@@ -9,7 +9,10 @@ RUN apk add --no-cache \
     oniguruma-dev \
     curl \
     git \
-    unzip
+    unzip \
+    autoconf \
+    g++ \
+    make
 
 RUN docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl
 

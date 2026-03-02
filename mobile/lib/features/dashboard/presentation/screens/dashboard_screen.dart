@@ -62,9 +62,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: AppColors.bgDark,
-        body: const SafeArea(
+        body: SafeArea(
           child: Center(
             child: CircularProgressIndicator(color: AppColors.primary),
           ),
@@ -231,10 +231,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ?.copyWith(color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 12),
-                    Wrap(
+                    const Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: const [
+                      children: [
                         _QuickAction(icon: Icons.flight_takeoff, label: 'Travel'),
                         _QuickAction(icon: Icons.event_available, label: 'Leave'),
                         _QuickAction(icon: Icons.account_balance_wallet, label: 'Finance'),

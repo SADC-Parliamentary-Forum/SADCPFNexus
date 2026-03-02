@@ -20,20 +20,26 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "org.sadcpf.sadcpf_nexus"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    // For production release, add a signing config and use it in buildTypes.release:
+    // signingConfigs {
+    //     create("release") {
+    //         storeFile = file(project.findProperty("SADC_KEYSTORE_PATH") ?: System.getenv("SADC_KEYSTORE_PATH") ?: "../upload-keystore.jks")
+    //         storePassword = project.findProperty("SADC_KEYSTORE_PASSWORD") ?: System.getenv("SADC_KEYSTORE_PASSWORD") ?: ""
+    //         keyAlias = project.findProperty("SADC_KEY_ALIAS") ?: System.getenv("SADC_KEY_ALIAS") ?: "upload"
+    //         keyPassword = project.findProperty("SADC_KEY_PASSWORD") ?: System.getenv("SADC_KEY_PASSWORD") ?: ""
+    //     }
+    // }
+    // buildTypes { release { signingConfig = signingConfigs.getByName("release") } }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

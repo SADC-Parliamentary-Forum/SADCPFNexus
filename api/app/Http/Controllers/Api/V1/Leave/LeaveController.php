@@ -2,7 +2,9 @@
 namespace App\Http\Controllers\Api\V1\Leave;
 
 use App\Http\Controllers\Controller;
+use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
+use App\Models\OvertimeAccrual;
 use App\Modules\Leave\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,11 +13,43 @@ class LeaveController extends Controller
 {
     public function __construct(private readonly LeaveService $leaveService) {}
 
-    /** Return LIL (leave-in-lieu) accruals available for the current user to link. Replace with real accruals from overtime/HR when available. */
+    /** Leave balances for the current user (annual days, LIL hours, sick used). */
+    public function balances(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $year = (int) date('Y');
+        $balance = LeaveBalance::where('user_id', $user->id)
+            ->where('period_year', $year)
+            ->first();
+
+        return response()->json([
+            'annual_balance_days'   => $balance ? (int) $balance->annual_balance_days : 0,
+            'lil_hours_available'   => $balance ? (float) $balance->lil_hours_available : 0,
+            'sick_leave_used_days'  => $balance ? (int) $balance->sick_leave_used_days : 0,
+            'period_year'           => $year,
+        ]);
+    }
+
+    /** Return LIL (leave-in-lieu) accruals available for the current user to link. */
     public function lilAccruals(Request $request): JsonResponse
     {
-        $accruals = []; // TODO: from overtime_accruals or HR when table/API exists
-        return response()->json(['data' => $accruals]);
+        $user = $request->user();
+        $rows = OvertimeAccrual::where('user_id', $user->id)
+            ->where('is_linked', false)
+            ->orderByDesc('accrual_date')
+            ->get();
+
+        $data = $rows->map(fn ($r) => [
+            'id'           => (string) $r->id,
+            'code'         => $r->code,
+            'description'  => $r->description ?? '',
+            'hours'        => (float) $r->hours,
+            'date'         => $r->accrual_date->format('Y-m-d'),
+            'approved_by'  => $r->approved_by_name,
+            'is_verified'  => $r->is_verified,
+        ]);
+
+        return response()->json(['data' => $data]);
     }
 
     public function index(Request $request): JsonResponse

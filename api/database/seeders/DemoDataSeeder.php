@@ -3,7 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\ImprestRequest;
+use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
+use App\Models\OvertimeAccrual;
+use App\Models\Payslip;
 use App\Models\ProcurementRequest;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;
@@ -40,6 +43,9 @@ class DemoDataSeeder extends Seeder
         $this->seedProcurementRequests($tenant, $staff, $admin ?? $finance);
         $this->seedSalaryAdvanceRequests($tenant, $staff, $finance);
         $this->seedTimesheets($tenant, $staff, $hr);
+        $this->seedPayslips($tenant, $staff);
+        $this->seedLeaveBalances($staff);
+        $this->seedOvertimeAccruals($staff);
     }
 
     private function seedTravelRequests(Tenant $tenant, User $requester, User $approver): void
@@ -234,6 +240,66 @@ class DemoDataSeeder extends Seeder
                     ]
                 );
             }
+        }
+    }
+
+    private function seedPayslips(Tenant $tenant, User $user): void
+    {
+        $year = (int) date('Y');
+        $months = [1, 2, 3];
+        foreach ($months as $month) {
+            Payslip::firstOrCreate(
+                [
+                    'user_id'      => $user->id,
+                    'period_year'  => $year,
+                    'period_month' => $month,
+                ],
+                [
+                    'tenant_id'    => $tenant->id,
+                    'gross_amount' => 45000.00,
+                    'net_amount'   => 35100.00,
+                    'currency'     => 'NAD',
+                    'issued_at'    => now()->setMonth($month)->setYear($year),
+                ]
+            );
+        }
+    }
+
+    private function seedLeaveBalances(User $user): void
+    {
+        $year = (int) date('Y');
+        LeaveBalance::firstOrCreate(
+            ['user_id' => $user->id, 'period_year' => $year],
+            [
+                'annual_balance_days'  => 18,
+                'lil_hours_available'  => 42.5,
+                'sick_leave_used_days' => 3,
+            ]
+        );
+    }
+
+    private function seedOvertimeAccruals(User $user): void
+    {
+        $items = [
+            ['code' => 'OT-2391', 'description' => 'Overtime: Project Alpha', 'hours' => 8, 'date' => now()->subDays(20), 'approved_by' => 'J. Doe', 'verified' => true],
+            ['code' => 'WE-8821', 'description' => 'Weekend Support Duty', 'hours' => 8, 'date' => now()->subDays(18), 'approved_by' => 'S. Smith', 'verified' => true],
+            ['code' => 'LS-1102', 'description' => 'Late Shift Differential', 'hours' => 4, 'date' => now()->subDays(25), 'approved_by' => null, 'verified' => false],
+        ];
+        foreach ($items as $item) {
+            OvertimeAccrual::firstOrCreate(
+                [
+                    'user_id'      => $user->id,
+                    'code'         => $item['code'],
+                    'accrual_date' => $item['date'],
+                ],
+                [
+                    'description'       => $item['description'],
+                    'hours'             => $item['hours'],
+                    'approved_by_name'   => $item['approved_by'],
+                    'is_verified'       => $item['verified'],
+                    'is_linked'         => false,
+                ]
+            );
         }
     }
 }

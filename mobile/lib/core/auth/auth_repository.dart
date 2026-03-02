@@ -29,7 +29,7 @@ class AuthRepository {
       if (token == null || token.isEmpty) throw Exception('No token received');
       await _storage.setToken(token);
       if (user != null) {
-        final jsonStr = user is Map ? jsonEncode(Map<String, dynamic>.from(user as Map)) : user.toString();
+        final jsonStr = user is Map ? jsonEncode(Map<String, dynamic>.from(user)) : user.toString();
         await _storage.setUserJson(jsonStr);
       }
       return AuthResult.success(user: user);

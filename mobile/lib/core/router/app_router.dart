@@ -7,6 +7,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/requests/presentation/screens/requests_screen.dart';
 import '../../features/approvals/presentation/screens/approvals_screen.dart';
+import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../../shared/widgets/bottom_nav_bar.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -42,11 +43,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'approvals',
             builder: (context, state) => const ApprovalsScreen(),
           ),
-          // Reports: placeholder until a Reports screen (e.g. travel/leave/DSA reports hub) and optional reports API exist.
           GoRoute(
             path: '/reports',
             name: 'reports',
-            builder: (context, state) => const PlaceholderScreen(title: 'Reports'),
+            builder: (context, state) => const ReportsScreen(),
           ),
           GoRoute(
             path: '/profile',

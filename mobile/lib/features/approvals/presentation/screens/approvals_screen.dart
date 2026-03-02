@@ -81,9 +81,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
+                        const Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
                         const SizedBox(height: 16),
-                        Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
                         const SizedBox(height: 16),
                         TextButton.icon(
                           onPressed: _load,
@@ -95,12 +95,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   ),
                 )
               : _submitted.isEmpty
-                  ? Center(
+                  ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.check_circle_outline, size: 64, color: AppColors.textMuted),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text('No pending approvals', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
                         ],
                       ),
@@ -132,7 +132,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                                 ),
                               ),
                               title: Text(desc, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                              subtitle: Text('$type · $ref', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              subtitle: Text('$type · $ref', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                               trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
                             ),
                           );

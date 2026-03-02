@@ -79,9 +79,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
+                        const Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary),
                         const SizedBox(height: 16),
-                        Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
                         const SizedBox(height: 16),
                         TextButton.icon(
                           onPressed: _load,
@@ -118,7 +118,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Text('No $title requests', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+            child: Text('No $title requests', style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           )
         else
           ...items.map((e) {
@@ -132,7 +132,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               child: ListTile(
                 leading: CircleAvatar(backgroundColor: AppColors.primary.withValues(alpha: 0.2), child: Icon(icon, color: AppColors.primary, size: 20)),
                 title: Text(desc, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(ref, style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                subtitle: Text(ref, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
