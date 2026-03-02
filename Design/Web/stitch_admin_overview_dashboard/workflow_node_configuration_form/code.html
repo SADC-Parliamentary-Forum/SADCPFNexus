@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Workflow Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2230",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-col overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark px-6 py-3 shrink-0 z-20">
+<div class="flex items-center gap-4">
+<div class="size-8 flex items-center justify-center rounded bg-primary/10 text-primary">
+<span class="material-symbols-outlined">shield</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">SADCPFNexus Admin</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="hidden md:flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-semibold hover:bg-blue-700 transition-colors">
+                        Save Workflow
+                    </button>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        Cancel
+                    </button>
+</div>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-medium text-slate-900 dark:text-white">Admin User</p>
+<p class="text-[10px] text-slate-500 dark:text-slate-400">Security Level 5</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 ring-2 ring-slate-100 dark:ring-slate-800" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD5i7MxMDRw5oLQhux9Cne9e5_vxl4FOomMdC1bkPxD70SPqBJw3bCfLKSS4ZXSx2NeN19N9Lq0Txa4jqgoqhhlsx6-xi2I-GE2Mxo7kFnMciqmdvheFtT-_BdFtHzuLcAn7w8hE11eZ-7kvjjE1cvaoNulxe1yHOeroHwxCtk8Xpd3r3SAtFS9gSEjvMy0JaG3CH7HDAfmuNLIk2fTdpgPAISPLd3t8SdT3-Mt7ugH7jhOiaxzNuZLz1VvTwvud4NZN2cpvu17GjI");'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<nav class="hidden lg:flex w-64 flex-col justify-between border-r border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark p-4 shrink-0 z-10">
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-3 px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-md size-8 shadow-sm" data-alt="Organization logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBAT-C9vWK9wzeC-SwNxtAwnRktDixiWIe_E1XrFDJNnyNkPzLJpXuxWUfQkkFQV894qs_nuRffGP3nWI2I03EZ2tzpBjZSkXNA85gjJZ2fNXklJ-TfzuqppgBnDz3wQaE4OysMBPL-khg6mcHniXfjxO94zyZ1LmV1tl5WxOXAOQ9uWgO5DFppC-R2OyeIaQp2-MLhe0dG_rl8S6sYPPWReO189UJoYDGm0HyXSD2LC3pxR0SghI8Y2yanpDhp2hUgFDxk9W1txA4");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-sm font-semibold">Workflow Engine</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs">v4.2.0 (Stable)</p>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="text-sm font-medium">Workflow Engine</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">group</span>
+<span class="text-sm font-medium">User Mgmt</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">description</span>
+<span class="text-sm font-medium">Audit Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</div>
+<div class="px-3 py-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-lg">help</span>
+<span class="text-xs font-medium">Documentation</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex relative bg-slate-50 dark:bg-slate-900/50 overflow-hidden">
+<!-- Visualizer (Dimmed Background) -->
+<div class="flex-1 flex flex-col p-8 opacity-40 transition-opacity hover:opacity-100 overflow-auto">
+<div class="mb-8">
+<div class="flex items-center gap-2 mb-1">
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Draft</span>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Workflow ID: #WF-2024-099</p>
+</div>
+<h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Finance Assessment Workflow</h1>
+</div>
+<div class="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-white/50 dark:bg-slate-800/50 p-10 relative">
+<!-- Simplified Flowchart Visualization -->
+<div class="flex items-center gap-8 w-full max-w-4xl relative z-0">
+<!-- Connecting Line -->
+<div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 dark:bg-slate-700 -z-10 -translate-y-1/2"></div>
+<!-- Node 1 -->
+<div class="flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-slate-800 border-4 border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-slate-400">start</span>
+</div>
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Start</span>
+</div>
+<!-- Node 2 -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="h-16 w-32 rounded-lg bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-sm">
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Dept Review</span>
+</div>
+</div>
+<!-- Node 3 (Active) -->
+<div class="flex flex-col items-center gap-2 flex-1 relative">
+<div class="absolute -top-3 -right-3 size-6 bg-primary text-white rounded-full flex items-center justify-center shadow-md z-10 border-2 border-white dark:border-slate-900">
+<span class="material-symbols-outlined text-[14px]">edit</span>
+</div>
+<div class="h-16 w-40 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 flex items-center justify-center relative z-0 ring-4 ring-primary/20">
+<span class="text-sm font-bold">Finance Assessment</span>
+</div>
+</div>
+<!-- Node 4 -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="h-16 w-32 rounded-lg bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-sm">
+<span class="text-xs font-medium text-slate-600 dark:text-slate-300">Approval</span>
+</div>
+</div>
+<!-- Node 5 -->
+<div class="flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-slate-800 border-4 border-slate-300 dark:border-slate-600 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-slate-400">flag</span>
+</div>
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wide">End</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Configuration Panel -->
+<aside class="w-[420px] bg-surface-light dark:bg-surface-dark border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl z-10 overflow-hidden">
+<!-- Panel Header -->
+<div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
+<div>
+<h3 class="text-slate-900 dark:text-white font-bold text-lg">Configure Node</h3>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Node ID: FA-332 • Type: Assessment</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Panel Content -->
+<div class="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
+<form class="flex flex-col gap-6">
+<!-- Basic Info Section -->
+<div class="space-y-4">
+<div>
+<label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Node Information</label>
+<label class="block mb-4">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 block">Node Name</span>
+<div class="relative">
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm px-3 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm" placeholder="e.g. Initial Review" type="text" value="Finance Assessment"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 text-lg">edit</span>
+</div>
+</label>
+<div class="grid grid-cols-2 gap-4">
+<label class="block col-span-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 block">Responsible Role</span>
+<div class="relative">
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm px-3 py-2.5 appearance-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm">
+<option>Finance Officer</option>
+<option>Department Head</option>
+<option>System Admin</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-lg">expand_more</span>
+</div>
+</label>
+<label class="block">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 block">SLA (Hours)</span>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm px-3 py-2.5 focus:border-primary focus:ring-1 focus:ring-primary shadow-sm" type="number" value="24"/>
+</label>
+<label class="block">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 block">Escalation Path</span>
+<div class="relative">
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm px-3 py-2.5 appearance-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm">
+<option>Line Manager</option>
+<option>Director</option>
+<option>None</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 pointer-events-none text-lg">expand_more</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<hr class="border-slate-100 dark:border-slate-800"/>
+<!-- Requirements Section -->
+<div class="space-y-4">
+<label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Input Requirements</label>
+<div class="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-2">Required Fields at this Stage</span>
+<div class="space-y-2">
+<label class="flex items-center gap-2 group cursor-pointer">
+<input checked="" class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">Budget Code Validation</span>
+</label>
+<label class="flex items-center gap-2 group cursor-pointer">
+<input checked="" class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">Vendor Risk Assessment</span>
+</label>
+<label class="flex items-center gap-2 group cursor-pointer">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-white dark:bg-slate-800 h-4 w-4" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">Payment Terms Override</span>
+</label>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Mandatory Remarks?</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">User must add comment to proceed</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<hr class="border-slate-100 dark:border-slate-800"/>
+<!-- Security Section -->
+<div class="space-y-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 text-sm">lock</span>
+<label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Security &amp; Auth</label>
+</div>
+<label class="block">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1 block">Step-up Auth Requirement</span>
+<div class="relative">
+<select class="w-full rounded-lg border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/10 text-slate-900 dark:text-white text-sm px-3 py-2.5 appearance-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 shadow-sm">
+<option>Class A Only (Biometric/Hardware Key)</option>
+<option>Always</option>
+<option>None</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-amber-500 pointer-events-none text-lg">security</span>
+</div>
+<p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">High-value transactions require enhanced verification.</p>
+</label>
+</div>
+</form>
+</div>
+<!-- Panel Footer -->
+<div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark mt-auto shrink-0">
+<div class="flex gap-3">
+<button class="flex-1 bg-primary hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span>
+                                Apply Changes
+                            </button>
+<button class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium py-2.5 px-4 rounded-lg transition-colors">
+                                Reset
+                            </button>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</div>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #334155;
+        }
+    </style>
+</body></html>

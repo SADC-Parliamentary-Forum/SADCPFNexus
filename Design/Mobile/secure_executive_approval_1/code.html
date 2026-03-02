@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Secure Executive Approval</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+            extend: {
+                colors: {
+                "primary": "#13ec80",
+                "background-light": "#f6f8f7",
+                "background-dark": "#102219",
+                },
+                fontFamily: {
+                "display": ["Public Sans", "sans-serif"]
+                },
+                borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col items-center justify-center p-0 m-0">
+<div class="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-xl">
+<!-- Top App Bar -->
+<div class="flex items-center px-4 py-3 justify-between sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
+<button class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Secure Approval</h2>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto pb-24"> <!-- Padding bottom for fixed footer -->
+<!-- Header Section -->
+<div class="px-6 pt-6 pb-2 text-center">
+<div class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-4xl">security</span>
+</div>
+<h1 class="text-slate-900 dark:text-white tracking-tight text-[26px] font-bold leading-tight mb-2">Confirm Executive Decision</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal leading-relaxed px-2">
+                    Please review the decision summary below before authorizing with your secure credentials.
+                </p>
+</div>
+<!-- Decision Card -->
+<div class="p-4">
+<div class="group relative overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-900 shadow-md transition-all">
+<!-- Image Background with Gradient Overlay -->
+<div class="absolute inset-0 z-0 h-32 w-full bg-cover bg-center" data-alt="Modern conference room table with documents" style='background-image: linear-gradient(180deg, rgba(16, 34, 25, 0.2) 0%, rgba(16, 34, 25, 0.9) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCTSnSgNoXDgnHbhnEB8XfTBin89j6S1zwEdmRmRrdsYUBIT_QT2dNbPojptWUly2Fk5_MR1ypeLwPTDGR9AgQplAlt80AJYAQngOsm2bAuxCLaSsyBrT2CLBAM9rmJztkkwnypq68BM-Uue8K8qxuvh6zobWk_4kfYqU57mUsnoEUuwzIcNd4apXfQgdibsFhGuB4AlgCetn_W9WMKUQe1wTDyJwdG4Uf3SCs5Feqn56JZ-QE_Y-s87AfWWm_AIE6plyPRmYD-mHFV");'>
+</div>
+<div class="relative z-10 flex flex-col pt-20 px-5 pb-5">
+<span class="mb-2 inline-flex w-fit items-center rounded-md bg-primary/20 px-2 py-1 text-xs font-medium text-primary backdrop-blur-sm border border-primary/20">
+                            High Priority
+                        </span>
+<h3 class="text-white text-xl font-bold leading-tight mb-1">Protocol Amendment 2024-B</h3>
+<p class="text-slate-300 text-sm font-medium">SADC Parliamentary Forum</p>
+</div>
+</div>
+</div>
+<!-- Details Grid -->
+<div class="px-6 py-2">
+<div class="divide-y divide-slate-200 dark:divide-slate-800">
+<div class="grid grid-cols-[35%_1fr] py-4 items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">Decision ID</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right font-mono">SADC-EXEC-8821</p>
+</div>
+<div class="grid grid-cols-[35%_1fr] py-4 items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">Date</p>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">Oct 24, 2024</p>
+</div>
+<div class="grid grid-cols-[35%_1fr] py-4 items-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">Authority Level</p>
+<div class="flex justify-end items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium">Secretary General</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Digital Signature Block -->
+<div class="mx-4 mt-2 mb-6 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#152a20] p-4">
+<div class="flex items-center gap-3 mb-3">
+<div class="flex h-8 w-8 items-center justify-center rounded bg-slate-200 dark:bg-slate-700">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-300 text-lg">fingerprint</span>
+</div>
+<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Digital Signature Block</p>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="text-xs text-slate-500 dark:text-slate-400">Device ID</span>
+<span class="text-xs font-mono text-slate-700 dark:text-slate-300">iPhone-15-Pro-SG-01</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-xs text-slate-500 dark:text-slate-400">Timestamp</span>
+<span class="text-xs font-mono text-slate-700 dark:text-slate-300">2024-10-24 T14:30:05Z</span>
+</div>
+<div class="flex justify-between items-start pt-1">
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Audit Hash</span>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-mono text-primary break-all text-right max-w-[180px] leading-tight bg-primary/10 px-1 py-0.5 rounded">
+                                0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa
+                            </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Disclaimer -->
+<p class="px-6 text-center text-xs text-slate-400 dark:text-slate-500 pb-4">
+                By authenticating, you certify that this decision is compliant with SADC protocols. This action is irreversible and logged on the nexus ledger.
+            </p>
+</div>
+<!-- Fixed Bottom Action Area -->
+<div class="absolute bottom-0 left-0 right-0 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 p-4 pb-8 backdrop-blur-xl bg-opacity-90 dark:bg-opacity-90">
+<div class="flex flex-col gap-3">
+<button class="flex w-full items-center justify-center gap-3 rounded-full bg-primary px-4 py-4 text-slate-900 shadow-[0_0_20px_rgba(19,236,128,0.3)] hover:shadow-[0_0_25px_rgba(19,236,128,0.5)] transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[24px]">face</span>
+<span class="text-base font-bold tracking-wide">Authenticate &amp; Approve</span>
+</button>
+<button class="w-full text-sm font-medium text-slate-500 dark:text-slate-400 py-2 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                    Reject Decision
+                </button>
+</div>
+</div>
+</div>
+</body></html>

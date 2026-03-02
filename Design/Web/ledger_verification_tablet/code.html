@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Ledger Verification</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#162e20",
+                        "surface-border": "#23482f",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for better look in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102216; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #23482f; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #13ec5b; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display flex flex-col min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 flex items-center justify-between border-b border-surface-border bg-background-dark/95 backdrop-blur-sm px-6 py-3 lg:px-10">
+<div class="flex items-center gap-4 text-slate-100">
+<div class="size-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-2xl">security</span>
+</div>
+<h2 class="text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8 items-center">
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-slate-300 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Audit</a>
+<a class="text-slate-300 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Compliance</a>
+<a class="text-slate-300 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 p-1 rounded-full hover:bg-surface-border transition-colors md:hidden">
+<span class="material-symbols-outlined text-slate-300">menu</span>
+</button>
+<button class="hidden md:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-green-400 transition-colors text-[#112217] text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="truncate">Profile</span>
+</button>
+<div class="size-9 rounded-full bg-surface-border overflow-hidden md:hidden border border-primary/30">
+<img alt="Profile Avatar" class="w-full h-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEA-ZjpRhND7tPyPVrgl8ZFW1KgWYHR5naPpDA20XZAIjnaV6G5NlMQd1LZ2ulVV5HRTdawwUi4TIE0r_ZZjnJMpRryFeyBKr-gK6NgZMc9eIPCD8NPjX_de__hu3rjWGJkKKx1J_2tKrh1YlEjR61h0NXdEJ10mdApWIeeBuLbLSnzrfK40pztvR5bhqwLVQM5YrS-JVkIOqevO_QlSDxM5I6ywJnsvNLOUuHr0G7UM_pjOZtlO9ta8oYVHjWyBhamUIPILMibvQ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 w-full max-w-3xl mx-auto p-4 md:p-6 pb-24">
+<!-- Status Section -->
+<section class="flex flex-col items-center justify-center py-8 gap-6 animate-fade-in">
+<!-- Central Status Gauge -->
+<div class="relative flex items-center justify-center size-64 md:size-80">
+<!-- Outer Glow Ring -->
+<div class="absolute inset-0 rounded-full border-4 border-primary/20 blur-sm"></div>
+<!-- Progress Ring SVG -->
+<svg class="w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(19,236,91,0.3)]" viewbox="0 0 100 100">
+<circle class="text-surface-border" cx="50" cy="50" fill="transparent" r="45" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-primary" cx="50" cy="50" fill="transparent" r="45" stroke="currentColor" stroke-dasharray="283" stroke-dashoffset="0" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<!-- Inner Content -->
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center z-10">
+<div class="mb-2 p-3 bg-primary/10 rounded-full text-primary">
+<span class="material-symbols-outlined text-5xl">verified_user</span>
+</div>
+<h1 class="text-3xl font-bold text-white tracking-tight">Verified</h1>
+<p class="text-sm text-primary font-medium mt-1">Leger Integrity: 100%</p>
+<span class="text-xs text-slate-400 mt-2">Last check: 2 mins ago</span>
+</div>
+</div>
+</section>
+<!-- Key Details Cards -->
+<div class="grid gap-4 mt-6">
+<!-- Manifest Hash -->
+<div class="bg-surface-dark border border-surface-border rounded-xl p-4 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">fingerprint</span>
+<span class="text-sm font-medium uppercase tracking-wider">Manifest Hash</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-bold">SHA-256</span>
+</div>
+<div class="flex items-center gap-3 bg-[#0a160e] rounded-lg p-3 border border-surface-border/50 group cursor-pointer hover:border-primary/30 transition-colors">
+<code class="text-primary font-mono text-sm truncate flex-1">7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069</code>
+<button class="text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Digital Signature -->
+<div class="bg-surface-dark border border-surface-border rounded-xl p-4 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">history_edu</span>
+<span class="text-sm font-medium uppercase tracking-wider">Authority Signature</span>
+</div>
+<div class="flex items-center gap-1 text-primary text-xs">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Valid</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-surface-border flex items-center justify-center shrink-0">
+<img alt="Admin Avatar" class="size-10 rounded-full object-cover border border-surface-border" data-alt="System administrator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4J77S2rgPhgNK_h7azPG_V4SncVmPLwiBMLpSTu2VgV0MAPkzSOPipML4-anxh9_jfgDi8r3dJaWLroB368VM3f_WeNG6K5dywu3saEkZmHxeNQ94gdzUKRAmGODhSfsCjQTXzgjhy9a-kz1aV-AnG4qTC7wdjb9WTezw-8UAY47I13tjxE9s_gGc1zglrnt9b7jbyBCw7NyJ5rllhXkRqnMWw1y7B4se3l2TNBaX6L1em3i6jOYsQOjHJaoHvKHDD_0jI7nndHI"/>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-slate-200 text-sm font-semibold truncate">Signed by Root Authority (Gov-01)</span>
+<span class="text-slate-500 text-xs truncate">2023-10-27T14:30:00Z</span>
+</div>
+</div>
+</div>
+</div>
+<!-- History Card (Expandable) -->
+<div class="mt-4 bg-surface-dark border border-surface-border rounded-xl overflow-hidden group">
+<details class="group/details">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-surface-border/30 transition-colors list-none">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-surface-border/50 rounded-lg text-slate-300">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-slate-200 font-medium text-base">Verification History</h3>
+<p class="text-slate-500 text-xs">View past audit logs</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-open/details:rotate-180 transition-transform">expand_more</span>
+</summary>
+<div class="border-t border-surface-border bg-[#0d1c12]">
+<div class="max-h-[300px] overflow-y-auto">
+<!-- History Item 1 -->
+<div class="flex items-center gap-4 p-4 border-b border-surface-border/50 hover:bg-surface-border/20 transition-colors">
+<div class="flex flex-col items-center gap-1">
+<div class="w-0.5 h-3 bg-surface-border"></div>
+<div class="size-2 rounded-full bg-primary shadow-[0_0_8px_rgba(19,236,91,0.5)]"></div>
+<div class="w-0.5 h-3 bg-surface-border"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="text-slate-200 text-sm font-medium">Routine Audit Check</span>
+<span class="text-slate-500 text-xs">Oct 27, 14:30</span>
+</div>
+<p class="text-slate-400 text-xs">Integrity verified via SHA-256 hash match.</p>
+</div>
+</div>
+<!-- History Item 2 -->
+<div class="flex items-center gap-4 p-4 border-b border-surface-border/50 hover:bg-surface-border/20 transition-colors">
+<div class="flex flex-col items-center gap-1">
+<div class="w-0.5 h-3 bg-surface-border"></div>
+<div class="size-2 rounded-full bg-slate-600"></div>
+<div class="w-0.5 h-3 bg-surface-border"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="text-slate-200 text-sm font-medium">Manual Override</span>
+<span class="text-slate-500 text-xs">Oct 26, 09:15</span>
+</div>
+<p class="text-slate-400 text-xs">Admin user initiated forced re-sync.</p>
+</div>
+</div>
+<!-- History Item 3 -->
+<div class="flex items-center gap-4 p-4 hover:bg-surface-border/20 transition-colors">
+<div class="flex flex-col items-center gap-1">
+<div class="w-0.5 h-3 bg-surface-border"></div>
+<div class="size-2 rounded-full bg-primary"></div>
+<div class="w-0.5 h-3 bg-surface-border"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-baseline mb-1">
+<span class="text-slate-200 text-sm font-medium">System Initialization</span>
+<span class="text-slate-500 text-xs">Oct 25, 08:00</span>
+</div>
+<p class="text-slate-400 text-xs">Genesis block created and verified.</p>
+</div>
+</div>
+</div>
+<div class="p-3 text-center border-t border-surface-border/50">
+<a class="text-primary text-xs font-bold hover:underline" href="#">Download Full Report</a>
+</div>
+</div>
+</details>
+</div>
+</main>
+<!-- Sticky Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-background-dark via-background-dark to-transparent z-40 pointer-events-none flex justify-center">
+<div class="w-full max-w-3xl pointer-events-auto">
+<button class="w-full group relative flex items-center justify-center gap-3 bg-primary hover:bg-[#10d650] text-[#112217] font-bold text-lg py-4 px-6 rounded-xl shadow-[0_0_20px_rgba(19,236,91,0.2)] hover:shadow-[0_0_30px_rgba(19,236,91,0.4)] transition-all transform hover:-translate-y-1 active:translate-y-0">
+<span class="material-symbols-outlined text-[24px]">gavel</span>
+<span>Verify Ledger Integrity</span>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+<span class="material-symbols-outlined">arrow_forward</span>
+</div>
+</button>
+</div>
+</div>
+</body></html>

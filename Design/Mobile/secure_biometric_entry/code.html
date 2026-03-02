@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Secure Biometric Entry - SADC Parliamentary Forum</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2bee6c",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="flex items-center px-4 py-3 justify-between bg-white/50 dark:bg-background-dark/50 backdrop-blur-sm sticky top-0 z-10">
+<button class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Secure Entry</h2>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col items-center justify-start w-full max-w-md mx-auto px-4 pb-6 pt-2">
+<!-- Institutional Visual/Seal -->
+<div class="w-full max-w-[320px] aspect-[4/3] relative rounded-2xl overflow-hidden shadow-sm mb-6 bg-slate-200 dark:bg-slate-800">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-90" data-alt="Official SADC Parliamentary Forum building or seal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAseCc2-1kSNNcKr0_J56jP8RkCHvOsw1Qi0yS0qBCFjr5YRktppRihp1FXMUNht2f2cmkalYnIfNnuU_wU7nrGI4m-Ws2rivElYelpMUrQzO9n1kwmdzevOPjZt_f5qR2HoricmHi9u3cyeCdkCsEZj2d4dYmvxzJmEPIXGx4U0ZcZ_bBDVHMxIsXhJ5Buc3HHxybdcpsJZGWvnN88x1JcctdmpR4R6SvaD_OnxJaHzT-GhP_XVfzGVBLlABJoatgfxZ4WsgLYgr2n");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-light/90 to-transparent dark:from-background-dark/90"></div>
+<div class="absolute bottom-4 left-0 right-0 text-center">
+<div class="mx-auto bg-primary/20 backdrop-blur-md rounded-full w-16 h-16 flex items-center justify-center mb-2 text-primary border border-primary/30 shadow-lg">
+<span class="material-symbols-outlined text-3xl">shield_lock</span>
+</div>
+</div>
+</div>
+<!-- Welcome Text -->
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-[28px] font-bold leading-tight text-center mb-2">
+            Welcome Back
+        </h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal text-center mb-8 max-w-[280px]">
+            Please verify your identity to access the SADC Executive Dashboard.
+        </p>
+<!-- Biometric Card -->
+<div class="w-full bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center gap-4 transition-transform active:scale-[0.98] cursor-pointer group">
+<div class="relative w-20 h-20 flex items-center justify-center">
+<div class="absolute inset-0 bg-primary/10 rounded-full animate-pulse group-hover:bg-primary/20"></div>
+<span class="material-symbols-outlined text-[40px] text-primary">fingerprint</span>
+<!-- FaceID overlay icon -->
+<span class="material-symbols-outlined text-lg text-primary absolute -right-1 -top-1 bg-white dark:bg-slate-800 rounded-full p-1 shadow-sm">face</span>
+</div>
+<div class="text-center">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight mb-1">FaceID or Fingerprint</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Tap to authenticate</p>
+</div>
+<button class="w-full mt-2 bg-primary hover:bg-green-400 text-slate-900 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">lock_open</span>
+                Unlock Now
+            </button>
+</div>
+<!-- Secondary Options -->
+<div class="mt-8 w-full flex flex-col items-center gap-4">
+<button class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium text-sm py-2 px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">dialpad</span>
+                Use Backup PIN
+            </button>
+</div>
+</main>
+<!-- Footer / Emergency -->
+<footer class="w-full max-w-md mx-auto px-6 py-6 pb-10">
+<button class="w-full group flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+<span class="material-symbols-outlined text-[20px] group-hover:animate-pulse">sos</span>
+<span class="font-bold text-sm">Emergency SOS</span>
+</button>
+<p class="text-center text-xs text-slate-400 dark:text-slate-600 mt-4">
+            SADCPFNexus v2.4.1 • Secure Governance Suite
+        </p>
+</footer>
+</body></html>

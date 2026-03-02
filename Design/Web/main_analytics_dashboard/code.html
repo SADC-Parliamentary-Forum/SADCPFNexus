@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Analytics Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "primary-content": "#ffffff",
+                        "primary-dark": "#1567b8",
+                        "primary-light": "#e8f3fe",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2630",
+                        "text-main": "#0d141b",
+                        "text-sub": "#4c739a",
+                        "border-light": "#e7edf3",
+                        "border-dark": "#2d3b4a",
+                        "success": "#078838",
+                        "danger": "#e73908",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Public Sans", sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-text-main dark:text-white">
+<div class="w-8 h-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">analytics</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">SADCPFNexus Analytics</h2>
+</div>
+<nav class="hidden md:flex items-center gap-1">
+<a class="px-3 py-2 text-sm font-medium text-text-main dark:text-white bg-primary-light dark:bg-primary/20 rounded-lg text-primary" href="#">Dashboard</a>
+<a class="px-3 py-2 text-sm font-medium text-text-sub dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">Reports</a>
+<a class="px-3 py-2 text-sm font-medium text-text-sub dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">System Logs</a>
+<a class="px-3 py-2 text-sm font-medium text-text-sub dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-text-sub dark:text-slate-400">
+<span class="material-symbols-outlined text-xl">search</span>
+</span>
+<input class="w-64 pl-10 pr-4 py-2 bg-background-light dark:bg-background-dark border-none rounded-lg text-sm text-text-main dark:text-white placeholder-text-sub focus:ring-2 focus:ring-primary focus:outline-none" placeholder="Search data..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-text-sub dark:text-slate-400 hover:bg-background-light dark:hover:bg-background-dark rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full"></span>
+</button>
+<div class="h-9 w-9 rounded-full bg-cover bg-center border-2 border-border-light dark:border-border-dark" data-alt="User profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDmzDhgkZi5Ccv2g5SSpzsSfV5CW93DvARurhfA14mA7cS5W0cqKlT3A1k5NdZ6SMjidmJE5Q0NGMHKkjIrnsNZWSVc2q91Vk4DPIBD5anaOYpJisxe1LbWavDUF8EvzrTchqfZiwqYbylI-G6PUHudXEq7nFBBn9XXUGThlbSCmDg9eb6P3Qd25ms5Aimrjod_zMhDf4jpAPdWnzvbkkE5Gp39PpNX59hCkfOaeQ5LFyf9I0HOGqVkSs-cKJ2OSujrG7bj8dV3kkk');"></div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 p-6 md:p-8 lg:px-12 max-w-[1600px] mx-auto w-full">
+<!-- Header & Filters -->
+<div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+<div>
+<h1 class="text-3xl font-bold text-text-main dark:text-white tracking-tight mb-2">Institutional Performance</h1>
+<p class="text-text-sub dark:text-slate-400">High-level visualization of submission volumes and compliance metrics.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<!-- Date Filter -->
+<div class="relative group">
+<button class="flex items-center gap-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark px-4 py-2 rounded-lg text-sm font-medium text-text-main dark:text-white hover:border-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">calendar_month</span>
+<span>Last 30 Days</span>
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">arrow_drop_down</span>
+</button>
+</div>
+<!-- Department Filter -->
+<div class="relative group">
+<button class="flex items-center gap-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark px-4 py-2 rounded-lg text-sm font-medium text-text-main dark:text-white hover:border-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">domain</span>
+<span>All Departments</span>
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">arrow_drop_down</span>
+</button>
+</div>
+<!-- Module Filter -->
+<div class="relative group">
+<button class="flex items-center gap-2 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark px-4 py-2 rounded-lg text-sm font-medium text-text-main dark:text-white hover:border-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">view_module</span>
+<span>All Modules</span>
+<span class="material-symbols-outlined text-text-sub dark:text-slate-400 text-[20px]">arrow_drop_down</span>
+</button>
+</div>
+<button class="flex items-center gap-2 bg-primary text-primary-content px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-primary-dark transition-colors ml-2">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Export PDF</span>
+</button>
+</div>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<!-- Card 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex flex-col justify-between group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">description</span>
+</div>
+<span class="flex items-center text-success text-sm font-bold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-base mr-1">trending_up</span> +12%
+                    </span>
+</div>
+<div>
+<p class="text-text-sub dark:text-slate-400 text-sm font-medium mb-1">Total Submission Volume</p>
+<h3 class="text-3xl font-bold text-text-main dark:text-white">1,248</h3>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex flex-col justify-between group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined">fact_check</span>
+</div>
+<span class="flex items-center text-success text-sm font-bold bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-base mr-1">trending_up</span> +2.1%
+                    </span>
+</div>
+<div>
+<p class="text-text-sub dark:text-slate-400 text-sm font-medium mb-1">Avg SLA Compliance</p>
+<h3 class="text-3xl font-bold text-text-main dark:text-white">94.2%</h3>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex flex-col justify-between group hover:border-primary/50 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<span class="flex items-center text-danger text-sm font-bold bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">
+<span class="material-symbols-outlined text-base mr-1">trending_down</span> -0.5%
+                    </span>
+</div>
+<div>
+<p class="text-text-sub dark:text-slate-400 text-sm font-medium mb-1">Budget Utilization</p>
+<h3 class="text-3xl font-bold text-text-main dark:text-white">$4.2M</h3>
+</div>
+</div>
+</div>
+<!-- Charts Section (Middle Row) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<!-- Main Line Chart -->
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white">Submissions by Module</h3>
+<p class="text-sm text-text-sub dark:text-slate-400">Year-to-date performance across key modules.</p>
+</div>
+<button class="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1">
+                        Full Report <span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+<!-- Chart Placeholder -->
+<div class="relative h-[320px] w-full flex items-end justify-between px-2 pt-8 gap-2">
+<!-- Y Axis Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none px-2 pb-6 pt-8">
+<div class="w-full border-t border-dashed border-border-light dark:border-border-dark/50"></div>
+<div class="w-full border-t border-dashed border-border-light dark:border-border-dark/50"></div>
+<div class="w-full border-t border-dashed border-border-light dark:border-border-dark/50"></div>
+<div class="w-full border-t border-dashed border-border-light dark:border-border-dark/50"></div>
+<div class="w-full border-t border-border-light dark:border-border-dark"></div>
+</div>
+<!-- Simplified SVG Line Chart Representation -->
+<svg class="absolute inset-0 w-full h-full px-2 pb-6 pt-8 overflow-visible" preserveaspectratio="none">
+<defs>
+<lineargradient id="gradientPrimary" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#1d85ed" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#1d85ed" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path class="text-primary" d="M0,250 C40,240 80,180 120,200 C160,220 200,100 240,120 C280,140 320,80 360,90 C400,100 440,150 480,140 C520,130 560,50 600,60 C640,70 680,120 720,110 C760,100 800,40 840,50 C880,60 920,30 960,40 C1000,50 1040,10 1080,20 L1080,300 L0,300 Z" fill="url(#gradientPrimary)"></path>
+<path d="M0,250 C40,240 80,180 120,200 C160,220 200,100 240,120 C280,140 320,80 360,90 C400,100 440,150 480,140 C520,130 560,50 600,60 C640,70 680,120 720,110 C760,100 800,40 840,50 C880,60 920,30 960,40 C1000,50 1040,10 1080,20" fill="none" stroke="#1d85ed" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+</svg>
+<!-- X Axis Labels (Simulated) -->
+<div class="absolute bottom-0 left-0 w-full flex justify-between text-xs text-text-sub dark:text-slate-500 px-4">
+<span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+</div>
+</div>
+</div>
+<!-- Departmental Activity Bar Chart -->
+<div class="lg:col-span-1 bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-text-main dark:text-white">Dept. Activity</h3>
+<span class="text-xs font-semibold bg-background-light dark:bg-background-dark px-2 py-1 rounded text-text-sub dark:text-slate-400">Q3 2023</span>
+</div>
+<div class="flex-1 flex flex-col justify-end gap-4 h-[320px]">
+<!-- Chart Body -->
+<div class="flex-1 flex items-end justify-between gap-2 px-2 pb-2">
+<!-- Bar 1 -->
+<div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
+<div class="w-full bg-blue-200 dark:bg-blue-900/40 rounded-t-sm relative h-[40%] group-hover:bg-primary transition-all">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark text-white text-xs py-1 px-2 rounded shadow-lg transition-opacity whitespace-nowrap z-10">HR: 140</div>
+</div>
+<span class="text-xs font-medium text-text-sub dark:text-slate-500">HR</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
+<div class="w-full bg-blue-300 dark:bg-blue-800/40 rounded-t-sm relative h-[75%] group-hover:bg-primary transition-all">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark text-white text-xs py-1 px-2 rounded shadow-lg transition-opacity whitespace-nowrap z-10">Fin: 280</div>
+</div>
+<span class="text-xs font-medium text-text-sub dark:text-slate-500">Fin</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
+<div class="w-full bg-blue-400 dark:bg-blue-700/40 rounded-t-sm relative h-[55%] group-hover:bg-primary transition-all">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark text-white text-xs py-1 px-2 rounded shadow-lg transition-opacity whitespace-nowrap z-10">Ops: 195</div>
+</div>
+<span class="text-xs font-medium text-text-sub dark:text-slate-500">Ops</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
+<div class="w-full bg-blue-500 dark:bg-blue-600/40 rounded-t-sm relative h-[90%] group-hover:bg-primary transition-all">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark text-white text-xs py-1 px-2 rounded shadow-lg transition-opacity whitespace-nowrap z-10">IT: 320</div>
+</div>
+<span class="text-xs font-medium text-text-sub dark:text-slate-500">IT</span>
+</div>
+<!-- Bar 5 -->
+<div class="flex flex-col items-center gap-2 w-full group cursor-pointer">
+<div class="w-full bg-blue-200 dark:bg-blue-900/40 rounded-t-sm relative h-[30%] group-hover:bg-primary transition-all">
+<div class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-surface-dark text-white text-xs py-1 px-2 rounded shadow-lg transition-opacity whitespace-nowrap z-10">Lgl: 90</div>
+</div>
+<span class="text-xs font-medium text-text-sub dark:text-slate-500">Lgl</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Heatmap Section -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-text-sub">grid_on</span>
+                            Peak Action Times
+                        </h3>
+<p class="text-sm text-text-sub dark:text-slate-400">User activity heat map by day and hour.</p>
+</div>
+<div class="flex gap-2">
+<span class="w-3 h-3 rounded-sm bg-blue-100 dark:bg-blue-900/20"></span>
+<span class="w-3 h-3 rounded-sm bg-blue-300 dark:bg-blue-700/40"></span>
+<span class="w-3 h-3 rounded-sm bg-primary"></span>
+</div>
+</div>
+<div class="grid grid-cols-8 gap-2 text-xs text-text-sub dark:text-slate-400 text-center">
+<!-- Header Row -->
+<div class="text-left font-medium"></div>
+<div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+<!-- Row 9AM -->
+<div class="text-left font-medium text-text-main dark:text-slate-300 self-center">9 AM</div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-primary text-white flex items-center justify-center font-bold">Hi</div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<!-- Row 12PM -->
+<div class="text-left font-medium text-text-main dark:text-slate-300 self-center">12 PM</div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-primary text-white flex items-center justify-center font-bold">Hi</div>
+<div class="h-8 rounded bg-primary text-white flex items-center justify-center font-bold">Hi</div>
+<div class="h-8 rounded bg-primary text-white flex items-center justify-center font-bold">Hi</div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<!-- Row 3PM -->
+<div class="text-left font-medium text-text-main dark:text-slate-300 self-center">3 PM</div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-blue-300 dark:bg-blue-700/40"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-primary text-white flex items-center justify-center font-bold">Hi</div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<!-- Row 6PM -->
+<div class="text-left font-medium text-text-main dark:text-slate-300 self-center">6 PM</div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-blue-100 dark:bg-blue-900/20"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+<div class="h-8 rounded bg-background-light dark:bg-background-dark/50 border border-dashed border-border-light dark:border-border-dark"></div>
+</div>
+</div>
+<!-- Recent Reports List -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl shadow-sm border border-border-light dark:border-border-dark flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-text-sub">history</span>
+                             Recent Reports
+                        </h3>
+<p class="text-sm text-text-sub dark:text-slate-400">Generated reports available for download.</p>
+</div>
+<button class="text-sm text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- List Item 1 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-background-light dark:hover:bg-surface-dark/50 border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all group cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-text-main dark:text-white group-hover:text-primary transition-colors">Q3 Compliance Audit.pdf</h4>
+<p class="text-xs text-text-sub dark:text-slate-400">Generated by Admin • 2 hours ago</p>
+</div>
+</div>
+<button class="text-text-sub dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+<!-- List Item 2 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-background-light dark:hover:bg-surface-dark/50 border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all group cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">table_view</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-text-main dark:text-white group-hover:text-primary transition-colors">Budget_Variance_YTD.xlsx</h4>
+<p class="text-xs text-text-sub dark:text-slate-400">Generated by Finance • Yesterday</p>
+</div>
+</div>
+<button class="text-text-sub dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+<!-- List Item 3 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-background-light dark:hover:bg-surface-dark/50 border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all group cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-text-main dark:text-white group-hover:text-primary transition-colors">Monthly_Ops_Summary.pdf</h4>
+<p class="text-xs text-text-sub dark:text-slate-400">Generated by System • 3 days ago</p>
+</div>
+</div>
+<button class="text-text-sub dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+<!-- List Item 4 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-background-light dark:hover:bg-surface-dark/50 border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all group cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">text_snippet</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-text-main dark:text-white group-hover:text-primary transition-colors">IT_Incident_Log_Aug.csv</h4>
+<p class="text-xs text-text-sub dark:text-slate-400">Generated by IT Support • 1 week ago</p>
+</div>
+</div>
+<button class="text-text-sub dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

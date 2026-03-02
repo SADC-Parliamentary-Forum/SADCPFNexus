@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Budget Variance Detailed Alerts</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#17cf82", // Emerald Green
+                        "secondary": "#d4af37", // Gold
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#11211a",
+                        "danger": "#ef4444",
+                        "warning": "#f59e0b",
+                        "caution": "#fbbf24",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-xl bg-white dark:bg-slate-900">
+<!-- Header -->
+<div class="flex items-center bg-white dark:bg-slate-900 p-4 pb-2 sticky top-0 z-10 border-b border-slate-100 dark:border-slate-800">
+<div class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full justify-center transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Budget Variance</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="flex items-center justify-center rounded-lg size-10 bg-transparent text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 overflow-y-auto pb-20">
+<!-- Summary Card -->
+<div class="p-4">
+<div class="flex flex-col gap-4 rounded-xl bg-white dark:bg-slate-800 p-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-danger/20 dark:border-danger/40">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-danger text-[20px]">warning</span>
+<p class="text-danger text-xs font-bold uppercase tracking-wider">Critical Alert</p>
+</div>
+<p class="text-slate-900 dark:text-white text-xl font-bold leading-tight mt-1">Total Over-expenditure Risk</p>
+</div>
+</div>
+<div class="flex items-end justify-between mt-2">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Projected Excess</p>
+<p class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">$1,250,000</p>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-danger font-bold text-lg">+12.5%</span>
+<span class="text-slate-400 dark:text-slate-500 text-xs">Above Total Budget</span>
+</div>
+</div>
+<!-- Visual Indicator Bar -->
+<div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
+<div class="h-full bg-primary w-[80%]"></div>
+<div class="h-full bg-danger w-[32.5%] relative">
+<div class="absolute right-0 top-0 bottom-0 w-0.5 bg-white/50"></div>
+</div>
+</div>
+<div class="flex justify-between text-xs text-slate-400 dark:text-slate-500">
+<span>Safe Limit</span>
+<span>Current Projection</span>
+</div>
+</div>
+</div>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-2">At Risk Budget Lines</h3>
+<!-- List Items -->
+<div class="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Item 1: Critical (Red) -->
+<div class="flex flex-col gap-3 bg-white dark:bg-slate-900 px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1">
+<div class="text-danger bg-danger/10 flex items-center justify-center rounded-lg shrink-0 size-10 mt-1">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal">Regional Integration</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">SADC-PF-2023-004</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-1 text-xs font-bold text-danger">
+<span class="material-symbols-outlined text-[14px]">error</span>
+                                102%
+                            </span>
+</div>
+</div>
+<div class="pl-[52px]">
+<div class="flex justify-between items-center mb-1 text-xs text-slate-500 dark:text-slate-400">
+<span>$510k Actual</span>
+<span>$500k Budget</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-danger w-full"></div>
+</div>
+<div class="flex gap-2 mt-3">
+<button class="flex-1 h-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                View Details
+                            </button>
+<button class="flex-1 h-9 rounded-lg bg-primary text-white text-xs font-bold shadow-sm shadow-primary/30 hover:bg-primary/90 transition-colors">
+                                Notify Director
+                            </button>
+</div>
+</div>
+</div>
+<!-- Item 2: Warning (Amber/Orange) -->
+<div class="flex flex-col gap-3 bg-white dark:bg-slate-900 px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1">
+<div class="text-warning bg-warning/10 flex items-center justify-center rounded-lg shrink-0 size-10 mt-1">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal">Parliamentary Sessions</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">SADC-PF-2023-012</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2 py-1 text-xs font-bold text-warning">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                                94%
+                            </span>
+</div>
+</div>
+<div class="pl-[52px]">
+<div class="flex justify-between items-center mb-1 text-xs text-slate-500 dark:text-slate-400">
+<span>$940k Actual</span>
+<span>$1.0M Budget</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-warning w-[94%]"></div>
+</div>
+<div class="flex gap-2 mt-3">
+<button class="flex-1 h-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                View Details
+                            </button>
+<button class="flex-1 h-9 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors">
+                                Flag Item
+                            </button>
+</div>
+</div>
+</div>
+<!-- Item 3: Caution (Yellow) -->
+<div class="flex flex-col gap-3 bg-white dark:bg-slate-900 px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1">
+<div class="text-caution bg-caution/10 flex items-center justify-center rounded-lg shrink-0 size-10 mt-1">
+<span class="material-symbols-outlined">attach_money</span>
+</div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal">ICT Infrastructure</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">SADC-PF-2023-089</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-1 rounded-full bg-caution/10 px-2 py-1 text-xs font-bold text-caution">
+                                82%
+                            </span>
+</div>
+</div>
+<div class="pl-[52px]">
+<div class="flex justify-between items-center mb-1 text-xs text-slate-500 dark:text-slate-400">
+<span>$246k Actual</span>
+<span>$300k Budget</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-caution w-[82%]"></div>
+</div>
+<div class="flex gap-2 mt-3">
+<button class="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                View Details
+                            </button>
+</div>
+</div>
+</div>
+<!-- Item 4: Safe (Primary/Green) -->
+<div class="flex flex-col gap-3 bg-white dark:bg-slate-900 px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1">
+<div class="text-primary bg-primary/10 flex items-center justify-center rounded-lg shrink-0 size-10 mt-1">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-base font-bold leading-normal">Secretariat Travel</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">SADC-PF-2023-102</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
+                                45%
+                            </span>
+</div>
+</div>
+<div class="pl-[52px]">
+<div class="flex justify-between items-center mb-1 text-xs text-slate-500 dark:text-slate-400">
+<span>$90k Actual</span>
+<span>$200k Budget</span>
+</div>
+<div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[45%]"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-5 bg-white dark:bg-slate-900"></div>
+</div>
+<!-- Bottom Navigation -->
+<div class="flex gap-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pb-6 pt-2 fixed bottom-0 left-0 right-0 max-w-md mx-auto z-20">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">speed</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-[24px] filled">notifications</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Alerts</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Budgets</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 hover:text-primary dark:text-slate-500 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin | Workflow Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light text-slate-900 font-display antialiased overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 bg-white px-6 py-3 shrink-0 z-20 relative">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-2xl">account_tree</span>
+</div>
+<div>
+<h2 class="text-slate-900 text-lg font-bold leading-tight">SADCPFNexus Admin</h2>
+<p class="text-slate-500 text-xs font-medium">Workflow Engine</p>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-3 items-center">
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm">
+<span>Save Workflow</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-colors border border-slate-200">
+<span>Validate</span>
+</button>
+<button class="flex items-center justify-center rounded-lg size-9 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors border border-slate-200">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="flex items-center justify-center rounded-lg size-9 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors border border-slate-200">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+</div>
+<div class="w-px h-8 bg-slate-200 mx-2"></div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border-2 border-slate-100 shadow-sm" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA5iQFq2_a_czFSJ4LimJ3YSc31YcjWUX_KabeDxhJGyZK6zKrflppMngW6LbSXPY1Eby7ZHwsaIvfqVDfDXVRNn57Qy_2gweYXi5zSQ7dgqD2YwSd8JU_bg-9Y4zWImxB90ZxA8u3ktSoDzwqtg-HfU7zbCFXeF_ACFy48A3p060DqZySA1Z0_ZJEvhsuU2b7b1FsjoahUVQBMLvw8noZanVxnEvB4HBS-PlWZcr77DtWPG6p_mXJUaHxMj_KShN0OJoVb_gXmML0");'></div>
+</div>
+</header>
+<!-- Breadcrumb & Title Bar -->
+<div class="bg-white border-b border-slate-200 px-6 py-3 shrink-0 flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2 text-sm text-slate-500 mb-1">
+<a class="hover:text-primary transition-colors" href="#">System Configuration</a>
+<span>/</span>
+<a class="hover:text-primary transition-colors" href="#">Workflows</a>
+<span>/</span>
+<span class="text-slate-900 font-medium">Purchase Request Flow</span>
+</div>
+<div class="flex items-center gap-3">
+<h1 class="text-slate-900 text-xl font-bold">Purchase Request Approval Flow</h1>
+<span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                    Class C - System Configuration
+                </span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-slate-500 text-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> Last edited 2m ago</span>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar: Node Palette -->
+<aside class="w-64 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 overflow-y-auto">
+<div class="p-4 border-b border-slate-200 bg-slate-50/80 backdrop-blur sticky top-0 z-10">
+<h3 class="text-slate-900 text-sm font-semibold">Node Palette</h3>
+<p class="text-slate-500 text-xs">Drag to canvas to add steps</p>
+</div>
+<div class="p-3 flex flex-col gap-2">
+<!-- Palette Item -->
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-green-600 flex items-center justify-center bg-green-50 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">play_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">Start Event</span>
+<span class="text-slate-400 text-[10px] mt-1">Initiates workflow</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-primary flex items-center justify-center bg-blue-50 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">Approval Step</span>
+<span class="text-slate-400 text-[10px] mt-1">Human review</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-orange-500 flex items-center justify-center bg-orange-50 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">call_split</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">Decision Logic</span>
+<span class="text-slate-400 text-[10px] mt-1">Conditional branch</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-purple-600 flex items-center justify-center bg-purple-50 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">Notification</span>
+<span class="text-slate-400 text-[10px] mt-1">Email / SMS</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-slate-600 flex items-center justify-center bg-slate-100 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">integration_instructions</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">Integration</span>
+<span class="text-slate-400 text-[10px] mt-1">API Call</span>
+</div>
+</div>
+<div class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-slate-200 shadow-sm cursor-grab hover:border-primary/50 hover:shadow-md transition-all">
+<div class="text-red-600 flex items-center justify-center bg-red-50 p-1.5 rounded-md">
+<span class="material-symbols-outlined text-[20px]">stop_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-900 text-sm font-medium leading-none">End Event</span>
+<span class="text-slate-400 text-[10px] mt-1">Terminates flow</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center: Canvas -->
+<main class="flex-1 bg-slate-100 relative overflow-hidden flex flex-col">
+<!-- Canvas Toolbar -->
+<div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+<button class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 text-slate-600">
+<span class="material-symbols-outlined text-[20px]">zoom_in</span>
+</button>
+<button class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 text-slate-600">
+<span class="material-symbols-outlined text-[20px]">zoom_out</span>
+</button>
+<button class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 text-slate-600">
+<span class="material-symbols-outlined text-[20px]">center_focus_strong</span>
+</button>
+</div>
+<!-- Grid Background -->
+<div class="absolute inset-0 z-0 opacity-40" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px;">
+</div>
+<!-- Flowchart Container -->
+<div class="flex-1 flex items-center justify-center relative z-0 overflow-auto p-20">
+<!-- Flowchart Visuals -->
+<div class="relative flex flex-col items-center gap-10">
+<!-- Start Node -->
+<div class="relative group">
+<div class="size-16 rounded-full bg-white border-4 border-green-500 shadow-md flex items-center justify-center z-10 relative">
+<span class="material-symbols-outlined text-green-600 text-3xl">play_arrow</span>
+</div>
+<div class="absolute top-1/2 left-full w-0.5 h-0 bg-transparent border-t-2 border-slate-300 border-dashed w-10"></div> <!-- Connector placeholder -->
+<div class="absolute top-full mt-2 w-full text-center text-xs font-semibold text-slate-600">Start</div>
+<!-- Line down -->
+<div class="absolute left-1/2 top-full h-10 w-0.5 bg-slate-300"></div>
+<div class="absolute left-1/2 top-[calc(100%+40px)] -translate-x-[5px] -translate-y-2 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-slate-300"></div>
+</div>
+<!-- Dept Head Approval Node -->
+<div class="relative w-64 p-4 bg-white rounded-xl border-2 border-slate-200 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="bg-blue-50 text-primary p-2 rounded-lg">
+<span class="material-symbols-outlined">how_to_reg</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-900">Dept Head Approval</h4>
+<p class="text-xs text-slate-500 mt-1">Role: Department Manager</p>
+</div>
+</div>
+<!-- Line down -->
+<div class="absolute left-1/2 top-full h-10 w-0.5 bg-slate-300"></div>
+<div class="absolute left-1/2 top-[calc(100%+40px)] -translate-x-[5px] -translate-y-2 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-slate-300"></div>
+</div>
+<!-- Finance Check Node (Selected) -->
+<div class="relative w-64 p-4 bg-white rounded-xl border-2 border-primary shadow-lg ring-4 ring-primary/10 cursor-pointer">
+<div class="absolute -top-3 -right-3 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">ACTIVE</div>
+<div class="flex items-start gap-3">
+<div class="bg-primary text-white p-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-900">Finance Check</h4>
+<p class="text-xs text-slate-500 mt-1">Role: Finance Controller</p>
+</div>
+</div>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">SLA: 24h</span>
+</div>
+<!-- Line down -->
+<div class="absolute left-1/2 top-full h-10 w-0.5 bg-slate-300"></div>
+<div class="absolute left-1/2 top-[calc(100%+40px)] -translate-x-[5px] -translate-y-2 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-slate-300"></div>
+</div>
+<!-- Final Sign-off Node -->
+<div class="relative w-64 p-4 bg-white rounded-xl border-2 border-slate-200 shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer opacity-80">
+<div class="flex items-start gap-3">
+<div class="bg-purple-50 text-purple-600 p-2 rounded-lg">
+<span class="material-symbols-outlined">verified_user</span>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-900">Final Sign-off</h4>
+<p class="text-xs text-slate-500 mt-1">Role: CFO</p>
+</div>
+</div>
+<!-- Line down -->
+<div class="absolute left-1/2 top-full h-10 w-0.5 bg-slate-300"></div>
+<div class="absolute left-1/2 top-[calc(100%+40px)] -translate-x-[5px] -translate-y-2 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-slate-300"></div>
+</div>
+<!-- End Node -->
+<div class="relative">
+<div class="size-12 rounded-full bg-white border-4 border-slate-400 shadow-md flex items-center justify-center z-10 relative">
+<div class="size-4 bg-slate-400 rounded-full"></div>
+</div>
+<div class="absolute top-full mt-2 w-full text-center text-xs font-semibold text-slate-500">End</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Sidebar: Config Form -->
+<aside class="w-80 bg-white border-l border-slate-200 flex flex-col shadow-xl z-20">
+<div class="p-5 border-b border-slate-100 flex items-center justify-between">
+<div>
+<h3 class="text-slate-900 text-base font-bold">Node Configuration</h3>
+<p class="text-slate-500 text-xs mt-0.5">Edit properties for selected step</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-5 space-y-6">
+<!-- Node Name -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-700">Node Name</label>
+<input class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2" type="text" value="Finance Check"/>
+</div>
+<!-- Description -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-700">Description</label>
+<textarea class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2 resize-none text-slate-600" rows="2">Initial verification of budget availability and cost center allocation.</textarea>
+</div>
+<!-- Responsible Role -->
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-700">Responsible Role</label>
+<div class="relative">
+<select class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2 pr-10 appearance-none bg-slate-50">
+<option>Finance Controller</option>
+<option>Department Head</option>
+<option>Procurement Officer</option>
+<option>CFO</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="inline-flex items-center rounded bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                            Finance Controller
+                            <button class="ml-1 inline-flex text-blue-400 hover:text-blue-600">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10 hover:bg-slate-200 cursor-pointer border border-slate-200 border-dashed">
+<span class="material-symbols-outlined text-[14px] mr-1">add</span> Add Role
+                        </span>
+</div>
+</div>
+<div class="border-t border-slate-100 my-4"></div>
+<!-- Step-up Auth -->
+<div class="space-y-1.5">
+<div class="flex items-center gap-1">
+<label class="block text-sm font-semibold text-slate-700">Step-up Auth Requirement</label>
+<span class="material-symbols-outlined text-[16px] text-slate-400 cursor-help" title="Requires additional authentication">info</span>
+</div>
+<div class="relative">
+<select class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2 pr-10 appearance-none bg-white">
+<option>None (Standard Session)</option>
+<option selected="">MFA / 2FA Prompt</option>
+<option>Digital Signature (Hardware Token)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<p class="text-xs text-orange-600 mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                        High security clearance level
+                    </p>
+</div>
+<!-- SLA & Timeout -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-700">SLA (Hours)</label>
+<input class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2" type="number" value="24"/>
+</div>
+<div class="space-y-1.5">
+<label class="block text-sm font-semibold text-slate-700">Escalation After</label>
+<input class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2" type="number" value="48"/>
+</div>
+</div>
+<div class="border-t border-slate-100 my-4"></div>
+<!-- Toggles -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Mandatory Remarks</span>
+<span class="text-xs text-slate-500">Approver must provide comment</span>
+</div>
+<button aria-checked="true" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-primary" role="switch" type="button">
+<span aria-hidden="true" class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Allow Re-assignment</span>
+<span class="text-xs text-slate-500">Can delegate to others</span>
+</div>
+<button aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-slate-200" role="switch" type="button">
+<span aria-hidden="true" class="translate-x-0 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="p-5 border-t border-slate-200 bg-slate-50 mt-auto">
+<div class="flex gap-3">
+<button class="flex-1 rounded-lg bg-primary py-2 px-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors">
+                        Apply Changes
+                    </button>
+<button class="rounded-lg bg-white py-2 px-3 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors">
+                        Cancel
+                    </button>
+</div>
+<div class="mt-3 text-center">
+<button class="text-xs text-red-600 hover:text-red-800 font-medium">Delete this node</button>
+</div>
+</div>
+</aside>
+</div>
+</body></html>

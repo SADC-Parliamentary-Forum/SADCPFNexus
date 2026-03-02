@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus | Incident Case Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1a3524",
+                        "surface-darker": "#0d1b11",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark mode technical feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #102216; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #23482f; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #13ec5b; 
+        }
+        
+        /* Watermark styling */
+        .secure-watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 8rem;
+            font-weight: 900;
+            color: rgba(35, 72, 47, 0.15);
+            pointer-events: none;
+            z-index: 0;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        .glass-panel {
+            background: rgba(26, 53, 36, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(19, 236, 91, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display overflow-hidden h-screen flex flex-col">
+<!-- Secure Watermark -->
+<div class="secure-watermark">CONFIDENTIAL // SECURE</div>
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-white/10 bg-background-dark px-6 py-3 relative z-20 shrink-0">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-3xl">security</span>
+</div>
+<div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+<div class="flex items-center gap-2 text-xs text-slate-400">
+<span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+<span>Live Connection</span>
+</div>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="hidden md:flex items-center bg-surface-dark px-3 py-1.5 rounded-lg border border-white/5">
+<span class="material-symbols-outlined text-slate-400 text-sm mr-2">search</span>
+<input class="bg-transparent border-none text-sm text-white focus:ring-0 placeholder-slate-500 w-48" placeholder="Search Incident ID..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg size-10 bg-surface-dark text-white hover:bg-white/10 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<button class="flex items-center justify-center rounded-lg size-10 bg-surface-dark text-white hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">chat</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-white/10">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold text-white leading-none">Officer J. Doe</p>
+<p class="text-xs text-primary leading-none mt-1">Level 4 Clearance</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-primary/30" data-alt="Profile picture of Officer J. Doe" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDeoDq-7AJwpOjFiIoFpQ5oZxSfI2fPw4wL06V8egO4m_F4j9Al9zZ6d4kPfuO3XharriFRXfNIKf9hWX9o247-IuPno8vuOxWO8pHFlkH5K9rZ9GYwHcjI5ST5CIIV_DBAVFan6MGZVF2QCOj3wgNi-xkcf64PQfv-6tcUrZvULv-SZ0jZkig1zSDF1G8F6mmSiExW2xA007lGck3yjA12xITe4vJcTSnP46IUWgEDXdXmuu1jEkVtjSFn5F_Kz2ChsewGSJuwf20");'></div>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex-1 flex overflow-hidden relative z-10">
+<!-- Left Scrollable Content (Incident Details) -->
+<div class="flex-1 overflow-y-auto p-6 md:p-10">
+<div class="max-w-4xl mx-auto space-y-8 pb-20">
+<!-- Incident Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Class A Incident</span>
+<span class="text-slate-400 text-sm font-mono">#99-2342-A</span>
+</div>
+<h1 class="text-3xl md:text-4xl font-bold text-white tracking-tight">Unauthorized Access Attempt</h1>
+<p class="text-primary mt-2 font-mono text-sm">SERVER ROOM B // CYBERSECURITY DEPT</p>
+</div>
+<div class="text-right hidden md:block">
+<p class="text-slate-400 text-sm">Time of Incident</p>
+<p class="text-white font-mono text-lg">Oct 24, 2023 <span class="text-slate-500">|</span> 14:30:45 Z</p>
+</div>
+</div>
+<!-- Status Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-surface-dark border border-white/5 p-4 rounded-xl">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-yellow-400">warning</span>
+<h3 class="text-slate-200 font-semibold text-sm">Threat Level</h3>
+</div>
+<p class="text-2xl font-bold text-white">High (Severe)</p>
+<div class="w-full bg-slate-700 h-1 mt-3 rounded-full overflow-hidden">
+<div class="bg-yellow-400 h-full w-3/4"></div>
+</div>
+</div>
+<div class="bg-surface-dark border border-white/5 p-4 rounded-xl">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary">radio_button_checked</span>
+<h3 class="text-slate-200 font-semibold text-sm">Investigation Status</h3>
+</div>
+<p class="text-2xl font-bold text-white">Active</p>
+<p class="text-xs text-slate-400 mt-1">Updated 2 mins ago</p>
+</div>
+<div class="bg-surface-dark border border-white/5 p-4 rounded-xl">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-blue-400">folder_open</span>
+<h3 class="text-slate-200 font-semibold text-sm">Evidence Collected</h3>
+</div>
+<p class="text-2xl font-bold text-white">4 Items</p>
+<p class="text-xs text-slate-400 mt-1">2 Digital, 2 Physical</p>
+</div>
+</div>
+<!-- Narrative Section -->
+<div class="bg-surface-dark/50 border border-white/5 rounded-xl p-6">
+<h3 class="text-white text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span>
+                        Incident Narrative
+                    </h3>
+<div class="prose prose-invert prose-sm max-w-none text-slate-300">
+<p>
+                            At approximately 14:30 Z, perimeter sensors in Sector 4 (Server Room B) were triggered. Security footage shows an unidentified individual attempting to bypass the biometric scanner at Access Point 4-B. The subject was wearing a standard maintenance uniform but lacked the appropriate RFID badge for this clearance level.
+                        </p>
+<p class="mt-4">
+                            Upon failure to authenticate, the subject attempted a physical force entry on the maglock system. Silent alarms were triggered immediately, alerting Officer J. Doe and the on-duty cybersecurity response team. The subject fled the scene via the north stairwell before physical security could intercept.
+                        </p>
+<div class="mt-6 bg-black/40 p-4 rounded-lg border-l-2 border-primary">
+<p class="font-mono text-xs text-primary mb-1">SYSTEM LOG - 14:31:02</p>
+<p class="font-mono text-xs text-white">Failed Authentication: User UNKNOWN</p>
+<p class="font-mono text-xs text-white">Biometric Match: 12% (No Match)</p>
+<p class="font-mono text-xs text-red-400">ALERT: Physical tampering detected on lock mechanism.</p>
+</div>
+</div>
+</div>
+<!-- Evidence Gallery -->
+<div>
+<h3 class="text-white text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">photo_library</span>
+                        Evidence
+                    </h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="group relative aspect-video bg-black/50 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-primary transition-colors">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 group-hover:opacity-100 transition-opacity" data-alt="Security camera footage showing a dark server room corridor" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA0-cVlUpo95gEttRYtVjJ6cEEwtNcHe74DGLPnmRn_e5uA1m120zaDCanGdAIHwo8rc7PKp5fiU3hFNjpDNrmyM2cvIYms9NU6JPVBcjujRg-vvbRgjA8bIKryp69c2v0eQuZcLIgSqGdGuSrYF0HRzlmSdh-KZ4GzbIQhecFf1aNxFSrRLYOSPOzF0qz5FHsnkfNpxKV-RJ5urNCbJ4ItBq1BjVT8rB_eHe6ChgWSnzgh0mEKi9Qdf_RXdRqOjpXMbFnRV7Jx6ZQ");'></div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+<p class="text-xs text-white font-mono">CAM-04 FEED</p>
+</div>
+</div>
+<div class="group relative aspect-video bg-black/50 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-primary transition-colors">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 group-hover:opacity-100 transition-opacity" data-alt="Close up of a digital fingerprint scan on a screen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB54V3UG3IWcWjcBw_RjkfRAxIeEX3Q5mnNJx5PVOztyEUbXrjxDrVKuc1b8k9a6KDvOQ9smPE8LrTRSnfkIyeK-kvdTuKY9RkTOj1h0ke1ifRoseio5ClGKD__Pja6jqdsfIGwbGvtP885SSjoVq1RHqxo5DAsX3lMDMj5m8s_L9MwhLxotmHJMk2aZvXCYCHJB-Mk7QIei3HmMVZ8QQf2lpPoGiV72FKeksYHAXYSFNrhXCmIfDAYoB5muC6Q62BpnVCIZ16SNjY");'></div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+<p class="text-xs text-white font-mono">BIO-SCAN LOG</p>
+</div>
+</div>
+<div class="group relative aspect-video bg-black/50 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-slate-500 group-hover:text-primary transition-colors">lock</span>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+<p class="text-xs text-white font-mono">LOCK DIAGNOSTIC</p>
+</div>
+</div>
+<div class="group relative aspect-video bg-black/50 rounded-lg overflow-hidden border border-white/10 cursor-pointer hover:border-primary transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-slate-500 group-hover:text-primary transition-colors">description</span>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+<p class="text-xs text-white font-mono">OFFICER REPORT</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Drawer (Case Actions) -->
+<aside class="w-80 md:w-96 bg-surface-darker border-l border-white/10 flex flex-col shadow-2xl relative z-30">
+<!-- Drawer Header / Legal Hold -->
+<div class="p-6 border-b border-white/10 bg-surface-dark">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-white font-bold text-lg">Case Actions</h2>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer hover:text-white">close</span>
+</div>
+<div class="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-red-500 text-sm">gavel</span>
+<h3 class="text-red-100 font-bold text-sm uppercase">Legal Hold</h3>
+</div>
+<p class="text-red-200/60 text-xs">Prevent deletion of all associated evidence.</p>
+</div>
+<!-- Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-500/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Drawer Content: Actions List -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Primary Actions -->
+<div class="space-y-3">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Primary Operations</p>
+<button class="w-full flex items-center justify-between bg-primary hover:bg-green-400 text-background-dark font-bold py-3 px-4 rounded-lg transition-colors group">
+<span>Escalate to Class S</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<button class="w-full flex items-center justify-between bg-surface-dark hover:bg-white/5 border border-white/10 text-white font-medium py-3 px-4 rounded-lg transition-colors">
+<span>Generate Report</span>
+<span class="material-symbols-outlined text-slate-400">print</span>
+</button>
+<button class="w-full flex items-center justify-between bg-surface-dark hover:bg-white/5 border border-white/10 text-white font-medium py-3 px-4 rounded-lg transition-colors">
+<span>Add Collaborator</span>
+<span class="material-symbols-outlined text-slate-400">person_add</span>
+</button>
+</div>
+<!-- Workflow Steps -->
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Workflow</p>
+<div class="space-y-0 relative">
+<!-- Connecting Line -->
+<div class="absolute left-3.5 top-3 bottom-5 w-0.5 bg-white/10 z-0"></div>
+<!-- Step 1: Completed -->
+<div class="relative z-10 flex gap-4 pb-6">
+<div class="size-7 rounded-full bg-primary flex items-center justify-center shrink-0 border-2 border-background-dark">
+<span class="material-symbols-outlined text-background-dark text-sm font-bold">check</span>
+</div>
+<div>
+<h4 class="text-white text-sm font-bold">Incident Logged</h4>
+<p class="text-xs text-slate-400 mt-0.5">Oct 24, 14:35 - Auto-System</p>
+</div>
+</div>
+<!-- Step 2: Completed -->
+<div class="relative z-10 flex gap-4 pb-6">
+<div class="size-7 rounded-full bg-primary flex items-center justify-center shrink-0 border-2 border-background-dark">
+<span class="material-symbols-outlined text-background-dark text-sm font-bold">check</span>
+</div>
+<div>
+<h4 class="text-white text-sm font-bold">Initial Triage</h4>
+<p class="text-xs text-slate-400 mt-0.5">Oct 24, 14:42 - Officer Doe</p>
+</div>
+</div>
+<!-- Step 3: Current -->
+<div class="relative z-10 flex gap-4 pb-6">
+<div class="size-7 rounded-full bg-surface-dark border-2 border-primary flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(19,236,91,0.3)]">
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+</div>
+<div>
+<h4 class="text-primary text-sm font-bold">Investigation</h4>
+<p class="text-xs text-slate-400 mt-0.5">In Progress</p>
+<button class="mt-2 text-xs bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/10 text-white transition-colors">Mark Complete</button>
+</div>
+</div>
+<!-- Step 4: Pending -->
+<div class="relative z-10 flex gap-4">
+<div class="size-7 rounded-full bg-surface-dark border-2 border-white/10 flex items-center justify-center shrink-0">
+<span class="text-slate-500 text-[10px] font-bold">4</span>
+</div>
+<div>
+<h4 class="text-slate-500 text-sm font-medium">Final Review</h4>
+<p class="text-xs text-slate-600 mt-0.5">Pending Investigation</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Notifications Settings -->
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Watchers</p>
+<div class="flex items-center -space-x-2 overflow-hidden mb-3">
+<img alt="Officer J. Doe" class="inline-block h-8 w-8 rounded-full ring-2 ring-background-dark" data-alt="Avatar of watcher" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH_ujrOXM6Ei-d5pKbqF3LG4iF3kOhjBjF-cUs-zqXXRx3_q5Y1cxCycRIdLbWtZtYJfgL7znaGyV_5QjTh-3a7ziyeSXNsV1M7Q1WNFAjsnt8p_Y99JIWrWNb9GoSAMlQD317XQzY8DuU4kL9e0tPNCDu00X_0UMD-visLLafUIwNJQ0Dm_-eZhARvFOHdsUgn4ArsIpg57nQRQn-QKTF3HUiFsFk5xKm-FlLXnrKmgdC_D8u8f_F7FW7WYQZxv2YrMVnXtKl0IM"/>
+<img alt="Sarah Connor" class="inline-block h-8 w-8 rounded-full ring-2 ring-background-dark" data-alt="Avatar of watcher" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDCjL8c2WcXiV_xFFcWEI__Mbeqf72Z2httNRwfPJyN_k2oBGsZJN6Mc_Ty1CUnnTXB_XeIth3zMJdrrJl5yFb6xaNi64i96O-3tT5o_W93kQRPdBdPEmCf0p67k-0LZBGrXnEqv8kZrrhlms2ztOuWdu7Ck0CSl-V90LGoglI8TzOhL_syjHcmdIsx5zFwU3hIkY7VUx_wSSYGA5m4XK20EyKHo9t2vfYgrf2C0pWBEiFZ0H0YamkQF1XTcAxU0z4KmxhBzvVTpA"/>
+<img alt="Admin" class="inline-block h-8 w-8 rounded-full ring-2 ring-background-dark" data-alt="Avatar of watcher" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2kCiAx0vtWVO_14fRu55ybGeHpUX5OLtb4uZhgx29iRU8FfN4Jr9VsTQBg8u__VBnCUvEPrsAGXHmArOxbx4eGXURSZ3q_WYrDswErCK-kqG8ZRLUh_cq09ApTprc069zdeI8N8iudYx6FQCOVf5Hibt7a9KlPRQhVkuDSJt2YURt0TJi8RW27mpeDp1cHsr8hVglryAwRMbewHozf0l_yLRBGQluyPGOaXqDwJo50FOTshjWFQ8cQ1nJgjP27pXNJTamjaQPSVU"/>
+<button class="flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-background-dark bg-surface-dark text-xs text-white hover:bg-white/10">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+<div class="flex items-center justify-between py-2">
+<span class="text-sm text-slate-300">Notify on updates</span>
+<div class="w-10 h-5 bg-primary/20 rounded-full relative cursor-pointer">
+<div class="absolute right-0.5 top-0.5 w-4 h-4 bg-primary rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Drawer Footer -->
+<div class="p-4 border-t border-white/10 bg-surface-darker text-center">
+<p class="text-[10px] text-slate-500">SADCPFNexus v2.4.1 | Secure Connection</p>
+</div>
+</aside>
+</main>
+</body></html>

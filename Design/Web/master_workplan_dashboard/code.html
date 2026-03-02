@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Master Workplan Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-4xl">policy</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-9">
+<a class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold leading-normal border-b-2 border-primary pb-0.5" href="#">Workplan</a>
+<a class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Finance</a>
+<a class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">HR</a>
+<a class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="hidden md:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-slate-900 dark:text-white focus:outline-0 focus:ring-0 border-none h-full placeholder:text-slate-400 px-3 text-sm font-normal leading-normal" placeholder="Search modules..."/>
+</div>
+</label>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-white dark:border-slate-900"></span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-slate-200 dark:border-slate-700 cursor-pointer" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC3Dieyl_pOidEuExo48UjrY7T_ymqENfYe8cYXqp1yy-TSUAk1cP6vqTbSnTr07M9eeI5_ue2Etjn__zz4X-ISmiUFysNkuqtLveXdr7rbqo_agBpGB-gK_PEflBHeAvVjaMgcA109xoyakA_x7UJ75aHc8AKf4OZpekV-2N-_c2Rfp87QY66c6JUJaH9HLJMtiFMjEo3pbxGjl2gSkX0WFCOXMAPQPQhR9kQJ_HUnpx6P6cerR_YWoZqsLpihkNrPEWXA2HoTZRA");'></div>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col lg:flex-row max-w-[1600px] w-full mx-auto p-6 gap-6">
+<!-- Main Content Area: Dashboard & Timeline -->
+<div class="flex-1 flex flex-col gap-6 min-w-0">
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+<div class="flex min-w-72 flex-col gap-1">
+<h1 class="text-slate-900 dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">Master Workplan Dashboard</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">Institutional Objectives &amp; Activity Timeline</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="bg-primary text-white hover:bg-blue-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm shadow-blue-200 dark:shadow-none">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Activity
+                    </button>
+<button class="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap gap-3 py-1">
+<div class="relative group">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-4 pr-10 py-2.5 cursor-pointer">
+<option>FY 2024</option>
+<option>FY 2023</option>
+<option>FY 2025</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="relative group">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-4 pr-10 py-2.5 cursor-pointer">
+<option>All Quarters</option>
+<option>Quarter 1</option>
+<option>Quarter 2</option>
+<option>Quarter 3</option>
+<option>Quarter 4</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+<div class="relative group">
+<select class="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full pl-4 pr-10 py-2.5 cursor-pointer">
+<option>All Departments</option>
+<option>Policy &amp; Strategy</option>
+<option>Legal Affairs</option>
+<option>Regional Integration</option>
+<option>Infrastructure</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-full w-1 bg-green-500"></div>
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">On Track</p>
+<span class="material-symbols-outlined text-green-500 bg-green-100 dark:bg-green-900/30 p-1.5 rounded-lg">check_circle</span>
+</div>
+<div>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">24</p>
+<p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Activities progressing well</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">At Risk</p>
+<span class="material-symbols-outlined text-amber-500 bg-amber-100 dark:bg-amber-900/30 p-1.5 rounded-lg">warning</span>
+</div>
+<div>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">8</p>
+<p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Requires immediate attention</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-full w-1 bg-red-500"></div>
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Delayed</p>
+<span class="material-symbols-outlined text-red-500 bg-red-100 dark:bg-red-900/30 p-1.5 rounded-lg">error</span>
+</div>
+<div>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">3</p>
+<p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Critical blockers identified</p>
+</div>
+</div>
+<div class="bg-primary/5 dark:bg-primary/10 p-5 rounded-xl border border-primary/20 shadow-sm flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-full w-1 bg-primary"></div>
+<div class="flex justify-between items-start">
+<p class="text-primary dark:text-blue-400 text-sm font-medium">Budget Utilized</p>
+<span class="material-symbols-outlined text-primary bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-lg">payments</span>
+</div>
+<div>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">64%</p>
+<p class="text-xs text-slate-400 dark:text-slate-500 mt-1">FY 2024 Total Allocation</p>
+</div>
+</div>
+</div>
+<!-- Gantt / Timeline Section -->
+<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden flex-1">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+<h3 class="text-slate-900 dark:text-white font-bold text-lg">Activity Timeline (Q1 - Q2)</h3>
+<div class="flex gap-2">
+<button class="text-xs font-medium px-3 py-1.5 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">Month</button>
+<button class="text-xs font-medium px-3 py-1.5 rounded bg-primary text-white">Quarter</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<div class="min-w-[800px]">
+<!-- Timeline Header -->
+<div class="grid grid-cols-12 gap-0 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+<div class="col-span-4 p-4 border-r border-slate-200 dark:border-slate-700">Activity</div>
+<div class="col-span-2 p-4 text-center border-r border-slate-200 dark:border-slate-700">Jan</div>
+<div class="col-span-2 p-4 text-center border-r border-slate-200 dark:border-slate-700">Feb</div>
+<div class="col-span-2 p-4 text-center border-r border-slate-200 dark:border-slate-700">Mar</div>
+<div class="col-span-2 p-4 text-center">Apr</div>
+</div>
+<!-- Row 1 -->
+<div class="grid grid-cols-12 gap-0 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors items-center h-16 relative group">
+<div class="col-span-4 px-4 py-3 border-r border-slate-100 dark:border-slate-800">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Strategic Policy Review</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-600/20">On Track</span>
+<span class="text-[10px] text-slate-400">Owner: Policy Dept</span>
+</div>
+</div>
+<div class="col-span-8 relative h-full flex items-center px-2">
+<!-- Bar -->
+<div class="absolute left-[5%] w-[30%] h-2 bg-green-500 rounded-full shadow-sm cursor-pointer hover:h-3 transition-all z-10 flex items-center group/bar" title="Jan 15 - Feb 28">
+<div class="hidden group-hover/bar:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">Completed: 80%</div>
+</div>
+<!-- Milestone Marker -->
+<div class="absolute left-[35%] top-1/2 -translate-y-1/2 z-10 flex flex-col items-center group/milestone cursor-pointer">
+<div class="size-3 bg-slate-900 dark:bg-white rotate-45 transform border border-white dark:border-slate-900"></div>
+<span class="hidden group-hover/milestone:block absolute top-4 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-20">Draft Approval</span>
+</div>
+<!-- Grid Lines Background -->
+<div class="absolute inset-0 grid grid-cols-4 h-full pointer-events-none">
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+</div>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-12 gap-0 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors items-center h-16 relative group">
+<div class="col-span-4 px-4 py-3 border-r border-slate-100 dark:border-slate-800">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Annual Budget Compilation</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300 ring-1 ring-inset ring-amber-600/20">At Risk</span>
+<a class="text-[10px] text-primary hover:underline flex items-center gap-0.5" href="#"><span class="material-symbols-outlined text-[10px]">flight</span> Travel Req #402</a>
+</div>
+</div>
+<div class="col-span-8 relative h-full flex items-center px-2">
+<div class="absolute left-[30%] w-[40%] h-2 bg-amber-500 rounded-full shadow-sm cursor-pointer hover:h-3 transition-all z-10 flex items-center group/bar"></div>
+<div class="absolute inset-0 grid grid-cols-4 h-full pointer-events-none">
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+</div>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-12 gap-0 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors items-center h-16 relative group">
+<div class="col-span-4 px-4 py-3 border-r border-slate-100 dark:border-slate-800">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Regional Infrastructure Summit</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-300 ring-1 ring-inset ring-red-600/20">Delayed</span>
+<span class="text-[10px] text-slate-400">Pending Ministerial Sign-off</span>
+</div>
+</div>
+<div class="col-span-8 relative h-full flex items-center px-2">
+<div class="absolute left-[60%] w-[20%] h-2 bg-red-500 rounded-full shadow-sm cursor-pointer hover:h-3 transition-all z-10 flex items-center group/bar"></div>
+<div class="absolute inset-0 grid grid-cols-4 h-full pointer-events-none">
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+</div>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="grid grid-cols-12 gap-0 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors items-center h-16 relative group">
+<div class="col-span-4 px-4 py-3 border-r border-slate-100 dark:border-slate-800">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Q1 Monitoring &amp; Evaluation</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 ring-1 ring-inset ring-slate-500/10">Not Started</span>
+<a class="text-[10px] text-primary hover:underline flex items-center gap-0.5" href="#"><span class="material-symbols-outlined text-[10px]">description</span> PIF-2024-001</a>
+</div>
+</div>
+<div class="col-span-8 relative h-full flex items-center px-2">
+<div class="absolute left-[75%] w-[15%] h-2 bg-slate-300 dark:bg-slate-600 rounded-full shadow-sm cursor-pointer hover:h-3 transition-all z-10 flex items-center group/bar border border-slate-400 dark:border-slate-500 border-dashed"></div>
+<div class="absolute inset-0 grid grid-cols-4 h-full pointer-events-none">
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+<div class="border-r border-slate-100 dark:border-slate-800 border-dashed h-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar: RSS & Updates -->
+<aside class="w-full lg:w-96 flex flex-col gap-6 shrink-0">
+<!-- Live Updates Header -->
+<div class="bg-gradient-to-r from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 rounded-xl p-5 text-white shadow-lg relative overflow-hidden">
+<div class="absolute right-0 top-0 opacity-10">
+<span class="material-symbols-outlined text-[150px]">rss_feed</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+</span>
+<h2 class="font-bold uppercase tracking-wider text-sm">Live Feed</h2>
+</div>
+<p class="text-slate-300 text-sm">Real-time legislative and sector updates impacting your workplan.</p>
+</div>
+</div>
+<!-- Tabbed Feed Content -->
+<div class="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden">
+<!-- Tabs -->
+<div class="flex border-b border-slate-200 dark:border-slate-700">
+<button class="flex-1 py-3 text-sm font-medium text-primary border-b-2 border-primary bg-primary/5">
+                        Parliamentary
+                    </button>
+<button class="flex-1 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                        Sector News
+                    </button>
+</div>
+<!-- Feed Items -->
+<div class="flex-1 overflow-y-auto max-h-[600px] p-4 space-y-4 custom-scrollbar">
+<!-- Item 1 -->
+<div class="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 group hover:border-primary transition-colors pb-2">
+<div class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-colors"></div>
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase">Today, 10:30 AM</span>
+<span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] px-1.5 py-0.5 rounded font-medium">Legislation</span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors cursor-pointer">Finance Bill 2024 Passed Second Reading</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">The parliamentary committee has approved the draft with minor amendments to the allocation for regional development projects.</p>
+</div>
+<!-- Item 2 -->
+<div class="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 group hover:border-primary transition-colors pb-2">
+<div class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-colors"></div>
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase">Yesterday, 4:15 PM</span>
+<span class="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] px-1.5 py-0.5 rounded font-medium">Alert</span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors cursor-pointer">New Procurement Guidelines Released</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Treasury circular #45/2024 outlines new thresholds for direct procurement affecting Q2 infrastructure projects.</p>
+<div class="mt-2 flex gap-2">
+<button class="text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-600">Read Circular</button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 group hover:border-primary transition-colors pb-2">
+<div class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-colors"></div>
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase">2 days ago</span>
+<span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-[10px] px-1.5 py-0.5 rounded font-medium">Committee</span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors cursor-pointer">Public Accounts Committee Hearing Schedule</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Ministry heads are required to appear before the PAC next Tuesday regarding FY23 audit queries.</p>
+</div>
+<!-- Item 4 -->
+<div class="relative pl-4 border-l-2 border-slate-200 dark:border-slate-700 group hover:border-primary transition-colors pb-2">
+<div class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 group-hover:bg-primary transition-colors"></div>
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-bold text-slate-400 uppercase">3 days ago</span>
+<span class="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-[10px] px-1.5 py-0.5 rounded font-medium">Gazette</span>
+</div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors cursor-pointer">Official Gazette Notice Vol. CXX</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">Appointments to the National Energy Board have been formalized.</p>
+</div>
+</div>
+<!-- Footer link -->
+<div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+<a class="flex items-center justify-center gap-2 text-sm font-medium text-primary hover:text-blue-600 transition-colors" href="#">
+                        View All Updates
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Quick Stats / Mini Chart -->
+<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Resource Allocation</h3>
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500 dark:text-slate-400">Personnel</span>
+<span class="font-medium text-slate-900 dark:text-white">45%</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500 dark:text-slate-400">Operations</span>
+<span class="font-medium text-slate-900 dark:text-white">30%</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-purple-500 rounded-full" style="width: 30%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500 dark:text-slate-400">Capital Projects</span>
+<span class="font-medium text-slate-900 dark:text-white">25%</span>
+</div>
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-teal-500 rounded-full" style="width: 25%"></div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

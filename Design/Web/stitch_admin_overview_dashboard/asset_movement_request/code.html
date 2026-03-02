@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>SADCPFNexus Asset Movement</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 lg:px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="size-8 flex items-center justify-center bg-primary text-white rounded-lg">
+<span class="material-symbols-outlined text-xl">account_tree</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight uppercase">SADCPFNexus</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<div class="hidden md:flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+<div class="h-10 w-10 rounded-full border-2 border-primary/20 bg-cover bg-center" data-alt="User profile avatar portrait" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBZsZzRtrSEVeKF4bPYUadcaj2wmpRd6jf2fVjn4-9v3SA1tST_SUB6g06GmSJa2nQ33tkmK-VgF7ScTieS9XLQ_d5OuMx2J6xx97rK_zysHOEGc1FYWE2N6a1XPA7_Xskn9eFT_qJBMyjekmOrXSKudXWxvo9va5xtnjyNY_6N7YdBvhUKMfq0zsSGyFD8PP8PC1bksVKkivEMtnKxSscmtM3dRXDYU-NEqidwwWba31GxfDgi1RalqdbB9BAcqPH5a4DwpD4RCQc')"></div>
+</div>
+</header>
+<main class="flex-1 px-4 lg:px-10 py-8 max-w-[1440px] mx-auto w-full">
+<!-- Header Section -->
+<div class="mb-8">
+<div class="flex flex-col gap-1">
+<h1 class="text-slate-900 dark:text-white text-3xl font-black leading-tight tracking-tight">Asset Reallocation Form</h1>
+<div class="flex items-center gap-2">
+<span class="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider">Class B Branding</span>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Nexus-ID: ADM-MVT-2024</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Left Panel: Form (70%) -->
+<div class="flex-[7] space-y-6">
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">inventory_2</span>
+                            Asset Identification
+                        </h3>
+<div class="mb-6">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Search Asset ID</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400" placeholder="e.g., ASSET-00124-PRM" type="text"/>
+</div>
+<p class="mt-2 text-xs text-slate-500 italic">Start typing to search the central registry...</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/10">
+<div>
+<label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1">Current Custodian</label>
+<div class="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-medium">
+<span class="material-symbols-outlined text-sm">person</span>
+<span>Marcus Holloway (Engineering)</span>
+</div>
+</div>
+<div>
+<label class="block text-xs font-bold text-primary uppercase tracking-wider mb-1">Current Location</label>
+<div class="flex items-center gap-2 text-slate-900 dark:text-slate-100 font-medium">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span>Floor 4 - Lab Delta</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">move_up</span>
+                            Movement Details
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Target Custodian</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">person_add</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Search user..." type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Target Location</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">near_me</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Search facility..." type="text"/>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Effective Date</label>
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" type="date"/>
+</div>
+<div class="flex items-end pb-3">
+<label class="inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+<span class="ms-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Approval Required</span>
+</label>
+</div>
+</div>
+<div class="mb-6">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Reason for Movement</label>
+<textarea class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Provide justification for reallocation..." rows="4"></textarea>
+</div>
+<div class="flex justify-end gap-3">
+<button class="px-6 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+<button class="px-8 py-2.5 bg-primary text-white rounded-lg font-bold hover:brightness-110 shadow-md shadow-primary/20 transition-all">Submit Transfer Request</button>
+</div>
+</div>
+</div>
+<!-- Right Panel: History Timeline (30%) -->
+<div class="flex-[3]">
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 sticky top-24 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">history</span>
+                                Asset History
+                            </h3>
+<span class="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 py-1 px-2 rounded">ASSET-00124</span>
+</div>
+<div class="space-y-8 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100 dark:before:bg-slate-800">
+<!-- Timeline Item 1 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1.5 size-6 bg-primary/10 border-2 border-primary rounded-full z-10 flex items-center justify-center">
+<div class="size-2 bg-primary rounded-full"></div>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase mb-1">Current</p>
+<p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Lab Delta - Engineering</p>
+<p class="text-xs text-slate-500 mt-1">Custodian: Marcus Holloway</p>
+<p class="text-[10px] text-slate-400 mt-2">Assigned: Jan 12, 2024</p>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1.5 size-6 bg-slate-200 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-full z-10 flex items-center justify-center">
+<div class="size-2 bg-slate-400 dark:bg-slate-600 rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Central Warehouse - Storage</p>
+<p class="text-xs text-slate-500 mt-1">Custodian: Logistics Hub</p>
+<p class="text-[10px] text-slate-400 mt-2">Duration: 4 months</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1.5 size-6 bg-slate-200 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-full z-10 flex items-center justify-center">
+<div class="size-2 bg-slate-400 dark:bg-slate-600 rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Production Line B</p>
+<p class="text-xs text-slate-500 mt-1">Custodian: Sarah Chen</p>
+<p class="text-[10px] text-slate-400 mt-2">Decommissioned: Aug 2023</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1.5 size-6 bg-slate-200 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-full z-10 flex items-center justify-center">
+<div class="size-2 bg-slate-400 dark:bg-slate-600 rounded-full"></div>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Procurement Entry</p>
+<p class="text-[10px] text-slate-400 mt-2">Original Registration: Jun 2023</p>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full py-2 flex items-center justify-center gap-2 text-primary font-bold text-sm hover:bg-primary/5 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+                                Export Full Movement Log
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer decoration (Class B) -->
+<footer class="mt-12 py-6 border-t border-slate-200 dark:border-slate-800 text-center">
+<p class="text-slate-400 text-xs tracking-widest uppercase">Proprietary Nexus Asset Management Framework • Version 4.2.0</p>
+</footer>
+</body></html>

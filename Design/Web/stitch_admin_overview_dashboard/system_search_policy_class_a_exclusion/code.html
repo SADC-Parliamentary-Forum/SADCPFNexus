@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Search Policy &amp; Class A Exclusion</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Toggle Switch Style */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #135bec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #135bec;
+        }
+        .toggle-checkbox:disabled + .toggle-label {
+            background-color: #e5e7eb;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-row overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex w-72 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151b2b] h-full justify-between overflow-y-auto no-scrollbar">
+<div class="flex flex-col gap-6 p-6">
+<!-- User Profile -->
+<div class="flex items-center gap-3 pb-6 border-b border-slate-100 dark:border-slate-800">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="Admin user profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBP3dH_I11gflT9z_YonxxOkSpkMV9RaM_86BXbSyP2fh8pthxO5ep1g7yD75TDt3PVm16VoohTn8lWkiKBg1ugULvjKLRu2A2fGO_Tnl10y4-p-df6b1BLbWq8GikTNP_Sqk_W5pwt4JjZCiOiyyn5nD_eEh37qdVowGUPGa8xYPcDI8SNlPaPL6RKBkPcQet3OYW_3s3wpuRB8AYLHqckCluqeQrXJSE3Xe6boYE8HIUcPiCyaknCDWQjCbp-0HEyuM3d5dCjs0E");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-semibold leading-normal">Nexus Admin</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium leading-normal">Super Admin Access</p>
+</div>
+</div>
+<!-- Main Nav -->
+<div class="flex flex-col gap-2">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Platform</p>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary dark:bg-primary/20" href="#">
+<span class="material-symbols-outlined text-[20px] fill-current">security</span>
+<span class="text-sm font-medium">Search Policy</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="text-sm font-medium">Audit Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">Users &amp; Roles</span>
+</a>
+</div>
+<!-- Secondary Nav / Audit -->
+<div class="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+<p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Audit (24h)</p>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 flex flex-col gap-3">
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-500 dark:text-slate-400">Top Query</span>
+<span class="text-primary font-bold">423 hits</span>
+</div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">"SADCPF Policy 2024"</p>
+<div class="h-1 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%]"></div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 flex flex-col gap-3">
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-500 dark:text-slate-400">Flagged Query</span>
+<span class="text-red-500 font-bold">12 hits</span>
+</div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">"Salary Adjustment"</p>
+<div class="h-1 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-red-500 w-[15%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<div class="p-6 border-t border-slate-200 dark:border-slate-800">
+<button class="flex w-full items-center justify-center gap-2 rounded-lg py-2.5 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span>Logout</span>
+</button>
+</div>
+</div>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+<!-- Mobile Header (Visible on small screens) -->
+<header class="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151b2b]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">security</span>
+<h1 class="font-bold text-slate-900 dark:text-white">Search Policy</h1>
+</div>
+<button class="text-slate-500">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<!-- Scrollable Area -->
+<div class="flex-1 overflow-y-auto p-4 md:p-8">
+<div class="max-w-5xl mx-auto flex flex-col gap-6">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">System Search Policy</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-2">Configure system-wide search indexing and enforce Class A security exclusions.</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold border border-green-200 dark:border-green-800">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            Indexing Service Active
+                        </div>
+</div>
+<!-- Dual Control Banner -->
+<div class="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-amber-800 dark:text-amber-200">
+<span class="material-symbols-outlined mt-0.5 text-amber-600 dark:text-amber-400">admin_panel_settings</span>
+<div>
+<p class="font-bold text-sm">Dual Control Active</p>
+<p class="text-sm opacity-90">Applying changes to search policy requires secondary approval from a designated Super Admin. All actions are logged.</p>
+</div>
+</div>
+<!-- Status Panel -->
+<div class="bg-white dark:bg-[#151b2b] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex items-center gap-4">
+<div class="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white">Last Indexing Job: Success</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Completed 2 hours ago • 14,205 Records Processed</p>
+</div>
+</div>
+<button class="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-semibold rounded-lg shadow-sm shadow-primary/30 transition-all">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+                            Trigger Full Reindex
+                        </button>
+</div>
+<!-- Main Settings Area -->
+<div class="bg-white dark:bg-[#151b2b] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-between items-center">
+<h3 class="font-bold text-slate-800 dark:text-slate-200">Global Indexing Modules</h3>
+<button class="text-primary text-sm font-medium hover:underline">Reset to Default</button>
+</div>
+<!-- Employee Directory -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-800">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<div>
+<h4 class="font-semibold text-slate-900 dark:text-white">Employee Directory</h4>
+<p class="text-xs text-slate-500">Basic identification data visible to all staff</p>
+</div>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle-dir" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer" for="toggle-dir"></label>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 pl-12">
+<label class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+<span>Full Name</span>
+<span class="text-green-600 text-xs font-bold">INDEXED</span>
+</label>
+<label class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+<span>Department Code</span>
+<span class="text-green-600 text-xs font-bold">INDEXED</span>
+</label>
+<label class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+<span>Work Email</span>
+<span class="text-green-600 text-xs font-bold">INDEXED</span>
+</label>
+<label class="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300 opacity-60">
+<span>Personal Phone</span>
+<span class="text-slate-400 text-xs font-bold">EXCLUDED</span>
+</label>
+</div>
+</div>
+<!-- Project Management -->
+<div class="p-6">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-lg">
+<span class="material-symbols-outlined">folder_open</span>
+</div>
+<div>
+<h4 class="font-semibold text-slate-900 dark:text-white">Project Documents</h4>
+<p class="text-xs text-slate-500">Project specs, timelines, and deliverables</p>
+</div>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" id="toggle-proj" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer" for="toggle-proj"></label>
+</div>
+</div>
+<div class="pl-12">
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+<div class="bg-purple-500 w-3/4 h-full rounded-full"></div>
+</div>
+<p class="text-xs text-slate-500 mt-2">75% of fields indexed. 2 restricted fields hidden.</p>
+</div>
+</div>
+</div>
+<!-- CLASS A EXCLUSION ZONE -->
+<div class="rounded-xl border-2 border-red-100 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/10 overflow-hidden relative">
+<!-- Decorative stripe -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-red-500"></div>
+<div class="px-6 py-5 border-b border-red-100 dark:border-red-900/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg shadow-sm">
+<span class="material-symbols-outlined">lock_person</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white text-lg">Class A Exclusion Zone</h3>
+<p class="text-sm text-red-600 dark:text-red-400 font-medium">Highly Sensitive Data Protection</p>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-900 dark:text-white">Mask Class A Results</span>
+<span class="text-[10px] text-slate-500">Global Search Enforcement</span>
+</div>
+<div class="relative inline-block w-10 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-not-allowed" disabled="" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-not-allowed opacity-100"></label>
+</div>
+</div>
+</div>
+<div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Restricted Item 1 -->
+<div class="bg-white dark:bg-[#151b2b] p-4 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm flex flex-col justify-between h-32 opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold">
+<span class="material-symbols-outlined text-[20px] text-slate-400">payments</span>
+                                        Salary Advance Reason
+                                    </div>
+<span class="material-symbols-outlined text-[18px] text-red-400">lock</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">NOT INDEXED</span>
+<div class="relative inline-block w-8 align-middle select-none">
+<input class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-slate-100 border-4 appearance-none cursor-not-allowed" disabled="" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-4 rounded-full bg-slate-200 cursor-not-allowed"></label>
+</div>
+</div>
+</div>
+<!-- Restricted Item 2 -->
+<div class="bg-white dark:bg-[#151b2b] p-4 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm flex flex-col justify-between h-32 opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold">
+<span class="material-symbols-outlined text-[20px] text-slate-400">medical_services</span>
+                                        Wellness Notes
+                                    </div>
+<span class="material-symbols-outlined text-[18px] text-red-400">lock</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">NOT INDEXED</span>
+<div class="relative inline-block w-8 align-middle select-none">
+<input class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-slate-100 border-4 appearance-none cursor-not-allowed" disabled="" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-4 rounded-full bg-slate-200 cursor-not-allowed"></label>
+</div>
+</div>
+</div>
+<!-- Restricted Item 3 -->
+<div class="bg-white dark:bg-[#151b2b] p-4 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm flex flex-col justify-between h-32 opacity-80 hover:opacity-100 transition-opacity">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-semibold">
+<span class="material-symbols-outlined text-[20px] text-slate-400">gavel</span>
+                                        Disciplinary Actions
+                                    </div>
+<span class="material-symbols-outlined text-[18px] text-red-400">lock</span>
+</div>
+<div class="flex items-center justify-between mt-auto">
+<span class="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">NOT INDEXED</span>
+<div class="relative inline-block w-8 align-middle select-none">
+<input class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-slate-100 border-4 appearance-none cursor-not-allowed" disabled="" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-4 rounded-full bg-slate-200 cursor-not-allowed"></label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="h-10"></div> <!-- Spacer -->
+</div>
+</div>
+</main>
+</div>
+</body></html>

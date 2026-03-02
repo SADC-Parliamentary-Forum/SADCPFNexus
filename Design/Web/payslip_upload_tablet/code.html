@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Payslip Upload</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dark": "#0fa842",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#112217",
+                        "surface-dark": "#1a3324",
+                        "surface-dark-hover": "#23482f",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-row overflow-hidden">
+<!-- Sidebar Navigation -->
+<div class="hidden md:flex w-72 flex-col justify-between border-r border-surface-dark-hover bg-background-dark p-6">
+<div class="flex flex-col gap-8">
+<!-- Branding -->
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary/80 to-primary-dark shadow-lg shadow-primary/20 flex items-center justify-center text-background-dark font-bold text-xl">S</div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-tight">SADCPFNexus</h1>
+<p class="text-primary/70 text-xs font-medium tracking-wide">HR Admin Portal</p>
+</div>
+</div>
+<!-- Nav Items -->
+<div class="flex flex-col gap-2">
+<a class="group flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 hover:bg-surface-dark-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-3 text-primary ring-1 ring-primary/20" href="#">
+<span class="material-symbols-outlined text-[24px] fill-1">payments</span>
+<span class="text-sm font-bold">HR Payroll</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 hover:bg-surface-dark-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">shopping_cart</span>
+<span class="text-sm font-medium">Procurement</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 hover:bg-surface-dark-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">description</span>
+<span class="text-sm font-medium">Audit Logs</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 hover:bg-surface-dark-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</div>
+</div>
+<!-- User Profile / Bottom Actions -->
+<div class="flex items-center gap-3 rounded-xl bg-surface-dark p-3 ring-1 ring-white/5">
+<div class="h-10 w-10 overflow-hidden rounded-full bg-slate-700" data-alt="User profile picture placeholder">
+<img alt="User Profile" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIzoFiEpUYqfFv99Puxf4xj1ezWp5VUbRvV_g7NE8Uxej4wAvynpmQ1DPIsFnq8oI57g9vB6x0iBJSlRxuEK4YZmbgd9IOgTz2rrGFzS3-UBOEAxdRIWTYjhlsYwMSJsQ_d7c40hZ_6GmRtt-F1-26Lbrf8SIkpIXPMPrw1_Lg0WYuxeXRt6b8dIeg-p-DTv8P9iWg6t85aYz8m2Krr3itigF-pXWfA35iuTMgnm3jlAohJ8ahvApAB0nSP0R95VYdsXa43btkkV4"/>
+</div>
+<div class="flex flex-col overflow-hidden">
+<p class="truncate text-sm font-semibold text-white">Elara Vance</p>
+<p class="truncate text-xs text-slate-400">Sr. HR Administrator</p>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex flex-1 flex-col h-full relative overflow-y-auto bg-background-dark">
+<!-- Mobile Header -->
+<div class="md:hidden flex items-center justify-between p-4 border-b border-surface-dark-hover bg-background-dark sticky top-0 z-20">
+<div class="flex items-center gap-2">
+<div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary/80 to-primary-dark flex items-center justify-center text-background-dark font-bold text-lg">S</div>
+<span class="text-white font-bold">SADCPFNexus</span>
+</div>
+<button class="text-white p-2">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+<div class="flex-1 flex flex-col w-full max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+<div>
+<h2 class="text-3xl sm:text-4xl font-black text-white tracking-tight">Upload Payslips</h2>
+<p class="mt-1 text-slate-400 text-lg">Manage monthly salary slip distribution securely.</p>
+</div>
+<div class="hidden sm:block">
+<span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20">
+                            System Status: Online
+                         </span>
+</div>
+</div>
+<!-- Action Card Container -->
+<div class="flex flex-col gap-6 flex-1">
+<!-- Toggle & Search Block -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Toggle Switch -->
+<div class="lg:col-span-4 flex flex-col gap-3">
+<label class="text-sm font-medium text-slate-300 uppercase tracking-wider">Upload Mode</label>
+<div class="flex h-16 w-full rounded-2xl bg-surface-dark p-1 ring-1 ring-white/5">
+<label class="relative flex flex-1 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 ease-in-out has-[:checked]:bg-primary has-[:checked]:text-background-dark has-[:checked]:shadow-lg text-slate-400 hover:text-white">
+<input checked="" class="sr-only peer" name="upload_mode" type="radio" value="single"/>
+<span class="flex items-center gap-2 text-base font-bold z-10">
+<span class="material-symbols-outlined">person</span>
+                                        Single
+                                    </span>
+</label>
+<label class="relative flex flex-1 cursor-pointer items-center justify-center rounded-xl transition-all duration-200 ease-in-out has-[:checked]:bg-primary has-[:checked]:text-background-dark has-[:checked]:shadow-lg text-slate-400 hover:text-white">
+<input class="sr-only peer" name="upload_mode" type="radio" value="bulk"/>
+<span class="flex items-center gap-2 text-base font-bold z-10">
+<span class="material-symbols-outlined">group</span>
+                                        Bulk
+                                    </span>
+</label>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="lg:col-span-8 flex flex-col gap-3">
+<label class="text-sm font-medium text-slate-300 uppercase tracking-wider">Target Employee</label>
+<div class="relative flex h-16 w-full items-center rounded-2xl bg-surface-dark px-4 ring-1 ring-white/5 focus-within:ring-2 focus-within:ring-primary transition-all shadow-inner">
+<span class="material-symbols-outlined text-slate-400 text-3xl">search</span>
+<input class="h-full w-full bg-transparent border-none px-4 text-xl text-white placeholder:text-slate-500 focus:ring-0 focus:outline-none" placeholder="Search by Staff ID or Name (e.g., Jane Doe)" type="text"/>
+<button class="hidden sm:flex h-10 w-10 items-center justify-center rounded-lg bg-surface-dark-hover text-slate-300 hover:text-white transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Dropzone Area -->
+<div class="flex flex-col gap-3 flex-1 min-h-[300px]">
+<label class="text-sm font-medium text-slate-300 uppercase tracking-wider">File Staging</label>
+<div class="group relative flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-surface-dark-hover bg-surface-dark/30 hover:bg-surface-dark/60 hover:border-primary/50 transition-all cursor-pointer p-8">
+<input class="absolute inset-0 h-full w-full cursor-pointer opacity-0 z-10" type="file"/>
+<div class="mb-6 rounded-full bg-surface-dark p-6 shadow-2xl ring-1 ring-white/5 group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-5xl text-primary">cloud_upload</span>
+</div>
+<h3 class="text-2xl font-bold text-white mb-2 text-center">Drag payslip file here</h3>
+<p class="text-slate-400 text-center max-w-sm mb-6">Support for high-res PDF, JPG. Max file size 25MB per document.</p>
+<button class="pointer-events-none rounded-xl bg-surface-dark-hover px-6 py-3 text-sm font-bold text-primary ring-1 ring-inset ring-primary/20 shadow-lg group-hover:bg-primary group-hover:text-background-dark transition-colors">
+                                Browse Files
+                            </button>
+</div>
+</div>
+<!-- Pipeline Status Horizontal List -->
+<div class="flex flex-col gap-3">
+<label class="text-sm font-medium text-slate-300 uppercase tracking-wider">Scan Pipeline Status</label>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Card 1 -->
+<div class="flex items-center gap-4 rounded-xl bg-surface-dark p-4 ring-1 ring-white/5 hover:bg-surface-dark-hover transition-colors">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-400">Security Check</p>
+<p class="text-lg font-bold text-white">Passed</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="flex items-center gap-4 rounded-xl bg-surface-dark p-4 ring-1 ring-white/5 hover:bg-surface-dark-hover transition-colors">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+<span class="material-symbols-outlined">data_usage</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-400">Data Extraction</p>
+<p class="text-lg font-bold text-white">Ready</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="flex items-center gap-4 rounded-xl bg-surface-dark p-4 ring-1 ring-white/5 hover:bg-surface-dark-hover transition-colors">
+<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+<span class="material-symbols-outlined">visibility</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-400">Preview Mode</p>
+<p class="text-lg font-bold text-white">Active</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Spacer for sticky footer -->
+<div class="h-24"></div>
+</div>
+<!-- Sticky Footer -->
+<div class="absolute bottom-0 left-0 right-0 z-30 border-t border-surface-dark-hover bg-background-dark/90 px-6 py-4 backdrop-blur-md">
+<div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
+<button class="hidden sm:flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">close</span>
+                         Cancel
+                    </button>
+<div class="flex flex-1 justify-end sm:flex-none w-full sm:w-auto">
+<button class="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-base font-bold text-background-dark shadow-lg shadow-primary/20 hover:bg-primary-dark hover:shadow-primary/30 transition-all active:scale-95">
+<span class="material-symbols-outlined">send</span>
+                            Submit to Pipeline
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

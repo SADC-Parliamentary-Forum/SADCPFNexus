@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus PIF Wizard: Travel Linkage</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1d85ed",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              "neutral-50": "#f8fafc",
+              "neutral-100": "#f1f5f9",
+              "neutral-200": "#e2e8f0",
+              "neutral-300": "#cbd5e1",
+              "neutral-400": "#94a3b8",
+              "neutral-500": "#64748b",
+              "neutral-600": "#475569",
+              "neutral-700": "#334155",
+              "neutral-800": "#1e293b",
+              "neutral-900": "#0f172a",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem", 
+              "lg": "0.5rem", 
+              "xl": "0.75rem", 
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-neutral-900 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-col overflow-hidden">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-white px-6 py-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-neutral-900 dark:text-white">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+<p class="text-xs font-medium text-neutral-500">Class A-D Secure Environment</p>
+</div>
+</div>
+</div>
+<div class="flex flex-1 items-center justify-center px-12">
+<div class="flex w-full max-w-xl items-center gap-2">
+<div class="flex w-full items-center justify-between">
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">1</div>
+<span class="text-[10px] font-medium text-primary">Overview</span>
+</div>
+<div class="h-0.5 flex-1 bg-primary"></div>
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">2</div>
+<span class="text-[10px] font-medium text-primary">Budget</span>
+</div>
+<div class="h-0.5 flex-1 bg-primary"></div>
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">3</div>
+<span class="text-[10px] font-medium text-primary">Partners</span>
+</div>
+<div class="h-0.5 flex-1 bg-primary"></div>
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">4</div>
+<span class="text-[10px] font-medium text-primary">Review</span>
+</div>
+<div class="h-0.5 flex-1 bg-primary"></div>
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full ring-4 ring-primary/20 bg-primary text-xs font-bold text-white">5</div>
+<span class="text-[10px] font-bold text-neutral-900 dark:text-white">Linkage</span>
+</div>
+<div class="h-0.5 flex-1 bg-neutral-200 dark:bg-neutral-700"></div>
+<div class="flex flex-col items-center gap-1">
+<div class="flex size-6 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-500 dark:bg-neutral-800">6</div>
+<span class="text-[10px] font-medium text-neutral-500">Finalize</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900"></span>
+</button>
+<div class="h-8 w-[1px] bg-neutral-200 dark:bg-neutral-700"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">Dr. A. Smith</p>
+<p class="text-xs text-neutral-500">Programme Director</p>
+</div>
+<div class="size-10 overflow-hidden rounded-full border-2 border-white shadow-sm dark:border-neutral-700 bg-neutral-200" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHtoPysebevaC6RU3G7eWnxNkBolnz4WxwdSajn2ewX-uPlI3jegSLqRZiNLsyin4N9aapF2Maa8NUpZITSOE5SswUxqg0fX2qmyFzC3MO0eRIeY0sG5B-wOC4rv8SeP33FPHd_Ugmzbl1bNIZjN6Rf92jCzwNrodeOTAZbcSEKepQd3fj_awAHAjQwcTlLsooNeu0nHGH7sjgdvYmOTAUTCM8N_iGVc5j9FWKDrdshMVtdUmRJovdOEM2eQ3ILDMVYrfzksxhxpk"); background-size: cover; background-position: center;'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="hidden w-64 flex-col justify-between border-r border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:flex overflow-y-auto">
+<nav class="flex flex-col gap-2">
+<div class="mb-6 flex flex-col gap-2 rounded-lg bg-neutral-50 p-4 border border-neutral-100 dark:bg-neutral-800 dark:border-neutral-700">
+<span class="text-xs font-bold uppercase tracking-wider text-neutral-500">Current Task</span>
+<span class="text-sm font-semibold text-neutral-900 dark:text-white">Project Initiation Form (PIF) Wizard</span>
+<div class="mt-2 h-1.5 w-full rounded-full bg-neutral-200 dark:bg-neutral-700">
+<div class="h-1.5 w-5/6 rounded-full bg-primary"></div>
+</div>
+<span class="text-xs text-neutral-500 mt-1">83% Complete</span>
+</div>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2.5 text-primary font-semibold shadow-sm transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm">My Projects</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">flight</span>
+<span class="text-sm font-medium">Travel Requests</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="text-sm font-medium">Budgeting</span>
+</a>
+</nav>
+<div class="rounded-xl bg-blue-50 p-4 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+<div>
+<p class="text-sm font-medium text-blue-900 dark:text-blue-100">Need Help?</p>
+<p class="text-xs text-blue-700 dark:text-blue-300 mt-1">Contact the PIF Support Desk for assistance with linking complex travel arrangements.</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto bg-background-light p-6 dark:bg-background-dark scroll-smooth">
+<div class="mx-auto max-w-7xl space-y-6">
+<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Travel Linkage</h1>
+<p class="text-neutral-500 text-sm mt-1">Associate approved travel requests to this Programme budget line.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+<span class="material-symbols-outlined text-base">save</span>
+                                Save Draft
+                            </button>
+<button class="flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 shadow-sm">
+                                Continue to Finalize
+                                <span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="col-span-1 md:col-span-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-4 w-full md:w-auto">
+<div class="flex size-12 flex-none items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+<span class="material-symbols-outlined text-2xl">account_balance</span>
+</div>
+<div>
+<p class="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Budget Line: BL-2024-SAF-09</p>
+<h3 class="text-lg font-bold text-neutral-900 dark:text-white">Regional Capacity Building Initiative</h3>
+</div>
+</div>
+<div class="flex w-full md:w-auto items-center gap-8 border-t md:border-t-0 md:border-l border-neutral-200 dark:border-neutral-700 pt-4 md:pt-0 md:pl-8">
+<div>
+<p class="text-xs text-neutral-500">Total Allocated</p>
+<p class="text-lg font-bold text-neutral-900 dark:text-white">$1,250,000.00</p>
+</div>
+<div>
+<p class="text-xs text-neutral-500">Travel Sub-Budget</p>
+<p class="text-lg font-bold text-neutral-900 dark:text-white">$150,000.00</p>
+</div>
+<div>
+<p class="text-xs text-neutral-500">Remaining</p>
+<p class="text-lg font-bold text-green-600 dark:text-green-400">$84,250.00</p>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+<div class="lg:col-span-2 flex flex-col rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 overflow-hidden relative">
+<div class="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30">
+<h3 class="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-lg">hub</span>
+                                    Linkage Map
+                                </h3>
+<div class="flex gap-2">
+<button class="p-1.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
+<span class="material-symbols-outlined text-lg">zoom_in</span>
+</button>
+<button class="p-1.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
+<span class="material-symbols-outlined text-lg">zoom_out</span>
+</button>
+<button class="p-1.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500">
+<span class="material-symbols-outlined text-lg">center_focus_strong</span>
+</button>
+</div>
+</div>
+<div class="flex-1 bg-neutral-50 dark:bg-neutral-950 relative overflow-hidden flex items-center justify-center p-8">
+<div class="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.05]" style="background-image: radial-gradient(#64748b 1px, transparent 1px); background-size: 20px 20px;">
+</div>
+<div class="absolute z-20 flex flex-col items-center gap-2 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+<div class="size-20 rounded-full bg-white dark:bg-neutral-800 border-4 border-primary shadow-xl flex items-center justify-center relative group cursor-pointer z-20">
+<span class="material-symbols-outlined text-4xl text-primary">folder_open</span>
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                            Main Programme
+                                        </div>
+</div>
+<span class="text-sm font-bold text-neutral-900 dark:text-white bg-white/80 dark:bg-neutral-900/80 px-2 rounded backdrop-blur-sm">RCBI Project</span>
+</div>
+<svg class="absolute inset-0 w-full h-full z-10 pointer-events-none">
+<path class="dark:stroke-neutral-700" d="M 50% 50% L 20% 30%" stroke="#cbd5e1" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 50% 50% L 80% 30%" stroke="#1d85ed" stroke-width="2"></path>
+<path d="M 50% 50% L 20% 70%" stroke="#1d85ed" stroke-width="2"></path>
+<path d="M 50% 50% L 80% 70%" stroke="#1d85ed" stroke-width="2"></path>
+</svg>
+<div class="absolute top-[30%] left-[20%] transform -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-600 shadow-md flex items-center justify-center hover:scale-105 transition-transform cursor-pointer relative">
+<span class="material-symbols-outlined text-2xl text-neutral-400">person_add</span>
+<div class="absolute -right-1 -top-1 size-5 bg-neutral-200 rounded-full flex items-center justify-center text-[10px] font-bold text-neutral-600 border border-white dark:border-neutral-800">?</div>
+</div>
+<div class="text-center">
+<span class="block text-xs font-semibold text-neutral-500">Unassigned</span>
+<span class="block text-[10px] text-neutral-400">TR-PENDING</span>
+</div>
+</div>
+<div class="absolute top-[30%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-neutral-800 border-2 border-green-500 shadow-md flex items-center justify-center hover:scale-105 transition-transform cursor-pointer overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBikZpINbOblbj99SwcK-WW800axLpYlvqs2DeLCxhZV5SpWipHdrIYL-8Vfb-G4jhcaCuLjzn-YOCNpYfPXKVxgcT3BVpgpQ0yf5zV4npucZfJE6snMuWLowqZ7J-UNydou0rFjVPSJbfVHGTtzXKu1fGR2p_4ZuWe1jPrkcqwRvC4Q67A6pRdzm7Mr-VRK3WcnfM6dhfZSUECA7iHjkJlxhfydsUxJorH-8YZUHXdDnfejwFI82_YIzDv_5hXSVsXkkPKYfRUzkc");'></div>
+</div>
+<div class="text-center bg-white/80 dark:bg-neutral-900/80 px-2 rounded backdrop-blur-sm">
+<span class="block text-xs font-semibold text-neutral-900 dark:text-white">Dr. A. Smith</span>
+<span class="block text-[10px] text-green-600 font-medium">Linked (TR-892)</span>
+</div>
+</div>
+<div class="absolute top-[70%] left-[20%] transform -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-neutral-800 border-2 border-green-500 shadow-md flex items-center justify-center hover:scale-105 transition-transform cursor-pointer overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDRKAW4PyKs465i-lF6Giz-DhA_LyuG7AirLiMdOIpNt7j1_9S9bpi5W_HeAnwZOIJv8_YWOBHBG6lCLMEo9o_ji2IPug1FCZROHI68UNKWT8O3w5xyWaEePaWKWhfbZM_IT_mTj38MmFlzCPYYp8Z1VZoaZJXl3voXX1vX_rUoADcm1-stzbdv6o330SxEGUAOPDOyT5XZoF1QGViho1DWmVAxjKY9Tg-AjWBZFqgfDsWfdCgPuzaNS3WS7BkvfbNXZjx8njKwRxA");'></div>
+</div>
+<div class="text-center bg-white/80 dark:bg-neutral-900/80 px-2 rounded backdrop-blur-sm">
+<span class="block text-xs font-semibold text-neutral-900 dark:text-white">M. Williams</span>
+<span class="block text-[10px] text-green-600 font-medium">Linked (TR-741)</span>
+</div>
+</div>
+<div class="absolute top-[70%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
+<div class="size-14 rounded-full bg-white dark:bg-neutral-800 border-2 border-green-500 shadow-md flex items-center justify-center hover:scale-105 transition-transform cursor-pointer overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXhjhya6tm4wPLbph9OWiVtw5qppAcEI9E17AFUxWtxV6-KPWo-KRyo5424ZP7W2i2ZXmeaQaBMq2RgUmI33MPspmVgYMVFrX7ukQC_0CYTrZjaDR1LlRY8ZtVofaSNmaQeSlRPuce5JJWxsZjwscFNuUUNATtJFPOcH-5FXAckyFYMXtdxR-7VMFoPgI4bzBCDLzqC3GDHLDi-_7WXuYjOZ0i7tdnS_-lQfCL5yrPPBylTX0pO6p3UHvMgXB1fEgTRXdxZ1QzHUo");'></div>
+</div>
+<div class="text-center bg-white/80 dark:bg-neutral-900/80 px-2 rounded backdrop-blur-sm">
+<span class="block text-xs font-semibold text-neutral-900 dark:text-white">J. Doe</span>
+<span class="block text-[10px] text-green-600 font-medium">Linked (TR-655)</span>
+</div>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 bg-white/90 dark:bg-neutral-800/90 p-2 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm backdrop-blur-sm text-xs">
+<div class="flex items-center gap-2 mb-1">
+<span class="size-2 rounded-full bg-green-500"></span>
+<span class="text-neutral-600 dark:text-neutral-300">Linked &amp; Approved</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-2 rounded-full bg-neutral-300 border border-neutral-400 border-dashed"></span>
+<span class="text-neutral-600 dark:text-neutral-300">Pending/Draft</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 h-full">
+<div class="p-4 border-b border-neutral-200 dark:border-neutral-700">
+<h3 class="text-lg font-bold text-neutral-900 dark:text-white">Participants</h3>
+<p class="text-xs text-neutral-500">Manage travel requests for this programme.</p>
+<button class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-600 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-lg">add_link</span>
+                                    Create Linked Travel
+                                </button>
+</div>
+<div class="flex-1 overflow-y-auto p-2">
+<div class="space-y-2">
+<div class="group flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 p-3 hover:border-primary/30 hover:bg-white hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-cover bg-center border border-neutral-200 dark:border-neutral-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBikZpINbOblbj99SwcK-WW800axLpYlvqs2DeLCxhZV5SpWipHdrIYL-8Vfb-G4jhcaCuLjzn-YOCNpYfPXKVxgcT3BVpgpQ0yf5zV4npucZfJE6snMuWLowqZ7J-UNydou0rFjVPSJbfVHGTtzXKu1fGR2p_4ZuWe1jPrkcqwRvC4Q67A6pRdzm7Mr-VRK3WcnfM6dhfZSUECA7iHjkJlxhfydsUxJorH-8YZUHXdDnfejwFI82_YIzDv_5hXSVsXkkPKYfRUzkc");'></div>
+<div>
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">Dr. A. Smith</p>
+<div class="flex items-center gap-2">
+<span class="text-xs text-neutral-500">TR-892</span>
+<span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Approved</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-sm font-medium text-neutral-900 dark:text-white">$3,240</span>
+<span class="text-[10px] text-neutral-400">Flight + Hotel</span>
+</div>
+</div>
+<div class="group flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 p-3 hover:border-primary/30 hover:bg-white hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-cover bg-center border border-neutral-200 dark:border-neutral-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDRKAW4PyKs465i-lF6Giz-DhA_LyuG7AirLiMdOIpNt7j1_9S9bpi5W_HeAnwZOIJv8_YWOBHBG6lCLMEo9o_ji2IPug1FCZROHI68UNKWT8O3w5xyWaEePaWKWhfbZM_IT_mTj38MmFlzCPYYp8Z1VZoaZJXl3voXX1vX_rUoADcm1-stzbdv6o330SxEGUAOPDOyT5XZoF1QGViho1DWmVAxjKY9Tg-AjWBZFqgfDsWfdCgPuzaNS3WS7BkvfbNXZjx8njKwRxA");'></div>
+<div>
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">M. Williams</p>
+<div class="flex items-center gap-2">
+<span class="text-xs text-neutral-500">TR-741</span>
+<span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Approved</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-sm font-medium text-neutral-900 dark:text-white">$2,100</span>
+<span class="text-[10px] text-neutral-400">Train + Per Diem</span>
+</div>
+</div>
+<div class="group flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 p-3 hover:border-primary/30 hover:bg-white hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-800/50 dark:hover:bg-neutral-800 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-cover bg-center border border-neutral-200 dark:border-neutral-700" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXhjhya6tm4wPLbph9OWiVtw5qppAcEI9E17AFUxWtxV6-KPWo-KRyo5424ZP7W2i2ZXmeaQaBMq2RgUmI33MPspmVgYMVFrX7ukQC_0CYTrZjaDR1LlRY8ZtVofaSNmaQeSlRPuce5JJWxsZjwscFNuUUNATtJFPOcH-5FXAckyFYMXtdxR-7VMFoPgI4bzBCDLzqC3GDHLDi-_7WXuYjOZ0i7tdnS_-lQfCL5yrPPBylTX0pO6p3UHvMgXB1fEgTRXdxZ1QzHUo");'></div>
+<div>
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">J. Doe</p>
+<div class="flex items-center gap-2">
+<span class="text-xs text-neutral-500">TR-655</span>
+<span class="inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Approved</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-sm font-medium text-neutral-900 dark:text-white">$4,500</span>
+<span class="text-[10px] text-neutral-400">Intl. Flight</span>
+</div>
+</div>
+<div class="group flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50/50 p-3 hover:bg-white hover:shadow-sm dark:border-orange-900/30 dark:bg-orange-900/10 dark:hover:bg-neutral-800 transition-all cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="size-10 flex items-center justify-center rounded-full bg-white text-neutral-400 border border-neutral-200 border-dashed dark:bg-neutral-800 dark:border-neutral-700">
+<span class="material-symbols-outlined text-lg">person</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">Unassigned</p>
+<div class="flex items-center gap-2">
+<span class="text-xs text-neutral-500">TR-NEW</span>
+<span class="inline-flex items-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">Draft</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-sm font-medium text-neutral-500 dark:text-neutral-400">--</span>
+<button class="text-[10px] text-primary hover:underline font-medium">Assign Now</button>
+</div>
+</div>
+</div>
+</div>
+<div class="border-t border-neutral-200 p-4 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 rounded-b-xl">
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Total Travel Cost</span>
+<span class="font-bold text-neutral-900 dark:text-white">$9,840.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-8 text-center text-xs text-neutral-400">
+<p>© 2024 SADCPFNexus Administration System. Authorized Access Only.</p>
+</footer>
+</main>
+</div>
+</div>
+
+</body></html>

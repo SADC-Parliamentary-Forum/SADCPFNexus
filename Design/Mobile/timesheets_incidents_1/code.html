@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Timesheets &amp; Incidents - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec80",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102219",
+                        "surface-dark": "#1c2e24",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between px-4 py-4 pt-12 bg-surface-light dark:bg-[#15201a] sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white" style="font-size: 24px;">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-slate-900 dark:text-white text-center flex-1">Timesheets &amp; Incidents</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white" style="font-size: 24px;">calendar_month</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto hide-scrollbar pb-24">
+<!-- Daily Log Section -->
+<section class="p-4 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Daily Log</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary/20 text-primary border border-primary/30">
+                        This Week
+                    </button>
+<button class="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-transparent">
+                        History
+                    </button>
+</div>
+</div>
+<!-- Weekly Calendar Strip -->
+<div class="flex justify-between items-center bg-white dark:bg-[#1c2e24] p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Mon</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-700 dark:text-slate-300">12</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Tue</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-700 dark:text-slate-300">13</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-primary">Wed</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-background-dark text-sm font-bold shadow-lg shadow-primary/40">14</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Thu</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-700 dark:text-slate-300">15</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Fri</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-700 dark:text-slate-300">16</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Sat</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-400 dark:text-slate-600">17</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Sun</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-400 dark:text-slate-600">18</button>
+</div>
+</div>
+<!-- Time Entry Cards -->
+<div class="space-y-3">
+<div class="bg-white dark:bg-[#1c2e24] p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+<div class="h-10 w-10 rounded-lg bg-blue-500/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 20px;">gavel</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white">Parl. Procedures</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">09:00 AM - 12:30 PM</p>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-slate-900 dark:text-white">3.5h</span>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 border border-green-500/20">Approved</span>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1c2e24] p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+<div class="h-10 w-10 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 20px;">policy</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white">Policy Review</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">01:30 PM - 04:00 PM</p>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-slate-900 dark:text-white">2.5h</span>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">Pending</span>
+</div>
+</div>
+<button class="w-full py-3 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 20px;">add_circle</span>
+                    Log New Activity
+                </button>
+</div>
+</section>
+<div class="h-1 bg-slate-100 dark:bg-white/5 my-2"></div>
+<!-- Incident Reporting Section -->
+<section class="p-4 space-y-4">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Incident Management</h2>
+<!-- Quick Report Button -->
+<button class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white p-4 rounded-xl shadow-lg shadow-red-500/20 flex items-center justify-between group active:scale-[0.98] transition-all">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 24px;">report_problem</span>
+</div>
+<div class="text-left">
+<span class="block text-sm font-bold">Quick-Report Incident</span>
+<span class="block text-xs text-red-100">Flag urgent security or ethics issues</span>
+</div>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" style="font-size: 20px;">arrow_forward</span>
+</button>
+<div class="flex items-center justify-between pt-2">
+<h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Cases</h3>
+<button class="text-xs font-medium text-primary hover:underline">View All</button>
+</div>
+<!-- Active Cases List -->
+<div class="space-y-3">
+<!-- Case 1 -->
+<div class="bg-white dark:bg-[#1c2e24] p-4 rounded-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mb-1">CASE #2023-849</span>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Unauthorized Access Attempt</h4>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            Hearing Workflow
+                        </span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                        Security breach reported in Sector 4 server room. Pending review by the disciplinary committee.
+                    </p>
+<div class="flex items-center gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-3">
+<div class="flex -space-x-2">
+<img alt="Avatar of committee member" class="w-6 h-6 rounded-full border-2 border-white dark:border-[#1c2e24]" data-alt="Committee member avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBlxTA0qMe2vJkWAlv5Ztjf1Iz7T-CqsY6U_9R4nxBK_IWW9kB7-TOlW1VHwBVfHoh757twzYNI1fLd0iUWVN5uWmcH0QFi-t1CW-WgsfteA4DBPylwHBhtqYts4gUMmUwVbN-TD_KgW4JIgllqp-SiP2J_H_16nDBXRciibA5kBrs05sFc5BxHcht7EH6C7WC98EvQXca7Zubn1n8ID672-BvwTrCIbfDQRX2QB_QwQ5P5OckaDaRrXrqVY5HqnfeGyqJTABQ_n72"/>
+<img alt="Avatar of committee member" class="w-6 h-6 rounded-full border-2 border-white dark:border-[#1c2e24]" data-alt="Committee member avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNnNq4t-RQfTLkSZ3M0HT-MPaWQGs2IRhjIJoSvXG52leD8oQhKnHfE3VPHSo3l9YahPC3zbdQm5keOj4JUxWP-Od86sjLmzO1TlHbwBAWoqDf-auktFCpopH5gBIw-GD46Lf-owTKLDlz8GTqIf5unClwdFjcVmG4pFoyrExagA4-_20U0movs1tbbxlYqJQbkt6_b7dbLnzscj8JNQ-z8-5lZtOBZlo-64lRicF0btsVyJO3cysvbY9VXL7R_rBTKYa06wqBps3E"/>
+<div class="w-6 h-6 rounded-full border-2 border-white dark:border-[#1c2e24] bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[8px] font-bold text-slate-500 dark:text-slate-300">+2</div>
+</div>
+<span class="text-[10px] text-slate-400 dark:text-slate-500">Updated 2h ago</span>
+</div>
+</div>
+<!-- Case 2 -->
+<div class="bg-white dark:bg-[#1c2e24] p-4 rounded-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-yellow-500"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mb-1">CASE #2023-852</span>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Asset Misallocation</h4>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+                            Investigation
+                        </span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                        Discrepancy in vehicle logbook for MP transport services assigned to regional delegation.
+                    </p>
+<div class="flex items-center gap-3 border-t border-slate-100 dark:border-slate-700/50 pt-3">
+<div class="flex -space-x-2">
+<img alt="Avatar of investigator" class="w-6 h-6 rounded-full border-2 border-white dark:border-[#1c2e24]" data-alt="Investigator avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDamnjPXUj7MfijON82pg2V7Ouw9Hnwum3IDlDRHZ_Ys60OtBaghrIo7fQ_DGdkZCp2CdNfgF7oO1zHOOfAmFUCrH1rE1ei6LdpyJFok2m0PtDavZTOgh4GwqHChtsWshPWFYD9hSgRzyveZ5a0XkIQ0hAY4WZ9jdQZn0OPgDtEKPyBXAdORBUVxQbgmZMv90_tl8aLBonkH_tqcRw2lvnTEfq5gifZUwpXucfP9GO3CJGHgd0J-hwOYAIcLCWC9ASPHCAlTkLsYYph"/>
+</div>
+<span class="text-[10px] text-slate-400 dark:text-slate-500">Updated 1d ago</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="bg-[#1c2721] border-t border-[#283930] px-6 pb-6 pt-3 flex justify-between items-end fixed bottom-0 w-full z-50">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-[#9db9ab] group-hover:text-primary transition-colors" style="font-size: 24px;">dashboard</span>
+<span class="text-[10px] font-medium text-[#9db9ab] group-hover:text-primary transition-colors">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-[#9db9ab] group-hover:text-primary transition-colors" style="font-size: 24px;">gavel</span>
+<span class="text-[10px] font-medium text-[#9db9ab] group-hover:text-primary transition-colors">Governance</span>
+</a>
+<a class="flex flex-col items-center gap-1 -mt-6 group relative" href="#">
+<div class="absolute -top-3 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/40 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-background-dark" style="font-size: 24px;">add</span>
+</div>
+<span class="text-[10px] font-medium text-white mt-10">Create</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-white" style="font-size: 24px; font-variation-settings: 'FILL' 1;">description</span>
+<span class="text-[10px] font-medium text-white">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-[#9db9ab] group-hover:text-primary transition-colors" style="font-size: 24px;">account_circle</span>
+<span class="text-[10px] font-medium text-[#9db9ab] group-hover:text-primary transition-colors">Profile</span>
+</a>
+</nav>
+</body></html>

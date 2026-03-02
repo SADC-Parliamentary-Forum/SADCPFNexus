@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Ledger Verification - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#19e65e",
+                        "primary-dark": "#14b84b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#112116",
+                        "surface-dark": "#1a3222",
+                        "surface-highlight": "#244730",
+                        "text-primary": "#ffffff",
+                        "text-secondary": "#93c8a5",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-text-primary font-display min-h-screen flex flex-col overflow-hidden">
+<div class="flex h-screen w-full flex-col bg-background-light dark:bg-background-dark">
+<!-- Top Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-surface-highlight px-6 py-3 bg-white dark:bg-background-dark z-20">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<svg class="h-8 w-8" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 12.236C39.9944 12.2537 39.9875 12.2845 39.9748 12.3294C39.9436 12.4399 39.8949 12.5741 39.8346 12.7175C39.8168 12.7597 39.7989 12.8007 39.7813 12.8398C38.5103 13.7113 35.9788 14.9393 33.7095 15.4811C30.9875 16.131 27.6413 16.5217 24 16.5217C20.3587 16.5217 17.0125 16.131 14.2905 15.4811C12.0012 14.9346 9.44505 13.6897 8.18538 12.8168C8.17384 12.7925 8.16216 12.767 8.15052 12.7408C8.09919 12.6249 8.05721 12.5114 8.02977 12.411C8.00356 12.3152 8.00039 12.2667 8.00004 12.2612C8.00004 12.261 8 12.2607 8.00004 12.2612C8.00004 12.2359 8.0104 11.9233 8.68485 11.3686C9.34546 10.8254 10.4222 10.2469 11.9291 9.72276C14.9242 8.68098 19.1919 8 24 8C28.8081 8 33.0758 8.68098 36.0709 9.72276C37.5778 10.2469 38.6545 10.8254 39.3151 11.3686C39.9006 11.8501 39.9857 12.1489 39.998 12.236ZM4.95178 15.2312L21.4543 41.6973C22.6288 43.5809 25.3712 43.5809 26.5457 41.6973L43.0534 15.223C43.0709 15.1948 43.0878 15.1662 43.104 15.1371L41.3563 14.1648C43.104 15.1371 43.1038 15.1374 43.104 15.1371L43.1051 15.135L43.1065 15.1325L43.1101 15.1261L43.1199 15.1082C43.1276 15.094 43.1377 15.0754 43.1497 15.0527C43.1738 15.0075 43.2062 14.9455 43.244 14.8701C43.319 14.7208 43.4196 14.511 43.5217 14.2683C43.6901 13.8679 44 13.0689 44 12.2609C44 10.5573 43.003 9.22254 41.8558 8.2791C40.6947 7.32427 39.1354 6.55361 37.385 5.94477C33.8654 4.72057 29.133 4 24 4C18.867 4 14.1346 4.72057 10.615 5.94478C8.86463 6.55361 7.30529 7.32428 6.14419 8.27911C4.99695 9.22255 3.99999 10.5573 3.99999 12.2609C3.99999 13.1275 4.29264 13.9078 4.49321 14.3607C4.60375 14.6102 4.71348 14.8196 4.79687 14.9689C4.83898 15.0444 4.87547 15.1065 4.9035 15.1529C4.91754 15.1762 4.92954 15.1957 4.93916 15.2111L4.94662 15.223L4.95178 15.2312ZM35.9868 18.996L24 38.22L12.0131 18.996C12.4661 19.1391 12.9179 19.2658 13.3617 19.3718C16.4281 20.1039 20.0901 20.5217 24 20.5217C27.9099 20.5217 31.5719 20.1039 34.6383 19.3718C35.082 19.2658 35.5339 19.1391 35.9868 18.996Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] text-slate-900 dark:text-white">SADCPFNexus</h2>
+</div>
+<div class="hidden md:flex w-full max-w-sm items-center rounded-lg bg-slate-100 dark:bg-surface-highlight/50 px-3 py-2">
+<span class="material-symbols-outlined text-slate-500 dark:text-text-secondary mr-2">search</span>
+<input class="w-full bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-text-secondary focus:outline-none" placeholder="Search records, hashes, or logs..."/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-text-secondary dark:hover:text-white transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-text-secondary dark:hover:text-white transition-colors" href="#">Audit Logs</a>
+<a class="text-sm font-medium text-slate-900 dark:text-white" href="#">Compliance</a>
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-text-secondary dark:hover:text-white transition-colors" href="#">Settings</a>
+</nav>
+<div class="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-surface-highlight border-2 border-transparent hover:border-primary transition-colors cursor-pointer">
+<img alt="User profile avatar showing a smiling man" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_Gw_FG3eTxsnIRK6FR2L-1du1fx2ZAXz_x2eDYNi5iW5Jn2RvBCHniumOqXDwhjC5Ihkyxbzv9syA9i02J8As-DbVIhFLfl21ZEZMN85t3p1Ol9xO48_AzCUhRrp71TY6dCE0dyhavrmHCtxokSKpQ4s-its1vcDLsXjh8b5WdtbT_XQVVRsRr5vrTY7RQwHypeg7CdwG21vwtd6qpGbuGQ-TFt80uLrbGignmoQhA2oXj0rGfv-bXe2bg3ghAb7D-mYuhqO45Fk"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden w-64 flex-col border-r border-slate-200 dark:border-surface-highlight bg-white dark:bg-background-dark py-6 lg:flex overflow-y-auto">
+<div class="px-6 pb-6">
+<div class="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-surface-highlight p-3 mb-6">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-900 dark:text-white">Admin Panel</h3>
+<p class="text-xs text-slate-500 dark:text-text-secondary">Security Control</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-highlight transition-colors" href="#">
+<span class="material-symbols-outlined">pie_chart</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-highlight transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-sm font-medium">Ledger</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary dark:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined fill-1">verified_user</span>
+<span class="text-sm font-medium">Verification</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-highlight transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium">Reports</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 dark:text-text-secondary hover:bg-slate-100 dark:hover:bg-surface-highlight transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-sm font-medium">Archives</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto px-6">
+<div class="mb-4">
+<h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">History</h4>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3 px-2 py-1.5 opacity-70 hover:opacity-100 cursor-pointer">
+<div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+<span class="text-xs text-slate-500 dark:text-text-secondary">Audit #2394 - Verified</span>
+</div>
+<div class="flex items-center gap-3 px-2 py-1.5 opacity-70 hover:opacity-100 cursor-pointer">
+<div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+<span class="text-xs text-slate-500 dark:text-text-secondary">Audit #2393 - Verified</span>
+</div>
+<div class="flex items-center gap-3 px-2 py-1.5 opacity-70 hover:opacity-100 cursor-pointer">
+<div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+<span class="text-xs text-slate-500 dark:text-text-secondary">Audit #2392 - Flagged</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#112116] p-6 md:p-10">
+<div class="mx-auto max-w-6xl">
+<!-- Title Section -->
+<div class="mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white md:text-4xl">Audit Ledger Verification</h1>
+<p class="mt-2 text-slate-500 dark:text-text-secondary">Verify the integrity of system records against immutable blockchain signatures.</p>
+</div>
+<div class="flex items-center gap-3 mt-4 md:mt-0">
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark px-4 py-2 text-sm font-medium text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-surface-highlight transition-colors">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                                Last 30 Days
+                            </button>
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark px-4 py-2 text-sm font-medium text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-surface-highlight transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                                Export Log
+                            </button>
+</div>
+</div>
+<!-- Main Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+<!-- Main Verification Card -->
+<div class="lg:col-span-2 flex flex-col rounded-2xl border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark shadow-sm overflow-hidden">
+<div class="relative h-48 w-full bg-gradient-to-r from-emerald-900 to-slate-900">
+<div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center backdrop-blur-sm border border-primary/30 animate-pulse">
+<span class="material-symbols-outlined text-5xl text-primary">lock</span>
+</div>
+</div>
+<!-- Data Visualization / Abstract tech background -->
+<img class="absolute inset-0 h-full w-full object-cover mix-blend-overlay opacity-40" data-alt="Abstract green digital blockchain visualization background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgbixuP3FG1OepJ_4Yf4IONRbq2XIwvB-XD2SFisoG5gnd4-ZzWfZ6dfA1TcsBGtxm_bBpzFTao041hqzZVd9-g4ERiiD68IPbLYhWq92OFJsUVLgE5btSy7ARxPOs1cjT4Tl12SBunm6g7m8o-mMPtUQHr_PXck6as4WsSNWDE02SSoqsqalteazj6UQMTAXVo97H5NltlTDMmGRtb1sCPS3cCc9BOZNVDfNXWkqhgmoceMUXGQHgNopwKBOsItkM9_kXu3rOCqo"/>
+</div>
+<div class="flex-1 p-6 md:p-8">
+<div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+<div class="space-y-4 flex-1">
+<div>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Current Ledger Manifest</h2>
+<p class="text-sm text-slate-500 dark:text-text-secondary mt-1">Block #9,482,102 • Mined 12 mins ago</p>
+</div>
+<div class="space-y-3">
+<div class="group relative rounded-lg bg-slate-100 dark:bg-black/30 p-3 border border-slate-200 dark:border-surface-highlight hover:border-primary/50 transition-colors">
+<p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Manifest Hash (SHA-256)</p>
+<code class="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm text-slate-700 dark:text-primary">8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4</code>
+<button class="absolute right-2 top-2 rounded bg-white dark:bg-surface-highlight p-1 text-slate-500 hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div class="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-surface-highlight/30 p-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-500">
+<span class="material-symbols-outlined text-[18px]">lock_clock</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Object Lock Status</p>
+<p class="font-medium text-slate-900 dark:text-white">Active</p>
+</div>
+</div>
+<div class="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-surface-highlight/30 p-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/20 text-blue-500">
+<span class="material-symbols-outlined text-[18px]">signature</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Blockchain Signature</p>
+<p class="font-medium text-slate-900 dark:text-white">Verified</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-end">
+<button class="group relative flex w-full md:w-auto items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary px-8 py-4 text-sm font-bold text-slate-900 shadow-[0_0_20px_rgba(25,230,94,0.3)] transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(25,230,94,0.5)] active:scale-[0.98]">
+<span class="relative z-10 flex items-center gap-2">
+<span class="material-symbols-outlined">verified</span>
+                                                Verify Ledger Integrity
+                                            </span>
+<div class="absolute inset-0 -translate-x-full bg-white/20 transition-transform duration-500 group-hover:translate-x-full"></div>
+</button>
+<p class="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">Next scheduled audit in 4h 12m</p>
+</div>
+</div>
+</div>
+<!-- Status Bar -->
+<div class="border-t border-slate-200 dark:border-surface-highlight bg-emerald-50/50 dark:bg-emerald-900/20 px-6 py-4">
+<div class="flex items-center gap-3 text-emerald-700 dark:text-emerald-400">
+<span class="material-symbols-outlined filled">check_circle</span>
+<p class="text-sm font-medium">Integrity Check Passed: No tampering detected in 45,201 records.</p>
+</div>
+</div>
+</div>
+<!-- Sidebar Stats / Verification History -->
+<div class="flex flex-col gap-6">
+<!-- Calendar Widget -->
+<div class="rounded-2xl border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark p-5 shadow-sm">
+<div class="mb-4 flex items-center justify-between">
+<h3 class="font-bold text-slate-900 dark:text-white">Verification Timeline</h3>
+<div class="flex gap-1">
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-highlight hover:text-slate-900 dark:hover:text-white">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-surface-highlight hover:text-slate-900 dark:hover:text-white">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="relative pl-4 border-l border-slate-200 dark:border-surface-highlight space-y-6">
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-white dark:ring-surface-dark"></div>
+<p class="text-xs font-semibold text-primary mb-1">Today, 10:42 AM</p>
+<p class="text-sm text-slate-900 dark:text-white font-medium">Manual Verification</p>
+<p class="text-xs text-slate-500 dark:text-text-secondary">User: Admin_sys_01</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></div>
+<p class="text-xs font-semibold text-slate-500 mb-1">Today, 06:00 AM</p>
+<p class="text-sm text-slate-900 dark:text-white font-medium">Scheduled Audit</p>
+<p class="text-xs text-slate-500 dark:text-text-secondary">System Automation</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></div>
+<p class="text-xs font-semibold text-slate-500 mb-1">Yesterday, 06:00 AM</p>
+<p class="text-sm text-slate-900 dark:text-white font-medium">Scheduled Audit</p>
+<p class="text-xs text-slate-500 dark:text-text-secondary">System Automation</p>
+</div>
+</div>
+</div>
+<!-- Quick Stats -->
+<div class="rounded-2xl border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark p-5 shadow-sm">
+<h3 class="font-bold text-slate-900 dark:text-white mb-4">Network Consensus</h3>
+<div class="flex items-center justify-center mb-4 relative">
+<!-- Donut Chart Representation -->
+<svg class="h-32 w-32 rotate-[-90deg]" viewbox="0 0 36 36">
+<path class="text-slate-100 dark:text-surface-highlight" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.8"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="98, 100" stroke-linecap="round" stroke-width="3.8"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-bold text-slate-900 dark:text-white">98%</span>
+<span class="text-[10px] text-slate-500 uppercase font-semibold">Consensus</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-center">
+<div class="rounded bg-slate-50 dark:bg-surface-highlight/30 p-2">
+<p class="text-xs text-slate-500 dark:text-text-secondary">Nodes Active</p>
+<p class="text-lg font-bold text-slate-900 dark:text-white">128</p>
+</div>
+<div class="rounded bg-slate-50 dark:bg-surface-highlight/30 p-2">
+<p class="text-xs text-slate-500 dark:text-text-secondary">Block Height</p>
+<p class="text-lg font-bold text-slate-900 dark:text-white">9.4M</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Verification Table -->
+<div class="rounded-2xl border border-slate-200 dark:border-surface-highlight bg-white dark:bg-surface-dark shadow-sm overflow-hidden">
+<div class="flex items-center justify-between border-b border-slate-200 dark:border-surface-highlight px-6 py-4">
+<h3 class="font-bold text-slate-900 dark:text-white">Recent Log Entries</h3>
+<button class="text-sm text-primary hover:text-emerald-400 font-medium">View All Logs</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-500 dark:text-text-secondary">
+<thead class="bg-slate-50 dark:bg-surface-highlight/30 text-xs uppercase text-slate-500 dark:text-text-secondary">
+<tr>
+<th class="px-6 py-3 font-medium" scope="col">Timestamp</th>
+<th class="px-6 py-3 font-medium" scope="col">Event Type</th>
+<th class="px-6 py-3 font-medium" scope="col">Initiator</th>
+<th class="px-6 py-3 font-medium" scope="col">Hash Ref</th>
+<th class="px-6 py-3 font-medium text-right" scope="col">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-surface-highlight">
+<tr class="hover:bg-slate-50 dark:hover:bg-surface-highlight/10">
+<td class="whitespace-nowrap px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 24, 2023 10:42:12</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 text-xs font-medium text-purple-700 dark:text-purple-300">
+                                                Manual Audit
+                                            </span>
+</td>
+<td class="px-6 py-4">Admin_sys_01</td>
+<td class="px-6 py-4 font-mono text-xs">0x4a...f92b</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 text-emerald-600 dark:text-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                                                Valid
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-surface-highlight/10">
+<td class="whitespace-nowrap px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 24, 2023 09:15:00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                                                Ledger Entry
+                                            </span>
+</td>
+<td class="px-6 py-4">System_Core</td>
+<td class="px-6 py-4 font-mono text-xs">0x8b...a12c</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 text-emerald-600 dark:text-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                                                Valid
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-surface-highlight/10">
+<td class="whitespace-nowrap px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 24, 2023 08:30:45</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-700 dark:text-orange-300">
+                                                Key Rotation
+                                            </span>
+</td>
+<td class="px-6 py-4">Sec_Officer_04</td>
+<td class="px-6 py-4 font-mono text-xs">0x1c...d44e</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 text-emerald-600 dark:text-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                                                Valid
+                                            </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-surface-highlight/10">
+<td class="whitespace-nowrap px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 23, 2023 23:59:59</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                Daily Snapshot
+                                            </span>
+</td>
+<td class="px-6 py-4">Auto_Archive_Bot</td>
+<td class="px-6 py-4 font-mono text-xs">0x9f...e11a</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1 text-emerald-600 dark:text-primary">
+<span class="material-symbols-outlined text-[16px]">check</span>
+                                                Valid
+                                            </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

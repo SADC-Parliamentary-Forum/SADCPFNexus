@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Asset Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#193322",
+                        "surface-darker": "#112217",
+                        "border-dark": "#23482f",
+                        "text-secondary": "#92c9a4",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-dark bg-surface-darker px-4 md:px-10 py-3 z-20">
+<div class="flex items-center gap-4 md:gap-8">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">token</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] hidden md:block">SADCPFNexus</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-9">
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal border-b-2 border-primary pb-0.5" href="#">Assets</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Maintenance</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 md:gap-8">
+<label class="hidden md:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-border-dark group focus-within:ring-1 focus-within:ring-primary">
+<div class="text-text-secondary flex border-none items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-text-secondary px-4 rounded-l-none pl-2 text-sm font-normal leading-normal" placeholder="Search assets..." value=""/>
+</div>
+</label>
+<button class="md:hidden text-white">
+<span class="material-symbols-outlined">search</span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-border-dark" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBywEXNXHXISgecITMgyF8Zk9DazTnBqWjhyQINEtRmofYgMMcA7afMj44elK7rIYrgqxinnmFESu1gnlYKmGWfovyL657vTGe5FOg892waDe7xXGAycUxm6HZfJYQRWNR5pRDlFFAWjonk2Fd2P_Tekt86ocfwneHAAPREVueoHHlhwzoFboz57zqmdOsv5KeEBT_A-bVa9ItE3NX3uHmeDS77m5pdBdnQoFpM8uHgFu2jniB6C4mzBB8aPgJzyA3Z59HmZaGuYTU");'></div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- Sidebar / Drawer (Collapsible) -->
+<aside class="w-64 bg-surface-darker border-r border-border-dark flex-col hidden lg:flex overflow-y-auto">
+<div class="p-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-white text-base font-bold">Filters</h3>
+<button class="text-text-secondary hover:text-primary text-xs font-medium">Reset</button>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-3">
+<h4 class="text-text-secondary text-xs uppercase tracking-wider font-semibold">Category</h4>
+<div class="flex flex-col gap-1">
+<label class="flex items-center gap-3 p-2 rounded-lg bg-surface-dark cursor-pointer group">
+<span class="material-symbols-outlined text-primary group-hover:text-white transition-colors">apps</span>
+<span class="text-white text-sm font-medium flex-1">All Assets</span>
+<input checked="" class="hidden" name="category" type="radio"/>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-dark cursor-pointer group transition-colors">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white transition-colors">computer</span>
+<span class="text-text-secondary group-hover:text-white text-sm font-medium flex-1">IT Equipment</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-dark cursor-pointer group transition-colors">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white transition-colors">chair</span>
+<span class="text-text-secondary group-hover:text-white text-sm font-medium flex-1">Furniture</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-dark cursor-pointer group transition-colors">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white transition-colors">directions_car</span>
+<span class="text-text-secondary group-hover:text-white text-sm font-medium flex-1">Vehicles</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-dark cursor-pointer group transition-colors">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white transition-colors">build</span>
+<span class="text-text-secondary group-hover:text-white text-sm font-medium flex-1">Machinery</span>
+</label>
+</div>
+</div>
+<div class="h-px bg-border-dark w-full"></div>
+<div class="flex flex-col gap-3">
+<h4 class="text-text-secondary text-xs uppercase tracking-wider font-semibold">Status</h4>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="rounded border-border-dark bg-surface-dark text-primary focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="text-white text-sm">Active</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-border-dark bg-surface-dark text-primary focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="text-white text-sm">In Maintenance</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-border-dark bg-surface-dark text-primary focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span class="text-white text-sm">Retired</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 md:p-8 relative">
+<!-- Mobile Filter Toggle (Visible only on small screens) -->
+<div class="lg:hidden mb-4">
+<button class="flex items-center gap-2 text-white bg-surface-dark px-4 py-2 rounded-lg border border-border-dark w-full">
+<span class="material-symbols-outlined">filter_list</span>
+<span class="font-medium">Filters</span>
+</button>
+</div>
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+<div>
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Asset Register - Class B</h1>
+<p class="text-slate-500 dark:text-text-secondary mt-1">Manage and track high-value institutional assets</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-text-secondary text-sm font-medium">Sorted by: <span class="text-white cursor-pointer hover:underline">Recent Added</span></div>
+<button class="p-2 rounded-lg bg-surface-dark text-white hover:bg-border-dark transition-colors">
+<span class="material-symbols-outlined">sort</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-dark text-white hover:bg-border-dark transition-colors">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+</div>
+</div>
+<!-- Grid Layout for Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 pb-20">
+<!-- Card 1 -->
+<div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-slate-100 dark:bg-black/20">
+<div class="absolute top-3 left-3 bg-green-500/20 backdrop-blur-md text-green-400 text-xs font-bold px-2 py-1 rounded border border-green-500/30">
+                            ACTIVE
+                        </div>
+<button class="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-primary hover:text-black transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="w-full h-full bg-center bg-cover bg-no-repeat" data-alt="Dell Precision laptop on a desk" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDaPeAk0zlQ5cJkVErgNHE8M2AlEe1IaIJYipLXp7Q20AyzwKEM70BB9aTgQNcu4ZzLiTEIgCgSBtT0uvM8-SvMsRk57hEfaq2JFoJA2cB1ZNHU_qT9cBMpqYkWAufccQa2dDEl_k2Rf31OwXdTegxpA04vy3_ndM7kEJLmbkoybmm_BO7Py9ZfItyqkMIYIrrQjqNGPeh5nluuKXQTSx7zABT_dVTqo4ImJQ5i7OCrHyqQAEDH0eMFLKoL54zZFlbHQ7JWY3U8yIw");'></div>
+</div>
+<div class="p-5 flex flex-col flex-1 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[18px]">computer</span>
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">IT Equipment</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1">Dell Precision 5560</h3>
+<p class="text-slate-500 dark:text-text-secondary text-xs">ID: #49201</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-surface-darker flex items-center justify-center text-xs font-bold text-slate-600 dark:text-white border border-slate-300 dark:border-border-dark">JD</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase text-text-secondary font-semibold">Custodian</span>
+<span class="text-sm text-slate-900 dark:text-white font-medium">John Doe</span>
+</div>
+<button class="ml-auto text-primary hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                                Details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-slate-100 dark:bg-black/20">
+<div class="absolute top-3 left-3 bg-blue-500/20 backdrop-blur-md text-blue-400 text-xs font-bold px-2 py-1 rounded border border-blue-500/30">
+                            IN USE
+                        </div>
+<button class="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-primary hover:text-black transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="w-full h-full bg-center bg-cover bg-no-repeat" data-alt="Herman Miller Aeron office chair" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCI7TRt6Geb2n4bc6hT5TzS-Bmk1WuSA5EbDi50K3b4Jgo2ADzsDqQir6p3z5f8_lnPefOzS87CmB8-boZZnfvUCgrtKt8rblCftzBrXlyB78MA1Vpy4N3wj0lOOSth47boGnMMIJdPyO-GP0RA9OXO6kuTfDgYY7-XU8NLj59iPNyTTBj0OoLQS6YOVdNRS0f_TDXEWsHttyKQYWFA2YbbN7sAMalrZt64Lrr8hDY5ER0GN_8Rd7xopzYKTLlv-_vaXTS4uynBLkE");'></div>
+</div>
+<div class="p-5 flex flex-col flex-1 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[18px]">chair</span>
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Furniture</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1">Herman Miller Aeron</h3>
+<p class="text-slate-500 dark:text-text-secondary text-xs">ID: #49202</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-surface-darker flex items-center justify-center text-xs font-bold text-slate-600 dark:text-white border border-slate-300 dark:border-border-dark">SD</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase text-text-secondary font-semibold">Custodian</span>
+<span class="text-sm text-slate-900 dark:text-white font-medium">Sales Dept</span>
+</div>
+<button class="ml-auto text-primary hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                                Details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-slate-100 dark:bg-black/20">
+<div class="absolute top-3 left-3 bg-yellow-500/20 backdrop-blur-md text-yellow-400 text-xs font-bold px-2 py-1 rounded border border-yellow-500/30">
+                            MAINTENANCE
+                        </div>
+<button class="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-primary hover:text-black transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="w-full h-full bg-center bg-cover bg-no-repeat" data-alt="Industrial generator unit" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBmA9QI6SXUNlhWQVeEk9wfWFD0Yq0n_vT7BcC9tXZVpMBs-jUog-dM3Igt25s52HlS7SjggQWcFO1HdRcqo41G41zbtOgnAc6C3zwnBuUCrl9h0DtwF4C1Gh7jbDsCz_LDPFJmIHDTogOs9kos2eJ-Q0tbYeVlaN5SLqb4_mR2xIbThOZhicI25D4OmxYWqD04Y3aGN0V72eMcDiWTEC2jU7ZCmssHG-8EDesl6rEaEWcEq-6Cmcb8qyNOt4HDJytOKpqXCGXxMUM");'></div>
+</div>
+<div class="p-5 flex flex-col flex-1 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[18px]">build</span>
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Machinery</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1">CAT Diesel Generator</h3>
+<p class="text-slate-500 dark:text-text-secondary text-xs">ID: #49205</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-surface-darker flex items-center justify-center text-xs font-bold text-slate-600 dark:text-white border border-slate-300 dark:border-border-dark">FM</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase text-text-secondary font-semibold">Custodian</span>
+<span class="text-sm text-slate-900 dark:text-white font-medium">Facility Mgmt</span>
+</div>
+<button class="ml-auto text-primary hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                                Details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-slate-100 dark:bg-black/20">
+<div class="absolute top-3 left-3 bg-green-500/20 backdrop-blur-md text-green-400 text-xs font-bold px-2 py-1 rounded border border-green-500/30">
+                            ACTIVE
+                        </div>
+<button class="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-primary hover:text-black transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="w-full h-full bg-center bg-cover bg-no-repeat" data-alt="White fleet sedan car" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB5sN3VAnvE8aPQ_zuWxQNwk4TCQAJQraNQMImK0Yb765i0a17HAbk4-haDmYrDYpYsJgneWWgX_PTWhI92UXe7pfbkiWLZLXQlUE6ul_SjJSbC678tjtqJp-jpIguQZWT5RZDSosJ2woKi9KVcycz6ot3rSQDrK3akEMlNTMaBQXI-FkiRDwMi8RjxP04UT_08iHVoBKVJcI044GBqaWQvUA8zjO0YlTxu6yXfLJ_oKwmhLTuCCQy7rdwHSsCe3pzhchdHWoSeOS4");'></div>
+</div>
+<div class="p-5 flex flex-col flex-1 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[18px]">directions_car</span>
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Vehicles</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1">Toyota Corolla 2023</h3>
+<p class="text-slate-500 dark:text-text-secondary text-xs">ID: #49208</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-surface-darker flex items-center justify-center text-xs font-bold text-slate-600 dark:text-white border border-slate-300 dark:border-border-dark">HR</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase text-text-secondary font-semibold">Custodian</span>
+<span class="text-sm text-slate-900 dark:text-white font-medium">HR Dept</span>
+</div>
+<button class="ml-auto text-primary hover:text-white transition-colors text-sm font-medium flex items-center gap-1">
+                                Details <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col">
+<div class="relative h-48 bg-slate-100 dark:bg-black/20">
+<div class="absolute top-3 left-3 bg-red-500/20 backdrop-blur-md text-red-400 text-xs font-bold px-2 py-1 rounded border border-red-500/30">
+                            RETIRED
+                        </div>
+<button class="absolute top-3 right-3 p-1.5 rounded-full bg-black/40 text-white hover:bg-primary hover:text-black transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="w-full h-full bg-center bg-cover bg-no-repeat" data-alt="Old desktop computer monitor" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBTOGoUZm-Yo88HQwpj-9_B2PU_YUtao0eFlbi-nh9Q81ib-BcDRSgbo7ktVKmxCRBtMqzQfszATqPgReijXdQ9O5yi9vUsuoPnT0P8a0U4ZEKOPC0LFMTTg1rvlj3q4nQDPpx7nlL9EIAIOFjaJUG-Z2Ffg7yd8KBoohB0eYsE7K74tvCG1n3Dce4j0on-MPYKfTmUhGgKmMc_YkmjBR3jTgPyxuOcbVgLqiIquvbnFs3ivSDbmrvdYCAaViVWAC7iOwYqT4GsMCE");'></div>
+</div>
+<div class="p-5 flex flex-col flex-1 gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-text-secondary text-[18px]">computer</span>
+<span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">IT Equipment</span>
+</div>
+<h3 class="text-lg font-bold text-slate-400 dark:text-text-secondary line-through leading-tight mb-1">HP EliteDisplay</h3>
+<p class="text-slate-500 dark:text-text-secondary text-xs">ID: #48100</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-white/5 opacity-50">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-surface-darker flex items-center justify-center text-xs font-bold text-slate-600 dark:text-white border border-slate-300 dark:border-border-dark">--</div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase text-text-secondary font-semibold">Custodian</span>
+<span class="text-sm text-slate-900 dark:text-white font-medium">None</span>
+</div>
+<button class="ml-auto text-primary hover:text-white transition-colors text-sm font-medium flex items-center gap-1 cursor-not-allowed">
+                                Archive <span class="material-symbols-outlined text-[16px]">archive</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-8 right-8 z-50 bg-primary hover:bg-green-400 text-surface-darker rounded-full p-4 shadow-lg shadow-green-900/40 hover:shadow-green-500/40 transition-all duration-300 flex items-center gap-2 group">
+<span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform duration-300">add</span>
+<span class="font-bold pr-2 text-lg hidden group-hover:block whitespace-nowrap overflow-hidden transition-all">Add Asset</span>
+</button>
+</main>
+</div>
+</body></html>

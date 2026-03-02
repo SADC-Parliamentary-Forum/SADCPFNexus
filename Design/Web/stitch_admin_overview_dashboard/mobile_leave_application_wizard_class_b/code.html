@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Mobile Leave Application</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-content": "#ffffff",
+                        "primary-dark": "#0e45b5",
+                        "primary-light": "#eef4ff",
+                        "background-light": "#f8f9fc",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2234",
+                        "text-main": "#0d121b",
+                        "text-secondary": "#4c669a",
+                        "border-light": "#e7ebf3",
+                        "border-dark": "#2a3449",
+                        "accent-orange": "#f97316",
+                        "accent-orange-bg": "#ffedd5",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for better mobile feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 20px;
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-gray-100 min-h-screen flex flex-col items-center">
+<!-- Mobile Container Simulation (Max Width Wrapper) -->
+<div class="w-full max-w-md bg-surface-light dark:bg-surface-dark min-h-screen shadow-2xl flex flex-col relative">
+<!-- Header -->
+<header class="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3">
+<button class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-text-main dark:text-gray-200">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<div class="flex items-center gap-2 text-primary">
+<div class="size-6 bg-primary rounded-md flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm">spa</span>
+</div>
+<h1 class="text-base font-bold tracking-tight text-text-main dark:text-white">SADCPFNexus</h1>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-8 rounded-full bg-gray-100 dark:bg-gray-800 text-text-main dark:text-gray-200">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<div class="size-8 rounded-full bg-primary/10 overflow-hidden border border-primary/20">
+<img alt="User Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3sapHkkwus0QKi2SBSwTa_9er39mL09JFTPkCwLk1oPlo5kNTGFGHXNbac35hNTG_d-ZIhSbTZ8edNt9y_T8CERnYgPPkXm8WfA3APelgpNKPq9HVvlFlZzFpcjBgjTN3dsRtgEA2j810xLP9_z-LB9Pydn7JiabnYBFwsIZeSCfU8sfkPypPc6mVYllM4XNOeaj0fL-5octYDFgk48v5caTdctS9dFejCvhtJCLSs_nu_bOCUpHx07B6uEX-3oAOrhcKOXE8FzI"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 px-4 py-5 pb-32">
+<!-- Step Indicator -->
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-lg font-bold text-text-main dark:text-white">Leave Request</h2>
+<span class="text-xs font-semibold text-text-secondary dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Step 2 / 6</span>
+</div>
+<div class="h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-1/3 rounded-full"></div>
+</div>
+</div>
+<!-- Class Badge -->
+<div class="mb-6 flex justify-start">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-orange-bg/80 border border-accent-orange/20 text-accent-orange dark:bg-orange-900/30 dark:text-orange-300">
+<span class="material-symbols-outlined text-lg">verified</span>
+<span class="text-sm font-bold uppercase tracking-wide">Class B</span>
+</div>
+</div>
+<!-- Form Fields -->
+<form class="flex flex-col gap-6" onsubmit="event.preventDefault();">
+<!-- Leave Type -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-text-main dark:text-gray-300">Leave Type</label>
+<div class="relative">
+<select class="w-full h-12 pl-4 pr-10 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-base text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select type</option>
+<option value="sick">Sick Leave</option>
+<option value="annual">Annual Leave</option>
+<option value="emergency">Emergency Leave</option>
+</select>
+<div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-gray-500">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Date Range Picker -->
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-text-main dark:text-gray-300">From Date</label>
+<div class="relative group cursor-pointer">
+<input class="w-full h-12 pl-10 pr-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-base text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer group-hover:border-primary/50 transition-colors" readonly="" type="text" value="Oct 24, 2023"/>
+<div class="absolute left-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-text-main dark:text-gray-300">To Date</label>
+<div class="relative group cursor-pointer">
+<input class="w-full h-12 pl-10 pr-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-base text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer group-hover:border-primary/50 transition-colors" placeholder="Select date" readonly="" type="text"/>
+<div class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary dark:text-gray-500 pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Inline Calendar Visualization (Simplified) -->
+<div class="bg-background-light dark:bg-background-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+<div class="flex items-center justify-between mb-4">
+<button class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<span class="text-sm font-bold text-text-main dark:text-white">October 2023</span>
+<button class="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-7 gap-1 text-center text-xs">
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">S</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">M</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">T</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">W</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">T</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">F</span>
+<span class="text-text-secondary dark:text-gray-500 font-medium py-1">S</span>
+<!-- Calendar Days -->
+<span class="text-gray-300 dark:text-gray-700 py-2">29</span>
+<span class="text-gray-300 dark:text-gray-700 py-2">30</span>
+<span class="text-text-main dark:text-white py-2">1</span>
+<span class="text-text-main dark:text-white py-2">2</span>
+<span class="text-text-main dark:text-white py-2">3</span>
+<span class="text-text-main dark:text-white py-2">4</span>
+<span class="text-text-main dark:text-white py-2">5</span>
+<span class="text-text-main dark:text-white py-2">6</span>
+<span class="text-text-main dark:text-white py-2">7</span>
+<span class="text-text-main dark:text-white py-2">8</span>
+<span class="text-text-main dark:text-white py-2">9</span>
+<span class="text-text-main dark:text-white py-2">10</span>
+<span class="text-text-main dark:text-white py-2">11</span>
+<span class="text-text-main dark:text-white py-2">12</span>
+<span class="text-text-main dark:text-white py-2">13</span>
+<span class="text-text-main dark:text-white py-2">14</span>
+<span class="text-text-main dark:text-white py-2">15</span>
+<span class="text-text-main dark:text-white py-2">16</span>
+<span class="text-text-main dark:text-white py-2">17</span>
+<span class="text-text-main dark:text-white py-2">18</span>
+<span class="text-text-main dark:text-white py-2">19</span>
+<span class="text-text-main dark:text-white py-2">20</span>
+<span class="text-text-main dark:text-white py-2">21</span>
+<span class="text-text-main dark:text-white py-2">22</span>
+<span class="text-text-main dark:text-white py-2">23</span>
+<!-- Selected Range Start -->
+<span class="relative bg-primary text-white rounded-l-full py-2 z-10 shadow-sm">
+                            24
+                        </span>
+<!-- Selected Range Middle (Simulated) -->
+<span class="bg-primary/20 text-primary-dark dark:text-primary-light py-2">25</span>
+<span class="bg-primary/20 text-primary-dark dark:text-primary-light py-2">26</span>
+<span class="bg-primary/20 text-primary-dark dark:text-primary-light rounded-r-full py-2">27</span>
+</div>
+</div>
+<!-- Reason Textarea -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-text-main dark:text-gray-300">Reason</label>
+<textarea class="w-full min-h-[100px] p-4 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-base text-text-main dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none" placeholder="Please describe the reason for your leave..."></textarea>
+</div>
+<!-- Attachment Upload -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-text-main dark:text-gray-300">
+                        Supporting Documents
+                        <span class="text-xs font-normal text-text-secondary dark:text-gray-500 ml-1">(Optional)</span>
+</label>
+<button class="relative overflow-hidden w-full h-32 border-2 border-dashed border-primary/30 dark:border-primary/40 rounded-xl bg-primary/5 dark:bg-primary/10 flex flex-col items-center justify-center gap-2 group hover:bg-primary/10 hover:border-primary transition-all" type="button">
+<!-- Scanning Animation Line -->
+<div class="absolute inset-x-0 top-0 h-1 bg-primary/50 blur-[2px] shadow-[0_0_10px_rgba(19,91,236,0.5)] animate-[scan_2s_ease-in-out_infinite]"></div>
+<div class="p-3 bg-white dark:bg-surface-dark rounded-full shadow-sm text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">upload_file</span>
+</div>
+<p class="text-sm font-medium text-primary">Tap to Upload</p>
+<p class="text-xs text-text-secondary dark:text-gray-500">Medical Certificate, etc.</p>
+</button>
+<style>
+                        @keyframes scan {
+                            0% { top: 0; opacity: 0; }
+                            10% { opacity: 1; }
+                            90% { opacity: 1; }
+                            100% { top: 100%; opacity: 0; }
+                        }
+                    </style>
+</div>
+</form>
+</main>
+<!-- Sticky Bottom Nav -->
+<div class="fixed bottom-0 left-0 right-0 z-40 w-full flex justify-center pointer-events-none">
+<!-- Constrain width to mimic mobile container -->
+<div class="w-full max-w-md bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] pointer-events-auto">
+<div class="flex flex-col gap-3">
+<div class="flex gap-3">
+<button class="flex-1 h-12 flex items-center justify-center gap-2 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-main dark:text-white font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+                            Back
+                        </button>
+<button class="flex-[2] h-12 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary-dark text-white font-semibold shadow-lg shadow-primary/30 transition-all active:scale-[0.98]">
+                            Next Step
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+<button class="text-sm font-medium text-text-secondary dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors text-center py-1">
+                        Save as Draft
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

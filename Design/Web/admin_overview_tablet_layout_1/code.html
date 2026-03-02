@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1d85ed",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1a2632",
+              "border-light": "#e7edf3",
+              "border-dark": "#2a3b4c",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for horizontal scrolling */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display transition-colors duration-200">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Collapsed Sidebar (Tablet/Mini variant) -->
+<aside class="flex w-20 flex-col items-center border-r border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark py-6 flex-shrink-0 z-20">
+<!-- Logo Icon Only -->
+<div class="mb-8 flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined text-[24px]">security</span>
+</div>
+<!-- Navigation Icons -->
+<nav class="flex flex-1 flex-col items-center gap-6">
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all hover:bg-primary hover:text-white" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Home</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Staff</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all" href="#">
+<span class="material-symbols-outlined">attach_money</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Finance</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all" href="#">
+<span class="material-symbols-outlined">shield</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Security</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Reports</span>
+</a>
+</nav>
+<!-- Bottom Actions -->
+<div class="flex flex-col items-center gap-4">
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="absolute left-14 hidden rounded bg-slate-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 z-50">Settings</span>
+</a>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-border-light dark:ring-border-dark" data-alt="User profile picture of a man" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCt2vZT8QKqo54yOO0ZlNr8_yip3BcK_2yjoqNY__rqSkhk7TiZdB8vpNCSqzbDn5o-7TWw70cz97yngU4VCiO-Xcyf-04JEBP5Y47GY-OmYFICWWDuUk83zUti-Uw8I5cYRNGWkSTpadyIOi4CR7gx6TWA9RfceI5ixDu_ZeOlpoTLOOElOl7ZwFW1PLyDdMrI3E73r_huX3m8rHhIPH3wZUWrbrJl3APuma3scpij3j9RSijrGUOAEA0TDWHA8OaUKUEXCg_tgfs");'></div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex flex-1 flex-col overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-border-light dark:border-border-dark bg-surface-light/80 dark:bg-surface-dark/80 px-6 py-3 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-3">
+<button class="lg:hidden text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Admin Overview</h1>
+</div>
+<div class="flex items-center gap-4">
+<!-- Search Bar (Tablet Optimized - icon only on very small screens, expanded here) -->
+<div class="hidden sm:flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+<input class="ml-2 w-48 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white border-none p-0 focus:ring-0" placeholder="Search system..." type="text"/>
+</div>
+<button class="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+</button>
+<button class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto overflow-x-hidden p-6">
+<!-- Section Title & Actions -->
+<div class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+<div>
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white">Dashboard</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Overview of key metrics and system status.</p>
+</div>
+<!-- Slide-out Drawer Trigger (Simulated) -->
+<button class="flex items-center gap-2 rounded-lg bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filters</span>
+</button>
+</div>
+<!-- KPI Carousel (Horizontal Scroll) -->
+<div class="-mx-6 mb-8 flex gap-4 overflow-x-auto px-6 pb-4 hide-scrollbar snap-x snap-mandatory">
+<!-- KPI Card 1 -->
+<div class="min-w-[260px] snap-center rounded-xl bg-surface-light dark:bg-surface-dark p-5 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Active Personnel</p>
+<span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">1,245</span>
+<span class="flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +2.5%
+                            </span>
+</div>
+<p class="mt-1 text-xs text-slate-400">vs. last month</p>
+</div>
+<!-- KPI Card 2 -->
+<div class="min-w-[260px] snap-center rounded-xl bg-surface-light dark:bg-surface-dark p-5 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Budget Utilization</p>
+<span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">78%</span>
+<span class="flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +1.1%
+                            </span>
+</div>
+<div class="mt-2 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+<div class="h-1.5 rounded-full bg-purple-500" style="width: 78%"></div>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="min-w-[260px] snap-center rounded-xl bg-surface-light dark:bg-surface-dark p-5 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Security Incidents</p>
+<span class="flex h-8 w-8 items-center justify-center rounded-full bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">3</span>
+<span class="flex items-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">trending_down</span>
+                                -50%
+                            </span>
+</div>
+<p class="mt-1 text-xs text-slate-400">Critical: 0</p>
+</div>
+<!-- KPI Card 4 -->
+<div class="min-w-[260px] snap-center rounded-xl bg-surface-light dark:bg-surface-dark p-5 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Approvals</p>
+<span class="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400">
+<span class="material-symbols-outlined text-[20px]">pending_actions</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">42</span>
+<span class="flex items-center text-xs font-medium text-amber-500 dark:text-amber-400">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +5%
+                            </span>
+</div>
+<p class="mt-1 text-xs text-slate-400">Avg time: 1.2 days</p>
+</div>
+</div>
+<!-- Stacked Layout for Tablet: Charts & Tables -->
+<div class="flex flex-col gap-6">
+<!-- Stacked Charts Section -->
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<!-- Chart 1: Personnel Distribution -->
+<div class="flex flex-col rounded-xl bg-surface-light dark:bg-surface-dark p-6 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="mb-4 flex items-center justify-between">
+<h3 class="font-bold text-slate-900 dark:text-white">Department Staffing</h3>
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<div class="flex-1 flex items-end justify-between gap-2 h-48 px-2">
+<!-- Bar 1 -->
+<div class="group flex flex-col items-center gap-2 w-full">
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg relative h-32 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
+<div class="absolute bottom-0 w-full bg-primary rounded-t-lg" style="height: 65%"></div>
+</div>
+<span class="text-xs text-slate-500">Ops</span>
+</div>
+<!-- Bar 2 -->
+<div class="group flex flex-col items-center gap-2 w-full">
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg relative h-32 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
+<div class="absolute bottom-0 w-full bg-primary/80 rounded-t-lg" style="height: 45%"></div>
+</div>
+<span class="text-xs text-slate-500">HR</span>
+</div>
+<!-- Bar 3 -->
+<div class="group flex flex-col items-center gap-2 w-full">
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg relative h-32 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
+<div class="absolute bottom-0 w-full bg-primary/60 rounded-t-lg" style="height: 80%"></div>
+</div>
+<span class="text-xs text-slate-500">IT</span>
+</div>
+<!-- Bar 4 -->
+<div class="group flex flex-col items-center gap-2 w-full">
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg relative h-32 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
+<div class="absolute bottom-0 w-full bg-primary/40 rounded-t-lg" style="height: 30%"></div>
+</div>
+<span class="text-xs text-slate-500">Fin</span>
+</div>
+<!-- Bar 5 -->
+<div class="group flex flex-col items-center gap-2 w-full">
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-t-lg relative h-32 group-hover:bg-slate-200 dark:group-hover:bg-slate-600 transition-colors">
+<div class="absolute bottom-0 w-full bg-primary/90 rounded-t-lg" style="height: 55%"></div>
+</div>
+<span class="text-xs text-slate-500">Sec</span>
+</div>
+</div>
+</div>
+<!-- Chart 2: System Activity Line -->
+<div class="flex flex-col rounded-xl bg-surface-light dark:bg-surface-dark p-6 shadow-sm ring-1 ring-border-light dark:ring-border-dark">
+<div class="mb-4 flex items-center justify-between">
+<h3 class="font-bold text-slate-900 dark:text-white">System Access Logs</h3>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 text-xs text-slate-500"><div class="h-2 w-2 rounded-full bg-primary"></div> Valid</span>
+<span class="flex items-center gap-1 text-xs text-slate-500"><div class="h-2 w-2 rounded-full bg-red-400"></div> Failed</span>
+</div>
+</div>
+<!-- Fake Line Chart Visual -->
+<div class="relative h-48 w-full">
+<svg class="h-full w-full overflow-visible" viewbox="0 0 400 150">
+<!-- Grid lines -->
+<line stroke="#e2e8f0" stroke-width="1" x1="0" x2="400" y1="150" y2="150"></line>
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="400" y1="100" y2="100"></line>
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="400" y1="50" y2="50"></line>
+<!-- Primary Line -->
+<path d="M0,120 C50,110 80,140 120,90 C160,40 200,80 240,60 C280,40 320,10 400,30" fill="none" stroke="#1d85ed" stroke-linecap="round" stroke-width="3"></path>
+<!-- Area under curve (optional gradient effect simulated with opacity) -->
+<path d="M0,120 C50,110 80,140 120,90 C160,40 200,80 240,60 C280,40 320,10 400,30 V150 H0 Z" fill="#1d85ed" fill-opacity="0.1"></path>
+<!-- Secondary Line (Failed attempts) -->
+<path d="M0,145 C60,148 100,140 150,142 C200,145 250,135 300,140 C350,145 380,148 400,146" fill="none" stroke="#f87171" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Large Touch-Optimized Table -->
+<div class="rounded-xl bg-surface-light dark:bg-surface-dark shadow-sm ring-1 ring-border-light dark:ring-border-dark overflow-hidden">
+<div class="border-b border-border-light dark:border-border-dark px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<h3 class="font-bold text-slate-900 dark:text-white">Recent Security Logs</h3>
+<div class="flex gap-2">
+<button class="rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Export</button>
+<button class="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600 shadow-sm shadow-blue-500/30">View All</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+<thead class="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase text-slate-500 dark:text-slate-400">
+<tr>
+<th class="px-6 py-4 font-semibold" scope="col">User</th>
+<th class="px-6 py-4 font-semibold" scope="col">Action</th>
+<th class="px-6 py-4 font-semibold" scope="col">Location</th>
+<th class="px-6 py-4 font-semibold" scope="col">Status</th>
+<th class="px-6 py-4 font-semibold text-right" scope="col">Timestamp</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark">
+<!-- Row 1 (Tall for touch) -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center" data-alt="Portrait of Sarah Jenkins" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDSbOsjdMSj55o-aeROHcvk3x5WD9YGGpOyPz_CJ28yB2uZog4S1u5IafrcxPlb4JOrO--LdsQybGzmzbS5kj85_UjtW-zi-_xbXA27bbf7cUJgpEny7zY9tY4dIFD1I3xWOmpjPWT9ifkC04kEXN87hkJtxmXZ6NDlY-W8k9WEiTPM8EEoHk2WAYGys16en6rpBYE904Tnpu1hw3GrgxnSRTWohZWkFfYxRqhOtDeG2iz4UQ3DB2dyH8njjc-jfDGQgvd7zOIzC24')"></div>
+<div class="font-medium text-slate-900 dark:text-white">
+<div>Sarah Jenkins</div>
+<div class="text-xs text-slate-400 font-normal">ID: #8821</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="block text-slate-900 dark:text-white font-medium">Database Access</span>
+<span class="text-xs">Read Operation</span>
+</td>
+<td class="px-6 py-5">
+                                            HQ - Server Room A
+                                        </td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                Authorized
+                                            </span>
+</td>
+<td class="px-6 py-5 text-right font-mono text-xs">
+                                            Oct 24, 14:32:01
+                                        </td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 font-bold">
+                                                    MK
+                                                </div>
+<div class="font-medium text-slate-900 dark:text-white">
+<div>Michael King</div>
+<div class="text-xs text-slate-400 font-normal">ID: #9932</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="block text-slate-900 dark:text-white font-medium">Gate Entry</span>
+<span class="text-xs">Biometric Scan</span>
+</td>
+<td class="px-6 py-5">
+                                            West Wing Entrance
+                                        </td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                Authorized
+                                            </span>
+</td>
+<td class="px-6 py-5 text-right font-mono text-xs">
+                                            Oct 24, 14:15:22
+                                        </td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center" data-alt="Portrait of James Chen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD78BnhPWECg5_abU1RLF-rrRN-bBmYdtiLjK-TpLZo5GawB3zNoK6iRvGLS8qv0Fx0T9stwF0r6fpuvVMFlDu74eAYTbRuJJ4xZuch7zD-Q45ARtQvRpEZefKrt2AAzkanogePwbmyM_he7Eor9W7FDcfsS60WTrvHqcfOz2ToUrES0Vk2Aaj__ph16oWtY-sz00I_JcnPWb_hbFouvxZQ0sEE1_0lY1P2Djfdod7DErfnncI-AtqS5siJIFw4jP06Spj0qYPB-go')"></div>
+<div class="font-medium text-slate-900 dark:text-white">
+<div>James Chen</div>
+<div class="text-xs text-slate-400 font-normal">ID: #1102</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="block text-slate-900 dark:text-white font-medium">File Download</span>
+<span class="text-xs">Confidential_Report_Q3.pdf</span>
+</td>
+<td class="px-6 py-5">
+                                            Remote VPN (NY)
+                                        </td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                                Flagged
+                                            </span>
+</td>
+<td class="px-6 py-5 text-right font-mono text-xs">
+                                            Oct 24, 13:58:10
+                                        </td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center" data-alt="Portrait of Elena Rodriguez" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDJ_MPVas3fq0rLooUCvY6I7nI8HRHJzjoX74mSuAClJ_wuP2sNMeRWyDZ0C9VwdEwIDM44EQlDQU_oA5b09DCF8j-OYtCjgTcLOlCBXYKERATcT4rMKiE54PNBmilm5ribQhb2mCDtcXFGBbZtgfkmUatZ28O5l85aFaAATtyAIZ1XwEtwQRbx8Zx8htG61Vr6WVrJjzL0E_o8cmpDWeRopd8XJrE4UtLXlc9OtBAR-_Tz0VoKZmbzRVvfK28jS8qSrmlzjlZwv3s')"></div>
+<div class="font-medium text-slate-900 dark:text-white">
+<div>Elena Rodriguez</div>
+<div class="text-xs text-slate-400 font-normal">ID: #4451</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<span class="block text-slate-900 dark:text-white font-medium">Zone Access</span>
+<span class="text-xs">Restricted Area B2</span>
+</td>
+<td class="px-6 py-5">
+                                            Sector 4
+                                        </td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                Denied
+                                            </span>
+</td>
+<td class="px-6 py-5 text-right font-mono text-xs">
+                                            Oct 24, 13:45:00
+                                        </td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="border-t border-border-light dark:border-border-dark px-6 py-4">
+<div class="flex items-center justify-between text-sm text-slate-500">
+<span>Showing 4 of 1,203 events</span>
+<div class="flex gap-1">
+<button class="p-1 hover:text-primary"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-1 hover:text-primary"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Legal -->
+<div class="mt-8 flex items-center justify-between border-t border-border-light dark:border-border-dark py-6 text-xs text-slate-400">
+<p>© 2024 SADCPFNexus. All rights reserved.</p>
+<div class="flex gap-4">
+<a class="hover:text-slate-600 dark:hover:text-slate-300" href="#">Privacy Policy</a>
+<a class="hover:text-slate-600 dark:hover:text-slate-300" href="#">Terms of Service</a>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

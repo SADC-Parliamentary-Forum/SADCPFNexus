@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Help Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-light": "#dce8fc", 
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navbar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">SADCPFNexus Help Center</h2>
+<div class="ml-4 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-800">
+                Class D
+            </div>
+</div>
+<div class="flex items-center gap-6">
+<button class="hidden md:flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Alex Morgan</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Staff Administrator</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-slate-800 shadow-sm" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBYSVaRpIMiWuA8GkF_I34vVi9Bh0D1IJNIoQ6LZNb4o8J7AIV4E10-BHVDiGefitIJjA7FhXwWiiIqb4hS4VSQensaH90g4LeExR1SDDiPIRFv4JnlhgZh31UXf9xipPzDIDDRWm0jmXAhol9IRPciYu4hWwUeilodTO7_Dt1zQfBBSOuzvh9dtUggyCCIXshSmDvnKXRJt6aqaet9heRVFywbM8l59wgFPJvwe2a7Pib1C05mm96jQ8RLCOE3lfKyZjq8X3fiyWc");'></div>
+<button class="flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 ml-2">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+</div>
+</header>
+<div class="layout-container flex grow flex-col w-full max-w-[1440px] mx-auto">
+<div class="px-4 md:px-8 lg:px-12 py-8 flex flex-col lg:flex-row gap-8">
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col gap-8">
+<!-- Hero Search Section -->
+<section class="flex flex-col items-center justify-center py-10 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+<!-- Abstract Background Pattern -->
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(#135bec_1px,transparent_1px)] [background-size:16px_16px]"></div>
+<h1 class="text-3xl md:text-4xl font-bold text-center text-slate-900 dark:text-white mb-6 relative z-10">How can we help you today?</h1>
+<div class="w-full max-w-2xl px-6 relative z-10">
+<label class="relative flex items-center w-full h-14 rounded-full shadow-lg shadow-primary/5 ring-1 ring-slate-200 dark:ring-slate-700 bg-white dark:bg-slate-800 overflow-hidden group focus-within:ring-2 focus-within:ring-primary transition-all">
+<div class="pl-5 pr-3 text-slate-400">
+<span class="material-symbols-outlined text-2xl">search</span>
+</div>
+<input class="peer h-full w-full border-none bg-transparent p-0 pr-6 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 sm:text-lg" placeholder="Search for tutorials, guides, and workflows..." type="text"/>
+</label>
+<div class="flex flex-wrap gap-2 mt-4 justify-center text-sm text-slate-500 dark:text-slate-400">
+<span>Popular:</span>
+<button class="hover:text-primary hover:underline decoration-primary">Leave Policy</button>
+<span class="text-slate-300">•</span>
+<button class="hover:text-primary hover:underline decoration-primary">Travel Expense</button>
+<span class="text-slate-300">•</span>
+<button class="hover:text-primary hover:underline decoration-primary">Password Reset</button>
+</div>
+</div>
+</section>
+<!-- Featured Tutorials -->
+<section>
+<div class="flex items-center justify-between mb-5">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Featured Tutorials</h2>
+<a class="text-primary text-sm font-semibold hover:underline flex items-center gap-1" href="#">
+                            View all
+                            <span class="material-symbols-outlined text-base">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+<!-- Card 1 -->
+<div class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300 flex flex-col">
+<div class="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="Screenshot of leave application form interface" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAlMrZn6VWVckBCa-_mmEztnk4PuQ9sG9a_ezXPS6lwHDxjyafQ1hLpHz2JvazW0bzl2yIs8cXm87LF1HJyVSOTZ1j7kKm_OtieSP51OzqFofyLSe3vW9tRFeFwDWGcb2fd08XxMirJp10Nduxj3MUK_yP6j8RgMYjfKRsNYl6DETLyEQG29-78tv8K-06sxNmQJHEO4Ce6CfmUtUTOg87ZkCH1Pby82m_RhSrpGP8XBnIKns4kqsZ9jhWz5NV6qKpQcfTb1khYdmo');"></div>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+<div class="size-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-md scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+<span class="material-symbols-outlined text-3xl">play_arrow</span>
+</div>
+</div>
+<span class="absolute top-3 left-3 px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">Class B</span>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<h3 class="font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">Applying for Leave (Class B)</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2">Learn the step-by-step process for submitting leave requests and getting manager approval.</p>
+<div class="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">speed</span> Easy</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">schedule</span> 5m</span>
+</div>
+<button class="text-primary hover:text-primary/80 font-medium text-sm">Start</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300 flex flex-col">
+<div class="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="Screenshot of PIF submission dashboard" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCYii-a5Mxz_0ERdQYdczg2Ae0T1q7f4QXi0Y5k-KGsyG5ntRmAyaE2Gy0vaVX0sFjNuPt16OYOAkKwGfpAtqpemgEquLVdWtZjQLqtHvNyW-JWWW4hBq5nOyAEAP4qj3rF5JT9o_HgTu6ldj8d_kkzwPwRqtA8if3PhkqEQFSFuJ5Ti493ocZNW4yCpc7s8-4dw0qi9cAEpJkep9OOPIucRGpo1seSwzB_cuIsKE37UwTRfVGPo_J5Irv0eEvW8rZZl6So-kkyoGQ');"></div>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+<div class="size-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-md scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+<span class="material-symbols-outlined text-3xl">play_arrow</span>
+</div>
+</div>
+<span class="absolute top-3 left-3 px-2 py-1 rounded bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200">Class B</span>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<h3 class="font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">Submitting a PIF</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2">Guide on how to properly fill out and submit the Personnel Information Form.</p>
+<div class="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">speed</span> Medium</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">schedule</span> 12m</span>
+</div>
+<button class="text-primary hover:text-primary/80 font-medium text-sm">Start</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-lg hover:border-primary/30 transition-all duration-300 flex flex-col">
+<div class="relative aspect-video bg-slate-100 dark:bg-slate-800 overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" data-alt="Graphic chart showing salary advance workflow" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBQG0lv1yBmX_KGl8LawMlz8czNnBUyTWOseeZ6QjDBBJQDmijY0mwObhnz6Z79WorkWhb3hul9Me00X28i40Thc8ObYV35PRCPYR9mQdvftqrytrz_UYbBUe2KyRyOjsEntvnru5eq6uQDcGLPHqIenHvzZGQgqXzKIXQlltwARQHIH7sOGHk_xoBQ9fNTeAW3mUN8qfLfxPgac0eEXIr2ktZdYZxFGatXJLUlLAjPwzBOPNPfzLdiPABhV5ZJCufHQrxr6L-tpmQ');"></div>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+<div class="size-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-md scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300">
+<span class="material-symbols-outlined text-3xl">play_arrow</span>
+</div>
+</div>
+<span class="absolute top-3 left-3 px-2 py-1 rounded bg-amber-100 text-amber-800 text-xs font-bold border border-amber-200">Class A</span>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<h3 class="font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">Managing Salary Advances</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-2">Critical workflow for approving and managing employee salary advances within compliance.</p>
+<div class="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">speed</span> Hard</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-base">schedule</span> 25m</span>
+</div>
+<button class="text-primary hover:text-primary/80 font-medium text-sm">Start</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Browse by Module -->
+<section>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white mb-5">Browse by Module</h2>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-blue-50 dark:bg-slate-800 text-blue-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">groups</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">HR &amp; People</span>
+</a>
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-purple-50 dark:bg-slate-800 text-purple-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Finance</span>
+</a>
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-teal-50 dark:bg-slate-800 text-teal-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">flight_takeoff</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Travel</span>
+</a>
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-orange-50 dark:bg-slate-800 text-orange-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">inventory_2</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Procurement</span>
+</a>
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-red-50 dark:bg-slate-800 text-red-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">gavel</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Compliance</span>
+</a>
+<!-- Module Card -->
+<a class="flex flex-col items-center justify-center gap-3 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-md transition-all group" href="#">
+<div class="p-3 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-3xl">more_horiz</span>
+</div>
+<span class="font-semibold text-slate-900 dark:text-white group-hover:text-primary transition-colors">More</span>
+</a>
+</div>
+</section>
+</div>
+<!-- Right Sidebar: Contextual Support -->
+<aside class="w-full lg:w-80 flex flex-col gap-6 shrink-0">
+<!-- Quick Link: User Manual -->
+<div class="bg-gradient-to-br from-primary to-blue-700 rounded-xl p-6 text-white shadow-lg relative overflow-hidden">
+<div class="absolute -right-6 -bottom-6 text-white/10">
+<span class="material-symbols-outlined text-[120px]">menu_book</span>
+</div>
+<div class="relative z-10">
+<h3 class="font-bold text-lg mb-2">User Manual 2024</h3>
+<p class="text-blue-100 text-sm mb-4">Download the complete PDF guide for all SADCPFNexus modules.</p>
+<button class="bg-white text-primary hover:bg-blue-50 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors w-fit">
+<span class="material-symbols-outlined text-base">download</span>
+                            Download PDF
+                        </button>
+</div>
+</div>
+<!-- My Open Tickets -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-bold text-slate-900 dark:text-white">My Open Tickets</h3>
+<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold">2</span>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Ticket Item -->
+<div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-mono text-slate-400">#TK-4092</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-orange-100 px-1.5 py-0.5 rounded">Pending</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-primary mb-1">Login issue on Finance Module</h4>
+<p class="text-xs text-slate-500">Updated: 2 hours ago</p>
+</div>
+<!-- Ticket Item -->
+<div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-mono text-slate-400">#TK-3310</span>
+<span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">In Progress</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-primary mb-1">Request for Salary Advance Approval Rights</h4>
+<p class="text-xs text-slate-500">Updated: 1 day ago</p>
+</div>
+</div>
+<button class="w-full mt-4 text-center text-sm text-primary font-medium hover:underline">View Ticket History</button>
+</div>
+<!-- Need more help? -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-center">
+<div class="mx-auto size-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-3">
+<span class="material-symbols-outlined text-2xl">support_agent</span>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-white mb-2">Still need help?</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Our support team is available Mon-Fri, 9am - 5pm EST.</p>
+<button class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                        Contact Support
+                    </button>
+</div>
+</aside>
+</div>
+<!-- Footer -->
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-8 px-8">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-lg">copyright</span>
+<span>2024 SADCPFNexus. All rights reserved.</span>
+</div>
+<div class="flex gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">System Status</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

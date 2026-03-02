@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - New Imprest Request</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 sticky top-0 z-30 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">account_balance</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Dashboard</a>
+<a class="text-primary font-bold text-sm leading-normal border-b-2 border-primary pb-0.5" href="#">Imprest</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Approvals</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Reports</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-slate-200 dark:border-slate-700" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuALOoT2pNL3SqYCpAbUkTDfihDiisJ1-b4go2yas817LoELI3QzCU-9-nCv-HeBJOJLiA7atiMfgpEc297hFafczQeP7Ve72S4QU7A24VM6kQr8dx_Q95DKU1zNBqGAYAM7_Zv2cYwgYX7rLItQ15d37eNxh1bv_H6SfT4zEpOXxckpJJBbamxtwkw5fkQL0btyjYa-aKfO9jPsxVHf3X1FCQtgfPyl8OmHfq4Sz-3R-RojWQwcn8LRiTgXXrE5dr-dLAeAwt-6O98");'></div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-4xl mx-auto p-4 md:p-6 pb-32">
+<!-- Header Section -->
+<div class="flex flex-col gap-2 mb-6">
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<span>Imprest</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>New Request</span>
+</div>
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div>
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white">New Imprest Request</h1>
+<p class="text-primary font-medium text-sm mt-1">Request #IMP-2023-8901</p>
+</div>
+<div class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Draft</div>
+</div>
+</div>
+<!-- Stepper -->
+<div class="mb-8 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+<div class="flex min-w-max gap-4 pb-2">
+<!-- Step 1 (Active) -->
+<div class="flex items-center gap-3 bg-primary text-white px-4 py-2 rounded-lg shadow-md shadow-primary/20">
+<span class="material-symbols-outlined filled text-xl">filter_1</span>
+<span class="text-sm font-bold whitespace-nowrap">Details</span>
+</div>
+<!-- Connector -->
+<div class="w-8 h-px bg-slate-300 dark:bg-slate-700 self-center"></div>
+<!-- Step 2 -->
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-xl">filter_2</span>
+<span class="text-sm font-medium whitespace-nowrap">Budget Code</span>
+</div>
+<!-- Connector -->
+<div class="w-8 h-px bg-slate-300 dark:bg-slate-700 self-center"></div>
+<!-- Step 3 -->
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-xl">filter_3</span>
+<span class="text-sm font-medium whitespace-nowrap">Justification</span>
+</div>
+<!-- Connector -->
+<div class="w-8 h-px bg-slate-300 dark:bg-slate-700 self-center"></div>
+<!-- Step 4 -->
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-xl">filter_4</span>
+<span class="text-sm font-medium whitespace-nowrap">Review</span>
+</div>
+</div>
+</div>
+<!-- Balance Check Card -->
+<div class="bg-gradient-to-r from-primary to-blue-600 rounded-xl p-6 mb-8 text-white shadow-lg relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-8 opacity-10 transform translate-x-4 -translate-y-4">
+<span class="material-symbols-outlined text-9xl">account_balance_wallet</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+<div>
+<p class="text-blue-100 text-sm font-medium mb-1">Public Works - Maintenance Dept.</p>
+<h3 class="text-2xl font-bold mb-4">Current Balance Available</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-4xl font-bold tracking-tight">$12,450.00</span>
+<span class="text-blue-200 text-sm">USD</span>
+</div>
+</div>
+<div class="bg-white/20 backdrop-blur-sm rounded-lg p-3 min-w-[160px]">
+<p class="text-blue-50 text-xs mb-1">Reserved Funds</p>
+<p class="font-bold text-lg">$2,100.00</p>
+</div>
+</div>
+</div>
+<!-- Form Section -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 md:p-8">
+<form class="flex flex-col gap-6" onsubmit="event.preventDefault();">
+<!-- Title Field -->
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold flex items-center gap-2">
+                        Request Title
+                        <span class="text-red-500">*</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">title</span>
+</div>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 pl-10 py-3 text-slate-900 dark:text-white focus:ring-primary focus:border-primary transition-shadow" placeholder="e.g. Office Supplies Restock" type="text" value="Q4 Maintenance Supplies"/>
+</div>
+</div>
+<!-- Date & Amount Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold flex items-center gap-2">
+                            Date Required
+                        </label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">calendar_today</span>
+</div>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 pl-10 py-3 text-slate-900 dark:text-white focus:ring-primary focus:border-primary transition-shadow" type="date"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold flex items-center gap-2">
+                            Estimated Amount
+                            <span class="text-red-500">*</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">attach_money</span>
+</div>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 pl-10 py-3 text-slate-900 dark:text-white focus:ring-primary focus:border-primary transition-shadow font-mono font-medium text-lg" placeholder="0.00" type="number"/>
+</div>
+</div>
+</div>
+<!-- Category -->
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold">Expense Category</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">category</span>
+</div>
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 pl-10 py-3 text-slate-900 dark:text-white focus:ring-primary focus:border-primary transition-shadow">
+<option>Select a category...</option>
+<option selected="">Operational Expenses</option>
+<option>Travel &amp; Subsistence</option>
+<option>Capital Equipment</option>
+<option>Training</option>
+</select>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold">Detailed Description</label>
+<textarea class="form-textarea w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3 text-slate-900 dark:text-white focus:ring-primary focus:border-primary transition-shadow min-h-[120px]" placeholder="Describe the purpose of this request..."></textarea>
+</div>
+<!-- Attachments -->
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-slate-200 text-sm font-bold">Attachments</label>
+<div class="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer group/upload">
+<span class="material-symbols-outlined text-4xl text-slate-400 group-hover/upload:text-primary transition-colors mb-2">cloud_upload</span>
+<p class="text-sm text-slate-600 dark:text-slate-400 font-medium">Click to upload or drag files here</p>
+<p class="text-xs text-slate-400 mt-1">PDF, JPG, PNG (Max 5MB)</p>
+</div>
+</div>
+</form>
+</div>
+</main>
+<!-- Sticky Footer -->
+<div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+<div class="max-w-4xl mx-auto flex items-center justify-between gap-4">
+<button class="flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors min-w-[120px]">
+<span class="material-symbols-outlined">save</span>
+                Save Draft
+            </button>
+<button class="flex items-center justify-center gap-2 px-8 py-3.5 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 transition-colors flex-1 md:flex-none md:min-w-[160px] shadow-lg shadow-primary/30">
+                Next Step
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Universal Submission Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .watermark {
+            background-image: url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' fill='%23e2e8f0' font-size='24' font-family='Inter, sans-serif' font-weight='bold' opacity='0.4' transform='rotate(-45 150 150)' text-anchor='middle' dominant-baseline='middle'%3ECONFIDENTIAL - ACCESS LOGGED%3C/text%3E%3C/svg%3E");
+        }
+        .dark .watermark {
+            background-image: url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' fill='%231e293b' font-size='24' font-family='Inter, sans-serif' font-weight='bold' opacity='0.2' transform='rotate(-45 150 150)' text-anchor='middle' dominant-baseline='middle'%3ECONFIDENTIAL - ACCESS LOGGED%3C/text%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden h-screen flex flex-col watermark">
+<!-- Top Navigation -->
+<header class="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-slate-900 z-10 relative shadow-sm">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="flex h-8 w-8 items-center justify-center rounded bg-primary text-white">
+<span class="material-symbols-outlined text-[20px]">security</span>
+</div>
+<h1 class="text-lg font-bold tracking-tight">SADCPFNexus</h1>
+</div>
+<!-- Breadcrumbs -->
+<nav class="hidden md:flex items-center text-sm font-medium text-slate-500 dark:text-slate-400">
+<span class="px-2">/</span>
+<a class="hover:text-primary transition-colors" href="#">Submissions</a>
+<span class="px-2">/</span>
+<span class="text-slate-900 dark:text-white">S-2023-8942</span>
+</nav>
+</div>
+<div class="flex flex-1 max-w-lg px-8">
+<div class="relative w-full">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full rounded-lg border-none bg-slate-100 py-2 pl-10 pr-4 text-sm text-slate-900 focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white placeholder:text-slate-400" placeholder="Global Search (Ref, User, Doc ID)..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+</button>
+<button class="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<button class="flex items-center gap-3 rounded-lg py-1 pl-1 pr-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="h-8 w-8 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white dark:ring-slate-800" data-alt="User Avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCji-_bqecxT0rrHpFpiu2UYhPHwc39Wmb1ziDNH06T13BczdFWyTC5lxGpiV20UjRZ4JbsN-zaf3HgUoiIndI70PNbnp_8qmIkBxxVmbGMKw1TTxRMtb4Kr3Rrx8qio7mCYKV-wweFsEMnsHVObf-OBNtSsy54D__aj5Ce5_re-zypHtWuCh-jY1Q8Cmzs6v2NGj_rkswIYAF068yQAmX5J-KoJXLIlZ2UxaNG2cA3VvgYYWl5V69gJ7f9gwP_otSahovQsUnaO0Q')"></div>
+<div class="hidden text-left sm:block">
+<p class="text-xs font-semibold text-slate-900 dark:text-white">Admin Console</p>
+<p class="text-[10px] text-slate-500 dark:text-slate-400">Level 4 Clearance</p>
+</div>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative z-0">
+<!-- Sidebar (Collapsed) -->
+<aside class="flex w-16 flex-col items-center border-r border-slate-200 bg-white py-4 dark:border-slate-800 dark:bg-slate-900 z-10">
+<nav class="flex flex-1 flex-col gap-4">
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-primary/20 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="absolute left-14 hidden rounded bg-slate-900 px-2 py-1 text-xs text-white group-hover:block dark:bg-white dark:text-slate-900 whitespace-nowrap z-50">Dashboard</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-primary/20" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="absolute left-14 hidden rounded bg-slate-900 px-2 py-1 text-xs text-white group-hover:block dark:bg-white dark:text-slate-900 whitespace-nowrap z-50">Submissions</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-primary/20 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-primary/20 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance</span>
+</a>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-primary/20 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+</a>
+<div class="my-2 h-[1px] w-8 bg-slate-200 dark:bg-slate-700"></div>
+<a class="group relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-primary/20 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+</a>
+</nav>
+<div class="flex flex-col gap-4">
+<button class="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex flex-1 flex-col overflow-hidden bg-background-light dark:bg-background-dark/50">
+<!-- Header Section -->
+<div class="flex flex-col border-b border-slate-200 bg-white/80 px-8 py-5 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white">Sensitive Personnel Transfer Request</h2>
+<span class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-bold text-red-700 ring-1 ring-inset ring-red-600/20 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-400/30">
+<span class="material-symbols-outlined mr-1 text-[16px]">lock</span>
+                                CLASS A - TOP SECRET
+                            </span>
+</div>
+<div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">tag</span>
+                                Ref: S-2023-8942
+                            </span>
+<span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                                Submitted: Oct 24, 2023
+                            </span>
+<span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">person</span>
+                                By: Dr. A. Vance
+                            </span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">print</span>
+                            Print Record
+                        </button>
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">share</span>
+                            Secure Share
+                        </button>
+</div>
+</div>
+<!-- Tab Navigation -->
+<div class="mt-6 flex gap-8 border-b border-slate-200 dark:border-slate-700/50">
+<button class="border-b-2 border-primary pb-3 text-sm font-semibold text-primary">
+                        Form Data
+                    </button>
+<button class="border-b-2 border-transparent pb-3 text-sm font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                        Attachments (3)
+                    </button>
+<button class="border-b-2 border-transparent pb-3 text-sm font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                        Comments <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">2</span>
+</button>
+<button class="border-b-2 border-transparent pb-3 text-sm font-medium text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                        History
+                    </button>
+</div>
+</div>
+<!-- Content Split -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Left 70%: Form Data -->
+<div class="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600">
+<div class="mx-auto max-w-5xl space-y-8 pb-12">
+<!-- Section 1: Personnel Info -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="mb-6 flex items-center justify-between">
+<h3 class="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-primary">badge</span>
+                                    Personnel Information
+                                </h3>
+<span class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">Read Only</span>
+</div>
+<div class="grid grid-cols-2 gap-x-8 gap-y-6">
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Full Name</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">Cpt. Sarah Connor</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Employee ID</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">SC-9092-X</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Current Unit</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">Special Ops / Cyber Division</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Clearance Level</label>
+<p class="mt-1 flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                                        Level 5
+                                        <span class="material-symbols-outlined text-[16px] text-green-500">verified_user</span>
+</p>
+</div>
+</div>
+</div>
+<!-- Section 2: Transfer Details -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<h3 class="mb-6 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-primary">move_location</span>
+                                Transfer Details
+                            </h3>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-x-8 gap-y-6">
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Facility</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">Site-19 [REDACTED]</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Proposed Effective Date</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">Nov 01, 2023</p>
+</div>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Operational Justification</label>
+<p class="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                                        The subject possesses unique skills required for the upcoming Project 'Skynet'. Immediate transfer is necessary to align with operational timelines. Current assignment at Cyber Division is nearing completion.
+                                    </p>
+</div>
+<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/50 dark:bg-yellow-900/20">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-yellow-600 dark:text-yellow-500">warning</span>
+<div>
+<p class="text-sm font-bold text-yellow-800 dark:text-yellow-400">Risk Assessment Required</p>
+<p class="mt-1 text-xs text-yellow-700 dark:text-yellow-300">This transfer involves crossing operational zones. Security detail must be briefed 24 hours prior.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Financial Impact -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<h3 class="mb-6 flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-primary">attach_money</span>
+                                Financial Impact
+                            </h3>
+<div class="grid grid-cols-3 gap-x-8 gap-y-6">
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Cost Center</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">CC-202-Alpha</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Relocation Budget</label>
+<p class="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">$15,000.00</p>
+</div>
+<div>
+<label class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Approval Status</label>
+<span class="mt-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">Pre-Approved</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right 30%: Decision Action Panel -->
+<aside class="w-[380px] shrink-0 border-l border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50 flex flex-col">
+<div class="flex-1 overflow-y-auto p-6">
+<!-- Action Card -->
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+<h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-4">Required Action</h3>
+<form class="space-y-6">
+<!-- Decision Radios -->
+<div class="space-y-3">
+<label class="relative flex cursor-pointer rounded-lg border border-slate-200 p-3 shadow-sm hover:border-green-500 hover:bg-green-50 focus-within:ring-1 focus-within:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-green-500 dark:hover:bg-green-900/20 transition-all">
+<input class="mt-0.5 h-4 w-4 border-slate-300 text-green-600 focus:ring-green-600 dark:border-slate-600 dark:bg-slate-700" name="decision" type="radio" value="approve"/>
+<span class="ml-3 flex flex-col">
+<span class="block text-sm font-medium text-slate-900 dark:text-white">Approve Request</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Authorize personnel movement immediately.</span>
+</span>
+</label>
+<label class="relative flex cursor-pointer rounded-lg border border-slate-200 p-3 shadow-sm hover:border-amber-500 hover:bg-amber-50 focus-within:ring-1 focus-within:ring-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-amber-500 dark:hover:bg-amber-900/20 transition-all">
+<input class="mt-0.5 h-4 w-4 border-slate-300 text-amber-600 focus:ring-amber-600 dark:border-slate-600 dark:bg-slate-700" name="decision" type="radio" value="return"/>
+<span class="ml-3 flex flex-col">
+<span class="block text-sm font-medium text-slate-900 dark:text-white">Return for Revision</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Request more details from submitter.</span>
+</span>
+</label>
+<label class="relative flex cursor-pointer rounded-lg border border-slate-200 p-3 shadow-sm hover:border-red-500 hover:bg-red-50 focus-within:ring-1 focus-within:ring-red-500 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-red-500 dark:hover:bg-red-900/20 transition-all">
+<input class="mt-0.5 h-4 w-4 border-slate-300 text-red-600 focus:ring-red-600 dark:border-slate-600 dark:bg-slate-700" name="decision" type="radio" value="reject"/>
+<span class="ml-3 flex flex-col">
+<span class="block text-sm font-medium text-slate-900 dark:text-white">Reject</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Deny request permanently.</span>
+</span>
+</label>
+</div>
+<!-- Remarks -->
+<div>
+<label class="mb-2 block text-xs font-medium text-slate-700 dark:text-slate-300" for="remarks">Admin Remarks (Mandatory for Reject)</label>
+<textarea class="w-full rounded-lg border-slate-300 bg-slate-50 text-sm focus:border-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-900 dark:text-white" id="remarks" placeholder="Enter justification..." rows="3"></textarea>
+</div>
+<!-- Step-up Auth -->
+<button class="group flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px] group-hover:animate-pulse">fingerprint</span>
+                                    Sign &amp; Submit (MFA)
+                                </button>
+<p class="text-center text-[10px] text-slate-400 dark:text-slate-500">
+<span class="material-symbols-outlined inline-block align-text-bottom text-[12px]">lock</span>
+                                    Digitally signed via secure token
+                                </p>
+</form>
+</div>
+<!-- Helper Info -->
+<div class="mt-6 rounded-lg border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+<h4 class="flex items-center gap-2 text-xs font-bold text-blue-900 dark:text-blue-300">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                                Workflow Status
+                            </h4>
+<p class="mt-1 text-xs text-blue-800/80 dark:text-blue-400">
+                                Current stage: <span class="font-semibold">Level 3 Executive Review</span>. Next stage: Final Operational Sign-off.
+                            </p>
+</div>
+</div>
+<!-- Audit Timeline Footer -->
+<div class="border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+<h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Recent Audit Log</h4>
+<div class="relative space-y-4 pl-2">
+<!-- Line -->
+<div class="absolute left-[13px] top-2 h-full w-[2px] bg-slate-100 dark:bg-slate-700"></div>
+<!-- Item 1 -->
+<div class="relative flex gap-3">
+<div class="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 ring-2 ring-white dark:bg-blue-900 dark:ring-slate-900">
+<span class="material-symbols-outlined text-[12px] text-blue-600 dark:text-blue-300">visibility</span>
+</div>
+<div>
+<p class="text-xs font-medium text-slate-900 dark:text-white">Viewed by Audit Team</p>
+<p class="text-[10px] text-slate-500">Just now • 10.232.1.4</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative flex gap-3">
+<div class="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-100 ring-2 ring-white dark:bg-green-900 dark:ring-slate-900">
+<span class="material-symbols-outlined text-[12px] text-green-600 dark:text-green-300">check_circle</span>
+</div>
+<div>
+<p class="text-xs font-medium text-slate-900 dark:text-white">Finance Cleared</p>
+<p class="text-[10px] text-slate-500">2 hours ago • J. Doe</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative flex gap-3">
+<div class="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-2 ring-white dark:bg-slate-700 dark:ring-slate-900">
+<span class="material-symbols-outlined text-[12px] text-slate-500 dark:text-slate-300">edit_document</span>
+</div>
+<div>
+<p class="text-xs font-medium text-slate-900 dark:text-white">Submission Created</p>
+<p class="text-[10px] text-slate-500">Yesterday • Dr. A. Vance</p>
+</div>
+</div>
+</div>
+<button class="mt-4 w-full text-center text-xs font-medium text-primary hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">View Full History</button>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</body></html>

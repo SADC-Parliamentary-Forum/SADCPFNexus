@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Log Explorer - Tablet</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1d85ed",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Collapsed Sidebar -->
+<aside class="flex w-20 flex-col items-center justify-between border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 z-20 shadow-sm shrink-0">
+<div class="flex flex-col items-center gap-6">
+<div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+</div>
+<nav class="flex flex-col gap-4 mt-4">
+<a class="group flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50 transition-colors" href="#" title="Dashboard">
+<span class="material-symbols-outlined text-2xl">dashboard</span>
+</a>
+<a class="group flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors" href="#" title="Audit Logs">
+<span class="material-symbols-outlined text-2xl fill-1">description</span>
+</a>
+<a class="group flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50 transition-colors" href="#" title="Users">
+<span class="material-symbols-outlined text-2xl">group</span>
+</a>
+<a class="group flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50 transition-colors" href="#" title="Settings">
+<span class="material-symbols-outlined text-2xl">settings</span>
+</a>
+</nav>
+</div>
+<div class="flex flex-col items-center gap-4">
+<a class="group flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-50 transition-colors" href="#" title="Help">
+<span class="material-symbols-outlined text-2xl">help</span>
+</a>
+<div class="h-10 w-10 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-slate-800 cursor-pointer" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC7IThXJnTKQQqCc00t3pfJPv1TTbnzu2TGtxB3beRBDTu03TN0emRoP57LwP9d1A45xF8JeHVwRlpxKv2hNyF_RBTWLElwDLAzSdPtdiSovuUc5wOye7q59rhqKjr-3D0cuNru1l16GzAA9cI94gNl1B249BE7MM15kzzeMRXQB9SYMVO00mf1V62HSM7_1-I7zjc09CJ5U15MJ3z1VC-HmR-RW4N9_aFCMFqynNpZcaL-KZzI6BqwuDpoVt10zK7eZcPuy81uu7E');"></div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Top Header Area -->
+<header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 shrink-0 z-10">
+<div class="flex flex-col">
+<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Audit Log Explorer</h1>
+<p class="text-sm text-slate-500 dark:text-slate-400">View and filter system events and user activities.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+<span>Export</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>New Entry</span>
+</button>
+</div>
+</header>
+<!-- Filter Bar & Actions -->
+<div class="flex items-center justify-between gap-4 px-6 py-4 bg-background-light dark:bg-background-dark shrink-0">
+<div class="flex items-center gap-3 w-full">
+<!-- Search Input -->
+<div class="relative flex-1 max-w-md group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="h-10 w-full rounded-lg border-slate-200 bg-white pl-10 pr-4 text-sm outline-none ring-1 ring-transparent focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:border-primary transition-all shadow-sm" placeholder="Search logs by ID, user, or event..." type="text"/>
+</div>
+<!-- Slide-out Drawer Trigger -->
+<button class="relative flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>Filters</span>
+<span class="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary dark:bg-primary/20">3</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Refresh">
+<span class="material-symbols-outlined text-2xl">refresh</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-auto px-6 pb-6">
+<div class="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<table class="w-full min-w-[800px] table-auto">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr class="border-b border-slate-200 dark:border-slate-800">
+<th class="w-[50px] px-4 py-4">
+<input class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-800" type="checkbox"/>
+</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Timestamp</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Event ID</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">User</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Action</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Resource</th>
+<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
+<th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-4 py-5">
+<input class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-800" type="checkbox"/>
+</td>
+<td class="px-4 py-5 text-sm font-medium text-slate-900 dark:text-slate-100">
+<div class="flex flex-col">
+<span>Oct 27, 2023</span>
+<span class="text-xs text-slate-500 font-normal">14:32:01</span>
+</div>
+</td>
+<td class="px-4 py-5 text-sm font-mono text-slate-600 dark:text-slate-400">EVT-9921</td>
+<td class="px-4 py-5">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold dark:bg-orange-900/30 dark:text-orange-400">
+                                            JD
+                                        </div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-slate-100">j.doe@gov.org</span>
+<span class="text-xs text-slate-500">Analyst</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        Login
+                                    </span>
+</td>
+<td class="px-4 py-5 text-sm text-slate-600 dark:text-slate-300">System Core</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-500/20">
+                                        Success
+                                    </span>
+</td>
+<td class="px-4 py-5 text-right">
+<button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-4 py-5">
+<input class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-800" type="checkbox"/>
+</td>
+<td class="px-4 py-5 text-sm font-medium text-slate-900 dark:text-slate-100">
+<div class="flex flex-col">
+<span>Oct 27, 2023</span>
+<span class="text-xs text-slate-500 font-normal">14:30:15</span>
+</div>
+</td>
+<td class="px-4 py-5 text-sm font-mono text-slate-600 dark:text-slate-400">EVT-9920</td>
+<td class="px-4 py-5">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-bold dark:bg-purple-900/30 dark:text-purple-400">
+                                            AS
+                                        </div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-slate-100">admin_sys</span>
+<span class="text-xs text-slate-500">Super Admin</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        Update Policy
+                                    </span>
+</td>
+<td class="px-4 py-5 text-sm text-slate-600 dark:text-slate-300">Policy #12</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-500/20">
+                                        Pending
+                                    </span>
+</td>
+<td class="px-4 py-5 text-right">
+<button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-4 py-5">
+<input class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-800" type="checkbox"/>
+</td>
+<td class="px-4 py-5 text-sm font-medium text-slate-900 dark:text-slate-100">
+<div class="flex flex-col">
+<span>Oct 27, 2023</span>
+<span class="text-xs text-slate-500 font-normal">14:28:44</span>
+</div>
+</td>
+<td class="px-4 py-5 text-sm font-mono text-slate-600 dark:text-slate-400">EVT-9919</td>
+<td class="px-4 py-5">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold dark:bg-blue-900/30 dark:text-blue-400">
+                                            KS
+                                        </div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-slate-100">k.smith@gov.org</span>
+<span class="text-xs text-slate-500">Manager</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        Delete Record
+                                    </span>
+</td>
+<td class="px-4 py-5 text-sm text-slate-600 dark:text-slate-300">Record 55</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-900/20 dark:text-red-400 dark:ring-red-500/20">
+                                        Failed
+                                    </span>
+</td>
+<td class="px-4 py-5 text-right">
+<button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-4 py-5">
+<input class="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-800" type="checkbox"/>
+</td>
+<td class="px-4 py-5 text-sm font-medium text-slate-900 dark:text-slate-100">
+<div class="flex flex-col">
+<span>Oct 27, 2023</span>
+<span class="text-xs text-slate-500 font-normal">14:15:22</span>
+</div>
+</td>
+<td class="px-4 py-5 text-sm font-mono text-slate-600 dark:text-slate-400">EVT-9918</td>
+<td class="px-4 py-5">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 text-xs font-bold dark:bg-slate-800 dark:text-slate-400">
+                                            SY
+                                        </div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900 dark:text-slate-100">system_auto</span>
+<span class="text-xs text-slate-500">Bot</span>
+</div>
+</div>
+</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        Backup
+                                    </span>
+</td>
+<td class="px-4 py-5 text-sm text-slate-600 dark:text-slate-300">Database A</td>
+<td class="px-4 py-5">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-500/20">
+                                        Success
+                                    </span>
+</td>
+<td class="px-4 py-5 text-right">
+<button class="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined text-[24px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+<p class="text-sm text-slate-500 dark:text-slate-400">
+                        Showing <span class="font-medium text-slate-900 dark:text-slate-100">1</span> to <span class="font-medium text-slate-900 dark:text-slate-100">4</span> of <span class="font-medium text-slate-900 dark:text-slate-100">97</span> results
+                    </p>
+<div class="flex rounded-lg shadow-sm">
+<button class="relative inline-flex items-center rounded-l-lg bg-white px-3 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-500 dark:hover:bg-slate-700">
+<span class="sr-only">Previous</span>
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="relative inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-white dark:hover:bg-slate-700">1</button>
+<button class="relative inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-white dark:hover:bg-slate-700">2</button>
+<button class="relative inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">3</button>
+<button class="relative inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-white dark:hover:bg-slate-700">...</button>
+<button class="relative inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-white dark:hover:bg-slate-700">10</button>
+<button class="relative inline-flex items-center rounded-r-lg bg-white px-3 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-500 dark:hover:bg-slate-700">
+<span class="sr-only">Next</span>
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

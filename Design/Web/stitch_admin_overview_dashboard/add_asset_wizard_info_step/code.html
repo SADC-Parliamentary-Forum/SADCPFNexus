@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus | Add Asset Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "slate": {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 rounded bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal" href="#">Assets</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Maintenance</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex relative group">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400 group-focus-within:text-primary">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-lg border-0 py-2 pl-10 pr-4 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-200 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" placeholder="Global Search..." type="text"/>
+</div>
+<button class="relative rounded-full p-1 text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<span class="sr-only">View notifications</span>
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+<span class="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+</button>
+<div class="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-bold cursor-pointer hover:ring-2 hover:ring-offset-2 hover:ring-primary transition-all">
+                JS
+            </div>
+</div>
+</header>
+<main class="flex-grow layout-container flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="layout-content-container flex flex-col max-w-[1200px] w-full gap-8">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm">
+<a class="text-slate-500 hover:text-primary transition-colors" href="#">Assets</a>
+<span class="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+<a class="text-slate-500 hover:text-primary transition-colors" href="#">Inventory</a>
+<span class="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+<span class="text-slate-900 dark:text-slate-200 font-medium">Add New Asset</span>
+</div>
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Add New Asset</h1>
+<p class="text-slate-500 dark:text-slate-400">Register a new physical asset into the central inventory system.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700">Cancel</button>
+<button class="px-4 py-2 text-sm font-medium text-primary bg-primary/10 border border-transparent rounded-lg hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">Save Draft</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Main Form Area -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Stepper -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="text-lg font-semibold text-slate-900 dark:text-white">Step 1: Asset Information</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Basic details about the item</p>
+</div>
+<span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">20% Completed</span>
+</div>
+<!-- Progress Bar -->
+<div class="relative w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500" style="width: 20%;"></div>
+</div>
+<!-- Stepper Labels (Optional for visual context) -->
+<div class="flex justify-between mt-3 text-xs font-medium text-slate-400">
+<span class="text-primary">1. Info</span>
+<span>2. Specs</span>
+<span>3. Finance</span>
+<span>4. Location</span>
+<span>5. Review</span>
+</div>
+</div>
+<!-- Form Content -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
+<form class="space-y-6">
+<!-- Row 1 -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div class="col-span-2 sm:col-span-1">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="asset-category">Category</label>
+<div class="relative">
+<select class="block w-full rounded-lg border-0 py-2.5 pl-3 pr-10 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-700 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="asset-category">
+<option>IT Equipment</option>
+<option>Furniture &amp; Fixtures</option>
+<option>Vehicles</option>
+<option>Heavy Machinery</option>
+</select>
+</div>
+</div>
+<div class="col-span-2 sm:col-span-1">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="classification">Classification</label>
+<div class="flex items-center h-[42px]">
+<span class="inline-flex items-center rounded-md bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 dark:bg-orange-900/20 dark:text-orange-300">
+<span class="mr-1.5 h-2 w-2 rounded-full bg-orange-500"></span>
+                                            Class B - Mid Value
+                                        </span>
+</div>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="col-span-2">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="description">Asset Description</label>
+<textarea class="block w-full rounded-lg border-0 py-2.5 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="description" placeholder="E.g., Dell Latitude 5420 Laptop, 16GB RAM, 512GB SSD" rows="3"></textarea>
+<p class="mt-1 text-xs text-slate-500">Provide a clear, distinct name for the asset.</p>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="serial-number">Serial Number</label>
+<input class="block w-full rounded-lg border-0 py-2.5 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="serial-number" placeholder="SN-XXXX-XXXX" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="model-number">Model Number</label>
+<input class="block w-full rounded-lg border-0 py-2.5 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="model-number" placeholder="Model-2024" type="text"/>
+</div>
+</div>
+<!-- Row 4 -->
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="supplier-search">Supplier</label>
+<div class="relative">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">storefront</span>
+</div>
+<input class="block w-full rounded-lg border-0 py-2.5 pl-10 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="supplier-search" placeholder="Search registered suppliers..." type="text"/>
+<div class="absolute inset-y-0 right-0 flex items-center pr-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px] cursor-pointer hover:text-primary">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Row 5 -->
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5" for="procurement-ref">Linked Procurement Reference</label>
+<div class="flex gap-2">
+<div class="relative flex-grow">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">receipt_long</span>
+</div>
+<input class="block w-full rounded-lg border-0 py-2.5 pl-10 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" id="procurement-ref" placeholder="PO-2023-0012" type="text"/>
+</div>
+<button class="inline-flex items-center rounded-lg bg-white dark:bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-900 dark:text-slate-200 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700" type="button">
+                                        Verify
+                                    </button>
+</div>
+<p class="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                    Valid PO linked: Purchase Order #0012 approved on Oct 12, 2023
+                                </p>
+</div>
+</form>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-between pt-4">
+<button class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                            Back
+                        </button>
+<button class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-sm shadow-blue-500/30">
+                            Next Step
+                            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Sidebar / Right Column -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Quick Links Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+<h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">rocket_launch</span>
+                                Quick Actions
+                            </h3>
+</div>
+<div class="p-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="size-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Recent Categories</p>
+<p class="text-xs text-slate-500">Reuse settings from last entries</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="size-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Asset Policy</p>
+<p class="text-xs text-slate-500">Read institutional guidelines</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="size-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-slate-900 dark:text-white">Bulk Upload</p>
+<p class="text-xs text-slate-500">Import from CSV/Excel</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Help Card -->
+<div class="bg-gradient-to-br from-primary/5 to-blue-50 dark:from-slate-800 dark:to-slate-900 rounded-xl border border-primary/10 dark:border-slate-700 p-5">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary text-[24px]">support_agent</span>
+</div>
+<div>
+<h4 class="font-semibold text-slate-900 dark:text-white text-sm">Need Assistance?</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">Our procurement team can help you verify asset classifications.</p>
+<button class="text-xs font-medium text-primary hover:underline">Contact Support</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

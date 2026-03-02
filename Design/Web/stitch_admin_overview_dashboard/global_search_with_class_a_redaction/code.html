@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin - Global Search</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-content": "#ffffff",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-dark": "#1a2332",
+                        "surface-hover": "#232f48",
+                        "border-dark": "#2a3649",
+                        "text-muted": "#94a3b8",
+                        "warning": "#fbbf24",
+                        "error": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .confidential-watermark {
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,255,255,0.02) 40px, rgba(255,255,255,0.02) 80px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden relative">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 flex items-center justify-between border-b border-solid border-border-dark bg-background-dark px-6 py-3">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 flex items-center justify-center rounded bg-primary/20 text-primary">
+<span class="material-symbols-outlined text-2xl">security</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Admin</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="flex gap-2">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-surface-hover text-white hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-surface-hover text-white hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-xl">settings</span>
+</button>
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-surface-hover text-white hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-xl">chat_bubble</span>
+</button>
+</div>
+<div class="h-8 w-px bg-border-dark"></div>
+<button class="flex items-center gap-3">
+<div class="flex flex-col items-end">
+<span class="text-sm font-medium text-white">Alex Morgan</span>
+<span class="text-xs text-text-muted">Security Level 3</span>
+</div>
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-surface-hover" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCKZh0AwMlQCISQtnTFRR9LEhLPPMmjWvhRhw05Joyl7OYonExsMQx5DEoq85SfYBT9X3LjliLhVdxP1rncNVzuiM_TSV2G98mq9GpdtPgJX9VPz-KJ0YhXV3ZKu65ESscvLShqt_Z0wgein-YuMNZm8NQY0Pm7cqlSmPTe5JsPOn3HvE1Zcm7GDNvNXEfAja9DvR3hvuYdGdGpcEa0odFBrXXo4NcaE6-sKiMrJb7QSk-wEChwldXG5Q7uKLHhqqJL64W_cqWc2Cs");'></div>
+</button>
+</div>
+</header>
+<div class="flex flex-1 relative">
+<!-- Confidential Watermark Overlay -->
+<div class="absolute inset-0 confidential-watermark z-0"></div>
+<!-- Sidebar Filters -->
+<aside class="w-72 bg-surface-dark border-r border-border-dark flex flex-col z-10 hidden lg:flex">
+<div class="p-6">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-muted mb-4">Filters</h3>
+<!-- Date Range -->
+<div class="mb-6">
+<label class="block text-sm font-medium text-white mb-2">Date Range</label>
+<select class="w-full bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+<option>Last 30 Days</option>
+<option>Last 3 Months</option>
+<option>Year to Date</option>
+<option>Custom Range</option>
+</select>
+</div>
+<!-- Module -->
+<div class="mb-6">
+<label class="block text-sm font-medium text-white mb-2">Module</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2 cursor-pointer">
+<input checked="" class="form-checkbox rounded bg-background-dark border-border-dark text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-gray-300">All Modules</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="form-checkbox rounded bg-background-dark border-border-dark text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-gray-300">Salary Advances</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="form-checkbox rounded bg-background-dark border-border-dark text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-gray-300">Leave Management</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="form-checkbox rounded bg-background-dark border-border-dark text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-gray-300">PIF Requests</span>
+</label>
+</div>
+</div>
+<!-- Classification -->
+<div class="mb-6">
+<label class="block text-sm font-medium text-white mb-2">Security Classification</label>
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/20">Class A</button>
+<button class="px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-500 border border-orange-500/20">Class B</button>
+<button class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">Class C</button>
+<button class="px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500 border border-blue-500/20">Class D</button>
+</div>
+</div>
+<!-- Status -->
+<div class="mb-6">
+<label class="block text-sm font-medium text-white mb-2">Status</label>
+<select class="w-full bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary">
+<option>Active</option>
+<option>Archived</option>
+<option>Pending</option>
+<option>Closed</option>
+</select>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col z-10">
+<!-- Search Header -->
+<div class="px-8 py-6 border-b border-border-dark bg-background-dark/80 backdrop-blur-sm sticky top-0 z-20">
+<div class="max-w-4xl mx-auto">
+<label class="flex flex-col w-full relative group">
+<div class="flex w-full items-center rounded-xl bg-surface-hover border border-transparent focus-within:border-primary/50 transition-all h-14 shadow-lg">
+<div class="pl-4 text-text-muted">
+<span class="material-symbols-outlined text-2xl">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-white placeholder-text-muted focus:ring-0 h-full px-4 text-lg" placeholder="Search across all modules..." value="salary review"/>
+<div class="pr-4">
+<button class="p-1 hover:bg-white/10 rounded-full transition-colors text-text-muted hover:text-white">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+</div>
+</label>
+<!-- Search Meta -->
+<div class="flex items-center justify-between mt-4">
+<div class="flex items-center gap-2 text-sm">
+<span class="text-white font-medium">12 Results found</span>
+<span class="text-text-muted">for "salary review"</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-medium text-text-muted uppercase tracking-wider">Sort by:</span>
+<select class="bg-transparent text-sm text-white font-medium border-none focus:ring-0 cursor-pointer p-0">
+<option>Relevance</option>
+<option>Date (Newest)</option>
+<option>Date (Oldest)</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Container -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-4xl mx-auto space-y-6">
+<!-- Security Alert -->
+<div class="rounded-lg bg-orange-900/20 border border-orange-500/30 p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-orange-500 mt-0.5">warning</span>
+<div class="flex-1">
+<h4 class="text-orange-200 font-medium text-sm">Access Scope Limitation</h4>
+<p class="text-orange-200/70 text-sm mt-1">3 additional results are hidden by your current access scope due to Class A Security Policy enforcement.</p>
+</div>
+<button class="text-orange-400 text-xs font-bold uppercase tracking-wide hover:text-orange-300 mt-1">View Policy</button>
+</div>
+<!-- Result Item: Class A (Redacted) -->
+<div class="group relative rounded-xl bg-surface-dark border border-border-dark p-1 overflow-hidden transition-all hover:border-red-500/30">
+<div class="absolute top-0 right-0 p-3">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-500/10 text-red-400 text-xs font-medium border border-red-500/20">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                                Class A
+                            </span>
+</div>
+<div class="p-5 flex gap-4">
+<div class="shrink-0 size-12 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+<span class="material-symbols-outlined">block</span>
+</div>
+<div class="flex-1 space-y-2">
+<div class="h-6 w-3/4 bg-border-dark/50 rounded animate-pulse"></div>
+<div class="h-4 w-1/2 bg-border-dark/30 rounded animate-pulse"></div>
+</div>
+</div>
+<div class="bg-background-dark/50 p-4 border-t border-border-dark flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted text-sm">info</span>
+<span class="text-sm text-text-muted">[REDACTED] - Class A Record - Ref #SA-4421. Details hidden.</span>
+</div>
+<button class="px-4 py-2 bg-surface-hover hover:bg-primary hover:text-white text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 group-hover:bg-primary group-hover:text-white">
+<span>Request Access</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Watermark for Redacted Card -->
+<div class="absolute inset-0 pointer-events-none opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZmZmZiIgdHJhbnNmb3JtPSJyb3RhdGUoLTQ1IDUwIDUwKSI+UkVEQUNURUQ8L3RleHQ+PC9zdmc+')]"></div>
+</div>
+<!-- Result Item: Class B (Full Details) -->
+<div class="rounded-xl bg-surface-dark border border-border-dark p-6 transition-all hover:bg-surface-hover/50 hover:border-primary/30 group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="shrink-0 size-10 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-xl">description</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-semibold group-hover:text-primary transition-colors">Quarterly Salary Review - Q3 2023</h3>
+<p class="text-sm text-text-muted">Module: HR / Performance</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-500/10 text-orange-400 text-xs font-medium border border-orange-500/20">
+                                Class B
+                            </span>
+</div>
+<p class="text-slate-300 text-sm mb-4 line-clamp-2">
+                            Comprehensive review of departmental salary structures following the mid-year inflation adjustment. Includes analysis of PIF requests for engineering department.
+                        </p>
+<div class="flex items-center gap-6 text-xs text-text-muted">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">person</span>
+<span>Owner: Sarah Jenkins</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 12, 2023</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">folder</span>
+<span>Ref #HR-2201</span>
+</div>
+</div>
+</div>
+<!-- Result Item: Class C (Full Details) -->
+<div class="rounded-xl bg-surface-dark border border-border-dark p-6 transition-all hover:bg-surface-hover/50 hover:border-primary/30 group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="shrink-0 size-10 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-xl">payments</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-semibold group-hover:text-primary transition-colors">Individual Salary Adjustment Request</h3>
+<p class="text-sm text-text-muted">Module: Finance / Payroll</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-medium border border-green-500/20">
+                                Class C
+                            </span>
+</div>
+<p class="text-slate-300 text-sm mb-4 line-clamp-2">
+                            Standard adjustment request for employee ID #8821 following probation completion. Verified by HR manager.
+                        </p>
+<div class="flex items-center gap-6 text-xs text-text-muted">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">person</span>
+<span>Owner: Mike Ross</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Nov 05, 2023</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">folder</span>
+<span>Ref #PY-8821</span>
+</div>
+</div>
+</div>
+<!-- Result Item: Class A (Redacted) -->
+<div class="group relative rounded-xl bg-surface-dark border border-border-dark p-1 overflow-hidden transition-all hover:border-red-500/30">
+<div class="absolute top-0 right-0 p-3">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-500/10 text-red-400 text-xs font-medium border border-red-500/20">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                                Class A
+                            </span>
+</div>
+<div class="p-5 flex gap-4">
+<div class="shrink-0 size-12 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center">
+<span class="material-symbols-outlined">health_and_safety</span>
+</div>
+<div class="flex-1 space-y-2">
+<div class="h-6 w-3/4 bg-border-dark/50 rounded animate-pulse"></div>
+<div class="h-4 w-1/2 bg-border-dark/30 rounded animate-pulse"></div>
+</div>
+</div>
+<div class="bg-background-dark/50 p-4 border-t border-border-dark flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted text-sm">info</span>
+<span class="text-sm text-text-muted">[REDACTED] - Class A Record - Ref #WL-9920. Details hidden.</span>
+</div>
+<button class="px-4 py-2 bg-surface-hover hover:bg-primary hover:text-white text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2 group-hover:bg-primary group-hover:text-white">
+<span>Request Access</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- Watermark for Redacted Card -->
+<div class="absolute inset-0 pointer-events-none opacity-5 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCIgZmlsbD0iI2ZmZmZmZiIgdHJhbnNmb3JtPSJyb3RhdGUoLTQ1IDUwIDUwKSI+UkVEQUNURUQ8L3RleHQ+PC9zdmc+')]"></div>
+</div>
+<!-- Result Item: Class C (Full Details) -->
+<div class="rounded-xl bg-surface-dark border border-border-dark p-6 transition-all hover:bg-surface-hover/50 hover:border-primary/30 group cursor-pointer">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="shrink-0 size-10 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-xl">flight_takeoff</span>
+</div>
+<div>
+<h3 class="text-white text-lg font-semibold group-hover:text-primary transition-colors">Annual Leave Request - Pending Approval</h3>
+<p class="text-sm text-text-muted">Module: HR / Leave</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-medium border border-green-500/20">
+                                Class C
+                            </span>
+</div>
+<p class="text-slate-300 text-sm mb-4 line-clamp-2">
+                             Leave request covering the period of Dec 20 - Jan 05. Notes: "Family vacation, salary review meeting needs to be rescheduled."
+                        </p>
+<div class="flex items-center gap-6 text-xs text-text-muted">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">person</span>
+<span>Owner: John Doe</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Nov 15, 2023</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">folder</span>
+<span>Ref #LV-3002</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

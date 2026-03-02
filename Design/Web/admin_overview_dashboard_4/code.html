@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Travel Wizard - Itinerary</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1d85ed",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              "neutral-50": "#f8fafc",
+              "neutral-100": "#f1f5f9",
+              "neutral-200": "#e2e8f0",
+              "neutral-300": "#cbd5e1",
+              "neutral-400": "#94a3b8",
+              "neutral-500": "#64748b",
+              "neutral-600": "#475569",
+              "neutral-700": "#334155",
+              "neutral-800": "#1e293b",
+              "neutral-900": "#0f172a",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem", 
+              "lg": "0.5rem", 
+              "xl": "0.75rem", 
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-neutral-900 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-col overflow-hidden relative">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-white px-6 py-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 z-10 shrink-0">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-neutral-900 dark:text-white">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+<p class="text-xs font-medium text-neutral-500">Travel Requisition Wizard</p>
+</div>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-2">
+<div class="flex items-center">
+<div class="flex items-center justify-center size-8 rounded-full bg-green-100 text-green-600 font-bold text-sm">1</div>
+<div class="w-8 h-1 bg-green-100 mx-1"></div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center justify-center size-8 rounded-full bg-green-100 text-green-600 font-bold text-sm">2</div>
+<div class="w-8 h-1 bg-green-100 mx-1"></div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center justify-center size-8 rounded-full bg-green-100 text-green-600 font-bold text-sm">3</div>
+<div class="w-8 h-1 bg-green-100 mx-1"></div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center justify-center size-8 rounded-full bg-primary text-white font-bold text-sm ring-4 ring-primary/20">4</div>
+<span class="ml-2 text-sm font-semibold text-primary">Itinerary</span>
+<div class="w-8 h-1 bg-neutral-200 mx-1"></div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center justify-center size-8 rounded-full bg-neutral-100 text-neutral-400 font-bold text-sm">5</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">J. Doe</p>
+<p class="text-xs text-neutral-500">Requester</p>
+</div>
+<div class="size-10 overflow-hidden rounded-full border-2 border-white shadow-sm dark:border-neutral-700 bg-neutral-200" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXhjhya6tm4wPLbph9OWiVtw5qppAcEI9E17AFUxWtxV6-KPWo-KRyo5424ZP7W2i2ZXmeaQaBMq2RgUmI33MPspmVgYMVFrX7ukQC_0CYTrZjaDR1LlRY8ZtVofaSNmaQeSlRPuce5JJWxsZjwscFNuUUNATtJFPOcH-5FXAckyFYMXtdxR-7VMFoPgI4bzBCDLzqC3GDHLDi-_7WXuYjOZ0i7tdnS_-lQfCL5yrPPBylTX0pO6p3UHvMgXB1fEgTRXdxZ1QzHUo"); background-size: cover; background-position: center;'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<aside class="hidden w-20 flex-col items-center border-r border-neutral-200 bg-white py-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:flex">
+<nav class="flex flex-col gap-4">
+<a class="p-3 rounded-lg text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-800" href="#">
+<span class="material-symbols-outlined">home</span>
+</a>
+<a class="p-3 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined">flight_takeoff</span>
+</a>
+<a class="p-3 rounded-lg text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-800" href="#">
+<span class="material-symbols-outlined">history</span>
+</a>
+</nav>
+</aside>
+<main class="flex-1 overflow-y-auto bg-background-light p-4 pb-32 lg:p-8 dark:bg-background-dark scroll-smooth relative">
+<div class="mx-auto max-w-5xl space-y-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Itinerary Details</h1>
+<p class="text-sm text-neutral-500 mt-1">Add all flight legs, train journeys, and hotel stays for REQ-2024-089.</p>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-sm hover:bg-blue-600 active:scale-95 transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+                            Add Item
+                        </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="group relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 active:bg-neutral-50">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+<span class="material-symbols-outlined">flight</span>
+</div>
+<div>
+<h3 class="font-bold text-neutral-900 dark:text-white">Flight to London</h3>
+<p class="text-xs text-neutral-500">Outbound • British Airways</p>
+</div>
+</div>
+<span class="rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">Oct 24</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Depart</span>
+<span class="font-medium text-neutral-900 dark:text-white">JFK 08:30 AM</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Arrive</span>
+<span class="font-medium text-neutral-900 dark:text-white">LHR 08:45 PM</span>
+</div>
+<div class="flex items-center justify-between text-sm pt-2 border-t border-neutral-100 dark:border-neutral-800">
+<span class="text-neutral-500">Est. Cost</span>
+<span class="font-bold text-neutral-900 dark:text-white">$1,240.00</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-0 transition-opacity group-hover:opacity-100">
+<span class="material-symbols-outlined text-primary">edit</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 active:bg-neutral-50">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+<span class="material-symbols-outlined">hotel</span>
+</div>
+<div>
+<h3 class="font-bold text-neutral-900 dark:text-white">The Westminster</h3>
+<p class="text-xs text-neutral-500">Accommodation • 3 Nights</p>
+</div>
+</div>
+<span class="rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">Oct 24 - 27</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Check-in</span>
+<span class="font-medium text-neutral-900 dark:text-white">Oct 24, 02:00 PM</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Location</span>
+<span class="font-medium text-neutral-900 dark:text-white truncate max-w-[150px]">30 John Islip St, London</span>
+</div>
+<div class="flex items-center justify-between text-sm pt-2 border-t border-neutral-100 dark:border-neutral-800">
+<span class="text-neutral-500">Est. Cost</span>
+<span class="font-bold text-neutral-900 dark:text-white">$850.00</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-0 transition-opacity group-hover:opacity-100">
+<span class="material-symbols-outlined text-primary">edit</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 active:bg-neutral-50">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
+<span class="material-symbols-outlined">train</span>
+</div>
+<div>
+<h3 class="font-bold text-neutral-900 dark:text-white">Eurostar to Paris</h3>
+<p class="text-xs text-neutral-500">Transit • Business Premier</p>
+</div>
+</div>
+<span class="rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">Oct 27</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Depart</span>
+<span class="font-medium text-neutral-900 dark:text-white">St Pancras 10:24 AM</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Arrive</span>
+<span class="font-medium text-neutral-900 dark:text-white">Gare du Nord 01:47 PM</span>
+</div>
+<div class="flex items-center justify-between text-sm pt-2 border-t border-neutral-100 dark:border-neutral-800">
+<span class="text-neutral-500">Est. Cost</span>
+<span class="font-bold text-neutral-900 dark:text-white">$320.00</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-0 transition-opacity group-hover:opacity-100">
+<span class="material-symbols-outlined text-primary">edit</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/50 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 active:bg-neutral-50">
+<div class="flex items-start justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+<span class="material-symbols-outlined">flight_land</span>
+</div>
+<div>
+<h3 class="font-bold text-neutral-900 dark:text-white">Flight to New York</h3>
+<p class="text-xs text-neutral-500">Inbound • Air France</p>
+</div>
+</div>
+<span class="rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">Oct 29</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Depart</span>
+<span class="font-medium text-neutral-900 dark:text-white">CDG 04:30 PM</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<span class="text-neutral-500">Arrive</span>
+<span class="font-medium text-neutral-900 dark:text-white">JFK 07:15 PM</span>
+</div>
+<div class="flex items-center justify-between text-sm pt-2 border-t border-neutral-100 dark:border-neutral-800">
+<span class="text-neutral-500">Est. Cost</span>
+<span class="font-bold text-neutral-900 dark:text-white">$1,150.00</span>
+</div>
+</div>
+<div class="absolute right-4 bottom-4 opacity-0 transition-opacity group-hover:opacity-100">
+<span class="material-symbols-outlined text-primary">edit</span>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-neutral-200 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-800/50">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h4 class="font-bold text-neutral-900 dark:text-white">Total Estimated Cost</h4>
+<p class="text-xs text-neutral-500">Does not include per diem allowances</p>
+</div>
+<div class="text-2xl font-bold text-primary">$3,560.00</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<div class="absolute bottom-0 left-0 right-0 border-t border-neutral-200 bg-white/90 px-6 py-4 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/90 z-20">
+<div class="mx-auto flex max-w-7xl items-center justify-between">
+<button class="rounded-lg px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">
+                    Back to Step 3
+                </button>
+<div class="flex gap-3">
+<button class="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                        Save Draft
+                    </button>
+<button class="rounded-lg bg-primary px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600">
+                        Continue to Summary
+                    </button>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+<div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl dark:bg-neutral-900 ring-1 ring-black/5 dark:ring-white/10 animate-[scaleIn_0.2s_ease-out]">
+<div class="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-neutral-800">
+<h3 class="text-lg font-bold text-neutral-900 dark:text-white">Edit Itinerary Item</h3>
+<button class="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-500 dark:hover:bg-neutral-800">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Item Type</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex items-center justify-center gap-2 rounded-lg border-2 border-primary bg-primary/5 py-2 text-sm font-medium text-primary">
+<span class="material-symbols-outlined text-lg">flight</span> Flight
+                                </button>
+<button class="flex items-center justify-center gap-2 rounded-lg border border-neutral-200 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300">
+<span class="material-symbols-outlined text-lg">hotel</span> Hotel
+                                </button>
+<button class="flex items-center justify-center gap-2 rounded-lg border border-neutral-200 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300">
+<span class="material-symbols-outlined text-lg">train</span> Train
+                                </button>
+</div>
+</div>
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Description / Route</label>
+<input class="w-full rounded-lg border-neutral-300 text-sm focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="Flight to London"/>
+</div>
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Date</label>
+<input class="w-full rounded-lg border-neutral-300 text-sm focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="date" value="2023-10-24"/>
+</div>
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Carrier / Vendor</label>
+<input class="w-full rounded-lg border-neutral-300 text-sm focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="British Airways"/>
+</div>
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Depart</label>
+<div class="relative">
+<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-neutral-400 text-sm">schedule</span>
+</span>
+<input class="w-full rounded-lg border-neutral-300 pl-10 text-sm focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="08:30"/>
+</div>
+</div>
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Arrive</label>
+<div class="relative">
+<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-neutral-400 text-sm">schedule</span>
+</span>
+<input class="w-full rounded-lg border-neutral-300 pl-10 text-sm focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="20:45"/>
+</div>
+</div>
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-neutral-500 mb-1">Estimated Cost</label>
+<div class="relative">
+<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">$</span>
+<input class="w-full rounded-lg border-neutral-300 pl-7 text-sm font-mono focus:border-primary focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="1240.00"/>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-neutral-100 bg-neutral-50 p-4 rounded-b-2xl dark:border-neutral-800 dark:bg-neutral-800/50">
+<button class="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400">Delete Item</button>
+<button class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 shadow-sm">Save Changes</button>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

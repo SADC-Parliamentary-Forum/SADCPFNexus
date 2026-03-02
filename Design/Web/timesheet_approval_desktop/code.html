@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Timesheet Approval - SADCPFNexus ERP</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "sans": ["Public Sans", "sans-serif"],
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 shadow-sm">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 rounded bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">SADCPFNexus ERP</h2>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold transition-colors" href="#">HR Module</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Approvals</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Reports</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="relative hidden sm:block w-full max-w-xs">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-slate-400" placeholder="Search employee or ID..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 ring-2 ring-white dark:ring-slate-800 shadow-sm" data-alt="User avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBv9iG-Zz--oY4gtOuHvTYoPG805xHXccMPCL7WeAVFtEWn5orA2BONf2jg5tD5VHR-v7aL5IMn2XpCW1ytbXMUhzRJ-B9UBHDyFsfaSBIJR1yI6EmupYFZ0hMCEdCKiWXUm60Cja4lnB-g7LoHEaa9IFjodQCZu8K9ORUFfXkLuoPBCXHBvlb8mlOlXZqUQK1WyVKIV_pou_7LO1pD38zX4nLRtQqxYcLKX67FfnctJ9JkEHPqweDBnXQHBIeVJlUJfkJpNVkSX3U");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="flex-1 w-full max-w-[1440px] mx-auto p-6 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Timesheet Details -->
+<div class="lg:col-span-8 flex flex-col gap-8">
+<!-- Breadcrumb & Header -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">HR Approvals</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-medium text-slate-900 dark:text-white">Timesheet #8821</span>
+</div>
+<div class="flex flex-wrap justify-between items-start gap-4">
+<div>
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Timesheet Approval: Jane Doe</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Period: Oct 1 - Oct 15, 2023 • Senior Analyst • ID: JD-9942</p>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium shadow-sm">
+<span class="material-symbols-outlined text-[18px]">print</span>
+                        Print PDF
+                    </button>
+</div>
+</div>
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-2">
+<div class="flex items-center gap-3 mb-2">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-primary">
+<span class="material-symbols-outlined">schedule</span>
+</div>
+<span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Hours</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">88.0</span>
+<span class="text-sm text-slate-500">hrs</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-2">
+<div class="flex items-center gap-3 mb-2">
+<div class="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined">work</span>
+</div>
+<span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Regular</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">80.0</span>
+<span class="text-sm text-slate-500">hrs</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute right-0 top-0 w-16 h-16 bg-amber-500/10 rounded-bl-full -mr-8 -mt-8"></div>
+<div class="flex items-center gap-3 mb-2">
+<div class="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+<span class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Overtime</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-amber-600 dark:text-amber-400">8.0</span>
+<span class="text-sm text-slate-500">hrs</span>
+</div>
+</div>
+</div>
+<!-- Policy Conflicts -->
+<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-5 flex flex-col sm:flex-row gap-4 items-start">
+<div class="p-2 bg-red-100 dark:bg-red-900/40 rounded-full text-red-600 dark:text-red-400 shrink-0">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div class="flex-1">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        Policy Conflicts Detected
+                        <span class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs px-2 py-0.5 rounded-full font-bold uppercase">Action Required</span>
+</h3>
+<p class="text-slate-600 dark:text-slate-300 mt-1 text-sm">
+                        The employee has logged 4 hours on <strong>Oct 12 (Saturday)</strong>, which is marked as a non-working day. Justification is required or hours must be adjusted.
+                    </p>
+</div>
+<button class="text-sm font-semibold text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline underline-offset-2 whitespace-nowrap">
+                    View Policy Details
+                </button>
+</div>
+<!-- Timesheet Grid (Read Only) -->
+<div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+<h3 class="font-bold text-lg text-slate-900 dark:text-white">Timesheet Entries</h3>
+<span class="text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded">Read Only</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead class="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700">
+<tr>
+<th class="px-6 py-3 w-32">Date</th>
+<th class="px-6 py-3 w-24">Day</th>
+<th class="px-6 py-3">Project / Task</th>
+<th class="px-6 py-3 w-32 text-center">Category</th>
+<th class="px-6 py-3 w-24 text-right">Hours</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 01, 2023</td>
+<td class="px-6 py-4 text-slate-500">Mon</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Project Alpha - Research Phase</td>
+<td class="px-6 py-4 text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Regular</span></td>
+<td class="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">8.0</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 02, 2023</td>
+<td class="px-6 py-4 text-slate-500">Tue</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Project Alpha - Team Sync</td>
+<td class="px-6 py-4 text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Regular</span></td>
+<td class="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">8.0</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors bg-amber-50/30 dark:bg-amber-900/10">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 03, 2023</td>
+<td class="px-6 py-4 text-slate-500">Wed</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Client Emergency Support</td>
+<td class="px-6 py-4 text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Overtime</span></td>
+<td class="px-6 py-4 text-right font-bold text-amber-600 dark:text-amber-400">10.0</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 04, 2023</td>
+<td class="px-6 py-4 text-slate-500">Thu</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Project Alpha - Documentation</td>
+<td class="px-6 py-4 text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Regular</span></td>
+<td class="px-6 py-4 text-right font-medium text-slate-900 dark:text-white">8.0</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors bg-red-50/30 dark:bg-red-900/10 border-l-4 border-red-500">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 12, 2023</td>
+<td class="px-6 py-4 text-slate-500">Sat</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">
+<div class="flex flex-col">
+<span>Weekend Catchup</span>
+<span class="text-xs text-red-500 mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">warning</span> Policy Violation: Weekend Work</span>
+</div>
+</td>
+<td class="px-6 py-4 text-center"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Overtime</span></td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">4.0</td>
+</tr>
+</tbody>
+<tfoot class="bg-slate-50 dark:bg-slate-900/50 font-semibold text-slate-900 dark:text-white">
+<tr>
+<td class="px-6 py-3 text-right" colspan="4">Total Period Hours</td>
+<td class="px-6 py-3 text-right text-base">88.0</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<!-- Comment Thread -->
+<div class="flex flex-col gap-4">
+<h3 class="font-bold text-lg text-slate-900 dark:text-white px-1">Feedback History</h3>
+<div class="flex gap-4 p-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0 bg-cover bg-center" data-alt="Jane Doe Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBKv7DtUMMI9q0cUZ03pCkSusm_EkONKG3k-19mA6brLAMFiTV7UvuHjfu_QJNAMszBRnJZGmPHNfXfgAyRwo351ce4x-pyNiL4hftn-GMEN98Dgrsbk3NXVrvJEQibJwDOr3Xw8XDPgey_E4UsyY-peAGV0DdG8KxMEvdONM4rty9nkaxHZcCtXIGr6njZ8OtHdcALcvJBoPvXmwHJFNqXiTVDlFOCEXp-adZiP8LndXqPATeAoHBXWD4PU6LKDpuCY0Y4OrnyMLg");'></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="font-semibold text-slate-900 dark:text-white">Jane Doe</span>
+<span class="text-xs text-slate-500">Oct 16, 10:30 AM</span>
+</div>
+<p class="text-slate-600 dark:text-slate-300 text-sm">Submitted timesheet for approval. Note that I worked 4 hours on Saturday to meet the deadline for the audit report.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Sticky Decision Form -->
+<div class="lg:col-span-4 space-y-6">
+<div class="sticky top-24 flex flex-col gap-6">
+<!-- Decision Card -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+<div class="bg-primary/5 dark:bg-primary/10 px-6 py-4 border-b border-primary/10">
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Supervisor Decision</h2>
+<p class="text-xs text-slate-500 mt-1">Select an action to proceed</p>
+</div>
+<div class="p-6 flex flex-col gap-6">
+<!-- Action Radios -->
+<div class="space-y-3">
+<label class="relative flex items-center p-4 rounded-lg border cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group focus-within:ring-2 focus-within:ring-primary has-[:checked]:border-primary has-[:checked]:bg-primary/5 dark:has-[:checked]:bg-primary/10">
+<input checked="" class="h-5 w-5 border-slate-300 text-primary focus:ring-primary" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white group-has-[:checked]:text-primary">Approve</span>
+<span class="block text-xs text-slate-500">Everything looks correct</span>
+</div>
+<div class="ml-auto text-primary opacity-0 group-has-[:checked]:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+</label>
+<label class="relative flex items-center p-4 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group focus-within:ring-2 focus-within:ring-amber-500 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 dark:has-[:checked]:bg-amber-900/10">
+<input class="h-5 w-5 border-slate-300 text-amber-500 focus:ring-amber-500" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white group-has-[:checked]:text-amber-600 dark:group-has-[:checked]:text-amber-500">Return for Correction</span>
+<span class="block text-xs text-slate-500">Ask employee to modify</span>
+</div>
+<div class="ml-auto text-amber-500 opacity-0 group-has-[:checked]:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">edit</span>
+</div>
+</label>
+<label class="relative flex items-center p-4 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group focus-within:ring-2 focus-within:ring-red-500 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 dark:has-[:checked]:bg-red-900/10">
+<input class="h-5 w-5 border-slate-300 text-red-500 focus:ring-red-500" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white group-has-[:checked]:text-red-600 dark:group-has-[:checked]:text-red-500">Reject</span>
+<span class="block text-xs text-slate-500">Deny this submission</span>
+</div>
+<div class="ml-auto text-red-500 opacity-0 group-has-[:checked]:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">block</span>
+</div>
+</label>
+</div>
+<!-- Comment Area -->
+<div class="space-y-2">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="comment">
+                                Reviewer Comments <span class="text-slate-400 font-normal">(Optional for approval)</span>
+</label>
+<textarea class="block w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary sm:text-sm placeholder:text-slate-400" id="comment" placeholder="Add feedback or reason for return..." rows="4"></textarea>
+</div>
+<!-- Submit Button -->
+<button class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                            Submit Decision
+                        </button>
+</div>
+</div>
+<!-- Info Panel -->
+<div class="bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-xl p-4">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Approval Deadline</h4>
+<p class="text-xs text-slate-600 dark:text-slate-400 mt-1">This timesheet is due for payroll processing in <span class="font-bold text-slate-900 dark:text-white">2 days</span>. Please action promptly to avoid payment delays.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

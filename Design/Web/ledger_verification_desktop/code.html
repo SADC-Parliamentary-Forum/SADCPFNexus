@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Ledger Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased">
+<div class="flex min-h-screen flex-row bg-slate-50 dark:bg-slate-900 overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex flex-col w-72 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 h-screen sticky top-0">
+<div class="flex items-center gap-3 p-6 border-b border-slate-100 dark:border-slate-800">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 bg-primary/10 flex items-center justify-center text-primary" data-alt="Abstract blue digital security logo">
+<span class="material-symbols-outlined text-2xl">security</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-normal">SADCPFNexus</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium leading-normal">Audit &amp; Compliance</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 p-4 flex-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">dashboard</span>
+<p class="text-sm font-medium leading-normal">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">description</span>
+<p class="text-sm font-medium leading-normal">Audit Logs</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:text-primary" href="#">
+<span class="material-symbols-outlined fill-1">verified_user</span>
+<p class="text-sm font-bold leading-normal">Ledger Verification</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">analytics</span>
+<p class="text-sm font-medium leading-normal">Compliance Reports</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">settings</span>
+<p class="text-sm font-medium leading-normal">Settings</p>
+</a>
+</div>
+<div class="p-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 font-bold text-xs">JD</div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-medium">Jane Doe</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Chief Auditor</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 flex flex-col h-screen overflow-y-auto bg-slate-50 dark:bg-slate-950">
+<!-- Header -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+<div>
+<h2 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Ledger Verification</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">System Integrity Check: <span class="text-green-600 dark:text-green-400 font-medium">Active</span></p>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-mono">v.2.4.0-audit-stable</span>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<main class="flex-1 p-8 max-w-7xl mx-auto w-full flex flex-col gap-8">
+<!-- Status Banner -->
+<div class="rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+<div class="flex items-start gap-4">
+<div class="bg-green-100 dark:bg-green-800/50 text-green-700 dark:text-green-300 p-3 rounded-full">
+<span class="material-symbols-outlined text-3xl">check_circle</span>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Ledger Health: Verified</h3>
+<p class="text-slate-600 dark:text-slate-300 text-sm mt-1 max-w-xl">
+                                The cryptographic integrity of the ledger is intact. All immutable records match their original SHA-256 signatures. Last verified 2 minutes ago.
+                            </p>
+</div>
+</div>
+<button class="whitespace-nowrap flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-sm hover:shadow-md transition-all active:scale-95">
+<span class="material-symbols-outlined animate-spin-slow" style="animation-duration: 3s;">sync</span>
+                        Verify Ledger Integrity
+                    </button>
+</div>
+<!-- Latest Manifest Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary/50 transition-colors group">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">Latest Manifest Hash</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors">fingerprint</span>
+</div>
+<div class="font-mono text-slate-900 dark:text-white text-xl font-bold truncate tracking-tight" title="e3b0c44298fc1c149afbf4c8996fb924">
+                            e3b0c44298fc...fb924
+                        </div>
+<div class="mt-2 text-xs text-slate-400">SHA-256 Algorithm</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary/50 transition-colors group">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">Signature Status</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors">verified</span>
+</div>
+<div class="text-slate-900 dark:text-white text-xl font-bold flex items-center gap-2">
+                            Valid 
+                            <span class="text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-2 py-0.5 rounded font-mono">RSA-4096</span>
+</div>
+<div class="mt-2 text-xs text-slate-400">Certificate Authority: GovRoot CA G2</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-primary/50 transition-colors group">
+<div class="flex items-center justify-between mb-4">
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">Object Lock Status</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors">lock</span>
+</div>
+<div class="text-slate-900 dark:text-white text-xl font-bold flex items-center gap-2">
+                            Locked
+                            <span class="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded font-mono">COMPLIANCE</span>
+</div>
+<div class="mt-2 text-xs text-slate-400">Retention Period: 7 Years</div>
+</div>
+</div>
+<!-- Verification History -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col flex-1 overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Verification History</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Recent automated and manual integrity checks</p>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-base">filter_list</span> Filter
+                            </button>
+<button class="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-base">download</span> Export
+                            </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-semibold">
+<tr>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Timestamp</th>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Initiator</th>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Manifest Hash</th>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Type</th>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">Status</th>
+<th class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">Today, 10:42 AM</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">System (Auto)</td>
+<td class="px-6 py-4 font-mono text-slate-500 text-xs">e3b0c442...96fb924</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Scheduled</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                            Pass
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-blue-700 font-medium text-xs">View Report</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">Yesterday, 04:15 PM</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400 flex items-center gap-2">
+<div class="h-5 w-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">JD</div>
+                                        Jane Doe
+                                    </td>
+<td class="px-6 py-4 font-mono text-slate-500 text-xs">a7f9d221...88ac110</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Manual</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                            Pass
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-blue-700 font-medium text-xs">View Report</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">Oct 24, 09:00 AM</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">System (Auto)</td>
+<td class="px-6 py-4 font-mono text-slate-500 text-xs">f2a1b334...77bc991</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Scheduled</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                            Pass
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-blue-700 font-medium text-xs">View Report</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">Oct 23, 11:30 AM</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400 flex items-center gap-2">
+<div class="h-5 w-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">MK</div>
+                                        Mark K.
+                                    </td>
+<td class="px-6 py-4 font-mono text-slate-500 text-xs">c4d5e667...22ef331</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Manual</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                            Fail
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium text-xs">Analyze</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-slate-900 dark:text-slate-200 font-medium whitespace-nowrap">Oct 23, 09:00 AM</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">System (Auto)</td>
+<td class="px-6 py-4 font-mono text-slate-500 text-xs">b1c2d3e4...55aa667</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Scheduled</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                            Pass
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:text-blue-700 font-medium text-xs">View Report</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<span class="text-xs text-slate-500 dark:text-slate-400">Showing 1-5 of 1,248 checks</span>
+<div class="flex gap-1">
+<button class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-white text-xs font-bold rounded">1</button>
+<button class="px-3 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs rounded transition-colors">2</button>
+<button class="px-3 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs rounded transition-colors">3</button>
+<span class="px-2 py-1 text-slate-400 text-xs">...</span>
+<button class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer / Legal -->
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-slate-400 gap-4">
+<div class="flex gap-4">
+<span>© 2024 SADCPFNexus. All rights reserved.</span>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">lock</span>
+<span>End-to-end encrypted connection</span>
+</div>
+</footer>
+</main>
+</div>
+</div>
+</body></html>

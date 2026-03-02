@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Unified Approvals</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#10b981", // Emerald 500
+                        "primary-content": "#ffffff",
+                        "background-light": "#f3f4f6", // Cool gray 100
+                        "surface-white": "#ffffff",
+                        "text-primary": "#111827", // Gray 900
+                        "text-secondary": "#6b7280", // Gray 500
+                        "border-light": "#e5e7eb", // Gray 200
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 2px;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-primary font-display min-h-screen flex flex-col antialiased selection:bg-primary selection:text-white">
+<div class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-border-light shadow-sm">
+<div class="flex items-center justify-between px-4 py-3 pt-12 md:pt-4">
+<button class="text-text-primary p-2 rounded-full hover:bg-gray-100 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-text-primary text-lg font-bold tracking-tight">Approvals</h1>
+<button class="text-text-primary p-2 rounded-full hover:bg-gray-100 transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+<div class="px-4 pb-0">
+<div class="flex justify-between gap-2">
+<button class="flex-1 pb-3 text-center border-b-2 border-primary text-primary font-bold text-sm">
+                    All
+                </button>
+<button class="flex-1 pb-3 text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary hover:bg-gray-50/50 font-medium text-sm transition-colors">
+                    Pending
+                </button>
+<button class="flex-1 pb-3 text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary hover:bg-gray-50/50 font-medium text-sm transition-colors">
+                    Completed
+                </button>
+</div>
+</div>
+</div>
+<div class="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
+<div class="flex items-center justify-between pb-1">
+<h2 class="text-sm font-bold text-text-secondary uppercase tracking-wider">Today</h2>
+<span class="text-xs font-medium text-text-secondary bg-gray-200/60 px-2.5 py-1 rounded-full">3 Requests</span>
+</div>
+<div class="bg-white rounded-xl p-4 border border-border-light shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    Under Review
+               </span>
+</div>
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 border border-blue-200">
+<span class="text-lg font-bold">JD</span>
+</div>
+<div class="flex-1 min-w-0 pr-20">
+<h3 class="text-text-primary font-bold text-base truncate">Leave Request - Annual</h3>
+<p class="text-text-secondary text-sm mt-0.5">John Doe • Finance Dept</p>
+<div class="flex items-center gap-2 mt-2 text-xs text-text-secondary">
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+<span>Oct 12 - Oct 24, 2023</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium transition-colors border border-transparent hover:border-red-200">
+<span class="material-symbols-outlined text-[18px]">close</span>
+                    Reject
+                </button>
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-white hover:bg-emerald-600 text-sm font-bold transition-colors shadow-sm shadow-emerald-200">
+<span class="material-symbols-outlined text-[18px]">check</span>
+                    Approve
+                </button>
+</div>
+</div>
+<div class="bg-white rounded-xl p-4 border border-border-light shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Authorized
+               </span>
+</div>
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-text-secondary shrink-0 overflow-hidden">
+<img alt="Sarah M." class="w-full h-full object-cover" data-alt="User avatar for Sarah M" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCXtbalLY4_r3DyW0sgaNQr6eW-qYBBhnC9XzxyYf8EqHGRQoo4XmMv-wqf4G-0eyjrDXf60em0QL2zW8PPVjX6r_q7OD7FapE_OYR9RQvDEBZwlMocUK7hd-_APEc_uG9REifNnhAfMbhMboHNPmSAuKT7M6sztPlKNQHtD4_7sYW5-cNgYXhF6D3fN9Bsw4G-QT6LhkiiuG4l1AWCd9XAw1iRsmioJm2TSEqHmYIOnSHY9KTjHJ7LTOiIRLSdfdPflColWy8W75m"/>
+</div>
+<div class="flex-1 min-w-0 pr-24">
+<h3 class="text-text-primary font-bold text-base truncate">Travel Requisition - Summit</h3>
+<p class="text-text-secondary text-sm mt-0.5">Sarah M. • International Relations</p>
+<div class="flex items-center gap-2 mt-2 text-xs text-text-secondary">
+<span class="material-symbols-outlined text-[16px]">flight_takeoff</span>
+<span>Dest: Johannesburg, SA</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium transition-colors border border-transparent hover:border-red-200">
+<span class="material-symbols-outlined text-[18px]">close</span>
+                    Reject
+                </button>
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-white hover:bg-emerald-600 text-sm font-bold transition-colors shadow-sm shadow-emerald-200">
+<span class="material-symbols-outlined text-[18px]">check</span>
+                    Approve
+                </button>
+</div>
+</div>
+<div class="bg-white rounded-xl p-4 border border-border-light shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    Under Review
+               </span>
+</div>
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 border border-emerald-200">
+<span class="text-lg font-bold">MK</span>
+</div>
+<div class="flex-1 min-w-0 pr-24">
+<h3 class="text-text-primary font-bold text-base truncate">Salary Advance Request</h3>
+<p class="text-text-secondary text-sm mt-0.5">Michael K. • Logistics</p>
+<div class="flex items-center gap-2 mt-2 text-xs text-text-secondary">
+<span class="material-symbols-outlined text-[16px]">attach_money</span>
+<span>Amount: $1,200.00</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-sm font-medium transition-colors border border-transparent hover:border-red-200">
+<span class="material-symbols-outlined text-[18px]">close</span>
+                    Reject
+                </button>
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-white hover:bg-emerald-600 text-sm font-bold transition-colors shadow-sm shadow-emerald-200">
+<span class="material-symbols-outlined text-[18px]">check</span>
+                    Approve
+                </button>
+</div>
+</div>
+<div class="flex items-center justify-between pb-1 mt-6">
+<h2 class="text-sm font-bold text-text-secondary uppercase tracking-wider">Yesterday</h2>
+<span class="text-xs font-medium text-text-secondary bg-gray-200/60 px-2.5 py-1 rounded-full">1 Request</span>
+</div>
+<div class="bg-white rounded-xl p-4 border border-border-light shadow-sm relative overflow-hidden group transition-shadow opacity-90 hover:opacity-100 hover:shadow-md">
+<div class="absolute top-0 right-0 p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+<span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                    Escalated
+               </span>
+</div>
+<div class="flex gap-4">
+<div class="w-12 h-12 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-text-secondary shrink-0 overflow-hidden">
+<img alt="David L." class="w-full h-full object-cover" data-alt="User avatar for David L" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsbanEKENpjpY-r6moYOvWLyERy4YQNsRz2xyzYBqxCovws7T8YMdkATkRMrXWSMSVOWsKMj9yZS1vDwjhXMgXH-cb17r8uXWOxPGWHi_z8j9x9ZoBJfim0dukpXLHg4DzPbHy3gKzkTPly7Co_pulAxs9RCDsm2x4WArN92qFAQ2eSIz0u2BK09Sqkdsd8hOHQoJbe2FazuiREbiUKZAuAbn4jFNrQ7pCXUBF3ARsGkvc7Awhv5ezSAKVWYYNgZ61b5eRfqBGeEtW"/>
+</div>
+<div class="flex-1 min-w-0 pr-24">
+<h3 class="text-text-primary font-bold text-base truncate">IT Hardware Procurement</h3>
+<p class="text-text-secondary text-sm mt-0.5">David L. • IT Services</p>
+<div class="flex items-center gap-2 mt-2 text-xs text-text-secondary">
+<span class="material-symbols-outlined text-[16px]">laptop_mac</span>
+<span>5x Macbooks Pro</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-3">
+<button class="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200 text-text-primary text-sm font-medium transition-colors w-full shadow-sm">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                    View Details
+                </button>
+</div>
+</div>
+<div class="h-24"></div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-border-light pb-6 pt-2 px-6 shadow-[0_-1px_3px_0_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-end">
+<a class="flex flex-col items-center justify-end gap-1 text-text-secondary group hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">home</span>
+<span class="text-xs font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-end gap-1 text-primary group" href="#">
+<div class="relative">
+<span class="material-symbols-outlined fill text-[24px] group-hover:scale-110 transition-transform">check_circle</span>
+<span class="absolute -top-1 -right-1 flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</span>
+</div>
+<span class="text-xs font-medium">Approvals</span>
+</a>
+<a class="flex flex-col items-center justify-end gap-1 text-text-secondary group hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">bar_chart</span>
+<span class="text-xs font-medium">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-end gap-1 text-text-secondary group hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">person</span>
+<span class="text-xs font-medium">Profile</span>
+</a>
+</div>
+</div>
+
+</body></html>

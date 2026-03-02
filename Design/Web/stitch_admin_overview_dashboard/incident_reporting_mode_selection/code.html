@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Incident Management - Mode Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-content": "#ffffff",
+                        "primary-light": "#eef4ff",
+                        "primary-dark": "#0a3aa0",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2230",
+                        "text-main-light": "#1e293b",
+                        "text-main-dark": "#f8fafc",
+                        "text-secondary-light": "#64748b",
+                        "text-secondary-dark": "#94a3b8",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3748",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark min-h-screen flex flex-col font-display antialiased">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-6 py-3 shadow-sm">
+<div class="mx-auto max-w-7xl flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<h2 class="text-text-main-light dark:text-text-main-dark text-lg font-bold leading-tight tracking-tight">SADCPFNexus <span class="text-text-secondary-light dark:text-text-secondary-dark font-medium">Incident Management</span></h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Dashboard</a>
+<a class="text-primary font-semibold text-sm leading-normal border-b-2 border-primary py-4 -my-4" href="#">Incidents</a>
+<a class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Reports</a>
+<a class="text-text-secondary-light dark:text-text-secondary-dark hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block w-64">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-text-secondary-light dark:text-text-secondary-dark">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-lg border border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark py-2 pl-10 pr-3 text-sm placeholder:text-text-secondary-light focus:border-primary focus:ring-primary focus:outline-none" placeholder="Search incidents..." type="text"/>
+</div>
+<div class="flex items-center gap-3 border-l border-border-light dark:border-border-dark pl-4">
+<button class="relative rounded-full p-1 text-text-secondary-light hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
+</button>
+<div class="h-9 w-9 rounded-full bg-cover bg-center border border-border-light dark:border-border-dark" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBQMx1pGbeuaJWR_Y-J4o_sMatDfzwYalkXnpLQFbVtaV89a1E6QsK1zLDuIfv5oNeY9EbkF3vS7cLhTNTyUeobva1jisseYX-A4vXUbpuqrlr66SX3I4l1d8TNFAVQeeBfFo81xZFYJJWNjLXPvMeBOVOBDVmX2pazlDNYtdoE-FshhKLKdWnIm5_cETaglciE5bwzEEax7rfp6bLzsCeftoJRoP20XfovHkihDPryk-ZiWWj4NBI0-JbSODSBsBQmHwu51KimM-0");'></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!-- Page Header -->
+<div class="mb-8">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+<span>Incidents</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span>New Wizard</span>
+</div>
+<h1 class="text-3xl font-extrabold text-text-main-light dark:text-text-main-dark tracking-tight">New Incident Report</h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-base max-w-2xl">
+                    Step 1 of 4: Select the appropriate reporting mode. This choice affects data privacy and handling procedures.
+                </p>
+</div>
+</div>
+<!-- Safety Banner -->
+<div class="mb-8 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<div class="flex gap-4">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined">emergency_home</span>
+</div>
+<div>
+<h3 class="text-base font-semibold text-red-900 dark:text-red-200">Is this an immediate emergency?</h3>
+<p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                        If there is an immediate threat to life or property, do not use this form. Contact emergency services immediately.
+                    </p>
+</div>
+</div>
+<button class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all">
+<span class="material-symbols-outlined text-[20px]">call</span>
+                Call Campus Security
+            </button>
+</div>
+<!-- Mode Selection Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Anonymous Card -->
+<div class="group relative flex flex-col rounded-xl bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50">
+<div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-8xl text-text-secondary-light">visibility_off</span>
+</div>
+<div class="mb-6">
+<div class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-xs font-medium text-slate-800 dark:text-slate-200 mb-4">
+<span class="material-symbols-outlined text-[14px] mr-1">no_accounts</span>
+                        Highest Privacy
+                    </div>
+<h3 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">Anonymous Report</h3>
+</div>
+<div class="h-40 w-full rounded-lg bg-slate-100 dark:bg-slate-800 mb-6 overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800" data-alt="Abstract grey gradient representing anonymity"></div>
+</div>
+<div class="flex-1 space-y-4">
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark leading-relaxed">
+                        No personal identifiers are collected. We will not be able to contact you for follow-up questions or provide direct status updates.
+                    </p>
+<ul class="space-y-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>No IP address logging</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Identity completely hidden</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-red-500 mt-0.5">close</span>
+<span>Limited investigation capability</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-border-light dark:border-border-dark">
+<button class="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-white dark:bg-transparent border border-slate-300 dark:border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-slate-500">
+                        Select Anonymous
+                    </button>
+</div>
+</div>
+<!-- Confidential Card -->
+<div class="group relative flex flex-col rounded-xl bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/50">
+<div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-8xl text-indigo-500">lock</span>
+</div>
+<div class="mb-6">
+<div class="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-4">
+<span class="material-symbols-outlined text-[14px] mr-1">lock</span>
+                        Restricted Access
+                    </div>
+<h3 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">Confidential Report</h3>
+</div>
+<div class="h-40 w-full rounded-lg bg-indigo-50 dark:bg-indigo-900/20 mb-6 overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-800" data-alt="Abstract indigo gradient representing confidentiality"></div>
+</div>
+<div class="flex-1 space-y-4">
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark leading-relaxed">
+                        Your identity is known only to specific administrators (e.g., Title IX Coordinator). Investigators will not see your name without explicit consent.
+                    </p>
+<ul class="space-y-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Identity protected from general staff</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Allows for sensitive follow-up</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-indigo-500 mt-0.5">info</span>
+<span>Required for legal compliance cases</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-border-light dark:border-border-dark">
+<button class="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-white dark:bg-transparent border border-indigo-200 dark:border-indigo-800 px-4 py-2.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors focus:ring-2 focus:ring-indigo-500">
+                        Select Confidential
+                    </button>
+</div>
+</div>
+<!-- Standard Card -->
+<div class="group relative flex flex-col rounded-xl bg-surface-light dark:bg-surface-dark border-2 border-primary ring-4 ring-primary/5 p-6 shadow-md transition-all hover:shadow-lg">
+<div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-8xl text-primary">badge</span>
+</div>
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                    Recommended
+                </div>
+<div class="mb-6 mt-2">
+<div class="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 mb-4">
+<span class="material-symbols-outlined text-[14px] mr-1">verified_user</span>
+                        Full Support
+                    </div>
+<h3 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">Standard Report</h3>
+</div>
+<div class="h-40 w-full rounded-lg bg-blue-50 dark:bg-blue-900/20 mb-6 overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-600" data-alt="Vibrant blue gradient representing standard full support"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<span class="material-symbols-outlined text-4xl">support_agent</span>
+</div>
+</div>
+<div class="flex-1 space-y-4">
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark leading-relaxed">
+                        Your identity is recorded and visible to assigned investigators. This allows for the most thorough investigation and comprehensive support services.
+                    </p>
+<ul class="space-y-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Full access to support resources</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Direct communication channel</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[18px] text-green-600 mt-0.5">check</span>
+<span>Fastest resolution time</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-border-light dark:border-border-dark">
+<button class="w-full inline-flex justify-center items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition-colors shadow-sm focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                        Select Standard
+                    </button>
+</div>
+</div>
+</div>
+<!-- Support Footer -->
+<div class="mt-12 text-center border-t border-border-light dark:border-border-dark pt-8">
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-4">
+                Not sure which mode to choose? View our <a class="text-primary hover:underline" href="#">Reporting Guidelines</a> or contact support anonymously.
+            </p>
+<div class="flex justify-center gap-6">
+<a class="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                    Help Center
+                </a>
+<a class="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">privacy_tip</span>
+                    Privacy Policy
+                </a>
+</div>
+</div>
+</main>
+</body></html>

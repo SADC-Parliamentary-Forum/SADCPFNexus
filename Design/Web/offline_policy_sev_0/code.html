@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Offline Policy (SEV-0) - SADCPFNexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec5b",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102216",
+              "danger": "#ef4444",
+              "danger-dark": "#7f1d1d",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for table if needed */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #193322;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #326744;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-[#23482f] bg-white dark:bg-[#112217] px-6 lg:px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="size-8 rounded bg-primary flex items-center justify-center text-background-dark">
+<span class="material-symbols-outlined">security</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus | SEV-0 Control</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 lg:gap-8 items-center">
+<div class="hidden sm:flex gap-2">
+<button class="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-transparent hover:bg-slate-100 dark:hover:bg-[#23482f] text-slate-600 dark:text-white text-sm font-bold transition-colors">
+<span class="truncate">Audit Logs</span>
+</button>
+<button class="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary text-background-dark text-sm font-bold hover:brightness-110 transition-all">
+<span class="truncate">Log Out</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJthvWhmHF8aDMr0B2n9nXy1ljBFl9iJlb_AzeyUKQgDFRJsbwGVDeGAv6JU7qRPu6PWdApSCLVaXASI_RFiAY0iJZf4CcePLoAxnrsMYgH21hfYVKtjJ-on0n1lTG_o5KjKGX_9PPaOJ_czq6wB1zJcBC1rJgpDnJq2SwgFEzDEVZFFInCWwx6fCuhhLTaUT3wjY5RI8xUhWJnFN7w_rFpWli6jUbxTVXzAIYn62QsxLKK-A-AulVZp_4zfQji0vlhLKRJiY1emo");'></div>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex flex-1 justify-center py-6 px-4 md:px-8">
+<div class="w-full max-w-[1024px] flex flex-col gap-8">
+<!-- Header Section -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-danger text-4xl">warning</span>
+<h1 class="text-3xl md:text-4xl font-black leading-tight tracking-tight text-slate-900 dark:text-white">Offline Class A Policy (SEV-0)</h1>
+</div>
+<p class="text-slate-500 dark:text-[#92c9a4] text-base font-normal max-w-3xl">
+                    Manage critical offline access controls for Class A data. Changes are logged immediately and require dual-authorization for activation.
+                </p>
+<div class="mt-2 flex items-center gap-2 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger dark:text-red-400 text-sm font-medium">
+<span class="material-symbols-outlined text-lg">info</span>
+<span>WARNING: Unauthorized changes to this policy constitute a SEV-0 incident. All actions are monitored by central security.</span>
+</div>
+</div>
+<!-- Primary Control Card -->
+<div class="grid gap-6">
+<section class="rounded-xl border border-slate-200 dark:border-[#326744] bg-white dark:bg-[#112217] shadow-sm overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-[#23482f]">
+<h3 class="text-lg font-bold mb-1">Global Configuration</h3>
+<p class="text-sm text-slate-500 dark:text-[#92c9a4]">Master controls for offline capability provisioning.</p>
+</div>
+<div class="p-6 grid gap-8">
+<!-- Main Toggle -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-lg border border-slate-200 dark:border-[#326744] bg-slate-50 dark:bg-[#193322]/50">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92c9a4]">public_off</span>
+<p class="text-slate-900 dark:text-white text-base font-bold">Global Offline Access</p>
+</div>
+<p class="text-slate-500 dark:text-[#92c9a4] text-sm">Master switch for Class A offline capabilities. Currently disabled by default.</p>
+</div>
+<label class="relative flex h-[32px] w-[56px] cursor-pointer items-center rounded-full border-2 border-transparent bg-slate-300 dark:bg-[#23482f] transition-colors has-[:checked]:bg-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary has-[:focus-visible]:ring-offset-2 dark:has-[:focus-visible]:ring-offset-[#112217]">
+<input class="peer sr-only" type="checkbox"/>
+<span class="absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow-md transition-transform peer-checked:translate-x-6"></span>
+</label>
+</div>
+<!-- Configuration Forms -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+<!-- TTL Input -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    Time-To-Live (Hours)
+                                </label>
+<div class="relative">
+<input class="w-full rounded-lg border border-slate-300 dark:border-[#326744] bg-slate-50 dark:bg-[#193322] px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" max="24" min="1" placeholder="e.g. 4" type="number"/>
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 dark:text-[#5c8a6d]">
+<span class="text-xs font-bold">HRS</span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-[#5c8a6d]">Max allowed: 24h</p>
+</div>
+<!-- Device Limit -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    Device Limit per User
+                                </label>
+<div class="relative">
+<input class="w-full rounded-lg border border-slate-300 dark:border-[#326744] bg-slate-50 dark:bg-[#193322] px-4 py-3 text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" max="3" min="1" placeholder="e.g. 1" type="number"/>
+<div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 dark:text-[#5c8a6d]">
+<span class="material-symbols-outlined text-lg">devices</span>
+</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-[#5c8a6d]">Strict limit enforcement</p>
+</div>
+<!-- Security Sign-off Upload -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    Security Sign-off
+                                </label>
+<div class="relative flex items-center">
+<label class="flex w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 dark:border-[#326744] bg-slate-50 dark:bg-[#193322] p-3 hover:bg-slate-100 dark:hover:bg-[#23482f] transition-colors">
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#92c9a4]">
+<span class="material-symbols-outlined">upload_file</span>
+<span class="text-sm font-medium">Upload PDF Approval</span>
+</div>
+<input accept=".pdf" class="hidden" type="file"/>
+</label>
+</div>
+<p class="text-xs text-slate-500 dark:text-[#5c8a6d]">Required for policy updates</p>
+</div>
+</div>
+<div class="flex justify-end pt-4 border-t border-slate-200 dark:border-[#23482f]">
+<button class="flex items-center gap-2 bg-primary hover:bg-green-400 text-background-dark font-bold py-2.5 px-6 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-lg">save</span>
+                                Save Policy Changes
+                            </button>
+</div>
+</div>
+</section>
+<!-- Revoke Device Table -->
+<section class="rounded-xl border border-slate-200 dark:border-[#326744] bg-white dark:bg-[#112217] shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-slate-200 dark:border-[#23482f] flex justify-between items-center flex-wrap gap-4">
+<div>
+<h3 class="text-lg font-bold mb-1 text-slate-900 dark:text-white">Active Offline Tokens</h3>
+<p class="text-sm text-slate-500 dark:text-[#92c9a4]">Monitor and revoke active offline sessions.</p>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative">
+<span class="absolute inset-y-0 left-3 flex items-center text-slate-400 dark:text-[#5c8a6d]">
+<span class="material-symbols-outlined text-lg">search</span>
+</span>
+<input class="pl-9 pr-4 py-2 rounded-lg border border-slate-300 dark:border-[#326744] bg-slate-50 dark:bg-[#193322] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#5c8a6d] focus:border-primary focus:ring-0 w-64" placeholder="Search Device ID or User" type="text"/>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left text-sm whitespace-nowrap">
+<thead class="bg-slate-50 dark:bg-[#193322] text-slate-500 dark:text-[#92c9a4]">
+<tr>
+<th class="px-6 py-4 font-semibold">User Principal</th>
+<th class="px-6 py-4 font-semibold">Device ID (Hardware Hash)</th>
+<th class="px-6 py-4 font-semibold">Issued At</th>
+<th class="px-6 py-4 font-semibold">Expires In</th>
+<th class="px-6 py-4 font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-[#23482f]">
+<tr class="hover:bg-slate-50 dark:hover:bg-[#193322]/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-[#23482f] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-primary">
+                                                JD
+                                            </div>
+<span class="font-medium text-slate-900 dark:text-slate-100">j.doe@agency.gov</span>
+</div>
+</td>
+<td class="px-6 py-4 font-mono text-slate-600 dark:text-[#92c9a4]">HW-8823-X992-ALPHA</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">2023-10-24 08:00</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-yellow-400/10 px-2 py-1 text-xs font-medium text-yellow-600 dark:text-yellow-400 ring-1 ring-inset ring-yellow-400/20">
+                                            3h 12m
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-danger hover:text-red-500 font-medium text-sm flex items-center justify-end gap-1 ml-auto transition-colors">
+<span class="material-symbols-outlined text-lg">block</span>
+                                            Revoke
+                                        </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#193322]/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-[#23482f] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-primary">
+                                                AS
+                                            </div>
+<span class="font-medium text-slate-900 dark:text-slate-100">a.smith@agency.gov</span>
+</div>
+</td>
+<td class="px-6 py-4 font-mono text-slate-600 dark:text-[#92c9a4]">HW-1029-B221-DELTA</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">2023-10-24 09:15</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-green-700 dark:text-primary ring-1 ring-inset ring-primary/20">
+                                            4h 20m
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-danger hover:text-red-500 font-medium text-sm flex items-center justify-end gap-1 ml-auto transition-colors">
+<span class="material-symbols-outlined text-lg">block</span>
+                                            Revoke
+                                        </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#193322]/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-[#23482f] flex items-center justify-center text-xs font-bold text-slate-600 dark:text-primary">
+                                                MR
+                                            </div>
+<span class="font-medium text-slate-900 dark:text-slate-100">m.ross@agency.gov</span>
+</div>
+</td>
+<td class="px-6 py-4 font-mono text-slate-600 dark:text-[#92c9a4]">HW-7731-C400-SIGMA</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">2023-10-24 07:45</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-danger ring-1 ring-inset ring-red-400/20">
+                                            0h 15m
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-danger hover:text-red-500 font-medium text-sm flex items-center justify-end gap-1 ml-auto transition-colors">
+<span class="material-symbols-outlined text-lg">block</span>
+                                            Revoke
+                                        </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-slate-200 dark:border-[#23482f] flex justify-center">
+<button class="text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-[#92c9a4] dark:hover:text-white transition-colors">
+                            View all 24 active sessions
+                        </button>
+</div>
+</section>
+<!-- Security Footer -->
+<div class="mt-4 flex flex-col items-center gap-2 text-center pb-10 opacity-75">
+<p class="text-xs text-slate-400 dark:text-[#5c8a6d] uppercase tracking-wider font-bold">
+                        US GOVERNMENT AUTHORIZED USE ONLY
+                    </p>
+<p class="text-[10px] text-slate-400 dark:text-[#5c8a6d] max-w-lg">
+                        You are accessing a U.S. Government information system. This system is provided for U.S. Government-authorized use only. Unauthorized or improper use of this system is prohibited and may result in civil and criminal penalties.
+                    </p>
+</div>
+</div>
+</div>
+</div>
+</body></html>

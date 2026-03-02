@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Vendor Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 font-display antialiased">
+<div class="relative flex h-screen w-full flex-row overflow-hidden">
+<!-- Sidebar Navigation -->
+<div class="hidden md:flex flex-col w-64 border-r border-slate-200 bg-white h-full shrink-0">
+<div class="flex items-center gap-3 p-4 border-b border-slate-100">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 shrink-0" data-alt="Organization Logo Abstract" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6xfAWnW4w1W7eJP-ZYWZthsXzI6q-hc43rAceUa3CSwa-vuDcN9lspNbNGwu5sYhAWIaavp1YAhXwc8IQpGZ6eMXPm4Bu6FoD8yK1L3KKfigzCpEdV35HJm21YC_tqXgOVUdThRZ_vbQaGVlS7Kg3WA649lJ3UeZ_69t8Mifdigptlm1xhd-P5esX31loavh_usgwnwin5tDVuxClo-H5d5bkQhj7iOrQa6gKt92b6qGOevp4CvLYeuFofiNlPqhvLMYirYg0Dps");'></div>
+<div class="flex flex-col overflow-hidden">
+<h1 class="text-slate-900 text-sm font-bold truncate">SADCPFNexus</h1>
+<p class="text-slate-500 text-xs truncate">Admin Portal</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1 p-3 overflow-y-auto flex-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined text-primary fill-1">shopping_cart</span>
+<span class="text-sm font-medium">Procurement</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">account_balance_wallet</span>
+<span class="text-sm font-medium">Finance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">groups</span>
+<span class="text-sm font-medium">HR</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-100">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">JD</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-900">Jane Doe</span>
+<span class="text-xs text-slate-500">Procurement Officer</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 flex flex-col h-full overflow-hidden bg-background-light relative">
+<!-- Breadcrumb Header -->
+<header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2 text-sm text-slate-500">
+<span class="hover:text-primary cursor-pointer">Procurement</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="hover:text-primary cursor-pointer">Vendors</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-slate-900 font-medium">TechCorp Solutions Ltd.</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="hidden sm:flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">print</span>
+                        Export
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors shadow-sm shadow-blue-200">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                        Edit Profile
+                    </button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto p-6">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Vendor Header Card -->
+<div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+<div class="flex flex-col md:flex-row gap-6 items-start">
+<div class="bg-slate-50 border border-slate-100 rounded-lg h-24 w-24 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-4xl text-slate-400">domain</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex flex-wrap items-center gap-3 mb-2">
+<h1 class="text-2xl font-bold text-slate-900">TechCorp Solutions Ltd.</h1>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        Active
+                                    </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mt-4">
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Vendor ID</span>
+<span class="font-medium text-slate-700 font-mono">VEN-2023-8492</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Registration Date</span>
+<span class="font-medium text-slate-700">Oct 12, 2019</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-500 text-xs uppercase tracking-wider font-semibold mb-1">Category</span>
+<span class="font-medium text-slate-700">IT Infrastructure &amp; Software</span>
+</div>
+</div>
+</div>
+<!-- Blacklist Toggle -->
+<div class="flex flex-col items-end gap-2 bg-slate-50 p-4 rounded-lg border border-slate-100">
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-bold text-slate-900">Blacklist Vendor</p>
+<p class="text-xs text-slate-500">Prevents bidding access</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-slate-200 mt-8 gap-6">
+<a class="pb-3 border-b-2 border-primary text-primary font-medium text-sm px-1" href="#">Overview</a>
+<a class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm px-1" href="#">Performance History</a>
+<a class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm px-1" href="#">Contracts (4)</a>
+<a class="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm px-1" href="#">Audit Log</a>
+</div>
+</div>
+<!-- Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left Panel: Vendor Details -->
+<div class="lg:col-span-1 space-y-6">
+<!-- Contact Information -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+<h3 class="font-bold text-slate-800 text-sm">Primary Contact</h3>
+<button class="text-primary hover:text-blue-700">
+<span class="material-symbols-outlined text-[18px]">edit_square</span>
+</button>
+</div>
+<div class="p-5">
+<div class="flex items-center gap-3 mb-4">
+<div class="h-10 w-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                            JS
+                                        </div>
+<div>
+<p class="text-sm font-bold text-slate-900">James Sullivan</p>
+<p class="text-xs text-slate-500">Key Account Manager</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px] mt-0.5">mail</span>
+<div class="text-sm break-all">
+<a class="text-primary hover:underline" href="mailto:james.sullivan@techcorp.com">james.sullivan@techcorp.com</a>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px] mt-0.5">call</span>
+<span class="text-sm text-slate-700">+1 (555) 012-3456</span>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-slate-400 text-[20px] mt-0.5">location_on</span>
+<span class="text-sm text-slate-700">4517 Washington Ave.<br/>Manchester, Kentucky 39495</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Financial Details -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+<h3 class="font-bold text-slate-800 text-sm">Financial Information</h3>
+</div>
+<div class="p-5 space-y-4">
+<div>
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Tax ID / VAT Number</p>
+<p class="text-sm font-mono text-slate-800 bg-slate-50 p-2 rounded border border-slate-100 inline-block">US-849201934</p>
+</div>
+<div class="border-t border-slate-100 pt-3">
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Banking Details</p>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">account_balance</span>
+<span class="text-sm font-medium text-slate-900">Citibank NA</span>
+</div>
+<p class="text-xs text-slate-500">Acct: •••• 9928</p>
+<p class="text-xs text-slate-500">Swift: CITIUS33</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: Compliance & Performance -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Compliance Status -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+<h3 class="font-bold text-slate-800 text-sm">Compliance &amp; Documents</h3>
+<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium border border-green-200">Compliant</span>
+</div>
+<div class="divide-y divide-slate-100">
+<!-- Item 1 -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-blue-50 p-2 rounded text-blue-600">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-900">Certificate of Incorporation</p>
+<p class="text-xs text-slate-500">Expires: Never • Verified on 10/2023</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+<!-- Item 2 -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-blue-50 p-2 rounded text-blue-600">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-900">Tax Clearance Certificate</p>
+<p class="text-xs text-slate-500">Expires: <span class="text-orange-600 font-medium">Dec 31, 2024</span> • Verified on 01/2024</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-blue-50 p-2 rounded text-blue-600">
+<span class="material-symbols-outlined text-[20px]">policy</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-900">Conflict of Interest Declaration</p>
+<p class="text-xs text-slate-500">Updated: Nov 2023</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<div class="bg-slate-50 p-3 border-t border-slate-100 flex justify-center">
+<button class="text-sm text-primary font-medium hover:underline">View All Documents</button>
+</div>
+</div>
+<!-- Performance History (RAG Ratings) -->
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+<h3 class="font-bold text-slate-800 text-sm">Recent Performance History</h3>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-green-500"></span>Good</span>
+<span class="flex items-center gap-1 text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-yellow-400"></span>Warning</span>
+<span class="flex items-center gap-1 text-[10px] text-slate-500"><span class="w-2 h-2 rounded-full bg-red-500"></span>Critical</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-600">
+<thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+<tr>
+<th class="px-5 py-3">Contract Ref</th>
+<th class="px-5 py-3">Delivery</th>
+<th class="px-5 py-3">Quality</th>
+<th class="px-5 py-3">Communication</th>
+<th class="px-5 py-3 text-right">Overall</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr>
+<td class="px-5 py-4 font-medium text-slate-900">CTR-2023-001</td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-yellow-400 block"></span></td>
+<td class="px-5 py-4 text-right"><span class="inline-block px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold">92%</span></td>
+</tr>
+<tr>
+<td class="px-5 py-4 font-medium text-slate-900">CTR-2022-156</td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4 text-right"><span class="inline-block px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold">98%</span></td>
+</tr>
+<tr>
+<td class="px-5 py-4 font-medium text-slate-900">CTR-2021-089</td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-yellow-400 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-green-500 block"></span></td>
+<td class="px-5 py-4"><span class="w-3 h-3 rounded-full bg-red-500 block"></span></td>
+<td class="px-5 py-4 text-right"><span class="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-bold">78%</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

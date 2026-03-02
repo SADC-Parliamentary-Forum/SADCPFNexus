@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HR Governance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13ec80", // Emerald Green base
+                        secondary: "#D4AF37", // Gold accent
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102219", // Dark emerald background
+                        "surface-dark": "#1c3326", // Slightly lighter for cards
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "0.75rem",
+                        xl: "1rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-slate-200 dark:border-primary/20 px-4 py-3">
+<div class="flex items-center justify-between">
+<button class="text-slate-900 dark:text-white flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-center flex-1">HR Governance</h1>
+<button class="relative text-slate-900 dark:text-white flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-secondary rounded-full"></span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto pb-24 px-4 pt-6 space-y-6">
+<!-- KPI Cards -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-white dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-16 h-16 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition-all"></div>
+<div class="relative z-10">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Employees</p>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">142</span>
+</div>
+</div>
+<div class="relative z-10 flex items-center text-primary text-xs font-medium bg-primary/10 self-start px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                    +2% QoQ
+                </div>
+</div>
+<div class="bg-white dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-16 h-16 bg-secondary/10 rounded-full blur-xl group-hover:bg-secondary/20 transition-all"></div>
+<div class="relative z-10">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Active Contracts</p>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-3xl font-bold text-slate-900 dark:text-white">138</span>
+</div>
+</div>
+<div class="relative z-10 flex items-center text-secondary text-xs font-medium bg-secondary/10 self-start px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">verified</span>
+                    97% Compliance
+                </div>
+</div>
+</div>
+<!-- Leave Utilization Heatmap Style -->
+<section class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 p-5">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-base font-bold text-slate-900 dark:text-white">Leave Utilization</h2>
+<button class="text-primary text-sm font-medium hover:text-primary/80">View Report</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-end justify-between gap-2 h-40 pt-4 px-2">
+<!-- Bar 1 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-slate-100 dark:bg-black/20 rounded-t-lg relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary/80 group-hover:bg-primary transition-all duration-300 rounded-t-lg" style="height: 65%;"></div>
+</div>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Admin</span>
+</div>
+<!-- Bar 2 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-slate-100 dark:bg-black/20 rounded-t-lg relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-secondary/80 group-hover:bg-secondary transition-all duration-300 rounded-t-lg" style="height: 45%;"></div>
+</div>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Finance</span>
+</div>
+<!-- Bar 3 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-slate-100 dark:bg-black/20 rounded-t-lg relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary/60 group-hover:bg-primary transition-all duration-300 rounded-t-lg" style="height: 30%;"></div>
+</div>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">IT</span>
+</div>
+<!-- Bar 4 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-slate-100 dark:bg-black/20 rounded-t-lg relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-red-500/80 group-hover:bg-red-500 transition-all duration-300 rounded-t-lg" style="height: 85%;"></div>
+</div>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Ops</span>
+</div>
+<!-- Bar 5 -->
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-slate-100 dark:bg-black/20 rounded-t-lg relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary/40 group-hover:bg-primary transition-all duration-300 rounded-t-lg" style="height: 20%;"></div>
+</div>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Legal</span>
+</div>
+</div>
+<div class="flex items-center justify-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2">
+<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-primary"></div>Normal</div>
+<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-secondary"></div>Warning</div>
+<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-red-500"></div>Critical</div>
+</div>
+</div>
+</section>
+<!-- Overtime Compliance Gauge & Performance -->
+<div class="grid grid-cols-1 gap-6">
+<!-- Overtime Compliance -->
+<div class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 p-5">
+<h2 class="text-base font-bold text-slate-900 dark:text-white mb-4">Overtime Compliance</h2>
+<div class="flex items-center gap-4">
+<div class="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewbox="0 0 36 36">
+<path class="text-slate-100 dark:text-black/30" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.8"></path>
+<path class="text-primary drop-shadow-[0_0_4px_rgba(19,236,128,0.5)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="3.8"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-xl font-bold text-slate-900 dark:text-white">92%</span>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<p class="text-sm text-slate-500 dark:text-slate-400">Compliance Rate</p>
+<div class="flex gap-2">
+<span class="px-2 py-1 text-xs font-medium rounded bg-primary/10 text-primary">Within Limits</span>
+</div>
+<p class="text-xs text-slate-400 dark:text-slate-500">Last updated: 2 hours ago</p>
+</div>
+</div>
+</div>
+<!-- Performance Appraisal -->
+<div class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 p-5">
+<h2 class="text-base font-bold text-slate-900 dark:text-white mb-4">Appraisal Completion</h2>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-600 dark:text-slate-300">Executive Team</span>
+<span class="text-secondary font-semibold">100%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-black/30 rounded-full h-2">
+<div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-600 dark:text-slate-300">Management</span>
+<span class="text-primary font-semibold">75%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-black/30 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1">
+<span class="text-slate-600 dark:text-slate-300">Staff</span>
+<span class="text-slate-900 dark:text-white font-semibold">45%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-black/30 rounded-full h-2">
+<div class="bg-slate-400 dark:bg-slate-500 h-2 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Contract Expiry Pipeline -->
+<section class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-primary/10 overflow-hidden">
+<div class="p-5 border-b border-slate-100 dark:border-primary/10 flex justify-between items-center">
+<h2 class="text-base font-bold text-slate-900 dark:text-white">Contract Expiry (90 Days)</h2>
+<button class="text-primary hover:bg-primary/10 p-1 rounded transition-colors">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+</button>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-primary/10">
+<!-- Item 1 -->
+<div class="p-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" data-alt="Profile picture of Sarah M.">
+<img alt="Sarah M." class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHPMkaXunQl92bq9uKNbhCePiN5uxzAVzcfXXzd_KSRs23Yue_mG0BclH76RJPgbPYxE4HJO4_ZKOX-6akFMwr5OinPT-PLkIie1fpDz_5K-MoSxSYLKPv1VemCV0vyJCSqngt4nQiUAAzqa_7C0SnroY-pZuK3mPeEbooHMtwU0-JZ832uftnAkMinxFLAFlUOo7rWqU4w-QPIrorWjF4ZKo6EywDBoXYBoj_XGssiQOIvt-dckVJasOoCxtVWlh4M0kZh6Ar2Rrd"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Sarah Mbeki</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Senior Analyst • Finance</p>
+</div>
+<div class="text-right">
+<span class="inline-block px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400">12 Days</span>
+<p class="text-[10px] text-slate-400 mt-1">Exp: Oct 24</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" data-alt="Profile picture of John D.">
+<img alt="John D." class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQbIOhKLZwazZNXmT-zhspQNWAOSgpH7dv_avaSa43UVV9yaj7-NqgkDbwKoq6aGnQsikGdOcvipFC3taKYE3oW7EYx8bIMf4NQ_xJcTIxnFcrz1Dwb4xJFahIX-P2bQLe5JDtt_rq3otTDK0CGqg3VjAHNICQeCLXMjBBHwhZlcSW4iUUbXcTE4rGQt1ZwC6mqfopfOeASx15Lmah2mb4mw_AbYcW5bGQP17tfmpya837HdhXFc0CToEbJsl4Sl11NBR5zUCg_obW"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">John Doe</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Consultant • Legal</p>
+</div>
+<div class="text-right">
+<span class="inline-block px-2 py-1 rounded text-xs font-medium bg-secondary/20 text-secondary">45 Days</span>
+<p class="text-[10px] text-slate-400 mt-1">Exp: Nov 26</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+<div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 font-bold text-xs">
+                        AL
+                    </div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Alice Lubinda</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 truncate">Coordinator • Admin</p>
+</div>
+<div class="text-right">
+<span class="inline-block px-2 py-1 rounded text-xs font-medium bg-primary/20 text-primary">82 Days</span>
+<p class="text-[10px] text-slate-400 mt-1">Exp: Jan 02</p>
+</div>
+</div>
+</div>
+<div class="p-3 bg-slate-50 dark:bg-black/20 text-center">
+<button class="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors flex items-center justify-center gap-1 w-full">
+                    View Full Pipeline <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full bg-background-light dark:bg-[#1c2721] border-t border-slate-200 dark:border-[#283930] pb-safe pt-2 z-30">
+<div class="flex justify-between items-center px-4 pb-4">
+<a class="flex flex-col items-center gap-1 flex-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">home</span>
+<span class="text-[10px] font-medium text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 flex-1 group" href="#">
+<div class="bg-primary/20 dark:bg-primary/20 px-4 py-1 rounded-full flex flex-col items-center">
+<span class="material-symbols-outlined text-primary dark:text-primary">group</span>
+</div>
+<span class="text-[10px] font-medium text-primary dark:text-primary">HR</span>
+</a>
+<a class="flex flex-col items-center gap-1 flex-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">payments</span>
+<span class="text-[10px] font-medium text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">Finance</span>
+</a>
+<a class="flex flex-col items-center gap-1 flex-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">settings</span>
+<span class="text-[10px] font-medium text-slate-400 dark:text-[#9db9ab] group-hover:text-primary dark:group-hover:text-white transition-colors">Settings</span>
+</a>
+</div>
+</nav>
+</body></html>

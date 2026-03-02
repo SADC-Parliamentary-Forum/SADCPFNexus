@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Role Permission Matrix Configuration - SADCPFNexus</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#135bec",
+              "primary-dark": "#0e45b5",
+              "background-light": "#f6f6f8",
+              "background-dark": "#101622",
+              "slate-850": "#1e293b",
+            },
+            fontFamily: {
+              "sans": ["Inter", "sans-serif"],
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for better aesthetics */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-sans antialiased overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 shrink-0 z-20 shadow-sm">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Admin</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary text-sm font-medium leading-normal transition-colors" href="#">Dashboard</a>
+<a class="text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary text-sm font-medium leading-normal transition-colors" href="#">Users</a>
+<a class="text-primary font-semibold text-sm leading-normal border-b-2 border-primary py-4 -my-4" href="#">Roles</a>
+<a class="text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary text-sm font-medium leading-normal transition-colors" href="#">Audit Logs</a>
+<a class="text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary text-sm font-medium leading-normal transition-colors" href="#">System Config</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<label class="hidden md:flex flex-col w-64 h-10">
+<div class="flex w-full flex-1 items-center rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+<div class="text-slate-400 pl-3 flex items-center justify-center">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 px-3 h-full" placeholder="Search resources..."/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="relative group">
+<div class="size-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold cursor-pointer border border-primary/20">
+                    JD
+                </div>
+</div>
+</div>
+</header>
+<!-- Breadcrumb & Header Area -->
+<div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 shrink-0">
+<div class="flex flex-col gap-1 max-w-[1440px] mx-auto w-full">
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Administration</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">Role Configuration</span>
+</div>
+<div class="flex justify-between items-end mt-2">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Role Definition &amp; Permission Matrix</h1>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            Class C (Blue) - Institutional Confidential
+                        </span>
+<span class="text-xs text-slate-400 dark:text-slate-500">Last updated: 2 hours ago by System</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="inline-flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-all">
+                        Discard Changes
+                    </button>
+<button class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-all">
+<span class="material-symbols-outlined text-lg mr-2">save</span>
+                        Submit for Approval
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Split Screen -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar: Role List -->
+<aside class="w-80 bg-slate-50 dark:bg-slate-900/50 border-r border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden shrink-0">
+<div class="p-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-center mb-3">
+<h3 class="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider">Defined Roles</h3>
+<button class="text-primary hover:text-primary-dark p-1 rounded hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-xl">add_circle</span>
+</button>
+</div>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-2 text-slate-400">
+<span class="material-symbols-outlined text-lg">search</span>
+</span>
+<input class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md py-1.5 pl-8 pr-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-slate-400 text-slate-900 dark:text-white" placeholder="Filter roles..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+<!-- Role Item: Super Admin -->
+<button class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors group">
+<div class="text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Super Admin</span>
+<span class="text-xs text-slate-500">2 Users</span>
+</div>
+</button>
+<!-- Role Item: SG -->
+<button class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors group">
+<div class="text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Secretary General</span>
+<span class="text-xs text-slate-500">1 User</span>
+</div>
+</button>
+<!-- Role Item: Director -->
+<button class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors group">
+<div class="text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">business_center</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Director</span>
+<span class="text-xs text-slate-500">8 Users</span>
+</div>
+</button>
+<!-- Role Item: HR Officer (Active) -->
+<button class="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-white dark:bg-slate-800 border border-primary/30 shadow-sm relative overflow-hidden group">
+<div class="absolute inset-y-0 left-0 w-1 bg-primary rounded-l-lg"></div>
+<div class="text-primary pl-1">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-bold text-slate-900 dark:text-white">HR Officer</span>
+<span class="text-xs text-primary font-medium">42 Users (Active)</span>
+</div>
+<span class="ml-auto material-symbols-outlined text-primary text-sm">edit</span>
+</button>
+<!-- Role Item: Finance Lead -->
+<button class="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors group">
+<div class="text-slate-400 group-hover:text-primary">
+<span class="material-symbols-outlined">attach_money</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Finance Lead</span>
+<span class="text-xs text-slate-500">3 Users</span>
+</div>
+</button>
+</div>
+</aside>
+<!-- Right Content: Permission Matrix -->
+<div class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+<!-- Security Warning Banner -->
+<div class="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3 flex items-start gap-3">
+<span class="material-symbols-outlined text-amber-600 dark:text-amber-500 shrink-0 mt-0.5">warning</span>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-amber-800 dark:text-amber-200">Security Impact Assessment</h4>
+<p class="text-sm text-amber-700 dark:text-amber-300/80 mt-0.5">
+                        Changes to the <span class="font-semibold">HR Officer</span> role will immediately affect access rights for <span class="font-semibold">42 active users</span>. Due to the sensitivity of these permissions, dual-control approval (Two-Person Rule) is required to publish these changes.
+                    </p>
+</div>
+<button class="text-amber-700 dark:text-amber-400 hover:underline text-xs font-medium">View Impact Report</button>
+</div>
+<!-- Scrollable Matrix Area -->
+<div class="flex-1 overflow-auto custom-scrollbar p-6">
+<div class="max-w-[1024px] mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+<!-- Table Header -->
+<div class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-6 py-4 flex justify-between items-center">
+<h3 class="font-semibold text-slate-900 dark:text-white">Access Control Matrix</h3>
+<div class="flex items-center gap-2">
+<span class="text-xs text-slate-500">Quick Filters:</span>
+<button class="px-2 py-1 bg-slate-200 dark:bg-slate-800 text-xs rounded text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Personnel</button>
+<button class="px-2 py-1 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-xs rounded text-slate-500 hover:text-primary transition-colors">Financial</button>
+<button class="px-2 py-1 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-xs rounded text-slate-500 hover:text-primary transition-colors">System</button>
+</div>
+</div>
+<!-- Matrix Table -->
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+<th class="px-6 py-4 w-1/3">Module / Action</th>
+<th class="px-4 py-4 text-center w-32 border-l border-slate-100 dark:border-slate-800">None</th>
+<th class="px-4 py-4 text-center w-32 border-l border-slate-100 dark:border-slate-800">Own Record</th>
+<th class="px-4 py-4 text-center w-32 border-l border-slate-100 dark:border-slate-800">Dept Scope</th>
+<th class="px-4 py-4 text-center w-32 border-l border-slate-100 dark:border-slate-800 bg-red-50/50 dark:bg-red-900/10 text-red-600 dark:text-red-400">Inst. Scope</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+<!-- Section: Leave Management -->
+<tr class="bg-slate-50/80 dark:bg-slate-800/30">
+<td class="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider" colspan="5">Leave Management</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Leave Requests - View</div>
+<div class="text-xs text-slate-500">Ability to read leave balances and history</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_view" type="radio"/>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Leave Requests - Approve</div>
+<div class="text-xs text-slate-500">Authorize pending leave requests</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_approve" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50">
+<!-- Disabled state -->
+<span class="block w-2 h-0.5 bg-slate-300 mx-auto"></span>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_approve" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_leave_approve" type="radio"/>
+</td>
+</tr>
+<!-- Section: Payroll & Compensation -->
+<tr class="bg-slate-50/80 dark:bg-slate-800/30">
+<td class="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider" colspan="5">Payroll &amp; Compensation</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Payslips - View</div>
+<div class="text-xs text-slate-500">Access to generated PDF payslips</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_pay_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_pay_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_pay_view" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-red-50/30 dark:bg-red-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-red-600 focus:ring-red-500" name="perm_pay_view" type="radio"/>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Salary Adjustment - Edit</div>
+<div class="text-xs text-slate-500">Modify base salary or benefits</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_salary_edit" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50">
+<span class="block w-2 h-0.5 bg-slate-300 mx-auto"></span>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_salary_edit" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_salary_edit" type="radio"/>
+</td>
+</tr>
+<!-- Section: User Management -->
+<tr class="bg-slate-50/80 dark:bg-slate-800/30">
+<td class="px-6 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider" colspan="5">User Management</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Personnel Files - Create</div>
+<div class="text-xs text-slate-500">Onboard new staff members</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_user_create" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50">
+<span class="block w-2 h-0.5 bg-slate-300 mx-auto"></span>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_user_create" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_user_create" type="radio"/>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="font-medium text-slate-900 dark:text-white">Role Assignment - Edit</div>
+<div class="text-xs text-slate-500">Change permissions for other users</div>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_role_edit" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/50">
+<span class="block w-2 h-0.5 bg-slate-300 mx-auto"></span>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_role_edit" type="radio"/>
+</td>
+<td class="px-4 py-4 text-center border-l border-slate-50 dark:border-slate-800">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary" name="perm_role_edit" type="radio"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer / Legend -->
+<div class="max-w-[1024px] mx-auto mt-6 flex justify-between items-center text-xs text-slate-500">
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full border border-slate-300 bg-white"></span>
+<span>Standard Access</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-blue-50 border border-blue-200"></span>
+<span>Selected</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-red-50 border border-red-200"></span>
+<span>High Privilege</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-0.5 bg-slate-400"></span>
+<span>Not Applicable</span>
+</div>
+</div>
+<div>
+                        Confidentiality: <span class="font-semibold text-slate-700 dark:text-slate-300">Internal Use Only</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

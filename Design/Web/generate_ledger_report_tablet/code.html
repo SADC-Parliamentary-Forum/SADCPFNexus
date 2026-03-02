@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Generate Ledger Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "primary-dark": "#156cb8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2633",
+                        "text-main": "#0d141b",
+                        "text-secondary": "#4c739a",
+                        "border-color": "#e7edf3",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)',
+                        'float': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Public Sans", sans-serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Custom Select Arrow */
+        .custom-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%234c739a' class='size-6'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5' /%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col overflow-hidden text-text-main">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-color bg-surface-light px-6 py-4 z-20 shadow-sm relative">
+<div class="flex items-center gap-4 text-text-main">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-3xl">account_balance</span>
+</div>
+<h2 class="text-text-main text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex h-10 items-center justify-center gap-2 rounded-lg bg-border-color/50 px-3 text-text-main transition-colors hover:bg-border-color">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<button class="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-white font-bold transition-colors hover:bg-primary-dark">
+<span class="truncate">Profile</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex-1 flex flex-col relative overflow-hidden">
+<!-- Background Decor -->
+<div class="absolute inset-0 z-0 opacity-30 pointer-events-none" style="background: radial-gradient(circle at 10% 20%, rgba(29, 133, 237, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(29, 133, 237, 0.05) 0%, transparent 40%);">
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto hide-scrollbar z-10 pb-28">
+<div class="max-w-[1024px] mx-auto w-full p-6 lg:p-10 flex flex-col gap-8">
+<!-- Floating Alert Box (Policy Notice) -->
+<div class="w-full animate-in slide-in-from-top-4 duration-500">
+<div class="flex items-start justify-between gap-4 rounded-xl bg-blue-50 border border-blue-100 p-5 shadow-sm">
+<div class="flex gap-4">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 text-primary">
+<span class="material-symbols-outlined">security</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-text-main text-base font-bold leading-tight">Policy Notice: Restricted Data</p>
+<p class="text-text-secondary text-sm font-normal leading-relaxed max-w-2xl">
+                                    Reports generated here are subject to audit logs and specific compliance retention policies (Retention Schedule A-12). Access is logged.
+                                </p>
+</div>
+</div>
+<button class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-blue-100 text-text-secondary transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+</div>
+<!-- Header Section -->
+<div class="flex flex-col gap-2 border-b border-border-color pb-6">
+<div class="flex items-center gap-2 text-text-secondary mb-1">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+<span class="text-sm font-medium uppercase tracking-wider">Back to Dashboard</span>
+</div>
+<h1 class="text-text-main text-3xl md:text-4xl font-black leading-tight tracking-tight">Generate Ledger Report</h1>
+<p class="text-text-secondary text-lg font-normal">Select parameters for the audit trail generation.</p>
+</div>
+<!-- Form Section -->
+<form class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+<!-- Fiscal Year -->
+<div class="col-span-1">
+<label class="flex flex-col gap-2 group">
+<span class="text-text-main text-sm font-bold uppercase tracking-wide">Fiscal Year</span>
+<div class="relative">
+<select class="custom-select w-full h-16 rounded-xl border border-border-color bg-surface-light px-4 text-lg font-medium text-text-main shadow-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer">
+<option disabled="" selected="" value="">Select Fiscal Year</option>
+<option value="2024">FY 2024</option>
+<option value="2023">FY 2023</option>
+<option value="2022">FY 2022</option>
+</select>
+</div>
+</label>
+</div>
+<!-- Department / Unit -->
+<div class="col-span-1">
+<label class="flex flex-col gap-2 group">
+<span class="text-text-main text-sm font-bold uppercase tracking-wide">Department / Unit</span>
+<div class="relative">
+<select class="custom-select w-full h-16 rounded-xl border border-border-color bg-surface-light px-4 text-lg font-medium text-text-main shadow-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer">
+<option disabled="" selected="" value="">Select Department</option>
+<option value="finance">Finance &amp; Treasury</option>
+<option value="hr">Human Resources</option>
+<option value="ops">Operations</option>
+<option value="compliance">Compliance &amp; Audit</option>
+</select>
+</div>
+</label>
+</div>
+<!-- Report Type -->
+<div class="col-span-1 md:col-span-2">
+<label class="flex flex-col gap-2 group">
+<span class="text-text-main text-sm font-bold uppercase tracking-wide">Report Type</span>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="reportType" type="radio"/>
+<div class="flex items-center gap-3 rounded-xl border border-border-color bg-surface-light p-4 transition-all hover:bg-slate-50 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary h-full">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-primary">
+<span class="material-symbols-outlined">table_chart</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-text-main">Detailed Ledger</span>
+<span class="text-xs text-text-secondary">Full transaction history</span>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="reportType" type="radio"/>
+<div class="flex items-center gap-3 rounded-xl border border-border-color bg-surface-light p-4 transition-all hover:bg-slate-50 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary h-full">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+<span class="material-symbols-outlined">summarize</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-text-main">Summary</span>
+<span class="text-xs text-text-secondary">Totals by category</span>
+</div>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="reportType" type="radio"/>
+<div class="flex items-center gap-3 rounded-xl border border-border-color bg-surface-light p-4 transition-all hover:bg-slate-50 peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary h-full">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
+<span class="material-symbols-outlined">difference</span>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-text-main">Variance</span>
+<span class="text-xs text-text-secondary">Budget vs Actual</span>
+</div>
+</div>
+</label>
+</div>
+</label>
+</div>
+<!-- Date Range Picker (Visual representation of a modal trigger or inline picker) -->
+<div class="col-span-1 md:col-span-2">
+<span class="text-text-main text-sm font-bold uppercase tracking-wide mb-2 block">Date Range</span>
+<div class="flex flex-col md:flex-row gap-4 items-center rounded-xl border border-border-color bg-surface-light p-2 shadow-sm">
+<div class="flex-1 w-full md:w-auto p-2">
+<label class="block text-xs font-medium text-text-secondary uppercase mb-1">Start Date</label>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary">calendar_today</span>
+<input class="w-full border-none bg-transparent p-0 text-lg font-medium text-text-main focus:ring-0" type="date" value="2023-10-01"/>
+</div>
+</div>
+<div class="hidden md:block w-px h-10 bg-border-color"></div>
+<div class="w-full md:w-auto h-px md:h-auto bg-border-color md:bg-transparent"></div>
+<div class="flex-1 w-full md:w-auto p-2">
+<label class="block text-xs font-medium text-text-secondary uppercase mb-1">End Date</label>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-secondary">event</span>
+<input class="w-full border-none bg-transparent p-0 text-lg font-medium text-text-main focus:ring-0" type="date" value="2023-12-31"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Include Archived Data Checkbox -->
+<div class="col-span-1 md:col-span-2 mt-2">
+<label class="inline-flex items-center cursor-pointer gap-3">
+<input class="h-6 w-6 rounded border-border-color text-primary focus:ring-primary/20" type="checkbox"/>
+<div class="flex flex-col">
+<span class="text-text-main font-medium">Include Archived Data</span>
+<span class="text-sm text-text-secondary">Search through cold storage records (may increase processing time)</span>
+</div>
+</label>
+</div>
+</form>
+<!-- Spacer for sticky footer -->
+<div class="h-10"></div>
+</div>
+</div>
+<!-- Sticky Bottom Navigation Bar -->
+<div class="absolute bottom-0 left-0 right-0 z-20 bg-surface-light border-t border-border-color shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] px-6 py-4">
+<div class="max-w-[1024px] mx-auto flex items-center justify-between">
+<button class="px-6 py-3 rounded-xl border border-border-color text-text-main font-bold hover:bg-slate-50 transition-colors">
+                    Cancel
+                </button>
+<div class="flex items-center gap-4">
+<span class="hidden sm:block text-sm text-text-secondary">Estimated time: ~45s</span>
+<button class="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-blue-500/30 hover:bg-primary-dark hover:shadow-blue-600/40 transition-all active:scale-95">
+<span class="material-symbols-outlined">receipt_long</span>
+                        Generate Report
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

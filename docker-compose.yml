@@ -1,0 +1,174 @@
+networks:
+  sadcpf:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  meilisearch_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sadcpf_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-sadcpfnexus}
+      POSTGRES_USER: ${DB_USERNAME:-sadcpf}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - sadcpf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sadcpf} -d ${DB_DATABASE:-sadcpfnexus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: sadcpf_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-secret}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - sadcpf
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: sadcpf_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-sadcpfminio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-secret123456}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - sadcpf
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.7
+    container_name: sadcpf_meilisearch
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY:-masterKey}
+      MEILI_ENV: development
+    volumes:
+      - meilisearch_data:/meili_data
+    ports:
+      - "7700:7700"
+    networks:
+      - sadcpf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-setup:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: sadcpf_api_setup
+    working_dir: /var/www/api
+    volumes:
+      - ./api:/var/www/api
+    environment:
+      - APP_KEY=${APP_KEY:-}
+      - APP_ENV=local
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=${DB_DATABASE:-sadcpfnexus}
+      - DB_USERNAME=${DB_USERNAME:-sadcpf}
+      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - REDIS_PORT=6379
+    command: sh -c "cp -n .env.docker.example .env 2>/dev/null || true && composer install --no-interaction --prefer-dist && (test -n \"$$APP_KEY\" || php artisan key:generate --force) && php artisan migrate --force && php artisan db:seed --force"
+    networks:
+      - sadcpf
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: sadcpf_php
+    restart: unless-stopped
+    working_dir: /var/www/api
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    env_file:
+      - ./api/.env
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    networks:
+      - sadcpf
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api-setup:
+        condition: service_completed_successfully
+
+  nginx:
+    image: nginx:alpine
+    container_name: sadcpf_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/nginx/api.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - sadcpf
+    depends_on:
+      - php
+
+  web:
+    image: node:20-alpine
+    container_name: sadcpf_web
+    restart: unless-stopped
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    volumes:
+      - ./web:/app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+    networks:
+      - sadcpf

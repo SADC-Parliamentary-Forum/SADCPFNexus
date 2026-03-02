@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Procurement - Vendor Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1d85ed",
+              "primary-dark": "#156cb8",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1a2632",
+            },
+            fontFamily: {
+              display: ["Public Sans", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark px-6 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight hidden md:block">SADCPFNexus</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary font-bold text-sm leading-normal border-b-2 border-primary py-1" href="#">Vendors</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Contracts</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Invoices</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block w-64">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-lg border-0 py-2 pl-10 text-slate-900 ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-slate-800 dark:ring-slate-700 dark:text-white" placeholder="Search vendors..." type="text"/>
+</div>
+<button class="relative rounded-full bg-slate-100 p-2 text-slate-500 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900"></span>
+</button>
+<div class="h-10 w-10 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-700" data-alt="User profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD1ByHkUBwMnBOGrzixgSjMBg0HdF19cnKqGSUqVZYBlyIoo5BlRwgMlVmRiIVP3942TGymE1KlM_5XVfkEdwiGFC7cx5oL1D638BcSP2FIL9tuMHbvA2QD1N5HsHwWrWnrwb5CAFjM7zOFXAx2fgKI6z6fbP1Eu2kirqUNCuJOpqUTrFjBM5LKbIPpiYfwYE8PzuFpzkmBCgSEfx5Twzp3YG3XNaAjoqTIviHQalyFWJiJC_xBCvf8aLCvcDftQKrH6QHcb_d0M6Y');"></div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Navigation (Desktop/Tablet) -->
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 hidden md:flex flex-col flex-shrink-0 z-40 h-[calc(100vh-73px)] overflow-y-auto">
+<div class="p-4 space-y-6">
+<!-- User Context -->
+<div class="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Admin Console</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Procurement Officer</p>
+</div>
+</div>
+<!-- Nav Links -->
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium group-hover:text-primary transition-colors">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">menu_book</span>
+<span class="text-sm font-medium group-hover:text-primary transition-colors">Catalog</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 text-primary rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">group</span>
+<span class="text-sm font-medium">Vendors</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">shopping_cart</span>
+<span class="text-sm font-medium group-hover:text-primary transition-colors">Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium group-hover:text-primary transition-colors">Settings</span>
+</a>
+</div>
+<!-- Filters Section in Sidebar for Tablet/Desktop -->
+<div class="pt-6 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">Filters</h3>
+<button class="text-xs text-primary hover:text-primary-dark">Reset</button>
+</div>
+<div class="space-y-4 px-1">
+<div>
+<label class="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">Status</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary bg-transparent" type="checkbox"/>
+                                    All Statuses
+                                </label>
+<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+<input class="rounded border-slate-300 text-primary focus:ring-primary bg-transparent" type="checkbox"/>
+                                    Compliant
+                                </label>
+<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+<input class="rounded border-slate-300 text-primary focus:ring-primary bg-transparent" type="checkbox"/>
+                                    Pending Review
+                                </label>
+</div>
+</div>
+<div>
+<label class="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2 block">Category</label>
+<select class="w-full rounded-lg border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+<option>All Categories</option>
+<option>Office Supplies</option>
+<option>Hardware</option>
+<option>Consulting</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 md:p-8 relative">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Vendor Register</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Manage and monitor approved suppliers for compliance.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="md:hidden flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium shadow-sm">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                            Filters
+                        </button>
+<div class="flex rounded-lg bg-white dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 shadow-sm">
+<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[20px]">table_rows</span>
+</button>
+<button class="p-2 rounded bg-slate-100 dark:bg-slate-700 text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Filters / Badges -->
+<div class="flex flex-wrap gap-2 pb-2">
+<button class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 text-white text-sm font-medium border border-transparent transition hover:bg-slate-700 dark:bg-white dark:text-slate-900">
+                        All Vendors
+                        <span class="bg-white/20 px-1.5 py-0.5 rounded-md text-xs dark:bg-slate-200/50">142</span>
+</button>
+<button class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm font-medium hover:bg-slate-50 transition dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                        Compliant
+                        <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-md text-xs dark:bg-green-900/30 dark:text-green-400">98</span>
+</button>
+<button class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm font-medium hover:bg-slate-50 transition dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                        Pending
+                        <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md text-xs dark:bg-amber-900/30 dark:text-amber-400">12</span>
+</button>
+<button class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 text-sm font-medium hover:bg-slate-50 transition dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700">
+                        Blocked
+                        <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md text-xs dark:bg-red-900/30 dark:text-red-400">3</span>
+</button>
+</div>
+<!-- Grid of Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+<!-- Card 1: Compliant -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-700 bg-cover bg-center border border-slate-200 dark:border-slate-600 flex-shrink-0" data-alt="Acme Corp Logo Placeholder" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDRhxPUd-bksMtQizfp51WhxQgrZMw8yVmhV3_-N2688KyT4DxUb_I1dx-3NwI-ErIavWbUGLF9LbDIH31o7ZartndPsuduGp8JkKim_ENpCvNq0NEE5tTbxDwnrocqbrT7NOlSukYIPHa_aSv_j2EKPd7P1b1hBLw9QIcBrVsAvHR098isJ2RGYspWbkw1249n9YC7aJ35Pd8JE7SrWGrbNB8i7ZeOVbclPXoXq4E1tyXsD0yWHwhhNqZZg1c6qNbAHVW6M4sBFBY');"></div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">Acme Supply Corp</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-8821</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">print</span>
+                                        Office Supplies
+                                    </div>
+</div>
+<div class="bg-green-50 dark:bg-green-900/10 p-2 rounded-lg border border-green-100 dark:border-green-900/20">
+<p class="text-[10px] uppercase font-bold text-green-600/70 dark:text-green-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-green-700 dark:text-green-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px] fill-current">verified</span>
+                                        Compliant
+                                    </div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Oct 24, 2023</span></span>
+<span class="flex items-center gap-1 text-primary cursor-pointer hover:underline">
+                                    View Profile
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Pending -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-slate-100 dark:bg-slate-700 bg-cover bg-center border border-slate-200 dark:border-slate-600 flex-shrink-0" data-alt="TechSolutions Logo Placeholder" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuADKnIs2yf3JQ5zHNjQjezHEsG-pj1uDU4uVero1Y6wBvJ0YFIwgug9JbLrq68c6Vjo1zMIjA3IBJ4vu0pNsOdJvV8MfKE2cphOcS9ew05TpxSQajfMLsY3Kea1a0Mp26ipe1UOhIc5pM0AcLVmqgpMicqiI-oDU1UE9DzEvTPVpGkvETsWSZWpmJdC0WqK6qRnjnF31iKopPQP-ecP91JexrtLlnqtVLf7vlRA9HUYSYDxrjiRVeMNAP8c8tIxnS0S95mcP_WRM_E');"></div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">TechSolutions Ltd</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-9002</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">computer</span>
+                                        IT Hardware
+                                    </div>
+</div>
+<div class="bg-amber-50 dark:bg-amber-900/10 p-2 rounded-lg border border-amber-100 dark:border-amber-900/20">
+<p class="text-[10px] uppercase font-bold text-amber-600/70 dark:text-amber-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px]">pending</span>
+                                        Review
+                                    </div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Pending</span></span>
+<span class="flex items-center gap-1 text-primary cursor-pointer hover:underline">
+                                    Review
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Compliant -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 flex-shrink-0 text-indigo-600 dark:text-indigo-300 font-bold text-xl">
+                                        GB
+                                    </div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">Global Build Inc.</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-7714</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">construction</span>
+                                        Construction
+                                    </div>
+</div>
+<div class="bg-green-50 dark:bg-green-900/10 p-2 rounded-lg border border-green-100 dark:border-green-900/20">
+<p class="text-[10px] uppercase font-bold text-green-600/70 dark:text-green-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-green-700 dark:text-green-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px] fill-current">verified</span>
+                                        Compliant
+                                    </div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Sep 12, 2023</span></span>
+<span class="flex items-center gap-1 text-primary cursor-pointer hover:underline">
+                                    View Profile
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Blocked -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-red-400 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center border border-red-100 dark:border-red-900/30 flex-shrink-0 text-red-500 dark:text-red-400">
+<span class="material-symbols-outlined">block</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-red-500 transition-colors">FastLogistics LLC</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-5521</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">local_shipping</span>
+                                        Logistics
+                                    </div>
+</div>
+<div class="bg-red-50 dark:bg-red-900/10 p-2 rounded-lg border border-red-100 dark:border-red-900/20">
+<p class="text-[10px] uppercase font-bold text-red-600/70 dark:text-red-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-red-700 dark:text-red-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px]">do_not_disturb_on</span>
+                                        Blocked
+                                    </div>
+</div>
+</div>
+<div class="mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded border border-red-100 dark:border-red-900/20">
+<p class="text-xs text-red-600 dark:text-red-300 flex items-start gap-1">
+<span class="material-symbols-outlined text-[14px] mt-0.5">info</span>
+                                    Flagged for insurance expiry.
+                                </p>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Jan 10, 2023</span></span>
+<span class="flex items-center gap-1 text-slate-400 cursor-not-allowed">
+                                    View Profile
+                                    <span class="material-symbols-outlined text-[14px]">lock</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 5: Compliant -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center border border-orange-100 dark:border-orange-800 flex-shrink-0 text-orange-600 dark:text-orange-300 font-bold text-xl">
+                                        DS
+                                    </div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">Delta Secur</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-3490</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">security</span>
+                                        Security
+                                    </div>
+</div>
+<div class="bg-green-50 dark:bg-green-900/10 p-2 rounded-lg border border-green-100 dark:border-green-900/20">
+<p class="text-[10px] uppercase font-bold text-green-600/70 dark:text-green-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-green-700 dark:text-green-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px] fill-current">verified</span>
+                                        Compliant
+                                    </div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Nov 02, 2023</span></span>
+<span class="flex items-center gap-1 text-primary cursor-pointer hover:underline">
+                                    View Profile
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+<!-- Card 6: Compliant -->
+<div class="group bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/50 relative overflow-hidden flex flex-col">
+<div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+<div class="p-5 flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-start">
+<div class="flex gap-3 items-center">
+<div class="h-12 w-12 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center border border-teal-100 dark:border-teal-800 flex-shrink-0 text-teal-600 dark:text-teal-300 font-bold text-xl">
+                                        PP
+                                    </div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">PaperPlus</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ID: #V-1290</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg">
+<p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Category</p>
+<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">print</span>
+                                        Office Supplies
+                                    </div>
+</div>
+<div class="bg-green-50 dark:bg-green-900/10 p-2 rounded-lg border border-green-100 dark:border-green-900/20">
+<p class="text-[10px] uppercase font-bold text-green-600/70 dark:text-green-400/70 tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-1.5 text-green-700 dark:text-green-400 text-sm font-bold">
+<span class="material-symbols-outlined text-[16px] fill-current">verified</span>
+                                        Compliant
+                                    </div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+<span>Last Audit: <span class="font-medium text-slate-700 dark:text-slate-300">Dec 15, 2023</span></span>
+<span class="flex items-center gap-1 text-primary cursor-pointer hover:underline">
+                                    View Profile
+                                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<button class="fixed bottom-8 right-8 h-14 w-14 rounded-full bg-primary text-white shadow-lg hover:shadow-xl hover:bg-primary-dark transition-all duration-300 flex items-center justify-center group z-50">
+<span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform duration-300">add</span>
+<span class="absolute right-16 bg-slate-900 text-white text-xs font-bold py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Add New Vendor
+                </span>
+</button>
+</main>
+</div>
+</body></html>

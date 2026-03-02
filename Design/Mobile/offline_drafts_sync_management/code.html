@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Offline Drafts &amp; Sync Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#17cf82",
+                        "primary-dark": "#0ea664",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#11211a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2c24",
+                        "text-main": "#111815",
+                        "text-sub": "#638878",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main antialiased selection:bg-primary selection:text-white">
+<div class="relative flex h-full min-h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark overflow-x-hidden shadow-2xl">
+<!-- Header -->
+<header class="flex items-center justify-between bg-surface-light px-4 py-4 pt-12 shadow-sm sticky top-0 z-10">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-background-light text-text-main transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-text-main flex-1 text-center pr-2">Offline Draft Management</h1>
+<button class="flex items-center justify-center text-primary font-semibold text-sm hover:text-primary-dark transition-colors">
+                Help
+            </button>
+</header>
+<!-- Status Overview -->
+<section class="p-4 space-y-4">
+<div class="flex gap-4">
+<!-- Storage Health Card -->
+<div class="flex-1 rounded-2xl bg-surface-light p-4 shadow-sm border border-slate-100 flex flex-col justify-between h-32">
+<div class="flex items-start justify-between">
+<span class="material-symbols-outlined text-primary text-3xl">hard_drive</span>
+<div class="size-2 rounded-full bg-primary"></div>
+</div>
+<div>
+<p class="text-xs font-medium text-text-sub uppercase tracking-wider">Storage Health</p>
+<p class="text-xl font-bold text-text-main mt-1">Optimal</p>
+</div>
+</div>
+<!-- Security Compliance Card -->
+<div class="flex-1 rounded-2xl bg-surface-light p-4 shadow-sm border border-slate-100 flex flex-col justify-between h-32">
+<div class="flex items-start justify-between">
+<span class="material-symbols-outlined text-primary text-3xl">verified_user</span>
+<div class="size-2 rounded-full bg-primary"></div>
+</div>
+<div>
+<p class="text-xs font-medium text-text-sub uppercase tracking-wider">Security Check</p>
+<p class="text-xl font-bold text-text-main mt-1">Compliant</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Drafts List Section -->
+<div class="flex-1 flex flex-col px-4 pb-24">
+<div class="flex items-center justify-between mb-3 mt-2">
+<h2 class="text-lg font-bold text-text-main">Ready for Sync</h2>
+<span class="text-xs font-medium text-text-sub bg-slate-200 px-2 py-1 rounded-full">3 Items</span>
+</div>
+<!-- List Items -->
+<div class="space-y-3">
+<!-- Item 1: Waiting for Network -->
+<div class="group relative flex items-center gap-4 rounded-xl bg-surface-light p-4 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-2xl">flight_takeoff</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-sm font-bold text-text-main truncate pr-2">Annual Leave Request</h3>
+<span class="shrink-0 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+<span class="size-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                                Waiting
+                            </span>
+</div>
+<p class="text-xs text-text-sub truncate">Created: Today, 09:41 AM</p>
+</div>
+</div>
+<!-- Item 2: Syncing -->
+<div class="group relative flex items-center gap-4 rounded-xl bg-surface-light p-4 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
+<span class="material-symbols-outlined text-2xl">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-sm font-bold text-text-main truncate pr-2">PIF: Project Alpha</h3>
+<span class="shrink-0 inline-flex items-center rounded-md bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600/20">
+<span class="material-symbols-outlined text-[10px] mr-1 animate-spin">sync</span>
+                                Syncing
+                            </span>
+</div>
+<p class="text-xs text-text-sub truncate">Uploading attachment (45%)</p>
+</div>
+</div>
+<!-- Item 3: Waiting -->
+<div class="group relative flex items-center gap-4 rounded-xl bg-surface-light p-4 shadow-sm border border-transparent hover:border-primary/20 transition-all">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-2xl">report_problem</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-sm font-bold text-text-main truncate pr-2">Incident Report #402</h3>
+<span class="shrink-0 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">
+<span class="size-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                                Waiting
+                            </span>
+</div>
+<p class="text-xs text-text-sub truncate">Location: server_room_01</p>
+</div>
+</div>
+<!-- Section Divider -->
+<div class="flex items-center justify-between mt-6 mb-3">
+<h2 class="text-lg font-bold text-text-main">Restricted</h2>
+<span class="material-symbols-outlined text-slate-400 text-sm">lock</span>
+</div>
+<!-- Restricted Item -->
+<div class="group relative flex items-center gap-4 rounded-xl bg-slate-50 p-4 shadow-none border border-slate-100 opacity-75">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
+<span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-sm font-bold text-slate-500 truncate pr-2">Q3 Financial Audit</h3>
+<span class="shrink-0 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-500/10">
+<span class="material-symbols-outlined text-[10px] mr-1">lock</span>
+                                Restricted
+                            </span>
+</div>
+<p class="text-xs text-slate-400 truncate">Requires secure connection to view</p>
+</div>
+</div>
+<!-- Restricted Item 2 -->
+<div class="group relative flex items-center gap-4 rounded-xl bg-slate-50 p-4 shadow-none border border-slate-100 opacity-75">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-500">
+<span class="material-symbols-outlined text-2xl">policy</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-sm font-bold text-slate-500 truncate pr-2">SG Executive Brief</h3>
+<span class="shrink-0 inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-500/10">
+<span class="material-symbols-outlined text-[10px] mr-1">lock</span>
+                                Restricted
+                            </span>
+</div>
+<p class="text-xs text-slate-400 truncate">Encrypted locally. Connect to decrypt.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Action -->
+<div class="fixed bottom-0 w-full max-w-md bg-white/80 backdrop-blur-md border-t border-slate-100 p-4 z-20">
+<div class="flex flex-col gap-3">
+<div class="flex gap-2 items-start bg-amber-50 p-3 rounded-lg border border-amber-100">
+<span class="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">warning</span>
+<p class="text-xs text-amber-800 leading-snug">
+<span class="font-bold">Compliance Warning:</span> Unsynced data is not yet part of the immutable audit ledger. Please sync as soon as connectivity is restored.
+                    </p>
+</div>
+<button class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-white font-bold text-base shadow-lg shadow-primary/25 active:scale-[0.98] transition-all hover:bg-primary-dark">
+<span class="material-symbols-outlined">sync</span>
+                    Sync All Drafts
+                </button>
+</div>
+<!-- Bottom Nav Bar Area (Placeholder for actual navigation) -->
+<div class="mt-4 flex justify-between px-6 pb-2 text-slate-400">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">folder_open</span>
+<span class="text-[10px] font-medium">Drafts</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="text-[10px] font-medium">Approvals</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</a>
+</div>
+</div>
+</div>
+</body></html>

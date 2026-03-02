@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus ERP - New Ledger Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg class="h-full w-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus ERP</h2>
+</div>
+<nav class="hidden lg:flex items-center gap-9">
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Ledgers</a>
+<a class="text-slate-900 dark:text-white font-bold text-sm leading-normal" href="#">Compliance</a>
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Audit Logs</a>
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<label class="hidden md:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full ring-1 ring-slate-200 dark:ring-slate-700 bg-slate-50 dark:bg-slate-800">
+<div class="text-slate-500 dark:text-slate-400 flex border-none bg-transparent items-center justify-center pl-3 rounded-l-lg">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-slate-500 dark:placeholder:text-slate-400 px-3 text-sm font-normal leading-normal" placeholder="Search records..." value=""/>
+</div>
+</label>
+<button class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-slate-200 dark:ring-slate-700 overflow-hidden" data-alt="User avatar profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDNhKKl6XqBRRd984FINfp5kKHIwhxXBZqi85SkCOZdsWaUHfL0__xwCWAhUcg0-bc0I6PoVWWmao4pN1eJG_c7mvHlEbeKpI1p3cuiCv3VyXf07J_9H5URsD_9iaLy_QMqEU3tSbH1fslp4JKz7U1OsmA4jnY-6UZFHWlBi34zdbBU_H8puBWdpeBFBtr8qsIp1YX7ojWb1jjweQWs9QQGKLlYKbnNW4QzGQZe0Z7HyCshWIyJAvtSKbQQUDqZAqwgb1Fshwb3Jxg");'></button>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex flex-1 justify-center py-8 px-4 sm:px-6 lg:px-8">
+<div class="flex flex-col max-w-[1024px] w-full gap-6">
+<!-- Page Title -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-primary text-sm font-medium mb-1">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+                            Back to Compliance Dashboard
+                        </div>
+<h1 class="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Generate New Ledger Report</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal">Step 1 of 3: Report Parameters</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold uppercase tracking-wider">Level 4 Clearance</span>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Left Column: Form -->
+<main class="flex-1 flex flex-col gap-8">
+<!-- Scope Section -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">1. Report Scope</h3>
+<div class="grid gap-3">
+<label class="group relative flex cursor-pointer items-start gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-primary/50 dark:hover:border-primary/50 transition-all shadow-sm">
+<input checked="" class="peer h-5 w-5 mt-0.5 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary" name="scope" type="radio"/>
+<div class="flex grow flex-col">
+<span class="text-slate-900 dark:text-white font-medium mb-1">Global Scope</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm">Comprehensive report covering the entire organization ledger. Requires executive approval for export.</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">public</span>
+</label>
+<label class="group relative flex cursor-pointer items-start gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-primary/50 dark:hover:border-primary/50 transition-all shadow-sm">
+<input class="peer h-5 w-5 mt-0.5 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary" name="scope" type="radio"/>
+<div class="flex grow flex-col">
+<span class="text-slate-900 dark:text-white font-medium mb-1">Module Specific</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm">Report limited to a specific functional module (e.g., Procurement, HR, Treasury).</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">view_module</span>
+</label>
+<label class="group relative flex cursor-pointer items-start gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-primary/50 dark:hover:border-primary/50 transition-all shadow-sm">
+<input class="peer h-5 w-5 mt-0.5 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary" name="scope" type="radio"/>
+<div class="flex grow flex-col">
+<span class="text-slate-900 dark:text-white font-medium mb-1">User Specific</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm">Targeted audit trail of a specific user's activity log within the selected timeframe.</span>
+</div>
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">person_search</span>
+</label>
+</div>
+<!-- Hidden by default unless module specific is selected, but shown here for layout demonstration -->
+<div class="mt-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+<label class="block text-slate-700 dark:text-slate-300 text-sm font-medium mb-2">Select Target Module</label>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-primary">
+<option disabled="" selected="" value="">Choose a module...</option>
+<option value="procurement">Procurement &amp; Sourcing</option>
+<option value="hr">Human Resources &amp; Payroll</option>
+<option value="treasury">Treasury &amp; Risk</option>
+</select>
+</div>
+</div>
+</section>
+<div class="h-px bg-slate-200 dark:bg-slate-700 w-full"></div>
+<!-- Date Range & Event Types -->
+<div class="grid md:grid-cols-2 gap-8">
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">2. Reporting Period</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">From Date</label>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-primary" type="date"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">To Date</label>
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-primary focus:ring-primary" type="date"/>
+</div>
+</div>
+<div class="flex items-start gap-2 text-slate-500 dark:text-slate-400 text-xs bg-blue-50 dark:bg-blue-900/20 p-3 rounded text-blue-800 dark:text-blue-200">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>Historical data older than 7 years must be requested from the Archive Retrieval System.</span>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">3. Event Types</h3>
+<div class="flex flex-col gap-3">
+<label class="flex items-center gap-3">
+<input checked="" class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-slate-700 dark:text-slate-300 font-medium">Access Logs</span>
+<span class="text-xs text-slate-400 ml-auto">Login, View</span>
+</label>
+<label class="flex items-center gap-3">
+<input checked="" class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-slate-700 dark:text-slate-300 font-medium">Change Events</span>
+<span class="text-xs text-slate-400 ml-auto">Create, Update</span>
+</label>
+<label class="flex items-center gap-3">
+<input class="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-slate-700 dark:text-slate-300 font-medium">Deletion Events</span>
+<span class="text-xs text-slate-400 ml-auto">Soft/Hard Delete</span>
+</label>
+</div>
+</section>
+</div>
+<div class="h-px bg-slate-200 dark:bg-slate-700 w-full"></div>
+<!-- Output Format -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">4. Output Format</h3>
+<div class="grid sm:grid-cols-2 gap-4">
+<label class="cursor-pointer border border-primary bg-primary/5 dark:bg-primary/10 rounded-xl p-4 flex items-center gap-3 ring-1 ring-primary">
+<input checked="" class="h-5 w-5 text-primary border-slate-300 dark:border-slate-600 focus:ring-primary" name="format" type="radio"/>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white">Secured PDF</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Digital Signature included</span>
+</div>
+<span class="material-symbols-outlined text-red-500 text-3xl ml-auto">picture_as_pdf</span>
+</label>
+<label class="cursor-pointer border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl p-4 flex items-center gap-3">
+<input class="h-5 w-5 text-primary border-slate-300 dark:border-slate-600 focus:ring-primary" name="format" type="radio"/>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-white">Excel Workbook</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Raw data for analysis</span>
+</div>
+<span class="material-symbols-outlined text-green-600 text-3xl ml-auto">table_view</span>
+</label>
+</div>
+</section>
+</main>
+<!-- Right Column: Sidebar info -->
+<aside class="w-full lg:w-80 flex flex-col gap-6">
+<!-- Policy Notice Card -->
+<div class="rounded-xl border border-orange-100 dark:border-orange-900 bg-orange-50/50 dark:bg-orange-950/20 p-5">
+<div class="flex items-center gap-2 mb-3 text-orange-700 dark:text-orange-400">
+<span class="material-symbols-outlined">warning</span>
+<h4 class="font-bold text-sm uppercase tracking-wide">Policy Notice</h4>
+</div>
+<p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">
+                                All report generation activities are strictly logged for audit purposes. Accessing sensitive ledger data without a valid business case constitutes a Level 2 violation.
+                            </p>
+<div class="text-xs text-orange-800 dark:text-orange-300 font-medium">
+                                Reference: COMP-POL-2023-04
+                            </div>
+</div>
+<!-- Compliance Metadata -->
+<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 flex flex-col gap-4">
+<h4 class="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wide border-b border-slate-100 dark:border-slate-700 pb-2">Session Metadata</h4>
+<div class="grid grid-cols-2 gap-y-4 text-sm">
+<div class="flex flex-col">
+<span class="text-slate-500 dark:text-slate-400 text-xs">Compliance Ref</span>
+<span class="text-slate-900 dark:text-white font-mono">AUD-2023-X99</span>
+</div>
+<div class="flex flex-col">
+<span class="text-slate-500 dark:text-slate-400 text-xs">Request ID</span>
+<span class="text-slate-900 dark:text-white font-mono">REQ-84720</span>
+</div>
+<div class="flex flex-col col-span-2">
+<span class="text-slate-500 dark:text-slate-400 text-xs">Authorized By</span>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="text-slate-900 dark:text-white">System Admin (Auto)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Help -->
+<div class="rounded-xl bg-primary/5 dark:bg-primary/10 p-5 border border-primary/10">
+<h4 class="font-bold text-primary text-sm mb-2">Need Assistance?</h4>
+<p class="text-slate-600 dark:text-slate-400 text-xs mb-3">
+                                 If you are unsure about the scope parameters, consult the Data Governance handbook.
+                             </p>
+<a class="text-primary text-xs font-semibold hover:underline flex items-center gap-1" href="#">
+                                 View Handbook <span class="material-symbols-outlined text-xs">open_in_new</span>
+</a>
+</div>
+</aside>
+</div>
+<!-- Footer Actions -->
+<div class="flex items-center justify-end gap-4 pt-6 mt-4 border-t border-slate-200 dark:border-slate-800">
+<button class="px-6 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors">
+                        Cancel
+                    </button>
+<button class="px-6 py-2.5 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium shadow-sm shadow-blue-500/30 transition-all flex items-center gap-2">
+                        Next Step
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

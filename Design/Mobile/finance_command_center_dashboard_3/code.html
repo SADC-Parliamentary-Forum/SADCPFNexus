@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Finance Command Center - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#059669", // Emerald Green
+              "primary-light": "#10b981", 
+              secondary: "#d97706", // Amber/Gold
+              "secondary-light": "#fbbf24",
+              "background-light": "#f8fafc", // Very light slate
+              "card-bg": "#ffffff", 
+              "surface-border": "#e2e8f0", 
+              "text-main": "#334155", // Slate 700 - Softer than pure black
+              "text-sub": "#64748b", // Slate 500
+              // New Governance Palette
+              "gov-terracotta": "#ca8a04", // Muted mustard/gold
+              "gov-terracotta-light": "#fef9c3", 
+              "gov-slate-blue": "#475569",
+              "gov-alert": "#b45309", // Terracotta/Rust
+              "gov-alert-bg": "#fff7ed", // Light orange/rust bg
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"],
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "2xl": "1rem",
+              "full": "9999px"
+            },
+            boxShadow: {
+                'card': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
+                'card-hover': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }.chart-stroke {
+            stroke: url(#gradientPrimary);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-main min-h-screen flex flex-col font-display">
+<div class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-border px-4 py-3 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+<span class="material-symbols-outlined text-2xl">security</span>
+</div>
+<div>
+<h1 class="text-xs font-semibold text-text-sub uppercase tracking-wider">SADCPFNexus</h1>
+<h2 class="text-lg font-bold leading-none text-slate-800">Finance Command</h2>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-600 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+</span>
+<span class="text-xs font-bold text-emerald-700 tracking-tight">Audit Ready</span>
+</div>
+</div>
+</div>
+<main class="flex-1 p-4 pb-24 space-y-4 overflow-y-auto no-scrollbar">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-card-bg rounded-xl p-4 shadow-card border border-surface-border flex flex-col justify-between">
+<div class="flex items-start justify-between mb-2">
+<div class="p-2 rounded-lg bg-slate-50 text-slate-600">
+<span class="material-symbols-outlined text-xl">timer</span>
+</div>
+<span class="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_down</span>
+                        -12%
+                    </span>
+</div>
+<div>
+<p class="text-xs font-semibold text-text-sub uppercase tracking-wide">Cycle Time</p>
+<h3 class="text-2xl font-bold text-slate-800 mt-1">4.2 <span class="text-sm font-normal text-text-sub">Days</span></h3>
+<p class="text-[10px] text-text-sub mt-1 font-medium">Submission to Payment</p>
+</div>
+</div>
+<div class="bg-card-bg rounded-xl p-4 shadow-card border border-surface-border relative overflow-hidden">
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-slate-300">pie_chart</span>
+</div>
+<p class="text-xs font-semibold text-text-sub mb-3 uppercase tracking-wide">Advance Cap</p>
+<div class="flex items-center gap-3">
+<div class="relative w-16 h-16 flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-gov-terracotta" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="42, 100" stroke-width="4"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-xs font-bold text-slate-800">42%</span>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<div class="w-2 h-2 rounded-full bg-gov-terracotta"></div>
+<span class="text-[10px] font-medium text-text-sub">Utilized</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-slate-200"></div>
+<span class="text-[10px] font-medium text-text-sub">Available</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-card-bg rounded-xl p-5 shadow-card border border-surface-border">
+<div class="flex items-center justify-between mb-5">
+<div>
+<h3 class="text-base font-bold text-slate-800">Imprest Aging</h3>
+<p class="text-xs text-text-sub font-medium">Outstanding Amounts by Duration</p>
+</div>
+<div class="text-right">
+<p class="text-lg font-bold text-slate-800">$45,200</p>
+<div class="flex items-center justify-end gap-1 text-gov-terracotta">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Attention Needed</p>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-medium text-text-sub">
+<span>&lt; 30 Days</span>
+<span class="text-slate-700 font-semibold">$12,400</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-600 rounded-full shadow-sm" style="width: 25%"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-medium text-text-sub">
+<span>30-60 Days</span>
+<span class="text-slate-700 font-semibold">$8,200</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-400 rounded-full shadow-sm" style="width: 18%"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-medium text-text-sub">
+<span>60-90 Days</span>
+<span class="text-gov-terracotta font-bold">$18,500</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-gov-terracotta rounded-full shadow-sm" style="width: 45%"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-medium text-text-sub">
+<span>&gt; 90 Days</span>
+<span class="text-gov-alert font-bold">$6,100</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-gov-alert rounded-full shadow-sm" style="width: 12%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-card-bg rounded-xl p-5 shadow-card border border-surface-border">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-base font-bold text-slate-800">Travel Cost Analysis</h3>
+<p class="text-xs text-text-sub font-medium">Q1 vs Q2 Comparative</p>
+</div>
+<div class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-600 shadow-sm"></span>
+<span class="text-[10px] font-bold text-slate-700 uppercase">Q2</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+<span class="text-[10px] font-bold text-text-sub uppercase">Q1</span>
+</div>
+</div>
+</div>
+<div class="relative h-44 w-full">
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="border-t border-dashed border-slate-200 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 w-full h-0"></div>
+<div class="border-t border-dashed border-slate-200 w-full h-0"></div>
+</div>
+<svg class="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+<defs>
+<linearGradient id="gradientPrimary" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#059669" stop-opacity="0.1"></stop>
+<stop offset="100%" stop-color="#059669" stop-opacity="0"></stop>
+</linearGradient>
+<linearGradient id="lineGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#059669"></stop>
+<stop offset="100%" stop-color="#10b981"></stop>
+</linearGradient>
+</defs>
+<path class="text-slate-300" d="M0,70 Q20,65 40,75 T80,50 T100,60" fill="none" stroke="currentColor" stroke-dasharray="4,4" stroke-width="2"></path>
+<path d="M0,80 Q25,50 50,60 T100,30 V100 H0 Z" fill="url(#gradientPrimary)"></path>
+<path d="M0,80 Q25,50 50,60 T100,30" fill="none" stroke="url(#lineGradient)" stroke-linecap="round" stroke-width="3"></path>
+<circle class="fill-white stroke-emerald-600 stroke-[3px]" cx="50" cy="60" filter="drop-shadow(0 1px 2px rgb(0 0 0 / 0.1))" r="4"></circle>
+<circle class="fill-white stroke-emerald-600 stroke-[3px]" cx="100" cy="30" filter="drop-shadow(0 1px 2px rgb(0 0 0 / 0.1))" r="4"></circle>
+<g transform="translate(65, 10)">
+<rect fill="#334155" height="18" opacity="0.9" rx="4" width="32"></rect>
+<text fill="white" font-size="8" font-weight="bold" text-anchor="middle" x="16" y="12">$42k</text>
+</g>
+</svg>
+</div>
+<div class="flex justify-between mt-2 px-1 text-[10px] font-medium text-text-sub uppercase tracking-wider">
+<span>Wk 1</span>
+<span>Wk 2</span>
+<span>Wk 3</span>
+<span>Wk 4</span>
+<span>Wk 5</span>
+<span>Wk 6</span>
+</div>
+<div class="mt-4 flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+<span class="text-xs font-semibold text-slate-600">Total Variance</span>
+<span class="text-sm font-bold text-emerald-700">-$25k (Savings)</span>
+</div>
+</div>
+<div class="space-y-3">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-sub px-1">Budget Variance Alerts</h3>
+<div class="bg-gov-alert-bg border border-orange-100 rounded-xl p-4 flex items-center gap-4 shadow-sm">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center text-gov-alert shadow-sm border border-orange-100">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-center mb-1.5">
+<h4 class="text-sm font-bold text-slate-800 truncate">IT Infrastructure</h4>
+<span class="text-xs font-bold text-gov-alert bg-orange-100/50 px-2 py-0.5 rounded-full">92%</span>
+</div>
+<div class="w-full bg-white h-2 rounded-full overflow-hidden border border-orange-100">
+<div class="h-full bg-gov-alert rounded-full" style="width: 92%"></div>
+</div>
+<p class="text-[11px] text-slate-600 mt-1.5 font-medium">Projected overrun in 14 days if rate continues.</p>
+</div>
+</div>
+<div class="bg-white border border-surface-border rounded-xl p-4 flex items-center gap-4 shadow-card">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-gov-terracotta border border-slate-100">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-center mb-1.5">
+<h4 class="text-sm font-bold text-slate-800 truncate">Consultancy Fees</h4>
+<span class="text-xs font-bold text-gov-terracotta bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-100">88%</span>
+</div>
+<div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+<div class="h-full bg-gov-terracotta rounded-full" style="width: 88%"></div>
+</div>
+<p class="text-[11px] text-text-sub mt-1.5 font-medium">Approaching critical threshold.</p>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 w-full border-t border-surface-border bg-white pb-safe z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex justify-around items-center px-2 py-3">
+<a class="flex flex-col items-center gap-1 min-w-[64px] group" href="#">
+<div class="text-emerald-700 bg-emerald-50 transition-colors duration-200 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;">dashboard</span>
+</div>
+<span class="text-[10px] font-bold text-emerald-800">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 min-w-[64px] group" href="#">
+<div class="text-slate-400 transition-colors duration-200 group-hover:text-emerald-600 group-hover:bg-emerald-50 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-[24px]">verified</span>
+</div>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-emerald-700">Approvals</span>
+</a>
+<a class="flex flex-col items-center gap-1 min-w-[64px] group" href="#">
+<div class="text-slate-400 transition-colors duration-200 group-hover:text-emerald-600 group-hover:bg-emerald-50 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+</div>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-emerald-700">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 min-w-[64px] group" href="#">
+<div class="text-slate-400 transition-colors duration-200 group-hover:text-emerald-600 group-hover:bg-emerald-50 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</div>
+<span class="text-[10px] font-medium text-slate-500 group-hover:text-emerald-700">Settings</span>
+</a>
+</div>
+</nav>
+<div class="h-6 bg-white w-full fixed bottom-0 z-[40]"></div>
+
+</body></html>

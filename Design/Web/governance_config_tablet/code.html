@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Governance Config (Tablet) - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#1d85ed",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1e293b",
+              "text-main": "#0f172a",
+              "text-sub": "#64748b",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem", 
+              "lg": "0.5rem", 
+              "xl": "0.75rem", 
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for tablet-like feeling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #1d85ed;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #1d85ed;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-text-main font-display min-h-screen flex flex-col overflow-x-hidden antialiased selection:bg-primary/20">
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-slate-200 bg-surface-light px-6 py-4 shadow-sm">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-text-main">
+<div class="size-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined filled text-2xl">policy</span>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6 ml-4">
+<a class="text-text-sub hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-text-main text-sm font-bold border-b-2 border-primary py-4 mt-0.5" href="#">Governance</a>
+<a class="text-text-sub hover:text-primary text-sm font-medium transition-colors" href="#">Modules</a>
+<a class="text-text-sub hover:text-primary text-sm font-medium transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-sub">search</span>
+<input class="h-10 w-64 rounded-full border-none bg-slate-100 pl-10 pr-4 text-sm text-text-main placeholder:text-text-sub focus:ring-2 focus:ring-primary/50" placeholder="Search policies..." type="text"/>
+</div>
+<button class="relative rounded-full p-1 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-text-sub">notifications</span>
+<span class="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+</button>
+<div class="h-9 w-9 overflow-hidden rounded-full border border-slate-200 bg-slate-50" data-alt="User Avatar Profile Picture">
+<img alt="User" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp-PaJAnPICZgxXjQ6jDUYYtoIA7PpCuQkF8FYgJx3bO_T69Pel9mHiYL6f1aWjND0NenruGdU5E0hyefScJf8s-B-3qrl-vX1B-ABjR7RwWdu_iqEFzd2isXzI5BqVYqWa0PF6y2uqBhqCpYeU93bV0sZRQMSxIxYWFfD1Baz0nnLWQxsYG5BIc20N2nsQvkOSCWgQaOvXbdSBWosahiCSMhD6BchxfhJysd6em4VoW5GALyiD--s892qiyNNHCllJpRP3W0Snjs"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area (Tablet Landscape Layout) -->
+<div class="flex flex-1 overflow-hidden h-[calc(100vh-73px)]">
+<!-- Left Side Tabbed Navigation -->
+<aside class="w-20 lg:w-64 flex-shrink-0 border-r border-slate-200 bg-surface-light flex flex-col overflow-y-auto">
+<div class="p-6 pb-2 hidden lg:block">
+<h3 class="text-xs font-bold uppercase tracking-wider text-text-sub">Configuration</h3>
+</div>
+<nav class="flex-1 px-3 py-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-sub hover:bg-slate-50 group transition-colors" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">verified_user</span>
+<span class="hidden lg:block font-medium">General Policy</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/20" href="#">
+<span class="material-symbols-outlined filled">visibility_off</span>
+<span class="hidden lg:block">Redaction Rules</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-sub hover:bg-slate-50 group transition-colors" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">output</span>
+<span class="hidden lg:block font-medium">Export Policies</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-sub hover:bg-slate-50 group transition-colors" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">lock</span>
+<span class="hidden lg:block font-medium">Access Control</span>
+</a>
+<div class="my-4 border-t border-slate-100 mx-3"></div>
+<div class="px-3 py-2 hidden lg:block">
+<h3 class="text-xs font-bold uppercase tracking-wider text-text-sub">Monitoring</h3>
+</div>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-sub hover:bg-slate-50 group transition-colors" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">receipt_long</span>
+<span class="hidden lg:block font-medium">Audit Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-sub hover:bg-slate-50 group transition-colors" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">analytics</span>
+<span class="hidden lg:block font-medium">Usage Reports</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-text-sub hover:text-red-600 hover:bg-red-50 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="hidden lg:block font-medium">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Scroll Area -->
+<main class="flex-1 overflow-y-auto bg-slate-50/50 p-4 lg:p-8">
+<div class="max-w-5xl mx-auto space-y-8">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl font-black text-text-main tracking-tight">Redaction &amp; Export Configuration</h1>
+<p class="text-text-sub mt-2 text-lg">Manage data visibility rules and export permissions for sensitive datasets.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-light border border-slate-200 rounded-lg shadow-sm text-text-main font-medium hover:bg-slate-50 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">history</span>
+                            History
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg shadow-md font-medium hover:bg-blue-600 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                            Save Changes
+                        </button>
+</div>
+</div>
+<!-- Redaction Rules Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">visibility_off</span>
+<h2 class="text-xl font-bold text-text-main">Global Redaction Rules</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Card 1: PII Auto-Redaction -->
+<div class="bg-surface-light rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-9xl">badge</span>
+</div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<h3 class="font-bold text-lg text-text-main">PII Auto-Redaction</h3>
+<p class="text-text-sub text-sm mt-1 max-w-[280px]">Automatically mask SSN, email, and phone numbers in query results.</p>
+</div>
+<label class="flex items-center cursor-pointer relative" for="toggle-pii">
+<input checked="" class="sr-only toggle-checkbox" id="toggle-pii" type="checkbox"/>
+<div class="toggle-label w-14 h-8 bg-primary rounded-full transition-colors shadow-inner"></div>
+<div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform translate-x-6 shadow-sm"></div>
+</label>
+</div>
+<div class="mt-6">
+<label class="text-xs font-bold uppercase text-text-sub tracking-wider mb-2 block">Masking Method</label>
+<div class="flex gap-2">
+<button class="flex-1 py-2 px-3 text-sm font-medium rounded bg-primary/10 text-primary border border-primary/20">Asterisks (***)</button>
+<button class="flex-1 py-2 px-3 text-sm font-medium rounded bg-slate-100 text-text-sub hover:bg-slate-200">Nullify</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Financial Data -->
+<div class="bg-surface-light rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+<span class="material-symbols-outlined text-9xl">attach_money</span>
+</div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<h3 class="font-bold text-lg text-text-main">Financial Thresholds</h3>
+<p class="text-text-sub text-sm mt-1 max-w-[280px]">Redact transaction amounts exceeding specific values for general users.</p>
+</div>
+<label class="flex items-center cursor-pointer relative" for="toggle-finance">
+<input class="sr-only toggle-checkbox" id="toggle-finance" type="checkbox"/>
+<div class="toggle-label w-14 h-8 bg-slate-300 rounded-full transition-colors shadow-inner"></div>
+<div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform shadow-sm"></div>
+</label>
+</div>
+<div class="mt-6 opacity-50 pointer-events-none"> <!-- Disabled state visual -->
+<label class="text-xs font-bold uppercase text-text-sub tracking-wider mb-2 block">Threshold Limit ($)</label>
+<input class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer" disabled="" type="range"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Export Policies Section -->
+<section class="space-y-4 pt-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">download</span>
+<h2 class="text-xl font-bold text-text-main">Export Control</h2>
+</div>
+<div class="bg-surface-light rounded-xl shadow-sm border border-slate-200 p-6">
+<div class="flex flex-col md:flex-row gap-8">
+<div class="flex-1 space-y-6">
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="font-bold text-text-main">Max Rows per Export</label>
+<span class="text-primary font-bold bg-primary/10 px-2 py-0.5 rounded text-sm">5,000 Rows</span>
+</div>
+<input class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary hover:accent-blue-600" max="50000" min="1000" type="range" value="5000"/>
+<div class="flex justify-between text-xs text-text-sub mt-1">
+<span>1k</span>
+<span>10k</span>
+<span>25k</span>
+<span>50k+</span>
+</div>
+</div>
+<div>
+<label class="font-bold text-text-main block mb-3">Allowed Formats</label>
+<div class="flex flex-wrap gap-3">
+<label class="flex items-center gap-2 px-4 py-3 rounded-lg border border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors">
+<input checked="" class="rounded text-primary focus:ring-primary w-5 h-5 border-slate-300" type="checkbox"/>
+<span class="font-medium text-text-main">CSV</span>
+</label>
+<label class="flex items-center gap-2 px-4 py-3 rounded-lg border border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors">
+<input checked="" class="rounded text-primary focus:ring-primary w-5 h-5 border-slate-300" type="checkbox"/>
+<span class="font-medium text-text-main">PDF (Watermarked)</span>
+</label>
+<label class="flex items-center gap-2 px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+<input class="rounded text-primary focus:ring-primary w-5 h-5 border-slate-300" type="checkbox"/>
+<span class="font-medium text-text-main">JSON / XML</span>
+</label>
+</div>
+</div>
+</div>
+<div class="w-full md:w-1/3 bg-slate-50 rounded-lg p-4 border border-slate-200 flex flex-col justify-center items-center text-center">
+<div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
+<span class="material-symbols-outlined text-3xl text-orange-500">warning</span>
+</div>
+<h4 class="font-bold text-text-main">Export Approvals</h4>
+<p class="text-sm text-text-sub mt-1 mb-4">Exports over 10,000 rows require manager approval.</p>
+<button class="text-primary text-sm font-bold hover:underline">Configure Workflow</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Query Audit Table (Card List Summary) -->
+<section class="space-y-4 pt-4 pb-8">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">table_rows</span>
+<h2 class="text-xl font-bold text-text-main">Recent Query Audits</h2>
+</div>
+<a class="text-primary text-sm font-bold hover:underline" href="#">View All Logs</a>
+</div>
+<div class="grid gap-3">
+<!-- Audit Card 1 -->
+<div class="bg-surface-light rounded-lg p-4 shadow-sm border-l-4 border-l-emerald-500 border-y border-r border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-text-sub">person</span>
+</div>
+<div>
+<h4 class="font-bold text-text-main">J. Doe queried 'Fiscal_2023'</h4>
+<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-text-sub">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 10 mins ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database</span> 428 Records</span>
+<span class="text-emerald-600 font-medium bg-emerald-50 px-2 rounded text-xs py-0.5">Approved</span>
+</div>
+</div>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-text-sub hover:bg-slate-50 hover:text-text-main transition-colors">
+                                View Full Log
+                            </button>
+</div>
+<!-- Audit Card 2 -->
+<div class="bg-surface-light rounded-lg p-4 shadow-sm border-l-4 border-l-amber-500 border-y border-r border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-text-sub">person</span>
+</div>
+<div>
+<h4 class="font-bold text-text-main">M. Smith queried 'HR_Employee_Sensitive'</h4>
+<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-text-sub">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 45 mins ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database</span> 12 Records</span>
+<span class="text-amber-600 font-medium bg-amber-50 px-2 rounded text-xs py-0.5">Flagged for Review</span>
+</div>
+</div>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-text-sub hover:bg-slate-50 hover:text-text-main transition-colors">
+                                View Full Log
+                            </button>
+</div>
+<!-- Audit Card 3 -->
+<div class="bg-surface-light rounded-lg p-4 shadow-sm border-l-4 border-l-emerald-500 border-y border-r border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-text-sub">smart_toy</span>
+</div>
+<div>
+<h4 class="font-bold text-text-main">System Backup Auto-run</h4>
+<div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-text-sub">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">schedule</span> 2 hrs ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">database</span> 1.2M Records</span>
+<span class="text-emerald-600 font-medium bg-emerald-50 px-2 rounded text-xs py-0.5">Success</span>
+</div>
+</div>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-text-sub hover:bg-slate-50 hover:text-text-main transition-colors">
+                                View Full Log
+                            </button>
+</div>
+</div>
+</section>
+<!-- Bottom spacing for scroll -->
+<div class="h-8"></div>
+</div>
+</main>
+</div>
+<script>
+        // Simple script to handle toggle visuals for the demo
+        const financeToggle = document.getElementById('toggle-finance');
+        const financeRange = financeToggle.closest('.group').querySelector('input[type="range"]');
+        const financeLabel = financeToggle.nextElementSibling;
+        const financeDot = financeLabel.nextElementSibling;
+
+        financeToggle.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                financeLabel.classList.remove('bg-slate-300');
+                financeLabel.classList.add('bg-primary');
+                financeDot.classList.add('translate-x-6');
+                financeRange.disabled = false;
+                financeRange.parentElement.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                financeLabel.classList.add('bg-slate-300');
+                financeLabel.classList.remove('bg-primary');
+                financeDot.classList.remove('translate-x-6');
+                financeRange.disabled = true;
+                financeRange.parentElement.classList.add('opacity-50', 'pointer-events-none');
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Three-Quote Compliance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#10B981", // Emerald 500
+                        secondary: "#D4AF37", // Gold
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#064E3B", // Emerald 900
+                        "surface-light": "#FFFFFF",
+                        "text-primary": "#064E3B",
+                        "text-secondary": "#6B7280",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-primary font-display antialiased min-h-screen flex flex-col">
+<!-- Header / Top Bar -->
+<header class="bg-surface-light border-b border-gray-100 sticky top-0 z-10">
+<div class="px-4 py-3 flex items-center justify-between">
+<button class="p-2 -ml-2 rounded-full hover:bg-gray-50 text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-text-primary">Compliance Review</h1>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                    Validated
+                </span>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Vendor Comparison Section -->
+<section class="p-4 space-y-4">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="text-xl font-bold text-text-primary">Vendor Analysis</h2>
+<p class="text-sm text-text-secondary">Comparing 3 validated quotes</p>
+</div>
+<button class="text-secondary text-sm font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">download</span> Export
+                </button>
+</div>
+<!-- Comparison Table / Cards -->
+<div class="grid grid-cols-1 gap-3">
+<!-- Vendor A (Best Value Highlight) -->
+<div class="relative bg-surface-light rounded-xl p-4 shadow-sm border-2 border-primary/20 ring-1 ring-primary/10">
+<div class="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg uppercase tracking-wider">Lowest Price</div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-50 w-10 h-10 rounded-full flex items-center justify-center text-primary font-bold">A</div>
+<div>
+<h3 class="font-bold text-text-primary">TechSolutions Ltd</h3>
+<p class="text-xs text-text-secondary">ID: #VQ-8821</p>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-primary">$12,500</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-3">
+<div>
+<p class="text-xs text-text-secondary mb-1">Validity</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">calendar_month</span> 30 Days
+                            </p>
+</div>
+<div>
+<p class="text-xs text-text-secondary mb-1">Delivery</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-emerald-600">local_shipping</span> 2 Weeks
+                            </p>
+</div>
+</div>
+</div>
+<!-- Vendor B -->
+<div class="bg-surface-light rounded-xl p-4 shadow-sm border border-gray-200">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-gray-100 w-10 h-10 rounded-full flex items-center justify-center text-gray-500 font-bold">B</div>
+<div>
+<h3 class="font-bold text-text-primary">Global Systems Inc</h3>
+<p class="text-xs text-text-secondary">ID: #VQ-8822</p>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-text-primary">$13,200</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-3">
+<div>
+<p class="text-xs text-text-secondary mb-1">Validity</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span> 45 Days
+                            </p>
+</div>
+<div>
+<p class="text-xs text-text-secondary mb-1">Delivery</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-gray-400">local_shipping</span> 1 Week
+                            </p>
+</div>
+</div>
+</div>
+<!-- Vendor C -->
+<div class="bg-surface-light rounded-xl p-4 shadow-sm border border-gray-200">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="bg-gray-100 w-10 h-10 rounded-full flex items-center justify-center text-gray-500 font-bold">C</div>
+<div>
+<h3 class="font-bold text-text-primary">Apex Networks</h3>
+<p class="text-xs text-text-secondary">ID: #VQ-8823</p>
+</div>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-text-primary">$11,900</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 text-sm border-t border-gray-100 pt-3">
+<div>
+<p class="text-xs text-text-secondary mb-1">Validity</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-orange-500">warning</span> 5 Days
+                            </p>
+</div>
+<div>
+<p class="text-xs text-text-secondary mb-1">Delivery</p>
+<p class="font-medium text-text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-gray-400">local_shipping</span> 4 Weeks
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Document Evidence -->
+<section class="px-4 py-2 space-y-4">
+<h2 class="text-lg font-bold text-text-primary flex items-center gap-2">
+                Document Evidence
+                <span class="text-xs font-normal bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">OCR Complete</span>
+</h2>
+<div class="bg-surface-light rounded-xl border border-gray-200 divide-y divide-gray-100">
+<!-- Doc 1 -->
+<div class="p-3 flex items-center gap-3">
+<div class="w-10 h-12 bg-red-50 rounded border border-red-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-primary truncate">Quote_TechSolutions_FINAL.pdf</p>
+<p class="text-xs text-emerald-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Data Extracted
+                        </p>
+</div>
+<button class="text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Doc 2 -->
+<div class="p-3 flex items-center gap-3">
+<div class="w-10 h-12 bg-red-50 rounded border border-red-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-primary truncate">Global_Systems_Q3_2023.pdf</p>
+<p class="text-xs text-emerald-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Data Extracted
+                        </p>
+</div>
+<button class="text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+<!-- Doc 3 -->
+<div class="p-3 flex items-center gap-3">
+<div class="w-10 h-12 bg-red-50 rounded border border-red-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-primary truncate">Apex_Quote_Signed.pdf</p>
+<p class="text-xs text-emerald-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> Data Extracted
+                        </p>
+</div>
+<button class="text-gray-400 hover:text-primary">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<!-- Warning Placeholder (Commented out logic, visualized here as if active for demonstration if needed, currently hidden as requirements say 3 are present) -->
+<!-- 
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-3">
+                 <span class="material-symbols-outlined text-amber-600 shrink-0">warning</span>
+                 <div>
+                     <p class="text-sm font-bold text-amber-800">Compliance Warning</p>
+                     <p class="text-xs text-amber-700 mt-1">Less than 3 quotes uploaded. Exception Memo required.</p>
+                     <button class="mt-2 text-xs bg-white text-amber-800 border border-amber-300 px-3 py-1.5 rounded font-medium">Upload Exception Memo</button>
+                 </div>
+            </div>
+            -->
+</section>
+<!-- Officer Recommendation -->
+<section class="px-4 py-2 space-y-4">
+<h2 class="text-lg font-bold text-text-primary">Recommendation</h2>
+<div class="bg-surface-light p-4 rounded-xl border border-gray-200 shadow-sm space-y-4">
+<div>
+<label class="block text-sm font-medium text-text-secondary mb-1.5">Selected Vendor</label>
+<div class="relative">
+<select class="w-full bg-gray-50 border border-gray-200 text-text-primary text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5 appearance-none">
+<option>TechSolutions Ltd ($12,500)</option>
+<option>Global Systems Inc ($13,200)</option>
+<option>Apex Networks ($11,900)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-text-secondary mb-1.5">Justification for Selection</label>
+<textarea class="block p-2.5 w-full text-sm text-text-primary bg-gray-50 rounded-lg border border-gray-200 focus:ring-primary focus:border-primary" placeholder="Explain why this vendor offers the best value despite price/time differences..." rows="4"></textarea>
+</div>
+<div class="flex items-center gap-2">
+<input class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2" id="certify-checkbox" type="checkbox" value=""/>
+<label class="text-xs text-text-secondary" for="certify-checkbox">I certify that this procurement adheres to SADC financial regulations.</label>
+</div>
+</div>
+</section>
+<!-- Submit Action -->
+<section class="px-4 py-6">
+<button class="w-full bg-primary hover:bg-emerald-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-200 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined">gavel</span>
+                Submit for Approval
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="bg-surface-light border-t border-gray-100 pb-safe fixed bottom-0 w-full z-20">
+<div class="flex justify-around items-center px-2 py-3">
+<a class="flex flex-col items-center gap-1 group w-16" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">home</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 group w-16" href="#">
+<span class="material-symbols-outlined text-primary">shopping_cart</span>
+<span class="text-[10px] font-medium text-primary">Procure</span>
+</a>
+<a class="flex flex-col items-center gap-1 group w-16" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">gavel</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Approval</span>
+</a>
+<a class="flex flex-col items-center gap-1 group w-16" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">analytics</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 group w-16" href="#">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">settings</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Safe area padding for bottom nav -->
+<div class="h-20"></div>
+</body></html>

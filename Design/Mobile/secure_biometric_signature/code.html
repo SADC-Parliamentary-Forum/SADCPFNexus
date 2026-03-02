@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Secure Biometric Signature</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, transparent, #13ec5b, transparent);
+            animation: scan 2s linear infinite;
+            box-shadow: 0 0 10px #13ec5b;
+        }
+
+        @keyframes scan {
+            0% { top: 10%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 90%; opacity: 0; }
+        }
+
+        .hash-text {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.1em;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark max-w-md mx-auto shadow-2xl overflow-hidden">
+<!-- Header -->
+<div class="flex items-center px-4 py-4 pt-12 pb-2 justify-between bg-background-light dark:bg-background-dark z-10">
+<div class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">
+                Security Check
+            </h2>
+<div class="w-10"></div> <!-- Spacer for visual balance -->
+</div>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 relative">
+<!-- Abstract background pattern -->
+<div class="absolute inset-0 z-0 opacity-5 pointer-events-none">
+<div class="absolute top-20 left-10 w-64 h-64 rounded-full bg-primary blur-3xl"></div>
+<div class="absolute bottom-20 right-10 w-72 h-72 rounded-full bg-primary blur-3xl"></div>
+</div>
+<!-- Title -->
+<div class="z-10 text-center mb-10">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Verifying Identity</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Initiating SG-Level Biometric Handshake</p>
+</div>
+<!-- Central Scanning Element -->
+<div class="relative z-10 mb-12">
+<!-- Progress Ring / Container -->
+<div class="relative flex items-center justify-center w-48 h-48 rounded-full border-4 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+<!-- Active Ring Segment (Simulated) -->
+<svg class="absolute inset-0 transform -rotate-90 w-full h-full p-1" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="46" stroke="#13ec5b" stroke-dasharray="290" stroke-dashoffset="70" stroke-linecap="round" stroke-width="4"></circle>
+</svg>
+<!-- Scanning Area -->
+<div class="relative w-32 h-32 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800 flex items-center justify-center border border-slate-100 dark:border-slate-700">
+<!-- User Face Placeholder -->
+<!-- NOTE: Using a generic tech/grid image to represent the scanning surface, user face would be here -->
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay" data-alt="Abstract digital security grid pattern" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAc_lF35Gms0hy5cc2AkhB-EPaslwvq9ue_enafyLW6fMk40tmgx_9o9hUYToS3W5-r0wn9h8gDh44pL24omwdvP3GuGRAMVI-P72aq5uJxVtvjuQvYFkTA9sLdoOiLoKMPowXpn_zDSN8F4FZiFMYQb8F6QoSKyg4yYQRL3I8rP9s_iTif0NuH1gTt4COU9nmjmUb8S9vPCLAwAWqUEPclRJ2EIM-Ml6eVTJxxCEtCJbvOzDyEFo6yREzPOT8O-QNSQFjGBJZd2aBH');"></div>
+<span class="material-symbols-outlined text-6xl text-slate-400 dark:text-slate-500 relative z-10">face_unlock</span>
+<!-- Animated Scan Line -->
+<div class="scan-line z-20"></div>
+</div>
+<!-- Lock Icon Badge -->
+<div class="absolute -bottom-3 bg-white dark:bg-slate-800 p-2 rounded-full shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl">lock</span>
+</div>
+</div>
+</div>
+<!-- Live Hash Ticker -->
+<div class="w-full max-w-xs bg-slate-100 dark:bg-slate-800/50 rounded-xl p-4 mb-6 border border-slate-200 dark:border-slate-700/50 z-10">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Generating Live Hash</span>
+<span class="flex h-2 w-2 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+</div>
+<div class="hash-text text-sm text-primary break-all leading-tight opacity-90">
+                    0x7F3A...9B2C
+                </div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1 mt-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-3/4 rounded-full"></div>
+</div>
+</div>
+<!-- Device Binding Info -->
+<div class="flex flex-col gap-2 items-center z-10">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-base">phonelink_lock</span>
+<span class="text-xs font-medium">Device Binding Verified: iPhone 14 Pro</span>
+</div>
+<p class="text-slate-400 text-xs text-center max-w-[200px] mt-2">
+                    Your biometric signature is being cryptographically linked to this session.
+                </p>
+</div>
+</div>
+<!-- Bottom Status Area (Success Preview) -->
+<div class="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 p-6 pb-8 z-20">
+<div class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 border border-primary/20">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm">
+<span class="material-symbols-outlined">check</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">Signature Ready</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Timestamp: 2023-10-27 14:32:01 UTC</p>
+</div>
+<div class="animate-pulse">
+<span class="material-symbols-outlined text-primary">fingerprint</span>
+</div>
+</div>
+<button class="w-full mt-4 bg-primary hover:bg-green-500 text-slate-900 font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-[0.98]">
+                Confirm Signature
+            </button>
+</div>
+</div>
+</body></html>

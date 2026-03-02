@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - User Registry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 dark:border-slate-800 dark:bg-slate-900 lg:px-10">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="flex h-8 w-8 items-center justify-center rounded bg-primary text-white">
+<span class="material-symbols-outlined">security</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<nav class="hidden items-center gap-6 md:flex">
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary" href="#">Dashboard</a>
+<a class="text-sm font-medium text-primary" href="#">Users</a>
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary" href="#">Roles</a>
+<a class="text-sm font-medium text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary" href="#">Audit Log</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4">
+<div class="hidden w-full max-w-md md:flex">
+<div class="relative w-full">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</div>
+<input class="block w-full rounded-lg border-0 bg-slate-100 py-2 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white sm:text-sm sm:leading-6" placeholder="Search system..." type="text"/>
+</div>
+</div>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 md:hidden">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">search</span>
+</button>
+<div class="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700" data-alt="User profile avatar placeholder">
+<img alt="Admin User" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0CRcY6JOyYm2srSu0VzB4TP3W_uzDd7W3S9q0xo1Wsml_pWzCSK8-3nwl2Aqeea35LmEigMRdlKl6X6dYmGwivHy1FV5S_WFJnss7Nq632fadL92E8Qv6Y1sf1ursoFsTEgdKpC_ZfqMYPu1Xjnza_D3P_EYID5mtl1CzGSZ90MIlRdavx-DOftwmWAYvxYKkbWYob12651EPl_wQX0yWlXfWG5glSdXHRM74S9Zkqzg93sgEzdcckCneoFZg8V6lNpUapGt9SUk"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1">
+<!-- Sidebar / Drawer -->
+<aside class="hidden w-64 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 lg:flex">
+<div class="mb-6 flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+<div class="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700" data-alt="Department logo placeholder">
+<img alt="Dept Logo" class="h-full w-full object-cover grayscale opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGF8Gpz_YeYPWs_4S_bB5iclb4EBhZgd0CvbhtuSAqLKV-mjBSmcmShkMRtryAX4RnOjTNMDoD52Dg45zaP18ivZ8WSrpEe2pq-Ojzmf8Zerm9U0WTsYZ9_4DvRKVeTHEfIARegWNqysqZ-F4BylUxteg9XHupqo-bd8MegIkMD7ZOTL8cXYYhASX6FeaiD0YRGZFQFypDICVYdU_N2QJiW2asfR5QQKiTb_QoA1u7z3aZEhaoEsoYnnuRoUQl4vZsPQVkSpct6eU"/>
+</div>
+<div>
+<h1 class="text-sm font-semibold text-slate-900 dark:text-white">Admin Console</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Dept. of Finance</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary dark:bg-primary/20" href="#">
+<span class="material-symbols-outlined fill-current">group</span>
+<span class="text-sm font-medium">User Registry</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined">vpn_key</span>
+<span class="text-sm font-medium">Access Control</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-sm font-medium">Reports</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-100 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+<h3 class="mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Filters</h3>
+<div class="space-y-4 px-3">
+<div>
+<label class="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">Role</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2">
+<input checked="" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400">Administrator</span>
+</label>
+<label class="flex items-center gap-2">
+<input class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400">Editor</span>
+</label>
+<label class="flex items-center gap-2">
+<input checked="" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" type="checkbox"/>
+<span class="text-sm text-slate-600 dark:text-slate-400">Viewer</span>
+</label>
+</div>
+</div>
+<div>
+<label class="mb-2 block text-xs font-medium text-slate-600 dark:text-slate-300">Status</label>
+<div class="space-y-2">
+<label class="flex items-center gap-2">
+<input checked="" class="h-4 w-4 border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" name="status" type="radio"/>
+<span class="text-sm text-slate-600 dark:text-slate-400">All Active</span>
+</label>
+<label class="flex items-center gap-2">
+<input class="h-4 w-4 border-slate-300 text-primary focus:ring-primary dark:border-slate-600 dark:bg-slate-700" name="status" type="radio"/>
+<span class="text-sm text-slate-600 dark:text-slate-400">Suspended</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 p-4 lg:p-8">
+<div class="mx-auto max-w-7xl">
+<div class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+<div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white">User Registry</h1>
+<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Manage system access, roles, and MFA authentication status.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 lg:hidden">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                                Filters
+                            </button>
+<button class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                                Export
+                            </button>
+</div>
+</div>
+<!-- Search Bar Mobile/Tablet -->
+<div class="mb-6 md:hidden">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400">search</span>
+<input class="block w-full rounded-lg border-0 bg-white py-2 pl-10 pr-4 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-primary dark:bg-slate-800 dark:text-white dark:ring-slate-700" placeholder="Search users..." type="text"/>
+</div>
+</div>
+<!-- Card Grid -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+<!-- Card 1 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Sarah Jenkins">
+<img alt="Sarah Jenkins" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQYFioBmeU80rGlVqZ0p1HZFf-lFQXVIbldGTMIw7Hf6zRXcoXmdvuLzDnfC4xKuMK4jWWiSKXHf30b-Ml7ljGLQkbQ3lzIlicSk5-k-_mI6REWo30tx7PqlHpyG8Tr-LIpZ8eeOpgKKHnK0BjMZD9khcg2gDiOY6gLjnE9QqAbt6fX0orc-v0Fk5h-BTIXbnBQx6-ltlZCiSrK_ngh6wKqhwIc8Z0qLLbHYiAmQz-rc3dXd9q0ywObAM_ezNTU9kRhAE3poFsRvs"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Sarah Jenkins</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">s.jenkins@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                        Administrator
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">2 mins ago</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Michael Chen">
+<img alt="Michael Chen" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGjZJU1X-d8VfGd4zDuJjtMQn-JVh9GHNaaRL3qhqV3h0hQ1O4ahrheHeTbgx_9uw8-z5mO7XOBS24FiG3nCjdtEKu1xBHoCkiIcyCx4T9_mXpkODdD5yXVpyj4RclcEkkNjR_MOhf1Q_chHIBUhPawsAEEzR11uivZUJWxqTT4LUxF9J6NSsHMTg6iT4n6o_qxv31q1Z2FSa6erN4kP8-DSXVgorsGGVWrtoGhZb3eiY1JItvEIM5FHGOjpo1UHLsI37e9wqOS-M"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Michael Chen</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">m.chen@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                        Auditor
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">4 hours ago</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Eliza Vance">
+<img alt="Eliza Vance" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK33QN2PUhC-Pg9l5JpCU9rrbR0fnfDmKT3vJWsvfl_R7huHfc59VcQbtFlzRGuZgYfoXbgErtg8Ewi4je6LWz1H3v0ROhW5n1DDNTSiADbA8d_dGw9kv_1PPtEPKbcb2bQBU615B9so6hfEz6x07sUnSaP828wlaM0shTZFuZEPeVaW3MSYIE8jzJrKW9hQxcx4tSif9cchvWsc2NiTPFFWQ1YQTpNQC7571bihHObkHX8Rym7pHTJTuptVQShNr-RUDxNe-EKdg"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Eliza Vance</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">e.vance@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                        Editor
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined text-[16px]">g_translate</span>
+<span class="text-xs font-medium">Pending Setup</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">1 day ago</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Robert Fox">
+<img alt="Robert Fox" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjBqejVDsYw33CDyLy5R0_bnAVydMgJNtBPZ4SC0js6dpH43DRG7jRIpJkzkZolwTJHDhyyGi1w0ZlmBF0myFX7PRUttIad9o5HOL7XNULgnd0VmbG3tEUiwmRjRMcRSUFkRC7FXOQeBHLZ2nztJYZJ0tIa42LEFpMpCExurdcuBQ5PMulDA1FCvf5UU3233fg_qOWBRpSTTDkOsQQLPpgp47GB8U9gPLOw1F-hzfnRr5-H5NygmAV3gA9-t9jsOYBdnPzj1Qnu-I"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Robert Fox</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">r.fox@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-300">
+                                        Viewer
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">5 days ago</span>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Eleanor Pena">
+<img alt="Eleanor Pena" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqPeP7YcpVv2sf9LXhri37jzDIPT3PR0zOHWx-cacIDIOd3xK3ZtQzBR-kKqVwd6MEnnjHx-hRpJzy2Cv37Dmd9FdPTGTkhRJMuzxDRe8nxQ87uI59jFA2FHPxpCE6WST9w09i0hA4CuG91EMNY_o_KlZYRsKGyH065x3Gna6WyVwydN5eEYTgmuA8ms0-G5KVgDqu3cTMK_1imTn6VyAhslcyhcPsNDSOjdGtxKJYUUlhVtI3FG3WFYswG8_VYh0cHOXkmzsvMfM"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Eleanor Pena</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">e.pena@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                        Editor
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="text-xs font-medium">Disabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">2 weeks ago</span>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Wade Warren">
+<img alt="Wade Warren" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe9QWHzQpelxSfn5frMAOXkPujOGrIb527UOwTYt7gSh40jIg_zb7gXEn_MQLXYTSKmT9Oa1_IeM8not6M38XtMHCLRuQS31b4bCn5EvV_zwnsMNG6AmlOJBT1ZfOp5yOuvwjCnr7LtObKEiuZIExlvaks6GgJFL_t-3zpt4GrSsX--nv9TEhO4TrsRa3MOQswnzlwvAWfymVmK5D2t6OEi1ab8CuJobW1tKRB53r98U77A9EaO09OS936akdM8HXaHHLkxSlksjY"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Wade Warren</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">w.warren@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-300">
+                                        Viewer
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">Just now</span>
+</div>
+</div>
+</div>
+<!-- Card 7 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Bessie Cooper">
+<img alt="Bessie Cooper" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKrUXOCN5QSblh8P1tc5yXbGH7IRUz5d7z36co_WYp7qE0Te5ptqocJiz1uHKahgpXqqgkd8TMlOmJH82yCdplWY9zH9z0blonNDab0fs02qg1mwJTdsZu8xUu2TG-GTUL6tk8t6h7xf01u67wQG5fZRk6zcvSmPo2HBQryNAOQ4A6DrAUVNAbPeZPexsJh2BiPqGFzYMUtOex1YtZhJ8Pw87PDG87Q02krklIPj0Kd05nevvbtJxG68cm33jITzk9zJW3WvHY8_k"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Bessie Cooper</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">b.cooper@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                        Administrator
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">3 days ago</span>
+</div>
+</div>
+</div>
+<!-- Card 8 -->
+<div class="group relative flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+<div class="mb-4 flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="h-12 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700" data-alt="Profile picture of Guy Hawkins">
+<img alt="Guy Hawkins" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjmgrQmGhAxmphX0FbBpbCW7Pm0H47B53rQkwmY6npkrP6fE9q82OpWbNTdjW5f1ReLZL4ZDbAnzZo_dBn38cHc2YRvqF5c0UcWsaMB5Nr3IycIcfcrH258r0tWWewSb-Eu3fiL74h_rHoKF_BoErCAKq_Vv9Vzlz5psYWP-lrNkaRPWW5fwwM5od1eEQBS3zU3khoBXyvJPhjLsSVrqeiqeryQ4vUlC1FAV2YXzqkDnkiWw_NVyof4QqnxLDOA2mMUBgRaO8V2nA"/>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 dark:text-white">Guy Hawkins</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">g.hawkins@gov.finance</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Role</span>
+<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                        Auditor
+                                    </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">MFA Status</span>
+<div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span class="text-xs font-medium">Enabled</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Last Active</span>
+<span class="text-xs text-slate-700 dark:text-slate-300">1 hour ago</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-8 flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-800">
+<p class="text-sm text-slate-500 dark:text-slate-400">
+                            Showing <span class="font-medium text-slate-900 dark:text-white">1</span> to <span class="font-medium text-slate-900 dark:text-white">8</span> of <span class="font-medium text-slate-900 dark:text-white">128</span> results
+                        </p>
+<div class="flex gap-2">
+<button class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 disabled:opacity-50" disabled="">
+                                Previous
+                            </button>
+<button class="inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                                Next
+                            </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Floating Action Button (FAB) -->
+<button class="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-blue-500/30 transition-transform hover:scale-105 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:shadow-blue-900/20">
+<span class="material-symbols-outlined text-[28px]">person_add</span>
+</button>
+</div>
+</body></html>

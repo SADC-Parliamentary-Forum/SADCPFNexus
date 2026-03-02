@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Profile &amp; Security</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec5b",
+              "primary-dark": "#0ea640", 
+              "background-light": "#f6f8f6",
+              "background-dark": "#102216",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1a3322",
+              "text-primary": "#111813",
+              "text-secondary": "#61896f",
+              "accent-green": "#13ec5b",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light font-display text-text-primary antialiased">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden pb-20">
+<!-- Header -->
+<header class="sticky top-0 z-10 bg-surface-light px-4 py-3 shadow-sm">
+<div class="flex items-center justify-between">
+<button class="flex size-10 items-center justify-center rounded-full text-text-primary hover:bg-background-light transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-text-primary">Profile &amp; Security</h1>
+<button class="flex size-10 items-center justify-center rounded-full text-text-primary hover:bg-background-light transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Profile Section -->
+<section class="flex flex-col items-center gap-4 bg-surface-light px-6 pb-8 pt-6">
+<div class="relative">
+<div class="size-28 overflow-hidden rounded-full border-4 border-background-light shadow-inner">
+<img alt="Portrait of Dr. Sarah M." class="h-full w-full object-cover" data-alt="Professional portrait of a woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNRRdJDMxTFa3v1UB196jgAZz5_2Cc7H74S7jN3c79am0QvzPaQYwR-oZvaHC2XM_NhT_Ua44Rnfmg2L83roCQrckSvmAIrAd3HotWS-SDn5dYoxmYGHiUqz8Q581RwoWTV7oo3G6OP32AmPm2FqUVGgepySmlepQt99iPRvas0aO-T-vJBqOHV7l3Hhg_C1PyocJ5nmljD0rDw0caAJW3ujk-urVF2ATaxp_Vs3amYISaAOG1EckmvJB1cC69_heyBlk9MvWfoIPV"/>
+</div>
+<div class="absolute bottom-1 right-1 flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-md ring-2 ring-white">
+<span class="material-symbols-outlined text-sm font-bold">verified_user</span>
+</div>
+</div>
+<div class="text-center">
+<h2 class="text-2xl font-bold tracking-tight text-text-primary">Dr. Sarah M.</h2>
+<p class="text-sm font-medium text-primary-dark">Director of Finance</p>
+<p class="mt-1 text-xs text-text-secondary">Dept: Financial Governance</p>
+</div>
+<div class="mt-2 flex w-full max-w-xs gap-3">
+<button class="flex-1 rounded-lg bg-background-light px-4 py-2.5 text-sm font-semibold text-text-primary transition-colors hover:bg-gray-200">
+                    Edit Profile
+                </button>
+<button class="flex-1 rounded-lg bg-background-dark px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-opacity-90">
+                    View Logs
+                </button>
+</div>
+</section>
+<!-- Main Content Scroll Area -->
+<main class="flex flex-col gap-6 p-4">
+<!-- Security Controls -->
+<section class="rounded-xl bg-surface-light p-5 shadow-sm ring-1 ring-black/5">
+<div class="mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dark">shield_lock</span>
+<h3 class="text-base font-bold text-text-primary">Security Controls</h3>
+</div>
+<div class="space-y-5">
+<!-- Biometric Toggle -->
+<div class="flex items-center justify-between">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background-light text-text-secondary">
+<span class="material-symbols-outlined">fingerprint</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-text-primary">Biometric Auth</p>
+<p class="text-xs text-text-secondary">FaceID / Fingerprint login</p>
+</div>
+</div>
+<label class="relative inline-flex cursor-pointer items-center">
+<input checked="" class="peer sr-only" type="checkbox" value=""/>
+<div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+</label>
+</div>
+<!-- Step-up Auth Toggle -->
+<div class="flex items-center justify-between">
+<div class="flex gap-3">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background-light text-text-secondary">
+<span class="material-symbols-outlined">lock_clock</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-text-primary">Step-up Auth</p>
+<p class="text-xs text-text-secondary">Required for sensitive approvals</p>
+</div>
+</div>
+<label class="relative inline-flex cursor-pointer items-center">
+<input checked="" class="peer sr-only" type="checkbox" value=""/>
+<div class="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Device Binding -->
+<section class="rounded-xl bg-surface-light p-5 shadow-sm ring-1 ring-black/5">
+<div class="mb-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dark">devices</span>
+<h3 class="text-base font-bold text-text-primary">Device Binding</h3>
+</div>
+<span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-800">Active</span>
+</div>
+<div class="flex items-center justify-between rounded-lg border border-gray-100 bg-background-light p-3">
+<div class="flex items-center gap-3">
+<div class="flex size-10 items-center justify-center rounded-full bg-white shadow-sm">
+<span class="material-symbols-outlined text-text-primary">smartphone</span>
+</div>
+<div>
+<p class="text-sm font-bold text-text-primary">iPhone 15 Pro</p>
+<p class="text-xs text-text-secondary">Last active: Just now</p>
+</div>
+</div>
+</div>
+<button class="mt-3 w-full rounded-lg border border-red-200 bg-white py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50">
+                    De-authorize Device
+                </button>
+</section>
+<!-- Digital Signature Management -->
+<section class="rounded-xl bg-surface-light p-5 shadow-sm ring-1 ring-black/5">
+<div class="mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dark">draw</span>
+<h3 class="text-base font-bold text-text-primary">Digital Signature</h3>
+</div>
+<div class="mb-4 rounded-lg bg-background-light p-4">
+<div class="mb-1 flex justify-between text-xs text-text-secondary">
+<span>Current Hash</span>
+<span class="font-mono text-[10px]">SHA-256</span>
+</div>
+<p class="break-all font-mono text-xs leading-relaxed text-text-primary opacity-70">
+                        8f4b...3a2c-e9d1-42b8-9102-valid
+                    </p>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary/20">
+<span class="material-symbols-outlined text-lg">pin</span>
+                        Update PIN
+                    </button>
+<button class="flex items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary/20">
+<span class="material-symbols-outlined text-lg">visibility</span>
+                        View Cert
+                    </button>
+</div>
+</section>
+<!-- Audit & Access -->
+<section class="rounded-xl bg-surface-light p-5 shadow-sm ring-1 ring-black/5">
+<div class="mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-dark">history</span>
+<h3 class="text-base font-bold text-text-primary">Audit &amp; Access</h3>
+</div>
+<div class="divide-y divide-gray-100">
+<div class="flex items-center justify-between py-2">
+<span class="text-sm text-text-secondary">Last Login</span>
+<span class="text-sm font-medium text-text-primary">Today, 09:42 AM</span>
+</div>
+<div class="flex items-center justify-between py-2">
+<span class="text-sm text-text-secondary">IP Address</span>
+<span class="text-sm font-medium text-text-primary">192.168.1.142</span>
+</div>
+<div class="flex items-center justify-between py-2">
+<span class="text-sm text-text-secondary">Location</span>
+<span class="text-sm font-medium text-text-primary">Windhoek, Namibia</span>
+</div>
+</div>
+</section>
+<div class="h-6"></div> <!-- Spacer for bottom nav -->
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 border-t border-[#f0f4f2] bg-surface-light px-4 pb-5 pt-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between gap-2">
+<a class="group flex flex-1 flex-col items-center justify-end gap-1 text-text-secondary hover:text-primary-dark" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">dashboard</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Dashboard</p>
+</a>
+<a class="group flex flex-1 flex-col items-center justify-end gap-1 text-text-secondary hover:text-primary-dark" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">check_circle</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Approvals</p>
+</a>
+<div class="relative flex flex-1 flex-col items-center justify-end">
+<div class="absolute -top-6 flex size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-white">
+<span class="material-symbols-outlined text-2xl">add</span>
+</div>
+<div class="h-6 w-full"></div> <!-- Spacer for absolute button -->
+</div>
+<a class="group flex flex-1 flex-col items-center justify-end gap-1 text-text-secondary hover:text-primary-dark" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">bar_chart</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Analytics</p>
+</a>
+<a class="group flex flex-1 flex-col items-center justify-end gap-1 text-primary-dark" href="#">
+<span class="material-symbols-outlined filled text-2xl group-hover:scale-110 transition-transform">person</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+</nav>
+</div>
+</body></html>

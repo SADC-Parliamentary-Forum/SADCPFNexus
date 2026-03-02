@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Timesheet Approval</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col overflow-hidden">
+<!-- Main Container: Centered for tablet feel on desktop, full width on actual tablet -->
+<div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-3xl h-screen flex flex-col bg-white dark:bg-slate-900 shadow-xl relative">
+<!-- Header -->
+<header class="shrink-0 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 py-4 bg-white dark:bg-slate-900 z-20">
+<div class="flex items-center gap-4">
+<button class="text-slate-900 dark:text-slate-100 hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Timesheet Approval</h1>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" data-alt="User profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2zzVEAEJ_F9cDeZM_ycj79KkeNWpeYwTjwKhokGFrOlFOiF63qQMcYVR3AOg6ldaBUaqPGDGD2Vm0Z32CRQEg_fJrsCZw2V3EW7eTBTaHW3jau_lVUBpwNYET5-tGvM3ICi6aWF-82P1fI2Nu1uwYDGpD60RvucGcBRlsrmVVYCrye3RBjWnlaE-AsQUk8zVrplPDNbUxL7it0fZev_N-oOgsNKLogYRz8CoKNf4hU7mFRnIY1OjWoVc1MzNkvN4gSugUhMBeEeo'); background-size: cover; background-position: center;">
+</div>
+</div>
+</header>
+<!-- Scrollable Content Area -->
+<main class="flex-1 overflow-y-auto pb-32 scrollbar-hide">
+<!-- Sticky Alert Section -->
+<div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-6 pt-4 pb-2 border-b border-transparent">
+<div class="flex gap-4 p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30">
+<div class="shrink-0 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100">System Alert</p>
+<p class="text-sm text-slate-600 dark:text-slate-300">Conflict Alert: Overtime hours exceed weekly limit for 2 employees.</p>
+</div>
+</div>
+</div>
+<!-- Filters -->
+<div class="px-6 py-4">
+<div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-6 px-6">
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary text-white px-4 transition-colors">
+<span class="material-symbols-outlined text-[20px]">list</span>
+<span class="text-sm font-medium">All</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="text-sm font-medium">Pending</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span class="text-sm font-medium">Approved</span>
+</button>
+<button class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">cancel</span>
+<span class="text-sm font-medium">Rejected</span>
+</button>
+</div>
+</div>
+<!-- List of Cards -->
+<div class="px-6 space-y-4">
+<!-- Card 1: Pending & Warning -->
+<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700" data-alt="Employee portrait John Doe" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD8QhP5K-vcvTh5NddgNzmzTrvHprV_IGW4K4IUVwnTxgmRUYGklfFIxNxQ2am1zLOxR8wDtc_40_2W1rRT8Kn1ERbtcV_0l3GDU8r9ZrzEt7h47Mjl3eUNf7CteMU3URYSTVoiQRvxQQtWjpDcxfBhm3pNkv-we3tpmNVQcT8Ga78snSZzKkkFKKgg9sOjUlOVRmPbHH2q6eTQVYVghexPD-MwuZdFvKke00ZJbfjZOQGx_gX3FrQSb1ZtpIVUsE1iZm3gQ0v0m3Y'); background-size: cover;"></div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">John Doe</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Week 42 • Oct 16 - 22</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-bold uppercase tracking-wider">
+                            Alert
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Hours</p>
+<p class="text-lg font-bold text-slate-900 dark:text-slate-100">45h <span class="text-sm font-normal text-orange-600 dark:text-orange-400">(+5h OT)</span></p>
+</div>
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Project</p>
+<p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Proj-Alpha, Gov-B</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700">
+<p class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                            Exceeds weekly cap
+                         </p>
+<button class="text-primary text-sm font-bold hover:underline">View Details</button>
+</div>
+</div>
+<!-- Card 2: Approved -->
+<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700" data-alt="Employee portrait Jane Smith" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB45RqAbSxIJ7l-jZulFweMvTVKJl5lY7T5bICVoBcqmDMWoTatFnlcHXn5ppN_9IKjaG-dDlCiBBO9pLdrhiMRJAPkcGIkDW7OwKTE_jA5lQ8mnjaiSwBqyDQ0ne07tWzsiGpSluRw5k1OvU_UstTYfX-Lps9PfJ2LYH0iH5HIHEiUysU4ICisJ_zJIJk4SrcD8YIWyeM5JcI8h9B1qB9RdFK1VOMd4QqXZPCvcq44njU0eTbU8kkM_O-cbumZPIX2w2cxi-BLVvA'); background-size: cover;"></div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Jane Smith</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Week 42 • Oct 16 - 22</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-bold uppercase tracking-wider">
+                            Approved
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Hours</p>
+<p class="text-lg font-bold text-slate-900 dark:text-slate-100">40h</p>
+</div>
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Project</p>
+<p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Proj-Beta</p>
+</div>
+</div>
+</div>
+<!-- Card 3: Pending -->
+<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-primary/50 transition-colors cursor-pointer border-l-4 border-l-slate-300 dark:border-l-slate-600">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700" data-alt="Employee portrait Alex Chen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAFf2HE8LoiOzB_7FWZI8_tBmyzcxs6eV3q7aQkOlQ_DpJk_IGihjaAbQQNuj7vLjkieXBY9wJjZScx5D9WRZfWJTUJZbh3VrujAnLNjh33f4Hp7dfeQMQDaYrKuHDXiKGI5nzOnOfEEASxiQ71lklbaAeInKPNRaGFc_jP6S2ohQKLd5MofSGkaSqxJkre-uot6rAMBWP2FTRLtI_xUSjOSPN_aHqZQLLEb1E0D4vXg8IQEmXfVWJdRZTn1LZNo5gZOhoKa6HnDwg'); background-size: cover;"></div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Alex Chen</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Week 42 • Oct 16 - 22</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold uppercase tracking-wider">
+                            Pending
+                        </span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Hours</p>
+<p class="text-lg font-bold text-slate-900 dark:text-slate-100">38h</p>
+</div>
+<div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+<p class="text-xs text-slate-500 dark:text-slate-400 mb-1">Project</p>
+<p class="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">Internal Ops</p>
+</div>
+</div>
+</div>
+<!-- Card 4: Rejected -->
+<div class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 shadow-sm hover:border-primary/50 transition-colors cursor-pointer relative overflow-hidden opacity-75">
+<div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700" data-alt="Employee portrait Sarah Connor" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnSVf7A8hlNunGua98LGaPEEHLfZdAhph2z2I6bJdXChZwZ0hkF7TvdOBWepz9fqOsBKeM8SgV9eGzMPC0WUt19nJksuVVtP8yZK--tmgk4zZh_W3eNj7TH5gM6nKRF5-mXbcZQhUhljVwRUfsYEoH5irYNSV6XTOHyMKwrj9ZPpESKZHhresOhRa4RAGTwY2raI3neAXEG2m-IqN0XkuSWQn-DfrpRwPSyQ7vSFPPXneY0En15X8PozebLVb7-19Xp2hTwO_oHpo'); background-size: cover;"></div>
+<div>
+<h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Sarah Connor</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Week 41 • Oct 09 - 15</p>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs font-bold uppercase tracking-wider">
+                            Rejected
+                        </span>
+</div>
+<div class="bg-red-50 dark:bg-red-900/20 p-2 rounded text-xs text-red-700 dark:text-red-300 mb-3">
+                        Missing supervisor signature for leave day.
+                     </div>
+</div>
+</div>
+<!-- Bottom padding for sticky action bar -->
+<div class="h-10"></div>
+</main>
+<!-- Sticky Bottom Action Bar -->
+<div class="absolute bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-slate-500 dark:text-slate-400">John Doe (Selected)</span>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:text-primary/80">
+<span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+                        Remarks
+                    </button>
+</div>
+<div class="grid grid-cols-3 gap-3 h-12">
+<button class="flex flex-col items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors">
+<span class="material-symbols-outlined text-[24px]">close</span>
+<span class="text-[10px] uppercase font-bold tracking-wider mt-0.5">Reject</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[24px]">undo</span>
+<span class="text-[10px] uppercase font-bold tracking-wider mt-0.5">Return</span>
+</button>
+<button class="flex flex-col items-center justify-center rounded-lg bg-primary text-white shadow-md hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-[24px]">check</span>
+<span class="text-[10px] uppercase font-bold tracking-wider mt-0.5">Approve</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Remarks Overlay (Hidden by default, visualized here as if triggered but keeping hidden class for initial state, 
+             Since no JS is allowed, I will mock it as a non-displayed element you could toggle with peer-checked or similar CSS tricks, 
+             but for this task I will leave it out or present it as a hidden state code block for completeness if this were an interactive prototype) -->
+<!-- 
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end justify-center hidden">
+             <div class="w-full h-[90%] bg-white dark:bg-slate-900 rounded-t-2xl p-6 flex flex-col shadow-2xl">
+                ...
+             </div>
+        </div> 
+        -->
+</div>
+</body></html>

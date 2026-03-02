@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Fleet &amp; Transport Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec80",
+              "primary-dark": "#0ea359",
+              "background-light": "#f6f8f7",
+              "background-dark": "#102219",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1a3326",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen pb-24">
+<!-- Header -->
+<div class="sticky top-0 z-50 bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 px-4 pt-12 pb-4 shadow-sm">
+<div class="flex items-center justify-between">
+<button class="flex size-10 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-slate-900 dark:text-white">Fleet &amp; Transport Control</h1>
+<button class="relative flex size-10 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2.5 rounded-full bg-red-500 border-2 border-white dark:border-slate-800"></span>
+</button>
+</div>
+</div>
+<!-- Main Content -->
+<main class="p-4 space-y-6">
+<!-- Quick Stats Cards -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
+<div class="size-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-2">
+<span class="material-symbols-outlined">directions_car</span>
+</div>
+<span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Active Vehicles</span>
+<span class="text-2xl font-bold text-slate-900 dark:text-white mt-1">12</span>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
+<div class="size-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-2">
+<span class="material-symbols-outlined">local_gas_station</span>
+</div>
+<span class="text-sm text-slate-500 dark:text-slate-400 font-medium">Fuel Efficiency</span>
+<span class="text-2xl font-bold text-slate-900 dark:text-white mt-1">8.4 <span class="text-xs font-normal text-slate-400">L/100km</span></span>
+</div>
+</div>
+<!-- Vehicle Booking Calendar -->
+<section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+<div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+<h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-500">calendar_month</span>
+                    Vehicle Booking
+                </h2>
+<div class="flex gap-1">
+<button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-slate-400">chevron_left</span>
+</button>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300 self-center">Sep 2023</span>
+<button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="p-4">
+<div class="grid grid-cols-7 mb-2">
+<div class="text-center text-xs font-bold text-slate-400">S</div>
+<div class="text-center text-xs font-bold text-slate-400">M</div>
+<div class="text-center text-xs font-bold text-slate-400">T</div>
+<div class="text-center text-xs font-bold text-slate-400">W</div>
+<div class="text-center text-xs font-bold text-slate-400">T</div>
+<div class="text-center text-xs font-bold text-slate-400">F</div>
+<div class="text-center text-xs font-bold text-slate-400">S</div>
+</div>
+<div class="grid grid-cols-7 gap-y-2">
+<!-- Empty cells for previous month -->
+<div></div><div></div><div></div>
+<!-- Days -->
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">1</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">2</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">3</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">4</button>
+<!-- Selected Range Start -->
+<div class="relative w-full h-9 flex items-center justify-center">
+<div class="absolute inset-y-0 left-1/2 right-0 bg-emerald-50 dark:bg-emerald-900/20 rounded-l-full"></div>
+<button class="relative z-10 h-9 w-9 flex items-center justify-center text-sm rounded-full bg-primary text-slate-900 font-bold shadow-md shadow-emerald-200 dark:shadow-none">5</button>
+</div>
+<!-- Range Middle -->
+<div class="relative w-full h-9 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20">
+<button class="relative z-10 h-9 w-9 flex items-center justify-center text-sm rounded-full text-emerald-800 dark:text-emerald-300 font-medium">6</button>
+</div>
+<!-- Range End -->
+<div class="relative w-full h-9 flex items-center justify-center">
+<div class="absolute inset-y-0 left-0 right-1/2 bg-emerald-50 dark:bg-emerald-900/20 rounded-r-full"></div>
+<button class="relative z-10 h-9 w-9 flex items-center justify-center text-sm rounded-full bg-primary text-slate-900 font-bold shadow-md shadow-emerald-200 dark:shadow-none">7</button>
+</div>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">8</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">9</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">10</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">11</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">12</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">13</button>
+<button class="h-9 w-9 mx-auto flex items-center justify-center text-sm rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">14</button>
+</div>
+</div>
+<div class="px-4 pb-4">
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 flex items-start gap-3">
+<img class="w-16 h-12 object-cover rounded-md shadow-sm" data-alt="Black luxury SUV side profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCsPO_70H6gRdB21Bc90qUB6aRSk5MNc8QOWs2SleZ6ufTkjYPq2zXeyADRaurCv1-NwFlmIDe1YQ3paR3j1_MizFg6g5gA86z7Oi3RDCgSWCMqQbWmhyqD9zjad9l9hrFpnJVTYvnR9NgOnT6PX-Aq53bPFy1flao8u5dsggojrpSURVXMCRsDMYcTEYeyZMCD5dcrhRIBo1LFGC15Gwpxig7iqj7MMv610iVEWb3i5trboM45mmMp3xOCPnrdJH346NxgeYgRkSJ"/>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold text-slate-900 dark:text-white truncate">Mercedes-Benz GLE 450</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Reserved for Executive Delegation</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-600/20">Confirmed</span>
+<span class="text-[10px] text-slate-400">09:00 AM - 06:00 PM</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Distance & Analytics Chart Section -->
+<section class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-base font-bold text-slate-900 dark:text-white">Distance Traveled</h2>
+<select class="bg-transparent text-xs font-semibold text-emerald-600 dark:text-emerald-400 focus:outline-none cursor-pointer">
+<option>Weekly</option>
+<option>Monthly</option>
+</select>
+</div>
+<div class="h-48 w-full flex items-end justify-between gap-2 px-1">
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[40%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">M</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[65%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">T</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[50%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">W</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-primary h-[85%] rounded-t-sm shadow-[0_0_15px_rgba(19,236,128,0.4)]"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-900 dark:text-white">T</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[45%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">F</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[30%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">S</span>
+</div>
+<div class="w-full flex flex-col items-center gap-2 group cursor-pointer">
+<div class="relative w-full bg-slate-100 dark:bg-slate-800 rounded-t-sm h-32 overflow-hidden group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/10 transition-colors">
+<div class="absolute bottom-0 left-0 right-0 bg-emerald-400/80 dark:bg-emerald-500/80 h-[20%] rounded-t-sm group-hover:bg-primary transition-all"></div>
+</div>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">S</span>
+</div>
+</div>
+</section>
+<!-- Fuel Log & Maintenance -->
+<section class="space-y-3">
+<h2 class="text-lg font-bold text-slate-900 dark:text-white px-1">Fuel Log &amp; Maintenance</h2>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Item 1 -->
+<div class="p-4 flex items-center justify-between group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-[20px]">build</span>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Oil Change Due</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Toyota Land Cruiser • V8-992</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-semibold text-orange-600 dark:text-orange-400">Warning</p>
+<p class="text-[10px] text-slate-400">Due in 50km</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 flex items-center justify-between group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[20px]">local_gas_station</span>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Refueled</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">BMW X5 • 52.4 Liters</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-slate-900 dark:text-white">$84.50</p>
+<p class="text-[10px] text-slate-400">Today, 08:30 AM</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex items-center justify-between group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[20px]">tire_repair</span>
+</div>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Tire Rotation</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Ford Ranger • Scheduled</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Upcoming</p>
+<p class="text-[10px] text-slate-400">Sep 28</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Report Button -->
+<button class="w-full group relative flex items-center justify-center gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 px-6 py-4 text-sm font-bold text-red-600 dark:text-red-400 ring-1 ring-inset ring-red-600/10 dark:ring-red-500/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">warning</span>
+            Report Incident / Fault
+        </button>
+</main>
+<!-- Bottom Nav -->
+<nav class="fixed bottom-0 left-0 right-0 bg-surface-light dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 px-6 pb-6 pt-3 z-40">
+<div class="flex justify-between items-center max-w-lg mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">dashboard</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-emerald-600 dark:text-primary transition-colors group relative" href="#">
+<div class="absolute -top-3 w-8 h-1 bg-emerald-600 dark:bg-primary rounded-b-full"></div>
+<span class="material-symbols-outlined text-[24px] fill-current group-hover:scale-110 transition-transform">directions_car</span>
+<span class="text-[10px] font-bold">Fleet</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">folder_open</span>
+<span class="text-[10px] font-medium">Docs</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-110 transition-transform">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCP Nexus | HR Module - Class A Payslip Viewer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dark": "#0ea640",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1a3322",
+                        "surface-border": "#23482f",
+                        "text-secondary": "#92c9a4",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .watermark {
+            background-image: url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' fill='rgba(239, 68, 68, 0.1)' font-family='sans-serif' font-weight='bold' font-size='24' text-anchor='middle' transform='rotate(-45 150 150)'%3ECONFIDENTIAL - ACCESS LOGGED%3C/text%3E%3C/svg%3E");
+        }
+        /* Hide scrollbar for PDF container */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-surface-border bg-background-dark px-10 py-3 shrink-0 z-20">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 text-primary">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCP Nexus <span class="text-text-secondary font-normal mx-2">|</span> HR Module</h2>
+</div>
+<div class="flex items-center gap-9">
+<a class="text-text-secondary hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-text-secondary hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Personnel</a>
+<a class="text-white text-sm font-medium leading-normal border-b-2 border-primary py-1" href="#">Payroll</a>
+<a class="text-text-secondary hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Benefits</a>
+<a class="text-text-secondary hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Compliance</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full group focus-within:ring-1 ring-primary/50 transition-all">
+<div class="text-text-secondary flex border-none bg-surface-dark items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-surface-dark focus:border-none h-full placeholder:text-text-secondary px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search records..." value=""/>
+</div>
+</label>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-surface-border cursor-pointer hover:border-primary transition-colors relative" data-alt="User avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCGv13_-VfpCAC4xiqHPxk9891WI_Y4-k1dKq56PFTp6LUVgFuilKYzjFYvWBjYX4DJWct1r-ltgiGa9e2YnZhPKgCuzFiDWjuCfLJmnFVRRbfpQ-lzn9Ix9LLKDs2Q9n7y7oR3d6Bcj9XMhn04whMFARVDocS_7jJZtyQ4mocOZmFTA9hilqhlW8hqQzmJKnOttOb3j3szhtq-y9l9CHRd2K4iwJGYuSnQr8eJ2Mo4Y0YUV3m2yeyc0dsLxHn4u6RqeaGaWIooPvc");'>
+<div class="absolute bottom-0 right-0 size-3 bg-primary rounded-full border-2 border-background-dark"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden relative">
+<!-- Document Viewer Section -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark relative">
+<!-- Breadcrumbs & Title -->
+<div class="px-8 py-4 border-b border-surface-border bg-background-dark z-10">
+<div class="flex flex-wrap gap-2 mb-2 items-center">
+<a class="text-text-secondary hover:text-primary text-xs font-medium leading-normal flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]">home</span>
+                        Home
+                    </a>
+<span class="text-text-secondary text-xs font-medium leading-normal">/</span>
+<a class="text-text-secondary hover:text-primary text-xs font-medium leading-normal" href="#">Payroll</a>
+<span class="text-text-secondary text-xs font-medium leading-normal">/</span>
+<span class="text-primary text-xs font-medium leading-normal">Payslip Viewer</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="text-white text-2xl font-bold tracking-tight">Class A Payslip: Oct 2023</h1>
+<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                                Top Secret
+                            </span>
+</div>
+<p class="text-text-secondary text-sm mt-1 font-mono">ID: 998-234-AX • Generated: 2023-10-31 • Hash: 8f7a...3b21</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-surface-border rounded-lg text-white hover:bg-surface-border transition-colors text-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">print_disabled</span>
+                            Print Disabled
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-background-dark rounded-lg hover:bg-primary-dark transition-colors text-sm font-bold shadow-[0_0_15px_rgba(19,236,91,0.2)]">
+<span class="material-symbols-outlined text-[18px] fill-1">close</span>
+                            Close Viewer
+                        </button>
+</div>
+</div>
+</div>
+<!-- PDF Viewer Container -->
+<div class="flex-1 bg-[#2a2a2a] relative overflow-y-auto no-scrollbar p-8 flex justify-center watermark">
+<!-- The Document Page -->
+<div class="bg-white w-[816px] min-h-[1056px] shadow-2xl relative p-12 text-slate-800">
+<!-- Red Watermark Overlay inside the doc as well for realism -->
+<div class="absolute inset-0 pointer-events-none opacity-10 flex items-center justify-center overflow-hidden z-0">
+<div class="text-red-600 font-black text-6xl -rotate-45 whitespace-nowrap">
+                            CONFIDENTIAL • DO NOT DISTRIBUTE • CONFIDENTIAL
+                         </div>
+</div>
+<!-- Doc Header -->
+<div class="flex justify-between border-b-2 border-slate-800 pb-6 mb-8 relative z-10">
+<div>
+<h2 class="text-2xl font-bold uppercase text-slate-900">Official Payslip</h2>
+<p class="text-slate-500 text-sm mt-1">SADCP National Finance Dept.</p>
+</div>
+<div class="text-right">
+<div class="font-mono text-sm text-slate-600">Period: 01 OCT - 31 OCT 2023</div>
+<div class="font-mono text-sm text-slate-600">Pay Date: 31 OCT 2023</div>
+</div>
+</div>
+<!-- Doc Content Placeholders -->
+<div class="grid grid-cols-2 gap-8 mb-8 relative z-10">
+<div class="p-4 bg-slate-50 border border-slate-200 rounded">
+<h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Employee Details</h3>
+<div class="space-y-1 text-sm">
+<div class="flex justify-between"><span class="text-slate-500">Name:</span> <span class="font-medium">ALEXANDER, J.</span></div>
+<div class="flex justify-between"><span class="text-slate-500">ID:</span> <span class="font-medium">998-234-AX</span></div>
+<div class="flex justify-between"><span class="text-slate-500">Grade:</span> <span class="font-medium">CLASS A / L4</span></div>
+<div class="flex justify-between"><span class="text-slate-500">Dept:</span> <span class="font-medium">Spec. Ops.</span></div>
+</div>
+</div>
+<div class="p-4 bg-slate-50 border border-slate-200 rounded">
+<h3 class="text-xs font-bold uppercase text-slate-500 mb-2">Payment Summary</h3>
+<div class="space-y-1 text-sm">
+<div class="flex justify-between"><span class="text-slate-500">Gross Pay:</span> <span class="font-medium">$12,450.00</span></div>
+<div class="flex justify-between"><span class="text-slate-500">Taxable:</span> <span class="font-medium">$11,200.00</span></div>
+<div class="flex justify-between"><span class="text-slate-500">Deductions:</span> <span class="font-medium text-red-600">-$3,450.00</span></div>
+<div class="flex justify-between border-t border-slate-300 pt-1 mt-1"><span class="font-bold text-slate-900">Net Pay:</span> <span class="font-bold text-slate-900">$9,000.00</span></div>
+</div>
+</div>
+</div>
+<div class="mb-8 relative z-10">
+<h3 class="text-xs font-bold uppercase text-slate-500 mb-3 pb-1 border-b border-slate-200">Earnings Detail</h3>
+<table class="w-full text-sm text-left">
+<thead class="text-xs text-slate-500 font-semibold bg-slate-50 uppercase">
+<tr>
+<th class="px-2 py-2">Description</th>
+<th class="px-2 py-2 text-right">Rate</th>
+<th class="px-2 py-2 text-right">Hours</th>
+<th class="px-2 py-2 text-right">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr>
+<td class="px-2 py-2">Basic Salary (Class A)</td>
+<td class="px-2 py-2 text-right">-</td>
+<td class="px-2 py-2 text-right">160.00</td>
+<td class="px-2 py-2 text-right">$9,500.00</td>
+</tr>
+<tr>
+<td class="px-2 py-2">Hazard Pay (Zone 4)</td>
+<td class="px-2 py-2 text-right">$50.00</td>
+<td class="px-2 py-2 text-right">40.00</td>
+<td class="px-2 py-2 text-right">$2,000.00</td>
+</tr>
+<tr>
+<td class="px-2 py-2">Housing Allowance</td>
+<td class="px-2 py-2 text-right">-</td>
+<td class="px-2 py-2 text-right">-</td>
+<td class="px-2 py-2 text-right">$950.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-12 pt-8 border-t border-slate-200 text-center relative z-10">
+<p class="text-xs text-slate-400">This is a system generated document. Valid without signature.</p>
+<p class="text-[10px] text-slate-300 mt-1 uppercase tracking-widest">SADCP-NX-GEN-V4.2.1 // CONFIDENTIAL</p>
+</div>
+</div>
+</div>
+<!-- Sticky Alert for Locked Access -->
+<div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-surface-dark border border-yellow-500/50 rounded-full px-6 py-2 shadow-lg flex items-center gap-3 z-20">
+<span class="material-symbols-outlined text-yellow-500 text-[20px]">visibility</span>
+<span class="text-white text-sm">Session monitored. Auto-lock in <span class="font-mono text-primary">04:59</span></span>
+</div>
+</main>
+<!-- Right Sidebar - Actions & Metadata -->
+<aside class="w-80 bg-[#0d1c12] border-l border-surface-border flex flex-col shrink-0 z-10">
+<!-- Legal Hold Banner -->
+<div class="bg-indigo-500/10 border-b border-indigo-500/20 p-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-indigo-400 mt-0.5">gavel</span>
+<div>
+<h3 class="text-indigo-200 text-sm font-bold uppercase tracking-wide">Legal Hold Active</h3>
+<p class="text-indigo-300/80 text-xs mt-1 leading-relaxed">This record is subject to Litigation Hold Case #4992. Deletion is disabled.</p>
+</div>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col gap-8 overflow-y-auto">
+<!-- Retention Info -->
+<div class="space-y-2">
+<h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Data Retention</h4>
+<div class="bg-surface-dark rounded-lg p-4 border border-surface-border">
+<div class="flex justify-between items-center mb-2">
+<span class="text-white text-sm font-medium">Expires in</span>
+<span class="text-primary text-sm font-mono">7 Yrs</span>
+</div>
+<div class="w-full bg-surface-border rounded-full h-1.5 mb-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 15%"></div>
+</div>
+<p class="text-text-secondary text-xs">Scheduled purge: Oct 31, 2030</p>
+</div>
+</div>
+<!-- Actions -->
+<div class="space-y-4">
+<h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Actions</h4>
+<button class="w-full group flex flex-col gap-1 bg-surface-dark hover:bg-[#1f3d29] border border-surface-border hover:border-primary/50 p-4 rounded-lg text-left transition-all">
+<div class="flex items-center gap-2 text-white font-medium">
+<span class="material-symbols-outlined text-primary">download</span>
+                            Download PDF
+                        </div>
+<p class="text-xs text-text-secondary group-hover:text-white/80">Will generate an audit log entry.</p>
+</button>
+<button class="w-full group flex flex-col gap-1 bg-surface-dark hover:bg-[#1f3d29] border border-surface-border hover:border-primary/50 p-4 rounded-lg text-left transition-all">
+<div class="flex items-center gap-2 text-white font-medium">
+<span class="material-symbols-outlined text-text-secondary">mail</span>
+                            Email Secure Link
+                        </div>
+<p class="text-xs text-text-secondary group-hover:text-white/80">Send 24h temporary access link.</p>
+</button>
+<button class="w-full group flex flex-col gap-1 bg-surface-dark hover:bg-[#1f3d29] border border-surface-border hover:border-primary/50 p-4 rounded-lg text-left transition-all opacity-50 cursor-not-allowed">
+<div class="flex items-center gap-2 text-slate-400 font-medium">
+<span class="material-symbols-outlined">delete</span>
+                            Purge Record
+                        </div>
+<p class="text-xs text-slate-500">Disabled by Legal Hold #4992</p>
+</button>
+</div>
+<!-- Audit Trail Micro-view -->
+<div class="space-y-3 mt-auto">
+<h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Recent Access</h4>
+<ul class="space-y-3 relative before:absolute before:left-[5px] before:top-1 before:bottom-0 before:w-px before:bg-surface-border">
+<li class="relative pl-5">
+<div class="absolute left-0 top-1.5 size-2.5 rounded-full bg-primary ring-4 ring-background-dark"></div>
+<p class="text-white text-xs">Current Session</p>
+<p class="text-text-secondary text-[10px]">Now • 192.168.1.42</p>
+</li>
+<li class="relative pl-5">
+<div class="absolute left-0 top-1.5 size-2.5 rounded-full bg-surface-border ring-4 ring-background-dark"></div>
+<p class="text-slate-300 text-xs">Admin Audit</p>
+<p class="text-slate-500 text-[10px]">Yesterday • SYSTEM</p>
+</li>
+<li class="relative pl-5">
+<div class="absolute left-0 top-1.5 size-2.5 rounded-full bg-surface-border ring-4 ring-background-dark"></div>
+<p class="text-slate-300 text-xs">Payroll Gen.</p>
+<p class="text-slate-500 text-[10px]">31 Oct • AUTOMATION</p>
+</li>
+</ul>
+<a class="block text-primary text-xs hover:underline pl-5 mt-2" href="#">View Full Audit Log</a>
+</div>
+</div>
+</aside>
+</div>
+<!-- Step-up Authentication Modal (Overlay) -->
+<!-- Ideally this would be toggled by state, here we simulate the unlocked state behind it but for the purpose of the output, I will make it 'hidden' by default so the main UI is visible, or I can show it as an overlay. The prompt says "Before viewing... once unlocked". I will create the modal but set it to display:none or add a 'hidden' class, but since I cannot add JS interaction, I will render the UI as the "Unlocked" state described in the prompt, but I will include the HTML for the modal commented out or hidden so the developer has it, OR I will make it a backdrop that is partially transparent to show context. Let's make it a visible overlay that the user "just unlocked" or is about to. Actually, the prompt says "Once unlocked, the main screen shows...". I will show the MAIN screen as requested, but I will put the MFA input inside the main content area as if it was just successfully entered or use the component provided in the input list. -->
+<!-- Wait, the prompt provided a specific component with PIN inputs. I should probably incorporate that style if relevant. The prompt provided code has a PIN input. I'll reimagine that component as the "Step-Up Auth" modal which might be overlaid if I wanted to show the locked state.
+    
+    However, the user asked for the "Class A Payslip Viewer" and described the screen *after* unlocking ("Once unlocked..."). The provided component in the input list IS the lock screen basically. I will integrate the lock screen elements into a "Security Check" modal that is conceptually "hidden" or I will render the full UI as requested. 
+    
+    Let's stick to the request: "Output a design... Class A Payslip Viewer... Once unlocked". 
+    I will design the VIEWING experience.
+    -->
+</body></html>

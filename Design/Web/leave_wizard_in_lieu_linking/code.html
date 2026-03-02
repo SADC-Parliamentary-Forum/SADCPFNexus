@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Leave Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2632",
+                        "border-light": "#e7edf3",
+                        "border-dark": "#2d3b4a",
+                        "text-main": "#0d141b",
+                        "text-secondary": "#4c739a",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+        }
+        /* Custom scrollbar for modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-slate-100 min-h-screen flex flex-col font-display antialiased">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-6 py-3 shadow-sm">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-8 flex items-center justify-center text-primary bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight text-text-main dark:text-white">SADCPFNexus</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="flex size-10 items-center justify-center rounded-lg bg-background-light dark:bg-background-dark text-text-main dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-lg bg-background-light dark:bg-background-dark text-text-main dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-border-light dark:border-border-dark">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-text-main dark:text-white leading-none">J. Doe</p>
+<p class="text-xs text-text-secondary dark:text-slate-400 mt-1">Senior Officer</p>
+</div>
+<div class="bg-primary/20 bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-surface-light dark:border-surface-dark shadow-sm" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHqosievUF1v6giI4zPTMFJ9sObTZO_14iDNLR6ilrH9je05aeDQyjrsJ8muuj2hkb8XL-2NgAReW9Fz8pQR_9b1zMTIjdxEiH010EtYXtfOr-3VVcddKl4b5ANgojb2JmM08Mv4RxcYQRJjxLBFgeAih2WrsiQmBqbnZ-jM9r-qptABgcwRKIp_cEa3c9B5U6RXmdAbDQ6b5Ns1R4ZQsLe0el240uFyNe6mrBWqOyskUK5wYXODdp3brButKnUSgKYmFJBG90UKc");'></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-6 py-8">
+<!-- Breadcrumbs & Title -->
+<div class="mb-8">
+<nav class="flex items-center gap-2 text-sm text-text-secondary dark:text-slate-400 mb-2">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Leave Request</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-medium text-text-main dark:text-white">Step 3: Linking</span>
+</nav>
+<h1 class="text-3xl font-bold text-text-main dark:text-white tracking-tight">Leave Application Wizard</h1>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Form Area -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Progress Stepper -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-border-light dark:border-border-dark">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary uppercase tracking-wider">Step 3 of 5</span>
+<h3 class="text-xl font-bold text-text-main dark:text-white mt-1">Leave-in-Lieu Linking</h3>
+</div>
+<span class="text-text-secondary dark:text-slate-400 text-sm font-medium">60% Completed</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+<div class="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 60%"></div>
+</div>
+</div>
+<!-- Employee Summary Card (Compact) -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 shadow-sm border border-border-light dark:border-border-dark grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-text-secondary dark:text-slate-400 uppercase">Employee ID</span>
+<span class="text-sm font-semibold text-text-main dark:text-white">SADC-8842</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-text-secondary dark:text-slate-400 uppercase">Department</span>
+<span class="text-sm font-semibold text-text-main dark:text-white">Intl. Liaison</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-text-secondary dark:text-slate-400 uppercase">Role</span>
+<span class="text-sm font-semibold text-text-main dark:text-white">Senior Officer</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-medium text-text-secondary dark:text-slate-400 uppercase">Clearance</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 w-fit">
+                            Class B
+                        </span>
+</div>
+</div>
+<!-- Main Action Area -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden">
+<div class="p-6 border-b border-border-light dark:border-border-dark">
+<div class="flex items-start justify-between gap-4">
+<div>
+<h3 class="text-lg font-bold text-text-main dark:text-white mb-2">Link Travel or Mission Records</h3>
+<p class="text-sm text-text-secondary dark:text-slate-400 max-w-2xl">
+                                    Select eligible official travel or missions to claim leave-in-lieu days. Only approved missions from the last 90 days are shown.
+                                </p>
+</div>
+<!-- Toggle Switch -->
+<label class="inline-flex items-center cursor-pointer group">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<span class="mr-3 text-sm font-medium text-text-main dark:text-white group-hover:text-primary transition-colors">Enable Linking</span>
+<div class="relative w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Search & Picker -->
+<div class="p-6 bg-slate-50 dark:bg-slate-800/50">
+<div class="relative mb-6">
+<div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none text-text-secondary dark:text-slate-400">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark text-text-main dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block w-full ps-10 p-3 shadow-sm" id="mission-search" placeholder="Search by Mission ID, Destination or Date..." required="" type="text"/>
+</div>
+<div class="space-y-3">
+<!-- Record Item: Selected -->
+<label class="relative flex items-center p-4 rounded-lg border-2 border-primary bg-primary/5 cursor-pointer transition-all hover:bg-primary/10">
+<input checked="" class="size-4 text-primary border-gray-300 focus:ring-primary dark:border-gray-600 dark:focus:ring-primary" name="mission-record" type="radio"/>
+<div class="ms-4 flex-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Mission to Brussels (EU Summit)</h4>
+<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">MIS-2023-094</span>
+</div>
+<div class="flex gap-4 text-xs text-text-secondary dark:text-slate-400">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span> Oct 12 - Oct 18, 2023</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> Brussels, Belgium</span>
+</div>
+</div>
+<div class="text-right pl-4 border-l border-border-light dark:border-border-dark ml-4">
+<p class="text-lg font-bold text-primary">2.0</p>
+<p class="text-[10px] font-medium text-text-secondary dark:text-slate-400 uppercase">Eligible Days</p>
+</div>
+</label>
+<!-- Record Item: Default -->
+<label class="relative flex items-center p-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark cursor-pointer transition-all hover:border-primary/50 hover:shadow-md">
+<input class="size-4 text-primary border-gray-300 focus:ring-primary dark:border-gray-600 dark:focus:ring-primary" name="mission-record" type="radio"/>
+<div class="ms-4 flex-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Regional Security Protocol Review</h4>
+<span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">MIS-2023-088</span>
+</div>
+<div class="flex gap-4 text-xs text-text-secondary dark:text-slate-400">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span> Sep 04 - Sep 06, 2023</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> Pretoria, SA</span>
+</div>
+</div>
+<div class="text-right pl-4 border-l border-border-light dark:border-border-dark ml-4">
+<p class="text-lg font-bold text-text-main dark:text-slate-300">1.0</p>
+<p class="text-[10px] font-medium text-text-secondary dark:text-slate-400 uppercase">Eligible Days</p>
+</div>
+</label>
+<!-- Record Item: Default -->
+<label class="relative flex items-center p-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark cursor-pointer transition-all hover:border-primary/50 hover:shadow-md">
+<input class="size-4 text-primary border-gray-300 focus:ring-primary dark:border-gray-600 dark:focus:ring-primary" name="mission-record" type="radio"/>
+<div class="ms-4 flex-1">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Technical Working Group</h4>
+<span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">MIS-2023-082</span>
+</div>
+<div class="flex gap-4 text-xs text-text-secondary dark:text-slate-400">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span> Aug 20 - Aug 21, 2023</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> Virtual</span>
+</div>
+</div>
+<div class="text-right pl-4 border-l border-border-light dark:border-border-dark ml-4">
+<p class="text-lg font-bold text-text-main dark:text-slate-300">0.5</p>
+<p class="text-[10px] font-medium text-text-secondary dark:text-slate-400 uppercase">Eligible Days</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Auto-calculation Display -->
+<div class="p-6 bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark flex justify-end">
+<div class="flex items-center gap-4">
+<span class="text-sm font-medium text-text-secondary dark:text-slate-400">Total days claimed from mission:</span>
+<div class="flex items-baseline gap-1">
+<span class="text-2xl font-bold text-primary">2.0</span>
+<span class="text-sm font-medium text-text-main dark:text-white">Days</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Navigation Buttons -->
+<div class="flex justify-between pt-4">
+<button class="px-6 py-2.5 rounded-lg border border-border-light dark:border-border-dark text-text-main dark:text-white font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+                        Back
+                    </button>
+<button class="px-8 py-2.5 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                        Next Step
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Right Column: Sidebar Summary -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Leave Balance Widget -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-border-light dark:border-border-dark sticky top-24">
+<h3 class="text-lg font-bold text-text-main dark:text-white mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+                        Leave Balance
+                    </h3>
+<!-- Chart / Visual representation -->
+<div class="relative size-40 mx-auto mb-6">
+<!-- Simple SVG Donut Chart representation -->
+<svg class="size-full -rotate-90" viewbox="0 0 36 36">
+<!-- Background Circle -->
+<path class="text-slate-100 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.8"></path>
+<!-- Progress Circle (75%) -->
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="75, 100" stroke-width="3.8"></path>
+</svg>
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+<span class="text-2xl font-bold text-text-main dark:text-white block">24</span>
+<span class="text-[10px] font-bold text-text-secondary dark:text-slate-400 uppercase tracking-wide">Days Left</span>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center pb-3 border-b border-dashed border-border-light dark:border-border-dark">
+<div class="flex items-center gap-2">
+<span class="size-2.5 rounded-full bg-emerald-500"></span>
+<span class="text-sm font-medium text-text-secondary dark:text-slate-400">Annual Leave</span>
+</div>
+<span class="text-sm font-bold text-text-main dark:text-white">18.0</span>
+</div>
+<div class="flex justify-between items-center pb-3 border-b border-dashed border-border-light dark:border-border-dark">
+<div class="flex items-center gap-2">
+<span class="size-2.5 rounded-full bg-blue-500"></span>
+<span class="text-sm font-medium text-text-secondary dark:text-slate-400">In-Lieu Accrued</span>
+</div>
+<span class="text-sm font-bold text-text-main dark:text-white">6.0</span>
+</div>
+<div class="flex justify-between items-center pb-3 bg-primary/5 p-3 rounded-lg border border-primary/20">
+<div class="flex items-center gap-2">
+<span class="size-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+<span class="text-sm font-medium text-primary">Pending Request</span>
+</div>
+<span class="text-sm font-bold text-primary">+2.0</span>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-border-light dark:border-border-dark">
+<h4 class="text-xs font-bold text-text-secondary dark:text-slate-500 uppercase tracking-wider mb-3">Policy Note</h4>
+<div class="flex gap-3 items-start p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<span class="material-symbols-outlined text-amber-500 text-lg flex-shrink-0 mt-0.5">info</span>
+<p class="text-xs text-text-secondary dark:text-slate-400 leading-relaxed">
+                                 Leave-in-Lieu must be claimed within 90 days of return from mission. Requires Class B clearance verification.
+                             </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PIF Wizard - SADCPFNexus Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 flex flex-col min-h-screen overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 shadow-sm z-10 sticky top-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[20px]">dataset</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Admin</h2>
+</div>
+<label class="hidden lg:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+<div class="text-slate-500 flex border-none items-center justify-center pl-3 pr-1">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg bg-transparent focus:outline-0 focus:ring-0 border-none h-full placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm font-normal leading-normal px-2 text-slate-900 dark:text-white" placeholder="Search PIF..."/>
+</div>
+</label>
+</div>
+<div class="flex items-center gap-8">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal" href="#">Projects</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center size-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex items-center justify-center size-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+</button>
+<div class="size-9 rounded-full bg-cover bg-center ring-2 ring-slate-100 dark:ring-slate-800 ml-1" data-alt="User profile photo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBzFrLmhfZgwqeB3TBgFkTdvLM6kOc-vnbp_ZnkQHP6JCfC-xGcXK3bRmvf4mZEWlk4v8PpDVGb2jvtmcPEd8ZusbaaKDHW2tr94eWWLKTMdJhfyEacPmuuvlbQmhHGO_58W6RRrjJD7hoEbjNgyL4LvjtaqkMIU367FhpePfyr_ZiUdiZT_zuaRjXH4fZqI0IwlC71KsRmP35Tz7PHDqkhmjO0HTp_D7dCqKKJb1-iiwBwb3VJwJusUYULjvJ5sQD_cXyloP9IR4");'></div>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col max-w-[1440px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+<!-- Breadcrumbs & Title Area -->
+<div class="mb-8">
+<div class="flex flex-wrap gap-2 items-center text-sm mb-4">
+<a class="text-slate-500 hover:text-primary transition-colors font-medium" href="#">Projects</a>
+<span class="text-slate-400">/</span>
+<a class="text-slate-500 hover:text-primary transition-colors font-medium" href="#">New PIF</a>
+<span class="text-slate-400">/</span>
+<span class="text-slate-900 dark:text-slate-100 font-semibold">Budget &amp; Funding</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">New Programme Initiation Form</h1>
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 py-2 px-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Status</span>
+<span class="size-2 rounded-full bg-amber-500"></span>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Draft in Progress</span>
+</div>
+</div>
+</div>
+<!-- Stepper -->
+<div class="w-full bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-8">
+<div class="flex items-center justify-between mb-2">
+<span class="text-sm font-medium text-slate-900 dark:text-white">Step 2 of 7: Funding &amp; Budget</span>
+<span class="text-sm text-slate-500">28% Completed</span>
+</div>
+<div class="relative w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-500" style="width: 28%"></div>
+</div>
+<div class="flex justify-between mt-4 text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
+<span class="text-primary">Basics</span>
+<span class="text-primary">Budget</span>
+<span>Stakeholders</span>
+<span>Risks</span>
+<span>Timeline</span>
+<span>Review</span>
+<span>Submit</span>
+</div>
+</div>
+<!-- Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Main Content Form -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Funding Source Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_balance</span>
+                        Funding Source
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Primary Funding Body</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary">
+<option>SADC Development Fund</option>
+<option>External Grant</option>
+<option>Public-Private Partnership</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Currency</label>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary">
+<option>USD - US Dollar</option>
+<option>EUR - Euro</option>
+<option>ZAR - South African Rand</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Budget Allocation Grid -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">table_chart</span>
+                            Budget Allocation
+                        </h3>
+<button class="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            Add Line Item
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+<thead class="bg-slate-50 dark:bg-slate-800 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">
+<tr>
+<th class="px-6 py-4">Description</th>
+<th class="px-6 py-4 w-32">Unit Type</th>
+<th class="px-6 py-4 w-24 text-right">Qty</th>
+<th class="px-6 py-4 w-32 text-right">Unit Cost</th>
+<th class="px-6 py-4 w-32 text-right">Total</th>
+<th class="px-6 py-4 w-12"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-4">
+<input class="w-full bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium placeholder-slate-400 text-sm" type="text" value="Initial Technical Assessment"/>
+</td>
+<td class="px-6 py-4">
+<select class="w-full bg-transparent border-0 text-sm py-1 pl-0 pr-6 focus:ring-0 text-slate-600 dark:text-slate-300">
+<option>Consultant Day</option>
+<option>Fixed Cost</option>
+</select>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="15"/>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="850.00"/>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
+                                        12,750.00
+                                    </td>
+<td class="px-6 py-4 text-center">
+<button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-4">
+<input class="w-full bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium placeholder-slate-400 text-sm" type="text" value="Rural Infrastructure Setup"/>
+</td>
+<td class="px-6 py-4">
+<select class="w-full bg-transparent border-0 text-sm py-1 pl-0 pr-6 focus:ring-0 text-slate-600 dark:text-slate-300">
+<option>Lump Sum</option>
+<option>Consultant Day</option>
+</select>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="1"/>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="45000.00"/>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
+                                        45,000.00
+                                    </td>
+<td class="px-6 py-4 text-center">
+<button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+<td class="px-6 py-4">
+<input class="w-full bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium placeholder-slate-400 text-sm" type="text" value="Local Training Workshops"/>
+</td>
+<td class="px-6 py-4">
+<select class="w-full bg-transparent border-0 text-sm py-1 pl-0 pr-6 focus:ring-0 text-slate-600 dark:text-slate-300">
+<option>Session</option>
+<option>Participant</option>
+</select>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="8"/>
+</td>
+<td class="px-6 py-4 text-right">
+<input class="w-full text-right bg-transparent border-0 border-b border-transparent focus:border-primary focus:ring-0 px-0 py-1 text-slate-900 dark:text-white font-medium" type="number" value="1200.00"/>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
+                                        9,600.00
+                                    </td>
+<td class="px-6 py-4 text-center">
+<button class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+<tfoot class="bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-white">
+<tr>
+<td class="px-6 py-4 text-right text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400" colspan="4">Total Budget (USD)</td>
+<td class="px-6 py-4 text-right text-lg text-primary">67,350.00</td>
+<td></td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+</div>
+<!-- Sidebar -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sticky top-24">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        Project Overview
+                        <span class="material-symbols-outlined text-slate-400">info</span>
+</h3>
+<div class="space-y-6">
+<div class="flex flex-col gap-1">
+<span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Project ID</span>
+<span class="text-slate-900 dark:text-white font-mono font-medium">PIF-2024-892</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Classification</span>
+<div>
+<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 dark:bg-orange-900/30 px-3 py-1 text-sm font-medium text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
+<span class="size-1.5 rounded-full bg-orange-500"></span>
+                                    Class B (Medium Risk)
+                                </span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Start Date</span>
+<div class="flex items-center gap-2 text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-[18px] text-slate-400">calendar_month</span>
+<span class="font-medium">01 Oct 2024</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Group</span>
+<div class="flex items-center gap-2 text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-[18px] text-slate-400">groups</span>
+<span class="font-medium">Rural SMEs &amp; Cooperatives</span>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="bg-primary/5 rounded-lg p-4 border border-primary/10">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-[20px] mt-0.5">lightbulb</span>
+<div class="flex flex-col gap-1">
+<p class="text-sm font-semibold text-primary">Budget Guideline</p>
+<p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Ensure administrative costs do not exceed 12% of the total budget for Class B projects.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="mt-12 py-6 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Back
+            </button>
+<div class="flex items-center gap-4">
+<button class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Draft
+                </button>
+<button class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+                    Next Step
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>

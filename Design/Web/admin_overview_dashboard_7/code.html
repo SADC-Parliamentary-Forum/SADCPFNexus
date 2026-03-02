@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - PIF Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "primary-600": "#156cbd",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "neutral-50": "#f8fafc",
+                        "neutral-100": "#f1f5f9",
+                        "neutral-200": "#e2e8f0",
+                        "neutral-300": "#cbd5e1",
+                        "neutral-400": "#94a3b8",
+                        "neutral-500": "#64748b",
+                        "neutral-600": "#475569",
+                        "neutral-700": "#334155",
+                        "neutral-800": "#1e293b",
+                        "neutral-900": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-neutral-900 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-col overflow-hidden">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-white px-6 py-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-neutral-900 dark:text-white">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+<p class="text-xs font-medium text-neutral-500">Class A-D Secure Environment</p>
+</div>
+</div>
+</div>
+<div class="flex flex-1 items-center justify-center px-12">
+<label class="flex w-full max-w-md items-center gap-2 rounded-lg bg-neutral-100 px-3 py-2 focus-within:ring-2 focus-within:ring-primary/50 dark:bg-neutral-800">
+<span class="material-symbols-outlined text-neutral-500">search</span>
+<input class="w-full border-none bg-transparent p-0 text-sm placeholder:text-neutral-500 focus:ring-0 dark:text-white" placeholder="Search forms, references, or policies..." type="text"/>
+</label>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900"></span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300">
+<span class="material-symbols-outlined">chat</span>
+</button>
+<div class="h-8 w-[1px] bg-neutral-200 dark:bg-neutral-700"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">Admin User</p>
+<p class="text-xs text-neutral-500">Security Level 4</p>
+</div>
+<div class="size-10 overflow-hidden rounded-full border-2 border-white shadow-sm dark:border-neutral-700 bg-neutral-200" data-alt="Profile picture of administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHtoPysebevaC6RU3G7eWnxNkBolnz4WxwdSajn2ewX-uPlI3jegSLqRZiNLsyin4N9aapF2Maa8NUpZITSOE5SswUxqg0fX2qmyFzC3MO0eRIeY0sG5B-wOC4rv8SeP33FPHd_Ugmzbl1bNIZjN6Rf92jCzwNrodeOTAZbcSEKepQd3fj_awAHAjQwcTlLsooNeu0nHGH7sjgdvYmOTAUTCM8N_iGVc5j9FWKDrdshMVtdUmRJovdOEM2eQ3ILDMVYrfzksxhxpk"); background-size: cover; background-position: center;'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="hidden w-64 flex-col justify-between border-r border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:flex overflow-y-auto">
+<nav class="flex flex-col gap-2">
+<div class="mb-4 flex items-center gap-3 rounded-lg bg-primary/10 p-3">
+<div class="size-10 rounded-full bg-cover bg-center" data-alt="Government building seal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuApqeo9fjlpRIW5ifKz1924WJKj-NNSwLfRjW6CUv5N0QVcAQTobKBDBLCeZOnGRBIiCphiGOF0Y3Owx8cQhKXAvqTeGHvF26v1OIxEdJ3VNCrsZVaii0ro0iz7NM-3m3ZZcts1Yetej0Df3s-PF7WI_9HpAFB7FO0yeIMR8pce1A4WgpQUPrjfWKzPTCy4lN7YU4BEqNPGjIeL12Ff0da3vKCd7s-zW8oMFgX2EbL8CJ19YoKsUna0ponxlQMAnp6Gpto0QPciNkc");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary dark:text-primary-400">Main Portal</span>
+<span class="text-xs text-neutral-500">v4.2.0 (Stable)</span>
+</div>
+</div>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<div class="my-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Programme Mgt</div>
+<a class="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white shadow-sm transition-colors" href="#">
+<span class="material-symbols-outlined">assignment_add</span>
+<span class="text-sm font-medium">New PIF Wizard</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="text-sm font-medium">Drafts</span>
+</a>
+<div class="my-2 h-px bg-neutral-200 dark:bg-neutral-800"></div>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Personnel</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Finance</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Session Secure</span>
+<span class="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+</div>
+<p class="text-xs font-medium text-neutral-900 dark:text-white">Token Expires in: 28m</p>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto bg-background-light p-8 dark:bg-background-dark scroll-smooth">
+<div class="mx-auto max-w-5xl space-y-8">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-sm text-neutral-500">
+<span>Programme Management</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>New Proposal</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="font-medium text-primary">Step 1: Activity Details</span>
+</div>
+<h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Programme Initiation Form (PIF)</h1>
+<p class="text-neutral-500 dark:text-neutral-400 max-w-2xl">Complete the details below to initialize a new programme activity. All fields marked with <span class="text-red-500">*</span> are mandatory for regulatory compliance.</p>
+</div>
+<div class="w-full overflow-x-auto pb-4">
+<div class="min-w-[800px] flex items-center justify-between">
+<div class="flex flex-col items-center gap-2 relative z-10">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-4 ring-white dark:ring-background-dark">
+<span class="material-symbols-outlined text-xl">description</span>
+</div>
+<span class="text-xs font-bold text-primary">Activity</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">attach_money</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Funding</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">location_on</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Venue</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">groups</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Participants</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">flight</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Travel Link</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">gavel</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Conflict</span>
+</div>
+<div class="flex-1 h-0.5 bg-neutral-200 dark:bg-neutral-700 mx-2"></div>
+<div class="flex flex-col items-center gap-2 relative z-10 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-neutral-300 text-neutral-400 dark:bg-neutral-800 dark:border-neutral-600">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+<span class="text-xs font-medium text-neutral-500">Approvals</span>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+<div class="border-b border-neutral-200 px-8 py-5 dark:border-neutral-800 flex justify-between items-center">
+<h3 class="text-lg font-bold text-neutral-900 dark:text-white">Core Activity Information</h3>
+<span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/30">Draft: #PIF-2024-001</span>
+</div>
+<form class="p-8 space-y-8">
+<div class="grid grid-cols-1 gap-6">
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="activity-title">Activity Title <span class="text-red-500">*</span></label>
+<div class="mt-2">
+<input class="block w-full rounded-md border-0 py-2.5 text-neutral-900 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:ring-neutral-700 dark:text-white" id="activity-title" name="activity-title" placeholder="e.g., Regional Workshop on Cybersecurity Policy Frameworks" type="text"/>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="date-from">Start Date <span class="text-red-500">*</span></label>
+<div class="relative mt-2">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+<span class="material-symbols-outlined text-neutral-400 text-lg">calendar_today</span>
+</div>
+<input class="block w-full rounded-md border-0 py-2.5 pl-10 text-neutral-900 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:ring-neutral-700 dark:text-white" id="date-from" name="date-from" type="date"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="date-to">End Date <span class="text-red-500">*</span></label>
+<div class="relative mt-2">
+<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+<span class="material-symbols-outlined text-neutral-400 text-lg">event</span>
+</div>
+<input class="block w-full rounded-md border-0 py-2.5 pl-10 text-neutral-900 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:ring-neutral-700 dark:text-white" id="date-to" name="date-to" type="date"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="officer">Programme Officer <span class="text-red-500">*</span></label>
+<div class="mt-2">
+<select class="block w-full rounded-md border-0 py-2.5 text-neutral-900 shadow-sm ring-1 ring-inset ring-neutral-300 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:ring-neutral-700 dark:text-white" id="officer" name="officer">
+<option>Select Officer...</option>
+<option>Dr. A. Smith (Senior Officer)</option>
+<option>J. Doe (Coordinator)</option>
+<option>M. Williams (Lead)</option>
+</select>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="target-group">Target Group</label>
+<p class="text-xs text-neutral-500 mb-2">Specify the primary beneficiaries or participant demographics.</p>
+<div class="mt-2">
+<input class="block w-full rounded-md border-0 py-2.5 text-neutral-900 shadow-sm ring-1 ring-inset ring-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:ring-neutral-700 dark:text-white" id="target-group" name="target-group" placeholder="e.g., Government officials, IT Managers, Policy Makers" type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold leading-6 text-neutral-900 dark:text-white" for="objectives">Objectives &amp; Outcomes <span class="text-red-500">*</span></label>
+<div class="mt-2 rounded-md border border-neutral-300 shadow-sm dark:border-neutral-700 overflow-hidden focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
+<div class="flex items-center gap-1 border-b border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800">
+<button class="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700" type="button">
+<span class="material-symbols-outlined text-lg">format_bold</span>
+</button>
+<button class="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700" type="button">
+<span class="material-symbols-outlined text-lg">format_italic</span>
+</button>
+<button class="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700" type="button">
+<span class="material-symbols-outlined text-lg">format_underlined</span>
+</button>
+<div class="mx-1 h-4 w-px bg-neutral-300 dark:bg-neutral-600"></div>
+<button class="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700" type="button">
+<span class="material-symbols-outlined text-lg">format_list_bulleted</span>
+</button>
+<button class="rounded p-1 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700" type="button">
+<span class="material-symbols-outlined text-lg">format_list_numbered</span>
+</button>
+</div>
+<textarea class="block w-full border-0 p-3 text-neutral-900 placeholder:text-neutral-400 focus:ring-0 sm:text-sm sm:leading-6 dark:bg-neutral-800 dark:text-white" id="objectives" name="objectives" placeholder="Describe the strategic objectives of this activity..." rows="6"></textarea>
+</div>
+<p class="mt-2 text-xs text-neutral-500 text-right">0 / 500 words</p>
+</div>
+</form>
+<div class="border-t border-neutral-200 bg-neutral-50 px-8 py-5 dark:border-neutral-800 dark:bg-neutral-900/50 rounded-b-xl flex items-center justify-between">
+<button class="text-sm font-semibold text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white" type="button">
+                            Cancel
+                        </button>
+<div class="flex items-center gap-3">
+<button class="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700" type="button">
+                                Save Draft
+                            </button>
+<button class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button">
+                                Next: Funding
+                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="rounded-lg bg-blue-50 p-4 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/30">
+<div class="flex">
+<div class="flex-shrink-0">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+</div>
+<div class="ml-3 flex-1 md:flex md:justify-between">
+<p class="text-sm text-blue-700 dark:text-blue-300">Need help defining objectives? Refer to the <a class="font-bold hover:underline" href="#">SMART Goals Guide</a> for policy formulation.</p>
+<p class="mt-3 text-sm md:ml-6 md:mt-0">
+<a class="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-200" href="#">View Guidelines <span aria-hidden="true">→</span></a>
+</p>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-12 text-center text-xs text-neutral-400 pb-4">
+<p>© 2024 SADCPFNexus Administration System. Authorized Access Only.</p>
+</footer>
+</main>
+</div>
+</div>
+
+</body></html>

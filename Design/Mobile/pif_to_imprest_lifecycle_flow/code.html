@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PIF to Imprest Lifecycle Flow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec80",
+                        "primary-dark": "#0ea65a",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102219",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#183325",
+                        "text-main": "#111814",
+                        "text-secondary": "#618975",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-main font-display antialiased selection:bg-primary selection:text-background-dark min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="bg-surface-light px-4 pt-6 pb-2 border-b border-[#f0f4f2] sticky top-0 z-20">
+<div class="flex items-center justify-between mb-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-background-light text-text-main">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold flex-1 text-center pr-10">Lifecycle Overview</h1>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-2xl font-bold tracking-tight text-text-main">PIF to Imprest</h2>
+<p class="text-text-secondary text-sm font-medium mt-1">Institutional Value Chain</p>
+</div>
+<button class="bg-primary/10 text-primary-dark p-2 rounded-lg hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Stats Overview -->
+<section class="grid grid-cols-3 gap-3 p-4">
+<div class="bg-surface-light rounded-xl p-3 border border-[#dbe6e0] shadow-sm flex flex-col justify-between h-28">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-[20px]">description</span>
+<span class="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">+12%</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-text-main">142</p>
+<p class="text-[11px] font-medium text-text-secondary uppercase tracking-wider">Total PIFs</p>
+</div>
+</div>
+<div class="bg-surface-light rounded-xl p-3 border border-[#dbe6e0] shadow-sm flex flex-col justify-between h-28">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-orange-500 text-[20px]">pending</span>
+<span class="text-[10px] font-bold text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full">+5%</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-text-main">450K</p>
+<p class="text-[11px] font-medium text-text-secondary uppercase tracking-wider">Imprest ($)</p>
+</div>
+</div>
+<div class="bg-surface-light rounded-xl p-3 border border-[#dbe6e0] shadow-sm flex flex-col justify-between h-28">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-blue-500 text-[20px]">verified</span>
+<span class="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full">+2%</span>
+</div>
+<div>
+<p class="text-2xl font-bold text-text-main">89%</p>
+<p class="text-[11px] font-medium text-text-secondary uppercase tracking-wider">Retired</p>
+</div>
+</div>
+</section>
+<!-- Vertical Timeline Flow -->
+<section class="px-5 py-2">
+<div class="relative">
+<!-- Vertical Line Container -->
+<div class="absolute left-[27px] top-6 bottom-6 w-[2px] bg-[#dbe6e0] z-0"></div>
+<!-- Step 1: Approved PIF -->
+<div class="relative z-10 flex gap-4 mb-8 group">
+<div class="flex-shrink-0">
+<div class="w-14 h-14 rounded-full bg-surface-light border-2 border-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-primary text-[28px]">check_circle</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-light p-4 rounded-xl border-l-4 border-l-primary shadow-sm border-t border-r border-b border-[#f0f4f2]">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-base font-bold text-text-main">Approved PIF</h3>
+<span class="bg-primary/20 text-primary-dark text-xs font-bold px-2 py-1 rounded-md">24</span>
+</div>
+<p class="text-sm text-text-secondary mb-3">Program Implementation Framework initialized.</p>
+<div class="flex items-center gap-2">
+<div class="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-full rounded-full"></div>
+</div>
+<span class="text-xs font-medium text-primary-dark">Complete</span>
+</div>
+</div>
+</div>
+<!-- Branching Logic -->
+<div class="relative z-10 mb-8 pl-[28px]">
+<!-- Branch Split Visual -->
+<div class="absolute left-[27px] top-[-24px] h-[36px] w-[24px] border-b-2 border-l-2 border-[#dbe6e0] rounded-bl-xl z-0"></div>
+<!-- Step 2a: Travel Requisition -->
+<div class="flex gap-4 mb-6 relative pl-6">
+<div class="absolute left-0 top-6 w-6 h-[2px] bg-[#dbe6e0]"></div>
+<div class="flex-shrink-0 z-10">
+<div class="w-12 h-12 rounded-full bg-surface-light border-2 border-blue-400 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-blue-500">flight_takeoff</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-light p-4 rounded-xl border border-[#f0f4f2] shadow-sm">
+<div class="flex justify-between items-center mb-1">
+<h3 class="text-sm font-bold text-text-main">Travel Requisition</h3>
+<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-md">12 Pending</span>
+</div>
+<p class="text-xs text-text-secondary">Logistics &amp; accommodation clearance.</p>
+</div>
+</div>
+<!-- Step 2b: Consultancy Requisition -->
+<div class="flex gap-4 relative pl-6">
+<div class="absolute left-0 top-6 w-6 h-[2px] bg-[#dbe6e0]"></div>
+<div class="flex-shrink-0 z-10">
+<div class="w-12 h-12 rounded-full bg-surface-light border-2 border-purple-400 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-purple-500">work</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-light p-4 rounded-xl border border-[#f0f4f2] shadow-sm">
+<div class="flex justify-between items-center mb-1">
+<h3 class="text-sm font-bold text-text-main">Consultancy Req</h3>
+<span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-md">5 Review</span>
+</div>
+<p class="text-xs text-text-secondary">External expert engagement approval.</p>
+</div>
+</div>
+</div>
+<!-- Step 3: Imprest Request -->
+<div class="relative z-10 flex gap-4 mb-8 group mt-6">
+<div class="flex-shrink-0">
+<div class="w-14 h-14 rounded-full bg-surface-light border-2 border-gray-300 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-gray-600 text-[28px]">payments</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-light p-4 rounded-xl border border-[#f0f4f2] shadow-sm">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-base font-bold text-text-main">Imprest Request</h3>
+<span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-md">Processing</span>
+</div>
+<p class="text-sm text-text-secondary mb-3">Funds allocation linked to approved PIF &amp; Travel.</p>
+<div class="flex items-center gap-2">
+<div class="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[65%] rounded-full"></div>
+</div>
+<span class="text-xs font-medium text-text-secondary">65%</span>
+</div>
+</div>
+</div>
+<!-- Step 4: Expense Retirement -->
+<div class="relative z-10 flex gap-4 mb-2 group">
+<div class="flex-shrink-0">
+<div class="w-14 h-14 rounded-full bg-surface-light border-2 border-gray-300 flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-gray-600 text-[28px]">receipt_long</span>
+</div>
+</div>
+<div class="flex-1 bg-surface-light p-4 rounded-xl border border-[#f0f4f2] shadow-sm opacity-80">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-base font-bold text-text-main">Expense Retirement</h3>
+<span class="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded-md">Waiting</span>
+</div>
+<p class="text-sm text-text-secondary mb-2">Final reconciliation for audit ledger.</p>
+<button class="flex items-center gap-1 text-xs font-bold text-primary-dark mt-2">
+                            View Audit Ledger
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full bg-surface-light border-t border-[#f0f4f2] px-6 py-3 flex justify-between items-center z-30 pb-safe">
+<a class="flex flex-col items-center gap-1 text-text-secondary hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform fill-1">account_tree</span>
+<span class="text-[10px] font-medium">Workflows</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-secondary hover:text-primary transition-colors group" href="#">
+<div class="bg-primary rounded-full p-3 -mt-8 shadow-lg border-4 border-background-light">
+<span class="material-symbols-outlined text-background-dark">add</span>
+</div>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-secondary hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">pie_chart</span>
+<span class="text-[10px] font-medium">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-text-secondary hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+<!-- Safe area spacing for mobile bottoms -->
+<div class="h-6 w-full bg-surface-light"></div>
+</body></html>

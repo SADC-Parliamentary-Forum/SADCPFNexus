@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Splash Screen</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b", // User emerald green requested, but using config primary
+                        "emerald-custom": "#047857", // Deep emerald for text/logo parts
+                        "gold-custom": "#D97706", // Gold accent
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Noto Serif", "serif"],
+                        "sans": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    backgroundImage: {
+                        'subtle-pattern': "radial-gradient(#13ec5b 0.5px, transparent 0.5px), radial-gradient(#13ec5b 0.5px, #f6f8f6 0.5px)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .bg-pattern {
+            background-image: radial-gradient(#13ec5b20 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-between font-display overflow-hidden relative selection:bg-primary/30">
+<!-- Geometric Pattern Overlay -->
+<div class="absolute inset-0 z-0 bg-pattern opacity-40 pointer-events-none"></div>
+<!-- Top Spacer for Layout Balance -->
+<div class="flex-1"></div>
+<!-- Main Content: Logo & Titles -->
+<div class="relative z-10 flex flex-col items-center justify-center w-full px-8 animate-fade-in">
+<!-- Logo Container -->
+<div class="relative mb-8">
+<div class="w-32 h-32 rounded-full bg-white shadow-xl flex items-center justify-center border border-primary/20 relative z-10">
+<!-- Abstract Institutional Logo using Material Symbols -->
+<span class="material-symbols-outlined text-6xl text-emerald-custom" style="font-variation-settings: 'FILL' 1, 'wght' 600;">
+                    account_balance
+                </span>
+<!-- Gold Accent Ring -->
+<div class="absolute inset-0 rounded-full border-2 border-gold-custom opacity-20 transform scale-110"></div>
+</div>
+<!-- Glow effect behind logo -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/20 blur-3xl rounded-full -z-10"></div>
+</div>
+<!-- App Name -->
+<h1 class="text-[#111813] dark:text-slate-100 tracking-tight text-[36px] font-bold leading-tight text-center mb-2">
+            SADCPFNexus
+        </h1>
+<!-- Tagline -->
+<h2 class="text-[#111813]/70 dark:text-slate-300 text-lg font-medium leading-tight tracking-[-0.015em] text-center max-w-[280px]">
+            Unified Institutional Architecture
+        </h2>
+</div>
+<!-- Bottom Section: Loading & Security Badge -->
+<div class="relative z-10 flex-1 flex flex-col justify-end w-full pb-12 px-12">
+<!-- Progress Bar -->
+<div class="w-full flex flex-col gap-3 mb-8">
+<div class="flex justify-between items-end px-1">
+<span class="text-xs text-emerald-custom font-sans font-bold tracking-wider uppercase">Loading Resources</span>
+<span class="text-xs text-slate-500 font-sans">35%</span>
+</div>
+<div class="h-1.5 w-full bg-primary/20 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-custom rounded-full" style="width: 35%;"></div>
+</div>
+</div>
+<!-- Security Badge -->
+<div class="flex flex-col items-center gap-1 opacity-60">
+<div class="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">
+                    lock
+                </span>
+<span class="text-xs font-sans font-medium tracking-wide uppercase">Secured by WORM</span>
+</div>
+<p class="text-[10px] text-slate-400 dark:text-slate-500 font-sans">v.2.0.4 Build 892</p>
+</div>
+</div>
+</body></html>

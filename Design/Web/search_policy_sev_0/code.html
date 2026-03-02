@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Search Policy (SEV-0) - SADCPFNexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1a3524",
+                        "surface-hover": "#23482f",
+                        "text-muted": "#92c9a4",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<div class="relative flex w-full flex-col border-b border-[#23482f]">
+<header class="flex items-center justify-between whitespace-nowrap px-10 py-3 bg-[#112217]">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-white">
+<div class="size-6 text-primary">
+<span class="material-symbols-outlined !text-2xl">shield_lock</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus | SEV-0 System Enforcement</h2>
+</div>
+<div class="hidden lg:flex items-center gap-9">
+<a class="text-text-muted hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-white text-sm font-medium leading-normal border-b-2 border-primary pb-1" href="#">Policies</a>
+<a class="text-text-muted hover:text-white transition-colors text-sm font-medium leading-normal" href="#">Audit Logs</a>
+<a class="text-text-muted hover:text-white transition-colors text-sm font-medium leading-normal" href="#">System Settings</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="hidden md:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-[#23482f] bg-[#1a3524] focus-within:border-primary/50 transition-colors">
+<div class="text-text-muted flex items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined !text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-transparent focus:border-none h-full placeholder:text-text-muted px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search resources..." value=""/>
+</div>
+</label>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500"></span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-[#23482f]" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDd9eqbdi4dop_C1ZGqIdg0BjOxDoFt-zL6IgXdeiWj1_xQLumObJk7vWw0fZXwfWiojhGoo2chFLagjT69C3bSPJeSA1HzOoamUt3uURkVTOLc-2en3lKkwYY_XV3IvYRy2s9Fn370g64BrPb9laVP6cYUcgGu0g_4C3lrdPD-jfPjNEoA6L4qPF4hit-EfuxIMCNdYJLuieoq-PNX5Fm_kOGh65KPrWhukQ1YVjqeLlxggMJaLHaE-WtX2VJevI4wdqtKiaRqm30");'></div>
+</div>
+</div>
+</header>
+</div>
+<!-- Main Content Layout -->
+<div class="flex flex-1">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-[#23482f] bg-[#112217] hidden md:flex flex-col py-6 px-4 gap-6">
+<div class="flex gap-3 items-center px-2">
+<div class="bg-primary/10 flex items-center justify-center rounded-lg size-10 text-primary">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-sm font-bold leading-tight">Nexus ERP</h1>
+<p class="text-text-muted text-xs font-normal">Gov-Adj Inst.</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-surface-hover hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">home</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-surface-hover hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">admin_panel_settings</span>
+<span class="text-sm font-medium">Access Control</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-surface-hover hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">database</span>
+<span class="text-sm font-medium">Data Governance</span>
+</a>
+<div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(19,236,91,0.1)]">
+<span class="material-symbols-outlined fill-current">search</span>
+<span class="text-sm font-medium">Search Configuration</span>
+</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:bg-surface-hover hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">description</span>
+<span class="text-sm font-medium">Compliance Reports</span>
+</a>
+</nav>
+<div class="mt-auto">
+<div class="p-4 rounded-xl bg-gradient-to-br from-[#1a3524] to-[#112217] border border-[#23482f]">
+<div class="flex items-center gap-2 text-primary mb-2">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+<span class="text-xs font-bold uppercase tracking-wider">System Status</span>
+</div>
+<p class="text-white text-sm font-medium">All Systems Operational</p>
+<p class="text-text-muted text-xs mt-1">Last check: 2m ago</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 bg-background-light dark:bg-background-dark p-6 lg:p-10 overflow-y-auto">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#23482f]">
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-widest">SEV-0 Enforcement</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest">Active</span>
+</div>
+<h1 class="text-3xl font-bold text-white tracking-tight">Search Policy Configuration</h1>
+<p class="text-text-muted max-w-2xl">Manage global search indexing rules and whitelist fields. Changes to Class A exclusions require dual-control authorization.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#23482f] bg-[#1a3524] text-white hover:bg-[#23482f] transition-colors text-sm font-medium">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                            View Audit Trail
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-green-400 text-slate-900 transition-colors text-sm font-bold shadow-[0_0_20px_rgba(19,236,91,0.2)]">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                            Save Policy Changes
+                        </button>
+</div>
+</div>
+<!-- Three Column Grid for Main Controls -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Col 1: Exclusion Rules (Locked) -->
+<div class="lg:col-span-1 space-y-6">
+<div class="bg-surface-dark border border-red-500/20 rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="text-white font-bold text-lg flex items-center gap-2">
+                                        Class A Exclusion
+                                        <span class="material-symbols-outlined text-red-500 text-sm">lock</span>
+</h3>
+<p class="text-text-muted text-sm mt-1">PII &amp; Financial data protection.</p>
+</div>
+<div aria-checked="true" class="relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent bg-red-500/20 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" role="switch">
+<span class="sr-only">Use setting</span>
+<span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 transform translate-x-5 rounded-full bg-red-500 shadow ring-0 transition duration-200 ease-in-out"></span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm py-2 border-b border-white/5">
+<span class="text-slate-300">SSN / Tax ID</span>
+<span class="text-red-400 text-xs font-mono uppercase">Excluded</span>
+</div>
+<div class="flex items-center justify-between text-sm py-2 border-b border-white/5">
+<span class="text-slate-300">Biometric Data</span>
+<span class="text-red-400 text-xs font-mono uppercase">Excluded</span>
+</div>
+<div class="flex items-center justify-between text-sm py-2 border-b border-white/5">
+<span class="text-slate-300">Medical Records</span>
+<span class="text-red-400 text-xs font-mono uppercase">Excluded</span>
+</div>
+</div>
+<div class="mt-4 flex gap-2 items-center text-xs text-text-muted bg-[#112217] p-2 rounded">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                                Modification requires Lvl 5 Clearance.
+                            </div>
+</div>
+<!-- Reindex Trigger -->
+<div class="bg-surface-dark border border-[#23482f] rounded-xl p-6">
+<h3 class="text-white font-bold text-lg mb-2">Reindex Trigger</h3>
+<p class="text-text-muted text-sm mb-6">Force a complete rebuild of the search index. This action is irreversible and consumes significant resources.</p>
+<button class="w-full py-3 px-4 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary transition-all flex items-center justify-center gap-2 group relative overflow-hidden">
+<span class="material-symbols-outlined group-hover:animate-spin">sync</span>
+<span class="font-bold">Initiate Reindex Sequence</span>
+</button>
+<p class="text-center text-[11px] text-text-muted mt-3 uppercase tracking-wide">
+                                * Requires Dual-Control Approval
+                            </p>
+</div>
+</div>
+<!-- Col 2 & 3: Whitelist Configuration Form -->
+<div class="lg:col-span-2 bg-surface-dark border border-[#23482f] rounded-xl p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-white font-bold text-lg">Whitelisted Index Fields</h3>
+<button class="text-primary text-sm font-medium hover:text-white flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                Add Field
+                            </button>
+</div>
+<div class="space-y-4">
+<!-- Field Item 1 -->
+<div class="group flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-[#112217] border border-[#23482f] hover:border-primary/30 transition-colors">
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Field Name</label>
+<input class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9" readonly="" type="text" value="employee_id"/>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Data Type</label>
+<select class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9">
+<option>String</option>
+<option>Integer</option>
+</select>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Weight</label>
+<div class="flex items-center gap-3">
+<input class="w-full h-1 bg-[#23482f] rounded-lg appearance-none cursor-pointer accent-primary" max="10" min="1" type="range" value="8"/>
+<span class="text-white text-sm font-mono w-4">8</span>
+</div>
+</div>
+<div class="flex items-end pb-1">
+<button class="text-text-muted hover:text-red-400 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Field Item 2 -->
+<div class="group flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-[#112217] border border-[#23482f] hover:border-primary/30 transition-colors">
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Field Name</label>
+<input class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9" type="text" value="department_code"/>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Data Type</label>
+<select class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9">
+<option>String</option>
+<option>Integer</option>
+</select>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Weight</label>
+<div class="flex items-center gap-3">
+<input class="w-full h-1 bg-[#23482f] rounded-lg appearance-none cursor-pointer accent-primary" max="10" min="1" type="range" value="5"/>
+<span class="text-white text-sm font-mono w-4">5</span>
+</div>
+</div>
+<div class="flex items-end pb-1">
+<button class="text-text-muted hover:text-red-400 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Field Item 3 -->
+<div class="group flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-[#112217] border border-[#23482f] hover:border-primary/30 transition-colors">
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Field Name</label>
+<input class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9" type="text" value="public_email"/>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Data Type</label>
+<select class="w-full bg-[#1a3524] border-none rounded text-white text-sm focus:ring-1 focus:ring-primary h-9">
+<option>String</option>
+<option>Integer</option>
+</select>
+</div>
+<div class="flex-1">
+<label class="block text-xs font-medium text-text-muted mb-1">Weight</label>
+<div class="flex items-center gap-3">
+<input class="w-full h-1 bg-[#23482f] rounded-lg appearance-none cursor-pointer accent-primary" max="10" min="1" type="range" value="3"/>
+<span class="text-white text-sm font-mono w-4">3</span>
+</div>
+</div>
+<div class="flex items-end pb-1">
+<button class="text-text-muted hover:text-red-400 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-6 p-4 rounded bg-primary/5 border border-primary/20 flex gap-3">
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+<div class="text-sm">
+<p class="text-white font-medium">Indexing Tip</p>
+<p class="text-text-muted">Fields with higher weight values (8-10) will appear higher in search results. Avoid assigning high weights to generic fields.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Index Job Logs -->
+<div class="w-full">
+<h3 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted">terminal</span>
+                        Index Job Logs
+                    </h3>
+<div class="bg-surface-dark border border-[#23482f] rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-[#112217] text-text-muted text-xs uppercase tracking-wider">
+<tr>
+<th class="p-4 border-b border-[#23482f] font-medium">Job ID</th>
+<th class="p-4 border-b border-[#23482f] font-medium">Timestamp</th>
+<th class="p-4 border-b border-[#23482f] font-medium">Status</th>
+<th class="p-4 border-b border-[#23482f] font-medium">Triggered By</th>
+<th class="p-4 border-b border-[#23482f] font-medium text-right">Duration</th>
+</tr>
+</thead>
+<tbody class="text-sm divide-y divide-[#23482f]">
+<tr class="hover:bg-[#1f3f2b] transition-colors">
+<td class="p-4 font-mono text-text-muted">IDX-2023-884</td>
+<td class="p-4 text-white">Oct 24, 2023 09:14 AM</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                Completed
+                                            </span>
+</td>
+<td class="p-4 flex items-center gap-2 text-white">
+<div class="size-6 rounded-full bg-slate-700 bg-center bg-cover" data-alt="Admin user avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAAeXjHNuFrH6ZG6_A_GWE-YpVgKGMw1KCpvucL07Rm4TpZbaCdmrkQZ02gRGHxp1WHTKg1HoZFhrwP7nQkGwYBRNFqLsHE-xMSK4tszgiGqeMF79f3JsPBplS9TLIIw5SWZ3dn_U0CZ-JNIzNdOIOTSIqXZWRx_pDysGul94OpIKBc-AJkZyD1l9bYhPb1vk-eK2h6E5udkxnqettJNilG8rci5iVvI0E5HkbsCdgowVdTpL6NTbUuGCEPjX84MJYk0Yfvsb8X3T4");'></div>
+                                            SysAdmin_Rogers
+                                        </td>
+<td class="p-4 text-right text-text-muted font-mono">4m 12s</td>
+</tr>
+<tr class="hover:bg-[#1f3f2b] transition-colors">
+<td class="p-4 font-mono text-text-muted">IDX-2023-883</td>
+<td class="p-4 text-white">Oct 23, 2023 14:30 PM</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                                                Completed
+                                            </span>
+</td>
+<td class="p-4 flex items-center gap-2 text-white">
+<span class="material-symbols-outlined text-text-muted">schedule</span>
+                                            Automated_Cron
+                                        </td>
+<td class="p-4 text-right text-text-muted font-mono">3m 45s</td>
+</tr>
+<tr class="hover:bg-[#1f3f2b] transition-colors">
+<td class="p-4 font-mono text-text-muted">IDX-2023-882</td>
+<td class="p-4 text-white">Oct 22, 2023 11:05 AM</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                                Failed
+                                            </span>
+</td>
+<td class="p-4 flex items-center gap-2 text-white">
+<div class="size-6 rounded-full bg-slate-700 bg-center bg-cover" data-alt="User avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBd2a6l5oc05-0pC6BIRqFpJzjn8YZLzQ4SvvnrU8lYqTrADbjrg6Gn6uWwR4zj50rTMh0xzzcuhn7EnsUKpJIpQgFhxDISsxduKN0EhTAcxyhVYzBa0b5Vd_2k863plhhbaHB2ZTqIF9PLMLeY73p-LuBmCVqU93jbFxpYIlwn9-0jiDdNxVcARqmXYvloGZJFUbbPqFFh3SYPrNeohHu_5Y1iYCGLh9OiLhvsqUf_eIePa04KmxoZLfaGybEAxeObcwTbUgT6PlE");'></div>
+                                            DevOps_Sarah
+                                        </td>
+<td class="p-4 text-right text-text-muted font-mono">0m 42s</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

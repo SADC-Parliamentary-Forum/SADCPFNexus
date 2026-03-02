@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADC PF Nexus - PIF Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec80",
+                        "primary-dark": "#0ea65a",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102219",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2c24",
+                        "text-primary-light": "#111814",
+                        "text-secondary-light": "#618975",
+                        "text-primary-dark": "#e2e8e5",
+                        "text-secondary-dark": "#8faea0",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark">
+<div class="relative flex h-full min-h-screen w-full flex-col mx-auto max-w-md bg-background-light dark:bg-background-dark overflow-hidden shadow-2xl">
+<!-- Header -->
+<header class="flex items-center bg-surface-light dark:bg-surface-dark px-4 py-3 pb-2 justify-between sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+<div class="flex size-12 shrink-0 items-center justify-start text-text-primary-light dark:text-text-primary-dark cursor-pointer">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</div>
+<h2 class="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Review &amp; Approval</h2>
+<div class="flex w-12 items-center justify-end cursor-pointer">
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-base font-medium leading-normal shrink-0 hover:text-primary transition-colors">Cancel</p>
+</div>
+</header>
+<!-- Progress Indicator -->
+<div class="flex w-full flex-row items-center justify-center gap-3 py-6 bg-background-light dark:bg-background-dark">
+<div class="h-2 w-2 rounded-full bg-primary/30"></div>
+<div class="h-2 w-2 rounded-full bg-primary/30"></div>
+<div class="h-2 w-2 rounded-full bg-primary/30"></div>
+<div class="h-2 w-8 rounded-full bg-primary"></div>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto pb-32"> <!-- Padding bottom for sticky footer -->
+<div class="px-6 pb-2">
+<h3 class="text-text-primary-light dark:text-text-primary-dark tracking-tight text-2xl font-bold leading-tight text-left">Program Implementation Form</h3>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm mt-1">Please review the details before submission.</p>
+</div>
+<!-- Summary Grid -->
+<div class="px-6 py-4">
+<div class="grid grid-cols-[30%_1fr] gap-x-4 gap-y-6">
+<div class="col-span-2 grid grid-cols-subgrid border-t border-gray-200 dark:border-gray-700 pt-4">
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium">Program Title</p>
+<p class="text-text-primary-light dark:text-text-primary-dark text-sm font-medium">SRHR Governance Workshop</p>
+</div>
+<div class="col-span-2 grid grid-cols-subgrid border-t border-gray-200 dark:border-gray-700 pt-4">
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium">Budget Code</p>
+<p class="text-text-primary-light dark:text-text-primary-dark text-sm font-medium font-mono">SADC-SRHR-2024-001</p>
+</div>
+<div class="col-span-2 grid grid-cols-subgrid border-t border-gray-200 dark:border-gray-700 pt-4">
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium">Proposed Date</p>
+<p class="text-text-primary-light dark:text-text-primary-dark text-sm font-medium">Oct 12-14, 2024</p>
+</div>
+<div class="col-span-2 grid grid-cols-subgrid border-t border-gray-200 dark:border-gray-700 pt-4">
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium">Location</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-primary">location_on</span>
+<p class="text-text-primary-light dark:text-text-primary-dark text-sm font-medium">Johannesburg, ZA</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Collapsible Section -->
+<div class="px-4 py-2">
+<details class="group flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark shadow-sm transition-all duration-300">
+<summary class="flex cursor-pointer items-center justify-between gap-4 p-4">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined">flight_land</span>
+</div>
+<div>
+<p class="text-text-primary-light dark:text-text-primary-dark text-sm font-bold">Arrival Matrix &amp; Participants</p>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-xs mt-0.5">14 MPs, 3 Staff Members</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark transition-transform group-open:rotate-180">expand_more</span>
+</summary>
+<div class="px-4 pb-4 pt-0 border-t border-gray-100 dark:border-gray-800 mt-2">
+<div class="mt-4 space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary-light dark:text-text-secondary-dark">VIP Transport</span>
+<span class="text-text-primary-light dark:text-text-primary-dark font-medium">Arranged (Fleet A)</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary-light dark:text-text-secondary-dark">Hotel Booking</span>
+<span class="text-text-primary-light dark:text-text-primary-dark font-medium">Radisson Blu Gautrain</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary-light dark:text-text-secondary-dark">Dietary Reqs</span>
+<span class="text-text-primary-light dark:text-text-primary-dark font-medium">3 Vegan, 1 Halal</span>
+</div>
+<button class="w-full mt-2 py-2 text-xs font-bold text-primary bg-primary/10 rounded hover:bg-primary/20 transition-colors">View Detailed Manifest</button>
+</div>
+</div>
+</details>
+</div>
+<!-- Approval Workflow Visualization -->
+<div class="px-6 py-6 mt-4">
+<h4 class="text-text-primary-light dark:text-text-primary-dark text-sm font-bold uppercase tracking-wider mb-6">Sequential Approval Workflow</h4>
+<div class="relative pl-4 border-l-2 border-dashed border-gray-300 dark:border-gray-700 ml-3 space-y-8">
+<!-- Step 1: Program Officer -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary ring-4 ring-background-light dark:ring-background-dark">
+<span class="material-symbols-outlined text-white text-[14px] font-bold">check</span>
+</div>
+<div class="ml-4">
+<p class="text-xs font-bold text-primary uppercase mb-0.5">Initiator</p>
+<p class="text-sm font-bold text-text-primary-light dark:text-text-primary-dark">Program Officer</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Drafted &amp; Reviewed</p>
+</div>
+</div>
+<!-- Step 2: Director -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark border-2 border-primary ring-4 ring-background-light dark:ring-background-dark">
+<div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+</div>
+<div class="ml-4">
+<p class="text-xs font-bold text-text-secondary-light dark:text-text-secondary-dark uppercase mb-0.5">Current Step</p>
+<p class="text-sm font-bold text-text-primary-light dark:text-text-primary-dark">Director of Programs</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Pending Approval</p>
+</div>
+</div>
+<!-- Step 3: Finance -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 ring-4 ring-background-light dark:ring-background-dark">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">lock</span>
+</div>
+<div class="ml-4 opacity-60">
+<p class="text-xs font-bold text-text-secondary-light dark:text-text-secondary-dark uppercase mb-0.5">Next</p>
+<p class="text-sm font-bold text-text-primary-light dark:text-text-primary-dark">Finance Department</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Budget Verification</p>
+</div>
+</div>
+<!-- Step 4: Secretary General -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 ring-4 ring-background-light dark:ring-background-dark">
+<span class="material-symbols-outlined text-gray-400 text-[14px]">stars</span>
+</div>
+<div class="ml-4 opacity-60">
+<p class="text-xs font-bold text-text-secondary-light dark:text-text-secondary-dark uppercase mb-0.5">Final</p>
+<p class="text-sm font-bold text-text-primary-light dark:text-text-primary-dark">Secretary General</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Executive Sign-off</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Footer Action -->
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-t border-gray-100 dark:border-gray-800 z-20">
+<button class="w-full bg-primary hover:bg-primary-dark active:scale-[0.98] transition-all text-[#102219] font-bold text-base py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span>Submit for Approval</span>
+<span class="material-symbols-outlined text-xl">send</span>
+</button>
+</div>
+</div>
+</body></html>

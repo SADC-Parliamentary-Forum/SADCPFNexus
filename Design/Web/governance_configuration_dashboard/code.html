@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Governance Configuration Dashboard - SADCPFNexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "primary-dark": "#1563b3",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for table if needed */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<div class="w-full bg-white dark:bg-[#1a2634] border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+<header class="layout-container flex h-16 items-center justify-between px-6 lg:px-12 mx-auto max-w-[1440px]">
+<div class="flex items-center gap-4 text-slate-900 dark:text-slate-100">
+<div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">security</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Governance</h2>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+<a class="text-primary hover:text-primary-dark transition-colors" href="#">Configuration</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Access Logs</a>
+<a class="hover:text-slate-900 dark:hover:text-slate-200 transition-colors" href="#">Reports</a>
+</nav>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-[#1a2634]"></span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border border-slate-200 dark:border-slate-700" data-alt="Administrator profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDYHp5et5CwmNhTsW6OiSgCzoQrLB-YLi2gd4ZtYQQHJ0y2KzNzwHtr4hAnlQ8MpNn4YNtf1cfzXdVy5HuCPLvdih2HiBEyVZ6CM5sBfQR4lPjFzgY1ktyBqdK5tQ02En-wzTLZpdxY35kSeMY4IqKiNjC9Kv_4MiBCnHLlBJe7AR3rIl0sWRIh21KdPyBmLBWKiKlt9fukAB3eKIDjSsc8SLKTZUD8S6SZjQ-asB-M68Jdzou0qjpFI0nN6GOnlu1k8cj4kVk2Eas");'></div>
+</div>
+</div>
+</header>
+</div>
+<!-- Main Content -->
+<main class="flex-1 layout-container px-6 lg:px-12 py-8 mx-auto w-full max-w-[1440px] flex flex-col gap-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em] text-slate-900 dark:text-slate-100">Governance Configuration</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base md:text-lg max-w-2xl">Manage institutional data policies, aggregation thresholds, and access controls for the Nexus system.</p>
+</div>
+<div class="flex gap-3 shrink-0">
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span>Reset Defaults</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-6 bg-primary text-white text-sm font-bold hover:bg-primary-dark transition-colors shadow-sm shadow-primary/30">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Save Changes</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- LEFT COLUMN (Config Forms) -->
+<div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-8">
+<!-- Allowed Datasets -->
+<section class="bg-white dark:bg-[#1a2634] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">folder_shared</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Allowed Datasets</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Define which data classes are accessible to standard queries.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="flex items-center gap-3 p-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50 transition-colors cursor-pointer group">
+<input checked="" class="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20 dark:bg-slate-800" type="checkbox"/>
+<div>
+<p class="font-semibold text-slate-900 dark:text-slate-200">Census Data 2023</p>
+<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">Class A</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50 transition-colors cursor-pointer group">
+<input checked="" class="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20 dark:bg-slate-800" type="checkbox"/>
+<div>
+<p class="font-semibold text-slate-900 dark:text-slate-200">Tax Records Q1-Q4</p>
+<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">Class B</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50 transition-colors cursor-pointer group">
+<input checked="" class="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20 dark:bg-slate-800" type="checkbox"/>
+<div>
+<p class="font-semibold text-slate-900 dark:text-slate-200">Infrastructure Logs</p>
+<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">Public</span>
+</div>
+</label>
+<label class="flex items-center gap-3 p-4 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-primary/50 transition-colors cursor-pointer group">
+<input class="h-5 w-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/20 dark:bg-slate-800" type="checkbox"/>
+<div>
+<p class="font-semibold text-slate-900 dark:text-slate-200">Personnel Records</p>
+<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">Restricted</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Aggregation Thresholds -->
+<section class="bg-white dark:bg-[#1a2634] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Aggregation Thresholds</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Set limits to prevent identification of individuals in aggregated reports.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">info</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Minimum Group Size</label>
+<div class="relative">
+<input class="w-full pl-3 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 focus:border-primary" type="number" value="15"/>
+<div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 text-sm">pax</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-500">Groups smaller than this will be suppressed.</p>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Time Granularity</label>
+<select class="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 focus:border-primary">
+<option>Daily</option>
+<option selected="">Weekly</option>
+<option>Monthly</option>
+<option>Quarterly</option>
+</select>
+<p class="text-xs text-slate-500 dark:text-slate-500">Minimum time window for data buckets.</p>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Variance Limit</label>
+<div class="relative">
+<input class="w-full pl-3 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 focus:border-primary" type="number" value="5"/>
+<div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 text-sm">%</div>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-500">Acceptable deviation for noise injection.</p>
+</div>
+</div>
+</section>
+<!-- Query Audit Table -->
+<section class="bg-white dark:bg-[#1a2634] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col h-full">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Query Audit Log</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Recent data access attempts and their status.</p>
+</div>
+</div>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 material-symbols-outlined text-[20px]">search</span>
+<input class="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-full sm:w-64 focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Search logs..." type="text"/>
+</div>
+</div>
+<div class="overflow-x-auto custom-scrollbar">
+<table class="w-full text-left text-sm whitespace-nowrap">
+<thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 font-semibold uppercase text-xs tracking-wider">
+<tr>
+<th class="px-6 py-4">Timestamp</th>
+<th class="px-6 py-4">User</th>
+<th class="px-6 py-4">Dataset</th>
+<th class="px-6 py-4">Query Type</th>
+<th class="px-6 py-4 text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">2023-10-24 14:32:01</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs font-bold">JD</div>
+<span class="text-slate-900 dark:text-slate-200 font-medium">J. Doe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Census Data 2023</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Aggregation</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+<span class="size-1.5 rounded-full bg-green-500"></span>
+                                            Approved
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">2023-10-24 13:15:45</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xs font-bold">AS</div>
+<span class="text-slate-900 dark:text-slate-200 font-medium">A. Smith</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Tax Records Q3</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Raw Export</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+<span class="size-1.5 rounded-full bg-red-500"></span>
+                                            Blocked
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">2023-10-24 11:05:22</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xs font-bold">MK</div>
+<span class="text-slate-900 dark:text-slate-200 font-medium">M. Kim</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Personnel Records</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Lookup</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+<span class="size-1.5 rounded-full bg-amber-500"></span>
+                                            Flagged
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">2023-10-24 09:40:10</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs font-bold">JD</div>
+<span class="text-slate-900 dark:text-slate-200 font-medium">J. Doe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-700 dark:text-slate-300">Infra Logs</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">Monitoring</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
+<span class="size-1.5 rounded-full bg-green-500"></span>
+                                            Approved
+                                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN (Redaction & Export Policies) -->
+<div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-8">
+<!-- Redaction Rules -->
+<section class="bg-white dark:bg-[#1a2634] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">visibility_off</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Redaction Rules</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Automatic field masking for PII.</p>
+</div>
+</div>
+<div class="flex flex-col gap-5">
+<div class="border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
+<h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Class A Data</h3>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-slate-200">Mask SSN/Tax IDs</span>
+<span class="text-xs text-slate-500">Replace with XXXXX-####</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-slate-200">Generalize Location</span>
+<span class="text-xs text-slate-500">Zip Code (3-digit)</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold uppercase text-slate-400 tracking-wider mb-3">Class B Data</h3>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-slate-200">Hide Exact Income</span>
+<span class="text-xs text-slate-500">Use income brackets</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-slate-200">Obscure Names</span>
+<span class="text-xs text-slate-500">Use UserID only</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Export Policies -->
+<section class="bg-white dark:bg-[#1a2634] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">file_download</span>
+</div>
+<div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">Export Policies</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Approved formats and destinations.</p>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<div class="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+<p class="text-sm font-bold text-slate-900 dark:text-slate-200 mb-3">Allowed Formats</p>
+<div class="flex flex-wrap gap-2">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">
+                                        CSV
+                                    </span>
+</label>
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">
+                                        PDF Reports
+                                    </span>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" type="checkbox"/>
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">
+                                        JSON/API
+                                    </span>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" type="checkbox"/>
+<span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all">
+                                        Excel (XLSX)
+                                    </span>
+</label>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Retention Period (Days)</label>
+<div class="flex items-center gap-3">
+<input class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary" max="90" min="1" type="range" value="30"/>
+<span class="text-sm font-mono w-8 text-right text-slate-900 dark:text-slate-100">30</span>
+</div>
+<p class="text-xs text-slate-500">Days before export logs are purged.</p>
+</div>
+</div>
+</section>
+<div class="mt-auto bg-gradient-to-r from-primary to-blue-600 rounded-xl p-6 text-white relative overflow-hidden shadow-lg">
+<div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+<div class="absolute -left-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2 opacity-90">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+<span class="text-xs font-bold uppercase tracking-wider">Compliance Status</span>
+</div>
+<h3 class="text-2xl font-bold mb-1">98% Secure</h3>
+<p class="text-sm text-blue-100 mb-4">Your current configuration meets federal compliance standards (FIPS 140-2).</p>
+<button class="w-full py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-sm font-semibold transition-colors border border-white/20">
+                            View Compliance Report
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

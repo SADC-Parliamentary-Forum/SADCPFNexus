@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin - Legal Hold Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Administrative Governance</p>
+</div>
+</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary font-bold text-sm leading-normal border-b-2 border-primary pb-0.5" href="#">Compliance</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Documents</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Users</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="flex flex-col min-w-40 !h-10 max-w-64 hidden sm:block">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-slate-800 border border-transparent focus-within:border-primary/50 transition-colors">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-0 text-sm" placeholder="Search records..."/>
+</div>
+</label>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 ring-2 ring-slate-200 dark:ring-slate-700" data-alt="User avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAwBLKJntWaNoHfEm-_gEwRY_XEqX0jOvD5O02xlXfn8vDW01tcLld9_5iZceesC80i8uSLYSgpV2uEnT1uqzES5wBdjLuHXQjJDEbx9PIS3P92jy72UIdiYGJWMllv8317k2-5Okr6x8RtRPhn2OhlN6kGKpvObQhDNHoSbQdGfVjQdqddjdpOkq0J_uspT7f8c5i7EeQ4TSMb0p_HlUNJnd_KSfQrKIWPp9dxHYcejxSlDoL3VOtfSa3G1VdLDQIi8rKxhiEP_88");'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col hidden lg:flex h-[calc(100vh-65px)] overflow-y-auto sticky top-[65px]">
+<div class="p-4">
+<div class="mb-6">
+<h3 class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold mb-3 pl-3">Governance</h3>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary font-medium" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="text-sm">Legal Holds</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">hourglass_empty</span>
+<span class="text-sm">Pending Review</span>
+<span class="ml-auto bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-2 py-0.5 rounded-full">4</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_off</span>
+<span class="text-sm">Archived Cases</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-sm">Audit Logs</span>
+</a>
+</nav>
+</div>
+<div class="mb-6">
+<h3 class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold mb-3 pl-3">Active Holds</h3>
+<div class="flex flex-col gap-3">
+<!-- Hold Item 1 -->
+<div class="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span>
+<span class="text-xs text-slate-400">#8842</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1 group-hover:text-primary transition-colors">IP Litigation: Q3</h4>
+<div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>1,240 records locked</span>
+</div>
+</div>
+<!-- Hold Item 2 -->
+<div class="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Review</span>
+<span class="text-xs text-slate-400">#8819</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1 group-hover:text-primary transition-colors">HR Compliance Audit</h4>
+<div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>85 records locked</span>
+</div>
+</div>
+<!-- Hold Item 3 -->
+<div class="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 hover:border-primary/50 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Active</span>
+<span class="text-xs text-slate-400">#8750</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-1 group-hover:text-primary transition-colors">Tax Records 2022</h4>
+<div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>4,012 records locked</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-3 text-xs text-primary font-medium hover:underline text-center">View all active holds</button>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto h-[calc(100vh-65px)]">
+<div class="max-w-5xl mx-auto px-6 py-8">
+<!-- Page Title Area -->
+<div class="mb-8 border-b border-slate-200 dark:border-slate-700 pb-6">
+<div class="flex flex-wrap justify-between items-end gap-4">
+<div class="max-w-2xl">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm mb-2">
+<span>Governance</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>Legal Holds</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-900 dark:text-white font-medium">New Configuration</span>
+</div>
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Legal Hold Configuration</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-2 text-lg">Apply and manage restrictive legal holds on institutional records to prevent modification or deletion.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
+                                Cancel
+                            </button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 font-medium shadow-sm shadow-blue-500/30 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span>
+                                Save Configuration
+                            </button>
+</div>
+</div>
+</div>
+<!-- Form Area -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Primary Details -->
+<div class="lg:col-span-2 space-y-8">
+<!-- Card 1: Case Details -->
+<section class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">assignment</span>
+</div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Case Details</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<label class="flex flex-col gap-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Case Reference Number</span>
+<input class="form-input rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:border-primary focus:ring-primary" placeholder="e.g., CASE-2023-8842" type="text"/>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Primary Custodian</span>
+<div class="relative">
+<input class="form-input w-full rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:border-primary focus:ring-primary pl-10" placeholder="Search users..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400">person_search</span>
+</div>
+</label>
+</div>
+<label class="flex flex-col gap-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Hold Justification / Reason</span>
+<textarea class="form-textarea rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:border-primary focus:ring-primary min-h-[120px]" placeholder="Enter detailed legal justification for this hold... This will be visible in audit logs."></textarea>
+</label>
+</section>
+<!-- Card 2: Record Selection -->
+<section class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined">folder_open</span>
+</div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Record Scope</h2>
+</div>
+<button class="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span>
+                                    Add Criteria
+                                </button>
+</div>
+<!-- Scope Selector -->
+<div class="flex flex-col gap-4">
+<div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-900/50">
+<div class="flex items-center justify-between mb-3">
+<p class="text-sm font-medium text-slate-700 dark:text-slate-300">Included Repositories</p>
+<span class="text-xs text-slate-500">2 selected</span>
+</div>
+<div class="space-y-2">
+<!-- Selected Item 1 -->
+<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-600">
+<div class="flex items-center gap-3">
+<div class="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded text-primary">
+<span class="material-symbols-outlined text-lg">folder_shared</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Finance / Q3 Reports</p>
+<p class="text-xs text-slate-500">/Corp/Fin/2023/Q3</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Selected Item 2 -->
+<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-600">
+<div class="flex items-center gap-3">
+<div class="bg-amber-100 dark:bg-amber-900/50 p-1.5 rounded text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined text-lg">description</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Contract_Alpha_v2.pdf</p>
+<p class="text-xs text-slate-500">Class A Document • ID: #9921</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+<button class="w-full py-2 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">library_add</span>
+                                            Select Folders or Class A Files
+                                        </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Settings & Meta -->
+<div class="space-y-8">
+<!-- Card 3: Timeline -->
+<section class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-green-50 dark:bg-green-900/30 p-2 rounded-lg text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">date_range</span>
+</div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Duration</h2>
+</div>
+<div class="space-y-5">
+<label class="flex flex-col gap-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Effective Start Date</span>
+<input class="form-input rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:border-primary focus:ring-primary w-full" type="date"/>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Anticipated End Date</span>
+<input class="form-input rounded-lg border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:border-primary focus:ring-primary w-full" type="date"/>
+<span class="text-xs text-slate-500 italic">Leave blank for indefinite hold.</span>
+</label>
+</div>
+</section>
+<!-- Card 4: Notification Settings -->
+<section class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<div class="bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">notifications_active</span>
+</div>
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
+</div>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<div class="flex h-6 items-center">
+<input checked="" class="size-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-slate-50 dark:bg-slate-900" id="notify_custodian" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-slate-900 dark:text-white" for="notify_custodian">Notify Custodians</label>
+<p class="text-slate-500 dark:text-slate-400">Send automated email to owners of locked records.</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<div class="flex h-6 items-center">
+<input class="size-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-slate-50 dark:bg-slate-900" id="notify_compliance" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-slate-900 dark:text-white" for="notify_compliance">Alert Compliance Team</label>
+<p class="text-slate-500 dark:text-slate-400">Cc: legal-ops@sadcpf.org on activation.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 5: Compliance Summary -->
+<section class="bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 p-5">
+<div class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary mt-0.5">verified_user</span>
+<div>
+<h3 class="text-sm font-bold text-slate-900 dark:text-white">Compliance Check</h3>
+<p class="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                                        This hold action complies with SADCPFNexus Protocol 7. All selected Class A files will be immutably locked.
+                                    </p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

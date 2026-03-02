@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Timesheet Entry - SADCPFNexus HR</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Public Sans", sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display overflow-x-hidden">
+<!-- Top Fixed Conflict Banner -->
+<div class="fixed top-0 left-0 right-0 z-50 bg-red-50 border-b border-red-200 px-6 py-4 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-red-600">warning</span>
+<div>
+<p class="text-red-900 font-bold text-sm">Conflict Detected</p>
+<p class="text-red-700 text-sm hidden sm:block">Overlapping hours on Tuesday, Oct 24th.</p>
+</div>
+</div>
+<button class="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm active:scale-95 transition-transform">
+            Fix Now
+        </button>
+</div>
+<!-- Main Layout Container (Push down for fixed banner) -->
+<div class="flex flex-col flex-1 pt-20 h-full">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 sticky top-20 z-40 shadow-sm">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-600">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="size-8 bg-primary rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">grid_view</span>
+</div>
+<h2 class="text-slate-900 text-lg font-bold tracking-tight">SADCPFNexus HR</h2>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-6 mr-4">
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="#">Timesheets</a>
+<a class="text-slate-500 font-medium hover:text-slate-900" href="#">Benefits</a>
+<a class="text-slate-500 font-medium hover:text-slate-900" href="#">Profile</a>
+</div>
+<div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm" data-alt="User profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCiZjvIY4t_rogldllXRT-2TRMQmK-GWlMO5RcmlQFvOSjxmKnRZa6GCUGnZz51jkBg_Btrzh15Vq8yrh0rWs51xosQIvcCdh0f5eFX6sQtMa_sJDz13V7PfvtkTd2pucXFN9pcgU8zceUc9oT1i6HbVEttSifoQvVenzflVwDp1OrPd__KLrFPPvIbyI1aaJSY90spIiyGnYdRREx9szgtrGKtBAVsoKeG_kKCW6-XLSgwoUFY2IMLmOFYHOti_lEq8UwKPwD2e-g'); background-size: cover;"></div>
+</div>
+</header>
+<!-- Content Area: Split View for Tablet Landscape -->
+<main class="flex flex-1 overflow-hidden relative">
+<!-- Left Side: TimeSheet List (Scrollable) -->
+<div class="flex-1 overflow-y-auto bg-background-light p-4 md:p-6 pb-24">
+<!-- Period Selector -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+<div>
+<h1 class="text-2xl font-bold text-slate-900">Week of Oct 22 - 28</h1>
+<p class="text-slate-500 font-medium mt-1">Status: <span class="text-amber-600 bg-amber-50 px-2 py-0.5 rounded text-sm font-bold">Draft</span> • 32 Hours Logged</p>
+</div>
+<div class="flex gap-2">
+<button class="p-3 bg-white border border-slate-200 rounded-lg text-slate-600 shadow-sm hover:bg-slate-50 active:bg-slate-100">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-3 bg-white border border-slate-200 rounded-lg text-slate-600 shadow-sm hover:bg-slate-50 active:bg-slate-100">
+<span class="material-symbols-outlined">calendar_today</span>
+</button>
+<button class="p-3 bg-white border border-slate-200 rounded-lg text-slate-600 shadow-sm hover:bg-slate-50 active:bg-slate-100">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-slate-800">Time Entries</h3>
+<button class="flex items-center gap-2 bg-primary text-white px-5 py-3 rounded-lg font-bold shadow-md active:bg-blue-700 transition-colors">
+<span class="material-symbols-outlined">add</span>
+<span>Add Entry</span>
+</button>
+</div>
+<!-- List Items (Large Touch Targets) -->
+<div class="flex flex-col gap-4">
+<!-- Item 1 -->
+<div class="group bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:border-primary cursor-pointer transition-all active:scale-[0.99]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-blue-50 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">science</span>
+</div>
+<div>
+<h4 class="text-base font-bold text-slate-900">Project Alpha - Research</h4>
+<p class="text-slate-500 text-sm mt-1">Task: Data Collection &amp; Analysis</p>
+<div class="mt-3 flex gap-2 flex-wrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium">Mon: 8h</span>
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium">Tue: 4h</span>
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium">Wed: 8h</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xl font-bold text-slate-900">20h</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary mt-4">edit_square</span>
+</div>
+</div>
+</div>
+<!-- Item 2 (Active/Editing State Visualization) -->
+<div class="group bg-blue-50/50 rounded-xl p-5 border border-primary shadow-sm cursor-pointer transition-all relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-white text-primary border border-blue-100 flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined">campaign</span>
+</div>
+<div>
+<h4 class="text-base font-bold text-slate-900">Marketing - Q4 Plan</h4>
+<p class="text-slate-500 text-sm mt-1">Task: Strategy Meeting</p>
+<div class="mt-3 flex gap-2 flex-wrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-white text-slate-600 text-xs font-medium border border-blue-100">Thu: 4h</span>
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-white text-slate-600 text-xs font-medium border border-blue-100">Fri: 4h</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xl font-bold text-slate-900">8h</span>
+<span class="material-symbols-outlined text-primary mt-4">edit_square</span>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="group bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:border-primary cursor-pointer transition-all active:scale-[0.99]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">school</span>
+</div>
+<div>
+<h4 class="text-base font-bold text-slate-900">Internal Training</h4>
+<p class="text-slate-500 text-sm mt-1">Task: Security Compliance Video</p>
+<div class="mt-3 flex gap-2 flex-wrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-xs font-medium">Tue: 4h</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-xl font-bold text-slate-900">4h</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary mt-4">edit_square</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: "Drawer" / Sidebar Summary (Visible on Larger Tablets/Desktop) -->
+<div class="hidden lg:flex w-80 bg-white border-l border-slate-200 flex-col h-full shrink-0 shadow-lg z-10">
+<div class="p-6 border-b border-slate-100">
+<h2 class="text-lg font-bold text-slate-900">Weekly Summary</h2>
+<div class="mt-4 flex items-end gap-2">
+<span class="text-4xl font-bold text-primary">32</span>
+<span class="text-lg text-slate-500 font-medium mb-1">/ 40 Hours</span>
+</div>
+<div class="w-full bg-slate-100 rounded-full h-2 mt-2">
+<div class="bg-primary h-2 rounded-full" style="width: 80%"></div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-2">
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-primary rounded-lg font-medium" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+                            Summary View
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">list</span>
+                            Detailed Logs
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+                            Audit Trail
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+                            Policy Help
+                        </a>
+</nav>
+<div class="mt-8 px-4">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Quick Stats</h4>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+<p class="text-xs text-slate-500">Billable</p>
+<p class="text-lg font-bold text-slate-900">28h</p>
+</div>
+<div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+<p class="text-xs text-slate-500">Non-Billable</p>
+<p class="text-lg font-bold text-slate-900">4h</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-slate-200">
+<button class="w-full bg-primary text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-blue-600 active:scale-95 transition-all">
+                        Submit for Approval
+                    </button>
+</div>
+</div>
+<!-- Modal Overlay (Simulated Open State) -->
+<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-30 flex items-center justify-center p-4">
+<!-- Row Editor Modal -->
+<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+<!-- Modal Header -->
+<div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0">
+<div>
+<h2 class="text-xl font-bold text-slate-900">Edit Entry</h2>
+<p class="text-slate-500 text-sm">Marketing - Q4 Plan</p>
+</div>
+<button class="size-10 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body (Scrollable Form) -->
+<div class="p-6 overflow-y-auto bg-white">
+<form class="flex flex-col gap-6">
+<!-- Project & Task Selection -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold text-slate-700">Project Code</label>
+<div class="relative">
+<select class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none font-medium">
+<option>MKT-102: Q4 Planning</option>
+<option>DEV-204: Backend API</option>
+<option>RES-001: Alpha Research</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-slate-500 pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold text-slate-700">Activity Type</label>
+<div class="relative">
+<select class="w-full h-12 pl-4 pr-10 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 appearance-none focus:ring-2 focus:ring-primary focus:border-primary outline-none font-medium">
+<option>Strategy Meeting</option>
+<option>Development</option>
+<option>Documentation</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-slate-500 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Hour Entry (Touch Friendly Grid) -->
+<div class="flex flex-col gap-3">
+<label class="text-sm font-bold text-slate-700">Hours per Day</label>
+<div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+<div class="flex justify-between items-center overflow-x-auto gap-4 pb-2">
+<!-- Day Item: Mon -->
+<div class="flex flex-col items-center gap-2 min-w-[60px]">
+<span class="text-xs font-bold text-slate-400 uppercase">Mon</span>
+<input class="w-14 h-14 text-center rounded-lg border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary outline-none text-lg font-bold text-slate-900 placeholder:text-slate-300" placeholder="0" type="text"/>
+</div>
+<!-- Day Item: Tue -->
+<div class="flex flex-col items-center gap-2 min-w-[60px]">
+<span class="text-xs font-bold text-slate-400 uppercase">Tue</span>
+<input class="w-14 h-14 text-center rounded-lg border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary outline-none text-lg font-bold text-slate-900 placeholder:text-slate-300" placeholder="0" type="text"/>
+</div>
+<!-- Day Item: Wed -->
+<div class="flex flex-col items-center gap-2 min-w-[60px]">
+<span class="text-xs font-bold text-slate-400 uppercase">Wed</span>
+<input class="w-14 h-14 text-center rounded-lg border border-slate-300 focus:border-primary focus:ring-2 focus:ring-primary outline-none text-lg font-bold text-slate-900 placeholder:text-slate-300" placeholder="0" type="text"/>
+</div>
+<!-- Day Item: Thu (Active) -->
+<div class="flex flex-col items-center gap-2 min-w-[60px]">
+<span class="text-xs font-bold text-primary uppercase">Thu</span>
+<input class="w-14 h-14 text-center rounded-lg border-2 border-primary bg-blue-50 focus:ring-2 focus:ring-primary outline-none text-lg font-bold text-primary shadow-sm" type="text" value="4"/>
+</div>
+<!-- Day Item: Fri (Active) -->
+<div class="flex flex-col items-center gap-2 min-w-[60px]">
+<span class="text-xs font-bold text-primary uppercase">Fri</span>
+<input class="w-14 h-14 text-center rounded-lg border-2 border-primary bg-blue-50 focus:ring-2 focus:ring-primary outline-none text-lg font-bold text-primary shadow-sm" type="text" value="4"/>
+</div>
+<!-- Day Item: Sat -->
+<div class="flex flex-col items-center gap-2 min-w-[60px] opacity-60">
+<span class="text-xs font-bold text-slate-400 uppercase">Sat</span>
+<input class="w-14 h-14 text-center rounded-lg border border-slate-200 bg-slate-100 text-lg font-bold text-slate-400" disabled="" placeholder="-" type="text"/>
+</div>
+<!-- Day Item: Sun -->
+<div class="flex flex-col items-center gap-2 min-w-[60px] opacity-60">
+<span class="text-xs font-bold text-slate-400 uppercase">Sun</span>
+<input class="w-14 h-14 text-center rounded-lg border border-slate-200 bg-slate-100 text-lg font-bold text-slate-400" disabled="" placeholder="-" type="text"/>
+</div>
+</div>
+<div class="mt-2 text-right">
+<span class="text-sm font-medium text-slate-500">Total: <span class="text-slate-900 font-bold">8.00 Hours</span></span>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold text-slate-700">Description / Notes</label>
+<textarea class="w-full p-4 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none h-28" placeholder="Enter details about your work..."></textarea>
+</div>
+<!-- Cost Center Toggle -->
+<div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 text-sm">Billable to Client</span>
+<span class="text-slate-500 text-xs">Standard rate applies</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</form>
+</div>
+<!-- Modal Footer -->
+<div class="p-6 border-t border-slate-100 bg-slate-50 flex gap-4">
+<button class="flex-1 py-3 px-4 rounded-lg border border-slate-300 text-slate-700 font-bold hover:bg-white transition-colors">
+                            Cancel
+                        </button>
+<button class="flex-[2] py-3 px-4 rounded-lg bg-primary text-white font-bold shadow-md hover:bg-blue-600 active:scale-95 transition-all">
+                            Save Changes
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

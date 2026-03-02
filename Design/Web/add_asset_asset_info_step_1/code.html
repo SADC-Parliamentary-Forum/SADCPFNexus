@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Add Asset Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1a3324",
+                        "surface-dark-highlight": "#23482f",
+                        "text-subtle": "#92c9a4",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-surface-dark-highlight bg-background-dark px-10 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined text-4xl">pentagon</span>
+</div>
+<h2 class="text-white text-xl font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full group">
+<div class="text-text-subtle flex border-none bg-surface-dark-highlight items-center justify-center pl-4 rounded-l-lg border-r-0 group-focus-within:text-white">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-surface-dark-highlight focus:border-none h-full placeholder:text-text-subtle px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search modules..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-8 items-center">
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal border-b-2 border-primary pb-0.5" href="#">Assets</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Procurement</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Admin</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-text-subtle hover:text-white">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-surface-dark-highlight" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC6rozXRheTwGi3ECF3V1lR4GlklRXbgmadl-ViASfs5rFHm2bkp8LbPcTFfS1wWzPIhF75b-ZoJfV4KNwExZhtZ547U6MX55EHEuMG1BCecwAgsDLtcXwbJPGg9T_GV-2JakXuDvSjbWdWu0Oe1GqBEPo1XjZvCiOP63yibHks6C2UNy1Rv6WHf9EdSgKLcSS0ufwWHduJ4fX1sTRKrFNRTJQf-VlCgdbmYekod2ig0KKix-7yZc0PX3m0IlXbxCL6bLcrEcd7YqI");'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 relative">
+<!-- Sidebar Navigation -->
+<aside class="w-64 bg-background-dark border-r border-surface-dark-highlight hidden lg:flex flex-col py-6">
+<div class="px-6 mb-8">
+<h1 class="text-white text-lg font-semibold leading-normal">Class B Assets</h1>
+<p class="text-text-subtle text-xs font-normal mt-1">Asset Management Module</p>
+</div>
+<nav class="flex flex-col gap-2 px-3">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-subtle hover:bg-surface-dark hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">inventory_2</span>
+<span class="text-sm font-medium">All Assets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-sm" href="#">
+<span class="material-symbols-outlined fill-1">add_circle</span>
+<span class="text-sm font-bold">Add New Asset</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-subtle hover:bg-surface-dark hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">swap_horiz</span>
+<span class="text-sm font-medium">Transfers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-subtle hover:bg-surface-dark hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">delete</span>
+<span class="text-sm font-medium">Disposal</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-subtle hover:bg-surface-dark hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">fact_check</span>
+<span class="text-sm font-medium">Audits</span>
+</a>
+<div class="my-2 border-t border-surface-dark-highlight mx-3"></div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-subtle hover:bg-surface-dark hover:text-white transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-6">
+<div class="bg-surface-dark p-4 rounded-xl border border-surface-dark-highlight">
+<p class="text-xs text-text-subtle mb-2">Need Help?</p>
+<a class="text-primary text-sm font-medium hover:underline flex items-center gap-1" href="#">
+                        View Documentation
+                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark">
+<!-- Breadcrumbs & Header -->
+<div class="px-8 py-6 border-b border-surface-dark-highlight flex justify-between items-center bg-background-dark/50 backdrop-blur-sm sticky top-0 z-40">
+<div>
+<nav class="flex items-center text-sm text-text-subtle mb-1">
+<a class="hover:text-white transition-colors" href="#">Assets</a>
+<span class="material-symbols-outlined text-base mx-1">chevron_right</span>
+<span class="text-white font-medium">New Asset Wizard</span>
+</nav>
+<h1 class="text-2xl font-bold text-white tracking-tight">Register New Asset</h1>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 rounded-lg border border-surface-dark-highlight text-white hover:bg-surface-dark transition-colors font-medium text-sm">
+                        Cancel
+                    </button>
+<button class="px-4 py-2 rounded-lg bg-surface-dark-highlight text-text-subtle cursor-not-allowed font-medium text-sm">
+                        Save Draft
+                    </button>
+</div>
+</div>
+<!-- Stepper -->
+<div class="px-8 py-8 w-full max-w-5xl mx-auto">
+<div class="flex items-center justify-between w-full mb-10 relative">
+<!-- Progress Line Background -->
+<div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-surface-dark-highlight -z-10 rounded-full"></div>
+<!-- Progress Line Active -->
+<div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-[10%] h-1 bg-primary -z-10 rounded-full transition-all duration-500"></div>
+<!-- Step 1 (Active) -->
+<div class="flex flex-col items-center gap-2 cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-primary text-background-dark flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(19,236,91,0.4)] border-2 border-background-dark">
+                            1
+                        </div>
+<span class="text-white font-semibold text-sm">Asset Info</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-2 cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-dark border-2 border-surface-dark-highlight text-text-subtle flex items-center justify-center font-medium text-sm group-hover:border-text-subtle transition-colors">
+                            2
+                        </div>
+<span class="text-text-subtle text-sm group-hover:text-white transition-colors">Financial</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2 cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-dark border-2 border-surface-dark-highlight text-text-subtle flex items-center justify-center font-medium text-sm group-hover:border-text-subtle transition-colors">
+                            3
+                        </div>
+<span class="text-text-subtle text-sm group-hover:text-white transition-colors">Allocation</span>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center gap-2 cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-dark border-2 border-surface-dark-highlight text-text-subtle flex items-center justify-center font-medium text-sm group-hover:border-text-subtle transition-colors">
+                            4
+                        </div>
+<span class="text-text-subtle text-sm group-hover:text-white transition-colors">Attachments</span>
+</div>
+<!-- Step 5 -->
+<div class="flex flex-col items-center gap-2 cursor-pointer group">
+<div class="w-10 h-10 rounded-full bg-surface-dark border-2 border-surface-dark-highlight text-text-subtle flex items-center justify-center font-medium text-sm group-hover:border-text-subtle transition-colors">
+                            5
+                        </div>
+<span class="text-text-subtle text-sm group-hover:text-white transition-colors">Confirm</span>
+</div>
+</div>
+<!-- Form Card -->
+<div class="bg-surface-dark border border-surface-dark-highlight rounded-xl p-8 shadow-xl">
+<div class="mb-8 border-b border-surface-dark-highlight pb-6">
+<h2 class="text-xl font-semibold text-white mb-2">Basic Asset Information</h2>
+<p class="text-text-subtle text-sm">Please provide the core identification details for the asset. Fields marked with <span class="text-primary">*</span> are mandatory.</p>
+</div>
+<form class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Category -->
+<div class="col-span-1">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Asset Category <span class="text-primary">*</span>
+</label>
+<div class="relative">
+<select class="w-full bg-background-dark border border-surface-dark-highlight rounded-lg px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none cursor-pointer">
+<option disabled="" selected="" value="">Select a category...</option>
+<option value="IT">IT Equipment</option>
+<option value="Furniture">Office Furniture</option>
+<option value="Vehicle">Fleet &amp; Vehicles</option>
+<option value="Machinery">Heavy Machinery</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-text-subtle pointer-events-none">expand_more</span>
+</div>
+<p class="mt-1.5 text-xs text-text-subtle">Select the classification for depreciation purposes.</p>
+</div>
+<!-- Linked Procurement Ref -->
+<div class="col-span-1">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Linked Procurement Ref
+                                </label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-subtle">link</span>
+<input class="w-full bg-background-dark border border-surface-dark-highlight rounded-lg pl-10 pr-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-subtle/50" placeholder="e.g. PO-2023-8849" type="text"/>
+</div>
+<p class="mt-1.5 text-xs text-text-subtle">Link to an existing Purchase Order if available.</p>
+</div>
+<!-- Description -->
+<div class="col-span-1 md:col-span-2">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Asset Description <span class="text-primary">*</span>
+</label>
+<textarea class="w-full bg-background-dark border border-surface-dark-highlight rounded-lg px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-subtle/50 resize-none" placeholder="Detailed description of the asset (e.g. 2023 Dell Latitude 5420 Laptop, 16GB RAM, 512GB SSD)..." rows="3"></textarea>
+</div>
+<!-- Serial Number -->
+<div class="col-span-1">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Serial Number / Tag ID <span class="text-primary">*</span>
+</label>
+<input class="w-full bg-background-dark border border-surface-dark-highlight rounded-lg px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-subtle/50" placeholder="Enter manufacturer serial" type="text"/>
+</div>
+<!-- Model Number -->
+<div class="col-span-1">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Model Number
+                                </label>
+<input class="w-full bg-background-dark border border-surface-dark-highlight rounded-lg px-4 py-3 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none placeholder:text-text-subtle/50" placeholder="e.g. LAT-5420-v2" type="text"/>
+</div>
+<!-- Supplier Search -->
+<div class="col-span-1 md:col-span-2">
+<label class="block text-sm font-medium text-white mb-2">
+                                    Supplier <span class="text-primary">*</span>
+</label>
+<div class="relative">
+<div class="flex items-center w-full bg-background-dark border border-surface-dark-highlight rounded-lg focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<span class="material-symbols-outlined pl-3 text-text-subtle">store</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-white px-3 py-3 placeholder:text-text-subtle/50" placeholder="Search registered suppliers..." type="text"/>
+<button class="pr-3 text-primary hover:text-white font-medium text-sm" type="button">Search</button>
+</div>
+<!-- Search Results Dropdown (Simulated as hidden by default, shown for context design) -->
+<!-- 
+                                    <div class="absolute top-full left-0 right-0 mt-1 bg-surface-dark border border-surface-dark-highlight rounded-lg shadow-xl z-10 hidden">
+                                        <div class="p-2 border-b border-surface-dark-highlight text-xs text-text-subtle">Found 3 results</div>
+                                        <div class="p-3 hover:bg-surface-dark-highlight cursor-pointer text-white text-sm">TechCorp Solutions Ltd.</div>
+                                        <div class="p-3 hover:bg-surface-dark-highlight cursor-pointer text-white text-sm">Office Depot Inc.</div>
+                                    </div>
+                                    -->
+</div>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-dark-highlight text-xs text-text-subtle">
+                                        Frequent: Dell SA
+                                    </span>
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-dark-highlight text-xs text-text-subtle">
+                                        Frequent: Generic Office Supplies
+                                    </span>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-end gap-4 mt-8 pt-6 border-t border-surface-dark-highlight">
+<button class="px-6 py-2.5 rounded-lg border border-transparent text-text-subtle hover:text-white hover:bg-surface-dark-highlight transition-colors font-medium text-sm" type="button">
+                                Back to Dashboard
+                            </button>
+<button class="px-8 py-2.5 rounded-lg bg-primary hover:bg-green-400 text-background-dark font-bold text-sm shadow-lg shadow-primary/20 transition-all transform active:scale-95 flex items-center gap-2" type="button">
+                                Next Step
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>SADCPFNexus - Travel Requisition</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 lg:px-40 py-3">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">travel_explore</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<div class="hidden md:flex items-center gap-9">
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-1" href="#">Requisitions</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Reports</a>
+<a class="text-slate-700 dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Settings</a>
+</div>
+<div class="flex gap-2">
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+<div class="bg-primary/20 rounded-full size-10 overflow-hidden border border-primary/30">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional user profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-Efn1kJ6R4-AaRlce77SFgV40eBR11CCfsy_DeG8bFGHYxWNMAycKITkrMz-EFqXuJgazvYTDFh09s6UJ6Z7GmmO0btXDIMT_KjWFmtOlCZjkw2nHg8dO0wSzy_aren12eSlMX78mTxKCC1oE5GcLyUB7VM8inftm1agstD2aidnKDNE0DkHELT16fleLpppIbq-SsjBCXUUGwQBLe0COuCkxloPruJu1jg-jAf13z5Q9OtSa4m5w_7hVq7oUbGEAjRyHamlXeDU"/>
+</div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-8">
+<div class="layout-content-container flex flex-col max-w-[1024px] flex-1 px-4 md:px-10">
+<!-- Page Header & Badge -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-3xl font-bold">Travel Requisition Wizard</h1>
+<span class="bg-primary text-white text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider">Class B</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Efficient logistics management for regional deployment</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">Save Draft</button>
+</div>
+</div>
+<!-- Multi-step Horizontal Stepper (8 steps) -->
+<div class="w-full mb-10 overflow-x-auto pb-4">
+<div class="flex items-start min-w-[800px]">
+<!-- Step 1 -->
+<div class="flex flex-col items-center flex-1 relative group">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-bold text-sm mb-2">1</div>
+<span class="text-xs font-medium text-slate-500">General Info</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-primary"></div>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-bold text-sm mb-2">2</div>
+<span class="text-xs font-medium text-slate-500">Itinerary</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-primary"></div>
+</div>
+<!-- Step 3 (Active) -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-10 h-10 -mt-1 rounded-full bg-primary ring-4 ring-primary/20 text-white font-bold text-sm mb-2">3</div>
+<span class="text-xs font-bold text-primary">Logistics</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-sm mb-2">4</div>
+<span class="text-xs font-medium text-slate-500">Expenses</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Step 5 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-sm mb-2">5</div>
+<span class="text-xs font-medium text-slate-500">Sub-diems</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Step 6 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-sm mb-2">6</div>
+<span class="text-xs font-medium text-slate-500">Assets</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Step 7 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-sm mb-2">7</div>
+<span class="text-xs font-medium text-slate-500">Safety</span>
+<div class="absolute top-4 left-1/2 w-full h-[2px] bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Step 8 -->
+<div class="flex flex-col items-center flex-1 relative">
+<div class="z-10 flex items-center justify-center w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-sm mb-2">8</div>
+<span class="text-xs font-medium text-slate-500">Review</span>
+</div>
+</div>
+</div>
+<!-- Form Section -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800">
+<h2 class="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hotel</span> Accommodation &amp; Transport
+                        </h2>
+</div>
+<div class="p-6 space-y-8">
+<!-- Toggles Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Accommodation Toggle -->
+<div class="flex flex-col gap-3">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Accommodation Required?</label>
+<div class="flex items-center gap-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-sm font-medium">Yes</span>
+</div>
+</div>
+<!-- Vehicle Toggle -->
+<div class="flex flex-col gap-3">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Vehicle Request?</label>
+<div class="flex items-center gap-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-sm font-medium">No</span>
+</div>
+</div>
+<!-- Driver Toggle -->
+<div class="flex flex-col gap-3">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Driver Required?</label>
+<div class="flex items-center gap-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-sm font-medium">Yes</span>
+</div>
+</div>
+</div>
+<!-- Accommodation Details (Conditional appearance) -->
+<div class="space-y-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Accommodation Details</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Hotel/Location Name</label>
+<input class="rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm p-2.5 focus:ring-primary focus:border-primary" placeholder="e.g. Grand Plaza Hotel" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold text-slate-600 dark:text-slate-400">Preferred Room Type</label>
+<select class="rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm p-2.5 focus:ring-primary focus:border-primary">
+<option>Standard Single</option>
+<option>Executive Suite</option>
+<option>Double/Twin</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Passenger List Grid -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Passenger List</h3>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-sm">person_add</span> Add Passenger
+                                </button>
+</div>
+<div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+<table class="w-full text-left text-sm">
+<thead class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+<tr>
+<th class="px-4 py-3 font-semibold">Name</th>
+<th class="px-4 py-3 font-semibold">Organisation</th>
+<th class="px-4 py-3 font-semibold">Role</th>
+<th class="px-4 py-3 font-semibold text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+<td class="px-4 py-3 font-medium">Jean-Pierre Mukendi</td>
+<td class="px-4 py-3">SADC Regional Office</td>
+<td class="px-4 py-3">Mission Lead</td>
+<td class="px-4 py-3 text-right">
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+<td class="px-4 py-3 font-medium">Sarah Omondi</td>
+<td class="px-4 py-3">PF Security Div</td>
+<td class="px-4 py-3">Advisor</td>
+<td class="px-4 py-3 text-right">
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+<td class="px-4 py-3 font-medium">David van Wyk</td>
+<td class="px-4 py-3">Technical Support</td>
+<td class="px-4 py-3">Technician</td>
+<td class="px-4 py-3 text-right">
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Special Requirements -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Logistics Notes / Special Requirements</label>
+<textarea class="rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm p-2.5 focus:ring-primary focus:border-primary" placeholder="Enter any additional requirements for transport or accommodation..." rows="3"></textarea>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<button class="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-lg">arrow_back</span> Back
+                        </button>
+<div class="flex gap-4">
+<button class="px-6 py-2.5 text-slate-500 dark:text-slate-400 font-bold hover:text-primary transition-colors">Skip for now</button>
+<button class="flex items-center gap-2 px-8 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                                Next Step <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Assistance Note -->
+<div class="mt-8 flex items-start gap-4 p-4 rounded-lg bg-primary/5 border border-primary/10">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100">Need help with logistics?</p>
+<p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Class B workflows allow for internal fleet management. If no vehicles are available, the system will automatically prompt for external car hire in the next stage.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto px-6 lg:px-40 py-6 border-t border-slate-200 dark:border-slate-800 text-slate-500 text-xs flex justify-between">
+<p>© 2024 SADCPFNexus. All rights reserved.</p>
+<div class="flex gap-4">
+<a class="hover:text-primary" href="#">Policy Handbook</a>
+<a class="hover:text-primary" href="#">Help Center</a>
+<a class="hover:text-primary" href="#">Contact Procurement</a>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workflow Delegation &amp; Acting Appointment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-50": "#eff6ff",
+                        "primary-100": "#dbeafe",
+                        "primary-200": "#bfdbfe",
+                        "primary-300": "#93c5fd",
+                        "primary-400": "#60a5fa",
+                        "primary-500": "#3b82f6",
+                        "primary-600": "#2563eb",
+                        "primary-700": "#1d4ed8",
+                        "primary-800": "#1e40af",
+                        "primary-900": "#1e3a8a",
+                        "background-light": "#f8f9fc",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                        "text-main": "#0f172a",
+                        "text-sub": "#475569",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="flex w-64 flex-col border-r border-slate-200 bg-surface-light dark:bg-surface-dark dark:border-slate-700 h-full flex-shrink-0 z-20">
+<div class="flex flex-col gap-4 p-4 h-full">
+<!-- Logo Area -->
+<div class="flex gap-3 items-center px-2 py-1">
+<div class="bg-primary/10 flex items-center justify-center rounded-lg size-10 flex-shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl">hub</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<h1 class="text-text-main dark:text-white text-base font-bold leading-tight truncate">SADCPFNexus</h1>
+<p class="text-text-sub dark:text-slate-400 text-xs font-normal leading-normal truncate">Institutional ERP</p>
+</div>
+</div>
+<!-- Nav Items -->
+<div class="flex flex-col gap-1 flex-1 overflow-y-auto mt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-sub hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-sub hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">groups</span>
+<p class="text-sm font-medium">HR Nexus</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-sub hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">payments</span>
+<p class="text-sm font-medium">Finance</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-sub hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">inventory_2</span>
+<p class="text-sm font-medium">Operations</p>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary dark:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined fill">admin_panel_settings</span>
+<p class="text-sm font-bold">Admin</p>
+</a>
+</div>
+<!-- User Profile / Logout -->
+<div class="border-t border-slate-200 dark:border-slate-700 pt-4 mt-auto">
+<div class="flex items-center gap-3 px-2 mb-3">
+<div class="bg-slate-200 dark:bg-slate-600 rounded-full size-9 bg-cover bg-center" data-alt="User profile photo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCxfnUTy1CQDcCbqCbjtV0aSwQlb9mRVsyK1sVou1Lz54N-Z_X2Im7RrVCGZNV_NnrL_NvmE91WJHi_6gwXs-KQv6nCNu26hY2URadMFkTossW6GZlNgPzSb5VIGvRnOz79ld9rb4QaMLU3_zkgb6UUzA6X3SRXO60jbXc-mGaWnL5DSD_ZdzaxNwaiB8WPUMMYvDx3jdX2wuAZxbXzWP0NPdbKvZsPII1NmT-pgCRD8er1VFS-z-W89rfP5jc3IbZWrbRPYzyZ40M');"></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-slate-900 dark:text-white">Alex Morgan</span>
+<span class="text-xs text-slate-500 dark:text-slate-400">Sr. Administrator</span>
+</div>
+</div>
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg h-9 px-4 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 text-sm font-medium transition-colors dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span>Sign out</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Header -->
+<header class="h-16 flex items-center justify-between px-6 border-b border-slate-200 bg-surface-light/80 backdrop-blur-md z-10 dark:bg-surface-dark/80 dark:border-slate-700 flex-shrink-0">
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+<span>Admin</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span>User Management</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-medium text-slate-900 dark:text-white">Delegation</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="material-symbols-outlined text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">search</span>
+<input class="pl-10 pr-4 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-64 dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:bg-slate-900" placeholder="Search policies..." type="text"/>
+</div>
+<button class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-auto p-8">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+<!-- Left: Main Form -->
+<div class="flex-1 min-w-0">
+<div class="flex flex-col gap-2 mb-8">
+<div class="flex items-center gap-3">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Workflow Delegation</h1>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800">
+                                    Class B (Restricted)
+                                </span>
+</div>
+<p class="text-slate-500 dark:text-slate-400">Manage temporary authority transfers and acting appointments.</p>
+</div>
+<div class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+<div class="p-6 space-y-8">
+<!-- Section 1: Personnel -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            Delegator
+                                            <span class="material-symbols-outlined text-slate-400 text-[16px]" title="The person assigning the rights">help</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">person</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400" readonly="" type="text" value="Alex Morgan (You)"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            Delegate
+                                            <span class="material-symbols-outlined text-slate-400 text-[16px]" title="The person receiving the rights">help</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-primary text-[20px]">person_search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-900 dark:border-slate-600 dark:text-white dark:placeholder-slate-500" placeholder="Search by name or employee ID..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Section 2: Scope & Timing -->
+<div class="border-t border-slate-100 dark:border-slate-700/50 pt-6">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4">Authority Scope</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Operational Scope</label>
+<select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white">
+<option>All Modules (Full Delegation)</option>
+<option>HR &amp; Payroll Only</option>
+<option>Finance &amp; Procurement Only</option>
+<option>Inventory &amp; Logistics Only</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Department Limit</label>
+<select class="block w-full pl-3 pr-10 py-2.5 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white">
+<option>Global (All Departments)</option>
+<option>IT Division</option>
+<option>Finance Division</option>
+</select>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Start Date/Time</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">calendar_today</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-900 dark:border-slate-600 dark:text-white" type="datetime-local"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">End Date/Time</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 text-[20px]">event_busy</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-900 dark:border-slate-600 dark:text-white" type="datetime-local"/>
+</div>
+</div>
+</div>
+<!-- Section 3: Acting Rank (Optional) -->
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-5 border border-slate-200 dark:border-slate-700">
+<div class="flex items-start gap-3">
+<div class="flex items-center h-5">
+<input class="focus:ring-primary h-4 w-4 text-primary border-slate-300 rounded" id="acting-appointment" type="checkbox"/>
+</div>
+<div class="flex-1 text-sm">
+<label class="font-medium text-slate-900 dark:text-white select-none" for="acting-appointment">Acting Appointment (Title Change)</label>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Check this if the delegate will assume the official title and rank during this period.</p>
+<div class="mt-4 hidden" id="acting-details">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Temporary Rank/Title</label>
+<input class="block w-full px-3 py-2 sm:text-sm border border-slate-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-900 dark:border-slate-600 dark:text-white" placeholder="e.g. Acting Director of Finance" type="text"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 4: Reason -->
+<div class="space-y-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Reason for Delegation</label>
+<textarea class="block w-full px-3 py-2 sm:text-sm border border-slate-300 rounded-lg focus:ring-primary focus:border-primary dark:bg-slate-900 dark:border-slate-600 dark:text-white placeholder-slate-400" placeholder="Please provide a justification for this delegation request..." rows="4"></textarea>
+</div>
+<!-- Notice -->
+<div class="flex gap-4 p-4 rounded-lg bg-blue-50 border border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/50">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+<div>
+<h4 class="text-sm font-bold text-blue-900 dark:text-blue-200">Dual-Control Requirement</h4>
+<p class="text-sm text-blue-700 dark:text-blue-300 mt-1">Because your role is classified as <span class="font-semibold">Senior Management</span>, this delegation request will require approval from the Chief Operations Officer before becoming active.</p>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
+<button class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700" type="button">
+                                    Save Draft
+                                </button>
+<button class="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary shadow-sm hover:shadow transition-all" type="button">
+                                    Submit Request
+                                </button>
+</div>
+</div>
+</div>
+<!-- Right: Sidebar Info -->
+<div class="w-full lg:w-80 flex-shrink-0 space-y-6">
+<!-- Help Card -->
+<div class="bg-white dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+<h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400">history</span>
+                                Current Active Delegations
+                            </h3>
+<div class="space-y-4">
+<!-- Item 1 -->
+<div class="relative pl-4 border-l-2 border-green-500 pb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Active</span>
+<span class="text-xs text-slate-400">Ends in 2d</span>
+</div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Procurement Approval</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">To: Sarah Jenkins</p>
+</div>
+<!-- Item 2 -->
+<div class="relative pl-4 border-l-2 border-slate-300 dark:border-slate-600 pb-1">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Scheduled</span>
+<span class="text-xs text-slate-400">Nov 12</span>
+</div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Leave Mgmt</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">To: Mike Ross</p>
+</div>
+</div>
+<div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700">
+<a class="text-sm font-medium text-primary hover:text-primary-600 flex items-center gap-1" href="#">
+                                    View full audit log
+                                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Policy Info -->
+<div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/30">
+<h3 class="font-bold text-indigo-900 dark:text-indigo-200 mb-3 text-sm">Policy Reference</h3>
+<ul class="space-y-2">
+<li class="flex items-start gap-2 text-xs text-indigo-800 dark:text-indigo-300">
+<span class="material-symbols-outlined text-[14px] mt-0.5">description</span>
+                                    HR-POL-2023-04: Delegation of Authority
+                                </li>
+<li class="flex items-start gap-2 text-xs text-indigo-800 dark:text-indigo-300">
+<span class="material-symbols-outlined text-[14px] mt-0.5">description</span>
+                                    IT-SEC-09: Access Control Standards
+                                </li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Toggle logic for the 'Acting Appointment' checkbox to show/hide details -->
+<script>
+        const checkbox = document.getElementById('acting-appointment');
+        const details = document.getElementById('acting-details');
+
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                details.classList.remove('hidden');
+            } else {
+                details.classList.add('hidden');
+            }
+        });
+    </script>
+</body></html>

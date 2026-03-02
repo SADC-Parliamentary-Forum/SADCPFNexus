@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus | Data Scope</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dark": "#0ea640",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1a3322",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col overflow-x-hidden text-slate-900 dark:text-slate-100">
+<div class="flex h-full min-h-screen w-full flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-primary/20 px-6 py-4 bg-white dark:bg-background-dark sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="text-primary size-8 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">shield_lock</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">SADCPFNexus <span class="text-slate-400 dark:text-slate-500 font-normal mx-2">|</span> Data Scope</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<!-- Search Bar -->
+<div class="hidden md:flex w-full max-w-sm items-stretch rounded-lg h-10 bg-slate-100 dark:bg-surface-dark border border-transparent focus-within:border-primary/50 transition-colors">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full bg-transparent border-none focus:ring-0 text-sm text-slate-900 dark:text-white placeholder:text-slate-400" placeholder="Search SEV-0 systems..."/>
+</div>
+<!-- Actions -->
+<div class="flex gap-3">
+<button class="flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-surface-dark text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-primary/20 transition-colors relative">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-surface-dark"></span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-surface-dark text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+<!-- Profile -->
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-primary/30" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAM-R6dQSNChVBlI6IyQ-pK4lMCJko6oOywKYzYh_v_16vDI0ocwf_l5mzCKi9SMloeZfrZ6TJFCJPa5JZek_RQSXPUwKMN1i1VmBWj5uygfs0JVCdsp87rECdfRorsxLmrGDF6bpN5484MTAXJUBe081o3LvDgj7846X6wAbns-zwAZHDBQ-VlTSHL3kedQQQKv6mVQAzbLXVVAom-vu8Y0MbVTJbBKx8Bsz2gDH_MAt32W7kx_Yp55ETf1xf7nftW872eOwB8GJs");'></div>
+</div>
+</header>
+<main class="flex-1 px-6 py-8 md:px-10 lg:px-20 max-w-[1440px] mx-auto w-full">
+<!-- Dashboard Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+<div>
+<h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Security CI Gate Status</h1>
+<p class="text-slate-500 dark:text-slate-400 text-lg">Real-time policy enforcement monitoring for SEV-0 systems.</p>
+</div>
+<div class="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+                    Live Monitoring
+                </div>
+</div>
+<!-- Status Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-12">
+<!-- Card 1: PASS -->
+<button class="group flex flex-col p-6 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-primary/10 hover:border-primary/50 dark:hover:border-primary transition-all shadow-sm hover:shadow-md dark:shadow-none text-left relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400 dark:text-slate-500">open_in_new</span>
+</div>
+<div class="mb-4">
+<div class="size-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 mb-3">
+<span class="material-symbols-outlined">verified_user</span>
+</div>
+<h3 class="text-slate-600 dark:text-slate-300 font-medium">IAM Policy Check</h3>
+</div>
+<div class="mt-auto">
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-slate-900 dark:text-white">PASS</span>
+<span class="text-sm font-bold text-green-600 dark:text-green-400">+100%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-green-500 h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</button>
+<!-- Card 2: FAIL -->
+<button class="group flex flex-col p-6 rounded-xl bg-white dark:bg-surface-dark border-l-4 border-l-red-500 dark:border-l-red-500 border-y border-r border-slate-200 dark:border-primary/10 hover:border-red-500 dark:hover:border-red-500 transition-all shadow-sm hover:shadow-md dark:shadow-none text-left relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-red-400 dark:text-red-500">warning</span>
+</div>
+<div class="mb-4">
+<div class="size-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 mb-3">
+<span class="material-symbols-outlined">gpp_bad</span>
+</div>
+<h3 class="text-slate-600 dark:text-slate-300 font-medium">Data Egress Filter</h3>
+</div>
+<div class="mt-auto">
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-slate-900 dark:text-white">FAIL</span>
+<span class="text-sm font-bold text-red-600 dark:text-red-400">! ALERT</span>
+</div>
+<p class="text-xs text-slate-500 mt-1">3 unauthorized packets detected</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-red-500 h-full rounded-full" style="width: 35%"></div>
+</div>
+</div>
+</button>
+<!-- Card 3: PASS -->
+<button class="group flex flex-col p-6 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-primary/10 hover:border-primary/50 dark:hover:border-primary transition-all shadow-sm hover:shadow-md dark:shadow-none text-left relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400 dark:text-slate-500">open_in_new</span>
+</div>
+<div class="mb-4">
+<div class="size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-3">
+<span class="material-symbols-outlined">fact_check</span>
+</div>
+<h3 class="text-slate-600 dark:text-slate-300 font-medium">Access Control List</h3>
+</div>
+<div class="mt-auto">
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-slate-900 dark:text-white">PASS</span>
+<span class="text-sm font-bold text-green-600 dark:text-green-400">+100%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-blue-500 h-full rounded-full" style="width: 98%"></div>
+</div>
+</div>
+</button>
+<!-- Card 4: PASS -->
+<button class="group flex flex-col p-6 rounded-xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-primary/10 hover:border-primary/50 dark:hover:border-primary transition-all shadow-sm hover:shadow-md dark:shadow-none text-left relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-slate-400 dark:text-slate-500">open_in_new</span>
+</div>
+<div class="mb-4">
+<div class="size-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-3">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<h3 class="text-slate-600 dark:text-slate-300 font-medium">Encryption Standards</h3>
+</div>
+<div class="mt-auto">
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold text-slate-900 dark:text-white">PASS</span>
+<span class="text-sm font-bold text-green-600 dark:text-green-400">+100%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-purple-500 h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</button>
+</div>
+<!-- Test Scope Simulator Section -->
+<div class="rounded-2xl bg-white dark:bg-surface-dark border border-slate-200 dark:border-primary/10 p-6 md:p-8">
+<div class="mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Test Scope Simulator</h2>
+<p class="text-slate-500 dark:text-slate-400">Select a policy domain and a user to simulate access rights.</p>
+</div>
+<div class="flex flex-col lg:flex-row gap-8">
+<!-- Simulator Controls -->
+<div class="flex-1 flex flex-col gap-6">
+<!-- Dropdown 1 -->
+<div class="relative group">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Policy Domain</label>
+<button class="w-full text-left flex items-center justify-between bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-4 hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-md bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-[20px]">database</span>
+</div>
+<div>
+<span class="block text-slate-900 dark:text-white font-medium text-lg">FinData_Prod_v2</span>
+<span class="block text-slate-400 text-xs">Last updated: 2 mins ago</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+</div>
+<!-- Dropdown 2 -->
+<div class="relative group">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider">Target Endpoint</label>
+<button class="w-full text-left flex items-center justify-between bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-xl px-5 py-4 hover:border-primary focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</div>
+<div>
+<span class="block text-slate-900 dark:text-white font-medium text-lg">us-east-1a: 192.168.1.104</span>
+<span class="block text-slate-400 text-xs">Public Gateway</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+</div>
+<button class="mt-4 bg-primary hover:bg-primary-dark text-background-dark font-bold py-4 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">play_circle</span>
+                             Run Simulation
+                        </button>
+</div>
+<!-- Divider -->
+<div class="hidden lg:block w-px bg-slate-100 dark:bg-slate-700 self-stretch"></div>
+<!-- Person Picker -->
+<div class="flex-1">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 uppercase tracking-wider">Simulate As User</label>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- User Card Active -->
+<div class="cursor-pointer relative rounded-xl border-2 border-primary bg-primary/10 dark:bg-primary/5 p-4 flex items-center gap-4 transition-all">
+<div class="absolute top-3 right-3 text-primary">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div class="size-12 rounded-full bg-cover bg-center" data-alt="Female executive portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBgVpgdsnl4MQ_nB9NHaUxR9TVCAyZ57gyjiv253H4A7cX4SZ123gq2bpltfxNoB8V_RiME1QHqcSgmE004pRV0MukxT4RDkXvaH3CVhYRIenrICZ90y6OzS-4xvfIp9saMi_Dmasm3pcWDRtWcMwWpqGqHfIoIcL8CrEdqQftRmHjQu5AsL7xa_Ope4ILZwTKxv0XaetFGfW31KHW5-bWqsJDNWnzyZP8TPxmxy1x9dlJPxbF6tNHGTs6H3EIfIRT9mNMvjapS_v8");'></div>
+<div>
+<p class="text-slate-900 dark:text-white font-bold">Sarah Jenkins</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Lead Auditor</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">LEVEL 5</span>
+</div>
+</div>
+<!-- User Card Inactive -->
+<div class="cursor-pointer group rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-background-dark p-4 flex items-center gap-4 hover:border-slate-400 dark:hover:border-slate-500 transition-all opacity-70 hover:opacity-100">
+<div class="size-12 rounded-full bg-cover bg-center grayscale group-hover:grayscale-0 transition-all" data-alt="Male engineer portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCncr9j8wcKDP5yC85cl2hNGEl_lRw3m16TZf9kov-KQ2T8Fd-RYsWdien5-rQaboExsuUMwU4isEXtxkTMRFkSS0Eswwg_QtqMcWwOLMnPD11N7l7S3qUxC4nnk2niELHwyLvLtd94g972-TnrkTQzD8RzrThngdDGzYtQNeQNJRjkla20zC6Ihcz6_gquHbIlsQ_pvCwUpHPr_nNxSLxzjtzB5UgpWxHVCZIw78MqYt9D396p7UdldNLzy_ON0T8q8Kw14xS0gyY");'></div>
+<div>
+<p class="text-slate-900 dark:text-white font-bold">David Chen</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">SysAdmin</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">LEVEL 4</span>
+</div>
+</div>
+<!-- User Card Inactive -->
+<div class="cursor-pointer group rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-background-dark p-4 flex items-center gap-4 hover:border-slate-400 dark:hover:border-slate-500 transition-all opacity-70 hover:opacity-100">
+<div class="size-12 rounded-full bg-cover bg-center grayscale group-hover:grayscale-0 transition-all" data-alt="Female contractor portrait" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBEPTIRcOcv_5EZ9ikayaHGVN81TWRaLL6q8wJZsIAxGmb0Ee86gfMBJ1KVT2kRMZN6mhZfkhYRHan9sPoASM53W_6rZPMGeiY5BFefOs-xAmCulW7NWYY9Y0V8NLUF-DPpuOdJqXvgvYziod9J-e13shllm4IODK6-7CeXnJamEANjNCqElJJuOd7WUe8ZzgeaQZvDcDTLH6CrsG58VV7uSAiSdunNMmgvkjI_7f6MREUnj04xu-2er0GCm3Cn4CE5xw5jhfLp9aA");'></div>
+<div>
+<p class="text-slate-900 dark:text-white font-bold">Elena Rodriguez</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">External Contractor</p>
+<span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">LEVEL 1</span>
+</div>
+</div>
+<!-- Add New -->
+<div class="cursor-pointer rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-transparent p-4 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-slate-400 hover:text-primary">
+<span class="material-symbols-outlined text-3xl">person_add</span>
+<span class="text-xs font-semibold uppercase tracking-wider">Add User Profile</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Modal Overlay (Mocked - Hidden by default but structure included for completeness as implied by context) -->
+<!-- Ideally controlled by JS, but visually represented here as if it could be toggled -->
+<!-- 
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden">
+        <div class="bg-background-light dark:bg-surface-dark w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-primary/20 overflow-hidden flex flex-col max-h-[90vh]">
+            ...
+        </div>
+    </div> 
+    -->
+</body></html>

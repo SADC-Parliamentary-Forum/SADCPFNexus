@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ledger Report Viewer - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 shrink-0 z-20">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined !text-[32px]">shield_lock</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus Audit</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Reports</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Logs</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Compliance</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden lg:flex relative w-64">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 !text-[20px]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg leading-5 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm" placeholder="Search audit logs..." type="text"/>
+</div>
+<button class="flex items-center justify-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined !text-[24px]">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-cover bg-center ring-2 ring-slate-100 dark:ring-slate-700" data-alt="User profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuALvOn4Jv5BgUgVxu4Eleg0MrVMU0wWuzNIZWFET4n36KCZHD-u110tgTjXYdGNBi4a2UEfTzAtq7ymc7VYqKwX7BCyPB_Bv8Ac9izFOsoo7hGo4K-KUHrYimaeGwO8eBuigfphgXu-FAsQc1o7E6REZD8nUMWAKgWzRBZP2o0niOs6haWdMvBUDljR-EvZiw8S4Ljf8DubNvxzjHAWzGq0qylmC2UZQInjKNKaXBz2l1ooOsanrvXUoI_vUOdmHRJ0YMVppcXBAG0');"></div>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar (Actions & Meta) -->
+<aside class="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 overflow-y-auto z-10">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 mb-2">
+<div class="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h1 class="text-sm font-bold text-slate-900 dark:text-white">Audit Report</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400 font-mono">#AR-2023-Q4-009</p>
+</div>
+</div>
+<div class="mt-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+<span class="w-1.5 h-1.5 mr-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                    Restricted: Class A
+                </div>
+</div>
+<nav class="flex-1 p-4 space-y-1">
+<div class="px-2 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Report Actions</div>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">verified_user</span>
+                    Verify Signature
+                </button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">download</span>
+                    Download (Logged)
+                </button>
+<button class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">send</span>
+                    Send to Auditor
+                </button>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="px-2 pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Metadata</div>
+<div class="space-y-3 px-2">
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Generated On</p>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Oct 24, 2023 14:32 UTC</p>
+</div>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Auditor</p>
+<div class="flex items-center gap-2 mt-1">
+<div class="h-5 w-5 rounded-full bg-cover bg-center" data-alt="Auditor avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD2jh40HHBKVc-ihEkwLpPwE79Ct_B6KvIame6roWzAspDRj-ZD1-SQjRD4Qgq9Q9bhZtGLhU_7j_l1mCqe5ogA9FNtPuQ7r-RcUANmcGCuwCdOeg4OcWimzVhD4KimRsek67dBsgkqHnX046JEf6tXN9itHBiJzcgb4oDXhbl4lwMTShaziMU0q95GydZBn-tlhrnOVRWHVw9RAzMgdAe6uRsHfeeCPsQLhGTVZJuTheRBmDQRSN1cdYq40B_XNnCw7DoTWBal8h8');"></div>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100">Sarah Jenkins</p>
+</div>
+</div>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400">Encryption</p>
+<p class="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">AES-256-GCM</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Document Preview Area -->
+<main class="flex-1 overflow-y-auto bg-slate-100 dark:bg-black/20 p-8 flex justify-center">
+<div class="w-full max-w-[850px] space-y-8">
+<!-- Document Page -->
+<div class="bg-white dark:bg-slate-900 shadow-xl rounded-sm min-h-[1100px] relative overflow-hidden flex flex-col">
+<!-- Watermark -->
+<div class="watermark text-8xl font-black text-slate-900 dark:text-white select-none">
+                        CONFIDENTIAL • CLASS A
+                    </div>
+<!-- Header -->
+<div class="p-12 border-b-2 border-slate-900 dark:border-slate-100">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-4">
+<div class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 p-3 rounded">
+<span class="material-symbols-outlined !text-[32px]">account_balance</span>
+</div>
+<div>
+<h1 class="text-2xl font-bold uppercase tracking-widest text-slate-900 dark:text-white">Official Ledger</h1>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">Department of Finance &amp; Oversight</p>
+</div>
+</div>
+<div class="text-right">
+<p class="text-sm font-bold text-slate-900 dark:text-white">FORM 1099-AUD</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Rev. 10/2023</p>
+</div>
+</div>
+</div>
+<!-- Body Content -->
+<div class="p-12 flex-1 relative z-10">
+<div class="flex justify-between items-end mb-10">
+<div>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">Q4 Fiscal Compliance Audit</h2>
+<p class="text-slate-600 dark:text-slate-300">Reference: <span class="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm">#REF-8892-XJ</span></p>
+</div>
+<div class="text-right">
+<div class="inline-block px-3 py-1 border border-green-500 text-green-700 dark:text-green-400 rounded text-sm font-bold uppercase tracking-wider">
+                                    Passed with Observations
+                                </div>
+</div>
+</div>
+<div class="prose prose-slate dark:prose-invert max-w-none">
+<h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">1. Executive Summary</h3>
+<p class="text-sm leading-relaxed text-justify mb-6">
+                                The comprehensive audit of the SADCPFNexus ledger for the period ending September 30, 2023, has been completed. All transactions have been verified against the immutable blockchain record. While the overall financial health remains robust, minor discrepancies in the procurement categorization logs were noted and auto-corrected by the system's reconciliation engine.
+                            </p>
+<h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">2. Transaction Variance Analysis</h3>
+<table class="w-full text-sm text-left mb-8 border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 uppercase text-xs font-bold">
+<tr>
+<th class="px-4 py-3 border-b dark:border-slate-700">Category</th>
+<th class="px-4 py-3 border-b dark:border-slate-700 text-right">Projected</th>
+<th class="px-4 py-3 border-b dark:border-slate-700 text-right">Actual</th>
+<th class="px-4 py-3 border-b dark:border-slate-700 text-right">Variance</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr>
+<td class="px-4 py-3 font-medium text-slate-900 dark:text-white">Operational Expenses</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$1,250,000.00</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$1,242,500.00</td>
+<td class="px-4 py-3 text-right font-mono text-green-600 font-bold">-0.6%</td>
+</tr>
+<tr>
+<td class="px-4 py-3 font-medium text-slate-900 dark:text-white">Capital Allocation</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$5,000,000.00</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$4,980,000.00</td>
+<td class="px-4 py-3 text-right font-mono text-green-600 font-bold">-0.4%</td>
+</tr>
+<tr>
+<td class="px-4 py-3 font-medium text-slate-900 dark:text-white">Discretionary Fund</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$250,000.00</td>
+<td class="px-4 py-3 text-right font-mono text-slate-600 dark:text-slate-400">$255,200.00</td>
+<td class="px-4 py-3 text-right font-mono text-red-600 font-bold">+2.1%</td>
+</tr>
+</tbody>
+</table>
+<h3 class="text-sm font-bold uppercase text-slate-400 tracking-wider mb-4 border-b border-slate-200 dark:border-slate-700 pb-2">3. Digital Signatures</h3>
+<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="p-4 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 uppercase mb-1">Controller</p>
+<div class="font-script text-2xl text-slate-800 dark:text-slate-200 mb-2 font-serif italic">Eleanor Rigby</div>
+<p class="text-xs text-slate-400 font-mono">Signed: 2023-10-24 09:15:22 UTC</p>
+<div class="flex items-center gap-1 mt-1 text-green-600 text-xs font-bold">
+<span class="material-symbols-outlined !text-[14px]">check_circle</span> Verified
+                                    </div>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 uppercase mb-1">Chief Auditor</p>
+<div class="font-script text-2xl text-slate-800 dark:text-slate-200 mb-2 font-serif italic">James T. Kirk</div>
+<p class="text-xs text-slate-400 font-mono">Signed: 2023-10-24 11:42:05 UTC</p>
+<div class="flex items-center gap-1 mt-1 text-green-600 text-xs font-bold">
+<span class="material-symbols-outlined !text-[14px]">check_circle</span> Verified
+                                    </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Verification Hash -->
+<div class="bg-slate-900 dark:bg-black text-white p-4 mt-auto">
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-xs text-slate-400 uppercase tracking-widest">
+<span>Official Record</span>
+<span>Page 1 of 1</span>
+</div>
+<div class="border-t border-slate-700 pt-3">
+<p class="text-[10px] text-slate-500 uppercase mb-1">Verification Hash (SHA-3)</p>
+<p class="font-mono text-[10px] text-primary break-all">
+                                    0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+                                    c8f3349d7b43b17c4d59265f7c320d767174d82ac242512130325d3265538392
+                                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Action Bar (Floating) -->
+<div class="sticky bottom-6 mx-auto w-full max-w-md bg-white dark:bg-slate-800 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 p-2 flex items-center justify-between gap-2 z-30">
+<button class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium transition-colors">
+<span class="material-symbols-outlined !text-[18px]">chevron_left</span>
+                        Prev
+                     </button>
+<div class="px-2 text-xs font-bold text-slate-500">1 / 1</div>
+<button class="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-500 text-sm font-medium transition-colors cursor-not-allowed">
+                        Next
+                        <span class="material-symbols-outlined !text-[18px]">chevron_right</span>
+</button>
+<div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<button class="flex items-center justify-center p-2 rounded-full bg-primary text-white hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30">
+<span class="material-symbols-outlined !text-[20px]">print</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

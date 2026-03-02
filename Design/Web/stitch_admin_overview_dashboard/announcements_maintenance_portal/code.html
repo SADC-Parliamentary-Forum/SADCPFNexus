@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin - Announcements &amp; Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111722",
+                        "surface-dark": "#192233",
+                        "surface-darker": "#232f48",
+                        "text-main": "#FFFFFF",
+                        "text-muted": "#92a4c9",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-[#232f48] bg-white dark:bg-[#111722] px-6 lg:px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">grid_view</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+<!-- Classification Badge -->
+<span class="hidden md:flex items-center justify-center rounded-full bg-blue-500/20 text-blue-400 px-2.5 py-0.5 text-xs font-bold border border-blue-500/30">
+                            Class C
+                        </span>
+</div>
+<label class="hidden lg:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-muted flex border-none bg-slate-100 dark:bg-[#232f48] items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-0 border-none bg-slate-100 dark:bg-[#232f48] focus:border-none h-full placeholder:text-muted px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search resources..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="hidden xl:flex items-center gap-6">
+<a class="text-muted hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal" href="#">Announcements</a>
+<a class="text-muted hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Maintenance</a>
+<a class="text-muted hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">System Health</a>
+</div>
+<div class="flex gap-2">
+<button class="relative flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-[#232f48] text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#2d3b55] transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<!-- Red Notification Dot -->
+<span class="absolute top-2 right-2 size-2 rounded-full bg-red-500 border border-[#232f48]"></span>
+</button>
+<button class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-[#232f48] text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#2d3b55] transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-[#232f48] text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-[#2d3b55] transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDEVcoS2xZQ76P2-dV9AyrSxwIhRfm0QKL74A_Q0ZkrqbJxbFCGo5WzR_SKlXtnqJYzOfjEc-wZKdKhC7EqRyekyHaP2FfQN50KSHKnBSMO4sz4-FyottDnVjOI05aSFtHCsNOGP1vXAPN3wDLTUK4-kmbKMMOelt5HSa3-UXnFijUsXrlXxJ1rNNnYGBVfBhl2y1iCgzbXpuTJhz6qzQHelPGaSMCPphP52DLhNoMGsBwYXXmrtF6w-nzojpyoLY0GBclfAyBsTRo");'></div>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-6 px-4 md:px-6 lg:px-10">
+<div class="layout-content-container flex flex-col max-w-[1200px] flex-1 gap-6">
+<!-- Top Banner: Maintenance -->
+<div class="@container">
+<div class="flex flex-col items-stretch justify-start rounded-xl shadow-lg dark:shadow-none overflow-hidden bg-white dark:bg-surface-dark border border-slate-200 dark:border-transparent">
+<div class="flex flex-col md:flex-row w-full min-w-72 grow items-stretch">
+<div class="w-full md:w-1/3 min-h-[160px] bg-center bg-no-repeat bg-cover relative" data-alt="Abstract server room technology" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCamumGQthKQCXLSqxLCYlw48HRs2dbjR5-x2t5k2ySf48b_81jVGnJCMDCs18C13sZG8Vw2sYRiZemveelvh6dsHTr3ghWlhxM04pf2h8xtJMjamqGL9AWKKWkBBjbhpz5i6MOS35LC4Cg5T1k8LEDwfsX3QRQSZGGwcQ0jKVxv5sPXCE_B5bb71cCrSIeC_i9PjfyV9aGVsDTOVanowts3JBjl19c_Z0THB1UOOG_L-tvOTWC95oiLwNTOy5BuFiAVZKXoAWpTeA");'>
+<div class="absolute inset-0 bg-primary/40 mix-blend-multiply"></div>
+<div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex items-center p-6">
+<div class="size-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20">
+<span class="material-symbols-outlined" style="font-size: 28px;">engineering</span>
+</div>
+</div>
+</div>
+<div class="flex w-full md:w-2/3 flex-col justify-center gap-1 p-6">
+<div class="flex items-center gap-2 mb-1">
+<span class="flex size-2 rounded-full bg-amber-500"></span>
+<p class="text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider">Scheduled Downtime</p>
+</div>
+<h1 class="text-slate-900 dark:text-white text-2xl font-bold leading-tight">Next Scheduled Maintenance</h1>
+<p class="text-slate-500 dark:text-muted text-base font-normal leading-normal mt-1 max-w-xl">
+                                        System upgrades and database optimization will occur this weekend. Services may be intermittent.
+                                    </p>
+<div class="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-slate-100 dark:border-white/10">
+<div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-muted" style="font-size: 20px;">calendar_month</span>
+<span class="text-sm font-medium">Saturday 22:00 UTC</span>
+</div>
+<div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-muted" style="font-size: 20px;">schedule</span>
+<span class="text-sm font-medium">4h Duration</span>
+</div>
+<div class="ml-auto">
+<button class="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 transition-colors text-white text-sm font-medium">
+                                                View Details
+                                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left Column: Active Announcements -->
+<div class="lg:col-span-7 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold">Active Announcements</h2>
+<button class="text-primary text-sm font-medium hover:underline">View Archived</button>
+</div>
+<!-- Critical Alert Card -->
+<div class="flex flex-col gap-4 bg-white dark:bg-surface-dark p-5 rounded-xl border-l-4 border-l-red-500 shadow-sm border border-slate-200 dark:border-transparent">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-2.5 rounded-lg shrink-0">
+<span class="material-symbols-outlined">gpp_maybe</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-slate-900 dark:text-white text-base font-bold">Security Policy Update</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 uppercase">Critical</span>
+</div>
+<p class="text-slate-500 dark:text-muted text-sm leading-relaxed">
+                                                Mandatory password rotation policy effective immediately due to new compliance standards. All users must update credentials within 24 hours.
+                                            </p>
+</div>
+</div>
+<div class="shrink-0 text-slate-400 text-xs whitespace-nowrap">
+                                        2 hours ago
+                                    </div>
+</div>
+</div>
+<!-- Warning Card -->
+<div class="flex flex-col gap-4 bg-white dark:bg-surface-dark p-5 rounded-xl border-l-4 border-l-amber-500 shadow-sm border border-slate-200 dark:border-transparent">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-2.5 rounded-lg shrink-0">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-slate-900 dark:text-white text-base font-bold">Payroll Module Latency</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 uppercase">Warning</span>
+</div>
+<p class="text-slate-500 dark:text-muted text-sm leading-relaxed">
+                                                Users may experience delays when processing batch payments. Engineering team is investigating the bottleneck.
+                                            </p>
+</div>
+</div>
+<div class="shrink-0 text-slate-400 text-xs whitespace-nowrap">
+                                        Yesterday
+                                    </div>
+</div>
+</div>
+<!-- Info Card -->
+<div class="flex flex-col gap-4 bg-white dark:bg-surface-dark p-5 rounded-xl border-l-4 border-l-blue-500 shadow-sm border border-slate-200 dark:border-transparent">
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 p-2.5 rounded-lg shrink-0">
+<span class="material-symbols-outlined">info</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<h3 class="text-slate-900 dark:text-white text-base font-bold">New HR Portal Features</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 uppercase">Info</span>
+</div>
+<p class="text-slate-500 dark:text-muted text-sm leading-relaxed">
+                                                The leave request module has been updated with a new calendar view. Documentation is available in the Wiki.
+                                            </p>
+</div>
+</div>
+<div class="shrink-0 text-slate-400 text-xs whitespace-nowrap">
+                                        3 days ago
+                                    </div>
+</div>
+</div>
+<!-- Maintenance History Table -->
+<div class="mt-4">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold mb-4">Maintenance History</h2>
+<div class="overflow-hidden rounded-xl border border-slate-200 dark:border-[#232f48] bg-white dark:bg-surface-dark shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-500 dark:text-muted">
+<thead class="bg-slate-50 dark:bg-[#1f2b41] text-xs uppercase text-slate-700 dark:text-slate-300">
+<tr>
+<th class="px-6 py-3 font-semibold" scope="col">Date</th>
+<th class="px-6 py-3 font-semibold" scope="col">Type</th>
+<th class="px-6 py-3 font-semibold" scope="col">Duration</th>
+<th class="px-6 py-3 font-semibold" scope="col">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-[#232f48]">
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1f2b41]/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 24, 2023</td>
+<td class="px-6 py-4">Database Patch</td>
+<td class="px-6 py-4">2h 15m</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-500/10 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400">
+<span class="size-1.5 rounded-full bg-green-500"></span> Completed
+                                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1f2b41]/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Oct 12, 2023</td>
+<td class="px-6 py-4">Load Balancer Config</td>
+<td class="px-6 py-4">45m</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-green-100 dark:bg-green-500/10 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400">
+<span class="size-1.5 rounded-full bg-green-500"></span> Completed
+                                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1f2b41]/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Sep 30, 2023</td>
+<td class="px-6 py-4">Unplanned Outage</td>
+<td class="px-6 py-4">1h 30m</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 dark:bg-red-500/10 px-2 py-1 text-xs font-medium text-red-700 dark:text-red-400">
+<span class="size-1.5 rounded-full bg-red-500"></span> Incident
+                                                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Create Notification Form -->
+<div class="lg:col-span-5">
+<div class="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-[#232f48] shadow-sm sticky top-24">
+<div class="p-5 border-b border-slate-200 dark:border-[#232f48] flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_square</span>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold">Manage Notifications</h2>
+</div>
+<span class="text-xs font-medium text-muted bg-slate-100 dark:bg-[#232f48] px-2 py-1 rounded">Admin Only</span>
+</div>
+<div class="p-6 flex flex-col gap-5">
+<!-- Title Input -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Announcement Title</label>
+<input class="w-full h-10 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#232f48] px-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted" placeholder="e.g. Server Migration Update" type="text"/>
+</div>
+<!-- Priority & Target Row -->
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Priority Level</label>
+<div class="relative">
+<select class="w-full h-10 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#232f48] px-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary appearance-none">
+<option>Info</option>
+<option>Warning</option>
+<option>Critical</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-muted" style="font-size: 20px;">expand_more</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Target Audience</label>
+<div class="relative">
+<select class="w-full h-10 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#232f48] px-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary appearance-none">
+<option>All Users</option>
+<option>IT Department</option>
+<option>HR Department</option>
+<option>Admins Only</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-muted" style="font-size: 20px;">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Message Area -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Message Content</label>
+<div class="rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#232f48] overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+<div class="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-[#232f48] bg-slate-100 dark:bg-[#1f2b41]">
+<button class="p-1 text-muted hover:text-slate-700 dark:hover:text-white rounded hover:bg-black/5 dark:hover:bg-white/10"><span class="material-symbols-outlined" style="font-size: 18px;">format_bold</span></button>
+<button class="p-1 text-muted hover:text-slate-700 dark:hover:text-white rounded hover:bg-black/5 dark:hover:bg-white/10"><span class="material-symbols-outlined" style="font-size: 18px;">format_italic</span></button>
+<button class="p-1 text-muted hover:text-slate-700 dark:hover:text-white rounded hover:bg-black/5 dark:hover:bg-white/10"><span class="material-symbols-outlined" style="font-size: 18px;">format_list_bulleted</span></button>
+<div class="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
+<button class="p-1 text-muted hover:text-slate-700 dark:hover:text-white rounded hover:bg-black/5 dark:hover:bg-white/10"><span class="material-symbols-outlined" style="font-size: 18px;">link</span></button>
+</div>
+<textarea class="w-full bg-transparent border-none p-3 text-sm text-slate-900 dark:text-white focus:ring-0 min-h-[140px] resize-none" placeholder="Type your announcement here..."></textarea>
+</div>
+</div>
+<!-- Expiry Date -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Expiry Date</label>
+<div class="relative">
+<input class="w-full h-10 rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#232f48] px-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary appearance-none placeholder:text-muted" type="date"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-muted" style="font-size: 20px;">calendar_today</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-3 mt-2 pt-2">
+<button class="flex-1 h-10 rounded-lg bg-primary hover:bg-blue-600 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
+<span class="material-symbols-outlined" style="font-size: 20px;">send</span>
+                                            Publish Announcement
+                                        </button>
+<button class="h-10 px-4 rounded-lg border border-slate-300 dark:border-[#3e4c66] text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-[#232f48] transition-colors">
+                                            Draft
+                                        </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

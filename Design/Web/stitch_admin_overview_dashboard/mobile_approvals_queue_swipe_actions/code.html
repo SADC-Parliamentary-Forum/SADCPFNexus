@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Mobile Approvals</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-light": "#dceeff",
+                        "primary-dark": "#0b3da8",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2536",
+                        "text-primary-light": "#0f172a",
+                        "text-primary-dark": "#f8fafc",
+                        "text-secondary-light": "#64748b",
+                        "text-secondary-dark": "#94a3b8",
+                        "success": "#10b981",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for desktop simulation */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark font-display min-h-screen flex justify-center items-start pt-4 sm:pt-10 pb-10">
+<!-- Mobile Device Simulator Wrapper -->
+<div class="w-full max-w-[420px] h-[850px] bg-background-light dark:bg-background-dark border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-2xl overflow-hidden relative flex flex-col">
+<!-- Status Bar Simulation (Cosmetic) -->
+<div class="h-8 w-full bg-surface-light dark:bg-surface-dark flex justify-between items-center px-6 text-xs font-medium text-text-primary-light dark:text-text-primary-dark select-none z-20">
+<span>9:41</span>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[16px]">wifi</span>
+<span class="material-symbols-outlined text-[16px]">battery_full</span>
+</div>
+</div>
+<!-- Header -->
+<header class="flex items-center justify-between px-5 py-4 bg-surface-light dark:bg-surface-dark sticky top-0 z-20 border-b border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<h1 class="text-lg font-bold tracking-tight">SADCPF<span class="text-primary">Nexus</span></h1>
+</div>
+<button class="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full border-2 border-surface-light dark:border-surface-dark"></span>
+</button>
+</header>
+<!-- Main Content (Scrollable) -->
+<main class="flex-1 overflow-y-auto no-scrollbar relative pb-24">
+<!-- Sticky Search Area -->
+<div class="sticky top-0 z-10 bg-background-light dark:bg-background-dark px-5 py-4 shadow-sm">
+<div class="flex gap-3">
+<div class="relative flex-1">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface-light dark:bg-surface-dark border-none rounded-xl text-sm shadow-sm focus:ring-2 focus:ring-primary/20 text-slate-900 dark:text-slate-100 placeholder-slate-400" placeholder="Search Ref, Name..." type="text"/>
+</div>
+<button class="flex items-center justify-center w-12 bg-primary text-white rounded-xl shadow-md hover:bg-primary-dark transition-colors">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+<!-- Quick stats / Heading -->
+<div class="flex justify-between items-end mt-6 mb-2">
+<div>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Approvals Queue</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">12 Pending Requests</p>
+</div>
+<button class="text-primary text-xs font-semibold">View History</button>
+</div>
+</div>
+<!-- List Content -->
+<div class="px-5 space-y-4 pt-2">
+<!-- Card 1: Standard Pending -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 relative group overflow-hidden">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Ref: LV-2023-892</span>
+<h3 class="font-semibold text-slate-900 dark:text-white">Annual Leave Request</h3>
+</div>
+<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-1 rounded-md">Class A</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of applicant smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwq5C1pzdZ1S7N5AGGzCtNj7ueULkPKmCgQsSzYFyZYXSyGFgySnXl5iPOkbxHFt2ZvI76k2xUhWm2A8kux7-k-KhTNLLOtG9RgI5TpSORofbwS8Xje5jJrE7n2O07DtKR0kQLgloMDoRNBCDk8PRmnBA169b_iFwYzDSScwRiEq7l40DxB5Cu8BqpNk2imkd1Gou-CuWNF8TYEyBts-G2CmXdQSnsQnthAJydesVt77XVRXrk8tmbK55nzq2nbqomEC-bIVnxGBY"/>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">Marcus Johnson</p>
+<p class="text-xs text-slate-500">Submitted 2 hrs ago</p>
+</div>
+</div>
+<div class="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+<span class="text-xs text-slate-500 font-medium">Oct 24 - Oct 28 (5 Days)</span>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</div>
+</div>
+<!-- Card 2: Swipe Action (Swiping Right for Approve) -->
+<div class="relative h-[150px] rounded-2xl overflow-hidden shadow-sm">
+<!-- Background Actions Layer -->
+<div class="absolute inset-0 flex w-full h-full">
+<!-- Left Action (Return - Hidden in this swipe state) -->
+<div class="w-1/2 bg-danger flex items-center justify-start pl-6">
+<span class="material-symbols-outlined text-white text-3xl">undo</span>
+</div>
+<!-- Right Action (Approve - Visible) -->
+<div class="w-1/2 bg-success flex items-center justify-end pr-6 ml-auto">
+<span class="material-symbols-outlined text-white text-3xl">check_circle</span>
+</div>
+</div>
+<!-- Foreground Card (Shifted) -->
+<div class="absolute inset-0 bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-slate-100 dark:border-slate-800 transform translate-x-24 transition-transform duration-300 shadow-xl flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Ref: TR-2023-104</span>
+<h3 class="font-semibold text-slate-900 dark:text-white">Intl. Conference Travel</h3>
+</div>
+<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-bold px-2 py-1 rounded-md">Class B</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of female applicant looking professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG3Z5E4or6HD_otdryz6VcZNFiLLdbj1yyZVYaJSFBYTug3je5L4a1jvYG7J-d2hXqrahfIQDfpHw-Hp-GZ_dMowuy4lsM201Tmq51pp0p5LUqdCBVX2vwYBsy3IJ2Q1mkjhtCBQX72lH1GG1xgoHQMXnXOxDCOxYB0cdppyUhtpCzq_xYJ8Nox24HORY0fkHmobVWSGx47t4mWJG6C0srUu8mTXNKoSIIWTUhx1FiygwnAhFXnnhlCeU3oFm04b01LDDMR-8gBAQ"/>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">Sarah Williams</p>
+<p class="text-xs text-slate-500">Submitted 5 hrs ago</p>
+</div>
+</div>
+<div class="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-2">
+<span class="text-xs text-slate-500 font-medium">Budget: $1,200</span>
+</div>
+<!-- Swipe Hint (Visual cue) -->
+<div class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none"></div>
+</div>
+</div>
+<!-- Card 3: Standard Pending -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Ref: EQ-2023-441</span>
+<h3 class="font-semibold text-slate-900 dark:text-white">Hardware Requisition</h3>
+</div>
+<span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold px-2 py-1 rounded-md">Class C</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<div class="flex items-center justify-center w-full h-full bg-slate-300 text-slate-600 font-bold text-xs">DK</div>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">David Kim</p>
+<p class="text-xs text-slate-500">Submitted 1 day ago</p>
+</div>
+</div>
+<div class="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+<span class="text-xs text-slate-500 font-medium">MacBook Pro M2 16"</span>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</div>
+</div>
+<!-- Card 4: Standard Pending (Visual Variety) -->
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 opacity-80">
+<div class="flex justify-between items-start mb-3">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Ref: OT-2023-112</span>
+<h3 class="font-semibold text-slate-900 dark:text-white">Overtime Claim</h3>
+</div>
+<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold px-2 py-1 rounded-md">Class A</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of male employee" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBiqDTr46qH7LmdKpCZF2s7o_Xp1Z-rnpuRYBUFo5MrkPhenwndVcL0HQ8jAQ4IsnW1vSKum6SwEl6GYjIyl3NbMlnPvZtmph_k17UBp4cY698nhP6jEfi8TnSvS791imvz_SQS71idjetU77a5NIQHYHKufhAMe3Eg1FSCZNfbfE5_KDG-5dcVMeB0HUbOKgcEKQ_aemRw8VlKQvxXa4NSPDTSU7aqGhJYrEUWSRK14yhe2un-IAu541XY5n-BF0H1Fw8d2zqp-NI"/>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-800 dark:text-slate-200">Alex Chen</p>
+<p class="text-xs text-slate-500">Submitted 2 days ago</p>
+</div>
+</div>
+<div class="flex justify-between items-center border-t border-slate-100 dark:border-slate-800 pt-3 mt-1">
+<span class="text-xs text-slate-500 font-medium">12 Hours Total</span>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Bottom Spacer for fab/nav -->
+<div class="h-24"></div>
+</main>
+<!-- Navigation Bar -->
+<nav class="absolute bottom-0 w-full bg-surface-light dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center z-30 pb-6 rounded-b-[2rem]">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary animate-pulse" href="#">
+<span class="material-symbols-outlined text-[24px] fill-current">assignment</span>
+<span class="text-[10px] font-bold">Queue</span>
+</a>
+<!-- FAB (Floating Action Button) Integrated in Nav -->
+<div class="relative -top-8">
+<button class="flex items-center justify-center w-14 h-14 bg-primary rounded-full shadow-lg text-white shadow-blue-500/30 transform transition-transform hover:scale-105 active:scale-95">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">groups</span>
+<span class="text-[10px] font-medium">HR</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+<!-- Modal Overlay (Simulated Open State) -->
+<!-- This is a quick-view modal that would appear on tap -->
+<div class="absolute inset-0 z-40 bg-black/40 backdrop-blur-sm hidden flex items-end justify-center">
+<div class="bg-surface-light dark:bg-surface-dark w-full rounded-t-3xl p-6 animate-slide-up shadow-2xl">
+<div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-6"></div>
+<h3 class="text-xl font-bold mb-1 dark:text-white">Annual Leave Request</h3>
+<p class="text-sm text-slate-500 mb-6">Ref: LV-2023-892 • Marcus Johnson</p>
+<div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl mb-6">
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-500">From</span>
+<span class="font-medium dark:text-slate-200">Oct 24, 2023</span>
+</div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-500">To</span>
+<span class="font-medium dark:text-slate-200">Oct 28, 2023</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Reason</span>
+<span class="font-medium dark:text-slate-200">Family vacation</span>
+</div>
+</div>
+<div class="mb-6">
+<label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Remarks (Optional)</label>
+<textarea class="w-full bg-background-light dark:bg-background-dark border-0 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 resize-none dark:text-white" placeholder="Add a note..." rows="2"></textarea>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 py-3.5 rounded-xl border border-danger text-danger font-semibold text-sm hover:bg-danger/5">Return</button>
+<button class="flex-1 py-3.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/30">Approve Request</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Plenary Resolutions - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<div class="w-full bg-white dark:bg-[#1A2633] border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30">
+<div class="px-6 lg:px-10 py-3 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">account_balance</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary font-semibold text-sm leading-normal" href="#">Parliamentary Business</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Committees</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Members</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary w-64" placeholder="Global Search..." type="text"/>
+</div>
+<button class="relative size-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="User profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE-ewOvPHi13Z-O5jC_jgBq1XzB8iYvSnNIuHVGbROl8JruJ5FBXbc1huw7SMz4UqXvGOLEhfSu8Bz9Jl_V-MWWmy3GiXQzE-2CZgv9ir3Bk9tZDR4dvn1wSzdNLcMcw78-15J6vbf62Q008mfJ63ONkIuFyydERDy2Ob2PV3CjkLNx8ivu1ollFU_QUUaJYAEfv28veJhrSRPB7lqGjxydcBKj31RiYmgj4QwtXqVOYJizelhklBWyzHVFexc7qp5Iyb9kio6ciE"/>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-1 relative">
+<!-- Sidebar Navigation (Collapsible on smaller screens) -->
+<aside class="hidden lg:flex w-64 flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1A2633] sticky top-[65px] h-[calc(100vh-65px)] overflow-y-auto">
+<div class="p-6 flex flex-col gap-6">
+<!-- Module Header -->
+<div class="flex gap-4 items-center">
+<div class="size-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[28px]">gavel</span>
+</div>
+<div>
+<h1 class="text-base font-bold text-slate-900 dark:text-white">Parliamentary</h1>
+<p class="text-sm text-slate-500 dark:text-slate-400">Business Module</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">home</span>
+<span class="text-sm font-medium">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">groups</span>
+<span class="text-sm font-medium">Plenary</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary dark:text-primary font-medium" href="#">
+<span class="material-symbols-outlined text-primary fill-current">description</span>
+<span class="text-sm">Resolutions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">how_to_vote</span>
+<span class="text-sm font-medium">Votes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">archive</span>
+<span class="text-sm font-medium">Archives</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark relative">
+<!-- Filters Drawer (Overlay on Mobile/Tablet) -->
+<div class="fixed inset-y-0 left-0 z-40 w-80 bg-white dark:bg-[#1A2633] shadow-2xl transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden" id="filter-drawer">
+<div class="h-full flex flex-col">
+<div class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+<h3 class="font-bold text-lg text-slate-900 dark:text-white">Filters</h3>
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500" onclick="document.getElementById('filter-drawer').classList.add('-translate-x-full')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Filter Groups -->
+<div class="space-y-3">
+<label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Status</label>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="form-checkbox rounded text-primary border-slate-300 dark:border-slate-600 focus:ring-primary bg-transparent" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Adopted</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox rounded text-primary border-slate-300 dark:border-slate-600 focus:ring-primary bg-transparent" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Draft</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="form-checkbox rounded text-primary border-slate-300 dark:border-slate-600 focus:ring-primary bg-transparent" type="checkbox"/>
+<span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-primary">Rejected</span>
+</label>
+</div>
+</div>
+<div class="space-y-3">
+<label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Session Year</label>
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary">
+<option>2023 - 2024</option>
+<option>2022 - 2023</option>
+<option>2021 - 2022</option>
+</select>
+</div>
+<div class="space-y-3">
+<label class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Committee</label>
+<select class="form-select w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:border-primary focus:ring-primary">
+<option>All Committees</option>
+<option>Finance &amp; Appropriations</option>
+<option>Foreign Affairs</option>
+<option>Agriculture</option>
+</select>
+</div>
+</div>
+<div class="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+<button class="w-full btn bg-primary hover:bg-blue-600 text-white font-medium py-2.5 rounded-lg shadow-sm transition-all" onclick="document.getElementById('filter-drawer').classList.add('-translate-x-full')">
+                            Apply Filters
+                        </button>
+</div>
+</div>
+</div>
+<!-- Page Header -->
+<div class="p-6 md:p-8 space-y-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="space-y-2">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Plenary Resolutions</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base max-w-2xl">Manage and track official resolutions adopted during plenary sessions. View full minutes and download official PDFs.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="lg:hidden flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm" onclick="document.getElementById('filter-drawer').classList.remove('-translate-x-full')">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                            Filters
+                        </button>
+<button class="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span class="hidden sm:inline">Export List</span>
+<span class="sm:hidden">Export</span>
+</button>
+</div>
+</div>
+<!-- Search and Tags (Tablet/Mobile optimized) -->
+<div class="flex flex-col sm:flex-row gap-4">
+<div class="relative flex-1">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+<span class="material-symbols-outlined">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" placeholder="Search resolutions by ID, title, or keyword..." type="text"/>
+</div>
+<!-- Quick Filters (Horizontal Scroll) -->
+<div class="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide items-center">
+<button class="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
+                            Status: All
+                            <span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+<button class="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-sm font-medium border border-transparent hover:border-slate-300 dark:hover:border-slate-600">
+                            Session: 2023
+                        </button>
+<button class="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full text-sm font-medium border border-transparent hover:border-slate-300 dark:hover:border-slate-600">
+                            Committee: All
+                        </button>
+</div>
+</div>
+<!-- Cards Grid (Tablet Layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-20">
+<!-- Card 1: Adopted -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Adopted</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 24, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-084</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Motion to approve the Supplementary Appropriation Bill regarding infrastructure development in the Northern Province.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on Finance</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                View Minutes
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Draft -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Draft</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 22, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-085</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Proposed amendment to the Digital Security Act focusing on cross-border data protection protocols.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on ICT</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit_document</span>
+                                Edit Draft
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" disabled="" title="Download PDF">
+<span class="material-symbols-outlined text-[20px] opacity-50">picture_as_pdf</span>
+</button>
+</div>
+</div>
+<!-- Card 3: Rejected -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Rejected</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 19, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-081</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Establishment of a special task force for urban wildlife management within metropolitan zones.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on Environment</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                View Minutes
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</button>
+</div>
+</div>
+<!-- Card 4: Adopted -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Adopted</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 15, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-079</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Authorization for the Ministry of Health to procure emergency medical supplies from approved international vendors.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on Health</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                View Minutes
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</button>
+</div>
+</div>
+<!-- Card 5: Adopted -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Adopted</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 10, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-078</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Ratification of the regional trade agreement with neighboring states regarding agricultural exports.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on Foreign Affairs</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                                View Minutes
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+</button>
+</div>
+</div>
+<!-- Card 6: Draft -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 flex flex-col gap-4 group hover:shadow-md hover:border-primary/50 transition-all duration-300">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2">
+<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">Draft</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Oct 05, 2023</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug mb-1 group-hover:text-primary transition-colors">RES-2023-075</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">Preliminary review of the Education Sector Reform Bill for the upcoming academic year.</p>
+</div>
+<div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-auto pt-2 border-t border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-[16px]">gavel</span>
+<span>Committee on Education</span>
+</div>
+<div class="flex gap-3 mt-1">
+<button class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">edit_document</span>
+                                Edit Draft
+                            </button>
+<button class="size-9 flex items-center justify-center bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors" disabled="" title="Download PDF">
+<span class="material-symbols-outlined text-[20px] opacity-50">picture_as_pdf</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button -->
+<button aria-label="Create New Resolution" class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 size-14 bg-primary hover:bg-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 z-50 flex items-center justify-center group">
+<span class="material-symbols-outlined text-[32px] group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+</main>
+</div>
+</body></html>

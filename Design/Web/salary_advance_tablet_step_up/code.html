@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Salary Advance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-x-hidden min-h-screen flex flex-col relative">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15202b] px-6 py-4 sticky top-0 z-30 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">policy</span>
+</div>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-semibold transition-colors" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-semibold transition-colors" href="#">Personnel</a>
+<a class="text-primary text-sm font-bold" href="#">Finance</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-semibold transition-colors" href="#">Admin</a>
+</nav>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg size-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">verified_user</span>
+</button>
+<div class="relative">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAgAEbP371J6s07SwkjNvNec74bUekfYXBTLa6CcpuTsrokR6N_80SuABAWpmaFlau_Vj6_C-l21iMjLQbMY-3Ew-Z1jG2Vp2hC34RspDogBpmAT1NnB5tUntDmd-2vo3LjbNyRivRbsmDHDZeG0od-LwZm34pdwzW6-ah4rxMzrhihRYsAvm1ZMsDQKJazFoTQ-0aQ76-d4Po-klnrNp_1DJOkZDQDPYhpD_aYgXyWq_rPzBf9gbPGL41PiDJVrCkYMtUD4Oo01Cw");'></div>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-[#15202b]"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col max-w-[1200px] mx-auto w-full px-4 md:px-8 py-6 relative">
+<!-- Security Watermark Background -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0 opacity-[0.03] select-none overflow-hidden">
+<div class="transform -rotate-45 text-[120px] font-black text-slate-900 dark:text-white whitespace-nowrap">
+                CLASS A SECURITY
+            </div>
+</div>
+<!-- Breadcrumbs -->
+<div class="flex flex-wrap gap-2 items-center mb-6 relative z-10">
+<a class="text-slate-500 hover:text-primary text-sm font-medium" href="#">Home</a>
+<span class="text-slate-400 text-sm">/</span>
+<a class="text-slate-500 hover:text-primary text-sm font-medium" href="#">HR Services</a>
+<span class="text-slate-400 text-sm">/</span>
+<a class="text-slate-500 hover:text-primary text-sm font-medium" href="#">Salary Advance</a>
+<span class="text-slate-400 text-sm">/</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-bold">Finance Assessment</span>
+</div>
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8 relative z-10 border-b border-slate-200 dark:border-slate-800 pb-6">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wide">Confidential</span>
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 uppercase tracking-wide">Ref: SA-2023-8942</span>
+</div>
+<h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">Salary Advance Request</h1>
+<div class="flex items-center gap-2 text-primary font-medium">
+<span class="flex size-6 items-center justify-center rounded-full bg-primary text-white text-xs font-bold">4</span>
+<span>Finance Assessment</span>
+<span class="text-slate-400 mx-2">|</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm font-normal">Security Level: Class A</span>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="h-12 px-6 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    Save Draft
+                </button>
+</div>
+</div>
+<!-- Main Form Area -->
+<div aria-hidden="true" class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10 blur-sm pointer-events-none select-none">
+<!-- Left Column: Summary -->
+<div class="lg:col-span-1 space-y-6">
+<div class="bg-white dark:bg-[#1e2936] rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+                        Request Summary
+                    </h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Requested Amount</span>
+<span class="font-bold text-lg text-slate-900 dark:text-white">€2,500.00</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Repayment Term</span>
+<span class="font-medium text-slate-900 dark:text-white">12 Months</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Monthly Deduction</span>
+<span class="font-medium text-slate-900 dark:text-white">€208.33</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-slate-500 dark:text-slate-400 text-sm">Net Salary Impact</span>
+<span class="font-bold text-red-500">-8.4%</span>
+</div>
+</div>
+</div>
+<div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 border border-blue-100 dark:border-blue-800/50">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<h4 class="font-bold text-primary mb-1">Policy Limit Check</h4>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+                                Total deductions cannot exceed 40% of net monthly salary. Current calculation places applicant at 32%.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Worksheet -->
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white dark:bg-[#1e2936] rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#15202b] flex justify-between items-center">
+<h3 class="font-bold text-lg">Financial Obligations Worksheet</h3>
+<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-base">add_circle</span>
+                            Add Obligation
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-[#15202b] text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-700">
+<th class="px-6 py-4">Obligation Type</th>
+<th class="px-6 py-4 text-right">Monthly Amount</th>
+<th class="px-6 py-4 text-right">Outstanding</th>
+<th class="px-6 py-4 text-center">Status</th>
+<th class="px-6 py-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Existing Loan #L-492</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€450.00</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€2,100.00</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                            Verified
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">edit</span></button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Tax Arrears (2022)</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€120.00</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€360.00</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                            Pending
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">edit</span></button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Garnishee Order</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€0.00</td>
+<td class="px-6 py-4 text-right font-mono text-slate-600 dark:text-slate-300">€0.00</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                            Clear
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">edit</span></button>
+</td>
+</tr>
+</tbody>
+<tfoot class="bg-slate-50 dark:bg-[#15202b] border-t-2 border-slate-200 dark:border-slate-600">
+<tr>
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">Total Obligations</td>
+<td class="px-6 py-4 text-right font-bold font-mono text-slate-900 dark:text-white">€570.00</td>
+<td class="px-6 py-4 text-right font-bold font-mono text-slate-900 dark:text-white">€2,460.00</td>
+<td colspan="2"></td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+<div class="flex justify-end gap-4 pt-4">
+<button class="h-14 px-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-lg">
+                        Back
+                    </button>
+<button class="h-14 px-8 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30 flex items-center gap-2 text-lg">
+                        Confirm &amp; Proceed
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Step-up Authentication Modal Overlay -->
+<div class="absolute inset-0 z-50 flex items-center justify-center p-4">
+<!-- Modal Container -->
+<div class="bg-white dark:bg-[#1e2936] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden flex flex-col relative ring-8 ring-black/5 dark:ring-black/20">
+<!-- Security Header -->
+<div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-400">lock_person</span>
+<span class="font-bold text-sm tracking-wide uppercase">Identity Verification</span>
+</div>
+<span class="text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700 text-slate-400">Class A Required</span>
+</div>
+<!-- Modal Body -->
+<div class="p-8 flex flex-col items-center text-center">
+<div class="size-16 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-4 ring-4 ring-blue-100 dark:ring-blue-900/20">
+<span class="material-symbols-outlined text-primary text-3xl">fingerprint</span>
+</div>
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Step-Up Authentication</h3>
+<p class="text-slate-600 dark:text-slate-400 mb-8 text-base leading-relaxed">
+                        To access sensitive financial assessments, please verify your identity using your security PIN.
+                    </p>
+<!-- PIN Input -->
+<div class="flex gap-4 justify-center mb-8 w-full max-w-[280px]">
+<input class="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-0 text-slate-900 dark:text-white transition-colors" maxlength="1" type="password" value="•"/>
+<input autofocus="" class="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-primary ring-4 ring-primary/10 bg-white dark:bg-slate-800 focus:border-primary focus:ring-0 text-slate-900 dark:text-white transition-colors" maxlength="1" type="password"/>
+<input class="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-0 text-slate-900 dark:text-white transition-colors" maxlength="1" type="password"/>
+<input class="w-12 h-14 text-center text-2xl font-bold rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-0 text-slate-900 dark:text-white transition-colors" maxlength="1" type="password"/>
+</div>
+<!-- Numeric Keypad (Visual Representation for Tablet) -->
+<div class="grid grid-cols-3 gap-3 w-full max-w-[280px] mb-6">
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">1</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">2</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">3</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">4</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">5</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">6</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">7</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">8</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">9</button>
+<div class="col-span-1"></div>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-transform">0</button>
+<button class="h-12 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-semibold text-lg hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base">backspace</span>
+</button>
+</div>
+<div class="w-full flex gap-3">
+<button class="flex-1 py-3 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                            Cancel
+                        </button>
+<button class="flex-1 py-3 rounded-lg bg-primary text-white font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20">
+                            Verify Identity
+                        </button>
+</div>
+</div>
+<!-- Footer -->
+<div class="bg-slate-50 dark:bg-[#15202b] px-6 py-3 border-t border-slate-200 dark:border-slate-700 text-center">
+<p class="text-xs text-slate-500 dark:text-slate-400">
+                        Protected by SADCPFNexus Biometric Core v2.4
+                    </p>
+</div>
+</div>
+<!-- Backdrop Blur Effect specifically for the modal overlay background -->
+<div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm -z-10"></div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Universal Submission Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "primary-dark": "#156cb8",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                        "text-main": "#0f172a",
+                        "text-muted": "#64748b",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#334155",
+                        "success": "#10b981",
+                        "warning": "#f59e0b",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light text-text-main font-display min-h-screen flex flex-col antialiased selection:bg-primary/20 selection:text-primary">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 bg-surface-light border-b border-border-light px-6 py-3 shadow-sm">
+<div class="max-w-[1440px] mx-auto flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-[24px]">shield</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-text-main">SADCPFNexus</h1>
+<div class="h-6 w-px bg-border-light mx-2"></div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-text-muted hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-medium text-primary" href="#">Submissions</a>
+<a class="text-sm font-medium text-text-muted hover:text-primary transition-colors" href="#">Approvals</a>
+<a class="text-sm font-medium text-text-muted hover:text-primary transition-colors" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-text-muted hover:bg-slate-100 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-danger rounded-full border border-surface-light"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-border-light">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-text-main">Officer A. Vance</p>
+<p class="text-xs text-text-muted">Security Level 4</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center border border-border-light" data-alt="User profile photo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA_uBf4771d59JPUFeqKvU7JH4u0_GxeRzjobpJ1ESZEsXGqG6P_b4oFcO9XqAEi48vOoSdme9ECf0USUcoJXtpElTYrwqnXeyaZAhGdR3mp0GLUVPziRdUxfTm8R0Rw60fxLNJNMBWt2jMML5z7FELEla53GxpdzVCKzdHQfk64VG0O-vnz0C8Yc7F1zaCHJRXZrv6ujIePitA1h37qYzVoOsCBRGQFjUhLQG4Bdl7HAbFCiWusewqP7Ph6plOSktf2_MnCwXDvmE');"></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-[1440px] mx-auto p-6 md:p-8 lg:px-12">
+<!-- Header Section -->
+<div class="mb-8">
+<div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+                            Class B Security
+                        </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+<span class="material-symbols-outlined text-[14px]">pending</span>
+                            Stage: L1 Review
+                        </span>
+</div>
+<h2 class="text-3xl font-bold text-text-main tracking-tight">Travel Requisition #TR-2023-8842</h2>
+<p class="mt-2 text-text-muted flex items-center gap-2 text-sm">
+                        Submitted by <span class="font-medium text-text-main">Officer A. Vance</span>
+<span class="size-1 bg-text-muted rounded-full"></span>
+<span class="material-symbols-outlined text-[16px]">schedule</span> 2 hours ago
+                    </p>
+</div>
+<div class="flex items-center gap-3">
+<button class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-light rounded-lg text-sm font-medium text-text-main hover:bg-slate-50 transition-shadow shadow-sm">
+<span class="material-symbols-outlined text-[18px]">print</span>
+                        Print
+                    </button>
+<button class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-border-light rounded-lg text-sm font-medium text-text-main hover:bg-slate-50 transition-shadow shadow-sm">
+<span class="material-symbols-outlined text-[18px]">share</span>
+                        Share
+                    </button>
+</div>
+</div>
+</div>
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<!-- Left Content (70%) -->
+<div class="w-full lg:w-[70%] space-y-6">
+<!-- Tabs -->
+<div class="bg-surface-light rounded-xl shadow-sm border border-border-light overflow-hidden">
+<div class="border-b border-border-light px-6">
+<nav aria-label="Tabs" class="flex space-x-8">
+<a class="border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span>
+                                Form Data
+                            </a>
+<a class="border-transparent text-text-muted hover:text-text-main hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">attachment</span>
+                                Attachments
+                                <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs ml-1">3</span>
+</a>
+<a class="border-transparent text-text-muted hover:text-text-main hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                                Audit Timeline
+                            </a>
+</nav>
+</div>
+<!-- Tab Content: Form Data -->
+<div class="p-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+<div class="col-span-1 md:col-span-2">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-muted mb-4 pb-2 border-b border-border-light">Trip Details</h3>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Destination</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">location_on</span>
+<p class="text-base font-medium text-text-main">Geneva, Switzerland</p>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Purpose</p>
+<p class="text-base font-medium text-text-main">International Security Summit 2023</p>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Start Date</p>
+<p class="text-base font-medium text-text-main">Oct 12, 2023</p>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">End Date</p>
+<p class="text-base font-medium text-text-main">Oct 16, 2023</p>
+</div>
+<div class="col-span-1 md:col-span-2 mt-4">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-muted mb-4 pb-2 border-b border-border-light">Financial &amp; Risk</h3>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Estimated Cost</p>
+<p class="text-lg font-bold text-text-main font-mono">$4,250.00</p>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Cost Center</p>
+<p class="text-base font-medium text-text-main">CC-9921-Global</p>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Risk Assessment</p>
+<div class="flex items-center gap-2 text-success font-medium">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                                    Low (Green Zone)
+                                </div>
+</div>
+<div class="space-y-1">
+<p class="text-xs font-semibold text-text-muted uppercase">Traveller ID</p>
+<p class="text-base font-medium text-text-main font-mono bg-slate-100 inline-block px-2 rounded">ID-88219-X</p>
+</div>
+</div>
+<!-- Justification Section -->
+<div class="mt-8">
+<h3 class="text-sm font-bold uppercase tracking-wider text-text-muted mb-4 pb-2 border-b border-border-light">Justification</h3>
+<div class="bg-slate-50 p-4 rounded-lg border border-border-light">
+<p class="text-sm text-text-main leading-relaxed">
+                                    Attendance at the International Security Summit is critical for aligning our department's protocols with new global standards regarding digital infrastructure protection. I will be presenting our Q3 findings on anomaly detection.
+                                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Attachments Section (Visual representation of tab content) -->
+<div class="bg-surface-light rounded-xl shadow-sm border border-border-light p-6">
+<h3 class="text-lg font-bold text-text-main mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-text-muted">folder_open</span>
+                        Supporting Documents
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Attachment 1 -->
+<div class="flex items-start gap-3 p-3 border border-border-light rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer">
+<div class="size-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-main truncate group-hover:text-primary">Flight_Itinerary_LX88.pdf</p>
+<p class="text-xs text-text-muted">1.2 MB • Uploaded 2h ago</p>
+</div>
+<div class="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-green-200">
+<span class="material-symbols-outlined text-[12px]">security</span>
+                                Scan Clean
+                            </div>
+</div>
+<!-- Attachment 2 -->
+<div class="flex items-start gap-3 p-3 border border-border-light rounded-lg hover:bg-slate-50 transition-colors group cursor-pointer">
+<div class="size-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-main truncate group-hover:text-primary">Conference_Invitation.docx</p>
+<p class="text-xs text-text-muted">845 KB • Uploaded 2h ago</p>
+</div>
+<div class="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-green-200">
+<span class="material-symbols-outlined text-[12px]">security</span>
+                                Scan Clean
+                            </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Action Panel (30%) - Sticky -->
+<div class="w-full lg:w-[30%] lg:sticky lg:top-24 h-fit">
+<div class="bg-surface-light rounded-xl shadow-lg border border-border-light overflow-hidden">
+<div class="bg-primary/5 border-b border-primary/10 p-4">
+<h3 class="text-lg font-bold text-text-main flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">gavel</span>
+                            Decision Form
+                        </h3>
+</div>
+<form class="p-5 space-y-6">
+<!-- Action Radios -->
+<div class="space-y-3">
+<label class="text-sm font-semibold text-text-muted uppercase tracking-wide">Select Action</label>
+<label class="relative flex items-center p-3 rounded-lg border border-border-light cursor-pointer hover:bg-slate-50 hover:border-primary/50 transition-all has-[:checked]:bg-green-50 has-[:checked]:border-green-200 has-[:checked]:ring-1 has-[:checked]:ring-green-500">
+<input class="peer h-4 w-4 border-gray-300 text-green-600 focus:ring-green-500" name="decision" type="radio" value="approve"/>
+<div class="ml-3 block">
+<span class="block text-sm font-medium text-text-main peer-checked:text-green-900">Approve Requisition</span>
+<span class="block text-xs text-text-muted peer-checked:text-green-700">Forward to Finance L2</span>
+</div>
+<span class="absolute right-3 top-3 text-green-600 opacity-0 peer-checked:opacity-100 material-symbols-outlined">check_circle</span>
+</label>
+<label class="relative flex items-center p-3 rounded-lg border border-border-light cursor-pointer hover:bg-slate-50 hover:border-primary/50 transition-all has-[:checked]:bg-amber-50 has-[:checked]:border-amber-200 has-[:checked]:ring-1 has-[:checked]:ring-amber-500">
+<input class="peer h-4 w-4 border-gray-300 text-amber-600 focus:ring-amber-500" name="decision" type="radio" value="return"/>
+<div class="ml-3 block">
+<span class="block text-sm font-medium text-text-main peer-checked:text-amber-900">Return for Correction</span>
+<span class="block text-xs text-text-muted peer-checked:text-amber-700">Send back to submitter</span>
+</div>
+<span class="absolute right-3 top-3 text-amber-600 opacity-0 peer-checked:opacity-100 material-symbols-outlined">undo</span>
+</label>
+<label class="relative flex items-center p-3 rounded-lg border border-border-light cursor-pointer hover:bg-slate-50 hover:border-primary/50 transition-all has-[:checked]:bg-red-50 has-[:checked]:border-red-200 has-[:checked]:ring-1 has-[:checked]:ring-red-500">
+<input class="peer h-4 w-4 border-gray-300 text-red-600 focus:ring-red-500" name="decision" type="radio" value="reject"/>
+<div class="ml-3 block">
+<span class="block text-sm font-medium text-text-main peer-checked:text-red-900">Reject</span>
+<span class="block text-xs text-text-muted peer-checked:text-red-700">Close case permanently</span>
+</div>
+<span class="absolute right-3 top-3 text-red-600 opacity-0 peer-checked:opacity-100 material-symbols-outlined">cancel</span>
+</label>
+</div>
+<!-- Remarks -->
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-text-muted uppercase tracking-wide" for="remarks">
+                                Remarks <span class="text-danger">*</span>
+</label>
+<textarea class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm bg-slate-50 resize-none p-3" id="remarks" placeholder="Enter required justification for decision..." rows="4"></textarea>
+<p class="text-xs text-text-muted text-right">0/500 characters</p>
+</div>
+<div class="border-t border-border-light pt-4"></div>
+<!-- Submit Button -->
+<button class="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all" type="button">
+<span class="material-symbols-outlined">fingerprint</span>
+                            Step-up Auth &amp; Submit
+                        </button>
+<p class="text-center text-[10px] text-text-muted">
+                            Action logged: 2023-10-10 14:32:01 UTC
+                        </p>
+</form>
+</div>
+<!-- Helper Info -->
+<div class="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-100">
+<h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Policy Reminder</h4>
+<p class="text-xs text-blue-700 leading-relaxed">
+                        International travel &gt;$4k requires L2 Finance approval. Ensure risk assessment is current within 48h of approval.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Simple Footer -->
+<footer class="mt-12 border-t border-border-light bg-surface-light py-8">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-text-muted">© 2023 SADCPFNexus Govt Systems. Confidential &amp; Proprietary.</p>
+<div class="flex gap-4">
+<a class="text-xs text-text-muted hover:text-primary" href="#">System Status</a>
+<a class="text-xs text-text-muted hover:text-primary" href="#">Privacy Policy</a>
+<a class="text-xs text-text-muted hover:text-primary" href="#">Contact Support</a>
+</div>
+</div>
+</footer>
+</body></html>

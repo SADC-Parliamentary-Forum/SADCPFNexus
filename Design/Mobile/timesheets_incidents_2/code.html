@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Timesheets &amp; Incidents - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec80",
+                        "primary-dark": "#0ea35c",
+                        "background-light": "#f3f5f6", 
+                        "surface-light": "#ffffff",
+                        "surface-hover": "#f8faf9",
+                        "card-border": "#e2e8f0"
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-slate-800 min-h-screen flex flex-col overflow-hidden">
+<header class="flex items-center justify-between px-4 py-4 pt-12 bg-surface-light sticky top-0 z-10 border-b border-card-border shadow-sm">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-slate-700" style="font-size: 24px;">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-slate-900 text-center flex-1">Timesheets &amp; Incidents</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-slate-700" style="font-size: 24px;">calendar_month</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto hide-scrollbar pb-24">
+<section class="p-4 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold text-slate-900">Daily Log</h2>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 text-xs font-bold rounded-full bg-primary/10 text-primary-dark border border-primary/20">
+                        This Week
+                    </button>
+<button class="px-3 py-1.5 text-xs font-medium rounded-full bg-white text-slate-500 border border-slate-200 shadow-sm">
+                        History
+                    </button>
+</div>
+</div>
+<div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-card-border">
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Mon</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-600 hover:bg-slate-50">12</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Tue</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-600 hover:bg-slate-50">13</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-primary-dark">Wed</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-slate-900 text-sm font-bold shadow-md shadow-primary/30">14</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Thu</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-600 hover:bg-slate-50">15</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Fri</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-600 hover:bg-slate-50">16</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Sat</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-400">17</button>
+</div>
+<div class="flex flex-col items-center gap-1 w-full">
+<span class="text-[10px] uppercase font-bold text-slate-400">Sun</span>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium text-slate-400">18</button>
+</div>
+</div>
+<div class="space-y-3">
+<div class="bg-white p-4 rounded-xl border border-card-border shadow-sm flex items-center gap-4 hover:border-slate-300 transition-colors">
+<div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+<span class="material-symbols-outlined" style="font-size: 20px;">gavel</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold text-slate-900">Parl. Procedures</h3>
+<p class="text-xs text-slate-500 font-medium">09:00 AM - 12:30 PM</p>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-slate-900">3.5h</span>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-50 text-green-600 font-bold border border-green-100">Approved</span>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-card-border shadow-sm flex items-center gap-4 hover:border-slate-300 transition-colors">
+<div class="h-10 w-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center border border-orange-100">
+<span class="material-symbols-outlined" style="font-size: 20px;">policy</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold text-slate-900">Policy Review</h3>
+<p class="text-xs text-slate-500 font-medium">01:30 PM - 04:00 PM</p>
+</div>
+<div class="text-right">
+<span class="block text-lg font-bold text-slate-900">2.5h</span>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 font-bold border border-amber-100">Pending</span>
+</div>
+</div>
+<button class="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-bold hover:bg-white hover:text-primary-dark hover:border-primary/50 transition-colors flex items-center justify-center gap-2 bg-slate-50/50">
+<span class="material-symbols-outlined" style="font-size: 20px;">add_circle</span>
+                    Log New Activity
+                </button>
+</div>
+</section>
+<div class="h-1 bg-slate-200/60 my-2"></div>
+<section class="p-4 space-y-4">
+<h2 class="text-xl font-bold text-slate-900">Incident Management</h2>
+<button class="w-full bg-white border border-red-100 p-1 rounded-xl shadow-sm hover:shadow-md transition-all group">
+<div class="bg-gradient-to-r from-red-50 to-white rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center border border-red-200">
+<span class="material-symbols-outlined" style="font-size: 24px;">report_problem</span>
+</div>
+<div class="text-left">
+<span class="block text-sm font-bold text-red-900">Quick-Report Incident</span>
+<span class="block text-xs text-red-600 font-medium">Flag urgent security or ethics issues</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-red-400 group-hover:translate-x-1 transition-transform" style="font-size: 20px;">arrow_forward</span>
+</div>
+</button>
+<div class="flex items-center justify-between pt-2">
+<h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Active Cases</h3>
+<button class="text-xs font-bold text-primary-dark hover:underline">View All</button>
+</div>
+<div class="space-y-3">
+<div class="bg-white p-4 rounded-xl border border-card-border shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-purple-600"></div>
+<div class="flex justify-between items-start mb-2 pl-2">
+<div>
+<span class="text-[10px] font-bold text-slate-400 block mb-1 tracking-wide">CASE #2023-849</span>
+<h4 class="text-sm font-bold text-slate-900">Unauthorized Access Attempt</h4>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
+                            Hearing Workflow
+                        </span>
+</div>
+<p class="text-xs text-slate-600 line-clamp-2 mb-3 pl-2 leading-relaxed">
+                        Security breach reported in Sector 4 server room. Pending review by the disciplinary committee.
+                    </p>
+<div class="flex items-center gap-3 border-t border-slate-100 pt-3 pl-2">
+<div class="flex -space-x-2">
+<img alt="Avatar of committee member" class="w-6 h-6 rounded-full border-2 border-white shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBlxTA0qMe2vJkWAlv5Ztjf1Iz7T-CqsY6U_9R4nxBK_IWW9kB7-TOlW1VHwBVfHoh757twzYNI1fLd0iUWVN5uWmcH0QFi-t1CW-WgsfteA4DBPylwHBhtqYts4gUMmUwVbN-TD_KgW4JIgllqp-SiP2J_H_16nDBXRciibA5kBrs05sFc5BxHcht7EH6C7WC98EvQXca7Zubn1n8ID672-BvwTrCIbfDQRX2QB_QwQ5P5OckaDaRrXrqVY5HqnfeGyqJTABQ_n72"/>
+<img alt="Avatar of committee member" class="w-6 h-6 rounded-full border-2 border-white shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNnNq4t-RQfTLkSZ3M0HT-MPaWQGs2IRhjIJoSvXG52leD8oQhKnHfE3VPHSo3l9YahPC3zbdQm5keOj4JUxWP-Od86sjLmzO1TlHbwBAWoqDf-auktFCpopH5gBIw-GD46Lf-owTKLDlz8GTqIf5unClwdFjcVmG4pFoyrExagA4-_20U0movs1tbbxlYqJQbkt6_b7dbLnzscj8JNQ-z8-5lZtOBZlo-64lRicF0btsVyJO3cysvbY9VXL7R_rBTKYa06wqBps3E"/>
+<div class="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500 shadow-sm">+2</div>
+</div>
+<span class="text-[10px] font-medium text-slate-400">Updated 2h ago</span>
+</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-card-border shadow-sm relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+<div class="flex justify-between items-start mb-2 pl-2">
+<div>
+<span class="text-[10px] font-bold text-slate-400 block mb-1 tracking-wide">CASE #2023-852</span>
+<h4 class="text-sm font-bold text-slate-900">Asset Misallocation</h4>
+</div>
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                            Investigation
+                        </span>
+</div>
+<p class="text-xs text-slate-600 line-clamp-2 mb-3 pl-2 leading-relaxed">
+                        Discrepancy in vehicle logbook for MP transport services assigned to regional delegation.
+                    </p>
+<div class="flex items-center gap-3 border-t border-slate-100 pt-3 pl-2">
+<div class="flex -space-x-2">
+<img alt="Avatar of investigator" class="w-6 h-6 rounded-full border-2 border-white shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDamnjPXUj7MfijON82pg2V7Ouw9Hnwum3IDlDRHZ_Ys60OtBaghrIo7fQ_DGdkZCp2CdNfgF7oO1zHOOfAmFUCrH1rE1ei6LdpyJFok2m0PtDavZTOgh4GwqHChtsWshPWFYD9hSgRzyveZ5a0XkIQ0hAY4WZ9jdQZn0OPgDtEKPyBXAdORBUVxQbgmZMv90_tl8aLBonkH_tqcRw2lvnTEfq5gifZUwpXucfP9GO3CJGHgd0J-hwOYAIcLCWC9ASPHCAlTkLsYYph"/>
+</div>
+<span class="text-[10px] font-medium text-slate-400">Updated 1d ago</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<nav class="bg-white border-t border-slate-200 px-6 pb-6 pt-3 flex justify-between items-end fixed bottom-0 w-full z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary-dark transition-colors" style="font-size: 24px;">dashboard</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary-dark transition-colors">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-primary-dark" style="font-size: 24px; font-variation-settings: 'FILL' 1;">gavel</span>
+<span class="text-[10px] font-bold text-primary-dark">Governance</span>
+</a>
+<a class="flex flex-col items-center gap-1 -mt-6 group relative" href="#">
+<div class="absolute -top-3 w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center shadow-lg shadow-slate-900/30 group-hover:scale-105 transition-transform border-4 border-white">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">add</span>
+</div>
+<span class="text-[10px] font-medium text-slate-400 mt-10 group-hover:text-slate-600">Create</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary-dark transition-colors" style="font-size: 24px;">description</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary-dark transition-colors">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary-dark transition-colors" style="font-size: 24px;">account_circle</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-primary-dark transition-colors">Profile</span>
+</a>
+</nav>
+
+</body></html>

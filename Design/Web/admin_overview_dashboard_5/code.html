@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Travel Wizard - Itinerary Grid</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "primary-hover": "#166ac0",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "neutral-50": "#f8fafc",
+                        "neutral-100": "#f1f5f9",
+                        "neutral-200": "#e2e8f0",
+                        "neutral-300": "#cbd5e1",
+                        "neutral-400": "#94a3b8",
+                        "neutral-500": "#64748b",
+                        "neutral-600": "#475569",
+                        "neutral-700": "#334155",
+                        "neutral-800": "#1e293b",
+                        "neutral-900": "#0f172a",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-neutral-900 font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full flex-col overflow-hidden">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-neutral-200 bg-white px-6 py-3 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-neutral-900 dark:text-white">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+<p class="text-xs font-medium text-neutral-500">Travel Requisition Portal</p>
+</div>
+</div>
+</div>
+<div class="flex flex-1 items-center justify-center px-12">
+<div class="flex w-full max-w-2xl items-center justify-between gap-2">
+<div class="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                    Draft ID: <span class="text-neutral-900 dark:text-white font-mono">TR-2024-8842</span>
+</div>
+<div class="flex items-center gap-2 text-xs text-neutral-400">
+<span class="size-2 rounded-full bg-green-500"></span>
+                    Auto-saved 2m ago
+                </div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex size-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-[1px] bg-neutral-200 dark:bg-neutral-700"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-neutral-900 dark:text-white">Dr. A. Smith</p>
+<p class="text-xs text-neutral-500">Department Head</p>
+</div>
+<div class="size-10 overflow-hidden rounded-full border-2 border-white shadow-sm dark:border-neutral-700 bg-neutral-200" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBikZpINbOblbj99SwcK-WW800axLpYlvqs2DeLCxhZV5SpWipHdrIYL-8Vfb-G4jhcaCuLjzn-YOCNpYfPXKVxgcT3BVpgpQ0yf5zV4npucZfJE6snMuWLowqZ7J-UNydou0rFjVPSJbfVHGTtzXKu1fGR2p_4ZuWe1jPrkcqwRvC4Q67A6pRdzm7Mr-VRK3WcnfM6dhfZSUECA7iHjkJlxhfydsUxJorH-8YZUHXdDnfejwFI82_YIzDv_5hXSVsXkkPKYfRUzkc"); background-size: cover; background-position: center;'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="hidden w-16 flex-col justify-between border-r border-neutral-200 bg-white py-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:flex">
+<nav class="flex flex-col gap-4 items-center">
+<a class="flex size-10 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors" href="#" title="Back to Dashboard">
+<span class="material-symbols-outlined">arrow_back</span>
+</a>
+<div class="h-px w-8 bg-neutral-200 dark:bg-neutral-700"></div>
+<div class="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-sm" title="New Request">
+<span class="material-symbols-outlined">edit_document</span>
+</div>
+<a class="flex size-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+</a>
+<a class="flex size-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+</a>
+</nav>
+<div class="flex flex-col items-center gap-4">
+<button class="flex size-10 items-center justify-center rounded-lg text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark relative">
+<div class="bg-white border-b border-neutral-200 px-8 py-6 dark:bg-neutral-900 dark:border-neutral-800">
+<div class="mx-auto max-w-6xl">
+<div class="relative flex items-center justify-between">
+<div class="absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2 bg-neutral-200 dark:bg-neutral-700 z-0"></div>
+<div class="absolute left-0 top-1/2 h-0.5 w-1/2 -translate-y-1/2 bg-primary z-0 transition-all duration-500"></div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900 cursor-pointer">
+<div class="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-white dark:ring-neutral-900">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-primary whitespace-nowrap">Details</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900 cursor-pointer">
+<div class="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-white dark:ring-neutral-900">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-primary whitespace-nowrap">Budget</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900 cursor-pointer">
+<div class="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-sm ring-4 ring-white dark:ring-neutral-900">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-primary whitespace-nowrap">Attendees</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900">
+<div class="flex size-8 items-center justify-center rounded-full bg-primary text-white shadow-md ring-4 ring-white dark:ring-neutral-900 scale-110 transform transition-transform">
+<span class="text-sm font-bold">4</span>
+</div>
+<span class="absolute top-10 text-xs font-bold text-neutral-900 dark:text-white whitespace-nowrap">Itinerary</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900">
+<div class="flex size-8 items-center justify-center rounded-full border-2 border-neutral-300 bg-white text-neutral-400 ring-4 ring-white dark:border-neutral-600 dark:bg-neutral-800 dark:ring-neutral-900">
+<span class="text-sm font-medium">5</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-neutral-400 whitespace-nowrap">Accommodation</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900">
+<div class="flex size-8 items-center justify-center rounded-full border-2 border-neutral-300 bg-white text-neutral-400 ring-4 ring-white dark:border-neutral-600 dark:bg-neutral-800 dark:ring-neutral-900">
+<span class="text-sm font-medium">6</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-neutral-400 whitespace-nowrap">Per Diem</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2 bg-white px-2 dark:bg-neutral-900">
+<div class="flex size-8 items-center justify-center rounded-full border-2 border-neutral-300 bg-white text-neutral-400 ring-4 ring-white dark:border-neutral-600 dark:bg-neutral-800 dark:ring-neutral-900">
+<span class="text-sm font-medium">7</span>
+</div>
+<span class="absolute top-10 text-xs font-medium text-neutral-400 whitespace-nowrap">Review</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 scroll-smooth pb-24">
+<div class="mx-auto max-w-7xl space-y-6">
+<div class="flex items-end justify-between">
+<div>
+<h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Trip Itinerary</h1>
+<p class="text-sm text-neutral-500 mt-1">Provide detailed travel segments. All times must be in local time of the location.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-sm">upload_file</span>
+                                Import from Concur
+                            </button>
+</div>
+</div>
+<div class="rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full min-w-[1000px] text-left border-collapse">
+<thead class="bg-neutral-50 text-xs font-semibold uppercase text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+<tr>
+<th class="px-4 py-3 w-10 text-center">#</th>
+<th class="px-4 py-3 w-32">Date</th>
+<th class="px-4 py-3 w-40">From</th>
+<th class="px-4 py-3 w-40">To</th>
+<th class="px-4 py-3 w-32">Mode</th>
+<th class="px-4 py-3 w-28">Ref/Flight #</th>
+<th class="px-4 py-3 w-24">Depart</th>
+<th class="px-4 py-3 w-24">Arrive</th>
+<th class="px-4 py-3">Notes</th>
+<th class="px-4 py-3 w-12"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
+<tr class="group bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+<td class="px-4 py-3 text-center text-neutral-400 font-mono">1</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="date" value="2023-11-14"/>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="Washington, DC"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="London, UK"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<select class="w-full rounded border-neutral-300 py-1 pl-2 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+<option selected="">Flight</option>
+<option>Rail</option>
+<option>Car Rental</option>
+<option>Private Vehicle</option>
+</select>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm uppercase font-mono focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="BA-216"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="18:30"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="06:30"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm text-neutral-500 focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400" type="text" value="Overnight"/>
+</td>
+<td class="px-4 py-3 text-center">
+<button class="text-neutral-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+<tr class="group bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+<td class="px-4 py-3 text-center text-neutral-400 font-mono">2</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="date" value="2023-11-15"/>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="LHR Airport"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text" value="Hotel"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<select class="w-full rounded border-neutral-300 py-1 pl-2 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+<option>Flight</option>
+<option>Rail</option>
+<option selected="">Car Rental</option>
+<option>Private Vehicle</option>
+</select>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm uppercase font-mono focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" placeholder="--" type="text"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="07:30"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time" value="08:15"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm text-neutral-500 focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400" placeholder="Add note..." type="text"/>
+</td>
+<td class="px-4 py-3 text-center">
+<button class="text-neutral-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+<tr class="group bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+<td class="px-4 py-3 text-center text-neutral-400 font-mono">3</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="date"/>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" placeholder="City or Airport" type="text"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<div class="relative">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" placeholder="City or Airport" type="text"/>
+<span class="material-symbols-outlined absolute right-2 top-1.5 text-xs text-neutral-400">location_on</span>
+</div>
+</td>
+<td class="px-4 py-3">
+<select class="w-full rounded border-neutral-300 py-1 pl-2 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+<option disabled="" selected="">Select...</option>
+<option>Flight</option>
+<option>Rail</option>
+<option>Car Rental</option>
+<option>Private Vehicle</option>
+</select>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm uppercase font-mono focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="text"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-white" type="time"/>
+</td>
+<td class="px-4 py-3">
+<input class="w-full rounded border-neutral-300 px-2 py-1 text-sm text-neutral-500 focus:border-primary focus:ring-1 focus:ring-primary dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400" placeholder="Add note..." type="text"/>
+</td>
+<td class="px-4 py-3 text-center">
+<button class="text-neutral-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="border-t border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-800/50">
+<button class="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-neutral-300 py-3 text-sm font-medium text-neutral-500 hover:border-primary hover:bg-white hover:text-primary dark:border-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-primary transition-all">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                                Add Another Segment
+                            </button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-yellow-600 mt-0.5">info</span>
+<div>
+<h4 class="text-sm font-bold text-yellow-800 dark:text-yellow-500">Travel Policy Note</h4>
+<p class="text-sm text-yellow-700 mt-1 dark:text-yellow-600">International flights exceeding 6 hours are eligible for Premium Economy upgrades. Please attach justification in Step 7 if Business Class is required.</p>
+</div>
+</div>
+</div>
+<div class="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-blue-600 mt-0.5">beach_access</span>
+<div>
+<h4 class="text-sm font-bold text-blue-800 dark:text-blue-400">Personal Days</h4>
+<p class="text-sm text-blue-700 mt-1 dark:text-blue-500">If your trip includes personal days, please ensure you check the "Personal Travel" box in the review step for insurance liability coverage.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 right-0 z-20 border-t border-neutral-200 bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] dark:border-neutral-800 dark:bg-neutral-900">
+<div class="mx-auto flex max-w-7xl items-center justify-between">
+<button class="flex items-center gap-2 rounded-lg border border-neutral-300 px-6 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_back</span>
+                        Back
+                    </button>
+<div class="flex items-center gap-3">
+<span class="mr-4 text-xs text-neutral-500 hidden sm:inline-block">Last saved: 10:42 AM</span>
+<button class="flex items-center gap-2 rounded-lg border border-neutral-300 px-6 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 transition-colors">
+<span class="material-symbols-outlined text-sm">save</span>
+                            Save Draft
+                        </button>
+<button class="flex items-center gap-2 rounded-lg bg-primary px-8 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 transition-all">
+                            Next Step
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>

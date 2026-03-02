@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus | Quarantine Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1d85ed",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for tablet feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navbar -->
+<header class="flex-none flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15202b] px-6 py-4 z-20 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">shield_person</span>
+</div>
+<div class="flex flex-col">
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+<span class="text-xs font-bold text-red-600 dark:text-red-400 tracking-wider">SEV-0 ENFORCEMENT // LEVEL 5</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-red-700 dark:text-red-300 text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">lock_clock</span>
+                SESSION TIMEOUT: 04:59
+            </div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold transition-colors">
+<span class="truncate">Logout</span>
+</button>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-slate-100 dark:border-slate-700 shadow-sm" data-alt="User profile picture of a security officer" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHBzyHbc9ksFwiCJ0-iF-GqaO6jO7Crty7I-zT6sInnh-VXBxKq_twUlQ17ELL3I15ze8qjzmQONI0s4fju72SHQouPNPglBq0cl91MPLeOATyckXJAM5O1sCjzPnz6F9aaM0tfZ3xkLyRZLrDj0v3W59Mrph40EL40kq1La2PgfgXGEipgqVplgVGDNBFjGTiqSTiCxD7cGGW30apMtSdhM4DDc0fkHv51_UVoOko9oxILmXCfOBEnA3vu4Jvz6jhxQ6vGEjCs50");'></div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex overflow-hidden relative">
+<!-- Left Panel: File List -->
+<div class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark">
+<div class="px-6 py-5 flex-none">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-slate-900 dark:text-white text-2xl font-bold leading-tight flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl">folder_managed</span>
+                        Quarantine Review Protocol
+                    </h3>
+<div class="flex gap-2">
+<button class="p-2 text-slate-500 hover:text-primary dark:text-slate-400 transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<button class="p-2 text-slate-500 hover:text-primary dark:text-slate-400 transition-colors">
+<span class="material-symbols-outlined">sort</span>
+</button>
+</div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400">Review flagged artifacts for potential containment breach.</p>
+</div>
+<!-- Scrollable List -->
+<div class="flex-1 overflow-y-auto px-6 pb-6 space-y-3">
+<!-- Active Item -->
+<div class="bg-white dark:bg-[#1a2634] p-4 rounded-xl shadow-sm border-l-4 border-primary ring-1 ring-slate-200 dark:ring-slate-700 cursor-pointer group transition-all">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">bug_report</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-lg group-hover:text-primary transition-colors">XY-902-Alpha.log</h4>
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>Detected: 14:02 Zulu</span>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span>Size: 4.2 MB</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-bold uppercase tracking-wide">High Risk</span>
+</div>
+<div class="mt-3 pl-16">
+<div class="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-red-500 w-[85%] rounded-full"></div>
+</div>
+<p class="text-xs text-slate-500 mt-1.5 font-medium">Heuristic Analysis: 85% Confidence (Trojan.Win32.Generic)</p>
+</div>
+</div>
+<!-- List Item 2 -->
+<div class="bg-white dark:bg-[#15202b] p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer transition-all opacity-75 hover:opacity-100">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-lg">manifest_corrupt_v2.json</h4>
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>Detected: 13:45 Zulu</span>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span>Size: 12 KB</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-xs font-bold uppercase tracking-wide">Medium Risk</span>
+</div>
+</div>
+<!-- List Item 3 -->
+<div class="bg-white dark:bg-[#15202b] p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer transition-all opacity-75 hover:opacity-100">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">data_object</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-lg">sys_dump_x86.bin</h4>
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>Detected: 11:20 Zulu</span>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span>Size: 128 MB</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wide">Pending Scan</span>
+</div>
+</div>
+<!-- List Item 4 -->
+<div class="bg-white dark:bg-[#15202b] p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer transition-all opacity-75 hover:opacity-100">
+<div class="flex items-start justify-between">
+<div class="flex gap-4">
+<div class="size-12 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined">encrypted</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-lg">auth_key_fragment.dat</h4>
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>Detected: 09:15 Zulu</span>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span>Size: 2 KB</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wide">Manual Review</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side: Drawer / Review Form -->
+<!-- Using a fixed width on desktop/tablet landscape, shadow to simulate depth -->
+<div class="w-[480px] xl:w-[560px] bg-white dark:bg-[#15202b] border-l border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col z-10 shrink-0 h-full">
+<!-- Drawer Header -->
+<div class="px-6 py-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-[#15202b]">
+<div class="flex items-center justify-between">
+<h3 class="font-bold text-xl text-slate-900 dark:text-white">Review Decision Form</h3>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">open_in_full</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-2 text-sm">
+<span class="text-slate-500 dark:text-slate-400">Target ID:</span>
+<span class="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-semibold select-all">#Q-8922-AZ</span>
+</div>
+</div>
+<!-- Drawer Content (Scrollable) -->
+<div class="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+<!-- Security Notice -->
+<div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg p-4 flex gap-3">
+<span class="material-symbols-outlined text-amber-600 dark:text-amber-500 shrink-0">gpp_maybe</span>
+<div>
+<h5 class="text-sm font-bold text-amber-800 dark:text-amber-500">SEV-0 Authorization Required</h5>
+<p class="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                            Any release action requires dual-signature verification. Quarantine actions are logged permanently.
+                        </p>
+</div>
+</div>
+<!-- Analysis Summary -->
+<section>
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Threat Vectors</h4>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+<span class="text-xs text-slate-500 block mb-1">Signature Match</span>
+<span class="font-bold text-slate-900 dark:text-white">Trojan.Generic</span>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+<span class="text-xs text-slate-500 block mb-1">Origin IP</span>
+<span class="font-mono text-sm font-bold text-slate-900 dark:text-white">192.168.0.XX</span>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700 col-span-2">
+<span class="text-xs text-slate-500 block mb-1">Behavioral Analysis</span>
+<div class="flex flex-wrap gap-2 mt-1">
+<span class="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium border border-red-200 dark:border-red-800/30">Registry Modification</span>
+<span class="px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium border border-red-200 dark:border-red-800/30">Outbound Connection</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Decision Form -->
+<section>
+<h4 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Disposition</h4>
+<div class="space-y-4">
+<!-- Radio Selection -->
+<div class="grid grid-cols-1 gap-3">
+<label class="relative flex items-center p-4 rounded-xl border-2 border-primary bg-primary/5 dark:bg-primary/10 cursor-pointer transition-all">
+<input checked="" class="w-5 h-5 text-primary border-slate-300 focus:ring-primary" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white">Permanent Quarantine</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Isolate in secure vault. No release possible without L6 approval.</span>
+</div>
+<span class="absolute right-4 top-4 text-primary">
+<span class="material-symbols-outlined">lock</span>
+</span>
+</label>
+<label class="relative flex items-center p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-transparent cursor-pointer transition-all">
+<input class="w-5 h-5 text-primary border-slate-300 focus:ring-primary" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white">False Positive / Release</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Return file to origin. Requires explanation.</span>
+</div>
+</label>
+<label class="relative flex items-center p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-transparent cursor-pointer transition-all">
+<input class="w-5 h-5 text-primary border-slate-300 focus:ring-primary" name="decision" type="radio"/>
+<div class="ml-3 flex flex-col">
+<span class="block text-sm font-bold text-slate-900 dark:text-white">Delete / Purge</span>
+<span class="block text-xs text-slate-500 dark:text-slate-400">Irreversible destruction of data artifact.</span>
+</div>
+</label>
+</div>
+</div>
+</section>
+<!-- Remarks -->
+<section>
+<div class="flex justify-between items-center mb-2">
+<label class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="remarks">Officer Remarks</label>
+<span class="text-xs text-slate-400 italic">Required for SEV-0</span>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm focus:border-primary focus:ring-primary sm:text-base p-4 resize-none" id="remarks" placeholder="Enter detailed justification for quarantine decision..." rows="6"></textarea>
+<div class="absolute bottom-3 right-3 flex items-center gap-2">
+<button class="p-1.5 text-slate-400 hover:text-primary dark:hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" type="button">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-primary dark:hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" type="button">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Drawer Footer / Actions -->
+<div class="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#15202b] flex gap-4">
+<button class="flex-1 py-4 px-6 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+<button class="flex-[2] py-4 px-6 rounded-xl bg-primary hover:bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">gavel</span>
+                    Execute Protocol
+                </button>
+</div>
+</div>
+</main>
+</body></html>

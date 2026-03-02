@@ -1,0 +1,238 @@
+<html lang="en"><head>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-background-light dark:bg-background-dark font-display antialiased text-text-main dark:text-white min-h-screen flex flex-col">```html
+
+
+
+
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Report Incident</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec80",
+              "primary-dark": "#0ea35e",
+              "background-light": "#f6f8f7",
+              "background-dark": "#102219",
+              "surface-light": "#ffffff",
+              "surface-dark": "#1a3326",
+              "text-main": "#111814",
+              "text-muted": "#618975",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            boxShadow: {
+                'soft': '0 4px 20px -2px rgba(19, 236, 128, 0.1)',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+<button class="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-text-main dark:text-white">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold text-center flex-1">New Incident Report</h1>
+<button class="text-primary font-semibold text-sm px-2 py-1 hover:bg-primary/10 rounded">
+            Drafts
+        </button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-md mx-auto p-4 pb-24 space-y-6">
+<!-- Progress Indicator -->
+<div class="flex items-center justify-between px-2">
+<div class="flex flex-col items-center gap-1 w-full">
+<div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-1/3 rounded-full"></div>
+</div>
+<span class="text-xs text-text-muted font-medium uppercase tracking-wider">Step 1 of 3: Filing</span>
+</div>
+</div>
+<!-- Section 1: Classification -->
+<div class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">category</span>
+<h2 class="text-base font-bold text-text-main dark:text-white">Classification</h2>
+</div>
+<label class="block">
+<span class="text-sm font-medium text-text-main dark:text-gray-300 mb-1.5 block">Incident Type</span>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main dark:text-white text-base rounded-xl px-4 py-3.5 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm">
+<option disabled="" selected="" value="">Select classification...</option>
+<option value="policy">Policy Breach</option>
+<option value="conduct">Professional Conduct</option>
+<option value="safety">Health &amp; Safety</option>
+<option value="security">Security Protocol</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-text-muted">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+<label class="block">
+<span class="text-sm font-medium text-text-main dark:text-gray-300 mb-1.5 block">Severity Level</span>
+<div class="flex gap-2">
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="severity" type="radio"/>
+<div class="h-10 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 peer-checked:bg-green-100 peer-checked:border-green-500 peer-checked:text-green-800 dark:peer-checked:bg-green-900/30 dark:peer-checked:text-green-400 text-sm font-medium transition-all">
+                            Low
+                        </div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input checked="" class="peer sr-only" name="severity" type="radio"/>
+<div class="h-10 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 peer-checked:bg-yellow-100 peer-checked:border-yellow-500 peer-checked:text-yellow-800 dark:peer-checked:bg-yellow-900/30 dark:peer-checked:text-yellow-400 text-sm font-medium transition-all">
+                            Medium
+                        </div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="severity" type="radio"/>
+<div class="h-10 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 peer-checked:bg-red-100 peer-checked:border-red-500 peer-checked:text-red-800 dark:peer-checked:bg-red-900/30 dark:peer-checked:text-red-400 text-sm font-medium transition-all">
+                            High
+                        </div>
+</label>
+</div>
+</label>
+</div>
+<!-- Section 2: Details -->
+<div class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">description</span>
+<h2 class="text-base font-bold text-text-main dark:text-white">Details</h2>
+</div>
+<label class="block">
+<span class="text-sm font-medium text-text-main dark:text-gray-300 mb-1.5 block">Description</span>
+<textarea class="w-full bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main dark:text-white text-base rounded-xl px-4 py-3 min-h-[140px] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm placeholder-gray-400 dark:placeholder-gray-600 resize-none" placeholder="Provide a detailed account of the incident, including time, location, and parties involved..."></textarea>
+</label>
+<!-- Witness Search -->
+<label class="block relative">
+<span class="text-sm font-medium text-text-main dark:text-gray-300 mb-1.5 block">Witnesses (Optional)</span>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-text-main dark:text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm" placeholder="Search employee directory..." type="text"/>
+</div>
+<!-- Selected Witness Chips -->
+<div class="flex flex-wrap gap-2 mt-2">
+<div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md text-xs font-medium text-text-main dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+<span>J. Dlamini</span>
+<button class="hover:text-red-500 transition-colors"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+</div>
+</label>
+</div>
+<!-- Section 3: Evidence -->
+<div class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">attach_file</span>
+<h2 class="text-base font-bold text-text-main dark:text-white">Evidence &amp; Signature</h2>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-primary hover:bg-primary/5 transition-all group h-32">
+<div class="bg-white dark:bg-gray-700 p-2 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary">photo_camera</span>
+</div>
+<span class="text-xs font-semibold text-text-muted group-hover:text-primary">Take Photo</span>
+</button>
+<button class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/50 hover:border-primary hover:bg-primary/5 transition-all group h-32">
+<div class="bg-white dark:bg-gray-700 p-2 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+</div>
+<span class="text-xs font-semibold text-text-muted group-hover:text-primary">Upload PDF</span>
+</button>
+</div>
+<!-- Uploaded Item List -->
+<div class="bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+<div class="flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-red-500">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-text-main dark:text-white">incident_report_v1.pdf</span>
+<span class="text-[10px] uppercase font-bold text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 px-1.5 py-0.5 rounded w-fit mt-0.5">Confidential</span>
+</div>
+</div>
+<button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Signature Block -->
+<label class="block">
+<span class="text-sm font-medium text-text-main dark:text-gray-300 mb-1.5 flex justify-between items-end">
+<span>Officer Signature</span>
+<button class="text-xs text-primary font-semibold hover:underline">Clear</button>
+</span>
+<div class="h-28 bg-white dark:bg-white/5 border border-gray-200 dark:border-gray-700 rounded-xl w-full relative group cursor-crosshair">
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-xs text-gray-400">Sign here</span>
+</div>
+<!-- Simulated signature line -->
+<svg class="absolute bottom-4 left-4 right-4 h-px w-[calc(100%-32px)] text-gray-300" stroke="currentColor">
+<line stroke-dasharray="4 2" x1="0" x2="100%" y1="0" y2="0"></line>
+</svg>
+<!-- Simulated signature scribbles -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none text-blue-900 dark:text-blue-200" style="stroke-width: 2px; fill: none; stroke: currentColor;">
+<path d="M 40 60 C 60 40, 80 80, 100 60 S 140 40, 160 70" opacity="0.8"></path>
+</svg>
+</div>
+<p class="text-[10px] text-text-muted mt-1">By signing, I certify the information provided is accurate and truthful to the best of my knowledge.</p>
+</label>
+</div>
+<!-- Submit Action -->
+<div class="pt-4">
+<button class="w-full bg-primary hover:bg-primary-dark text-background-dark font-bold text-base py-4 rounded-xl shadow-soft transition-all transform active:scale-[0.99] flex items-center justify-center gap-2">
+<span>Submit Report</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 w-full bg-surface-light dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 pb-safe z-40">
+<div class="flex justify-around items-center h-16 max-w-md mx-auto px-2">
+<a class="flex flex-col items-center justify-center w-full h-full gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">home</span>
+<span class="text-[10px] font-medium text-text-muted group-hover:text-primary transition-colors">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full gap-1 group" href="#">
+<div class="bg-primary/10 dark:bg-primary/20 px-4 py-1 rounded-full flex flex-col items-center">
+<span class="material-symbols-outlined text-primary filled">add_box</span>
+</div>
+<span class="text-[10px] font-bold text-primary">Report</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">history</span>
+<span class="text-[10px] font-medium text-text-muted group-hover:text-primary transition-colors">History</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">person</span>
+<span class="text-[10px] font-medium text-text-muted group-hover:text-primary transition-colors">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Safe area spacing for mobile -->
+<div class="h-6 w-full"></div>
+</body></html>

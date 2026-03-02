@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Procurement Vendor &amp; Quotes Step</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 18.4228L42 11.475V34.3663C42 34.7796 41.7457 35.1504 41.3601 35.2992L24 42V18.4228Z" fill="currentColor" fill-rule="evenodd"></path>
+<path clip-rule="evenodd" d="M24 8.18819L33.4123 11.574L24 15.2071L14.5877 11.574L24 8.18819ZM9 15.8487L21 20.4805V37.6263L9 32.9945V15.8487ZM27 37.6263V20.4805L39 15.8487V32.9945L27 37.6263ZM25.354 2.29885C24.4788 1.98402 23.5212 1.98402 22.646 2.29885L4.98454 8.65208C3.7939 9.08038 3 10.2097 3 11.475V34.3663C3 36.0196 4.01719 37.5026 5.55962 38.098L22.9197 44.7987C23.6149 45.0671 24.3851 45.0671 25.0803 44.7987L42.4404 38.098C43.9828 37.5026 45 36.0196 45 34.3663V11.475C45 10.2097 44.2061 9.08038 43.0155 8.65208L25.354 2.29885Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus ERP</h2>
+</div>
+<div class="hidden lg:flex items-center gap-9">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal" href="#">Procurement</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">Finance</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">HR</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium leading-normal" href="#">Assets</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-slate-800">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-4 pr-2">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-0 text-sm" placeholder="Search" value=""/>
+</div>
+</label>
+<button class="relative text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-200 dark:border-slate-700" data-alt="User profile picture placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA1vTA-aMtwBYAJZ_L6xCYwGZS6nE8Fdmx5LfWxqVLSp_B0nSfcs4dG-VbivgdXE0_S3aDy-klaVOUhrV1YcLkmekIvBPovj4XYDf4WCXl4qorzQBkvGjkjke72dsN-l58lYteQEXL7l-j7JpAukWRhjHg1ijjUHXb61ytTVgWLszqQkPIG_lC8aUNomy_kvsRugFdOOrceMAGA9CMoLFIcSNRN5zORx3XoUr8e_A4Ts4JwgH5ogeYKVf-v1B7wRNFAjFR5O-aNdbU");'></div>
+</div>
+</header>
+<div class="flex flex-1">
+<!-- Main Content Area -->
+<main class="flex-1 px-6 py-8 max-w-[1280px] mx-auto w-full">
+<!-- Breadcrumbs -->
+<div class="flex flex-wrap gap-2 mb-6 text-sm">
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-primary" href="#">Procurement</a>
+<span class="text-slate-400">/</span>
+<a class="text-slate-500 dark:text-slate-400 font-medium hover:text-primary" href="#">Requisitions</a>
+<span class="text-slate-400">/</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">PR-2023-001</span>
+</div>
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white">Vendor &amp; Quotes Selection</h1>
+<span class="inline-flex items-center rounded-full bg-orange-100 dark:bg-orange-900/30 px-2.5 py-0.5 text-xs font-semibold text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
+                                Class B
+                            </span>
+</div>
+<p class="text-slate-500 dark:text-slate-400">Step 2 of 4: Upload quotes and select a vendor for Requisition #PR-2023-001</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                            Save Draft
+                        </button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-500/30">
+                            Continue to Review
+                        </button>
+</div>
+</div>
+<!-- Wizard Progress -->
+<div class="mb-10">
+<div class="relative flex w-full justify-between items-center">
+<div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 dark:bg-slate-800 -z-10 -translate-y-1/2 rounded"></div>
+<div class="absolute top-1/2 left-0 w-[40%] h-1 bg-primary -z-10 -translate-y-1/2 rounded"></div>
+<!-- Step 1: Done -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm ring-4 ring-white dark:ring-background-dark">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<span class="text-xs font-semibold text-primary">Details</span>
+</div>
+<!-- Step 2: Current -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="size-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm ring-4 ring-white dark:ring-background-dark shadow-lg shadow-primary/30">
+                                2
+                            </div>
+<span class="text-xs font-semibold text-primary">Quotes</span>
+</div>
+<!-- Step 3: Pending -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-60">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-sm ring-4 ring-white dark:ring-background-dark">
+                                3
+                            </div>
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Approval</span>
+</div>
+<!-- Step 4: Pending -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer opacity-60">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-sm ring-4 ring-white dark:ring-background-dark">
+                                4
+                            </div>
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400">PO Generation</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Content -->
+<div class="lg:col-span-2 flex flex-col gap-8">
+<!-- Upload Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Vendor Quotes</h3>
+<span class="text-xs text-slate-500 dark:text-slate-400">Supported: PDF, JPG, PNG</span>
+</div>
+<!-- Drag & Drop Zone -->
+<div class="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col items-center justify-center text-center hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+<div class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">cloud_upload</span>
+</div>
+<p class="text-slate-900 dark:text-white font-medium mb-1">Click to upload or drag and drop</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Maximum file size 10MB per quote</p>
+</div>
+<!-- Uploaded Files List -->
+<div class="mt-6 flex flex-col gap-3">
+<!-- File Item 1: Processed -->
+<div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">TechSupply_Quote_Q1022.pdf</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">2.4 MB • Uploaded just now</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded text-xs font-medium">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                                            Scanned
+                                        </div>
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- File Item 2: Processing -->
+<div class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+<span class="material-symbols-outlined">image</span>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">OfficeDepot_Est.png</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">1.8 MB • Uploading...</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded text-xs font-medium animate-pulse">
+<span class="material-symbols-outlined text-sm animate-spin">sync</span>
+                                            Scanning
+                                        </div>
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Comparison Grid -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Quote Comparison</h3>
+<button class="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span> Manually Add Quote
+                                </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Select</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Vendor Name</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Total Price</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Lead Time</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Status</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+<!-- Row 1: Selected -->
+<tr class="bg-primary/5 dark:bg-primary/10">
+<td class="py-4 px-6">
+<input checked="" class="size-4 text-primary border-slate-300 focus:ring-primary dark:bg-slate-800 dark:border-slate-600" name="vendor_select" type="radio"/>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 font-bold text-xs">TS</div>
+<div>
+<p class="font-medium text-slate-900 dark:text-white">TechSupply Inc.</p>
+<p class="text-xs text-slate-500">Ref: Q-1022</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-bold text-slate-900 dark:text-white">$12,450.00</span>
+</td>
+<td class="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                                3-5 Days
+                                            </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center rounded-md bg-green-50 dark:bg-green-900/30 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20">Lowest Price</span>
+</td>
+<td class="py-4 px-6">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<input class="size-4 text-primary border-slate-300 focus:ring-primary dark:bg-slate-800 dark:border-slate-600" name="vendor_select" type="radio"/>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 font-bold text-xs">OD</div>
+<div>
+<p class="font-medium text-slate-900 dark:text-white">Office Depot</p>
+<p class="text-xs text-slate-500">Ref: OD-2023-X</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-bold text-slate-900 dark:text-white">$13,200.00</span>
+</td>
+<td class="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                                2 Days
+                                            </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-600/20">Fastest</span>
+</td>
+<td class="py-4 px-6">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<input class="size-4 text-primary border-slate-300 focus:ring-primary dark:bg-slate-800 dark:border-slate-600" name="vendor_select" type="radio"/>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 font-bold text-xs">GS</div>
+<div>
+<p class="font-medium text-slate-900 dark:text-white">Global Suppliers</p>
+<p class="text-xs text-slate-500">Ref: QUO-998</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="font-bold text-slate-900 dark:text-white">$14,500.00</span>
+</td>
+<td class="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                                7-10 Days
+                                            </td>
+<td class="py-4 px-6">
+<span class="text-slate-400 text-xs">—</span>
+</td>
+<td class="py-4 px-6">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar info -->
+<div class="flex flex-col gap-6">
+<!-- Cost Center Budget Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm sticky top-24">
+<h4 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-6">Financial Overview</h4>
+<!-- Budget Item 1 -->
+<div class="mb-6">
+<div class="flex justify-between items-baseline mb-2">
+<p class="text-sm font-medium text-slate-700 dark:text-slate-300">Cost Center Budget</p>
+<p class="text-lg font-bold text-slate-900 dark:text-white">$50,000.00</p>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
+</div>
+<p class="text-xs text-slate-500 mt-2 text-right">75% Utilized</p>
+</div>
+<!-- Budget Item 2 -->
+<div class="mb-6">
+<div class="flex justify-between items-baseline mb-2">
+<p class="text-sm font-medium text-slate-700 dark:text-slate-300">Remaining Balance</p>
+<p class="text-2xl font-bold text-green-600 dark:text-green-400">$12,450.00</p>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                    This requisition ($12,450) will utilize <span class="font-semibold text-slate-900 dark:text-slate-100">100%</span> of the remaining budget.
+                                </p>
+</div>
+<div class="border-t border-slate-200 dark:border-slate-800 pt-6">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-orange-500 mt-0.5">warning</span>
+<div>
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Budget Warning</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            This selection is within budget but leaves $0.00 for future expenses in this quarter.
+                                        </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Policy Card -->
+<div class="bg-primary/5 rounded-xl border border-primary/10 p-6 sticky top-[420px]">
+<h4 class="text-sm font-semibold text-primary mb-3">Procurement Policy</h4>
+<ul class="space-y-3">
+<li class="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Minimum 3 quotes required for Class B items.</span>
+</li>
+<li class="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Vendor must be registered in SAP.</span>
+</li>
+<li class="flex gap-2 text-sm text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Lead time must be under 14 days.</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

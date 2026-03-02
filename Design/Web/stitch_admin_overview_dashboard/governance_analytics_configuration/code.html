@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Governance Analytics Configuration - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec",
+                        "background-light": "#f8f9fc",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom toggle switch styling */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #135bec;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #135bec;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<span class="material-symbols-outlined !text-3xl">token</span>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<label class="hidden md:flex flex-col min-w-40 h-10 w-96">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 overflow-hidden group focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<div class="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-slate-900 dark:text-white focus:outline-none h-full placeholder:text-slate-400 px-3 text-sm font-normal leading-normal border-none focus:ring-0" placeholder="Search settings, reports, or users..."/>
+</div>
+</label>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-slate-900 dark:text-white leading-none">Alex Morgan</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Chief Data Officer</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-slate-100 dark:ring-slate-800" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB-AKXuowCCV8tkvqawPurrvTXjd4OIELxIhHSzXlwHD7OfU4pDzlrMR3d-sSJP4vC-E-CLG_-mmjB-418C4YIIAAUjMfPue6ZHyuY42BzruyRVj5YPZ8dDp8k5RAhoubleR_SwwLrS5MPzxzj_9-EJUu4iZI7CjMEwjeemgLkKQAal4A5U_qqZ19nVtkJB7oPOvbhTwQX_dO710CzBOrW4AV0zOqtmpwIJOY-eOIz6XAfFKy-gZSiPvHP8NYbdndtwuIz1XOP-b8w");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 sm:px-10 py-8 max-w-7xl mx-auto w-full">
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+<div class="flex flex-col gap-2">
+<h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Governance Analytics Configuration</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base max-w-2xl">Manage data privacy settings, redaction rules, and export permissions for institutional reporting. Changes require dual-control approval.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                    Audit Log
+                </button>
+<button class="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Policy
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Redaction Rules -->
+<div class="lg:col-span-2 flex flex-col gap-6">
+<!-- Dataset Redaction Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+<div>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Dataset Redaction Rules</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Enable automatic redaction for sensitive fields in generated reports.</p>
+</div>
+<span class="bg-blue-100 dark:bg-blue-900/30 text-primary text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">Active</span>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- HR Data -->
+<div class="flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start gap-4">
+<div class="text-primary bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-semibold">HR Data Records</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Employee SSN, Home Address, Salary details</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300">
+                                          PII
+                                        </span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300">
+                                          Compensation
+                                        </span>
+</div>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 checked:right-0 checked:border-primary focus:ring-0 focus:outline-none transition-all duration-300" id="toggle-hr" name="toggle-hr" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer checked:bg-primary transition-colors duration-300" for="toggle-hr"></label>
+</div>
+</div>
+<!-- Finance Records -->
+<div class="flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start gap-4">
+<div class="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-semibold">Finance &amp; Procurement</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Vendor tax IDs, Bank account numbers, Transaction metadata</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 checked:right-0 checked:border-primary focus:ring-0 focus:outline-none transition-all duration-300" id="toggle-finance" name="toggle-finance" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer checked:bg-primary transition-colors duration-300" for="toggle-finance"></label>
+</div>
+</div>
+<!-- Student Data -->
+<div class="flex items-center justify-between p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-start gap-4">
+<div class="text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">school</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-white font-semibold">Student Academic Records</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">GPA, Disciplinary records, Financial Aid status</p>
+</div>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 checked:right-0 checked:border-primary focus:ring-0 focus:outline-none transition-all duration-300" id="toggle-student" name="toggle-student" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer checked:bg-primary transition-colors duration-300" for="toggle-student"></label>
+</div>
+</div>
+</div>
+</section>
+<!-- Aggregation Settings -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+<div class="flex items-start gap-4 mb-6">
+<div class="text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined">group_work</span>
+</div>
+<div>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Aggregation Threshold</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Prevents re-identification of individuals in small datasets.</p>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2" for="threshold">Minimum Group Size for Reporting</label>
+<div class="flex items-center gap-4">
+<input class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary" id="threshold" max="20" min="1" name="threshold" type="range" value="5"/>
+<span class="text-slate-900 dark:text-white font-bold text-lg min-w-[3ch] text-center" id="threshold-val">5</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+<span class="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
+                            Results will be suppressed if a query returns fewer than <span class="font-bold text-slate-700 dark:text-slate-300">5 individuals</span>.
+                        </p>
+</div>
+</section>
+</div>
+<!-- Right Column: Export Permissions -->
+<div class="lg:col-span-1 flex flex-col gap-6">
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm h-full">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Export Permissions</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Define who can export raw data.</p>
+</div>
+<div class="p-6 space-y-6">
+<!-- Role: Super Admin -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Super Admin</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded">Full Access</span>
+</div>
+</div>
+<!-- Role: Department Head -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]">supervisor_account</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Department Head</span>
+</div>
+<select class="text-sm bg-transparent border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 py-1 pl-2 pr-8 focus:ring-primary focus:border-primary">
+<option>Restricted</option>
+<option>Full Access</option>
+<option>No Access</option>
+</select>
+</div>
+<div class="pl-11 text-xs text-slate-500 dark:text-slate-400">
+                                Can export aggregated data only. No PII.
+                            </div>
+</div>
+<!-- Role: Analyst -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]">analytics</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">Data Analyst</span>
+</div>
+<select class="text-sm bg-transparent border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 py-1 pl-2 pr-8 focus:ring-primary focus:border-primary">
+<option>No Access</option>
+<option>Restricted</option>
+<option>Full Access</option>
+</select>
+</div>
+<div class="pl-11 text-xs text-slate-500 dark:text-slate-400">
+                                View only permission. Export disabled.
+                            </div>
+</div>
+<!-- Role: Auditor -->
+<div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+</div>
+<span class="font-medium text-slate-900 dark:text-white">External Auditor</span>
+</div>
+<select class="text-sm bg-transparent border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 py-1 pl-2 pr-8 focus:ring-primary focus:border-primary">
+<option>Restricted</option>
+<option>No Access</option>
+</select>
+</div>
+</div>
+</div>
+<div class="bg-blue-50 dark:bg-slate-800/50 p-4 mx-6 mb-6 rounded-lg flex gap-3">
+<span class="material-symbols-outlined text-primary text-[20px] shrink-0">security</span>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+<strong>Security Note:</strong> Changing export permissions triggers a security alert to the Chief Information Security Officer (CISO).
+                        </p>
+</div>
+</section>
+</div>
+</div>
+<!-- Sticky Bottom Bar / Notice -->
+<div class="mt-8 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-500">
+<span class="material-symbols-outlined">lock_person</span>
+</div>
+<div>
+<h4 class="text-slate-900 dark:text-white font-bold text-sm">Dual-Control Requirement Active</h4>
+<p class="text-slate-600 dark:text-slate-400 text-sm">Changes to these settings will not take effect immediately. A second administrator must approve this configuration.</p>
+</div>
+</div>
+<div class="flex gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none h-10 px-6 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    Cancel
+                </button>
+<button class="flex-1 md:flex-none h-10 px-6 rounded-lg bg-primary text-white text-sm font-bold hover:bg-blue-700 shadow-md transition-colors flex items-center justify-center gap-2">
+                    Submit for Approval
+                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+<script>
+        // Simple script to update range value display
+        const rangeInput = document.getElementById('threshold');
+        const rangeValue = document.getElementById('threshold-val');
+        
+        rangeInput.addEventListener('input', function() {
+            rangeValue.textContent = this.value;
+        });
+    </script>
+</body></html>

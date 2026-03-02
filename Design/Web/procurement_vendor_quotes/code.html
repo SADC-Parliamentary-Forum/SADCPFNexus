@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Procurement: Vendor &amp; Quotes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#1d85ed",
+              "primary-dark": "#1666b8",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101922",
+              surface: "#ffffff",
+              "surface-dark": "#1a2632",
+              border: "#e2e8f0",
+              "border-dark": "#2d3748",
+              text: "#1e293b",
+              "text-light": "#64748b",
+            },
+            fontFamily: {
+              display: ["Public Sans", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-light text-text font-display min-h-screen flex flex-col antialiased">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-border bg-surface px-10 py-3 shadow-sm">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-text">
+<div class="size-8 flex items-center justify-center rounded bg-primary text-white">
+<span class="material-symbols-outlined text-xl">grid_view</span>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight">SADCPFNexus</h2>
+</div>
+<label class="hidden md:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-border bg-background-light focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<div class="text-text-light flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent border-none text-text focus:ring-0 placeholder:text-text-light/70 px-3 text-sm font-normal leading-normal" placeholder="Search modules..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-text-light hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium transition-colors" href="#">Procurement</a>
+<a class="text-text-light hover:text-primary text-sm font-medium transition-colors" href="#">Finance</a>
+<a class="text-text-light hover:text-primary text-sm font-medium transition-colors" href="#">Reports</a>
+<a class="text-text-light hover:text-primary text-sm font-medium transition-colors" href="#">Admin</a>
+</nav>
+<div class="flex items-center gap-3 pl-4 border-l border-border">
+<button class="text-text-light hover:text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-border" data-alt="User profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDJyZ30HKh8w6_W0qUAOyEV2JmAC10niBFiHbAoQGSB4y4wms-CC996BnJOJlXYH43PwUUhd38cDlYwyXwxjglYAFsPwDOo9Z8RTleiSz_gdSWz-70QmIQUd6ZR__UPalRYYKpLZ2jvHSKknS9nr2sA4gPfCO5aphLe4isyimeau4YrwoLoW_fkXPJldvoqgTB7H2m66Nu_8gaV9MG-7o-382W3RT4VQWNQCMctNGlwNulaZvzfqJOhjliBeuW6nS-Dm76miH5kS3U");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-6 py-8 md:px-12 lg:px-24 max-w-[1440px] mx-auto w-full">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 mb-6 text-sm">
+<a class="text-text-light hover:text-primary transition-colors" href="#">Procurement</a>
+<span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+<a class="text-text-light hover:text-primary transition-colors" href="#">New Requisition (REQ-2023-8492)</a>
+<span class="material-symbols-outlined text-text-light text-sm">chevron_right</span>
+<span class="text-text font-semibold">Vendor &amp; Quotes</span>
+</div>
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+<div class="flex flex-col gap-2">
+<h1 class="text-3xl font-bold text-text tracking-tight">Vendor Selection &amp; Quotes</h1>
+<p class="text-text-light text-base">Step 3 of 5: Enter quote details, upload supporting documents, and select a preferred vendor.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 h-10 px-5 rounded-lg border border-border bg-surface hover:bg-background-light text-text font-medium transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm">save</span>
+<span>Save Draft</span>
+</button>
+<button class="flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-primary hover:bg-primary-dark text-white font-medium transition-all shadow-sm">
+<span>Next Step</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+<!-- Left Column: Quotes Table & Upload -->
+<div class="xl:col-span-2 flex flex-col gap-8">
+<!-- Quotes Received Card -->
+<div class="bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-border flex justify-between items-center bg-gray-50/50">
+<h3 class="text-lg font-bold text-text">Quotes Received</h3>
+<button class="text-primary hover:text-primary-dark text-sm font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-base">add</span>
+                            Add Quote
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-background-light border-b border-border text-xs uppercase text-text-light">
+<th class="px-6 py-3 font-semibold tracking-wider w-1/4">Vendor Name</th>
+<th class="px-6 py-3 font-semibold tracking-wider w-1/6">Amount (USD)</th>
+<th class="px-6 py-3 font-semibold tracking-wider w-1/6">Validity</th>
+<th class="px-6 py-3 font-semibold tracking-wider">Attachment</th>
+<th class="px-6 py-3 font-semibold tracking-wider w-1/6">Status</th>
+<th class="px-6 py-3 font-semibold tracking-wider w-12"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border">
+<tr class="hover:bg-gray-50/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="font-medium text-text">Acme Supplies Ltd.</div>
+<div class="text-xs text-text-light">ID: VND-4829</div>
+</td>
+<td class="px-6 py-4 font-medium text-text">$12,500.00</td>
+<td class="px-6 py-4 text-sm text-text-light">Dec 31, 2023</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500 text-xl">picture_as_pdf</span>
+<a class="text-sm text-primary hover:underline truncate max-w-[120px]" href="#">quote_acme_v2.pdf</a>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+<span class="size-1.5 rounded-full bg-green-600"></span>
+                                            Verified
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-light hover:text-primary p-1 rounded hover:bg-background-light">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-gray-50/50 transition-colors group bg-blue-50/30">
+<td class="px-6 py-4">
+<div class="font-medium text-text">Global Corp Solutions</div>
+<div class="text-xs text-text-light">ID: VND-9921</div>
+</td>
+<td class="px-6 py-4 font-medium text-text">$11,800.00</td>
+<td class="px-6 py-4 text-sm text-text-light">Nov 15, 2023</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500 text-xl">picture_as_pdf</span>
+<a class="text-sm text-primary hover:underline truncate max-w-[120px]" href="#">global_q4.pdf</a>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+<span class="material-symbols-outlined text-[10px]">hourglass_top</span>
+                                            Scanning
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-light hover:text-primary p-1 rounded hover:bg-background-light">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-gray-50/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="font-medium text-text">Local Vendors Co.</div>
+<div class="text-xs text-text-light">ID: VND-1022</div>
+</td>
+<td class="px-6 py-4 font-medium text-text">$13,200.00</td>
+<td class="px-6 py-4 text-sm text-text-light">Dec 01, 2023</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500 text-xl">picture_as_pdf</span>
+<a class="text-sm text-primary hover:underline truncate max-w-[120px]" href="#">local_bid_final.pdf</a>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+<span class="material-symbols-outlined text-[10px]">warning</span>
+                                            Flagged
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-light hover:text-primary p-1 rounded hover:bg-background-light">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-border bg-gray-50/50 flex justify-center">
+<button class="w-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center justify-center text-text-light hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group">
+<span class="material-symbols-outlined text-3xl mb-2 group-hover:scale-110 transition-transform">cloud_upload</span>
+<span class="text-sm font-medium">Click to upload additional quotes or drag and drop</span>
+<span class="text-xs mt-1">PDF, DOCX up to 10MB</span>
+</button>
+</div>
+</div>
+<!-- Justification Section -->
+<div class="bg-surface rounded-xl border border-border shadow-sm p-6">
+<h3 class="text-lg font-bold text-text mb-4">Justification for Selection</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-text mb-1">Reason for choosing this vendor <span class="text-red-500">*</span></label>
+<p class="text-xs text-text-light mb-2">Please provide a detailed explanation for your choice, especially if the lowest bidder was not selected.</p>
+<textarea class="w-full rounded-lg border-border bg-background-light text-text focus:border-primary focus:ring-primary min-h-[120px] p-3 text-sm" placeholder="Enter your justification here..."></textarea>
+</div>
+<div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+<span class="material-symbols-outlined text-blue-600 mt-0.5">info</span>
+<div class="text-sm text-blue-800">
+<p class="font-medium">Policy Reminder</p>
+<p class="mt-1">According to Policy PROC-2022-A, any selection over $10,000 requiring a non-lowest bidder justification must be approved by the Department Head.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Criteria & Preferred Selection -->
+<div class="xl:col-span-1 flex flex-col gap-8">
+<!-- Preferred Vendor Selection -->
+<div class="bg-surface rounded-xl border border-border shadow-sm p-6">
+<h3 class="text-lg font-bold text-text mb-4">Select Preferred Vendor</h3>
+<div class="space-y-3">
+<label class="flex items-start p-3 border border-border rounded-lg hover:bg-background-light cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input class="mt-1 size-4 border-gray-300 text-primary focus:ring-primary" name="preferred_vendor" type="radio"/>
+<div class="ml-3 flex-1">
+<div class="flex justify-between">
+<span class="block text-sm font-medium text-text">Acme Supplies Ltd.</span>
+<span class="block text-sm font-bold text-text">$12,500.00</span>
+</div>
+<span class="block text-xs text-text-light mt-1">Lowest qualified bidder</span>
+</div>
+</label>
+<label class="flex items-start p-3 border border-border rounded-lg hover:bg-background-light cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary">
+<input checked="" class="mt-1 size-4 border-gray-300 text-primary focus:ring-primary" name="preferred_vendor" type="radio"/>
+<div class="ml-3 flex-1">
+<div class="flex justify-between">
+<span class="block text-sm font-medium text-text">Global Corp Solutions</span>
+<span class="block text-sm font-bold text-text">$11,800.00</span>
+</div>
+<span class="block text-xs text-text-light mt-1">Scanning in progress</span>
+</div>
+</label>
+<label class="flex items-start p-3 border border-border rounded-lg hover:bg-background-light cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:ring-1 has-[:checked]:ring-primary opacity-60">
+<input class="mt-1 size-4 border-gray-300 text-primary focus:ring-primary" disabled="" name="preferred_vendor" type="radio"/>
+<div class="ml-3 flex-1">
+<div class="flex justify-between">
+<span class="block text-sm font-medium text-text">Local Vendors Co.</span>
+<span class="block text-sm font-bold text-text">$13,200.00</span>
+</div>
+<span class="block text-xs text-red-500 mt-1 font-medium">Compliance Flag Raised</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Selection Criteria Checklist -->
+<div class="bg-surface rounded-xl border border-border shadow-sm p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-bold text-text">Selection Criteria</h3>
+<span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">Mandatory</span>
+</div>
+<p class="text-xs text-text-light mb-4">Confirm that the selected vendor meets all the following criteria as per the procurement mandate.</p>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="flex h-6 items-center">
+<input class="size-4 rounded border-gray-300 text-primary focus:ring-primary" id="crit1" name="crit1" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-text" for="crit1">Technical Compliance</label>
+<p class="text-text-light text-xs">Vendor meets all technical specifications outlined in the original requisition.</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="flex h-6 items-center">
+<input checked="" class="size-4 rounded border-gray-300 text-primary focus:ring-primary" id="crit2" name="crit2" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-text" for="crit2">Delivery Timeline</label>
+<p class="text-text-light text-xs">Can deliver goods/services within the required timeframe (by Jan 15, 2024).</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="flex h-6 items-center">
+<input checked="" class="size-4 rounded border-gray-300 text-primary focus:ring-primary" id="crit3" name="crit3" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-text" for="crit3">Warranty &amp; Support</label>
+<p class="text-text-light text-xs">Includes standard 1-year warranty and post-implementation support.</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="flex h-6 items-center">
+<input class="size-4 rounded border-gray-300 text-primary focus:ring-primary" id="crit4" name="crit4" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-text" for="crit4">Tax Clearance</label>
+<p class="text-text-light text-xs">Valid tax clearance certificate attached and verified.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer actions for mobile (visible only on small screens) -->
+<div class="mt-8 flex md:hidden flex-col gap-3">
+<button class="flex items-center justify-center gap-2 h-12 w-full rounded-lg bg-primary text-white font-medium shadow-sm">
+<span>Next Step</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+<button class="flex items-center justify-center gap-2 h-12 w-full rounded-lg border border-border bg-surface text-text font-medium shadow-sm">
+<span class="material-symbols-outlined text-sm">save</span>
+<span>Save Draft</span>
+</button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto border-t border-border bg-surface py-6">
+<div class="px-6 md:px-12 lg:px-24 max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-text-light">
+<p>© 2023 SADCPFNexus Government Systems. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary" href="#">Privacy Policy</a>
+<a class="hover:text-primary" href="#">Terms of Service</a>
+<a class="hover:text-primary" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

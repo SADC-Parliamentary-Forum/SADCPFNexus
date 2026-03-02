@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus Admin Dashboard (Dark Mode)</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#3b82f6", 
+              "primary-dark": "#2563eb",
+              "background-dark": "#0F172A",
+              "surface-dark": "#1E293B",
+              "surface-hover": "#334155",
+              "border-dark": "#334155",
+              "text-main": "#F8FAFC",
+              "text-secondary": "#94A3B8",
+              "status-emerald": "#10B981",
+              "status-amber": "#F59E0B",
+              "status-crimson": "#EF4444",
+              "status-blue": "#3B82F6",
+              "status-purple": "#8B5CF6",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "0.25rem", 
+              "lg": "0.5rem", 
+              "xl": "0.75rem", 
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background-dark text-text-main font-display antialiased overflow-hidden dark">
+<div class="flex h-screen w-full flex-col overflow-hidden">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-border-dark bg-surface-dark px-6 py-3 shadow-md z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 text-white">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/20 ring-1 ring-primary/30">
+<span class="material-symbols-outlined text-2xl">shield_person</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight text-white">SADCPFNexus</h2>
+<p class="text-xs font-medium text-text-secondary">Class A-D Secure Environment</p>
+</div>
+</div>
+</div>
+<div class="flex flex-1 items-center justify-center px-12">
+<label class="flex w-full max-w-md items-center gap-2 rounded-lg bg-background-dark px-3 py-2 border border-border-dark focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50">
+<span class="material-symbols-outlined text-text-secondary">search</span>
+<input class="w-full border-none bg-transparent p-0 text-sm placeholder:text-text-secondary focus:ring-0 text-white" placeholder="Search approvals, personnel, or policies..." type="text"/>
+</label>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative flex size-10 items-center justify-center rounded-full bg-surface-hover text-text-secondary hover:bg-slate-600 hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-status-crimson ring-2 ring-surface-dark"></span>
+</button>
+<button class="flex size-10 items-center justify-center rounded-full bg-surface-hover text-text-secondary hover:bg-slate-600 hover:text-white transition-colors">
+<span class="material-symbols-outlined">chat</span>
+</button>
+<div class="h-8 w-[1px] bg-border-dark"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-white">Admin User</p>
+<p class="text-xs text-text-secondary">Security Level 4</p>
+</div>
+<div class="size-10 overflow-hidden rounded-full border-2 border-border-dark shadow-sm bg-surface-hover" data-alt="Profile picture of administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHtoPysebevaC6RU3G7eWnxNkBolnz4WxwdSajn2ewX-uPlI3jegSLqRZiNLsyin4N9aapF2Maa8NUpZITSOE5SswUxqg0fX2qmyFzC3MO0eRIeY0sG5B-wOC4rv8SeP33FPHd_Ugmzbl1bNIZjN6Rf92jCzwNrodeOTAZbcSEKepQd3fj_awAHAjQwcTlLsooNeu0nHGH7sjgdvYmOTAUTCM8N_iGVc5j9FWKDrdshMVtdUmRJovdOEM2eQ3ILDMVYrfzksxhxpk"); background-size: cover; background-position: center;'></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="hidden w-64 flex-col justify-between border-r border-border-dark bg-surface-dark p-4 shadow-lg lg:flex overflow-y-auto">
+<nav class="flex flex-col gap-2">
+<div class="mb-4 flex items-center gap-3 rounded-lg bg-background-dark border border-border-dark p-3">
+<div class="size-10 rounded-full bg-cover bg-center ring-1 ring-border-dark" data-alt="Government building seal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuApqeo9fjlpRIW5ifKz1924WJKj-NNSwLfRjW6CUv5N0QVcAQTobKBDBLCeZOnGRBIiCphiGOF0Y3Owx8cQhKXAvqTeGHvF26v1OIxEdJ3VNCrsZVaii0ro0iz7NM-3m3ZZcts1Yetej0Df3s-PF7WI_9HpAFB7FO0yeIMR8pce1A4WgpQUPrjfWKzPTCy4lN7YU4BEqNPGjIeL12Ff0da3vKCd7s-zW8oMFgX2EbL8CJ19YoKsUna0ponxlQMAnp6Gpto0QPciNkc");'></div>
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-primary">Main Portal</span>
+<span class="text-xs text-text-secondary">v4.2.0 (Stable)</span>
+</div>
+</div>
+<a class="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-dark" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Personnel</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Finance</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="text-sm font-medium">Legal</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">local_shipping</span>
+<span class="text-sm font-medium">Logistics</span>
+</a>
+<div class="my-2 h-px bg-border-dark"></div>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-text-secondary hover:bg-surface-hover hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+</nav>
+<div class="rounded-xl bg-background-dark p-4 border border-border-dark">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-text-secondary uppercase tracking-wider">System Status</span>
+<span class="flex h-2 w-2 rounded-full bg-status-emerald shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+</div>
+<p class="text-sm font-medium text-white">All Systems Operational</p>
+<p class="text-xs text-text-secondary mt-1">Last check: 2m ago</p>
+</div>
+</aside>
+<main class="flex-1 overflow-y-auto bg-background-dark p-6 scroll-smooth">
+<div class="mx-auto max-w-7xl space-y-6">
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-primary/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Pending</p>
+<div class="p-1.5 rounded-lg bg-status-amber/10 text-status-amber">
+<span class="material-symbols-outlined text-lg">pending_actions</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">42</p>
+<p class="text-xs font-medium text-status-emerald flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +5% vs last week
+                        </p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-status-crimson/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Overdue</p>
+<div class="p-1.5 rounded-lg bg-status-crimson/10 text-status-crimson">
+<span class="material-symbols-outlined text-lg">alarm_off</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">7</p>
+<p class="text-xs font-medium text-status-crimson flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +2% vs last week
+                        </p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-status-amber/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Quarantined</p>
+<div class="p-1.5 rounded-lg bg-status-amber/10 text-status-amber">
+<span class="material-symbols-outlined text-lg">biotech</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">13</p>
+<p class="text-xs font-medium text-text-secondary">No change</p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-status-blue/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Legal Holds</p>
+<div class="p-1.5 rounded-lg bg-status-blue/10 text-status-blue">
+<span class="material-symbols-outlined text-lg">gavel</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">5</p>
+<p class="text-xs font-medium text-status-emerald flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_down</span> -1 from yesterday
+                        </p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-status-purple/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Audit Flags</p>
+<div class="p-1.5 rounded-lg bg-status-purple/10 text-status-purple">
+<span class="material-symbols-outlined text-lg">flag</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">2</p>
+<p class="text-xs font-medium text-text-secondary">Stable</p>
+</div>
+<div class="flex flex-col gap-1 rounded-xl border border-border-dark bg-surface-dark p-5 shadow-lg transition-all hover:bg-surface-hover hover:border-status-emerald/30 group">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-text-secondary group-hover:text-white transition-colors">Health</p>
+<div class="p-1.5 rounded-lg bg-status-emerald/10 text-status-emerald">
+<span class="material-symbols-outlined text-lg">monitor_heart</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-white mt-2">99%</p>
+<p class="text-xs font-medium text-status-emerald">Optimal</p>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+<div class="flex flex-col rounded-xl border border-border-dark bg-surface-dark p-6 shadow-lg">
+<div class="mb-6 flex items-center justify-between">
+<div>
+<h3 class="text-lg font-bold text-white">Security Alerts</h3>
+<p class="text-sm text-text-secondary">Alert severity distribution</p>
+</div>
+<div class="flex items-center gap-2 rounded-lg bg-status-crimson/10 border border-status-crimson/20 px-3 py-1.5 text-status-crimson">
+<span class="material-symbols-outlined text-sm">warning</span>
+<span class="text-xs font-bold">3 High Priority</span>
+</div>
+</div>
+<div class="mt-2 grid grid-cols-[80px_1fr] items-center gap-y-6 gap-x-4">
+<span class="text-sm font-medium text-status-crimson">Critical</span>
+<div class="h-2.5 w-full overflow-hidden rounded-full bg-background-dark border border-border-dark">
+<div class="h-full w-[10%] rounded-full bg-status-crimson shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+</div>
+<span class="text-sm font-medium text-status-amber">High</span>
+<div class="h-2.5 w-full overflow-hidden rounded-full bg-background-dark border border-border-dark">
+<div class="h-full w-[25%] rounded-full bg-status-amber shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
+</div>
+<span class="text-sm font-medium text-yellow-400">Medium</span>
+<div class="h-2.5 w-full overflow-hidden rounded-full bg-background-dark border border-border-dark">
+<div class="h-full w-[45%] rounded-full bg-yellow-400"></div>
+</div>
+<span class="text-sm font-medium text-status-blue">Low</span>
+<div class="h-2.5 w-full overflow-hidden rounded-full bg-background-dark border border-border-dark">
+<div class="h-full w-[80%] rounded-full bg-status-blue"></div>
+</div>
+</div>
+<div class="mt-8 flex items-center justify-between border-t border-border-dark pt-4">
+<span class="text-xs text-text-secondary">Updated 5 mins ago</span>
+<button class="text-sm font-medium text-primary hover:text-primary-400 hover:underline">View All Alerts</button>
+</div>
+</div>
+<div class="flex flex-col rounded-xl border border-border-dark bg-surface-dark p-6 shadow-lg">
+<div class="mb-4 flex items-center justify-between">
+<div>
+<h3 class="text-lg font-bold text-white">Approval Trends</h3>
+<p class="text-sm text-text-secondary">Processing velocity (Last 30 Days)</p>
+</div>
+<div class="flex items-center gap-1 text-status-emerald">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span class="text-sm font-bold">+12%</span>
+</div>
+</div>
+<div class="relative mt-4 flex h-48 w-full items-end justify-between gap-4">
+<div class="group relative flex h-full flex-1 flex-col justify-end gap-2">
+<div class="w-full rounded-t-sm bg-primary/20 transition-all hover:bg-primary/40 border-t border-x border-primary/10" style="height: 40%"></div>
+<span class="text-center text-[10px] text-text-secondary">W1</span>
+</div>
+<div class="group relative flex h-full flex-1 flex-col justify-end gap-2">
+<div class="w-full rounded-t-sm bg-primary/30 transition-all hover:bg-primary/50 border-t border-x border-primary/20" style="height: 55%"></div>
+<span class="text-center text-[10px] text-text-secondary">W2</span>
+</div>
+<div class="group relative flex h-full flex-1 flex-col justify-end gap-2">
+<div class="w-full rounded-t-sm bg-primary/50 transition-all hover:bg-primary/70 border-t border-x border-primary/30" style="height: 45%"></div>
+<span class="text-center text-[10px] text-text-secondary">W3</span>
+</div>
+<div class="group relative flex h-full flex-1 flex-col justify-end gap-2">
+<div class="w-full rounded-t-sm bg-primary transition-all hover:bg-primary-dark shadow-[0_0_15px_rgba(59,130,246,0.3)]" style="height: 75%"></div>
+<span class="text-center text-[10px] text-primary font-bold">This Week</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between border-t border-border-dark pt-4">
+<span class="text-xs text-text-secondary">Avg. Processing Time: 4.2h</span>
+<button class="text-sm font-medium text-primary hover:text-primary-400 hover:underline">Download Report</button>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-border-dark bg-surface-dark shadow-lg overflow-hidden">
+<div class="flex items-center justify-between border-b border-border-dark px-6 py-4 bg-surface-dark/50">
+<h3 class="text-lg font-bold text-white">My Approvals Queue</h3>
+<div class="flex gap-2">
+<button class="flex items-center gap-1 rounded-lg border border-border-dark bg-surface-hover px-3 py-1.5 text-sm font-medium text-text-secondary hover:bg-slate-600 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                                Filter
+                            </button>
+<button class="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark shadow-md shadow-primary/20">
+<span class="material-symbols-outlined text-sm">add</span>
+                                New Request
+                            </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full min-w-[800px] text-left">
+<thead class="bg-background-dark text-xs font-semibold uppercase text-text-secondary border-b border-border-dark">
+<tr>
+<th class="px-6 py-3">ID</th>
+<th class="px-6 py-3">Subject</th>
+<th class="px-6 py-3">Department</th>
+<th class="px-6 py-3">Requester</th>
+<th class="px-6 py-3">Date</th>
+<th class="px-6 py-3">Status</th>
+<th class="px-6 py-3 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark text-sm">
+<tr class="group hover:bg-surface-hover/50 transition-colors">
+<td class="px-6 py-4 font-mono text-text-secondary">REQ-2024-089</td>
+<td class="px-6 py-4 font-medium text-white">Hardware Procurement - Server Cluster B</td>
+<td class="px-6 py-4 text-text-secondary">IT Infrastructure</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-slate-600 bg-cover ring-1 ring-border-dark" data-alt="Requester avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBikZpINbOblbj99SwcK-WW800axLpYlvqs2DeLCxhZV5SpWipHdrIYL-8Vfb-G4jhcaCuLjzn-YOCNpYfPXKVxgcT3BVpgpQ0yf5zV4npucZfJE6snMuWLowqZ7J-UNydou0rFjVPSJbfVHGTtzXKu1fGR2p_4ZuWe1jPrkcqwRvC4Q67A6pRdzm7Mr-VRK3WcnfM6dhfZSUECA7iHjkJlxhfydsUxJorH-8YZUHXdDnfejwFI82_YIzDv_5hXSVsXkkPKYfRUzkc");'></div>
+<span class="text-gray-300">Dr. A. Smith</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-secondary">Oct 24, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-status-amber/10 border border-status-amber/20 px-2.5 py-0.5 text-xs font-medium text-status-amber">
+                                            Pending Review
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-60 transition-opacity group-hover:opacity-100">
+<button class="rounded p-1 text-status-emerald hover:bg-status-emerald/20 transition-colors" title="Approve">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</button>
+<button class="rounded p-1 text-status-crimson hover:bg-status-crimson/20 transition-colors" title="Reject">
+<span class="material-symbols-outlined text-lg">cancel</span>
+</button>
+<button class="rounded p-1 text-text-secondary hover:bg-slate-600 hover:text-white transition-colors" title="View Details">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-surface-hover/50 transition-colors">
+<td class="px-6 py-4 font-mono text-text-secondary">REQ-2024-082</td>
+<td class="px-6 py-4 font-medium text-white">Security Clearance Renewal - Group 4</td>
+<td class="px-6 py-4 text-text-secondary">Personnel Security</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-slate-600 bg-cover ring-1 ring-border-dark" data-alt="Requester avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXhjhya6tm4wPLbph9OWiVtw5qppAcEI9E17AFUxWtxV6-KPWo-KRyo5424ZP7W2i2ZXmeaQaBMq2RgUmI33MPspmVgYMVFrX7ukQC_0CYTrZjaDR1LlRY8ZtVofaSNmaQeSlRPuce5JJWxsZjwscFNuUUNATtJFPOcH-5FXAckyFYMXtdxR-7VMFoPgI4bzBCDLzqC3GDHLDi-_7WXuYjOZ0i7tdnS_-lQfCL5yrPPBylTX0pO6p3UHvMgXB1fEgTRXdxZ1QzHUo");'></div>
+<span class="text-gray-300">J. Doe</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-secondary">Oct 23, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-status-crimson/10 border border-status-crimson/20 px-2.5 py-0.5 text-xs font-medium text-status-crimson">
+                                            Urgent
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-60 transition-opacity group-hover:opacity-100">
+<button class="rounded p-1 text-status-emerald hover:bg-status-emerald/20 transition-colors" title="Approve">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</button>
+<button class="rounded p-1 text-status-crimson hover:bg-status-crimson/20 transition-colors" title="Reject">
+<span class="material-symbols-outlined text-lg">cancel</span>
+</button>
+<button class="rounded p-1 text-text-secondary hover:bg-slate-600 hover:text-white transition-colors" title="View Details">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-surface-hover/50 transition-colors">
+<td class="px-6 py-4 font-mono text-text-secondary">REQ-2024-075</td>
+<td class="px-6 py-4 font-medium text-white">Quarterly Budget Adjustment</td>
+<td class="px-6 py-4 text-text-secondary">Finance</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-slate-600 bg-cover ring-1 ring-border-dark" data-alt="Requester avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDRKAW4PyKs465i-lF6Giz-DhA_LyuG7AirLiMdOIpNt7j1_9S9bpi5W_HeAnwZOIJv8_YWOBHBG6lCLMEo9o_ji2IPug1FCZROHI68UNKWT8O3w5xyWaEePaWKWhfbZM_IT_mTj38MmFlzCPYYp8Z1VZoaZJXl3voXX1vX_rUoADcm1-stzbdv6o330SxEGUAOPDOyT5XZoF1QGViho1DWmVAxjKY9Tg-AjWBZFqgfDsWfdCgPuzaNS3WS7BkvfbNXZjx8njKwRxA");'></div>
+<span class="text-gray-300">M. Williams</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-secondary">Oct 20, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-status-blue/10 border border-status-blue/20 px-2.5 py-0.5 text-xs font-medium text-status-blue">
+                                            Escalated
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-60 transition-opacity group-hover:opacity-100">
+<button class="rounded p-1 text-status-emerald hover:bg-status-emerald/20 transition-colors" title="Approve">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</button>
+<button class="rounded p-1 text-status-crimson hover:bg-status-crimson/20 transition-colors" title="Reject">
+<span class="material-symbols-outlined text-lg">cancel</span>
+</button>
+<button class="rounded p-1 text-text-secondary hover:bg-slate-600 hover:text-white transition-colors" title="View Details">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-surface-hover/50 transition-colors">
+<td class="px-6 py-4 font-mono text-text-secondary">REQ-2024-068</td>
+<td class="px-6 py-4 font-medium text-white">Facility Maintenance - Sector 7</td>
+<td class="px-6 py-4 text-text-secondary">Logistics</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-slate-600 bg-cover ring-1 ring-border-dark" data-alt="Requester avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAePQ3KSoFt3N5JT-Cc26I7a9n6SOUN68HFSDChR-bmAAVRFAVo1q-3YbBElZLySlIIzZdPiFoz1nPzVRuLa1qxFo2cqpSRsRN0hhZXgFJqVLy-TOP-N_Jq9P2nKuKvU5cCME6VKZRiuHYk17JZraCiDV73rfGqe5WUur8oSIK00yXdLdhPFZsQvDEUc4AjBC0CpW-fRQfkrL95M5J3f2sOFc_qQm7MekuGBdM_Q9LiBXV2yQZQ12YdWlrSqABIBi4BhdwlnGqsdxA");'></div>
+<span class="text-gray-300">T. Johnson</span>
+</div>
+</td>
+<td class="px-6 py-4 text-text-secondary">Oct 18, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-background-dark border border-border-dark px-2.5 py-0.5 text-xs font-medium text-text-secondary">
+                                            On Hold
+                                        </span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-60 transition-opacity group-hover:opacity-100">
+<button class="rounded p-1 text-status-emerald hover:bg-status-emerald/20 transition-colors" title="Approve">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</button>
+<button class="rounded p-1 text-status-crimson hover:bg-status-crimson/20 transition-colors" title="Reject">
+<span class="material-symbols-outlined text-lg">cancel</span>
+</button>
+<button class="rounded p-1 text-text-secondary hover:bg-slate-600 hover:text-white transition-colors" title="View Details">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between border-t border-border-dark px-6 py-3 bg-surface-dark">
+<div class="text-xs text-text-secondary">Showing 1-4 of 42 items</div>
+<div class="flex gap-1">
+<button class="rounded px-2 py-1 text-sm text-text-secondary hover:bg-surface-hover hover:text-white disabled:opacity-50 transition-colors">Previous</button>
+<button class="rounded px-2 py-1 text-sm font-medium bg-primary text-white">1</button>
+<button class="rounded px-2 py-1 text-sm text-text-secondary hover:bg-surface-hover hover:text-white transition-colors">2</button>
+<button class="rounded px-2 py-1 text-sm text-text-secondary hover:bg-surface-hover hover:text-white transition-colors">3</button>
+<span class="px-2 py-1 text-sm text-text-secondary">...</span>
+<button class="rounded px-2 py-1 text-sm text-text-secondary hover:bg-surface-hover hover:text-white transition-colors">Next</button>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-8 text-center text-xs text-text-secondary/60">
+<p>© 2024 SADCPFNexus Administration System. Authorized Access Only.</p>
+</footer>
+</main>
+</div>
+</div>
+
+</body></html>

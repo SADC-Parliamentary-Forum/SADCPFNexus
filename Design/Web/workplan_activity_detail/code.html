@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workplan Activity Detail - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "primary-content": "#ffffff",
+                        "primary-dark": "#1563b3",
+                        "primary-light": "#e0f0ff",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2632",
+                        "text-main": "#0d141b",
+                        "text-sub": "#4c739a",
+                        "border-light": "#e7edf3",
+                        "border-dark": "#2a3b4d",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Public Sans", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-text-main dark:text-white">
+<div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+<h2 class="text-text-main dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<label class="hidden md:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-text-sub dark:text-slate-400 flex border-none bg-background-light dark:bg-background-dark items-center justify-center pl-4 rounded-l-lg border-r-0">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-main dark:text-white focus:outline-0 focus:ring-0 border-none bg-background-light dark:bg-background-dark focus:border-none h-full placeholder:text-text-sub dark:placeholder:text-slate-500 px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal" placeholder="Search activities..." value=""/>
+</div>
+</label>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<div class="hidden lg:flex items-center gap-9">
+<a class="text-text-main dark:text-slate-200 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Workplans</a>
+<a class="text-text-sub dark:text-slate-400 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Reports</a>
+<a class="text-text-sub dark:text-slate-400 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Compliance</a>
+<a class="text-text-sub dark:text-slate-400 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Settings</a>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20" data-alt="User profile avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDOAocmA57Go1plNnQg7fI_PUUekRtZ9rXEu_Bvait0LYuVRCTRN3hwh1W5gkr7LA8GenSszGfbbQepHtaCk99bRF8an1qmZSf7OdzVWG4epZHcEEm8R-W2iLI11JBujRVpKWm0um_vIZ4moxUuAeBNlWpuP1gqPKdZoRE7ES2VdtAqj4ZBsufNo2GuhCHh-23_ZoOMMo_DPdifhp77EdwQ7kvMgKtyFYTHg_ZqVilUju0p0u124ZZ-Xzjup-5XZ17Ik7dybCv7pak");'></div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="flex-1 px-6 py-8 md:px-10 lg:px-40 max-w-[1600px] mx-auto w-full">
+<!-- Breadcrumbs & Header -->
+<div class="mb-8">
+<div class="flex flex-wrap gap-2 mb-4 items-center">
+<a class="text-text-sub dark:text-slate-400 text-sm font-medium hover:text-primary" href="#">Workplans</a>
+<span class="text-text-sub dark:text-slate-400 text-sm">/</span>
+<a class="text-text-sub dark:text-slate-400 text-sm font-medium hover:text-primary" href="#">FY 2024</a>
+<span class="text-text-sub dark:text-slate-400 text-sm">/</span>
+<span class="text-text-main dark:text-slate-100 text-sm font-medium">Trade Policy Formulation</span>
+</div>
+<div class="flex flex-col md:flex-row justify-between gap-6 items-start md:items-end">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide">Activity 4.2</span>
+<span class="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide">On Track</span>
+</div>
+<h1 class="text-text-main dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em] mb-2">Draft Regional Trade Policy</h1>
+<p class="text-text-sub dark:text-slate-400 text-base">Strategic Objective 4: Economic Integration</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-colors">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+<span class="hidden sm:inline">Edit Activity</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-6 bg-primary hover:bg-primary-dark text-white font-bold text-sm shadow-md shadow-blue-500/20 transition-all">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+<span>Submit Evidence</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: KPI, Owner, Progress (8 cols) -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Key Metrics Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+<h3 class="text-lg font-bold mb-6 text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">monitoring</span>
+                        Key Performance Indicators
+                    </h3>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+<div class="p-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark">
+<p class="text-text-sub dark:text-slate-400 text-sm mb-1">Budget Utilization</p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-text-main dark:text-white">65%</span>
+<span class="text-xs text-green-600 dark:text-green-400 font-medium mb-1">within limit</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-3">
+<div class="bg-primary h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+<div class="flex justify-between mt-2 text-xs text-text-sub dark:text-slate-500">
+<span>Used: $97.5k</span>
+<span>Total: $150k</span>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark">
+<p class="text-text-sub dark:text-slate-400 text-sm mb-1">Timeline Progress</p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-text-main dark:text-white">Day 180</span>
+<span class="text-xs text-text-sub dark:text-slate-500 mb-1">of 365</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-3">
+<div class="bg-purple-500 h-1.5 rounded-full" style="width: 49%"></div>
+</div>
+<div class="flex justify-between mt-2 text-xs text-text-sub dark:text-slate-500">
+<span>Start: Jan 01</span>
+<span>End: Dec 31</span>
+</div>
+</div>
+<div class="p-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark">
+<p class="text-text-sub dark:text-slate-400 text-sm mb-1">Deliverables</p>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold text-text-main dark:text-white">3/5</span>
+<span class="text-xs text-orange-600 dark:text-orange-400 font-medium mb-1">2 Pending</span>
+</div>
+<div class="flex gap-1 mt-3">
+<div class="h-1.5 flex-1 rounded-full bg-green-500"></div>
+<div class="h-1.5 flex-1 rounded-full bg-green-500"></div>
+<div class="h-1.5 flex-1 rounded-full bg-green-500"></div>
+<div class="h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+<div class="h-1.5 flex-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+</div>
+<div class="mt-2 text-xs text-text-sub dark:text-slate-500">
+                                Next: Draft Review Meeting
+                            </div>
+</div>
+</div>
+</div>
+<!-- Details & Owner -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+<h3 class="text-lg font-bold mb-4 text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">person</span>
+                            Ownership
+                        </h3>
+<div class="flex items-center gap-4 mb-4">
+<div class="size-12 rounded-full bg-cover bg-center" data-alt="Owner portrait" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC0Voh68Lz1Md4YNG4TfvztnAi76JPQ7n43bU0JVHGsgdsFPxScUl3bfhIlA5JAVC626cbg0Y1sjzWaDMt0t5nXgRzFWTnANsiwTSjkhRNuLFiYk5Mid-JGPMv-kC_RnlUTpmgDljV-iFG0ACUXT2M42ng5lA8bjbBB34LDuH45xyUjsr31ojX1UOExzMS6S1stJSZ_T2FW5nNfmst371Ad9trt2lsctE85x8gOl8kqGWRDqkBAjMCVplbhqb2T4M9EKEIAlSzSo2w');"></div>
+<div>
+<p class="font-bold text-text-main dark:text-white">Dr. A. Mbeki</p>
+<p class="text-sm text-text-sub dark:text-slate-400">Senior Trade Analyst</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-sm py-2 border-b border-border-light dark:border-border-dark">
+<span class="text-text-sub dark:text-slate-400">Department</span>
+<span class="font-medium text-text-main dark:text-white">Trade &amp; Integration</span>
+</div>
+<div class="flex justify-between text-sm py-2 border-b border-border-light dark:border-border-dark">
+<span class="text-text-sub dark:text-slate-400">Unit</span>
+<span class="font-medium text-text-main dark:text-white">Policy Formulation</span>
+</div>
+<div class="flex justify-between text-sm pt-2">
+<span class="text-text-sub dark:text-slate-400">Deputy</span>
+<span class="font-medium text-text-main dark:text-white">Sarah Jenkins</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+<h3 class="text-lg font-bold mb-4 text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span>
+                            Description
+                        </h3>
+<p class="text-sm text-text-sub dark:text-slate-300 leading-relaxed mb-4">
+                            This activity involves the drafting of the comprehensive regional trade policy framework. It includes stakeholder consultations, economic impact assessments, and the final formulation of policy documents for member state ratification.
+                        </p>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">#TradePolicy</span>
+<span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">#RegionalIntegration</span>
+<span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">#FY2024</span>
+</div>
+</div>
+</div>
+<!-- Progress Log -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-text-main dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">history</span>
+                            Progress Log
+                        </h3>
+<button class="text-sm text-primary font-medium hover:underline">View All History</button>
+</div>
+<div class="relative pl-4 border-l-2 border-border-light dark:border-slate-700 space-y-8">
+<!-- Item 1 -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-white dark:ring-surface-dark"></div>
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Phase 1 Draft Completed</h4>
+<span class="text-xs text-text-sub dark:text-slate-500">2 days ago</span>
+</div>
+<p class="text-sm text-text-sub dark:text-slate-400 mb-2">Initial draft circulated to internal stakeholders for review.</p>
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-gray-200 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7K1kyLMgjj51JpwhqF-R3HdoFDQbkmuMA1eW25ptm2n6LvNTlkarZ0x2zfsLu5GyyyCHmRN3BBcGeWeafAEKgWlsUSiE9exDQdDopliJuQR7eQ2IUDPKlkRWHo2sar44CCfmikJTdOAvpD1irHL3a8J_07AGcnJpvifXtlegRUUCNk_Yo3Nd0pxXgoF3sDlNA37Wit9H-akRwZrob9m1iJ3NpXVTHXH23IDIyWZU53IHeqYvFYkalA8sE9yHPZmzB0TymylVaneA');"></div>
+<span class="text-xs text-text-sub dark:text-slate-500">Dr. A. Mbeki</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></div>
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Stakeholder Workshop Held</h4>
+<span class="text-xs text-text-sub dark:text-slate-500">1 week ago</span>
+</div>
+<p class="text-sm text-text-sub dark:text-slate-400 mb-2">Consultation with private sector representatives in Johannesburg.</p>
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-gray-200 bg-cover" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBUcodbuLxeHUcMTPjyZA_7D2ZzHZQ7FYxm3sOrqEx5009SO1XuF-kHKZZZrA2x52U_sM-R98-rSBYg_fUXsdjEQNnp8rE_6bMoUp8LyrzXKiKXFylq58uBpy1AdC2k9zLjV7IAeEmXDjhEeCh-n5BRL7dhsc-wYyzhWXiP40YdEE1DtSl5aAmHmizBNCGNxvtup_YRkQhEFkXdd_GZ3bBbvcx9guSKOl5hnMda_ibI2k2NBBK5eurMyomj7cX1NDHTXW8653aSTDU');"></div>
+<span class="text-xs text-text-sub dark:text-slate-500">Sarah Jenkins</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative">
+<div class="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-surface-dark"></div>
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-1">
+<h4 class="text-sm font-bold text-text-main dark:text-white">Budget Approval</h4>
+<span class="text-xs text-text-sub dark:text-slate-500">Jan 15, 2024</span>
+</div>
+<p class="text-sm text-text-sub dark:text-slate-400 mb-2">Allocated $150,000 for FY2024 execution.</p>
+<div class="flex items-center gap-2">
+<div class="flex items-center justify-center size-6 rounded-full bg-blue-100 text-blue-600 text-[10px] font-bold">SYS</div>
+<span class="text-xs text-text-sub dark:text-slate-500">System Auto-log</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: RSS Insight Panel (4 cols) -->
+<div class="lg:col-span-4 space-y-6">
+<!-- RSS Panel Container -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm h-full flex flex-col overflow-hidden">
+<div class="p-5 border-b border-border-light dark:border-border-dark bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-surface-dark">
+<div class="flex justify-between items-center mb-2">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined">rss_feed</span>
+<h3 class="font-bold text-text-main dark:text-white">RSS Insight Panel</h3>
+</div>
+<span class="animate-pulse relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+</span>
+</div>
+<p class="text-xs text-text-sub dark:text-slate-400">
+                            Monitoring news for: <span class="font-semibold text-text-main dark:text-slate-200">Trade, Policy, SADC</span>
+</p>
+</div>
+<div class="flex-1 overflow-y-auto max-h-[800px] p-0">
+<!-- Feed Item 1 -->
+<a class="block p-5 border-b border-border-light dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold tracking-wider text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">The Economist</span>
+<span class="text-xs text-text-sub dark:text-slate-500">2h ago</span>
+</div>
+<h4 class="font-bold text-text-main dark:text-white text-sm mb-2 group-hover:text-primary transition-colors">New Trade Agreements signed in East Africa: Implications for SADC</h4>
+<p class="text-xs text-text-sub dark:text-slate-400 line-clamp-2">
+                                Several East African nations have ratified a new cross-border digital trade protocol, setting a precedent for neighboring regions...
+                            </p>
+</a>
+<!-- Feed Item 2 -->
+<a class="block p-5 border-b border-border-light dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold tracking-wider text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">World Bank</span>
+<span class="text-xs text-text-sub dark:text-slate-500">5h ago</span>
+</div>
+<h4 class="font-bold text-text-main dark:text-white text-sm mb-2 group-hover:text-primary transition-colors">Global Economic Prospects: Regional integration remains key for growth</h4>
+<p class="text-xs text-text-sub dark:text-slate-400 line-clamp-2">
+                                The latest report highlights that reducing non-tariff barriers is the single most effective lever for short-term GDP growth in sub-Saharan Africa.
+                            </p>
+<div class="mt-2 flex gap-1">
+<span class="material-symbols-outlined text-[14px] text-text-sub">attachment</span>
+<span class="text-[10px] text-text-sub">PDF Available</span>
+</div>
+</a>
+<!-- Feed Item 3 -->
+<a class="block p-5 border-b border-border-light dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold tracking-wider text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">Reuters Africa</span>
+<span class="text-xs text-text-sub dark:text-slate-500">1d ago</span>
+</div>
+<h4 class="font-bold text-text-main dark:text-white text-sm mb-2 group-hover:text-primary transition-colors">Logistics bottlenecks easing at major regional ports</h4>
+<p class="text-xs text-text-sub dark:text-slate-400 line-clamp-2">
+                                Improved customs automation has led to a 15% reduction in wait times at Durban and Maputo ports, signalling better trade flow.
+                            </p>
+</a>
+<!-- Feed Item 4 -->
+<a class="block p-5 border-b border-border-light dark:border-border-dark hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-bold tracking-wider text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">Trade Law Centre</span>
+<span class="text-xs text-text-sub dark:text-slate-500">2d ago</span>
+</div>
+<h4 class="font-bold text-text-main dark:text-white text-sm mb-2 group-hover:text-primary transition-colors">Policy Brief: Harmonizing sanitary standards</h4>
+<p class="text-xs text-text-sub dark:text-slate-400 line-clamp-2">
+                                A critical look at how divergent SPS measures are stifling agricultural exports within the bloc.
+                            </p>
+</a>
+</div>
+<div class="p-4 bg-background-light dark:bg-background-dark border-t border-border-light dark:border-border-dark mt-auto">
+<button class="w-full py-2 flex items-center justify-center gap-2 text-sm font-medium text-text-sub hover:text-text-main transition-colors">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+                            Configure RSS Feeds
+                        </button>
+</div>
+</div>
+<!-- Related Documents Widget -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5 shadow-sm">
+<h3 class="font-bold text-text-main dark:text-white text-sm mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">folder</span>
+                        Linked Documents
+                    </h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3 p-2 rounded hover:bg-background-light dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<div class="size-8 rounded bg-red-100 dark:bg-red-900/30 text-red-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-main dark:text-white truncate">Policy_Draft_v1.2.pdf</p>
+<p class="text-xs text-text-sub dark:text-slate-500">2.4 MB • Uploaded Yesterday</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-2 rounded hover:bg-background-light dark:hover:bg-slate-800 cursor-pointer transition-colors">
+<div class="size-8 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">article</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-text-main dark:text-white truncate">Meeting_Minutes_Jan.docx</p>
+<p class="text-xs text-text-sub dark:text-slate-500">450 KB • Uploaded Jan 28</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 text-xs font-bold text-primary border border-primary/20 rounded hover:bg-primary/5 transition-colors">
+                        Browse All Files
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

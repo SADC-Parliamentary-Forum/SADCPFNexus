@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Procurement Requisition - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1d85ed",
+                        "primary-content": "#ffffff",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e2936",
+                        "border-light": "#e7edf3",
+                        "border-dark": "#2d3b4a",
+                        "text-main-light": "#0d141b",
+                        "text-main-dark": "#e2e8f0",
+                        "text-sub-light": "#4c739a",
+                        "text-sub-dark": "#94a3b8",
+                    },
+                    fontFamily: {
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main-light dark:text-text-main-dark transition-colors duration-200 min-h-screen flex flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-light dark:border-border-dark px-6 lg:px-10 py-3 bg-surface-light dark:bg-surface-dark sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Procurement</h2>
+</div>
+<div class="flex flex-1 justify-end gap-4 lg:gap-8 items-center">
+<div class="hidden md:flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-background-light dark:bg-background-dark hover:bg-border-light dark:hover:bg-border-dark text-text-main-light dark:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-background-light dark:bg-background-dark hover:bg-border-light dark:hover:bg-border-dark text-text-main-light dark:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-background-light dark:bg-background-dark hover:bg-border-light dark:hover:bg-border-dark text-text-main-light dark:text-text-main-dark transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-border-light dark:border-border-dark">
+<div class="flex flex-col items-end hidden sm:flex">
+<span class="text-sm font-bold">J. Doe</span>
+<span class="text-xs text-text-sub-light dark:text-text-sub-dark">Procurement Officer</span>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary" data-alt="User profile picture of a man" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuADf93Lt5Ogt5gY-qrAtst9YK87OYKDcUJkM6bC8F5fOsl-mLeCVRIqX7NzWf1n6xv5_-IUSy-Wc9ZwlnNxKdlBrSPdfDZyBwPohHMzGx2pJ_owc5pzJnPo4Xl0uJIOD_JmEO30vZ19cm7dZLrYC-UMiuYN7IwsZOHsSAoV2uPfj_3AtWNLaQnZ_xP9h8dMhwHtGqy9GEQqmL4cudA-idrSorlmQ2iVssg2l_MnsFMMmqTb7HAvw_XY3LyTxNKCEpln7PoyNm5uIxQ");'></div>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col w-full max-w-[1200px] mx-auto p-4 lg:p-8 gap-6">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h1 class="text-3xl font-bold tracking-tight text-text-main-light dark:text-text-main-dark">Requisition #REQ-2023-8492</h1>
+<p class="text-text-sub-light dark:text-text-sub-dark mt-1">Create a new request for goods or services.</p>
+</div>
+<div class="flex gap-3">
+<button class="h-10 px-4 rounded-lg border border-border-light dark:border-border-dark text-text-main-light dark:text-text-main-dark font-medium bg-surface-light dark:bg-surface-dark hover:bg-background-light dark:hover:bg-background-dark">Save Draft</button>
+<button class="h-10 px-4 rounded-lg bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 font-medium hover:bg-red-100 dark:hover:bg-red-900/30">Cancel</button>
+</div>
+</div>
+<!-- Horizontally Scrollable Stepper -->
+<div class="w-full overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+<div class="flex min-w-max items-center">
+<!-- Step 1: Completed -->
+<div class="flex items-center gap-2 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-content">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="text-sm font-bold text-primary whitespace-nowrap">Header Info</span>
+</div>
+<div class="h-[2px] w-12 bg-primary mx-3"></div>
+<!-- Step 2: Completed -->
+<div class="flex items-center gap-2 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-content">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="text-sm font-bold text-primary whitespace-nowrap">Line Items</span>
+</div>
+<div class="h-[2px] w-12 bg-primary mx-3"></div>
+<!-- Step 3: Active -->
+<div class="flex items-center gap-2 group">
+<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-content shadow-[0_0_0_4px_rgba(29,133,237,0.2)]">
+<span class="text-sm font-bold">3</span>
+</div>
+<span class="text-sm font-bold text-text-main-light dark:text-text-main-dark whitespace-nowrap">Vendor &amp; Quotes</span>
+</div>
+<div class="h-[2px] w-12 bg-border-light dark:bg-border-dark mx-3"></div>
+<!-- Step 4: Pending -->
+<div class="flex items-center gap-2 group opacity-50">
+<div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-sub-light dark:text-text-sub-dark">
+<span class="text-sm font-bold">4</span>
+</div>
+<span class="text-sm font-medium text-text-sub-light dark:text-text-sub-dark whitespace-nowrap">Billing</span>
+</div>
+<div class="h-[2px] w-12 bg-border-light dark:bg-border-dark mx-3 opacity-50"></div>
+<!-- Step 5: Pending -->
+<div class="flex items-center gap-2 group opacity-50">
+<div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-sub-light dark:text-text-sub-dark">
+<span class="text-sm font-bold">5</span>
+</div>
+<span class="text-sm font-medium text-text-sub-light dark:text-text-sub-dark whitespace-nowrap">Documents</span>
+</div>
+<div class="h-[2px] w-12 bg-border-light dark:bg-border-dark mx-3 opacity-50"></div>
+<!-- Step 6: Pending -->
+<div class="flex items-center gap-2 group opacity-50">
+<div class="flex h-8 w-8 items-center justify-center rounded-full border-2 border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-text-sub-light dark:text-text-sub-dark">
+<span class="text-sm font-bold">6</span>
+</div>
+<span class="text-sm font-medium text-text-sub-light dark:text-text-sub-dark whitespace-nowrap">Review</span>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex flex-col lg:flex-row gap-8 items-start">
+<!-- Left Column: Guidelines & Summary -->
+<div class="w-full lg:w-1/3 flex flex-col gap-6 order-2 lg:order-1">
+<!-- Policy Info Card -->
+<div class="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800">
+<div class="flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary mt-1">info</span>
+<div>
+<h3 class="font-bold text-text-main-light dark:text-text-main-dark text-sm mb-1">Procurement Policy #402</h3>
+<p class="text-sm text-text-sub-light dark:text-text-sub-dark leading-relaxed">
+                                For requisitions exceeding $5,000, you must provide at least three (3) vendor quotes. If choosing a vendor that is not the lowest bidder, a justification is required.
+                            </p>
+</div>
+</div>
+</div>
+<!-- Summary Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 shadow-sm border border-border-light dark:border-border-dark">
+<h3 class="font-bold text-lg mb-4 text-text-main-light dark:text-text-main-dark">Request Summary</h3>
+<div class="flex flex-col gap-3">
+<div class="flex justify-between text-sm">
+<span class="text-text-sub-light dark:text-text-sub-dark">Requestor</span>
+<span class="font-medium text-text-main-light dark:text-text-main-dark">J. Doe</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-sub-light dark:text-text-sub-dark">Department</span>
+<span class="font-medium text-text-main-light dark:text-text-main-dark">IT Operations</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-sub-light dark:text-text-sub-dark">Total Line Items</span>
+<span class="font-medium text-text-main-light dark:text-text-main-dark">4</span>
+</div>
+<div class="border-t border-border-light dark:border-border-dark my-1"></div>
+<div class="flex justify-between text-base font-bold">
+<span class="text-text-main-light dark:text-text-main-dark">Est. Total</span>
+<span class="text-primary">$12,450.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Form Fields & Card List -->
+<div class="w-full lg:w-2/3 flex flex-col gap-6 order-1 lg:order-2">
+<!-- Justification Section -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-border-light dark:border-border-dark">
+<h2 class="text-xl font-bold mb-4 text-text-main-light dark:text-text-main-dark">Vendor Selection</h2>
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Selection Method <span class="text-red-500">*</span></label>
+<select class="form-select h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary">
+<option>Competitive Quotes (3+)</option>
+<option>Sole Source</option>
+<option>State Contract</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Justification Comments</label>
+<textarea class="form-textarea w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary" placeholder="Explain why this vendor was selected..." rows="3"></textarea>
+</div>
+</div>
+</div>
+<!-- Quotes List (Card Based) -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">Vendor Quotes</h2>
+<button class="flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Add Quote</span>
+</button>
+</div>
+<!-- Quote Card 1 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 shadow-sm border border-l-4 border-primary dark:border-primary">
+<div class="flex justify-between items-start mb-3">
+<div class="flex gap-3 items-center">
+<div class="bg-blue-100 dark:bg-blue-900/40 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-text-main-light dark:text-text-main-dark">TechSupply Co.</h3>
+<span class="inline-flex items-center rounded-full bg-green-50 dark:bg-green-900/20 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 ring-1 ring-inset ring-green-600/20">Preferred Vendor</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-text-sub-light hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-text-sub-light hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Quote Ref</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">#QT-9928</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Date</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">Oct 12, 2023</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Lead Time</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">5 Days</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold text-right">Total Amount</p>
+<p class="font-bold text-text-main-light dark:text-text-main-dark text-right text-lg">$12,450.00</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-border-light dark:border-border-dark flex gap-2 items-center text-sm text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined text-sm">attachment</span>
+<span class="truncate">techsupply_quote_final.pdf (2.4MB)</span>
+</div>
+</div>
+<!-- Quote Card 2 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 shadow-sm border border-border-light dark:border-border-dark">
+<div class="flex justify-between items-start mb-3">
+<div class="flex gap-3 items-center">
+<div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-text-main-light dark:text-text-main-dark">Global Systems Inc.</h3>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-text-sub-light hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-text-sub-light hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Quote Ref</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">GS-2023-001</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Date</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">Oct 10, 2023</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Lead Time</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">14 Days</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold text-right">Total Amount</p>
+<p class="font-bold text-text-main-light dark:text-text-main-dark text-right text-lg">$13,200.00</p>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-border-light dark:border-border-dark flex gap-2 items-center text-sm text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined text-sm">attachment</span>
+<span class="truncate">gs_quote_v2.pdf (1.1MB)</span>
+</div>
+</div>
+<!-- Quote Card 3 -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 shadow-sm border border-border-light dark:border-border-dark opacity-75">
+<div class="flex justify-between items-start mb-3">
+<div class="flex gap-3 items-center">
+<div class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-text-sub-light dark:text-text-sub-dark">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div>
+<h3 class="font-bold text-lg text-text-main-light dark:text-text-main-dark">Alpha Hardware</h3>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-text-sub-light hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+<button class="p-2 text-text-sub-light hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Quote Ref</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">AH-Q88</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Date</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">Oct 11, 2023</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold">Lead Time</p>
+<p class="font-medium text-text-main-light dark:text-text-main-dark">7 Days</p>
+</div>
+<div>
+<p class="text-xs text-text-sub-light dark:text-text-sub-dark uppercase font-semibold text-right">Total Amount</p>
+<p class="font-bold text-text-main-light dark:text-text-main-dark text-right text-lg">$14,150.00</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Footer -->
+<div class="sticky bottom-0 left-0 w-full bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-30">
+<div class="max-w-[1200px] mx-auto flex justify-between items-center">
+<button class="h-12 px-6 rounded-lg border border-border-light dark:border-border-dark text-text-main-light dark:text-text-main-dark font-bold bg-background-light dark:bg-background-dark hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center gap-2">
+<span class="material-symbols-outlined">arrow_back</span>
+                Back
+            </button>
+<div class="flex gap-4">
+<button class="h-12 px-6 rounded-lg bg-surface-light dark:bg-surface-dark border border-primary text-primary font-bold hover:bg-blue-50 dark:hover:bg-blue-900/10">
+                    Save Draft
+                </button>
+<button class="h-12 px-8 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 shadow-lg flex items-center gap-2">
+                    Next Step
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Modal Overlay (Simulated for Demo) -->
+<!-- Ideally hidden by default, shown here to demonstrate "Row Editor" component requested -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" style="display: none;"> <!-- remove display:none to see modal -->
+<div class="bg-surface-light dark:bg-surface-dark w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+<div class="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
+<h3 class="text-xl font-bold text-text-main-light dark:text-text-main-dark">Add Quote Details</h3>
+<button class="text-text-sub-light hover:text-text-main-light dark:hover:text-text-main-dark">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 overflow-y-auto flex flex-col gap-5">
+<!-- Vendor Name -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Vendor Name <span class="text-red-500">*</span></label>
+<input class="h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 focus:ring-primary focus:border-primary" placeholder="e.g., Office Depot" type="text"/>
+</div>
+<!-- Quote Ref & Date -->
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Quote Reference</label>
+<input class="h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 focus:ring-primary focus:border-primary" type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Quote Date</label>
+<input class="h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 focus:ring-primary focus:border-primary" type="date"/>
+</div>
+</div>
+<!-- Financials -->
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Lead Time (Days)</label>
+<input class="h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 focus:ring-primary focus:border-primary" type="number"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Total Amount ($) <span class="text-red-500">*</span></label>
+<input class="h-12 w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark px-3 focus:ring-primary focus:border-primary font-bold text-right" placeholder="0.00" type="number"/>
+</div>
+</div>
+<!-- Attachment -->
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-medium text-text-main-light dark:text-text-main-dark">Quote Document</label>
+<div class="border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-background-light dark:hover:bg-background-dark transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-text-sub-light text-4xl mb-2">cloud_upload</span>
+<span class="text-sm text-primary font-bold">Click to upload</span>
+<span class="text-xs text-text-sub-light dark:text-text-sub-dark mt-1">PDF, PNG, JPG up to 10MB</span>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-border-light dark:border-border-dark flex justify-end gap-3 bg-surface-light dark:bg-surface-dark rounded-b-2xl">
+<button class="h-10 px-4 rounded-lg text-text-main-light dark:text-text-main-dark hover:bg-background-light dark:hover:bg-background-dark font-medium">Cancel</button>
+<button class="h-10 px-6 rounded-lg bg-primary text-white font-bold hover:bg-blue-600 shadow-sm">Save Quote</button>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Audit Dashboard (Light Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#10b981", // Emerald 500 for better contrast on light
+                        "primary-dark": "#059669",
+                        "background-light": "#f8fafc", // Very light slate
+                        "card-light": "#ffffff",
+                        "text-primary": "#1e293b", // Slate 800
+                        "text-secondary": "#64748b", // Slate 500
+                        "accent-green": "#d1fae5", // Emerald 100
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"],
+                        "sans": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                    boxShadow: {
+                        "soft": "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+                        "card": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }.scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light text-text-primary min-h-screen flex flex-col overflow-hidden relative">
+<header class="flex items-center justify-between px-6 pt-12 pb-4 bg-background-light z-10 sticky top-0">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl">shield_lock</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight text-text-primary">Audit Dashboard</h1>
+<p class="text-xs text-text-secondary font-medium tracking-wide">SADC PF NEXUS • GOVERNANCE</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 relative transition-colors">
+<span class="material-symbols-outlined text-text-secondary">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-background-light"></span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto scrollbar-hide px-4 pb-24 space-y-5">
+<section class="bg-card-light rounded-2xl p-6 shadow-soft border border-slate-100 relative overflow-hidden group">
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-accent-green/50 rounded-full blur-3xl opacity-60"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="space-y-1">
+<p class="text-text-secondary text-sm font-medium">Hash Ledger Status</p>
+<h2 class="text-2xl font-bold text-text-primary tracking-tight">Verified</h2>
+</div>
+<div class="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full border border-emerald-100 flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-sm">verified</span>
+                    SECURE
+                </div>
+</div>
+<div class="mt-6 flex items-end gap-2 relative z-10">
+<span class="text-4xl font-bold text-primary">100%</span>
+<span class="text-text-secondary text-sm font-medium mb-1.5">Integrity Score</span>
+</div>
+<div class="mt-4 w-full bg-slate-100 rounded-full h-2 overflow-hidden relative z-10">
+<div class="bg-primary h-full rounded-full w-full shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+</div>
+<p class="mt-3 text-xs text-text-secondary relative z-10 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Last block validation: 2 mins ago • Node ID: #8X92-A
+            </p>
+</section>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-card-light rounded-2xl p-5 shadow-soft border border-slate-100 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-text-secondary text-xs font-medium uppercase tracking-wider">Completeness</p>
+<span class="material-symbols-outlined text-text-secondary text-lg">data_usage</span>
+</div>
+<div class="relative w-24 h-24 mx-auto my-2 flex items-center justify-center">
+<svg class="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="40" stroke="#f1f5f9" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="none" r="40" stroke="#10b981" stroke-dasharray="251.2" stroke-dashoffset="30" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-xl font-bold text-text-primary">88%</span>
+</div>
+</div>
+<p class="text-center text-xs text-text-secondary mt-1">Data Entry Rate</p>
+</div>
+<div class="bg-card-light rounded-2xl p-5 shadow-soft border border-slate-100 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-text-secondary text-xs font-medium uppercase tracking-wider">Risk Level</p>
+<span class="material-symbols-outlined text-text-secondary text-lg">warning</span>
+</div>
+<div class="flex-1 flex flex-col justify-center items-center gap-2">
+<span class="text-3xl font-bold text-amber-500">Low</span>
+<div class="flex gap-1">
+<div class="w-2 h-6 rounded-sm bg-primary"></div>
+<div class="w-2 h-6 rounded-sm bg-primary"></div>
+<div class="w-2 h-6 rounded-sm bg-amber-400"></div>
+<div class="w-2 h-6 rounded-sm bg-slate-200"></div>
+<div class="w-2 h-6 rounded-sm bg-slate-200"></div>
+</div>
+</div>
+<p class="text-center text-xs text-text-secondary mt-2">Within Limits</p>
+</div>
+</div>
+<section class="bg-card-light rounded-2xl p-6 shadow-soft border border-slate-100">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-base font-bold text-text-primary">Approval SLA Breaches</h3>
+<p class="text-xs text-text-secondary">By Department • Last 30 Days</p>
+</div>
+<button class="text-primary-dark text-xs font-bold px-3 py-1.5 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100">
+                    View Report
+                </button>
+</div>
+<div class="flex items-end justify-between h-40 px-2 gap-4">
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="text-xs text-text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity mb-1">12</div>
+<div class="w-full bg-slate-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary absolute bottom-0 transition-all duration-500 hover:bg-primary-dark" style="height: 65%;"></div>
+</div>
+<p class="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Fin</p>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="text-xs text-text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity mb-1">8</div>
+<div class="w-full bg-slate-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary absolute bottom-0 transition-all duration-500 hover:bg-primary-dark" style="height: 45%;"></div>
+</div>
+<p class="text-[10px] uppercase font-bold text-text-secondary tracking-wider">HR</p>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="text-xs text-text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity mb-1">3</div>
+<div class="w-full bg-slate-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary absolute bottom-0 transition-all duration-500 hover:bg-primary-dark" style="height: 20%;"></div>
+</div>
+<p class="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Legal</p>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="text-xs text-text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity mb-1">15</div>
+<div class="w-full bg-slate-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-red-400 absolute bottom-0 transition-all duration-500 hover:bg-red-500" style="height: 85%;"></div>
+</div>
+<p class="text-[10px] uppercase font-bold text-text-secondary tracking-wider">Ops</p>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="text-xs text-text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity mb-1">5</div>
+<div class="w-full bg-slate-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
+<div class="w-full bg-primary absolute bottom-0 transition-all duration-500 hover:bg-primary-dark" style="height: 30%;"></div>
+</div>
+<p class="text-[10px] uppercase font-bold text-text-secondary tracking-wider">IT</p>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-4 px-1">
+<h3 class="text-base font-bold text-text-primary">Recent Overrides</h3>
+<span class="text-xs text-primary font-medium cursor-pointer hover:text-primary-dark hover:underline">View All</span>
+</div>
+<div class="space-y-3">
+<div class="bg-card-light rounded-xl p-4 shadow-sm border border-slate-200 flex items-center justify-between hover:border-slate-300 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+<span class="material-symbols-outlined text-xl">lock_open</span>
+</div>
+<div>
+<p class="text-sm font-bold text-text-primary">Budget Cap Override</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-semibold">HIGH SEC</span>
+<span class="text-xs text-text-secondary">10:42 AM</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 text-xl">chevron_right</span>
+</div>
+<div class="bg-card-light rounded-xl p-4 shadow-sm border border-slate-200 flex items-center justify-between hover:border-slate-300 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+<span class="material-symbols-outlined text-xl">key</span>
+</div>
+<div>
+<p class="text-sm font-bold text-text-primary">Access Grant: Vendor</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-semibold">MED SEC</span>
+<span class="text-xs text-text-secondary">09:15 AM</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 text-xl">chevron_right</span>
+</div>
+<div class="bg-card-light rounded-xl p-4 shadow-sm border border-slate-200 flex items-center justify-between hover:border-slate-300 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-xl">contract_edit</span>
+</div>
+<div>
+<p class="text-sm font-bold text-text-primary">Policy Exception #44</p>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded border border-emerald-100 font-semibold">LOGGED</span>
+<span class="text-xs text-text-secondary">Yesterday</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-300 text-xl">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<nav class="bg-card-light border-t border-slate-200 px-6 pb-6 pt-3 flex justify-between items-end fixed bottom-0 w-full z-50 shadow-2xl shadow-slate-300">
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors text-2xl">grid_view</span>
+<span class="text-[10px] font-medium text-text-secondary group-hover:text-primary transition-colors">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-primary text-2xl filled">fact_check</span>
+<span class="text-[10px] font-medium text-primary">Audit</span>
+</a>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-[0_4px_15px_rgba(16,185,129,0.4)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.5)] transition-all transform hover:-translate-y-1">
+<span class="material-symbols-outlined text-white text-3xl font-bold">add</span>
+</button>
+</div>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors text-2xl">description</span>
+<span class="text-[10px] font-medium text-text-secondary group-hover:text-primary transition-colors">Reports</span>
+</a>
+<a class="flex flex-col items-center gap-1 group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-primary transition-colors text-2xl">settings</span>
+<span class="text-[10px] font-medium text-text-secondary group-hover:text-primary transition-colors">Settings</span>
+</a>
+</nav>
+<div class="fixed bottom-20 left-0 w-full h-12 bg-gradient-to-t from-background-light to-transparent pointer-events-none z-40"></div>
+
+</body></html>

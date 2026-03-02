@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Upload Quarantine Review - SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#ec1313",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#1a0505", // Slightly darker/redder base for the requested theme
+                        "surface-dark": "#2d0f0f",    // Panel background
+                        "surface-highlight": "#451a1a", // Row highlight/Hover
+                        "border-color": "#5e2323",
+                        "text-muted": "#d4a5a5",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        mono: ["Courier New", "monospace"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-border-color bg-surface-dark px-6 py-3 shrink-0">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-white">
+<div class="size-8 flex items-center justify-center bg-primary rounded text-white">
+<span class="material-symbols-outlined">shield_lock</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus Admin</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-text-muted hover:text-white text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-white text-sm font-medium border-b-2 border-primary pb-0.5" href="#">Security</a>
+<a class="text-text-muted hover:text-white text-sm font-medium transition-colors" href="#">Compliance</a>
+<a class="text-text-muted hover:text-white text-sm font-medium transition-colors" href="#">System Logs</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<div class="relative hidden sm:block w-64">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted">
+<span class="material-symbols-outlined text-lg">search</span>
+</span>
+<input class="w-full bg-surface-highlight border-none rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder-text-muted focus:ring-1 focus:ring-primary" placeholder="Search incidents..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-xs font-bold text-white">Admin.Sys</p>
+<p class="text-[10px] text-primary font-mono">SEV-0 ACCESS</p>
+</div>
+<div class="bg-surface-highlight rounded-full h-9 w-9 flex items-center justify-center border border-border-color bg-cover bg-center" data-alt="Admin user profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB6NIJ7MgmxoZEb70Mw9l_GZAHMiBsrZWFftYZbeDwost6LVPuhm9NpaA8lA5WD8rRVv4edDXloe24yS_72ek4paiON9QJSq2ESIBou8smMoKBs9LAxUicbxu4BQzWjn79v28Yd5E5_H5hnCMGlj9-XcLd_Bggdm1xJDcXeXD3RUKE854l4V-EK91jULWVmDyZNUz5Jx7rBgh5gcHLUQ2YCkM_YX2aFk74SHMQbrvXtL7Fc5q2GhA6C5CWmOlTFGj5GHWVCO-k37z0");'></div>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Content (Table) -->
+<div class="flex-1 flex flex-col min-w-0 overflow-hidden border-r border-border-color">
+<!-- Breadcrumbs & Title -->
+<div class="p-6 pb-2 shrink-0">
+<div class="flex flex-wrap items-center gap-2 mb-4 text-sm">
+<a class="text-text-muted hover:text-primary transition-colors" href="#">Security Center</a>
+<span class="text-text-muted">/</span>
+<a class="text-text-muted hover:text-primary transition-colors" href="#">Threat Management</a>
+<span class="text-text-muted">/</span>
+<span class="text-white font-medium">Upload Quarantine Review</span>
+</div>
+<div class="flex justify-between items-end mb-6">
+<div>
+<h1 class="text-3xl font-black text-white tracking-tight mb-2">Upload Quarantine Review</h1>
+<p class="text-text-muted">Manage and analyze flagged uploads held in isolation.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 bg-surface-highlight hover:bg-opacity-80 rounded text-xs font-medium text-text-muted transition-colors">
+<span class="material-symbols-outlined text-base">filter_list</span> Filter
+                        </button>
+<button class="flex items-center gap-2 px-3 py-1.5 bg-surface-highlight hover:bg-opacity-80 rounded text-xs font-medium text-text-muted transition-colors">
+<span class="material-symbols-outlined text-base">download</span> Export Log
+                        </button>
+</div>
+</div>
+<!-- Warning Banner -->
+<div class="flex items-center gap-4 bg-primary/10 border border-primary/30 rounded-lg p-3 mb-2">
+<div class="p-2 bg-primary/20 rounded-full text-primary shrink-0">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<p class="text-primary font-bold text-sm">SEV-0 Environment Active</p>
+<p class="text-text-muted text-xs">All actions on this page are non-repudiable and logged immediately to the immutable audit trail. Proceed with caution.</p>
+</div>
+</div>
+</div>
+<!-- Table Container -->
+<div class="flex-1 overflow-auto px-6 pb-6">
+<div class="border border-border-color rounded-lg overflow-hidden bg-surface-dark">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-highlight sticky top-0 z-10">
+<tr>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Filename</th>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Uploaded By</th>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Threat Type</th>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Status</th>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider">Detected</th>
+<th class="p-3 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-color">
+<!-- Row 1: Active Selection -->
+<tr class="bg-primary/5 hover:bg-surface-highlight/50 transition-colors border-l-2 border-l-primary cursor-pointer group">
+<td class="p-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">description</span>
+<span class="text-sm font-medium text-white group-hover:text-primary transition-colors">payroll_batch_2023_v2.exe</span>
+</div>
+</td>
+<td class="p-3">
+<div class="flex items-center gap-2">
+<div class="size-6 bg-slate-700 rounded-full bg-cover" data-alt="User avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDR_1Px4My2kAyeRGFYPMb2vu03xTW0qgluZR8i6_gcU1LeOjsbzqtPR_RVsJ8OA6tR8IAJKXswZNru04aApCf6BVM1vSuG-Yn9q8rzZfkxF3AIy2FtFkobWCfauuzBnV-hKQBHaeQ79q4h1tGqI8X-A8YP5lmQ3JqN2vEIlzYByD_uAWjGuTdDIaN3WNpy-HIgvluriZlNH732KrlhIS0G2F70W1UFlhiwZKmRiyX2BLnbf8ueQFbr6VaIP88r7zsfZODp42eVgUI");'></div>
+<span class="text-sm text-text-muted">j.doe@finance.sadcp</span>
+</div>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900/30 text-red-400 border border-red-900/50">
+                                        Malware.Heuristic.99
+                                    </span>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-900/30 text-amber-400 border border-amber-900/50">
+<span class="block size-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Quarantined
+                                    </span>
+</td>
+<td class="p-3 text-sm text-text-muted">Oct 27, 09:42</td>
+<td class="p-3 text-right">
+<span class="text-primary text-xs font-bold uppercase tracking-wider">Reviewing</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-highlight/30 transition-colors border-l-2 border-l-transparent cursor-pointer">
+<td class="p-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-muted">picture_as_pdf</span>
+<span class="text-sm font-medium text-white">vendor_contract_Q4.pdf</span>
+</div>
+</td>
+<td class="p-3">
+<div class="flex items-center gap-2">
+<div class="size-6 bg-slate-700 rounded-full flex items-center justify-center text-[10px] text-white font-bold">MS</div>
+<span class="text-sm text-text-muted">m.smith@procure.sadcp</span>
+</div>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-900/30 text-orange-400 border border-orange-900/50">
+                                        Macro.VBA.Suspicious
+                                    </span>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-900/50">
+                                        Pending Rescan
+                                    </span>
+</td>
+<td class="p-3 text-sm text-text-muted">Oct 27, 08:15</td>
+<td class="p-3 text-right">
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-highlight/30 transition-colors border-l-2 border-l-transparent cursor-pointer">
+<td class="p-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-muted">data_object</span>
+<span class="text-sm font-medium text-white">sys_config_backup.xml</span>
+</div>
+</td>
+<td class="p-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-xs text-text-muted">smart_toy</span>
+<span class="text-sm text-text-muted">sysadmin_auto</span>
+</div>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-900/30 text-purple-400 border border-purple-900/50">
+                                        Injection.SQL.Pattern
+                                    </span>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-900/30 text-amber-400 border border-amber-900/50">
+                                        Quarantined
+                                    </span>
+</td>
+<td class="p-3 text-sm text-text-muted">Oct 26, 14:20</td>
+<td class="p-3 text-right">
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-highlight/30 transition-colors border-l-2 border-l-transparent cursor-pointer">
+<td class="p-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-text-muted">table_view</span>
+<span class="text-sm font-medium text-white">employee_pii_export.xlsx</span>
+</div>
+</td>
+<td class="p-3">
+<div class="flex items-center gap-2">
+<div class="size-6 bg-slate-700 rounded-full flex items-center justify-center text-[10px] text-white font-bold">HL</div>
+<span class="text-sm text-text-muted">h.lee@hr.sadcp</span>
+</div>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-900/50">
+                                        DLP.Pattern.SSN
+                                    </span>
+</td>
+<td class="p-3">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-900/30 text-amber-400 border border-amber-900/50">
+                                        Quarantined
+                                    </span>
+</td>
+<td class="p-3 text-sm text-text-muted">Oct 26, 11:05</td>
+<td class="p-3 text-right">
+<button class="text-text-muted hover:text-white transition-colors">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Panel (Review) -->
+<aside class="w-[420px] shrink-0 bg-surface-dark flex flex-col border-l border-border-color shadow-2xl relative z-20">
+<!-- Panel Header -->
+<div class="px-6 py-5 border-b border-border-color">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-mono text-primary font-bold uppercase tracking-widest">Incident #9921-A</span>
+<span class="flex h-2 w-2 rounded-full bg-primary"></span>
+</div>
+<h3 class="text-white text-xl font-bold truncate">payroll_batch_2023_v2.exe</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs text-text-muted font-mono">MD5: 8a7d...3b1f</span>
+<button class="text-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto custom-scrollbar">
+<!-- Action Buttons -->
+<div class="p-6 grid grid-cols-2 gap-3">
+<button class="col-span-1 flex items-center justify-center gap-2 bg-surface-highlight hover:bg-[#5e2323] border border-border-color text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                        Request Rescan
+                    </button>
+<button class="col-span-1 flex items-center justify-center gap-2 bg-surface-highlight hover:bg-[#5e2323] border border-border-color text-white text-sm font-medium py-2.5 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+                        Mark Clean
+                    </button>
+<button class="col-span-2 flex items-center justify-center gap-2 bg-primary hover:bg-red-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors shadow-lg shadow-red-900/20">
+<span class="material-symbols-outlined text-lg">delete_forever</span>
+                        Delete Permanently
+                    </button>
+</div>
+<div class="px-6 space-y-6 pb-6">
+<!-- File Preview (Hex) -->
+<div>
+<div class="flex items-center justify-between mb-2">
+<h4 class="text-sm font-bold text-white">Hex Dump Preview</h4>
+<span class="text-xs text-text-muted">First 256 bytes</span>
+</div>
+<div class="bg-black/40 rounded-lg p-3 border border-border-color font-mono text-xs leading-relaxed text-text-muted overflow-hidden">
+<div class="flex">
+<span class="text-primary/60 select-none border-r border-border-color pr-2 mr-2">
+                                    0000<br/>0010<br/>0020<br/>0030<br/>0040<br/>0050
+                                </span>
+<span class="text-slate-300">
+                                    4D 5A 90 00 03 00 00 00 04 00 00 00 FF FF 00 00<br/>
+                                    B8 00 00 00 00 00 00 00 40 00 00 00 00 00 00 00<br/>
+                                    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00<br/>
+                                    00 00 00 00 00 00 00 00 00 00 00 00 80 00 00 00<br/>
+                                    0E 1F BA 0E 00 B4 09 CD 21 B8 01 4C CD 21 54 68<br/>
+                                    69 73 20 70 72 6F 67 72 61 6D 20 63 61 6E 6E 6F
+                                </span>
+</div>
+</div>
+</div>
+<!-- Analysis Stats -->
+<div class="bg-surface-highlight/30 rounded-lg p-4 border border-border-color">
+<h4 class="text-sm font-bold text-white mb-3">Threat Analysis</h4>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span class="text-text-muted">Confidence Score</span>
+<span class="text-red-400 font-bold">99.8%</span>
+</div>
+<div class="w-full bg-surface-dark rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 99%"></div>
+</div>
+<div class="flex justify-between text-sm pt-1">
+<span class="text-text-muted">Heuristics Engine</span>
+<span class="text-white">Flagged (Critical)</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-text-muted">Sandbox Behavior</span>
+<span class="text-white">Process Injection</span>
+</div>
+</div>
+</div>
+<!-- Audit Timeline -->
+<div>
+<h4 class="text-sm font-bold text-white mb-3">Audit Timeline</h4>
+<div class="relative pl-4 space-y-6 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-px before:bg-border-color">
+<!-- Item 1 -->
+<div class="relative">
+<div class="absolute -left-4 top-1 size-3 rounded-full bg-primary border-2 border-surface-dark"></div>
+<div class="flex flex-col">
+<span class="text-xs text-text-muted">Oct 27, 09:42:01</span>
+<span class="text-sm text-white font-medium">File Quarantined automatically</span>
+<span class="text-xs text-text-muted mt-0.5">System: Antivirus_Node_04</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative">
+<div class="absolute -left-4 top-1 size-3 rounded-full bg-border-color border-2 border-surface-dark"></div>
+<div class="flex flex-col">
+<span class="text-xs text-text-muted">Oct 27, 09:41:55</span>
+<span class="text-sm text-white font-medium">Upload completed</span>
+<span class="text-xs text-text-muted mt-0.5">User: j.doe@finance.sadcp</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative">
+<div class="absolute -left-4 top-1 size-3 rounded-full bg-border-color border-2 border-surface-dark"></div>
+<div class="flex flex-col">
+<span class="text-xs text-text-muted">Oct 27, 09:41:48</span>
+<span class="text-sm text-white font-medium">Upload started</span>
+<span class="text-xs text-text-muted mt-0.5">IP: 10.23.4.112 (VPN Concentrator)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<style>
+        /* Custom Scrollbar for the panels */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #2d0f0f;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #5e2323;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #ec1313;
+        }
+    </style>
+</body></html>

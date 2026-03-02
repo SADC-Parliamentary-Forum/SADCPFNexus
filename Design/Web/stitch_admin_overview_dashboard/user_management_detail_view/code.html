@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - User Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-dark": "#0e44b3",
+                        "background-light": "#f8f9fc",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#334155",
+                        "text-primary-light": "#0f172a",
+                        "text-primary-dark": "#f8fafc",
+                        "text-secondary-light": "#64748b",
+                        "text-secondary-dark": "#94a3b8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased">
+<div class="flex min-h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex flex-col w-72 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0">
+<div class="flex flex-col h-full">
+<!-- Logo Area -->
+<div class="p-6 flex items-center gap-3 border-b border-border-light dark:border-border-dark">
+<div class="bg-primary/10 rounded-lg p-2 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-2xl">security</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-tight">SADCPFNexus</h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-xs font-medium">Admin Console</p>
+</div>
+</div>
+<!-- Navigation -->
+<div class="flex flex-col flex-1 gap-1 p-4 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/5 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">User Management</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/5 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">verified_user</span>
+<span class="text-sm font-medium">Role Configuration</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/5 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">description</span>
+<span class="text-sm font-medium">Audit Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/5 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary">settings</span>
+<span class="text-sm font-medium">System Settings</span>
+</a>
+</div>
+<!-- User Profile Snippet -->
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3">
+<div class="relative w-9 h-9 rounded-full bg-cover bg-center" data-alt="User avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC4q1wg-MLUGPVn1wXo8SuE6JFligKI7I6rrCKYQI0kIouIYzSAjOk6NdKwCPZ7JT0a1vOt0wVYgAr2iBfRghTU5Vw_8qzJLRV2HUJbuMiQpbG4CKxeZLC2WxMpdE5TKjYf3buUX7mXfTPHzGVGkLOD5ONBqVB3gKR_49SdCBwIKD5tRMW6A460UKnYkAC8STOGfKz69oy0YX07CwH-4TBFK_HVKrhSeiUI63mJiDow9lH-nDfwncHhLQ5aaVtX6YHRKBQ4Muo3pAA');">
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-surface-light dark:border-surface-dark rounded-full"></span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<p class="text-sm font-medium truncate">Admin User</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark truncate">System Administrator</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex flex-col flex-1 min-w-0 h-screen overflow-y-auto">
+<!-- Header -->
+<header class="flex items-center justify-between px-8 py-5 bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark sticky top-0 z-20">
+<div class="flex items-center gap-4">
+<div class="lg:hidden text-text-secondary-light cursor-pointer">
+<span class="material-symbols-outlined">menu</span>
+</div>
+<nav aria-label="Breadcrumb" class="flex">
+<ol class="flex items-center space-x-2">
+<li>
+<a class="text-text-secondary-light hover:text-primary text-sm font-medium" href="#">User Management</a>
+</li>
+<li>
+<span class="text-text-secondary-light text-sm">/</span>
+</li>
+<li>
+<span aria-current="page" class="text-primary text-sm font-medium">Edit User: J. Doe</span>
+</li>
+</ol>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-text-secondary-light hover:text-primary transition-colors rounded-lg hover:bg-background-light dark:hover:bg-surface-dark">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+</button>
+<button class="p-2 text-text-secondary-light hover:text-primary transition-colors rounded-lg hover:bg-background-light dark:hover:bg-surface-dark">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-8 max-w-7xl mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<h1 class="text-2xl font-bold tracking-tight text-text-primary-light dark:text-text-primary-dark">Edit User: John Doe</h1>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                                Class A Access
+                            </span>
+<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
+                                Active
+                            </span>
+</div>
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">badge</span>
+                            ID: #8921-AD
+                            <span class="w-1 h-1 rounded-full bg-text-secondary-light dark:bg-text-secondary-dark opacity-50"></span>
+                            Last Active: Oct 27, 2023 09:42 AM
+                        </p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-text-primary-light bg-white dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg shadow-sm hover:bg-background-light dark:hover:bg-gray-800 transition-all">
+<span class="material-symbols-outlined text-[18px]">history</span>
+                            View Audit Log
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg shadow hover:bg-primary-dark transition-all">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                            Save Changes
+                        </button>
+</div>
+</div>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Main Form -->
+<div class="lg:col-span-2 flex flex-col gap-6">
+<!-- Personal Information Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-6">
+<h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">person</span>
+                                Personal Information
+                            </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="col-span-1">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5" for="fullName">Full Name</label>
+<input class="block w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50 text-text-primary-light dark:text-text-primary-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-11" id="fullName" type="text" value="Johnathan Doe"/>
+</div>
+<div class="col-span-1">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5" for="email">Email Address</label>
+<input class="block w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50 text-text-primary-light dark:text-text-primary-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-11" id="email" type="email" value="j.doe@agency.gov"/>
+</div>
+<div class="col-span-1">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5" for="department">Department</label>
+<select class="block w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50 text-text-primary-light dark:text-text-primary-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-11" id="department">
+<option>Select Department</option>
+<option selected="" value="IT">IT &amp; Security Operations</option>
+<option value="HR">Human Resources</option>
+<option value="Finance">Finance Audit</option>
+<option value="Ops">Field Operations</option>
+</select>
+</div>
+<div class="col-span-1">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-1.5" for="primaryRole">Primary Role</label>
+<select class="block w-full rounded-lg border-border-light dark:border-border-dark bg-background-light dark:bg-background-dark/50 text-text-primary-light dark:text-text-primary-dark shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-11" id="primaryRole">
+<option>Select Role</option>
+<option value="Admin">System Administrator</option>
+<option selected="" value="Analyst">Senior Security Analyst</option>
+<option value="Viewer">Read-Only Viewer</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Secondary Roles Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-6">
+<h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">badge</span>
+                                Secondary Roles
+                            </h2>
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-4">Assign additional functional roles to grant specific permissions outside the primary role scope.</p>
+<div class="flex flex-wrap gap-2 mb-4">
+<div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+                                    Audit Reviewer
+                                    <button class="ml-2 hover:text-red-500 focus:outline-none"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+<div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20">
+                                    Incident Responder
+                                    <button class="ml-2 hover:text-red-500 focus:outline-none"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+<button class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-secondary-light hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[16px] mr-1">add</span>
+                                    Add Role
+                                </button>
+</div>
+</div>
+<!-- Security Settings Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-6">
+<h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">lock</span>
+                                Security &amp; Access
+                            </h2>
+<div class="space-y-6">
+<div class="flex items-center justify-between py-3 border-b border-border-light dark:border-border-dark">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-text-primary-light dark:text-text-primary-dark">Account Status</span>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Disable access without deleting the user account.</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+<span class="ml-3 text-sm font-medium text-text-primary-light dark:text-text-primary-dark">Active</span>
+</label>
+</div>
+<div class="flex items-center justify-between py-3 border-b border-border-light dark:border-border-dark">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-text-primary-light dark:text-text-primary-dark">MFA Enforcement</span>
+<span class="material-symbols-outlined text-[16px] text-primary" title="Locked due to Class A Access">lock</span>
+</div>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Mandatory for Class A clearance levels.</span>
+</div>
+<label class="relative inline-flex items-center cursor-not-allowed opacity-80">
+<input checked="" class="sr-only peer" disabled="" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-primary/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+<span class="ml-3 text-sm font-medium text-primary font-bold">Required</span>
+</label>
+</div>
+<div class="pt-2">
+<button class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-lg transition-all">
+<span class="material-symbols-outlined text-[18px]">lock_reset</span>
+                                        Reset Password (Logged)
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Data Scope / Permissions -->
+<div class="lg:col-span-1">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-6 sticky top-24">
+<h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">visibility</span>
+                                Effective Data Scope
+                            </h2>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mb-6">
+                                These permissions are calculated based on the user's Department, Primary Role, and Secondary Roles.
+                            </p>
+<div class="space-y-6">
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark mb-3">Module Access</h3>
+<ul class="space-y-3">
+<li class="flex items-center justify-between text-sm">
+<span class="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                User Provisioning
+                                            </span>
+<span class="text-xs font-mono text-text-secondary-light bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">R/W</span>
+</li>
+<li class="flex items-center justify-between text-sm">
+<span class="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                Security Logs
+                                            </span>
+<span class="text-xs font-mono text-text-secondary-light bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">READ</span>
+</li>
+<li class="flex items-center justify-between text-sm">
+<span class="flex items-center gap-2 text-text-primary-light dark:text-text-primary-dark">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                Incident Reports
+                                            </span>
+<span class="text-xs font-mono text-text-secondary-light bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">R/W/D</span>
+</li>
+<li class="flex items-center justify-between text-sm opacity-50">
+<span class="flex items-center gap-2 text-text-secondary-light">
+<span class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                                                Financial Records
+                                            </span>
+<span class="text-xs font-mono text-text-secondary-light">NONE</span>
+</li>
+</ul>
+</div>
+<div class="border-t border-border-light dark:border-border-dark pt-5">
+<h3 class="text-xs font-bold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark mb-3">Clearance Level</h3>
+<div class="flex flex-col gap-2">
+<div class="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-blue-500 to-primary w-[85%]"></div>
+</div>
+<div class="flex justify-between text-xs font-medium">
+<span class="text-primary">Level 4 (High)</span>
+<span class="text-text-secondary-light">Max: Level 5</span>
+</div>
+</div>
+<div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[18px] mt-0.5">info</span>
+<p class="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+                                                User has elevated privileges capable of modifying system configurations. All actions are strictly logged.
+                                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

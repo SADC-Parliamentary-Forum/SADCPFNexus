@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Regional Compliance Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec80",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#102219",
+                        "surface-dark": "#1c2e24", 
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col overflow-hidden text-slate-900 dark:text-slate-100">
+<!-- Top Navigation Bar -->
+<div class="sticky top-0 z-50 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-b border-slate-200 dark:border-white/10 pt-safe-top pb-2">
+<div class="px-4 py-2 flex items-center justify-between">
+<button class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-white" style="font-size: 24px;">menu</span>
+</button>
+<h2 class="text-lg font-bold tracking-tight text-center flex-1">SADCPFNexus</h2>
+<button class="px-3 py-1 rounded-full text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
+                Help
+            </button>
+</div>
+</div>
+<!-- Main Content Scroll Area -->
+<div class="flex-1 overflow-y-auto pb-24">
+<!-- Page Title & Hero -->
+<div class="px-5 pt-6 pb-2">
+<span class="text-xs font-bold tracking-wider text-primary uppercase mb-1 block">Governance Dashboard</span>
+<h1 class="text-3xl font-bold leading-tight mb-2">Regional Compliance &amp; Treaty Tracker</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Monitor ratification status and legislative alignment across SADC member states.</p>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-3 px-5 py-4 overflow-x-auto no-scrollbar scroll-smooth">
+<button class="flex items-center justify-center px-4 py-2 rounded-full bg-primary text-background-dark font-semibold text-sm whitespace-nowrap shadow-lg shadow-primary/20">
+                All Treaties
+            </button>
+<button class="flex items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm whitespace-nowrap">
+                Model Laws
+            </button>
+<button class="flex items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm whitespace-nowrap">
+                Protocols
+            </button>
+<button class="flex items-center justify-center px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm whitespace-nowrap">
+                Declarations
+            </button>
+</div>
+<!-- Ratification Progress Section -->
+<div class="px-5 mt-2">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold">Ratification Progress</h3>
+<button class="text-primary text-sm font-medium">View Full Map</button>
+</div>
+<!-- Map Card Visualization -->
+<div class="rounded-xl overflow-hidden bg-white dark:bg-surface-dark shadow-sm border border-slate-200 dark:border-white/5 relative aspect-video w-full group">
+<img alt="Abstract map representing African continent with data points" class="w-full h-full object-cover opacity-60 mix-blend-overlay dark:opacity-40" data-alt="Abstract dark map of Africa with glowing data points" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUYZW1mi0seMeSXSayivBt1eP4GsLhapnTMmkU6Z9B4S1lGtRgQLqN_Nu3n9kPGmh-oLgziGIfmsKpqB0GaGkU6q6qmCTJMiR20wAZbwoHk4yXcpgBez5vpTyLDbsYNMmJUfx3Y2aCTKgEGsdEr0H1wAETsiGUHEvCpjBuX6wiiP5rJ-eCHRK9qfFeBmBKqB-kQMRMAjVhDXA-fRRtEybnCN-0ZDVB3E-eyXMgn2n843NMmUF2WBhoDEN7bq2jZUQzLYdvAQjJZXGP"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent"></div>
+<!-- Data Points Overlay -->
+<div class="absolute inset-0 p-4 flex flex-col justify-end">
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-dark/80 backdrop-blur border border-white/10 p-3 rounded-lg">
+<div class="text-primary text-xl font-bold">14/16</div>
+<div class="text-[10px] uppercase tracking-wider text-slate-400">Ratified</div>
+</div>
+<div class="bg-surface-dark/80 backdrop-blur border border-white/10 p-3 rounded-lg">
+<div class="text-yellow-400 text-xl font-bold">85%</div>
+<div class="text-[10px] uppercase tracking-wider text-slate-400">Compliance</div>
+</div>
+<div class="bg-surface-dark/80 backdrop-blur border border-white/10 p-3 rounded-lg">
+<div class="text-white text-xl font-bold">2</div>
+<div class="text-[10px] uppercase tracking-wider text-slate-400">Pending</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Compliance Scorecard -->
+<div class="px-5 mt-8">
+<h3 class="text-lg font-bold mb-4">Compliance Scorecard</h3>
+<div class="space-y-3">
+<!-- Country Item 1 -->
+<div class="p-4 bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-white/5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center text-lg overflow-hidden relative">
+<img alt="Flag of Botswana" class="w-full h-full object-cover opacity-80" data-alt="Botswana flag texture" data-location="Botswana" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfhn7_yFDcFuaYZqro4y578ya6ziLn87EKAhDIYaIR4TiYKNrbnEK8TNv1P8VEWCCAFmqbhoDe1Iq5dVW7c3l43dp6USfNzu51UWB7pdjWu1ZTOy6W-9j8JnsjD5GpTTP64SMzzULwe98byeUZWgstvs76vZfT0A3e1OidghdIXwk_Q3YkKPopFPQmjcDPe5ZfTwkRWzJl750moPD3wn--3qt5A7vK8QiQe_s2ed0JbnwcC4PWazWDgzxQo4A3kXe6nXOSWpcZawm_"/>
+</div>
+<div>
+<p class="font-semibold text-sm">Botswana</p>
+<p class="text-xs text-primary">Fully Compliant</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-lg font-bold">98%</span>
+<div class="w-16 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[98%]"></div>
+</div>
+</div>
+</div>
+<!-- Country Item 2 -->
+<div class="p-4 bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-white/5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center text-lg overflow-hidden relative">
+<img alt="Flag of South Africa" class="w-full h-full object-cover opacity-80" data-alt="South Africa flag texture" data-location="South Africa" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtRIEirk26GELWvJik1Y_ade4pQjtmuxzdHhTRASu2bi6w5umVo18z_isUdQLrOzm4lf7UdZk9z3lAO-umJRZ6cip0CPz3g-Hb69UvU8qegjj5FECVgiJohqsJx_XhmnDWQ7nL-KrRpMdByuLpFFHdK1FLEDP_rBfjC3_oV7u37py0Q8Zr4Q0dE1KmxTVEGsj7JaO4c0yEl8HomSkwRZJfSBpEBjWExDEDvxre7wiFx93mRWZrRfpmFIXYIWTD7MzX0RMTdNK_xART"/>
+</div>
+<div>
+<p class="font-semibold text-sm">South Africa</p>
+<p class="text-xs text-yellow-400">Partial Alignment</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-lg font-bold text-slate-700 dark:text-slate-200">72%</span>
+<div class="w-16 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-yellow-400 w-[72%]"></div>
+</div>
+</div>
+</div>
+<!-- Country Item 3 -->
+<div class="p-4 bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-white/5 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/10 flex items-center justify-center text-lg overflow-hidden relative">
+<img alt="Flag of Namibia" class="w-full h-full object-cover opacity-80" data-alt="Namibia flag texture" data-location="Namibia" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCB0i5r99lNWtjWiI2m-8AzW6765dqYAFk472RbYHzjme-uLgejsEhzIixPAaAWF9kjUh4nBIWtJQLnEksGcfVyCvjVCACj7rBlGCmSVwpXP2-juvIz9xiqvCw1qEz0l5XDKGBgZeEcW7MmohAXvrUU9DY12LuG0fDZfm2hCEj8sDFKPKv3YsEWxxtlzZrEuQmkPI8J7FEsfKO1_YBYIOijfRQyJSb8T_jK2_ID1xyelNk4OMdATh2gBeFcNttQsusDVcODLY1102Gn"/>
+</div>
+<div>
+<p class="font-semibold text-sm">Namibia</p>
+<p class="text-xs text-primary">Fully Compliant</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="text-lg font-bold">94%</span>
+<div class="w-16 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[94%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Implementation Gaps -->
+<div class="px-5 mt-8 mb-6">
+<h3 class="text-lg font-bold mb-4">National Implementation Gaps</h3>
+<div class="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-white/5 p-4 space-y-4">
+<div class="flex gap-4 items-start">
+<div class="mt-1 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-red-500 text-sm">warning</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">Gender Based Violence Model Law</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">3 member states have not yet domesticated the provisions of Article 7 regarding swift prosecution.</p>
+<div class="mt-2 flex gap-2">
+<span class="text-[10px] px-2 py-1 bg-slate-100 dark:bg-white/5 rounded text-slate-500">Angola</span>
+<span class="text-[10px] px-2 py-1 bg-slate-100 dark:bg-white/5 rounded text-slate-500">Lesotho</span>
+</div>
+</div>
+</div>
+<div class="h-px bg-slate-100 dark:bg-white/10 w-full"></div>
+<div class="flex gap-4 items-start">
+<div class="mt-1 w-8 h-8 rounded-full bg-yellow-400/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-yellow-400 text-sm">schedule</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">Climate Change Protocol</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Pending parliamentary review in 4 states. Ratification deadline approaching in 30 days.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-light dark:bg-[#1c2721] border-t border-slate-200 dark:border-[#283930] px-4 pb-6 pt-2 z-50">
+<div class="flex justify-between items-center max-w-lg mx-auto">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-[#9db9ab] hover:text-primary transition-colors group" href="#">
+<div class="flex h-8 items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Dashboard</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="flex h-8 items-center justify-center relative">
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+<span class="material-symbols-outlined text-[24px] font-variation-fill">verified</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Treaties</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-[#9db9ab] hover:text-primary transition-colors group" href="#">
+<div class="flex h-8 items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-[24px]">newspaper</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">News</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-[#9db9ab] hover:text-primary transition-colors group" href="#">
+<div class="flex h-8 items-center justify-center transition-transform group-hover:-translate-y-1">
+<span class="material-symbols-outlined text-[24px]">account_circle</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+</div>
+<!-- CSS for Material Symbols Fill Variation & Utilities -->
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .font-variation-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Safe area spacing for iOS */
+        .pt-safe-top {
+            padding-top: env(safe-area-inset-top, 20px);
+        }
+    </style>
+</body></html>

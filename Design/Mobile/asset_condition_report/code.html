@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Condition Report - SADCPFNexus</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec80", // Bright emerald green
+              "primary-dark": "#0ea659", // Darker shade for text/contrast
+              "secondary": "#618975", // Muted green from example for secondary text
+              "background-light": "#f6f8f7",
+              "background-dark": "#102219",
+              "surface-white": "#ffffff",
+            },
+            fontFamily: {
+              "display": ["Public Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+            boxShadow: {
+              "soft": "0 4px 20px -2px rgba(19, 236, 128, 0.1)",
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom range slider styling */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #13ec80;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #dbe6e0;
+            border-radius: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased selection:bg-primary/30">
+<div class="mx-auto flex w-full max-w-md flex-col min-h-screen relative overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl">
+<!-- Top App Bar -->
+<div class="sticky top-0 z-50 flex items-center bg-surface-white/90 backdrop-blur-md dark:bg-background-dark/90 px-4 py-3 border-b border-slate-100 dark:border-slate-800 transition-all duration-200">
+<button aria-label="Go back" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-slate-900 dark:text-white">
+                Asset Condition Report
+            </h2>
+<button class="flex h-10 items-center justify-end px-2 text-primary-dark dark:text-primary font-bold text-base hover:opacity-80 transition-opacity">
+                Save
+            </button>
+</div>
+<!-- Progress Indicators -->
+<div class="flex w-full flex-row items-center justify-center gap-3 py-6 bg-surface-white dark:bg-background-dark">
+<div class="h-2.5 w-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+<div class="h-2.5 w-8 rounded-full bg-primary shadow-soft shadow-primary/50"></div> <!-- Active Step -->
+<div class="h-2.5 w-2.5 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+</div>
+<!-- Main Content -->
+<main class="flex-1 px-5 pb-24">
+<!-- Header Section -->
+<div class="mb-8">
+<h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2">
+                    Verify Asset Status
+                </h1>
+<p class="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
+                    Please provide current condition details and photo evidence for <span class="font-semibold text-slate-900 dark:text-white">Asset #AF-9021</span>.
+                </p>
+</div>
+<!-- Photo Evidence Section -->
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Photo Evidence</h3>
+<span class="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">Required</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Add Photo Button -->
+<button class="group flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 active:scale-95 transition-all duration-200">
+<div class="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/30 transition-colors">
+<span class="material-symbols-outlined text-primary-dark dark:text-primary" style="font-size: 28px;">add_a_photo</span>
+</div>
+<span class="text-sm font-semibold text-primary-dark dark:text-primary">Tap to Upload</span>
+</button>
+<!-- Preview Thumbnail (Simulated uploaded image) -->
+<div class="relative group aspect-square rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700">
+<img alt="Preview of uploaded asset photo showing a laptop" class="h-full w-full object-cover" data-alt="Close up of a generic office equipment asset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwM-s87q3syKPzQkNQwmzhvDs6DYlxxUg-GmUT2fn4XhRNTs8KmwmFVMf0LNSV_lJok_TvQrSLkUCBbBuD5u0U4YrExf_KHJz5R2nBX1hWyO9PckHqobmo0k5uTYoU0UdWaBQl676aZ4nuXwXoG-IIokH4uOYiadlTFHxzar_oh27dbQf67u0r0T0EzvREaSzQMBgWh9w8AL7G2IFuqtlgHNFFGioT1vf9fzgu0CcS9yM75g6-zyH4bwSiqwLds4m2zRz46i2yWCzz"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="bg-white/20 backdrop-blur-md p-2 rounded-full hover:bg-white/40 text-white transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<div class="absolute bottom-2 left-2 right-2">
+<div class="bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[14px]">sell</span>
+<span class="text-[10px] font-medium text-white">Front View</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Condition Rating Section -->
+<section class="mb-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Condition Rating</h3>
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex justify-between items-center mb-6">
+<span class="text-sm font-medium text-slate-400">Poor</span>
+<span class="text-lg font-bold text-primary-dark dark:text-primary">Good</span>
+<span class="text-sm font-medium text-slate-400">Excellent</span>
+</div>
+<div class="relative w-full h-10 flex items-center">
+<!-- Custom Range Slider using native input for accessibility but styled -->
+<input class="w-full absolute z-20 opacity-0 cursor-pointer h-full" id="condition-slider" max="5" min="1" step="1" type="range" value="4"/>
+<!-- Visual Track -->
+<div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden absolute z-10">
+<div class="h-full bg-gradient-to-r from-red-400 via-yellow-400 to-primary w-3/4 rounded-full"></div>
+</div>
+<!-- Visual Thumb (positioned absolutely based on percentage - purely decorative here for layout) -->
+<div class="absolute left-[75%] -translate-x-1/2 z-10 h-7 w-7 bg-white dark:bg-slate-800 rounded-full shadow-lg border-4 border-primary flex items-center justify-center transform transition-transform active:scale-110">
+</div>
+<!-- Ticks -->
+<div class="w-full flex justify-between px-1 absolute top-4 z-0 pt-2">
+<div class="h-1 w-0.5 bg-slate-300 dark:bg-slate-600"></div>
+<div class="h-1 w-0.5 bg-slate-300 dark:bg-slate-600"></div>
+<div class="h-1 w-0.5 bg-slate-300 dark:bg-slate-600"></div>
+<div class="h-1 w-0.5 bg-slate-300 dark:bg-slate-600"></div>
+<div class="h-1 w-0.5 bg-slate-300 dark:bg-slate-600"></div>
+</div>
+</div>
+<p class="text-xs text-slate-500 text-center mt-3">Slide to adjust the asset condition score</p>
+</div>
+</section>
+<!-- Comments Section -->
+<section class="mb-8">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Inspector Comments</h3>
+<div class="relative">
+<textarea class="w-full min-h-[120px] rounded-2xl border-0 bg-white dark:bg-slate-900 p-4 text-base text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-200 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary resize-none transition-all" placeholder="Describe any visible damage, missing parts, or discrepancies found during inspection..."></textarea>
+<div class="absolute bottom-3 right-3 flex gap-2">
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors">
+<span class="material-symbols-outlined text-[20px]">mic</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Digital Signature Section -->
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Digital Signature</h3>
+<button class="text-sm font-semibold text-primary-dark dark:text-primary">Clear</button>
+</div>
+<div class="relative w-full h-32 rounded-2xl bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 overflow-hidden group hover:border-primary/50 transition-colors cursor-crosshair">
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<p class="text-slate-300 text-sm font-medium group-hover:text-primary/40 transition-colors select-none">Sign here</p>
+</div>
+<!-- Signature Path (Simulated) -->
+<svg class="absolute inset-0 h-full w-full pointer-events-none" style="filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.1));">
+<path class="dark:stroke-white" d="M 40 80 Q 60 40 90 70 T 140 60 Q 180 30 220 80 T 280 60" fill="none" stroke="#111814" stroke-linecap="round" stroke-width="2.5"></path>
+</svg>
+</div>
+<div class="mt-4 flex items-center gap-3">
+<div class="flex h-5 w-5 items-center justify-center rounded border border-slate-300 bg-white dark:bg-slate-800 dark:border-slate-600">
+<span class="material-symbols-outlined text-primary text-[18px]">check</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">
+                        I certify that this report represents the true condition of the asset.
+                    </p>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto z-40 p-4 bg-gradient-to-t from-background-light via-background-light to-transparent dark:from-background-dark dark:via-background-dark pt-8">
+<button class="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-green-400 active:scale-[0.98] text-[#102219] font-bold h-14 text-lg shadow-lg shadow-primary/20 transition-all">
+<span>Submit Report</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+<script>
+        // Simple script to update slider label based on value (Visual only for this demo)
+        const slider = document.getElementById('condition-slider');
+        const labels = ['Critical', 'Poor', 'Fair', 'Good', 'Excellent'];
+        // In a real app, this would update the label text
+    </script>
+</body></html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus - Incident Wizard</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13ec5b",
+                        "primary-dark": "#0ea340",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#162f21",
+                        "surface-darker": "#112217",
+                        "border-dark": "#23482f",
+                        "text-secondary": "#92c9a4",
+                    },
+                    fontFamily: {
+                        sans: ["Public Sans", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #112217; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #23482f; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #326744; 
+        }
+        
+        /* Watermark style */
+        .confidential-watermark {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(239, 68, 68, 0.03) 0px,
+                rgba(239, 68, 68, 0.03) 20px,
+                transparent 20px,
+                transparent 40px
+            );
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-primary/30 selection:text-white flex flex-col min-h-screen relative overflow-x-hidden confidential-watermark">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-40 w-full bg-surface-darker border-b border-border-dark">
+<div class="px-6 lg:px-10 py-3 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-white">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z" fill="currentColor"></path>
+<path clip-rule="evenodd" d="M39.998 12.236C39.9944 12.2537 39.9875 12.2845 39.9748 12.3294C39.9436 12.4399 39.8949 12.5741 39.8346 12.7175C39.8168 12.7597 39.7989 12.8007 39.7813 12.8398C38.5103 13.7113 35.9788 14.9393 33.7095 15.4811C30.9875 16.131 27.6413 16.5217 24 16.5217C20.3587 16.5217 17.0125 16.131 14.2905 15.4811C12.0012 14.9346 9.44505 13.6897 8.18538 12.8168C8.17384 12.7925 8.16216 12.767 8.15052 12.7408C8.09919 12.6249 8.05721 12.5114 8.02977 12.411C8.00356 12.3152 8.00039 12.2667 8.00004 12.2612C8.00004 12.261 8 12.2607 8.00004 12.2612C8.00004 12.2359 8.0104 11.9233 8.68485 11.3686C9.34546 10.8254 10.4222 10.2469 11.9291 9.72276C14.9242 8.68098 19.1919 8 24 8C28.8081 8 33.0758 8.68098 36.0709 9.72276C37.5778 10.2469 38.6545 10.8254 39.3151 11.3686C39.9006 11.8501 39.9857 12.1489 39.998 12.236ZM4.95178 15.2312L21.4543 41.6973C22.6288 43.5809 25.3712 43.5809 26.5457 41.6973L43.0534 15.223C43.0709 15.1948 43.0878 15.1662 43.104 15.1371L41.3563 14.1648C43.104 15.1371 43.1038 15.1374 43.104 15.1371L43.1051 15.135L43.1065 15.1325L43.1101 15.1261L43.1199 15.1082C43.1276 15.094 43.1377 15.0754 43.1497 15.0527C43.1738 15.0075 43.2062 14.9455 43.244 14.8701C43.319 14.7208 43.4196 14.511 43.5217 14.2683C43.6901 13.8679 44 13.0689 44 12.2609C44 10.5573 43.003 9.22254 41.8558 8.2791C40.6947 7.32427 39.1354 6.55361 37.385 5.94477C33.8654 4.72057 29.133 4 24 4C18.867 4 14.1346 4.72057 10.615 5.94478C8.86463 6.55361 7.30529 7.32428 6.14419 8.27911C4.99695 9.22255 3.99999 10.5573 3.99999 12.2609C3.99999 13.1275 4.29264 13.9078 4.49321 14.3607C4.60375 14.6102 4.71348 14.8196 4.79687 14.9689C4.83898 15.0444 4.87547 15.1065 4.9035 15.1529C4.91754 15.1762 4.92954 15.1957 4.93916 15.2111L4.94662 15.223L4.95178 15.2312ZM35.9868 18.996L24 38.22L12.0131 18.996C12.4661 19.1391 12.9179 19.2658 13.3617 19.3718C16.4281 20.1039 20.0901 20.5217 24 20.5217C27.9099 20.5217 31.5719 20.1039 34.6383 19.3718C35.082 19.2658 35.5339 19.1391 35.9868 18.996Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">SADCPFNexus</h2>
+</div>
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium leading-normal" href="#">Incidents</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Admin</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-64 bg-surface-dark border-transparent focus:border-primary focus:ring-0 rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder-text-secondary" placeholder="Search incidents..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden md:block">
+<p class="text-xs text-text-secondary font-medium uppercase tracking-wider">Agent ID: 8942</p>
+<p class="text-xs text-red-400 font-bold uppercase tracking-wider">Level 4 Clearance</p>
+</div>
+<div class="size-10 rounded-full bg-cover bg-center border-2 border-primary/30" data-alt="User profile picture of a male agent" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAWvQefD911UY_Jhm_OwvLYZ4HBb8BJhSCzgbu309VNRiaHj0sCzikpr7UE32TxiA3jm7n6ASt5HfutaK3HpzL2NyxKj7XeRBMoWH8f_8RZTK7XMlk5V2jR9t30SR54qLezEB9JK_G8-kQ_zm_BigbU14ydEUHVzBdTEeReyYew492vnqB7VVhnUAjXH3W2Vbbx0dyQL_-2vaxHR0DJk-LiglHYVfHD5jblhPCQm6-_-qoh-AsNm0c6XPPjtej21VqgTkG2lhnmSjU");'></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex-grow flex justify-center w-full px-4 sm:px-6 lg:px-8 py-8 pb-32">
+<div class="w-full max-w-5xl flex flex-col gap-6">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm">
+<a class="text-text-secondary hover:text-white transition-colors" href="#">Incidents</a>
+<span class="text-text-secondary">/</span>
+<span class="text-white font-medium">New Entry</span>
+<span class="text-text-secondary">/</span>
+<span class="text-primary font-medium">Core Details</span>
+</div>
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-border-dark pb-6">
+<div class="space-y-2">
+<h1 class="text-3xl md:text-4xl font-black text-white tracking-tight">Incident Wizard</h1>
+<div class="flex items-center gap-2">
+<span class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+<p class="text-red-400 text-sm font-bold uppercase tracking-widest">Confidential Mode - Access Logged</p>
+</div>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-dark rounded border border-border-dark">
+<span class="material-symbols-outlined text-text-secondary text-sm">lock</span>
+<span class="text-xs text-text-secondary font-mono">SESSION_ID: 9X-224-B</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-medium">
+<span class="text-white">Step 2 of 4: Core Details</span>
+<span class="text-text-secondary">50% Complete</span>
+</div>
+<div class="h-2 w-full bg-surface-dark rounded-full overflow-hidden">
+<div class="h-full bg-primary transition-all duration-500 ease-out" style="width: 50%"></div>
+</div>
+</div>
+<!-- Form Content -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-4">
+<!-- Main Column (Left) -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Core Info Card -->
+<div class="bg-surface-darker border border-border-dark rounded-xl p-6 space-y-6 shadow-lg">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">feed</span>
+<h3 class="text-lg font-bold text-white">Incident Particulars</h3>
+</div>
+<!-- Category & Sub-category -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Incident Category <span class="text-red-500">*</span></label>
+<div class="relative">
+<select class="block w-full rounded-lg border-border-dark bg-surface-dark py-3 pl-4 pr-10 text-white focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm appearance-none">
+<option disabled="" selected="" value="">Select Classification Level</option>
+<option value="A">Class A - Critical Security Breach</option>
+<option value="B">Class B - Infrastructure Anomaly</option>
+<option value="C">Class C - Personnel Misconduct</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Sub-classification</label>
+<div class="relative">
+<select class="block w-full rounded-lg border-border-dark bg-surface-dark py-3 pl-4 pr-10 text-white focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm appearance-none" disabled="">
+<option>Select Category First</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Detailed Description <span class="text-red-500">*</span></label>
+<div class="rounded-lg border border-border-dark bg-surface-dark overflow-hidden focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+<div class="flex items-center gap-1 border-b border-border-dark px-2 py-2 bg-surface-darker">
+<button class="p-1.5 text-text-secondary hover:text-white rounded hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-[18px]">format_bold</span>
+</button>
+<button class="p-1.5 text-text-secondary hover:text-white rounded hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-[18px]">format_italic</span>
+</button>
+<button class="p-1.5 text-text-secondary hover:text-white rounded hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+</button>
+<div class="h-4 w-px bg-border-dark mx-1"></div>
+<button class="p-1.5 text-text-secondary hover:text-white rounded hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-[18px]">link</span>
+</button>
+</div>
+<textarea class="block w-full border-0 bg-transparent py-3 px-4 text-white placeholder:text-gray-600 focus:ring-0 sm:text-sm" placeholder="Describe the incident in detail according to protocol 42-B..." rows="6"></textarea>
+</div>
+<p class="text-xs text-gray-500 text-right">0 / 2000 characters</p>
+</div>
+</div>
+<!-- Persons Involved Section -->
+<div class="bg-surface-darker border border-border-dark rounded-xl p-6 space-y-6 shadow-lg">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">group</span>
+<h3 class="text-lg font-bold text-white">Persons Involved</h3>
+</div>
+<button class="flex items-center gap-1 text-xs font-bold text-primary hover:text-white transition-colors uppercase tracking-wider bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded">
+<span class="material-symbols-outlined text-sm">add</span>
+                                Add Person
+                            </button>
+</div>
+<div class="space-y-3">
+<!-- Person Item 1 -->
+<div class="flex items-center justify-between bg-surface-dark p-4 rounded-lg border border-border-dark hover:border-primary/50 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm">JD</div>
+<div>
+<p class="text-white font-medium">John Doe</p>
+<p class="text-xs text-text-secondary">Role: Witness | ID: Ext-4421</p>
+</div>
+</div>
+<div class="flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+<button class="text-text-secondary hover:text-white p-2">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="text-text-secondary hover:text-red-400 p-2">
+<span class="material-symbols-outlined text-sm">delete</span>
+</button>
+</div>
+</div>
+<!-- Empty State Placeholder -->
+<div class="border border-dashed border-border-dark rounded-lg p-4 flex flex-col items-center justify-center text-center gap-2 py-6 bg-surface-dark/50">
+<span class="material-symbols-outlined text-text-secondary opacity-50">person_add</span>
+<p class="text-sm text-text-secondary">No other personnel added yet.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Column (Right) -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Date/Time & Location Card -->
+<div class="bg-surface-darker border border-border-dark rounded-xl p-6 space-y-6 shadow-lg">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<h3 class="text-lg font-bold text-white">Time &amp; Place</h3>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Date of Occurrence</label>
+<input class="block w-full rounded-lg border-border-dark bg-surface-dark py-2.5 px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm appearance-none" type="date"/>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Time (24h)</label>
+<input class="block w-full rounded-lg border-border-dark bg-surface-dark py-2.5 px-4 text-white focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm appearance-none" type="time"/>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-medium text-text-secondary">Location</label>
+<div class="relative">
+<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-text-secondary">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+</span>
+<input class="block w-full rounded-lg border-border-dark bg-surface-dark py-2.5 pl-10 pr-4 text-white focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm" placeholder="Building, Room, Sector..." type="text"/>
+</div>
+</div>
+<!-- Map Placeholder -->
+<div class="relative w-full aspect-video rounded-lg overflow-hidden border border-border-dark group">
+<div class="absolute inset-0 bg-cover bg-center opacity-70 group-hover:opacity-100 transition-opacity" data-alt="Satellite map view of a secure facility compound" data-location="Sector 7 Compound" style='background-image: url("https://placeholder.pics/svg/300");'></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-3">
+<span class="text-xs text-white font-mono flex items-center gap-1">
+<span class="size-2 bg-primary rounded-full animate-pulse"></span>
+                                        GPS: 38.8951° N, 77.0364° W
+                                    </span>
+</div>
+</div>
+</div>
+</div>
+<!-- Attachments Card -->
+<div class="bg-surface-darker border border-border-dark rounded-xl p-6 space-y-6 shadow-lg">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">attach_file</span>
+<h3 class="text-lg font-bold text-white">Evidence Upload</h3>
+</div>
+<!-- Drop Zone -->
+<div class="border-2 border-dashed border-border-dark rounded-lg p-6 flex flex-col items-center justify-center text-center gap-3 hover:bg-surface-dark/50 hover:border-primary/50 transition-all cursor-pointer">
+<div class="p-3 rounded-full bg-surface-dark">
+<span class="material-symbols-outlined text-primary text-2xl">cloud_upload</span>
+</div>
+<div>
+<p class="text-sm font-medium text-white">Click to upload</p>
+<p class="text-xs text-text-secondary mt-1">or drag and drop files here</p>
+</div>
+<p class="text-[10px] text-gray-500 uppercase">Max 25MB • Encrypted AES-256</p>
+</div>
+<!-- File List -->
+<div class="space-y-3">
+<div class="bg-surface-dark rounded-lg p-3 flex items-center gap-3 border border-border-dark">
+<div class="size-8 rounded bg-red-500/10 flex items-center justify-center text-red-500">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs text-white font-medium truncate">incident_report_draft_v1.pdf</p>
+<p class="text-[10px] text-text-secondary">2.4 MB</p>
+</div>
+<button class="text-text-secondary hover:text-white">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Scanning State Item -->
+<div class="bg-surface-dark rounded-lg p-3 flex items-center gap-3 border border-yellow-500/30 relative overflow-hidden">
+<!-- Progress Bar Background -->
+<div class="absolute bottom-0 left-0 h-0.5 bg-yellow-500 w-2/3 animate-[pulse_2s_infinite]"></div>
+<div class="size-8 rounded bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+<span class="material-symbols-outlined text-sm animate-spin">sync</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs text-white font-medium truncate">security_cam_feed_04.mp4</p>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] text-yellow-500 font-bold uppercase tracking-wider">Scanning for malware...</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Bar -->
+<div class="fixed bottom-0 left-0 right-0 bg-surface-darker/95 backdrop-blur-md border-t border-border-dark z-50">
+<div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-lg border border-border-dark text-text-secondary hover:text-white hover:bg-surface-dark transition-all font-medium text-sm">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+                Back
+            </button>
+<div class="flex items-center gap-4">
+<span class="text-xs text-text-secondary hidden sm:inline-block">Last autosaved: 2 mins ago</span>
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-surface-dark text-white hover:bg-surface-dark/80 transition-all font-medium text-sm border border-transparent">
+                    Save Draft
+                </button>
+<button class="flex items-center gap-2 px-8 py-2.5 rounded-lg bg-primary text-slate-900 hover:bg-primary-dark transition-all font-bold text-sm shadow-lg shadow-primary/20">
+                    Next Step
+                    <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>
