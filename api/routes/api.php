@@ -26,6 +26,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
 
+        Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
+
         // Admin - User Management
         Route::prefix('admin')->group(function () {
             // Users
@@ -65,6 +67,7 @@ Route::prefix('v1')->group(function () {
 
         // Leave Module
         Route::prefix('leave')->group(function () {
+            Route::get('lil-accruals', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'lilAccruals']);
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest']);
             Route::post('requests/{leaveRequest}/submit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);

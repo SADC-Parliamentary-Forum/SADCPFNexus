@@ -1,11 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  String? _userName;
+  Map<String, dynamic>? _stats;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final api = ref.read(apiClientProvider);
+      final name = await repo.getStoredUserName();
+      final response = await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
+      final data = response.data;
+      if (!mounted) return;
+      setState(() {
+        _userName = name ?? 'User';
+        _stats = data;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString().contains('SocketException') || e.toString().contains('Connection')
+            ? 'Cannot reach server'
+            : 'Failed to load';
+      });
+    }
+  }
+
+  static String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: AppColors.bgDark,
+        body: const SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: AppColors.bgDark,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: _load,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final pending = _stats != null ? (_stats!['pending_approvals'] as num?)?.toInt() ?? 0 : 0;
+    final travels = _stats != null ? (_stats!['active_travels'] as num?)?.toInt() ?? 0 : 0;
+    final leave = _stats != null ? (_stats!['leave_requests'] as num?)?.toInt() ?? 0 : 0;
+    final requisitions = _stats != null ? (_stats!['open_requisitions'] as num?)?.toInt() ?? 0 : 0;
+
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       body: SafeArea(
@@ -20,13 +119,18 @@ class DashboardScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Good morning,',
-                              style: Theme.of(context).textTheme.bodySmall),
                           Text(
-                            'Staff Member',
+                            '${_greeting()},',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                          ),
+                          Text(
+                            _userName ?? 'User',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
                           ),
                         ],
                       ),
@@ -41,8 +145,11 @@ class DashboardScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: const Icon(Icons.notifications_outlined,
-                              color: AppColors.textSecondary, size: 22),
+                          child: const Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.textSecondary,
+                            size: 22,
+                          ),
                         ),
                         Positioned(
                           top: 6,
@@ -68,9 +175,11 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Overview',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      'Overview',
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 12),
                     GridView.count(
                       crossAxisCount: 2,
@@ -79,15 +188,31 @@ class DashboardScreen extends StatelessWidget {
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                       childAspectRatio: 1.5,
-                      children: const [
-                        _StatCard(label: 'Pending', value: '12',
-                            icon: Icons.pending_actions_outlined, color: AppColors.warning),
-                        _StatCard(label: 'Travels', value: '4',
-                            icon: Icons.flight_takeoff_outlined, color: AppColors.primary),
-                        _StatCard(label: 'Leave', value: '7',
-                            icon: Icons.event_available_outlined, color: AppColors.success),
-                        _StatCard(label: 'Requisitions', value: '3',
-                            icon: Icons.shopping_cart_outlined, color: AppColors.info),
+                      children: [
+                        _StatCard(
+                          label: 'Pending',
+                          value: '$pending',
+                          icon: Icons.pending_actions_outlined,
+                          color: AppColors.warning,
+                        ),
+                        _StatCard(
+                          label: 'Travels',
+                          value: '$travels',
+                          icon: Icons.flight_takeoff_outlined,
+                          color: AppColors.primary,
+                        ),
+                        _StatCard(
+                          label: 'Leave',
+                          value: '$leave',
+                          icon: Icons.event_available_outlined,
+                          color: AppColors.success,
+                        ),
+                        _StatCard(
+                          label: 'Requisitions',
+                          value: '$requisitions',
+                          icon: Icons.shopping_cart_outlined,
+                          color: AppColors.info,
+                        ),
                       ],
                     ),
                   ],
@@ -100,14 +225,16 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Quick Actions',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: [
+                      children: const [
                         _QuickAction(icon: Icons.flight_takeoff, label: 'Travel'),
                         _QuickAction(icon: Icons.event_available, label: 'Leave'),
                         _QuickAction(icon: Icons.account_balance_wallet, label: 'Finance'),
@@ -124,9 +251,11 @@ class DashboardScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Recent Activity',
-                        style: Theme.of(context).textTheme.titleSmall
-                            ?.copyWith(color: AppColors.textSecondary)),
+                    Text(
+                      'Recent Activity',
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
@@ -134,33 +263,17 @@ class DashboardScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppColors.border),
                       ),
-                      child: const Column(
-                        children: [
-                          _ActivityItem(
-                            title: 'Travel requisition submitted',
-                            subtitle: '2 hours ago',
-                            icon: Icons.flight_takeoff_outlined,
-                            status: 'PENDING',
-                            statusColor: AppColors.warning,
-                            isLast: false,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(
+                          child: Text(
+                            'Activity is driven by your requests and approvals.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
                           ),
-                          _ActivityItem(
-                            title: 'Leave approved by supervisor',
-                            subtitle: '4 hours ago',
-                            icon: Icons.check_circle_outline,
-                            status: 'APPROVED',
-                            statusColor: AppColors.success,
-                            isLast: false,
-                          ),
-                          _ActivityItem(
-                            title: 'Imprest retirement pending',
-                            subtitle: '1 day ago',
-                            icon: Icons.account_balance_wallet_outlined,
-                            status: 'ACTION',
-                            statusColor: AppColors.danger,
-                            isLast: true,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -211,15 +324,18 @@ class _StatCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value,
+              Text(
+                value,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              Text(label,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
             ],
           ),
         ],
@@ -248,82 +364,9 @@ class _QuickAction extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.primary, size: 22),
           const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final String status;
-  final Color statusColor;
-  final bool isLast;
-
-  const _ActivityItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.status,
-    required this.statusColor,
-    required this.isLast,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.textSecondary, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500)),
-                Text(subtitle,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 11)),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
-            ),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
           ),
         ],
       ),

@@ -11,6 +11,13 @@ class LeaveController extends Controller
 {
     public function __construct(private readonly LeaveService $leaveService) {}
 
+    /** Return LIL (leave-in-lieu) accruals available for the current user to link. Replace with real accruals from overtime/HR when available. */
+    public function lilAccruals(Request $request): JsonResponse
+    {
+        $accruals = []; // TODO: from overtime_accruals or HR when table/API exists
+        return response()->json(['data' => $accruals]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'leave_type', 'per_page']);

@@ -13,13 +13,17 @@ class TimesheetController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'per_page']);
-        $query = Timesheet::with(['user'])
+        $filters = $request->only(['status', 'per_page', 'week_start']);
+        $query = Timesheet::with(['user', 'entries'])
             ->where('user_id', $request->user()->id)
             ->orderByDesc('week_start');
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['week_start'])) {
+            $query->where('week_start', $filters['week_start']);
         }
 
         $paginated = $query->paginate($filters['per_page'] ?? 20);

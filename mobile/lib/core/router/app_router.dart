@@ -42,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'approvals',
             builder: (context, state) => const ApprovalsScreen(),
           ),
+          // Reports: placeholder until a Reports screen (e.g. travel/leave/DSA reports hub) and optional reports API exist.
           GoRoute(
             path: '/reports',
             name: 'reports',
