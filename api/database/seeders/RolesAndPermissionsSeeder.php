@@ -31,49 +31,63 @@ class RolesAndPermissionsSeeder extends Seeder
 
         foreach ($permissions as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'sanctum']);
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
-        // --- Roles ---
-        $systemAdmin = Role::firstOrCreate(['name' => 'System Admin', 'guard_name' => 'sanctum']);
-        $systemAdmin->syncPermissions(Permission::all());
+        $guards = ['sanctum', 'web'];
 
-        $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'sanctum']);
-        $superAdmin->syncPermissions(Permission::all());
+        foreach ($guards as $guard) {
+            // --- Roles (same names for both guards so syncRoles() finds them; default guard is web) ---
+            $systemAdmin = Role::firstOrCreate(['name' => 'System Admin', 'guard_name' => $guard]);
+            $systemAdmin->syncPermissions(Permission::where('guard_name', $guard)->get());
 
-        $hrManager = Role::firstOrCreate(['name' => 'HR Manager', 'guard_name' => 'sanctum']);
-        $hrManager->syncPermissions([
-            'users.view', 'hr.view', 'hr.create', 'hr.edit', 'hr.approve',
-            'travel.view', 'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
-            'governance.view',
-        ]);
+            $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => $guard]);
+            $superAdmin->syncPermissions(Permission::where('guard_name', $guard)->get());
 
-        $financeController = Role::firstOrCreate(['name' => 'Finance Controller', 'guard_name' => 'sanctum']);
-        $financeController->syncPermissions([
-            'finance.view', 'finance.create', 'finance.approve', 'finance.export',
-            'travel.view', 'procurement.view', 'governance.view', 'audit.view',
-        ]);
+            $hrManager = Role::firstOrCreate(['name' => 'HR Manager', 'guard_name' => $guard]);
+            $hrManager->syncPermissions(
+                Permission::whereIn('name', [
+                    'users.view', 'hr.view', 'hr.create', 'hr.edit', 'hr.approve',
+                    'travel.view', 'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
+                    'governance.view',
+                ])->where('guard_name', $guard)->get()
+            );
 
-        $procurementOfficer = Role::firstOrCreate(['name' => 'Procurement Officer', 'guard_name' => 'sanctum']);
-        $procurementOfficer->syncPermissions([
-            'procurement.view', 'procurement.create',
-            'assets.view', 'assets.create', 'finance.view', 'governance.view',
-        ]);
+            $financeController = Role::firstOrCreate(['name' => 'Finance Controller', 'guard_name' => $guard]);
+            $financeController->syncPermissions(
+                Permission::whereIn('name', [
+                    'finance.view', 'finance.create', 'finance.approve', 'finance.export',
+                    'travel.view', 'procurement.view', 'governance.view', 'audit.view',
+                ])->where('guard_name', $guard)->get()
+            );
 
-        $externalAuditor = Role::firstOrCreate(['name' => 'External Auditor', 'guard_name' => 'sanctum']);
-        $externalAuditor->syncPermissions([
-            'finance.view', 'governance.view', 'audit.view', 'audit.export',
-            'travel.view', 'assets.view', 'hr.view',
-        ]);
+            $procurementOfficer = Role::firstOrCreate(['name' => 'Procurement Officer', 'guard_name' => $guard]);
+            $procurementOfficer->syncPermissions(
+                Permission::whereIn('name', [
+                    'procurement.view', 'procurement.create',
+                    'assets.view', 'assets.create', 'finance.view', 'governance.view',
+                ])->where('guard_name', $guard)->get()
+            );
 
-        // Use lowercase 'staff' to match API checks: hasRole('staff')
-        $staff = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'sanctum']);
-        $staff->syncPermissions([
-            'travel.view', 'travel.create',
-            'leave.view', 'leave.create',
-            'imprest.view', 'imprest.create',
-            'finance.view', 'finance.create',
-            'procurement.view', 'procurement.create',
-            'hr.view', 'hr.create',
-        ]);
+            $externalAuditor = Role::firstOrCreate(['name' => 'External Auditor', 'guard_name' => $guard]);
+            $externalAuditor->syncPermissions(
+                Permission::whereIn('name', [
+                    'finance.view', 'governance.view', 'audit.view', 'audit.export',
+                    'travel.view', 'assets.view', 'hr.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $staff = Role::firstOrCreate(['name' => 'staff', 'guard_name' => $guard]);
+            $staff->syncPermissions(
+                Permission::whereIn('name', [
+                    'travel.view', 'travel.create',
+                    'leave.view', 'leave.create',
+                    'imprest.view', 'imprest.create',
+                    'finance.view', 'finance.create',
+                    'procurement.view', 'procurement.create',
+                    'hr.view', 'hr.create',
+                ])->where('guard_name', $guard)->get()
+            );
+        }
     }
 }

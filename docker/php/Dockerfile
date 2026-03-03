@@ -1,4 +1,4 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 RUN apk add --no-cache \
     postgresql-dev \
@@ -22,5 +22,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/api
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 RUN addgroup -g 1000 www && adduser -u 1000 -G www -s /bin/sh -D www
 USER www
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
