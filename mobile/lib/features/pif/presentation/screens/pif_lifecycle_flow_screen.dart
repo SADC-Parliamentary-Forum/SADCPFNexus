@@ -31,7 +31,7 @@ class _PipelineStep {
 }
 
 final _pipelineSteps = [
-  _PipelineStep(
+  const _PipelineStep(
     title: 'Approved PIF',
     subtitle: 'Program Implementation Framework initialized.',
     icon: Icons.description_outlined,
@@ -41,7 +41,7 @@ final _pipelineSteps = [
     count: 24,
     isComplete: true,
   ),
-  _PipelineStep(
+  const _PipelineStep(
     title: 'Travel Requisition',
     subtitle: 'Logistics & accommodation clearance.',
     icon: Icons.flight_takeoff,
@@ -50,7 +50,7 @@ final _pipelineSteps = [
     statusColor: AppColors.warning,
     count: 12,
   ),
-  _PipelineStep(
+  const _PipelineStep(
     title: 'Consultancy Req.',
     subtitle: 'External expert engagement approval.',
     icon: Icons.work_outline,
@@ -59,7 +59,7 @@ final _pipelineSteps = [
     statusColor: AppColors.info,
     count: 5,
   ),
-  _PipelineStep(
+  const _PipelineStep(
     title: 'Imprest Request',
     subtitle: 'Operational fund disbursement.',
     icon: Icons.account_balance_wallet_outlined,
@@ -69,7 +69,7 @@ final _pipelineSteps = [
     count: 8,
     progress: 0.65,
   ),
-  _PipelineStep(
+  const _PipelineStep(
     title: 'Expense Retirement',
     subtitle: 'Final reconciliation for audit ledger.',
     icon: Icons.receipt_long_outlined,
@@ -216,7 +216,7 @@ class _PifLifecycleFlowScreenState extends State<PifLifecycleFlowScreen> {
     ];
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.bgSurface,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),

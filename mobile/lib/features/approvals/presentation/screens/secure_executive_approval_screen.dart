@@ -112,11 +112,11 @@ class _SecureExecutiveApprovalScreenState
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF0D3320),
+                    Color(0xFF0D3320),
                     AppColors.bgCard,
                   ],
                 ),
@@ -160,11 +160,11 @@ class _SecureExecutiveApprovalScreenState
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.groups_2_outlined,
+                      Icon(Icons.groups_2_outlined,
                           color: AppColors.textMuted, size: 14),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'SADC Parliamentary Forum',
@@ -207,13 +207,13 @@ class _SecureExecutiveApprovalScreenState
                 _buildDetailRowWidget(
                   icon: Icons.manage_accounts_outlined,
                   label: 'Authority Level',
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.verified_user_rounded,
+                      Icon(Icons.verified_user_rounded,
                           color: AppColors.primary, size: 14),
-                      const SizedBox(width: 4),
-                      const Text(
+                      SizedBox(width: 4),
+                      Text(
                         'Secretary General',
                         style: TextStyle(
                           color: AppColors.primary,
@@ -241,12 +241,12 @@ class _SecureExecutiveApprovalScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.draw_outlined,
+                      Icon(Icons.draw_outlined,
                           color: AppColors.primary, size: 16),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Digital Signature Block',
                         style: TextStyle(
                           color: AppColors.primary,
@@ -273,12 +273,12 @@ class _SecureExecutiveApprovalScreenState
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.fingerprint_rounded,
+                          Icon(Icons.fingerprint_rounded,
                               color: AppColors.textMuted, size: 13),
-                          const SizedBox(width: 6),
-                          const Text(
+                          SizedBox(width: 6),
+                          Text(
                             'Audit Hash',
                             style: TextStyle(
                               color: AppColors.textSecondary,

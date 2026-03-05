@@ -47,7 +47,7 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
   String _query = '';
 
   static final List<_AuditGroup> _allGroups = [
-    _AuditGroup(
+    const _AuditGroup(
       dateLabel: 'TODAY  24 OCT 2023',
       entries: [
         _AuditEntry(
@@ -82,7 +82,7 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
         ),
       ],
     ),
-    _AuditGroup(
+    const _AuditGroup(
       dateLabel: 'YESTERDAY  23 OCT 2023',
       entries: [
         _AuditEntry(

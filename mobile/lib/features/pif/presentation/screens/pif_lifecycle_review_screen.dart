@@ -35,57 +35,57 @@ class _ChainRow {
 }
 
 final _chainCards = [
-  _ChainCard(
+  const _ChainCard(
     step: 1,
     title: 'Program Implementation',
     statusLabel: 'Approved',
     statusColor: AppColors.success,
     rows: [
-      const _ChainRow('BUDGET LINE', 'BL-3024-01'),
-      const _ChainRow('LEAD OFFICER', 'Dr. A. Mwamba'),
+      _ChainRow('BUDGET LINE', 'BL-3024-01'),
+      _ChainRow('LEAD OFFICER', 'Dr. A. Mwamba'),
     ],
   ),
-  _ChainCard(
+  const _ChainCard(
     step: 2,
     title: 'Travel Requisition',
     statusLabel: 'Completed',
     statusColor: AppColors.primary,
     rows: [
-      const _ChainRow('ROUTE', 'Gaborone → Lusaka'),
-      const _ChainRow('DSA ENTITLEMENT', '\$1,200.00'),
+      _ChainRow('ROUTE', 'Gaborone → Lusaka'),
+      _ChainRow('DSA ENTITLEMENT', '\$1,200.00'),
     ],
   ),
-  _ChainCard(
+  const _ChainCard(
     step: 3,
     title: 'Imprest Requisition',
     statusLabel: 'Disbursed',
     statusColor: AppColors.info,
     rows: [
-      const _ChainRow('TRANSACTION ID', '#TXN-99281-ZA'),
-      const _ChainRow('AMOUNT', '\$1,260.00'),
+      _ChainRow('TRANSACTION ID', '#TXN-99281-ZA'),
+      _ChainRow('AMOUNT', '\$1,260.00'),
     ],
   ),
-  _ChainCard(
+  const _ChainCard(
     step: 4,
     title: 'Expense Retirement',
     statusLabel: 'Reconciled',
     statusColor: AppColors.warning,
     rows: [
-      const _ChainRow('IMPREST', '\$1,260.00'),
-      const _ChainRow('ACTUAL SPEND', '\$1,150.00'),
-      const _ChainRow('VARIANCE', '-\$30.00'),
+      _ChainRow('IMPREST', '\$1,260.00'),
+      _ChainRow('ACTUAL SPEND', '\$1,150.00'),
+      _ChainRow('VARIANCE', '-\$30.00'),
     ],
     note: 'Refund due to renegotiation',
     noteColor: AppColors.warning,
   ),
-  _ChainCard(
+  const _ChainCard(
     step: 5,
     title: 'WORM Archive',
     statusLabel: 'Secured',
     statusColor: AppColors.success,
     rows: [
-      const _ChainRow('VERIFIED', 'HASH-CHAIN'),
-      const _ChainRow('HASH', 'a3f9d2e1b7c4...'),
+      _ChainRow('VERIFIED', 'HASH-CHAIN'),
+      _ChainRow('HASH', 'a3f9d2e1b7c4...'),
     ],
     note: 'Immutable Record Secured',
     noteColor: AppColors.success,
@@ -114,9 +114,9 @@ class PifLifecycleReviewScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
         children: [
           // Sub-brand
-          Row(
+          const Row(
             children: [
-              const Text(
+              Text(
                 'SADCPFNexus Governance',
                 style: TextStyle(
                   color: AppColors.primary,
@@ -125,13 +125,13 @@ class PifLifecycleReviewScreen extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
-              const Text(
+              Text(
                 '  ·  ',
                 style: TextStyle(color: AppColors.border),
               ),
               Text(
                 'Reference No: $_refNo',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 11,
                   fontFamily: 'monospace',

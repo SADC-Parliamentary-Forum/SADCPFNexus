@@ -375,11 +375,11 @@ class _BiometricSignatureScreenState extends State<BiometricSignatureScreen>
                         color: AppColors.success, size: 22),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Signature Ready',
                           style: TextStyle(
                             color: AppColors.success,
@@ -387,18 +387,18 @@ class _BiometricSignatureScreenState extends State<BiometricSignatureScreen>
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        SizedBox(height: 3),
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Timestamp: 2023-10-27 14:32:01 UTC',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 10,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            const Icon(Icons.fingerprint_rounded,
+                            SizedBox(width: 6),
+                            Icon(Icons.fingerprint_rounded,
                                 color: AppColors.textMuted, size: 12),
                           ],
                         ),

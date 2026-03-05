@@ -135,10 +135,10 @@ class _DelegationMeetingsScreenState extends State<DelegationMeetingsScreen> {
               child: Text(m['type'] as String, style: TextStyle(color: typeColor, fontSize: 10, fontWeight: FontWeight.w700))),
             const Spacer(),
             if (m['quorum'] as bool)
-              Row(children: [
-                const Icon(Icons.verified, color: AppColors.success, size: 12),
-                const SizedBox(width: 3),
-                const Text('Quorum', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600)),
+              const Row(children: [
+                Icon(Icons.verified, color: AppColors.success, size: 12),
+                SizedBox(width: 3),
+                Text('Quorum', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w600)),
               ]),
           ]),
           const SizedBox(height: 8),

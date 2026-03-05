@@ -50,12 +50,12 @@ class _OfflineDraftsScreenState extends State<OfflineDraftsScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.warning.withValues(alpha: 0.3))),
-            child: Row(children: [
-              const Icon(Icons.wifi_off, color: AppColors.warning, size: 18),
-              const SizedBox(width: 10),
+            child: const Row(children: [
+              Icon(Icons.wifi_off, color: AppColors.warning, size: 18),
+              SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Working Offline', style: TextStyle(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w700)),
-                const Text('Drafts are saved locally. Sync when connected.', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                Text('Working Offline', style: TextStyle(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w700)),
+                Text('Drafts are saved locally. Sync when connected.', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ])),
             ]),
           ),

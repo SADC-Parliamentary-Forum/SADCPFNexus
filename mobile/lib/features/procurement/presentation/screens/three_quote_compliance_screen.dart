@@ -131,9 +131,9 @@ class _ThreeQuoteComplianceScreenState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     'Vendor Analysis',
                     style: TextStyle(
@@ -179,8 +179,8 @@ class _ThreeQuoteComplianceScreenState
           const SizedBox(height: 20),
 
           // ── Document Evidence ─────────────────────────────────────────
-          Row(
-            children: const [
+          const Row(
+            children: [
               Text(
                 'Document Evidence',
                 style: TextStyle(

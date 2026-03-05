@@ -92,7 +92,7 @@ class _HrGovernanceDashboardScreenState
   }
 
   Widget _buildStatsRow() {
-    return Row(
+    return const Row(
       children: [
         Expanded(
           child: _StatCard(
@@ -102,7 +102,7 @@ class _HrGovernanceDashboardScreenState
             badgeColor: AppColors.success,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: _StatCard(
             label: 'Active Contracts',
@@ -196,12 +196,12 @@ class _HrGovernanceDashboardScreenState
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          const Row(
             children: [
               _LegendDot(color: AppColors.success, label: 'Normal'),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               _LegendDot(color: AppColors.warning, label: 'Warning'),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               _LegendDot(color: AppColors.danger, label: 'Critical'),
             ],
           ),
@@ -233,7 +233,7 @@ class _HrGovernanceDashboardScreenState
           Row(
             children: [
               // Circular gauge
-              SizedBox(
+              const SizedBox(
                 width: 90,
                 height: 90,
                 child: Stack(
@@ -249,7 +249,7 @@ class _HrGovernanceDashboardScreenState
                         strokeCap: StrokeCap.round,
                       ),
                     ),
-                    const Center(
+                    Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -323,10 +323,10 @@ class _HrGovernanceDashboardScreenState
         border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Appraisal Completion',
             style: TextStyle(
               fontSize: 14,
@@ -334,11 +334,11 @@ class _HrGovernanceDashboardScreenState
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           _AppraisalBar(label: 'Executive Team', percent: 1.0, color: AppColors.success),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _AppraisalBar(label: 'Management', percent: 0.73, color: AppColors.warning),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _AppraisalBar(label: 'Staff', percent: 0.45, color: AppColors.danger),
         ],
       ),
@@ -356,9 +356,9 @@ class _HrGovernanceDashboardScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Contract Expiry (90 Days)',
                 style: TextStyle(
@@ -370,7 +370,7 @@ class _HrGovernanceDashboardScreenState
             ],
           ),
           const SizedBox(height: 12),
-          _ContractExpiryRow(
+          const _ContractExpiryRow(
             initials: 'SM',
             name: 'Sarah M.',
             role: 'Senior Analyst / Finance',
@@ -378,7 +378,7 @@ class _HrGovernanceDashboardScreenState
             urgent: true,
           ),
           const Divider(color: AppColors.border, height: 16),
-          _ContractExpiryRow(
+          const _ContractExpiryRow(
             initials: 'AL',
             name: 'Alice Lubinda',
             role: 'Coordinator / Legal',

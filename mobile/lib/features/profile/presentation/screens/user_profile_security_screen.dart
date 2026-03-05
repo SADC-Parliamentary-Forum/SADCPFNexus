@@ -40,11 +40,11 @@ class _UserProfileSecurityScreenState extends State<UserProfileSecurityScreen> {
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
             ),
             child: Row(children: [
-              SizedBox(width: 64, height: 64,
+              const SizedBox(width: 64, height: 64,
                 child: Stack(alignment: Alignment.center, children: [
                   CircularProgressIndicator(value: 0.88, strokeWidth: 5,
-                    backgroundColor: AppColors.bgDark, valueColor: const AlwaysStoppedAnimation(AppColors.primary)),
-                  const Text('88', style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.w900)),
+                    backgroundColor: AppColors.bgDark, valueColor: AlwaysStoppedAnimation(AppColors.primary)),
+                  Text('88', style: TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.w900)),
                 ]),
               ),
               const SizedBox(width: 16),

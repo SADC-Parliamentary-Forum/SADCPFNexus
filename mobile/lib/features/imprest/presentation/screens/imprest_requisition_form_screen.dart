@@ -29,7 +29,7 @@ class ImprestRequisitionFormScreen extends StatefulWidget {
 
 class _ImprestRequisitionFormScreenState
     extends State<ImprestRequisitionFormScreen> {
-  int _currentStep = 1;
+  final int _currentStep = 1;
   static const int _totalSteps = 3;
 
   String? _selectedMission;
@@ -113,8 +113,8 @@ class _ImprestRequisitionFormScreenState
               border: Border.all(
                   color: AppColors.success.withValues(alpha: 0.35)),
             ),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.check_circle_outline_rounded,
                     color: AppColors.success, size: 16),
                 SizedBox(width: 8),
@@ -217,12 +217,12 @@ class _ImprestRequisitionFormScreenState
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'Available Balance',
                             style: TextStyle(
@@ -241,7 +241,7 @@ class _ImprestRequisitionFormScreenState
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: const [
+                        children: [
                           Text(
                             'From Total',
                             style: TextStyle(
@@ -339,9 +339,9 @@ class _ImprestRequisitionFormScreenState
                     ),
                   ],
                 ),
-                Column(
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: const [
+                  children: [
                     Text(
                       'USD Equivalent',
                       style: TextStyle(

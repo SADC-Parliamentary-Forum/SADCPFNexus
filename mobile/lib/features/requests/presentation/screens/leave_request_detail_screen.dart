@@ -79,11 +79,11 @@ class LeaveRequestDetailScreen extends StatelessWidget {
             Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
+                child: const LinearProgressIndicator(
                   value: 13 / 21,
                   minHeight: 6,
                   backgroundColor: AppColors.bgCard,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.success),
+                  valueColor: AlwaysStoppedAnimation(AppColors.success),
                 ),
               )),
             const Padding(padding: EdgeInsets.fromLTRB(14, 4, 14, 12),

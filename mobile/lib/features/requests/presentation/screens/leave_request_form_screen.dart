@@ -261,7 +261,7 @@ class _LeaveRequestFormScreenState extends State<LeaveRequestFormScreen> {
                 style: TextStyle(color: _hasDoc ? AppColors.primary : AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
               if (_hasDoc) const Text('234 KB', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
             ])),
-            if (_hasDoc) Icon(Icons.check_circle, color: AppColors.success, size: 18),
+            if (_hasDoc) const Icon(Icons.check_circle, color: AppColors.success, size: 18),
           ]),
         ),
       ),
@@ -325,7 +325,7 @@ class _StepIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    decoration: BoxDecoration(color: AppColors.bgSurface, border: Border(bottom: BorderSide(color: AppColors.border))),
+    decoration: const BoxDecoration(color: AppColors.bgSurface, border: Border(bottom: BorderSide(color: AppColors.border))),
     child: Row(children: List.generate(total, (i) {
       final done = i < current;
       final active = i == current;
@@ -419,7 +419,7 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-    decoration: BoxDecoration(color: AppColors.bgSurface, border: Border(top: BorderSide(color: AppColors.border))),
+    decoration: const BoxDecoration(color: AppColors.bgSurface, border: Border(top: BorderSide(color: AppColors.border))),
     child: Row(children: [
       if (onBack != null) ...[
         OutlinedButton(

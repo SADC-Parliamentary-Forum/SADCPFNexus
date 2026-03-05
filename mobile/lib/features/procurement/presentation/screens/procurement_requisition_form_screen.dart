@@ -114,7 +114,7 @@ class _ProcurementRequisitionFormScreenState
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
           // ── Step Indicator ────────────────────────────────────────────
-          _StepIndicator(currentStep: 1, totalSteps: 4, label: 'Vendor Details'),
+          const _StepIndicator(currentStep: 1, totalSteps: 4, label: 'Vendor Details'),
           const SizedBox(height: 20),
 
           // ── Vendor Details Section ────────────────────────────────────
@@ -151,8 +151,8 @@ class _ProcurementRequisitionFormScreenState
                     border: Border.all(
                         color: AppColors.warning.withValues(alpha: 0.35)),
                   ),
-                  child: Row(
-                    children: const [
+                  child: const Row(
+                    children: [
                       Icon(Icons.warning_amber_rounded,
                           color: AppColors.warning, size: 16),
                       SizedBox(width: 8),

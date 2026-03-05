@@ -63,21 +63,21 @@ class ImprestDetailScreen extends StatelessWidget {
           _card(children: [
             _secHeader('Retirement Progress', Icons.pie_chart_outline, AppColors.primary),
             const SizedBox(height: 4),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 14),
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 14),
               child: Row(children: [
-                const Text('Retired', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                const Spacer(),
-                const Text('N\$2,100.00 / N\$4,500.00', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+                Text('Retired', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                Spacer(),
+                Text('N\$2,100.00 / N\$4,500.00', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
               ])),
             const SizedBox(height: 8),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 14),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
+                child: const LinearProgressIndicator(
                   value: 2100 / 4500,
                   minHeight: 8,
                   backgroundColor: AppColors.bgCard,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation(AppColors.primary),
                 ),
               )),
             const SizedBox(height: 8),
@@ -99,11 +99,11 @@ class ImprestDetailScreen extends StatelessWidget {
             _expRow('Stationery & Printing', 'N\$320.00', false),
             _expRow('Ground Transport', 'N\$680.00', false),
             const Divider(color: AppColors.border, height: 20, indent: 14, endIndent: 14),
-            Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+            const Padding(padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Row(children: [
-                const Text('Total Spent', style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-                const Spacer(),
-                const Text('N\$3,100.00', style: TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w800)),
+                Text('Total Spent', style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                Spacer(),
+                Text('N\$3,100.00', style: TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w800)),
               ])),
           ]),
           const SizedBox(height: 12),

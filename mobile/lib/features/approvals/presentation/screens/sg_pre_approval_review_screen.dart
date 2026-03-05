@@ -62,13 +62,13 @@ class _SgPreApprovalReviewScreenState
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.tag_rounded,
+                  Icon(Icons.tag_rounded,
                       color: AppColors.textMuted, size: 13),
-                  const SizedBox(width: 5),
-                  const Text(
+                  SizedBox(width: 5),
+                  Text(
                     'Procurement #REQ-2023-892',
                     style: TextStyle(
                       color: AppColors.textSecondary,

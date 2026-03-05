@@ -180,7 +180,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
         // Status + ID row
         Row(
           children: [
-            _StatusBadge(
+            const _StatusBadge(
               label: 'FULLY APPROVED',
               color: AppColors.success,
             ),
@@ -253,7 +253,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
         ),
         const SizedBox(height: 22),
         // Linked Financial Documents
-        _SectionTitle(
+        const _SectionTitle(
           icon: Icons.link,
           iconColor: AppColors.primary,
           label: 'LINKED FINANCIAL DOCUMENTS',
@@ -268,7 +268,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
             )),
         const SizedBox(height: 22),
         // Approval History
-        _SectionTitle(
+        const _SectionTitle(
           icon: Icons.history,
           iconColor: AppColors.gold,
           label: 'APPROVAL HISTORY',
@@ -287,7 +287,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
         top: 16,
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.bgDark,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -393,9 +393,9 @@ class _LinkedDocCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 if (status == 'approved')
-                  _StatusBadge(label: 'Approved', color: AppColors.success)
+                  const _StatusBadge(label: 'Approved', color: AppColors.success)
                 else if (status == 'create')
-                  _CreateButton(label: 'Create')
+                  const _CreateButton(label: 'Create')
                 else if (status == 'info' && onParticipantsToggle != null)
                   GestureDetector(
                     onTap: onParticipantsToggle,
@@ -414,18 +414,18 @@ class _LinkedDocCard extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: AppColors.border)),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 12),
-                  const Text(
+                  SizedBox(height: 12),
+                  Text(
                     '14 Member of Parliament delegates and 3 staff members confirmed for attendance.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 6,

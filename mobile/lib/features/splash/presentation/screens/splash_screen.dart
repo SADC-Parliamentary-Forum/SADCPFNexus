@@ -136,9 +136,9 @@ class _SplashScreenState extends State<SplashScreen>
                   ],
                 ),
                 const SizedBox(height: 20),
-                Row(
+                const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Icon(Icons.lock_outline, size: 11, color: Color(0xFF8FAEA0)),
                     SizedBox(width: 5),
                     Text(

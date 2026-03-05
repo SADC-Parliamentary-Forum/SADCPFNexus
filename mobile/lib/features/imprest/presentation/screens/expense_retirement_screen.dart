@@ -42,9 +42,9 @@ class _ExpenseRetirementScreenState extends State<ExpenseRetirementScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
             child: Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Initial Issued', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                const Text('N\$1,500.00', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
+              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Initial Issued', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                Text('N\$1,500.00', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
               ])),
               Container(width: 1, height: 36, color: AppColors.border),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -118,13 +118,13 @@ class _ExpenseRetirementScreenState extends State<ExpenseRetirementScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Authorization', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-              const SizedBox(height: 8),
+            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Authorization', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              SizedBox(height: 8),
               Row(children: [
-                const Icon(Icons.verified, color: AppColors.primary, size: 16),
-                const SizedBox(width: 8),
-                const Text('DIGITAL SIGNATURE · Biometric Verified', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+                Icon(Icons.verified, color: AppColors.primary, size: 16),
+                SizedBox(width: 8),
+                Text('DIGITAL SIGNATURE · Biometric Verified', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
               ]),
             ]),
           ),

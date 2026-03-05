@@ -222,7 +222,7 @@ class _PifFormScreenState extends State<PifFormScreen> {
         top: 16,
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.bgDark,
         border: Border(top: BorderSide(color: AppColors.border)),
       ),
@@ -401,7 +401,7 @@ class _Step1GeneralInfoState extends State<_Step1GeneralInfo> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.circle,
           iconColor: AppColors.primary,
           label: 'General Information',
@@ -455,7 +455,7 @@ class _Step1GeneralInfoState extends State<_Step1GeneralInfo> {
           ),
         ),
         const SizedBox(height: 24),
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.location_on,
           iconColor: AppColors.danger,
           label: 'Venue Details',
@@ -917,7 +917,7 @@ class _Step3ResourcesState extends State<_Step3Resources> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       children: [
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.people_alt_outlined,
           iconColor: AppColors.gold,
           label: 'Team & Resources',
@@ -1014,17 +1014,17 @@ class _Step3ResourcesState extends State<_Step3Resources> {
           ),
         ),
         const SizedBox(height: 20),
-        _SectionHeader(
+        const _SectionHeader(
           icon: Icons.description_outlined,
           iconColor: AppColors.info,
           label: 'Supporting Documents',
         ),
         const SizedBox(height: 12),
-        _DocumentUploadTile(label: 'Terms of Reference (ToR)', uploaded: true),
+        const _DocumentUploadTile(label: 'Terms of Reference (ToR)', uploaded: true),
         const SizedBox(height: 8),
-        _DocumentUploadTile(label: 'Budget Justification Memo', uploaded: false),
+        const _DocumentUploadTile(label: 'Budget Justification Memo', uploaded: false),
         const SizedBox(height: 8),
-        _DocumentUploadTile(label: 'Venue Confirmation Letter', uploaded: false),
+        const _DocumentUploadTile(label: 'Venue Confirmation Letter', uploaded: false),
       ],
     );
   }

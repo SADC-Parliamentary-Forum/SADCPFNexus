@@ -213,13 +213,13 @@ class _DisciplinaryCaseScreenState extends State<DisciplinaryCaseScreen> {
             ),
           ),
           const Divider(height: 1, color: AppColors.border),
-          _HearingDetailRow(
+          const _HearingDetailRow(
             label: 'DATE & TIME',
             value: 'Oct 24, 2024 · 14:00-16:30',
             icon: Icons.access_time,
           ),
           const Divider(height: 1, indent: 16, endIndent: 16, color: AppColors.border),
-          _HearingDetailRow(
+          const _HearingDetailRow(
             label: 'VENUE',
             value: 'Executive Chamber B, West Wing',
             icon: Icons.location_on_outlined,
