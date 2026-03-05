@@ -136,12 +136,12 @@ class _SalaryAdvancePreviewSignScreenState
                   ),
                 ),
                 const Divider(height: 1, color: Color(0xFFD0F5E4)),
-                _ComplianceRow(
+                const _ComplianceRow(
                   title: 'Single Active Advance',
                   description: 'No other outstanding advances on record.',
                 ),
                 const Divider(height: 1, indent: 16, endIndent: 16, color: Color(0xFFE8F9EF)),
-                _ComplianceRow(
+                const _ComplianceRow(
                   title: 'Within 50% Cap',
                   description: 'Request is 30% of net monthly salary.',
                 ),
@@ -151,8 +151,8 @@ class _SalaryAdvancePreviewSignScreenState
           const SizedBox(height: 20),
 
           // ── Deduction Schedule ────────────────────────────────────────
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.calendar_today, size: 14, color: Color(0xFF888888)),
               SizedBox(width: 6),
               Text(
@@ -206,9 +206,9 @@ class _SalaryAdvancePreviewSignScreenState
                     color: Color(0xFFF0FFF6),
                     borderRadius: BorderRadius.vertical(bottom: Radius.circular(11)),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
                         'Total Repayment:',
                         style: TextStyle(
@@ -307,8 +307,8 @@ class _SalaryAdvancePreviewSignScreenState
             children: [
               Checkbox(
                 value: _acknowledged,
-                activeColor: const Color(0xFF059669),
-                checkColor: Colors.white,
+                activeColor: const Color(0xFF13EC80),
+                checkColor: const Color(0xFF102219),
                 side: const BorderSide(color: Color(0xFFCCCCCC)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 onChanged: (v) => setState(() => _acknowledged = v!),
@@ -340,9 +340,9 @@ class _SalaryAdvancePreviewSignScreenState
           label: const Text('Submit Request'),
           style: ElevatedButton.styleFrom(
             backgroundColor:
-                canSubmit ? const Color(0xFF059669) : const Color(0xFFCCCCCC),
+                canSubmit ? const Color(0xFF13EC80) : const Color(0xFFCCCCCC),
             foregroundColor:
-                canSubmit ? Colors.white : const Color(0xFF888888),
+                canSubmit ? const Color(0xFF102219) : const Color(0xFF888888),
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
@@ -390,10 +390,10 @@ class _ComplianceRow extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: const BoxDecoration(
-              color: Color(0xFF059669),
+              color: Color(0xFF13EC80),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check, size: 14, color: Colors.white),
+            child: const Icon(Icons.check, size: 14, color: Color(0xFF102219)),
           ),
           const SizedBox(width: 12),
           Expanded(

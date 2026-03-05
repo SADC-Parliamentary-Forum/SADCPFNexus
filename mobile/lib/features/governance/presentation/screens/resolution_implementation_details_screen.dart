@@ -32,23 +32,23 @@ class ResolutionImplementationDetailsScreen extends StatelessWidget {
           _card(children: [
             _secHeader('Implementation Progress'),
             Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 16), child: Column(children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Overall Completion', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                const Text('85%', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w800)),
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Overall Completion', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text('85%', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w800)),
               ]),
               const SizedBox(height: 8),
               ClipRRect(borderRadius: BorderRadius.circular(6),
                 child: const LinearProgressIndicator(value: 0.85, minHeight: 8,
-                  backgroundColor: AppColors.bgCard, valueColor: AlwaysStoppedAnimation(AppColors.primary))),
+                  backgroundColor: Color(0xFF1A2C24), valueColor: AlwaysStoppedAnimation(AppColors.primary))),
               const SizedBox(height: 12),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Due Date', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                const Text('30 Jun 2026', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Due Date', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                Text('30 Jun 2026', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ]),
               const SizedBox(height: 4),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('Responsible Dept', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                const Text('Finance Department', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Text('Responsible Dept', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                Text('Finance Department', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ]),
             ])),
           ]),
@@ -61,7 +61,7 @@ class ResolutionImplementationDetailsScreen extends StatelessWidget {
               _voteRow('Against', '2', AppColors.danger),
               _voteRow('Abstain', '0', AppColors.textMuted),
               const Divider(color: AppColors.border, height: 20),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Quorum', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                 Row(children: [
                   Icon(Icons.verified, color: AppColors.success, size: 14),

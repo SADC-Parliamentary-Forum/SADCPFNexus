@@ -65,6 +65,13 @@ class FinanceCommandCenterScreen extends StatelessWidget {
         name: 'Consultancy Fees', pct: 0.88, barColor: Color(0xFFF59E0B)),
   ];
 
+  String _fmt(double v) {
+    if (v >= 1000) {
+      return '\$${(v / 1000).toStringAsFixed(1)}k';
+    }
+    return '\$${v.toStringAsFixed(0)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,19 +122,19 @@ class FinanceCommandCenterScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ── Imprest Aging ─────────────────────────────────────────────
-          _SectionHeader(title: 'Imprest Aging'),
+          const _SectionHeader(title: 'Imprest Aging'),
           const SizedBox(height: 12),
           _buildAgingCard(),
           const SizedBox(height: 20),
 
           // ── Travel Cost Analysis ──────────────────────────────────────
-          _SectionHeader(title: 'Travel Cost Analysis'),
+          const _SectionHeader(title: 'Travel Cost Analysis'),
           const SizedBox(height: 12),
           _TravelCostChart(),
           const SizedBox(height: 20),
 
           // ── Budget Variance Alerts ────────────────────────────────────
-          _SectionHeader(title: 'Budget Variance Alerts'),
+          const _SectionHeader(title: 'Budget Variance Alerts'),
           const SizedBox(height: 12),
           _buildAlertsCard(),
         ],
@@ -280,10 +287,10 @@ class _AdvanceCapCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'ADVANCE CAP',
             style: TextStyle(
               color: AppColors.textMuted,
@@ -292,7 +299,7 @@ class _AdvanceCapCard extends StatelessWidget {
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Center(
             child: SizedBox(
               width: 90,
@@ -300,10 +307,10 @@ class _AdvanceCapCard extends StatelessWidget {
               child: CustomPaint(
                 painter: _DonutPainter(
                   value: 0.42,
-                  foregroundColor: const Color(0xFFF59E0B),
+                  foregroundColor: Color(0xFFF59E0B),
                   backgroundColor: AppColors.border,
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     '42%',
                     style: TextStyle(
@@ -316,8 +323,8 @@ class _AdvanceCapCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
-          const Center(
+          SizedBox(height: 10),
+          Center(
             child: Text(
               'of cap utilized',
               style: TextStyle(
@@ -488,10 +495,10 @@ class _TravelCostChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          const Row(
             children: [
               _LegendDot(color: AppColors.primary, label: 'Q1'),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               _LegendDot(color: AppColors.warning, label: 'Q2'),
             ],
           ),
@@ -636,9 +643,9 @@ class _AlertRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+        const Text(
           'Budget utilization exceeds threshold',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 10,
           ),

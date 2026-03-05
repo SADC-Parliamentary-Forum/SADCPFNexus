@@ -20,6 +20,7 @@ class _AssetConditionReportScreenState extends State<AssetConditionReportScreen>
   };
 
   final _categories = ['No Issues', 'Minor Wear', 'Damage', 'Missing Parts', 'Needs Service'];
+  final _photos = <String>[];
 
   @override
   void dispose() {
@@ -54,7 +55,7 @@ class _AssetConditionReportScreenState extends State<AssetConditionReportScreen>
                 const Text('SADC-TT-2304', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                 const SizedBox(height: 4),
                 Row(children: [
-                  Container(width: 6, height: 6, decoration: BoxDecoration(color: AppColors.success, shape: BoxShape.circle)),
+                  Container(width: 6, height: 6, decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle)),
                   const SizedBox(width: 4),
                   const Text('Last Inspected: 12 Oct 2023', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
                 ]),
@@ -96,7 +97,7 @@ class _AssetConditionReportScreenState extends State<AssetConditionReportScreen>
                 }),
               ),
               const SizedBox(height: 12),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
+              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Text('Poor', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
                 Text('Excellent', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
               ]),

@@ -16,6 +16,11 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login']);
     });
 
+    // External Integrations APIs
+    Route::prefix('external')->group(function () {
+        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
+    });
+
     // Authenticated routes
     Route::middleware(['auth:sanctum', \App\Http\Middleware\SetRlsContext::class])->group(function () {
 

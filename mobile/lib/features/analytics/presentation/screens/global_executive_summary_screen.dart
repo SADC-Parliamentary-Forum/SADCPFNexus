@@ -44,7 +44,7 @@ class _GlobalExecutiveSummaryScreenState extends State<GlobalExecutiveSummaryScr
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.bgCard]),
+              gradient: const LinearGradient(colors: [Color(0xFF1A4030), Color(0xFF102219)]),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
             ),
@@ -74,9 +74,9 @@ class _GlobalExecutiveSummaryScreenState extends State<GlobalExecutiveSummaryScr
           _sectionHeader('Financial Overview', Icons.account_balance_outlined, AppColors.primary),
           const SizedBox(height: 10),
           _barChartCard([
-            _BarData('Jan', 0.55, AppColors.primary),
-            _BarData('Feb', 0.72, AppColors.primary),
-            _BarData('Mar', 0.48, AppColors.primary),
+            const _BarData('Jan', 0.55, AppColors.primary),
+            const _BarData('Feb', 0.72, AppColors.primary),
+            const _BarData('Mar', 0.48, AppColors.primary),
           ]),
           const SizedBox(height: 8),
           Row(children: [
