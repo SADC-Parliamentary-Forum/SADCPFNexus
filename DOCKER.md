@@ -28,7 +28,21 @@ docker-compose up --build -d
 ```
 
 - The **php** container entrypoint runs on start: ensures `api/.env` exists, runs `composer install` if needed, `key:generate` if needed, then migrations and seeding (roles, demo tenant, users, travel/leave/imprest/procurement/finance/HR demo data). There is no separate api-setup service; php does not wait on a long-running step, so the stack comes up without blocking.
+- The **web** container builds from `docker/web/Dockerfile` (target `dev`). `node_modules` are installed **inside the image** at build time — the container does not run `npm install` on every start. The host `./web` folder is volume-mounted so all source changes are reflected instantly.
 - **Postgres** is on port 5432, **Redis** on 6380 (host), **API** via nginx on **8000**, **Web** (Next.js) on **3000**.
+
+## Hot-reload (HMR) in Docker on Windows
+
+`WATCHPACK_POLLING=true` and `CHOKIDAR_USEPOLLING=true` are set on the `web` container. These are required because Docker Desktop on Windows runs inside a Hyper-V/WSL2 VM — inotify filesystem events do not cross that boundary, so Next.js would never detect saved file changes without polling. With polling enabled, edits to any file under `./web/` are picked up within ~500 ms and the browser auto-refreshes.
+
+## Rebuild after adding npm packages
+
+If you add or remove a package from `package.json`, you must rebuild the `web` image so the new dep is installed inside the container:
+
+```bash
+docker-compose build web
+docker-compose up -d web
+```
 
 ## URLs
 

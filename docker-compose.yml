@@ -145,13 +145,19 @@ services:
         condition: service_healthy
 
   web:
-    image: node:20-alpine
+    build:
+      context: ./web
+      dockerfile: ../docker/web/Dockerfile
+      target: dev
     container_name: sadcpf_web
     restart: unless-stopped
-    working_dir: /app
-    command: sh -c "npm install && npm run dev"
     volumes:
       - ./web:/app
+      # Preserve the node_modules installed inside the image — prevents the host
+      # folder (which may be empty or Windows-native) from overriding container deps
+      - /app/node_modules
+      # Persist the Next.js build cache across restarts so hot-reload is fast
+      - /app/.next
     ports:
       - "${WEB_PORT:-3000}:3000"
     env_file:
@@ -159,6 +165,12 @@ services:
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+      # Required for file-change detection (HMR) on Docker Desktop / Windows
+      # inotify events do not cross the Hyper-V / WSL2 boundary, so we use polling
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=500
+      - NEXT_TELEMETRY_DISABLED=1
     networks:
       sadcpf:
         ipv4_address: 10.20.30.9

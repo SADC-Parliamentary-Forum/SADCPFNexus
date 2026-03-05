@@ -106,5 +106,53 @@ class DemoTenantSeeder extends Seeder
             ]
         );
         $financeUser->syncRoles(['Finance Controller']);
+
+        $secDept  = Department::where('tenant_id', $tenant->id)->where('code', 'SEC')->first();
+        $govDept  = Department::where('tenant_id', $tenant->id)->where('code', 'GOV')->first();
+
+        $mariaUser = User::firstOrCreate(
+            ['email' => 'maria@sadcpf.org'],
+            [
+                'tenant_id'       => $tenant->id,
+                'department_id'   => $secDept?->id,
+                'name'            => 'Maria Dlamini',
+                'password'        => Hash::make('Maria@2024!'),
+                'employee_number' => 'SADCPF-005',
+                'job_title'       => 'Senior Programme Officer',
+                'classification'  => 'CONFIDENTIAL',
+                'is_active'       => true,
+            ]
+        );
+        $mariaUser->syncRoles(['staff']);
+
+        $johnUser = User::firstOrCreate(
+            ['email' => 'john@sadcpf.org'],
+            [
+                'tenant_id'       => $tenant->id,
+                'department_id'   => $procDept?->id,
+                'name'            => 'John Mutamba',
+                'password'        => Hash::make('John@2024!'),
+                'employee_number' => 'SADCPF-006',
+                'job_title'       => 'Procurement Officer',
+                'classification'  => 'CONFIDENTIAL',
+                'is_active'       => true,
+            ]
+        );
+        $johnUser->syncRoles(['staff']);
+
+        $thaboUser = User::firstOrCreate(
+            ['email' => 'thabo@sadcpf.org'],
+            [
+                'tenant_id'       => $tenant->id,
+                'department_id'   => $govDept?->id,
+                'name'            => 'Thabo Nkosi',
+                'password'        => Hash::make('Thabo@2024!'),
+                'employee_number' => 'SADCPF-007',
+                'job_title'       => 'Governance Officer',
+                'classification'  => 'CONFIDENTIAL',
+                'is_active'       => true,
+            ]
+        );
+        $thaboUser->syncRoles(['staff']);
     }
 }

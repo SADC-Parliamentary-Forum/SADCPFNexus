@@ -126,7 +126,7 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? AppColors.primary.withOpacity(0.15) : Colors.transparent,
+                color: isActive ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(

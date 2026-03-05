@@ -23,281 +23,679 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = Tenant::where('slug', 'sadcpf')->first();
-        if (!$tenant) {
-            return;
-        }
+        $tenant  = Tenant::where('slug', 'sadcpf')->first();
+        if (!$tenant) return;
 
-        $admin = User::where('email', 'admin@sadcpf.org')->first();
-        $staff = User::where('email', 'staff@sadcpf.org')->first();
-        $hr = User::where('email', 'hr@sadcpf.org')->first();
+        $admin   = User::where('email', 'admin@sadcpf.org')->first();
+        $staff   = User::where('email', 'staff@sadcpf.org')->first();   // Demo Staff
+        $hr      = User::where('email', 'hr@sadcpf.org')->first();
         $finance = User::where('email', 'finance@sadcpf.org')->first();
+        $maria   = User::where('email', 'maria@sadcpf.org')->first();   // Maria Dlamini
+        $john    = User::where('email', 'john@sadcpf.org')->first();    // John Mutamba
+        $thabo   = User::where('email', 'thabo@sadcpf.org')->first();   // Thabo Nkosi
 
-        if (!$staff) {
-            return;
-        }
+        if (!$staff) return;
 
-        $this->seedTravelRequests($tenant, $staff, $admin ?? $hr);
-        $this->seedLeaveRequests($tenant, $staff, $admin ?? $hr);
-        $this->seedImprestRequests($tenant, $staff, $admin ?? $finance);
-        $this->seedProcurementRequests($tenant, $staff, $admin ?? $finance);
-        $this->seedSalaryAdvanceRequests($tenant, $staff, $finance);
-        $this->seedTimesheets($tenant, $staff, $hr);
-        $this->seedPayslips($tenant, $staff);
-        $this->seedLeaveBalances($staff);
-        $this->seedOvertimeAccruals($staff);
+        $approver = $admin ?? $hr;
+
+        $this->seedTravelRequests($tenant, $staff, $maria, $john, $approver);
+        $this->seedLeaveRequests($tenant, $staff, $maria, $thabo, $approver);
+        $this->seedImprestRequests($tenant, $staff, $maria, $john, $approver);
+        $this->seedProcurementRequests($tenant, $staff, $john, $approver);
+        $this->seedSalaryAdvanceRequests($tenant, $staff, $maria, $finance);
+        $this->seedTimesheets($tenant, $staff, $maria, $john, $hr);
+        $this->seedPayslips($tenant, $staff, $maria, $john, $thabo, $hr, $finance);
+        $this->seedLeaveBalances($staff, $maria, $john, $thabo);
+        $this->seedOvertimeAccruals($staff, $maria, $john);
     }
 
-    private function seedTravelRequests(Tenant $tenant, User $requester, User $approver): void
-    {
-        $refs = ['TRV-DEMO001', 'TRV-DEMO002', 'TRV-DEMO003'];
-        $statuses = ['draft', 'submitted', 'approved'];
-        $purposes = ['Regional workshop', 'Committee meeting', 'Stakeholder engagement'];
+    /* ──────────────────────────────────────────────────── TRAVEL ── */
 
-        foreach ($refs as $i => $ref) {
-            $dep = now()->addDays(14 + $i * 7);
-            $ret = $dep->copy()->addDays(3);
+    private function seedTravelRequests(Tenant $tenant, User $staff, ?User $maria, ?User $john, User $approver): void
+    {
+        $today = Carbon::today();
+
+        $records = [
+            // 1 – Draft (staff)
+            [
+                'reference_number'    => 'TRV-DEMO001',
+                'requester'           => $staff,
+                'purpose'             => 'Regional Workshop – Lusaka',
+                'status'              => 'draft',
+                'departure_date'      => $today->copy()->addDays(21),
+                'return_date'         => $today->copy()->addDays(25),
+                'destination_country' => 'Zambia',
+                'destination_city'    => 'Lusaka',
+                'estimated_dsa'       => 600.00,
+                'currency'            => 'USD',
+            ],
+            // 2 – Submitted (staff)
+            [
+                'reference_number'    => 'TRV-DEMO002',
+                'requester'           => $staff,
+                'purpose'             => 'Committee Meeting – Gaborone',
+                'status'              => 'submitted',
+                'departure_date'      => $today->copy()->addDays(14),
+                'return_date'         => $today->copy()->addDays(17),
+                'destination_country' => 'Botswana',
+                'destination_city'    => 'Gaborone',
+                'estimated_dsa'       => 450.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDays(2),
+            ],
+            // 3 – Approved future (staff)
+            [
+                'reference_number'    => 'TRV-DEMO003',
+                'requester'           => $staff,
+                'purpose'             => 'Stakeholder Engagement – Johannesburg',
+                'status'              => 'approved',
+                'departure_date'      => $today->copy()->addDays(30),
+                'return_date'         => $today->copy()->addDays(34),
+                'destination_country' => 'South Africa',
+                'destination_city'    => 'Johannesburg',
+                'estimated_dsa'       => 520.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDays(5),
+                'approved_at'         => $today->copy()->subDays(3),
+                'approved_by'         => $approver->id,
+            ],
+            // 4 – ACTIVE TODAY (Maria) – for Alerts "Active Missions" & "Away Today"
+            [
+                'reference_number'    => 'TRV-ACTIVE1',
+                'requester'           => $maria ?? $staff,
+                'purpose'             => 'Parliamentary Strengthening Workshop – Dar es Salaam',
+                'status'              => 'approved',
+                'departure_date'      => $today->copy()->subDays(2),
+                'return_date'         => $today->copy()->addDays(3),
+                'destination_country' => 'Tanzania',
+                'destination_city'    => 'Dar es Salaam',
+                'estimated_dsa'       => 750.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDays(10),
+                'approved_at'         => $today->copy()->subDays(8),
+                'approved_by'         => $approver->id,
+            ],
+            // 5 – Rejected (staff)
+            [
+                'reference_number'    => 'TRV-DEMO005',
+                'requester'           => $staff,
+                'purpose'             => 'Conference – Nairobi',
+                'status'              => 'rejected',
+                'departure_date'      => $today->copy()->subDays(20),
+                'return_date'         => $today->copy()->subDays(15),
+                'destination_country' => 'Kenya',
+                'destination_city'    => 'Nairobi',
+                'estimated_dsa'       => 800.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDays(30),
+                'rejection_reason'    => 'Budget not available for this quarter.',
+                'approved_by'         => $approver->id,
+            ],
+            // 6 – Approved past (John)
+            [
+                'reference_number'    => 'TRV-DEMO006',
+                'requester'           => $john ?? $staff,
+                'purpose'             => 'Procurement Due Diligence – Harare',
+                'status'              => 'approved',
+                'departure_date'      => $today->copy()->subDays(14),
+                'return_date'         => $today->copy()->subDays(11),
+                'destination_country' => 'Zimbabwe',
+                'destination_city'    => 'Harare',
+                'estimated_dsa'       => 380.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDays(21),
+                'approved_at'         => $today->copy()->subDays(18),
+                'approved_by'         => $approver->id,
+            ],
+            // 7 – Draft (Thabo via john)
+            [
+                'reference_number'    => 'TRV-DEMO007',
+                'requester'           => $john ?? $staff,
+                'purpose'             => 'Governance Forum – Maputo',
+                'status'              => 'draft',
+                'departure_date'      => $today->copy()->addDays(45),
+                'return_date'         => $today->copy()->addDays(48),
+                'destination_country' => 'Mozambique',
+                'destination_city'    => 'Maputo',
+                'estimated_dsa'       => 420.00,
+                'currency'            => 'USD',
+            ],
+            // 8 – Submitted (Maria)
+            [
+                'reference_number'    => 'TRV-DEMO008',
+                'requester'           => $maria ?? $staff,
+                'purpose'             => 'Gender Audit Mission – Maseru',
+                'status'              => 'submitted',
+                'departure_date'      => $today->copy()->addDays(10),
+                'return_date'         => $today->copy()->addDays(14),
+                'destination_country' => 'Lesotho',
+                'destination_city'    => 'Maseru',
+                'estimated_dsa'       => 500.00,
+                'currency'            => 'USD',
+                'submitted_at'        => $today->copy()->subDay(),
+            ],
+        ];
+
+        foreach ($records as $data) {
+            $requester = $data['requester'];
+            unset($data['requester']);
+
             $travel = TravelRequest::firstOrCreate(
-                ['reference_number' => $ref],
-                [
-                    'tenant_id'           => $tenant->id,
-                    'requester_id'        => $requester->id,
-                    'approved_by'         => in_array($statuses[$i], ['approved'], true) ? $approver->id : null,
-                    'purpose'             => $purposes[$i],
-                    'status'              => $statuses[$i],
-                    'departure_date'      => $dep,
-                    'return_date'         => $ret,
-                    'destination_country' => 'Namibia',
-                    'destination_city'    => 'Windhoek',
-                    'estimated_dsa'       => 450.00,
-                    'currency'            => 'USD',
-                    'justification'       => 'Official mission.',
-                    'submitted_at'        => in_array($statuses[$i], ['submitted', 'approved'], true) ? now()->subDays(2) : null,
-                    'approved_at'         => $statuses[$i] === 'approved' ? now()->subDay() : null,
-                ]
+                ['reference_number' => $data['reference_number']],
+                array_merge($data, [
+                    'tenant_id'    => $tenant->id,
+                    'requester_id' => $requester->id,
+                    'justification' => 'Official mission per approved workplan.',
+                    'currency'     => $data['currency'] ?? 'USD',
+                ])
             );
+
             if ($travel->wasRecentlyCreated && $travel->itineraries()->count() === 0) {
                 $travel->itineraries()->create([
-                    'from_location'   => 'Windhoek',
-                    'to_location'     => 'Windhoek',
-                    'travel_date'     => $dep,
-                    'transport_mode'  => 'Flight',
-                    'dsa_rate'        => 150,
-                    'days_count'      => 3,
-                    'calculated_dsa'  => 450,
+                    'from_location'  => 'Windhoek',
+                    'to_location'    => $data['destination_city'] ?? $data['destination_country'],
+                    'travel_date'    => $data['departure_date'],
+                    'transport_mode' => 'Flight',
+                    'dsa_rate'       => $data['estimated_dsa'] / 3,
+                    'days_count'     => 3,
+                    'calculated_dsa' => $data['estimated_dsa'],
                 ]);
             }
         }
     }
 
-    private function seedLeaveRequests(Tenant $tenant, User $requester, User $approver): void
-    {
-        $refs = ['LV-DEMO001', 'LV-DEMO002', 'LV-DEMO003'];
-        $statuses = ['draft', 'submitted', 'approved'];
-        $types = ['annual', 'sick', 'unpaid'];
+    /* ───────────────────────────────────────────────────── LEAVE ── */
 
-        foreach ($refs as $i => $ref) {
-            $start = now()->addDays(7 + $i * 5);
-            $days = [3, 5, 2][$i];
-            $end = $start->copy()->addDays($days - 1);
+    private function seedLeaveRequests(Tenant $tenant, User $staff, ?User $maria, ?User $thabo, User $approver): void
+    {
+        $today = Carbon::today();
+        $year  = (int) $today->year;
+
+        $records = [
+            // 1 – Draft annual (staff)
+            [
+                'reference_number' => 'LV-DEMO001',
+                'requester'        => $staff,
+                'leave_type'       => 'annual',
+                'start_date'       => $today->copy()->addDays(10),
+                'end_date'         => $today->copy()->addDays(12),
+                'days_requested'   => 3,
+                'reason'           => 'Family vacation',
+                'status'           => 'draft',
+            ],
+            // 2 – Submitted sick (staff)
+            [
+                'reference_number' => 'LV-DEMO002',
+                'requester'        => $staff,
+                'leave_type'       => 'sick',
+                'start_date'       => $today->copy()->addDays(5),
+                'end_date'         => $today->copy()->addDays(6),
+                'days_requested'   => 2,
+                'reason'           => 'Medical appointment',
+                'status'           => 'submitted',
+                'submitted_at'     => $today->copy()->subDays(2),
+            ],
+            // 3 – Approved annual future (staff)
+            [
+                'reference_number' => 'LV-DEMO003',
+                'requester'        => $staff,
+                'leave_type'       => 'annual',
+                'start_date'       => $today->copy()->addDays(30),
+                'end_date'         => $today->copy()->addDays(39),
+                'days_requested'   => 10,
+                'reason'           => 'Annual leave',
+                'status'           => 'approved',
+                'submitted_at'     => $today->copy()->subDays(7),
+                'approved_at'      => $today->copy()->subDays(5),
+                'approved_by'      => $approver->id,
+            ],
+            // 4 – AWAY TODAY (Maria) – for Alerts "Away Today"
+            [
+                'reference_number' => 'LV-AWAY001',
+                'requester'        => $maria ?? $staff,
+                'leave_type'       => 'annual',
+                'start_date'       => $today->copy()->subDay(),
+                'end_date'         => $today->copy()->addDays(2),
+                'days_requested'   => 4,
+                'reason'           => 'Annual leave – already approved',
+                'status'           => 'approved',
+                'submitted_at'     => $today->copy()->subDays(14),
+                'approved_at'      => $today->copy()->subDays(12),
+                'approved_by'      => $approver->id,
+            ],
+            // 5 – Rejected (staff)
+            [
+                'reference_number' => 'LV-DEMO005',
+                'requester'        => $staff,
+                'leave_type'       => 'unpaid',
+                'start_date'       => $today->copy()->subDays(10),
+                'end_date'         => $today->copy()->subDays(8),
+                'days_requested'   => 3,
+                'reason'           => 'Personal reasons',
+                'status'           => 'rejected',
+                'submitted_at'     => $today->copy()->subDays(20),
+                'approved_by'      => $approver->id,
+                'rejection_reason' => 'Insufficient leave balance.',
+            ],
+            // 6 – LIL leave (staff)
+            [
+                'reference_number'   => 'LV-LIL001',
+                'requester'          => $staff,
+                'leave_type'         => 'lil',
+                'start_date'         => $today->copy()->addDays(20),
+                'end_date'           => $today->copy()->addDays(21),
+                'days_requested'     => 2,
+                'reason'             => 'LIL compensation days',
+                'status'             => 'draft',
+                'has_lil_linking'    => true,
+                'lil_hours_required' => 16,
+                'lil_hours_linked'   => 16,
+            ],
+            // 7 – Approved sick (Thabo)
+            [
+                'reference_number' => 'LV-DEMO007',
+                'requester'        => $thabo ?? $staff,
+                'leave_type'       => 'sick',
+                'start_date'       => $today->copy()->subDays(5),
+                'end_date'         => $today->copy()->subDays(3),
+                'days_requested'   => 3,
+                'reason'           => 'Flu',
+                'status'           => 'approved',
+                'submitted_at'     => $today->copy()->subDays(7),
+                'approved_at'      => $today->copy()->subDays(6),
+                'approved_by'      => $approver->id,
+            ],
+            // 8 – Submitted maternity (Maria)
+            [
+                'reference_number' => 'LV-DEMO008',
+                'requester'        => $maria ?? $staff,
+                'leave_type'       => 'maternity',
+                'start_date'       => $today->copy()->addDays(60),
+                'end_date'         => $today->copy()->addDays(144),
+                'days_requested'   => 84,
+                'reason'           => 'Maternity leave',
+                'status'           => 'submitted',
+                'submitted_at'     => $today->copy()->subDays(3),
+            ],
+        ];
+
+        foreach ($records as $data) {
+            $requester = $data['requester'];
+            unset($data['requester']);
+
             LeaveRequest::firstOrCreate(
-                ['reference_number' => $ref],
-                [
-                    'tenant_id'        => $tenant->id,
-                    'requester_id'     => $requester->id,
-                    'approved_by'      => $statuses[$i] === 'approved' ? $approver->id : null,
-                    'leave_type'       => $types[$i],
-                    'start_date'       => $start,
-                    'end_date'         => $end,
-                    'days_requested'   => $days,
-                    'reason'           => 'Leave request for ' . $types[$i],
-                    'status'           => $statuses[$i],
-                    'has_lil_linking'  => false,
-                    'submitted_at'     => in_array($statuses[$i], ['submitted', 'approved'], true) ? now()->subDays(2) : null,
-                    'approved_at'      => $statuses[$i] === 'approved' ? now()->subDay() : null,
-                ]
-            );
-        }
-    }
-
-    private function seedImprestRequests(Tenant $tenant, User $requester, User $approver): void
-    {
-        $refs = ['IMP-DEMO001', 'IMP-DEMO002'];
-        $statuses = ['submitted', 'approved'];
-
-        foreach ($refs as $i => $ref) {
-            ImprestRequest::firstOrCreate(
-                ['reference_number' => $ref],
-                [
-                    'tenant_id'                 => $tenant->id,
-                    'requester_id'              => $requester->id,
-                    'approved_by'               => $approver->id,
-                    'budget_line'               => 'OP-' . ($i + 1),
-                    'amount_requested'          => 5000.00 + $i * 2000,
-                    'amount_approved'            => 5000.00 + $i * 2000,
-                    'amount_liquidated'          => 0,
-                    'currency'                  => 'NAD',
-                    'expected_liquidation_date' => now()->addDays(30),
-                    'purpose'                   => 'Travel advance for mission',
-                    'justification'             => 'Official travel.',
-                    'status'                    => $statuses[$i],
-                    'submitted_at'              => now()->subDays(3),
-                    'approved_at'               => now()->subDays(1),
-                ]
-            );
-        }
-    }
-
-    private function seedProcurementRequests(Tenant $tenant, User $requester, User $approver): void
-    {
-        $refs = ['PROC-DEMO01', 'PROC-DEMO02'];
-        $statuses = ['submitted', 'approved'];
-
-        foreach ($refs as $i => $ref) {
-            ProcurementRequest::firstOrCreate(
-                ['reference_number' => $ref],
-                [
-                    'tenant_id'          => $tenant->id,
-                    'requester_id'       => $requester->id,
-                    'approved_by'        => $approver->id,
-                    'title'              => $i === 0 ? 'Office equipment' : 'Software licences',
-                    'description'        => 'Request for procurement.',
-                    'category'           => 'goods',
-                    'estimated_value'    => 15000.00 + $i * 5000,
-                    'currency'           => 'NAD',
-                    'procurement_method' => 'request_for_quotation',
-                    'status'             => $statuses[$i],
-                    'budget_line'        => 'CAPEX-01',
-                    'justification'      => 'Operational requirement.',
-                    'required_by_date'   => now()->addDays(21),
-                    'submitted_at'      => now()->subDays(2),
-                    'approved_at'       => now()->subDay(),
-                ]
-            );
-        }
-    }
-
-    private function seedSalaryAdvanceRequests(Tenant $tenant, User $requester, User $approver): void
-    {
-        $refs = ['SAR-DEMO001', 'SAR-DEMO002'];
-        $statuses = ['submitted', 'approved'];
-
-        foreach ($refs as $i => $ref) {
-            SalaryAdvanceRequest::firstOrCreate(
-                ['reference_number' => $ref],
-                [
+                ['reference_number' => $data['reference_number']],
+                array_merge($data, [
                     'tenant_id'       => $tenant->id,
                     'requester_id'    => $requester->id,
-                    'approved_by'     => $approver->id,
-                    'advance_type'    => $i === 0 ? 'rental' : 'medical',
-                    'amount'          => 10000.00 + $i * 5000,
-                    'currency'        => 'NAD',
-                    'repayment_months' => 6,
-                    'purpose'         => 'Salary advance request.',
-                    'justification'   => 'Personal emergency.',
-                    'status'          => $statuses[$i],
-                    'submitted_at'    => now()->subDays(2),
-                    'approved_at'     => now()->subDay(),
-                ]
+                    'has_lil_linking' => $data['has_lil_linking'] ?? false,
+                ])
             );
         }
     }
 
-    private function seedTimesheets(Tenant $tenant, User $user, User $approver): void
-    {
-        $weekStart = Carbon::now()->startOfWeek()->subWeek();
-        $weekEnd = $weekStart->copy()->addDays(6);
+    /* ─────────────────────────────────────────────────── IMPREST ── */
 
-        $ts = Timesheet::firstOrCreate(
+    private function seedImprestRequests(Tenant $tenant, User $staff, ?User $maria, ?User $john, User $approver): void
+    {
+        $today = Carbon::today();
+
+        $records = [
+            // 1 – Approved, liquidation DUE IN 10 DAYS (for Alerts "Upcoming Deadlines")
             [
-                'tenant_id'  => $tenant->id,
-                'user_id'    => $user->id,
-                'week_start' => $weekStart,
+                'reference_number'          => 'IMP-DEMO001',
+                'requester'                 => $staff,
+                'budget_line'               => 'OP-TRAVEL-2026',
+                'amount_requested'          => 5500.00,
+                'amount_approved'           => 5500.00,
+                'amount_liquidated'         => 0,
+                'currency'                  => 'NAD',
+                'expected_liquidation_date' => $today->copy()->addDays(10),
+                'purpose'                   => 'Travel advance – Lusaka workshop',
+                'justification'             => 'Pre-advance for approved mission.',
+                'status'                    => 'approved',
+                'submitted_at'              => $today->copy()->subDays(7),
+                'approved_at'               => $today->copy()->subDays(5),
+                'approved_by'               => $approver->id,
+            ],
+            // 2 – Partially liquidated
+            [
+                'reference_number'          => 'IMP-DEMO002',
+                'requester'                 => $staff,
+                'budget_line'               => 'OP-WORKSHOP-2026',
+                'amount_requested'          => 8000.00,
+                'amount_approved'           => 7500.00,
+                'amount_liquidated'         => 3200.00,
+                'currency'                  => 'NAD',
+                'expected_liquidation_date' => $today->copy()->addDays(25),
+                'purpose'                   => 'Workshop advance – Gaborone',
+                'justification'             => 'Official workshop expenses.',
+                'status'                    => 'approved',
+                'submitted_at'              => $today->copy()->subDays(14),
+                'approved_at'               => $today->copy()->subDays(12),
+                'approved_by'               => $approver->id,
+            ],
+            // 3 – Submitted (Maria)
+            [
+                'reference_number'          => 'IMP-DEMO003',
+                'requester'                 => $maria ?? $staff,
+                'budget_line'               => 'PROG-001-TRAVEL',
+                'amount_requested'          => 12000.00,
+                'amount_approved'           => null,
+                'amount_liquidated'         => 0,
+                'currency'                  => 'NAD',
+                'expected_liquidation_date' => $today->copy()->addDays(40),
+                'purpose'                   => 'Gender programme travel advance',
+                'justification'             => 'Mission to Tanzania (TRV-ACTIVE1).',
+                'status'                    => 'submitted',
+                'submitted_at'              => $today->copy()->subDays(5),
+            ],
+            // 4 – Liquidated (John)
+            [
+                'reference_number'          => 'IMP-DEMO004',
+                'requester'                 => $john ?? $staff,
+                'budget_line'               => 'PROC-2026-Q1',
+                'amount_requested'          => 3000.00,
+                'amount_approved'           => 3000.00,
+                'amount_liquidated'         => 3000.00,
+                'currency'                  => 'NAD',
+                'expected_liquidation_date' => $today->copy()->subDays(5),
+                'purpose'                   => 'Procurement site visit advance',
+                'justification'             => 'Vendor assessment trip.',
+                'status'                    => 'liquidated',
+                'submitted_at'              => $today->copy()->subDays(25),
+                'approved_at'               => $today->copy()->subDays(22),
+                'approved_by'               => $approver->id,
+            ],
+        ];
+
+        foreach ($records as $data) {
+            $requester = $data['requester'];
+            unset($data['requester']);
+
+            ImprestRequest::firstOrCreate(
+                ['reference_number' => $data['reference_number']],
+                array_merge($data, ['tenant_id' => $tenant->id, 'requester_id' => $requester->id])
+            );
+        }
+    }
+
+    /* ───────────────────────────────────────────────── PROCUREMENT ── */
+
+    private function seedProcurementRequests(Tenant $tenant, User $staff, ?User $john, User $approver): void
+    {
+        $today = Carbon::today();
+
+        $records = [
+            [
+                'reference_number'   => 'PROC-DEMO01',
+                'requester'          => $staff,
+                'title'              => 'Office Equipment – Laptops & Monitors',
+                'description'        => '10 laptops and 10 external monitors for programme staff.',
+                'category'           => 'goods',
+                'estimated_value'    => 85000.00,
+                'currency'           => 'NAD',
+                'procurement_method' => 'request_for_quotation',
+                'status'             => 'approved',
+                'budget_line'        => 'CAPEX-IT-2026',
+                'justification'      => 'Staff equipment refresh.',
+                'required_by_date'   => $today->copy()->addDays(30),
+                'submitted_at'       => $today->copy()->subDays(10),
+                'approved_at'        => $today->copy()->subDays(7),
+                'approved_by'        => $approver->id,
             ],
             [
-                'week_end'      => $weekEnd,
-                'total_hours'   => 40,
-                'overtime_hours'=> 2,
-                'status'        => 'approved',
-                'submitted_at'  => now()->subDays(3),
-                'approved_at'   => now()->subDays(1),
-                'approved_by'   => $approver->id,
-            ]
-        );
+                'reference_number'   => 'PROC-DEMO02',
+                'requester'          => $john ?? $staff,
+                'title'              => 'Microsoft 365 Licences (Annual Renewal)',
+                'description'        => 'Annual renewal of 25 Microsoft 365 Business Premium licences.',
+                'category'           => 'services',
+                'estimated_value'    => 42000.00,
+                'currency'           => 'NAD',
+                'procurement_method' => 'direct_purchase',
+                'status'             => 'submitted',
+                'budget_line'        => 'ICT-OPEX-2026',
+                'justification'      => 'Core operational licence renewal.',
+                'required_by_date'   => $today->copy()->addDays(14),
+                'submitted_at'       => $today->copy()->subDays(3),
+            ],
+            [
+                'reference_number'   => 'PROC-DEMO03',
+                'requester'          => $john ?? $staff,
+                'title'              => 'Conference Room AV Equipment',
+                'description'        => 'Projector, screen, and sound system for main conference room.',
+                'category'           => 'goods',
+                'estimated_value'    => 35000.00,
+                'currency'           => 'NAD',
+                'procurement_method' => 'request_for_quotation',
+                'status'             => 'draft',
+                'budget_line'        => 'CAPEX-INFRA-2026',
+                'justification'      => 'AV upgrade for hybrid meetings.',
+                'required_by_date'   => $today->copy()->addDays(60),
+            ],
+            [
+                'reference_number'   => 'PROC-DEMO04',
+                'requester'          => $staff,
+                'title'              => 'Consultancy – Programme Evaluation',
+                'description'        => 'Mid-term evaluation of Parliamentary Strengthening Programme.',
+                'category'           => 'services',
+                'estimated_value'    => 180000.00,
+                'currency'           => 'NAD',
+                'procurement_method' => 'tender',
+                'status'             => 'approved',
+                'budget_line'        => 'PROG-001-EVAL',
+                'justification'      => 'Required by EU donor agreement.',
+                'required_by_date'   => $today->copy()->addDays(45),
+                'submitted_at'       => $today->copy()->subDays(21),
+                'approved_at'        => $today->copy()->subDays(14),
+                'approved_by'        => $approver->id,
+            ],
+        ];
 
-        if ($ts->wasRecentlyCreated) {
-            for ($d = 0; $d < 5; $d++) {
-                $workDate = $weekStart->copy()->addDays($d);
-                TimesheetEntry::firstOrCreate(
+        foreach ($records as $data) {
+            $requester = $data['requester'];
+            unset($data['requester']);
+
+            ProcurementRequest::firstOrCreate(
+                ['reference_number' => $data['reference_number']],
+                array_merge($data, ['tenant_id' => $tenant->id, 'requester_id' => $requester->id])
+            );
+        }
+    }
+
+    /* ──────────────────────────────────────────── SALARY ADVANCES ── */
+
+    private function seedSalaryAdvanceRequests(Tenant $tenant, User $staff, ?User $maria, ?User $finance): void
+    {
+        $today = Carbon::today();
+
+        $records = [
+            [
+                'reference_number'  => 'SAR-DEMO001',
+                'requester'         => $staff,
+                'advance_type'      => 'rental',
+                'amount'            => 12000.00,
+                'currency'          => 'NAD',
+                'repayment_months'  => 6,
+                'purpose'           => 'Rental deposit for new apartment.',
+                'justification'     => 'Relocating closer to office.',
+                'status'            => 'approved',
+                'submitted_at'      => $today->copy()->subDays(14),
+                'approved_at'       => $today->copy()->subDays(10),
+                'approved_by'       => $finance?->id,
+            ],
+            [
+                'reference_number'  => 'SAR-DEMO002',
+                'requester'         => $maria ?? $staff,
+                'advance_type'      => 'medical',
+                'amount'            => 8500.00,
+                'currency'          => 'NAD',
+                'repayment_months'  => 4,
+                'purpose'           => 'Medical treatment not covered by insurance.',
+                'justification'     => 'Specialist consultation required.',
+                'status'            => 'submitted',
+                'submitted_at'      => $today->copy()->subDays(3),
+            ],
+            [
+                'reference_number'  => 'SAR-DEMO003',
+                'requester'         => $staff,
+                'advance_type'      => 'school',
+                'amount'            => 6000.00,
+                'currency'          => 'NAD',
+                'repayment_months'  => 3,
+                'purpose'           => 'Children school fees – January intake.',
+                'justification'     => 'School fees due before salary date.',
+                'status'            => 'draft',
+            ],
+        ];
+
+        foreach ($records as $data) {
+            $requester = $data['requester'];
+            unset($data['requester']);
+
+            SalaryAdvanceRequest::firstOrCreate(
+                ['reference_number' => $data['reference_number']],
+                array_merge($data, ['tenant_id' => $tenant->id, 'requester_id' => $requester->id])
+            );
+        }
+    }
+
+    /* ─────────────────────────────────────────────── TIMESHEETS ── */
+
+    private function seedTimesheets(Tenant $tenant, User $staff, ?User $maria, ?User $john, User $approver): void
+    {
+        $users = array_filter([$staff, $maria, $john], fn($u) => $u !== null);
+
+        foreach ($users as $idx => $user) {
+            // Two weeks back + last week for each user
+            foreach ([2, 1] as $weeksAgo) {
+                $weekStart = Carbon::now()->startOfWeek()->subWeeks($weeksAgo);
+                $weekEnd   = $weekStart->copy()->addDays(6);
+
+                $ts = Timesheet::firstOrCreate(
+                    ['tenant_id' => $tenant->id, 'user_id' => $user->id, 'week_start' => $weekStart],
                     [
-                        'timesheet_id' => $ts->id,
-                        'work_date'   => $workDate,
-                    ],
+                        'week_end'       => $weekEnd,
+                        'total_hours'    => $weeksAgo === 1 ? 40 : 42,
+                        'overtime_hours' => $weeksAgo === 1 ? 0 : 2,
+                        'status'         => 'approved',
+                        'submitted_at'   => $weekEnd->copy()->addDay(),
+                        'approved_at'    => $weekEnd->copy()->addDays(3),
+                        'approved_by'    => $approver->id,
+                    ]
+                );
+
+                if ($ts->wasRecentlyCreated) {
+                    for ($d = 0; $d < 5; $d++) {
+                        $workDate = $weekStart->copy()->addDays($d);
+                        $ot = ($weeksAgo === 2 && $d === 4) ? 2 : 0;
+                        TimesheetEntry::firstOrCreate(
+                            ['timesheet_id' => $ts->id, 'work_date' => $workDate],
+                            [
+                                'hours'          => 8,
+                                'overtime_hours' => $ot,
+                                'description'    => 'Office work – ' . $workDate->format('D d M'),
+                            ]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    /* ─────────────────────────────────────────────────── PAYSLIPS ── */
+
+    private function seedPayslips(Tenant $tenant, User ...$users): void
+    {
+        $year   = (int) Carbon::today()->year;
+        $months = [1, 2, 3];
+
+        $salaries = [
+            'staff@sadcpf.org'   => ['gross' => 45000.00,  'net' => 35100.00],
+            'maria@sadcpf.org'   => ['gross' => 58000.00,  'net' => 45240.00],
+            'john@sadcpf.org'    => ['gross' => 42000.00,  'net' => 32760.00],
+            'thabo@sadcpf.org'   => ['gross' => 40000.00,  'net' => 31200.00],
+            'hr@sadcpf.org'      => ['gross' => 62000.00,  'net' => 48360.00],
+            'finance@sadcpf.org' => ['gross' => 65000.00,  'net' => 50700.00],
+        ];
+
+        foreach ($users as $user) {
+            if (!$user) continue;
+            $pay = $salaries[$user->email] ?? ['gross' => 45000.00, 'net' => 35100.00];
+
+            foreach ($months as $month) {
+                Payslip::firstOrCreate(
+                    ['user_id' => $user->id, 'period_year' => $year, 'period_month' => $month],
                     [
-                        'hours'         => 8,
-                        'overtime_hours'=> $d === 4 ? 2 : 0,
-                        'description'   => 'Office work',
+                        'tenant_id'    => $tenant->id,
+                        'gross_amount' => $pay['gross'],
+                        'net_amount'   => $pay['net'],
+                        'currency'     => 'NAD',
+                        'issued_at'    => Carbon::create($year, $month, 25),
                     ]
                 );
             }
         }
     }
 
-    private function seedPayslips(Tenant $tenant, User $user): void
+    /* ──────────────────────────────────────────── LEAVE BALANCES ── */
+
+    private function seedLeaveBalances(User ...$users): void
     {
-        $year = (int) date('Y');
-        $months = [1, 2, 3];
-        foreach ($months as $month) {
-            Payslip::firstOrCreate(
+        $year = (int) Carbon::today()->year;
+
+        $balances = [
+            'staff@sadcpf.org'   => ['annual' => 18, 'lil' => 42.5, 'sick_used' => 3],
+            'maria@sadcpf.org'   => ['annual' => 15, 'lil' => 24.0, 'sick_used' => 0],
+            'john@sadcpf.org'    => ['annual' => 20, 'lil' => 16.0, 'sick_used' => 2],
+            'thabo@sadcpf.org'   => ['annual' => 22, 'lil' => 8.0,  'sick_used' => 3],
+            'hr@sadcpf.org'      => ['annual' => 12, 'lil' => 32.0, 'sick_used' => 1],
+            'finance@sadcpf.org' => ['annual' => 14, 'lil' => 20.0, 'sick_used' => 0],
+        ];
+
+        foreach ($users as $user) {
+            if (!$user) continue;
+            $bal = $balances[$user->email] ?? ['annual' => 18, 'lil' => 0, 'sick_used' => 0];
+
+            LeaveBalance::firstOrCreate(
+                ['user_id' => $user->id, 'period_year' => $year],
                 [
-                    'user_id'      => $user->id,
-                    'period_year'  => $year,
-                    'period_month' => $month,
-                ],
-                [
-                    'tenant_id'    => $tenant->id,
-                    'gross_amount' => 45000.00,
-                    'net_amount'   => 35100.00,
-                    'currency'     => 'NAD',
-                    'issued_at'    => now()->setMonth($month)->setYear($year),
+                    'annual_balance_days'  => $bal['annual'],
+                    'lil_hours_available'  => $bal['lil'],
+                    'sick_leave_used_days' => $bal['sick_used'],
                 ]
             );
         }
     }
 
-    private function seedLeaveBalances(User $user): void
-    {
-        $year = (int) date('Y');
-        LeaveBalance::firstOrCreate(
-            ['user_id' => $user->id, 'period_year' => $year],
-            [
-                'annual_balance_days'  => 18,
-                'lil_hours_available'  => 42.5,
-                'sick_leave_used_days' => 3,
-            ]
-        );
-    }
+    /* ────────────────────────────────────────── OVERTIME ACCRUALS ── */
 
-    private function seedOvertimeAccruals(User $user): void
+    private function seedOvertimeAccruals(User $staff, ?User $maria, ?User $john): void
     {
+        $today = Carbon::today();
+
         $items = [
-            ['code' => 'OT-2391', 'description' => 'Overtime: Project Alpha', 'hours' => 8, 'date' => now()->subDays(20), 'approved_by' => 'J. Doe', 'verified' => true],
-            ['code' => 'WE-8821', 'description' => 'Weekend Support Duty', 'hours' => 8, 'date' => now()->subDays(18), 'approved_by' => 'S. Smith', 'verified' => true],
-            ['code' => 'LS-1102', 'description' => 'Late Shift Differential', 'hours' => 4, 'date' => now()->subDays(25), 'approved_by' => null, 'verified' => false],
+            // Staff accruals
+            ['user' => $staff,          'code' => 'OT-2391',  'description' => 'Overtime: ExCo meeting preparation',    'hours' => 8,  'date' => $today->copy()->subDays(20), 'verified' => true,  'approved_by' => 'HR Manager'],
+            ['user' => $staff,          'code' => 'WE-8821',  'description' => 'Weekend Support: Plenary coordination', 'hours' => 8,  'date' => $today->copy()->subDays(18), 'verified' => true,  'approved_by' => 'HR Manager'],
+            ['user' => $staff,          'code' => 'LS-1102',  'description' => 'Late Shift: Server migration',          'hours' => 4,  'date' => $today->copy()->subDays(25), 'verified' => false, 'approved_by' => null],
+            // Maria accruals
+            ['user' => $maria ?? $staff,'code' => 'OT-3105',  'description' => 'Overtime: Gender audit report writing', 'hours' => 10, 'date' => $today->copy()->subDays(12), 'verified' => true,  'approved_by' => 'HR Manager'],
+            ['user' => $maria ?? $staff,'code' => 'WE-0012',  'description' => 'Weekend travel – Lilongwe mission',     'hours' => 16, 'date' => $today->copy()->subDays(10), 'verified' => true,  'approved_by' => 'HR Manager'],
+            // John accrual
+            ['user' => $john  ?? $staff,'code' => 'OT-4422',  'description' => 'Overtime: Tender evaluation committee', 'hours' => 6,  'date' => $today->copy()->subDays(8),  'verified' => true,  'approved_by' => 'Finance Controller'],
         ];
+
         foreach ($items as $item) {
+            $user = $item['user'];
             OvertimeAccrual::firstOrCreate(
+                ['user_id' => $user->id, 'code' => $item['code'], 'accrual_date' => $item['date']],
                 [
-                    'user_id'      => $user->id,
-                    'code'         => $item['code'],
-                    'accrual_date' => $item['date'],
-                ],
-                [
-                    'description'       => $item['description'],
-                    'hours'             => $item['hours'],
-                    'approved_by_name'   => $item['approved_by'],
-                    'is_verified'       => $item['verified'],
-                    'is_linked'         => false,
+                    'description'      => $item['description'],
+                    'hours'            => $item['hours'],
+                    'approved_by_name' => $item['approved_by'],
+                    'is_verified'      => $item['verified'],
+                    'is_linked'        => false,
                 ]
             );
         }

@@ -14,9 +14,10 @@ void main() async {
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
+    statusBarIconBrightness: Brightness.dark,          // dark icons on light bg
+    statusBarBrightness: Brightness.light,
     systemNavigationBarColor: AppColors.bgSurface,
-    systemNavigationBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.dark,
   ));
 
   runApp(
@@ -36,7 +37,7 @@ class SADCPFNexusApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'SADC PF Nexus',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       routerConfig: router,
     );
   }

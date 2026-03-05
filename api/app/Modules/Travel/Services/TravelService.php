@@ -4,6 +4,7 @@ namespace App\Modules\Travel\Services;
 use App\Models\AuditLog;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Models\WorkplanEvent;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -127,6 +128,22 @@ class TravelService
             'auditable_id'   => $travel->id,
             'tags'           => 'travel',
         ]);
+
+        // Add approved mission to the workplan calendar
+        $travel->loadMissing('requester');
+        WorkplanEvent::updateOrCreate(
+            ['linked_module' => 'travel', 'linked_id' => $travel->id],
+            [
+                'tenant_id'   => $travel->tenant_id,
+                'created_by'  => $approver->id,
+                'title'       => 'Mission: ' . $travel->purpose . ' — ' . $travel->destination_country,
+                'type'        => 'travel',
+                'date'        => $travel->departure_date,
+                'end_date'    => $travel->return_date,
+                'responsible' => $travel->requester?->name,
+                'description' => $travel->reference_number,
+            ]
+        );
 
         return $travel->fresh(['requester', 'approver']);
     }

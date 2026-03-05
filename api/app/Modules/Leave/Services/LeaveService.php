@@ -4,6 +4,7 @@ namespace App\Modules\Leave\Services;
 use App\Models\AuditLog;
 use App\Models\LeaveRequest;
 use App\Models\User;
+use App\Models\WorkplanEvent;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -131,6 +132,23 @@ class LeaveService
             'auditable_id'   => $leave->id,
             'tags'           => 'leave',
         ]);
+
+        // Add approved leave to the workplan calendar
+        $leave->loadMissing('requester');
+        $typeLabel = ucfirst(str_replace('_', ' ', $leave->leave_type)) . ' Leave';
+        WorkplanEvent::updateOrCreate(
+            ['linked_module' => 'leave', 'linked_id' => $leave->id],
+            [
+                'tenant_id'   => $leave->tenant_id,
+                'created_by'  => $approver->id,
+                'title'       => ($leave->requester?->name ?? 'Staff') . ' — ' . $typeLabel,
+                'type'        => 'leave',
+                'date'        => $leave->start_date,
+                'end_date'    => $leave->end_date,
+                'responsible' => $leave->requester?->name,
+                'description' => $leave->reference_number . ' · ' . $leave->days_requested . ' days',
+            ]
+        );
 
         return $leave->fresh();
     }

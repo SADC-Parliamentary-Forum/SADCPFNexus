@@ -116,5 +116,32 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/{timesheet}/approve', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'approve']);
             Route::post('timesheets/{timesheet}/reject', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'reject']);
         });
+
+        // Programmes (PIF)
+        Route::prefix('programmes')->group(function () {
+            Route::apiResource('', \App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class)
+                ->parameter('', 'programme');
+            Route::post('{programme}/submit',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
+            Route::post('{programme}/approve', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'approve']);
+            Route::post('{programme}/reject',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
+
+            Route::apiResource('{programme}/activities',   \App\Http\Controllers\Api\V1\Programmes\ProgrammeActivityController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['activities' => 'activity']);
+            Route::apiResource('{programme}/milestones',   \App\Http\Controllers\Api\V1\Programmes\ProgrammeMilestoneController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['milestones' => 'milestone']);
+            Route::apiResource('{programme}/deliverables', \App\Http\Controllers\Api\V1\Programmes\ProgrammeDeliverableController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['deliverables' => 'deliverable']);
+            Route::apiResource('{programme}/budget-lines', \App\Http\Controllers\Api\V1\Programmes\ProgrammeBudgetLineController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['budget-lines' => 'budgetLine']);
+            Route::apiResource('{programme}/procurement',  \App\Http\Controllers\Api\V1\Programmes\ProgrammeProcurementItemController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['procurement' => 'procurementItem']);
+        });
+
+        // Workplan
+        Route::apiResource('workplan/events', \App\Http\Controllers\Api\V1\Workplan\WorkplanController::class)
+            ->parameters(['events' => 'event']);
+
+        // Alerts
+        Route::get('alerts/summary', [\App\Http\Controllers\Api\V1\Alerts\AlertsController::class, 'summary']);
     });
 });
