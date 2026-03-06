@@ -17,7 +17,7 @@ class DepartmentsController extends Controller
     {
         $this->authorize('viewAny', Department::class);
 
-        $departments = Department::with('parent', 'children')
+        $departments = Department::with('parent', 'children', 'supervisor')
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderBy('name')
             ->get();
@@ -36,6 +36,7 @@ class DepartmentsController extends Controller
             'name'      => ['required', 'string', 'max:255'],
             'code'      => ['nullable', 'string', 'max:20'],
             'parent_id' => ['nullable', 'exists:departments,id'],
+            'supervisor_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $dept = Department::create([
@@ -64,6 +65,7 @@ class DepartmentsController extends Controller
             'name'      => ['sometimes', 'string', 'max:255'],
             'code'      => ['nullable', 'string', 'max:20'],
             'parent_id' => ['nullable', 'exists:departments,id'],
+            'supervisor_id' => ['nullable', 'exists:users,id'],
         ]);
 
         $department->update($data);
@@ -76,5 +78,31 @@ class DepartmentsController extends Controller
         ]);
 
         return response()->json(['message' => 'Department updated.', 'data' => $department->fresh()]);
+    }
+
+    /**
+     * @OA\Delete(path="/api/v1/admin/departments/{id}", summary="Delete department", tags={"Admin - Departments"}, security={{"sanctum":{}}})
+     */
+    public function destroy(Department $department): JsonResponse
+    {
+        $this->authorize('delete', $department);
+
+        if ($department->children()->exists()) {
+            return response()->json(['message' => 'Cannot delete department with sub-units.'], 422);
+        }
+
+        if ($department->users()->exists()) {
+            return response()->json(['message' => 'Cannot delete department with assigned staff.'], 422);
+        }
+
+        $department->delete();
+
+        AuditLog::record('department.deleted', [
+            'auditable_type' => Department::class,
+            'auditable_id'   => $department->id,
+            'tags'           => 'user_management',
+        ]);
+
+        return response()->json(['message' => 'Department deleted.']);
     }
 }

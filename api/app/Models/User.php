@@ -14,6 +14,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
+    protected $guard_name = 'sanctum';
+
     protected $fillable = [
         'tenant_id',
         'department_id',

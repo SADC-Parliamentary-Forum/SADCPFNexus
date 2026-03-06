@@ -39,6 +39,21 @@ class LeaveRequest extends Model
         return $this->hasMany(LeaveLilLinking::class);
     }
 
+    public function approvalRequest()
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\Leave\Services\LeaveService::class)->onWorkflowApproved($this, $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        app(\App\Modules\Leave\Services\LeaveService::class)->onWorkflowRejected($this, $approver, $reason);
+    }
+
     public function isDraft(): bool { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }

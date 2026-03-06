@@ -11,7 +11,10 @@ use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
-    public function __construct(private readonly LeaveService $leaveService) {}
+    public function __construct(
+        private readonly LeaveService $leaveService,
+        private readonly \App\Services\WorkflowService $workflowService
+    ) {}
 
     /** Leave balances for the current user (annual days, LIL hours, sick used). */
     public function balances(Request $request): JsonResponse
@@ -60,7 +63,7 @@ class LeaveController extends Controller
 
     public function show(LeaveRequest $leaveRequest): JsonResponse
     {
-        return response()->json($leaveRequest->load(['requester', 'approver', 'lilLinkings']));
+        return response()->json($leaveRequest->load(['requester', 'approver', 'lilLinkings', 'approvalRequest.workflow.steps', 'approvalRequest.history.user']));
     }
 
     public function store(Request $request): JsonResponse
@@ -112,14 +115,29 @@ class LeaveController extends Controller
 
     public function approve(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
-        $leave = $this->leaveService->approve($leaveRequest, $request->user());
-        return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
+        if (!$leaveRequest->approvalRequest) {
+            // Fallback for legacy or non-workflow requests
+            $leave = $this->leaveService->approve($leaveRequest, $request->user());
+            return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
+        }
+        
+        $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+        $this->workflowService->approve($leaveRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
+        
+        return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh('approvalRequest')]);
     }
 
     public function reject(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-        $leave = $this->leaveService->reject($leaveRequest, $data['reason'], $request->user());
-        return response()->json(['message' => 'Leave request rejected.', 'data' => $leave]);
+
+        if (!$leaveRequest->approvalRequest) {
+            $leave = $this->leaveService->reject($leaveRequest, $data['reason'], $request->user());
+            return response()->json(['message' => 'Leave request rejected.', 'data' => $leave]);
+        }
+
+        $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $data['reason']);
+        
+        return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh('approvalRequest')]);
     }
 }

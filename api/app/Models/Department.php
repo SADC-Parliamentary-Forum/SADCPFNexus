@@ -11,7 +11,7 @@ class Department extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['tenant_id', 'name', 'code', 'parent_id'];
+    protected $fillable = ['tenant_id', 'name', 'code', 'parent_id', 'supervisor_id'];
 
     public function tenant(): BelongsTo
     {
@@ -26,5 +26,15 @@ class Department extends Model
     public function children(): HasMany
     {
         return $this->hasMany(Department::class, 'parent_id');
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 }

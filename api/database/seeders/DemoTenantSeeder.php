@@ -56,7 +56,8 @@ class DemoTenantSeeder extends Seeder
             ]
         );
 
-        $admin->syncRoles(['System Admin']);
+        $adminRole = \Spatie\Permission\Models\Role::findByName('System Admin', 'sanctum');
+        $admin->syncRoles([$adminRole]);
 
         $hrDept = Department::where('tenant_id', $tenant->id)->where('code', 'HR')->first();
         $finDept = Department::where('tenant_id', $tenant->id)->where('code', 'FIN')->first();
@@ -75,7 +76,8 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $staffUser->syncRoles(['staff']);
+        $staffRole = \Spatie\Permission\Models\Role::findByName('staff', 'sanctum');
+        $staffUser->syncRoles([$staffRole]);
 
         $hrUser = User::firstOrCreate(
             ['email' => 'hr@sadcpf.org'],
@@ -90,7 +92,8 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $hrUser->syncRoles(['HR Manager']);
+        $hrManagerRole = \Spatie\Permission\Models\Role::findByName('HR Manager', 'sanctum');
+        $hrUser->syncRoles([$hrManagerRole]);
 
         $financeUser = User::firstOrCreate(
             ['email' => 'finance@sadcpf.org'],
@@ -105,7 +108,8 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $financeUser->syncRoles(['Finance Controller']);
+        $financeControllerRole = \Spatie\Permission\Models\Role::findByName('Finance Controller', 'sanctum');
+        $financeUser->syncRoles([$financeControllerRole]);
 
         $secDept  = Department::where('tenant_id', $tenant->id)->where('code', 'SEC')->first();
         $govDept  = Department::where('tenant_id', $tenant->id)->where('code', 'GOV')->first();
@@ -123,7 +127,7 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $mariaUser->syncRoles(['staff']);
+        $mariaUser->syncRoles([$staffRole]);
 
         $johnUser = User::firstOrCreate(
             ['email' => 'john@sadcpf.org'],
@@ -138,7 +142,7 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $johnUser->syncRoles(['staff']);
+        $johnUser->syncRoles([$staffRole]);
 
         $thaboUser = User::firstOrCreate(
             ['email' => 'thabo@sadcpf.org'],
@@ -153,6 +157,6 @@ class DemoTenantSeeder extends Seeder
                 'is_active'       => true,
             ]
         );
-        $thaboUser->syncRoles(['staff']);
+        $thaboUser->syncRoles([$staffRole]);
     }
 }

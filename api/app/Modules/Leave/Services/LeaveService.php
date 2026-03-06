@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 class LeaveService
 {
+    public function __construct(protected \App\Services\WorkflowService $workflowService) {}
+
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = LeaveRequest::with(['requester'])
@@ -106,6 +108,9 @@ class LeaveService
 
         $leave->update(['status' => 'submitted', 'submitted_at' => now()]);
 
+        // Initiate workflow
+        $this->workflowService->initiate($leave, 'leave', $user);
+
         AuditLog::record('leave.submitted', [
             'auditable_type' => LeaveRequest::class,
             'auditable_id'   => $leave->id,
@@ -173,5 +178,46 @@ class LeaveService
         ]);
 
         return $leave->fresh();
+    }
+
+    /**
+     * Called by WorkflowService when the workflow is fully approved.
+     */
+    public function onWorkflowApproved(LeaveRequest $leave, User $approver): void
+    {
+        $leave->update([
+            'status'      => 'approved',
+            'approved_by' => $approver->id,
+            'approved_at' => now(),
+        ]);
+
+        // Add approved leave to the workplan calendar
+        $leave->loadMissing('requester');
+        $typeLabel = ucfirst(str_replace('_', ' ', $leave->leave_type)) . ' Leave';
+        WorkplanEvent::updateOrCreate(
+            ['linked_module' => 'leave', 'linked_id' => $leave->id],
+            [
+                'tenant_id'   => $leave->tenant_id,
+                'created_by'  => $approver->id,
+                'title'       => ($leave->requester?->name ?? 'Staff') . ' — ' . $typeLabel,
+                'type'        => 'leave',
+                'date'        => $leave->start_date,
+                'end_date'    => $leave->end_date,
+                'responsible' => $leave->requester?->name,
+                'description' => $leave->reference_number . ' · ' . $leave->days_requested . ' days',
+            ]
+        );
+    }
+
+    /**
+     * Called by WorkflowService when the workflow is rejected.
+     */
+    public function onWorkflowRejected(LeaveRequest $leave, User $approver, ?string $reason = null): void
+    {
+        $leave->update([
+            'status'           => 'rejected',
+            'approved_by'      => $approver->id,
+            'rejection_reason' => $reason,
+        ]);
     }
 }

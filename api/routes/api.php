@@ -149,5 +149,20 @@ Route::prefix('v1')->group(function () {
 
         // Alerts
         Route::get('alerts/summary', [\App\Http\Controllers\Api\V1\Alerts\AlertsController::class, 'summary']);
+
+        // Approval Workflows
+        Route::prefix('approvals')->group(function () {
+            Route::get('pending', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'pending']);
+            Route::post('{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve']);
+            Route::post('{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject']);
+            Route::get('{approvalRequest}/history', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'history']);
+        });
+
+        // Admin Workflows
+        Route::prefix('admin/workflows')->group(function () {
+             Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
+             Route::post('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'store']);
+             Route::put('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'update']);
+        });
     });
 });
