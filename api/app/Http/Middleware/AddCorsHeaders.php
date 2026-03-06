@@ -15,6 +15,8 @@ class AddCorsHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        \Log::debug('CORS Request', ['method' => $request->method(), 'url' => $request->fullUrl(), 'origin' => $request->header('Origin')]);
+
         $origin = $request->header('Origin');
         $allowed = config('cors.allowed_origins');
         if (! is_array($allowed) || empty($allowed)) {
