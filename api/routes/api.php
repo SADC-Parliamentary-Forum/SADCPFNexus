@@ -94,8 +94,9 @@ Route::prefix('v1')->group(function () {
             Route::post('vendors', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'store']);
         });
 
-        // Finance - Salary Advances, Payslips, Summary
+        // Finance - Salary Advances, Payslips, Summary, and Budgets
         Route::prefix('finance')->group(function () {
+            Route::apiResource('budgets', \App\Http\Controllers\Api\V1\Finance\BudgetController::class);
             Route::get('summary', [\App\Http\Controllers\Api\V1\Finance\FinanceSummaryController::class, 'summary']);
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'index']);
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'show']);
