@@ -29,6 +29,10 @@ Route::prefix('v1')->group(function () {
             Route::get('me', [AuthController::class, 'me']);
         });
 
+        // User Profile (Self-Service)
+        Route::get('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'show']);
+        Route::put('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'update']);
+
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
 
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
@@ -42,7 +46,10 @@ Route::prefix('v1')->group(function () {
 
             // Departments
             Route::apiResource('departments', \App\Http\Controllers\Api\V1\Admin\DepartmentsController::class)
-                ->only(['index', 'store', 'update']);
+                ->only(['index', 'store', 'update', 'show', 'destroy']);
+
+            // Portfolios
+            Route::apiResource('portfolios', \App\Http\Controllers\Api\V1\Admin\PortfoliosController::class);
 
             // Roles & Permissions
             Route::get('roles', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'index']);

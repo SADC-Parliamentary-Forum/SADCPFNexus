@@ -17,7 +17,8 @@ class DepartmentsController extends Controller
     {
         $this->authorize('viewAny', Department::class);
 
-        $departments = Department::with('parent', 'children', 'supervisor')
+        $departments = Department::withCount('users')
+            ->with('parent', 'children', 'supervisor')
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderBy('name')
             ->get();

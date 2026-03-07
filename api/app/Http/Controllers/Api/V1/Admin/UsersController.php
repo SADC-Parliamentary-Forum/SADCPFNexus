@@ -14,7 +14,7 @@ class UsersController extends Controller
 {
     public function __construct(private readonly UserService $userService)
     {
-        $this->authorizeResource(User::class, 'user');
+        //
     }
 
     /**
@@ -33,6 +33,7 @@ class UsersController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', User::class);
         $filters = $request->only(['search', 'department_id', 'status', 'role', 'per_page']);
         $users = $this->userService->list($filters);
 
@@ -50,6 +51,7 @@ class UsersController extends Controller
      */
     public function show(User $user): JsonResponse
     {
+        $this->authorize('view', $user);
         return response()->json(
             $user->load(['tenant', 'department', 'roles', 'permissions'])
         );
@@ -66,6 +68,7 @@ class UsersController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', User::class);
         $data = $request->validate([
             'name'            => ['required', 'string', 'max:255'],
             'email'           => ['required', 'email', 'unique:users,email'],
@@ -75,6 +78,24 @@ class UsersController extends Controller
             'role'            => ['nullable', 'string', 'exists:roles,name'],
             'classification'  => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
             'mfa_enabled'     => ['boolean'],
+            'bio'             => ['nullable', 'string'],
+            'date_of_birth'   => ['nullable', 'date'],
+            'join_date'       => ['nullable', 'date'],
+            'phone'           => ['nullable', 'string', 'max:50'],
+            'nationality'     => ['nullable', 'string', 'max:100'],
+            'gender'          => ['nullable', 'string', 'max:20'],
+            'marital_status'  => ['nullable', 'string', 'max:20'],
+            'emergency_contact_name'         => ['nullable', 'string', 'max:255'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
+            'emergency_contact_phone'        => ['nullable', 'string', 'max:50'],
+            'address_line1'   => ['nullable', 'string', 'max:255'],
+            'address_line2'   => ['nullable', 'string', 'max:255'],
+            'city'            => ['nullable', 'string', 'max:100'],
+            'country'         => ['nullable', 'string', 'max:100'],
+            'skills'          => ['nullable', 'array'],
+            'qualifications'  => ['nullable', 'array'],
+            'portfolio_ids'   => ['nullable', 'array'],
+            'portfolio_ids.*' => ['exists:portfolios,id'],
         ]);
 
         $user = $this->userService->create($data, $request->user());
@@ -96,6 +117,7 @@ class UsersController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
+        $this->authorize('update', $user);
         $data = $request->validate([
             'name'           => ['sometimes', 'string', 'max:255'],
             'email'          => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
@@ -104,6 +126,24 @@ class UsersController extends Controller
             'role'           => ['nullable', 'string', 'exists:roles,name'],
             'classification' => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
             'mfa_enabled'    => ['boolean'],
+            'bio'            => ['nullable', 'string'],
+            'date_of_birth'  => ['nullable', 'date'],
+            'join_date'      => ['nullable', 'date'],
+            'phone'          => ['nullable', 'string', 'max:50'],
+            'nationality'     => ['nullable', 'string', 'max:100'],
+            'gender'          => ['nullable', 'string', 'max:20'],
+            'marital_status'  => ['nullable', 'string', 'max:20'],
+            'emergency_contact_name'         => ['nullable', 'string', 'max:255'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
+            'emergency_contact_phone'        => ['nullable', 'string', 'max:50'],
+            'address_line1'   => ['nullable', 'string', 'max:255'],
+            'address_line2'   => ['nullable', 'string', 'max:255'],
+            'city'            => ['nullable', 'string', 'max:100'],
+            'country'         => ['nullable', 'string', 'max:100'],
+            'skills'          => ['nullable', 'array'],
+            'qualifications'  => ['nullable', 'array'],
+            'portfolio_ids'   => ['nullable', 'array'],
+            'portfolio_ids.*' => ['exists:portfolios,id'],
         ]);
 
         $user = $this->userService->update($user, $data, $request->user());
@@ -125,6 +165,7 @@ class UsersController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
+        $this->authorize('delete', $user);
         $this->userService->deactivate($user, $request->user());
 
         return response()->json(['message' => 'User deactivated successfully.']);

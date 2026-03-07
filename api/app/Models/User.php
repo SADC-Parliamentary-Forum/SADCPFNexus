@@ -29,6 +29,22 @@ class User extends Authenticatable
         'mfa_enabled',
         'mfa_secret',
         'last_login_at',
+        'bio',
+        'date_of_birth',
+        'join_date',
+        'phone',
+        'nationality',
+        'gender',
+        'marital_status',
+        'emergency_contact_name',
+        'emergency_contact_relationship',
+        'emergency_contact_phone',
+        'address_line1',
+        'address_line2',
+        'city',
+        'country',
+        'skills',
+        'qualifications',
     ];
 
     protected $hidden = [
@@ -45,6 +61,10 @@ class User extends Authenticatable
             'password'          => 'hashed',
             'is_active'         => 'boolean',
             'mfa_enabled'       => 'boolean',
+            'date_of_birth'     => 'date',
+            'join_date'         => 'date',
+            'skills'            => 'array',
+            'qualifications'    => 'array',
         ];
     }
 
@@ -56,5 +76,10 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function portfolios(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Portfolio::class);
     }
 }
