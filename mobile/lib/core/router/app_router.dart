@@ -11,6 +11,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/requests/presentation/screens/requests_screen.dart';
 import '../../features/approvals/presentation/screens/approvals_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
+import '../../features/reports/presentation/screens/report_detail_screen.dart';
 import '../../shared/widgets/bottom_nav_bar.dart';
 
 // Travel Requests
@@ -174,6 +175,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ReportsScreen(),
           ),
           GoRoute(
+            path: '/reports/detail',
+            name: 'report-detail',
+            builder: (context, state) => ReportDetailScreen(
+              reportType: state.uri.queryParameters['type'] ?? 'travel',
+              reportTitle: state.uri.queryParameters['title'],
+            ),
+          ),
+          GoRoute(
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
@@ -312,7 +321,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pif/review',
         name: 'pif-review',
-        builder: (context, state) => const PifReviewApprovalScreen(),
+        builder: (context, state) => PifReviewApprovalScreen(
+          programmeId: state.uri.queryParameters['id'],
+        ),
       ),
       GoRoute(
         path: '/pif/lifecycle',

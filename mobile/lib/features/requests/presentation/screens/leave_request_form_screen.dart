@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
-class LeaveRequestFormScreen extends StatefulWidget {
-  const LeaveRequestFormScreen({super.key});
-  @override
-  State<LeaveRequestFormScreen> createState() => _LeaveRequestFormScreenState();
+/// Maps UI leave type labels to API values.
+String _leaveTypeToApi(String label) {
+  const map = {
+    'Annual Leave': 'annual',
+    'Sick Leave': 'sick',
+    'Maternity Leave': 'maternity',
+    'Paternity Leave': 'paternity',
+    'Study Leave': 'special',
+    'Compassionate': 'special',
+  };
+  return map[label] ?? 'annual';
 }
 
-class _LeaveRequestFormScreenState extends State<LeaveRequestFormScreen> {
+class LeaveRequestFormScreen extends ConsumerStatefulWidget {
+  const LeaveRequestFormScreen({super.key});
+  @override
+  ConsumerState<LeaveRequestFormScreen> createState() => _LeaveRequestFormScreenState();
+}
+
+class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen> {
   int _step = 0;
   String _leaveType = 'Annual Leave';
   DateTime? _startDate;
@@ -283,37 +298,59 @@ class _LeaveRequestFormScreenState extends State<LeaveRequestFormScreen> {
   );
 
   Future<void> _submit() async {
+    if (_startDate == null || _endDate == null) return;
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _submitting = false);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.bgSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 64, height: 64,
-            decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle, color: AppColors.success, size: 36)),
-          const SizedBox(height: 16),
-          const Text('Request Submitted', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          const Text('Your leave request has been forwarded to your supervisor for approval.',
-            textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          const SizedBox(height: 20),
-          SizedBox(width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w700)),
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final createRes = await dio.post<Map<String, dynamic>>('/leave/requests', data: {
+        'leave_type': _leaveTypeToApi(_leaveType),
+        'start_date': _startDate!.toIso8601String().split('T').first,
+        'end_date': _endDate!.toIso8601String().split('T').first,
+        'reason': _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
+      });
+      final id = createRes.data?['data']?['id'];
+      if (id != null) {
+        await dio.post('/leave/requests/$id/submit');
+      }
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          backgroundColor: AppColors.bgSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 64, height: 64,
+              decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.check_circle, color: AppColors.success, size: 36)),
+            const SizedBox(height: 16),
+            const Text('Request Submitted', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            const Text('Your leave request has been forwarded to your supervisor for approval.',
+              textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () { Navigator.pop(context); Navigator.pop(context); },
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
             ),
-          ),
-        ]),
-      ),
-    );
+          ]),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to submit leave request. Please try again.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 }
 

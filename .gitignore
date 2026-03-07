@@ -5,3 +5,4 @@ web
 api/.env.docker.example
 api/.env.example
 web
+web

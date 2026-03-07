@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -21,16 +23,17 @@ class _LineItem {
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class ProcurementRequisitionFormScreen extends StatefulWidget {
+class ProcurementRequisitionFormScreen extends ConsumerStatefulWidget {
   const ProcurementRequisitionFormScreen({super.key});
 
   @override
-  State<ProcurementRequisitionFormScreen> createState() =>
+  ConsumerState<ProcurementRequisitionFormScreen> createState() =>
       _ProcurementRequisitionFormScreenState();
 }
 
 class _ProcurementRequisitionFormScreenState
-    extends State<ProcurementRequisitionFormScreen> {
+    extends ConsumerState<ProcurementRequisitionFormScreen> {
+  bool _submitting = false;
   String? _selectedVendor;
   final List<_LineItem> _items = [
     _LineItem(
@@ -71,6 +74,60 @@ class _ProcurementRequisitionFormScreenState
 
   void _removeItem(int index) {
     if (_items.length > 1) setState(() => _items.removeAt(index));
+  }
+
+  Future<void> _submit() async {
+    final title = _items.isNotEmpty && _items.first.description.isNotEmpty
+        ? _items.first.description
+        : 'Procurement request';
+    final description = _justificationCtrl.text.trim().isNotEmpty
+        ? _justificationCtrl.text.trim()
+        : title;
+    setState(() => _submitting = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final payload = {
+        'title': title,
+        'description': description,
+        'category': 'goods',
+        'estimated_value': _estimatedTotal,
+        'currency': 'NAD',
+        'justification': _justificationCtrl.text.trim().isEmpty ? null : _justificationCtrl.text.trim(),
+        'items': _items.map((i) => {
+          'description': i.description.isEmpty ? 'Item' : i.description,
+          'quantity': i.qty,
+          'estimated_unit_price': i.unitCost,
+        }).toList(),
+      };
+      if (_selectedVendor != null) {
+        payload['quotes'] = [
+          {'vendor_name': _selectedVendor, 'quoted_amount': _estimatedTotal, 'is_recommended': true},
+        ];
+      }
+      final createRes = await dio.post<Map<String, dynamic>>('/procurement/requests', data: payload);
+      final id = createRes.data?['data']?['id'];
+      if (id != null) {
+        await dio.post('/procurement/requests/$id/submit');
+      }
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Procurement request submitted successfully.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to submit procurement request. Please try again.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   @override
@@ -348,7 +405,7 @@ class _ProcurementRequisitionFormScreenState
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _submitting ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.bgDark,
@@ -356,18 +413,27 @@ class _ProcurementRequisitionFormScreenState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Proceed to Attachments',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
-              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.bgDark,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Proceed to Attachments',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
+                    ),
             ),
           ),
         ),

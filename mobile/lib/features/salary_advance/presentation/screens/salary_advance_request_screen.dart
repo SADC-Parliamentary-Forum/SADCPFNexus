@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/theme/app_theme.dart';
 
-class SalaryAdvanceRequestScreen extends StatefulWidget {
+/// Maps UI purpose labels to API advance_type.
+String _purposeToAdvanceType(String purpose) {
+  const map = {
+    'Personal Emergency': 'other',
+    'Medical Expenses': 'medical',
+    'Education': 'school',
+    'Home Repair': 'other',
+    'Other': 'other',
+  };
+  return map[purpose] ?? 'other';
+}
+
+class SalaryAdvanceRequestScreen extends ConsumerStatefulWidget {
   const SalaryAdvanceRequestScreen({super.key});
 
   @override
-  State<SalaryAdvanceRequestScreen> createState() =>
+  ConsumerState<SalaryAdvanceRequestScreen> createState() =>
       _SalaryAdvanceRequestScreenState();
 }
 
 class _SalaryAdvanceRequestScreenState
-    extends State<SalaryAdvanceRequestScreen> {
+    extends ConsumerState<SalaryAdvanceRequestScreen> {
   final _amountController = TextEditingController(text: '2500');
   String _purpose = 'Personal Emergency';
   int _recoveryMonths = 3;
   bool _hasError = false;
+  bool _submitting = false;
 
   static const double _netSalary = 4500.0;
   static const double _activeAdvances = 0.0;
@@ -45,6 +61,44 @@ class _SalaryAdvanceRequestScreenState
     setState(() {
       _hasError = _requestedAmount > _cap;
     });
+  }
+
+  Future<void> _submit() async {
+    if (_hasError || _requestedAmount < 1) return;
+    setState(() => _submitting = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final createRes = await dio.post<Map<String, dynamic>>('/finance/advances', data: {
+        'advance_type': _purposeToAdvanceType(_purpose),
+        'amount': _requestedAmount,
+        'currency': 'NAD',
+        'repayment_months': _recoveryMonths,
+        'purpose': _purpose,
+        'justification': 'Salary advance request: $_purpose. Amount: $_requestedAmount. Recovery: $_recoveryMonths months.',
+      });
+      final id = createRes.data?['data']?['id'];
+      if (id != null) {
+        await dio.post('/finance/advances/$id/submit');
+      }
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Salary advance request submitted successfully.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to submit salary advance. Please try again.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   @override
@@ -450,9 +504,15 @@ class _SalaryAdvanceRequestScreenState
           border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
         ),
         child: ElevatedButton.icon(
-          onPressed: _hasError ? null : () {},
-          icon: const Icon(Icons.arrow_forward, size: 18),
-          label: const Text('Next Step'),
+          onPressed: (_hasError || _submitting) ? null : _submit,
+          icon: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.arrow_forward, size: 18),
+          label: Text(_submitting ? 'Submitting…' : 'Next Step'),
           style: ElevatedButton.styleFrom(
             backgroundColor:
                 _hasError ? const Color(0xFFCCCCCC) : const Color(0xFF13EC80),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -44,14 +47,14 @@ class _LineItem {
 // ─────────────────────────────────────────────────────────────
 //  MAIN SCREEN
 // ─────────────────────────────────────────────────────────────
-class PifFormScreen extends StatefulWidget {
+class PifFormScreen extends ConsumerStatefulWidget {
   const PifFormScreen({super.key});
 
   @override
-  State<PifFormScreen> createState() => _PifFormScreenState();
+  ConsumerState<PifFormScreen> createState() => _PifFormScreenState();
 }
 
-class _PifFormScreenState extends State<PifFormScreen> {
+class _PifFormScreenState extends ConsumerState<PifFormScreen> {
   int _currentStep = 0;
   final _data = _PifFormData();
   bool _submitting = false;
@@ -85,18 +88,53 @@ class _PifFormScreenState extends State<PifFormScreen> {
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _submitting = false);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final totalBudget = _data.lineItems.fold<double>(0, (s, i) => s + i.amount);
+      final createRes = await dio.post<Map<String, dynamic>>('/programmes', data: {
+        'title': _data.programTitle.isEmpty ? 'PIF Programme' : _data.programTitle,
+        'background': _data.description.isEmpty ? null : _data.description,
+        'overall_objective': _data.strategicObjective.isEmpty ? null : _data.strategicObjective,
+        'primary_currency': 'NAD',
+        'total_budget': totalBudget,
+        'funding_source': 'SADC PF',
+      });
+      final id = createRes.data?['data']?['id'];
+      if (id != null) {
+        await dio.post('/programmes/$id/submit');
+        if (!mounted) return;
+        setState(() => _submitting = false);
+        Navigator.of(context).pop();
+        context.push('/pif/review?id=$id');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('PIF submitted for review'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        setState(() => _submitting = false);
+        _showError();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      _showError();
+    }
+  }
+
+  void _showError() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('PIF submitted for review'),
-        backgroundColor: AppColors.success,
+        content: const Text('Failed to submit PIF. Please try again.'),
+        backgroundColor: AppColors.danger,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-    Navigator.of(context).pop();
   }
 
   @override
@@ -474,7 +512,8 @@ class _Step1GeneralInfoState extends State<_Step1GeneralInfo> {
           ),
         ),
         const SizedBox(height: 14),
-        _MapPlaceholder(
+        _LocationDisplay(
+          locationName: widget.data.locationName,
           lat: widget.data.latitude ?? -22.5609,
           lng: widget.data.longitude ?? 17.0658,
         ),
@@ -1292,115 +1331,64 @@ class _FormField extends StatelessWidget {
   }
 }
 
-class _MapPlaceholder extends StatelessWidget {
+class _LocationDisplay extends StatelessWidget {
+  final String locationName;
   final double lat;
   final double lng;
 
-  const _MapPlaceholder({required this.lat, required this.lng});
+  const _LocationDisplay({
+    required this.locationName,
+    required this.lat,
+    required this.lng,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 160,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1B14),
+        color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      child: Stack(
+      child: Row(
         children: [
-          // Grid lines
-          CustomPaint(
-            size: const Size(double.infinity, 160),
-            painter: _MapGridPainter(),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.location_on, color: AppColors.primary, size: 22),
           ),
-          // Center pin
-          const Center(
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.location_on, color: AppColors.danger, size: 32),
-                SizedBox(height: 2),
                 Text(
-                  'Windhoek, Namibia',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
+                  locationName.isEmpty ? 'Location' : locationName,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-          ),
-          // Change location button
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.bgSurface.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.edit_location_alt, color: AppColors.primary, size: 12),
-                  SizedBox(width: 4),
-                  Text(
-                    'Change Location',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  '${lat.toStringAsFixed(4)}°, ${lng.toStringAsFixed(4)}°',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
                   ),
-                ],
-              ),
-            ),
-          ),
-          // Coordinates label
-          Positioned(
-            bottom: 10,
-            left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.bgDark.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'Coordinates: ${lat.abs().toStringAsFixed(4)}° S, ${lng.toStringAsFixed(4)}° E',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 9,
-                  fontFamily: 'monospace',
                 ),
-              ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.border.withValues(alpha: 0.5)
-      ..strokeWidth = 0.5;
-
-    for (double x = 0; x < size.width; x += 30) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += 30) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }

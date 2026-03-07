@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_format.dart';
 
 // ─────────────────────────────────────────────────────────────
-//  MOCK DATA
+//  FALLBACK MOCK DATA (when no programmeId or API fails)
 // ─────────────────────────────────────────────────────────────
 const _mockPif = {
   'id': 'PROJ-0025',
@@ -68,16 +71,75 @@ final _approvalHistory = [
 // ─────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────
-class PifReviewApprovalScreen extends StatefulWidget {
-  const PifReviewApprovalScreen({super.key});
+class PifReviewApprovalScreen extends ConsumerStatefulWidget {
+  const PifReviewApprovalScreen({super.key, this.programmeId});
+
+  final String? programmeId;
 
   @override
-  State<PifReviewApprovalScreen> createState() => _PifReviewApprovalScreenState();
+  ConsumerState<PifReviewApprovalScreen> createState() => _PifReviewApprovalScreenState();
 }
 
-class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
+class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScreen> {
   bool _participantsExpanded = false;
   bool _generatingImprest = false;
+  Map<String, dynamic>? _programme;
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.programmeId != null) _loadProgramme();
+    else setState(() => _loading = false);
+  }
+
+  Future<void> _loadProgramme() async {
+    if (widget.programmeId == null) return;
+    setState(() { _loading = true; _error = null; });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>('/programmes/${widget.programmeId}');
+      final data = res.data;
+      if (!mounted) return;
+      if (data != null) {
+        final approvedAt = data['approved_at'] ?? data['submitted_at'];
+        String approvedStr = '—';
+        if (approvedAt != null) {
+          if (approvedAt is String) {
+            approvedStr = AppDateFormatter.short(approvedAt);
+          } else if (approvedAt is Map && approvedAt['date'] != null) {
+            approvedStr = AppDateFormatter.short(approvedAt['date'].toString());
+          }
+        }
+        setState(() {
+          _programme = {
+            'id': data['id']?.toString() ?? data['reference_number'],
+            'status': data['status'] ?? 'draft',
+            'title': data['title'] ?? 'Programme',
+            'subtitle': _statusSubtitle(data['status']),
+            'budget_code': data['reference_number'] ?? '—',
+            'approved_date': approvedStr,
+            'location': data['member_states']?.toString() ?? '—',
+          };
+          _loading = false;
+        });
+      } else {
+        setState(() { _loading = false; });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _error = 'Failed to load programme.'; _loading = false; });
+    }
+  }
+
+  String _statusSubtitle(dynamic status) {
+    if (status == null) return 'Draft.';
+    final s = status.toString().toLowerCase();
+    if (s == 'approved') return 'Implementation Approved. Financial actions enabled.';
+    if (s == 'submitted') return 'Pending approval.';
+    return 'Status: $status';
+  }
 
   Future<void> _generateImprest() async {
     setState(() => _generatingImprest = true);
@@ -94,6 +156,8 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
     );
   }
 
+  Map<String, dynamic> get _pif => _programme ?? _mockPif;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,8 +165,33 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          Expanded(child: _buildBody()),
-          _buildBottomBar(),
+          if (_loading)
+            const Expanded(
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            )
+          else if (_error != null)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: _loadProgramme,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else ...[
+            Expanded(child: _buildBody()),
+            _buildBottomBar(),
+          ],
         ],
       ),
     );
@@ -186,7 +275,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              'ID: ${_mockPif['id']}',
+              'ID: ${_pif['id']}',
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 12,
@@ -198,7 +287,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
         const SizedBox(height: 14),
         // Title
         Text(
-          _mockPif['title'] as String,
+          _pif['title'] as String,
           style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 24,
@@ -207,7 +296,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
         ),
         const SizedBox(height: 6),
         Text(
-          _mockPif['subtitle'] as String,
+          _pif['subtitle'] as String,
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 14),
@@ -224,7 +313,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
               _MetaRow(
                 icon: Icons.tag,
                 label: 'Budget Code',
-                value: _mockPif['budget_code'] as String,
+                value: _pif['budget_code'] as String,
                 valueColor: AppColors.gold,
               ),
               const SizedBox(height: 10),
@@ -234,7 +323,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
                     child: _MetaRow(
                       icon: Icons.calendar_today,
                       label: 'Approved',
-                      value: _mockPif['approved_date'] as String,
+                      value: _pif['approved_date'] as String,
                       valueColor: AppColors.success,
                     ),
                   ),
@@ -242,7 +331,7 @@ class _PifReviewApprovalScreenState extends State<PifReviewApprovalScreen> {
                     child: _MetaRow(
                       icon: Icons.location_on_outlined,
                       label: 'Location',
-                      value: _mockPif['location'] as String,
+                      value: _pif['location'] as String,
                       valueColor: AppColors.textPrimary,
                     ),
                   ),

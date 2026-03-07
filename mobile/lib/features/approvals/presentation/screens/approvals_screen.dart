@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_format.dart';
 
 const _typeConfig = {
   'Travel':  _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary,  bg: Color(0x1A1D85ED)),
@@ -286,16 +287,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                       final desc = (e['purpose'] ?? e['reason'] ?? e['title'])?.toString() ?? '—';
                       final tc = _typeConfig[type] ?? _typeConfig['Travel']!;
 
-                      // Date
-                      final submittedAt = e['submitted_at']?.toString() ?? '';
-                      String dateStr = '';
-                      if (submittedAt.isNotEmpty) {
-                        try {
-                          final dt = DateTime.parse(submittedAt);
-                          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                          dateStr = '${dt.day} ${months[dt.month - 1]}';
-                        } catch (_) {}
-                      }
+                      // Date (friendly format)
+                      final submittedAt = e['submitted_at']?.toString() ?? e['created_at']?.toString();
+                      final dateStr = (submittedAt != null && submittedAt.isNotEmpty)
+                          ? AppDateFormatter.short(submittedAt)
+                          : '';
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),

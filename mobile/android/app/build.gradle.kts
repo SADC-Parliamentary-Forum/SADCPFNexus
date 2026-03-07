@@ -27,20 +27,22 @@ android {
         versionName = flutter.versionName
     }
 
-    // For production release, add a signing config and use it in buildTypes.release:
-    // signingConfigs {
-    //     create("release") {
-    //         storeFile = file(project.findProperty("SADC_KEYSTORE_PATH") ?: System.getenv("SADC_KEYSTORE_PATH") ?: "../upload-keystore.jks")
-    //         storePassword = project.findProperty("SADC_KEYSTORE_PASSWORD") ?: System.getenv("SADC_KEYSTORE_PASSWORD") ?: ""
-    //         keyAlias = project.findProperty("SADC_KEY_ALIAS") ?: System.getenv("SADC_KEY_ALIAS") ?: "upload"
-    //         keyPassword = project.findProperty("SADC_KEY_PASSWORD") ?: System.getenv("SADC_KEY_PASSWORD") ?: ""
-    //     }
-    // }
-    // buildTypes { release { signingConfig = signingConfigs.getByName("release") } }
+    // Production release: set SADC_KEYSTORE_PATH, SADC_KEYSTORE_PASSWORD, SADC_KEY_ALIAS, SADC_KEY_PASSWORD
+    // (env or gradle.properties). If not set, release uses debug signing for local builds.
+    signingConfigs {
+        create("release") {
+            val path = project.findProperty("SADC_KEYSTORE_PATH")?.toString() ?: System.getenv("SADC_KEYSTORE_PATH") ?: "../upload-keystore.jks"
+            storeFile = file(path)
+            storePassword = project.findProperty("SADC_KEYSTORE_PASSWORD")?.toString() ?: System.getenv("SADC_KEYSTORE_PASSWORD") ?: ""
+            keyAlias = project.findProperty("SADC_KEY_ALIAS")?.toString() ?: System.getenv("SADC_KEY_ALIAS") ?: "upload"
+            keyPassword = project.findProperty("SADC_KEY_PASSWORD")?.toString() ?: System.getenv("SADC_KEY_PASSWORD") ?: ""
+        }
+    }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            val releaseConfig = signingConfigs.getByName("release")
+            signingConfig = if (releaseConfig.storeFile?.exists() == true) releaseConfig else signingConfigs.getByName("debug")
         }
     }
 }

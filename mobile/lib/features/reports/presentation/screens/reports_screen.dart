@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 
 const _reportTypes = [
@@ -8,6 +9,7 @@ const _reportTypes = [
     icon: Icons.flight_takeoff_rounded,
     color: AppColors.primary,
     tag: 'Travel',
+    apiKey: 'travel',
   ),
   _ReportType(
     title: 'Leave Management',
@@ -15,6 +17,7 @@ const _reportTypes = [
     icon: Icons.event_available_rounded,
     color: AppColors.success,
     tag: 'Leave',
+    apiKey: 'leave',
   ),
   _ReportType(
     title: 'DSA & Allowances',
@@ -22,6 +25,7 @@ const _reportTypes = [
     icon: Icons.payments_rounded,
     color: AppColors.warning,
     tag: 'Finance',
+    apiKey: 'finance',
   ),
   _ReportType(
     title: 'Imprest & Finance',
@@ -29,6 +33,7 @@ const _reportTypes = [
     icon: Icons.account_balance_wallet_rounded,
     color: AppColors.info,
     tag: 'Finance',
+    apiKey: 'imprest',
   ),
   _ReportType(
     title: 'Procurement',
@@ -36,6 +41,7 @@ const _reportTypes = [
     icon: Icons.shopping_cart_rounded,
     color: Color(0xFF8B5CF6),
     tag: 'Procurement',
+    apiKey: 'procurement',
   ),
   _ReportType(
     title: 'HR & Timesheets',
@@ -43,6 +49,7 @@ const _reportTypes = [
     icon: Icons.schedule_rounded,
     color: Color(0xFF14B8A6),
     tag: 'HR',
+    apiKey: 'hr',
   ),
 ];
 
@@ -52,12 +59,14 @@ class _ReportType {
   final IconData icon;
   final Color color;
   final String tag;
+  final String apiKey;
   const _ReportType({
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.color,
     required this.tag,
+    required this.apiKey,
   });
 }
 
@@ -179,17 +188,7 @@ class _ReportCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           splashColor: report.color.withValues(alpha:0.08),
-          onTap: () {
-            // TODO: navigate when report API is available
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${report.title} reports coming soon.'),
-                backgroundColor: AppColors.bgSurface,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-          },
+          onTap: () => context.push('/reports/detail?type=${report.apiKey}&title=${Uri.encodeComponent(report.title)}'),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(

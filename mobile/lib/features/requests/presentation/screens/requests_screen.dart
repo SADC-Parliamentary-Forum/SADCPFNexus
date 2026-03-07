@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_format.dart';
 
 // Status config
 const _statusColors = {
@@ -385,15 +386,17 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final submittedAt = item['submitted_at']?.toString() ?? item['created_at']?.toString() ?? '';
-    String dateStr = '';
-    if (submittedAt.isNotEmpty) {
-      try {
-        final dt = DateTime.parse(submittedAt);
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        dateStr = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
-      } catch (_) {}
-    }
+    final submittedAt = item['submitted_at']?.toString() ?? item['created_at']?.toString();
+    final dateStr = submittedAt != null && submittedAt.isNotEmpty
+        ? AppDateFormatter.short(submittedAt)
+        : '';
+    final rangeStr = (item['departure_date'] != null || item['start_date'] != null)
+        ? AppDateFormatter.range(
+            item['departure_date']?.toString() ?? item['start_date']?.toString(),
+            item['return_date']?.toString() ?? item['end_date']?.toString(),
+          )
+        : dateStr;
+    final displayDate = rangeStr != '—' ? rangeStr : dateStr;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -440,9 +443,9 @@ class _RequestCard extends StatelessWidget {
                           fontFamily: 'monospace',
                         ),
                       ),
-                      if (dateStr.isNotEmpty) ...[
+                      if (displayDate.isNotEmpty && displayDate != '—') ...[
                         const Text('  ·  ', style: TextStyle(color: AppColors.border, fontSize: 11)),
-                        Text(dateStr,
+                        Text(displayDate,
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                       ],
                     ],

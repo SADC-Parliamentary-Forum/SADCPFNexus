@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,18 +21,19 @@ class _ExpenseItem {
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class ImprestRequisitionFormScreen extends StatefulWidget {
+class ImprestRequisitionFormScreen extends ConsumerStatefulWidget {
   const ImprestRequisitionFormScreen({super.key});
 
   @override
-  State<ImprestRequisitionFormScreen> createState() =>
+  ConsumerState<ImprestRequisitionFormScreen> createState() =>
       _ImprestRequisitionFormScreenState();
 }
 
 class _ImprestRequisitionFormScreenState
-    extends State<ImprestRequisitionFormScreen> {
+    extends ConsumerState<ImprestRequisitionFormScreen> {
   final int _currentStep = 1;
   static const int _totalSteps = 3;
+  bool _submitting = false;
 
   String? _selectedMission;
   final List<_ExpenseItem> _items = [
@@ -55,6 +58,49 @@ class _ImprestRequisitionFormScreenState
 
   void _addItem() {
     setState(() => _items.add(_ExpenseItem()));
+  }
+
+  Future<void> _submit() async {
+    if (_total < 1) return;
+    setState(() => _submitting = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final liquidationDate = DateTime.now().add(const Duration(days: 30));
+      final purpose = _items.isNotEmpty && _items.first.description.isNotEmpty
+          ? _items.first.description
+          : 'Imprest requisition';
+      final justification = _items.map((i) => i.note).where((n) => n.isNotEmpty).join('; ');
+      final createRes = await dio.post<Map<String, dynamic>>('/imprest/requests', data: {
+        'budget_line': _selectedMission ?? '2064.TRAVEL.INT',
+        'amount_requested': _total,
+        'currency': 'NAD',
+        'expected_liquidation_date': '${liquidationDate.year}-${liquidationDate.month.toString().padLeft(2, '0')}-${liquidationDate.day.toString().padLeft(2, '0')}',
+        'purpose': purpose,
+        'justification': justification.isEmpty ? null : justification,
+      });
+      final id = createRes.data?['data']?['id'];
+      if (id != null) {
+        await dio.post('/imprest/requests/$id/submit');
+      }
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Imprest request submitted successfully.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to submit imprest request. Please try again.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   String _fmt(double v) {
@@ -368,7 +414,7 @@ class _ImprestRequisitionFormScreenState
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _submitting || _total < 1 ? null : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.bgDark,
@@ -376,18 +422,27 @@ class _ImprestRequisitionFormScreenState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Continue to Approvers',
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_rounded, size: 18),
-                ],
-              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.bgDark,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Continue to Approvers',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
+                    ),
             ),
           ),
         ),
