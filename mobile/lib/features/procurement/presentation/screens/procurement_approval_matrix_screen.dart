@@ -263,9 +263,9 @@ class ProcurementApprovalMatrixScreen extends StatelessWidget {
             ),
           ),
           const Divider(color: AppColors.border, height: 20),
-          _ComplianceRow(
+          const _ComplianceRow(
             label: 'Secure Executive Authorization',
-            trailing: const Icon(Icons.lock_rounded,
+            trailing: Icon(Icons.lock_rounded,
                 color: AppColors.textMuted, size: 18),
           ),
         ],
@@ -283,8 +283,8 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.12), AppColors.bgCard],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0A4D30), Color(0xFF1A3326)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

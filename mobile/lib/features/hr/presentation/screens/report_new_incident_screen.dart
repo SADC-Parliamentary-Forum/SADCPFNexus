@@ -122,7 +122,7 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
         children: [
           // ── Classification section ────────────────────────────────────
-          _SectionHeader(label: 'Classification'),
+          const _SectionHeader(label: 'Classification'),
           const SizedBox(height: 12),
 
           const Text(
@@ -171,6 +171,7 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
             ),
             child: Row(
               children: _severities.asMap().entries.map((entry) {
+                final i = entry.key;
                 final s = entry.value;
                 final isActive = s == _severity;
                 Color activeColor;
@@ -225,7 +226,7 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
           const SizedBox(height: 20),
 
           // ── Details section ───────────────────────────────────────────
-          _SectionHeader(label: 'Details'),
+          const _SectionHeader(label: 'Details'),
           const SizedBox(height: 12),
 
           const Text(
@@ -339,7 +340,7 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
           const SizedBox(height: 20),
 
           // ── Evidence & Signature section ──────────────────────────────
-          _SectionHeader(label: 'Evidence & Signature'),
+          const _SectionHeader(label: 'Evidence & Signature'),
           const SizedBox(height: 12),
 
           Row(
@@ -456,9 +457,9 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
                       painter: _SignaturePainter(),
                       size: Size.infinite,
                     )
-                  : Column(
+                  : const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Icon(Icons.gesture, size: 32, color: Color(0xFFCCCCCC)),
                         SizedBox(height: 4),
                         Text(
@@ -489,8 +490,8 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
           icon: const Icon(Icons.send, size: 18),
           label: const Text('Submit Report'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF059669),
-            foregroundColor: Colors.white,
+            backgroundColor: const Color(0xFF13EC80),
+            foregroundColor: const Color(0xFF102219),
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,

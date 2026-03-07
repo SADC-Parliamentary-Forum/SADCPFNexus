@@ -15,8 +15,8 @@ class ExecutiveCockpitScreen extends StatelessWidget {
         actions: [
           IconButton(icon: const Icon(Icons.refresh, color: AppColors.textSecondary), onPressed: () {}),
           Container(margin: const EdgeInsets.only(right: 12), width: 32, height: 32,
-            decoration: BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
-            child: const Center(child: Text('SG', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))),
+            decoration: const BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
+            child: const Center(child: Text('SG', style: TextStyle(color: Color(0xFF102219), fontSize: 11, fontWeight: FontWeight.w800)))),
         ],
       ),
       body: ListView(
