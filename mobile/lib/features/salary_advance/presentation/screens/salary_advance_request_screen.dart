@@ -69,8 +69,8 @@ class _SalaryAdvanceRequestScreenState
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Column(
-          children: const [
+        title: const Column(
+          children: [
             Text(
               'Request Advance',
               style: TextStyle(
@@ -427,8 +427,8 @@ class _SalaryAdvanceRequestScreenState
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
-              children: const [
+            child: const Row(
+              children: [
                 Icon(Icons.info_outline, size: 14, color: Color(0xFF888888)),
                 SizedBox(width: 8),
                 Expanded(
@@ -455,9 +455,9 @@ class _SalaryAdvanceRequestScreenState
           label: const Text('Next Step'),
           style: ElevatedButton.styleFrom(
             backgroundColor:
-                _hasError ? const Color(0xFFCCCCCC) : const Color(0xFF059669),
+                _hasError ? const Color(0xFFCCCCCC) : const Color(0xFF13EC80),
             foregroundColor:
-                _hasError ? const Color(0xFF888888) : Colors.white,
+                _hasError ? const Color(0xFF888888) : const Color(0xFF102219),
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,

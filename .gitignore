@@ -4,3 +4,4 @@ LOGIN_CREDENTIALS.md
 web
 api/.env.docker.example
 api/.env.example
+web
