@@ -181,8 +181,9 @@ class _TravelRequestFormScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -193,6 +194,7 @@ class _TravelRequestFormScreenState
                   : () => setState(() => _step--),
               onSaveDraft: _saveDraft,
               stepLabels: _stepLabels,
+              theme: theme,
             ),
             Expanded(
               child: AnimatedSwitcher(
@@ -256,36 +258,41 @@ class _Header extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onSaveDraft;
   final List<String> stepLabels;
+  final ThemeData theme;
 
   const _Header({
     required this.step,
     required this.onBack,
     required this.onSaveDraft,
     required this.stepLabels,
+    required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = theme.colorScheme;
+    final borderColor = c.outline.withValues(alpha: 0.5);
     return Container(
-      color: AppColors.bgDark,
+      color: theme.scaffoldBackgroundColor,
       child: Column(
         children: [
-          // Top bar
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
             child: Row(
               children: [
                 IconButton(
                   onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back,
-                      color: AppColors.textPrimary, size: 22),
+                  icon: Icon(Icons.arrow_back, color: c.onSurface, size: 22),
                 ),
-                const Expanded(
-                  child: Text('Travel Requisition',
-                      style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text(
+                    'Travel Requisition',
+                    style: TextStyle(
+                      color: c.onSurface,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 GestureDetector(
                   onTap: onSaveDraft,
@@ -293,37 +300,36 @@ class _Header extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      color: c.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(_kStitchRoundness),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3)),
+                          color: c.primary.withValues(alpha: 0.3)),
                     ),
-                    child: const Text('Save Draft',
-                        style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'Save Draft',
+                      style: TextStyle(
+                        color: c.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          // Step indicator
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: List.generate(stepLabels.length * 2 - 1, (i) {
                 if (i.isOdd) {
-                  // Connector line
                   final lineStep = i ~/ 2;
                   final filled = step > lineStep;
                   return Expanded(
                     child: Container(
                       height: 2,
-                      color: filled
-                          ? AppColors.primary
-                          : AppColors.border,
+                      color: filled ? c.primary : c.outline,
                     ),
                   );
                 }
@@ -331,60 +337,73 @@ class _Header extends StatelessWidget {
                 final isActive = s == step;
                 final isDone = s < step;
                 return _StepCircle(
-                    number: s + 1,
-                    label: stepLabels[s],
-                    isActive: isActive,
-                    isDone: isDone);
+                  number: s + 1,
+                  label: stepLabels[s],
+                  isActive: isActive,
+                  isDone: isDone,
+                  theme: theme,
+                );
               }),
             ),
           ),
           const SizedBox(height: 12),
-          Container(height: 1, color: AppColors.border.withValues(alpha: 0.5)),
+          Container(height: 1, color: borderColor),
         ],
       ),
     );
   }
 }
 
+const double _kStitchRoundness = 8.0;
+
 class _StepCircle extends StatelessWidget {
   final int number;
   final String label;
   final bool isActive;
   final bool isDone;
+  final ThemeData theme;
 
   const _StepCircle({
     required this.number,
     required this.label,
     required this.isActive,
     required this.isDone,
+    required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
+    final c = theme.colorScheme;
     Color bg;
     Color borderColor;
     Widget child;
 
     if (isDone) {
-      bg = AppColors.primary;
-      borderColor = AppColors.primary;
-      child = const Icon(Icons.check, size: 12, color: AppColors.bgDark);
+      bg = c.primary;
+      borderColor = c.primary;
+      child = Icon(Icons.check, size: 12, color: c.onPrimary);
     } else if (isActive) {
-      bg = AppColors.primary;
-      borderColor = AppColors.primary;
-      child = Text('$number',
-          style: const TextStyle(
-              color: AppColors.bgDark,
-              fontSize: 11,
-              fontWeight: FontWeight.w800));
+      bg = c.primary;
+      borderColor = c.primary;
+      child = Text(
+        '$number',
+        style: TextStyle(
+          color: c.onPrimary,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      );
     } else {
       bg = Colors.transparent;
-      borderColor = AppColors.border;
-      child = Text('$number',
-          style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 11,
-              fontWeight: FontWeight.w600));
+      borderColor = c.outline;
+      child = Text(
+        '$number',
+        style: TextStyle(
+          color: c.onSurface.withValues(alpha: 0.6),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      );
     }
 
     return Column(
@@ -402,13 +421,16 @@ class _StepCircle extends StatelessWidget {
           child: Center(child: child),
         ),
         const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-                color: isActive || isDone
-                    ? AppColors.primary
-                    : AppColors.textMuted,
-                fontSize: 9,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive || isDone
+                ? c.primary
+                : c.onSurface.withValues(alpha: 0.6),
+            fontSize: 9,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -799,12 +821,14 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
       decoration: BoxDecoration(
-        color: AppColors.bgDark,
-        border:
-            Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+        color: Theme.of(context).scaffoldBackgroundColor,
+        border: Border(
+          top: BorderSide(color: c.outline.withValues(alpha: 0.5)),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -815,18 +839,24 @@ class _BottomBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(leftLabel,
-                        style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5)),
+                    Text(
+                      leftLabel,
+                      style: TextStyle(
+                        color: c.onSurface.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(leftValue,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800)),
+                    Text(
+                      leftValue,
+                      style: TextStyle(
+                        color: c.onSurface,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -834,18 +864,24 @@ class _BottomBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(rightLabel,
-                        style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5)),
+                    Text(
+                      rightLabel,
+                      style: TextStyle(
+                        color: c.onSurface.withValues(alpha: 0.7),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(rightValue,
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800)),
+                    Text(
+                      rightValue,
+                      style: TextStyle(
+                        color: c.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -858,24 +894,30 @@ class _BottomBar extends StatelessWidget {
             child: ElevatedButton(
               onPressed: onCta,
               style: ElevatedButton.styleFrom(
-                backgroundColor: onCta != null
-                    ? AppColors.primary
-                    : AppColors.border,
-                foregroundColor: AppColors.bgDark,
+                backgroundColor:
+                    onCta != null ? c.primary : c.outline,
+                foregroundColor: c.onPrimary,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(_kStitchRoundness),
+                ),
                 elevation: 0,
               ),
               child: loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.bgDark))
-                  : Text(ctaLabel,
+                        strokeWidth: 2,
+                        color: c.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      ctaLabel,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 15)),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
             ),
           ),
         ],

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 
+/// Login: email/password + optional biometric. Theme-aware (light/dark).
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -27,9 +29,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (token == null || token.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sign in with email first to enable biometric login.'),
+          SnackBar(
+            content: const Text(
+              'Sign in with email first to enable biometric login.',
+            ),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),
         );
       }
@@ -42,7 +47,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!canCheck) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Biometrics not available.'), behavior: SnackBarBehavior.floating),
+            SnackBar(
+              content: const Text('Biometrics not available.'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            ),
           );
         }
         return;
@@ -58,8 +67,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Biometric failed: ${e.toString().split('.').last}'),
+            content: Text(
+              'Biometric failed: ${e.toString().split('.').last}',
+            ),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),
         );
       }
@@ -97,85 +109,125 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
+              // Logo
               Container(
-                width: 100,
-                height: 100,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.bgSurface,
-                  border: Border.all(color: AppColors.gold, width: 3),
+                  color: c.surface,
+                  border: Border.all(
+                    color: c.primary.withValues(alpha: 0.5),
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha:0.2),
-                      blurRadius: 24,
-                      spreadRadius: 4,
+                      color: c.primary.withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Icon(Icons.account_balance, size: 48, color: AppColors.primary),
+                child: Icon(
+                  Icons.account_balance_rounded,
+                  size: 44,
+                  color: c.primary,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Text(
                 'SADC PF Nexus',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.textPrimary,
+                style: GoogleFonts.publicSans(
+                  color: c.onSurface,
+                  fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 'Parliamentary Forum Governance Platform',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.5,
+                style: GoogleFonts.publicSans(
+                  color: c.onSurface.withValues(alpha: 0.7),
+                  fontSize: 13,
+                  letterSpacing: 0.3,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
+              // Form card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border),
+                  color: c.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: c.outline),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Sign In', style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        'Sign In',
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Enter your credentials to continue',
-                          style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        'Enter your credentials to continue',
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface.withValues(alpha: 0.7),
+                          fontSize: 13,
+                        ),
+                      ),
                       if (_errorMessage != null) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: AppColors.danger.withValues(alpha:0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.danger.withValues(alpha:0.3)),
+                            color: AppColors.danger.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.danger.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppColors.danger,
+                                size: 20,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: const TextStyle(
+                                  style: GoogleFonts.publicSans(
                                     color: AppColors.danger,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -186,11 +238,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       Text(
                         'EMAIL ADDRESS',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          letterSpacing: 1.2,
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          letterSpacing: 1.0,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -198,23 +252,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
+                        autocorrect: false,
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface,
+                          fontSize: 15,
+                        ),
+                        decoration: InputDecoration(
                           hintText: 'you@sadcpf.org',
-                          prefixIcon: Icon(Icons.email_outlined,
-                              color: AppColors.textSecondary, size: 20),
+                          hintStyle: TextStyle(
+                            color: c.onSurface.withValues(alpha: 0.5),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: c.onSurface.withValues(alpha: 0.6),
+                            size: 20,
+                          ),
                         ),
                         validator: (val) {
-                          if (val == null || val.isEmpty) return 'Email is required';
-                          if (!val.contains('@')) return 'Enter a valid email';
+                          if (val == null || val.isEmpty) {
+                            return 'Email is required';
+                          }
+                          if (!val.contains('@')) {
+                            return 'Enter a valid email';
+                          }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'PASSWORD',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          letterSpacing: 1.2,
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          letterSpacing: 1.0,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -222,57 +292,107 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: GoogleFonts.publicSans(
+                          color: c.onSurface,
+                          fontSize: 15,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'password',
-                          prefixIcon: const Icon(Icons.lock_outline,
-                              color: AppColors.textSecondary, size: 20),
+                          hintText: '••••••••',
+                          hintStyle: TextStyle(
+                            color: c.onSurface.withValues(alpha: 0.5),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.lock_outline,
+                            color: c.onSurface.withValues(alpha: 0.6),
+                            size: 20,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
-                              color: AppColors.textSecondary,
+                              color: c.onSurface.withValues(alpha: 0.6),
                               size: 20,
                             ),
-                            onPressed: () =>
-                                setState(() => _obscurePassword = !_obscurePassword),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                           ),
                         ),
                         validator: (val) {
-                          if (val == null || val.isEmpty) return 'Password is required';
-                          if (val.length < 8) return 'Minimum 8 characters';
+                          if (val == null || val.isEmpty) {
+                            return 'Password is required';
+                          }
+                          if (val.length < 8) {
+                            return 'Minimum 8 characters';
+                          }
                           return null;
                         },
                       ),
-                      const SizedBox(height: 28),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.bgDark,
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: c.primary,
+                            foregroundColor: c.onPrimary,
+                            disabledBackgroundColor: c.outline.withValues(
+                              alpha: 0.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: c.onPrimary,
+                                  ),
+                                )
+                              : Text(
+                                  'Sign In',
+                                  style: GoogleFonts.publicSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
                                 ),
-                              )
-                            : const Text('Sign In'),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Center(
                         child: TextButton.icon(
-                          onPressed: _biometricLoading ? null : _handleBiometricLogin,
+                          onPressed: _biometricLoading
+                              ? null
+                              : _handleBiometricLogin,
                           icon: _biometricLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: c.primary,
+                                  ),
                                 )
-                              : const Icon(Icons.fingerprint, color: AppColors.primary, size: 22),
+                              : Icon(
+                                  Icons.fingerprint,
+                                  color: c.primary,
+                                  size: 22,
+                                ),
                           label: Text(
-                            _biometricLoading ? 'Authenticating…' : 'Use biometric login',
-                            style: const TextStyle(color: AppColors.primary, fontSize: 13),
+                            _biometricLoading
+                                ? 'Authenticating…'
+                                : 'Use biometric login',
+                            style: GoogleFonts.publicSans(
+                              color: c.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -280,15 +400,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 28),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shield_outlined, color: AppColors.textMuted, size: 14),
+                  Icon(
+                    Icons.shield_outlined,
+                    color: c.onSurface.withValues(alpha: 0.5),
+                    size: 14,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Secured by SADC PF Security Framework',
-                    style: Theme.of(context).textTheme.labelSmall,
+                    style: GoogleFonts.publicSans(
+                      color: c.onSurface.withValues(alpha: 0.5),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),

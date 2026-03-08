@@ -43,6 +43,8 @@ dependencies:
   # UI utilities
   cached_network_image: ^3.3.1
   intl: ^0.19.0
+  shared_preferences: ^2.2.2
+  google_fonts: ^6.1.0
 
   # Icons (Material)
   cupertino_icons: ^1.0.6

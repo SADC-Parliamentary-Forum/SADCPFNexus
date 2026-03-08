@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/theme_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -55,22 +56,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
             : CustomScrollView(
                 slivers: [
-                  // Header bar
-                  const SliverAppBar(
+                  SliverAppBar(
                     pinned: false,
-                    backgroundColor: AppColors.bgDark,
+                    backgroundColor: theme.scaffoldBackgroundColor,
                     elevation: 0,
                     automaticallyImplyLeading: false,
-                    title: Text('Profile',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary)),
+                    title: Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
                   ),
 
                   SliverToBoxAdapter(
@@ -192,6 +198,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             title: 'Preferences',
                             icon: Icons.settings_outlined,
                             children: [
+                              _ThemeTile(),
                               _ActionTile(
                                 icon: Icons.notifications_outlined,
                                 label: 'Notifications',
@@ -383,6 +390,94 @@ class _InfoTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Theme (Light/Dark) setting. Default is light; switchable in Profile > Preferences.
+class _ThemeTile extends ConsumerWidget {
+  const _ThemeTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+    return GestureDetector(
+      onTap: () => _showThemeDialog(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                isDark ? Icons.dark_mode : Icons.light_mode,
+                size: 17,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Appearance',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              isDark ? 'Dark' : 'Light',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showThemeDialog(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(themeModeProvider.notifier);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(ctx).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text('Appearance'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('Light'),
+              leading: const Icon(Icons.light_mode),
+              onTap: () {
+                notifier.setThemeMode(ThemeMode.light);
+                Navigator.of(ctx).pop();
+              },
+            ),
+            ListTile(
+              title: const Text('Dark'),
+              leading: const Icon(Icons.dark_mode),
+              onTap: () {
+                notifier.setThemeMode(ThemeMode.dark);
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
