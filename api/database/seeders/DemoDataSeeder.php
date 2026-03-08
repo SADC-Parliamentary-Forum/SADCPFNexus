@@ -636,6 +636,84 @@ class DemoDataSeeder extends Seeder
                 );
             }
         }
+
+        // One local-staff payslip with full template details (matches PDF template)
+        $staffUser = $users[0] ?? null;
+        if ($staffUser) {
+            $periodMonth = 2;
+            $periodEnd  = Carbon::create($year, $periodMonth, 28);
+            $payslip    = Payslip::firstOrCreate(
+                ['user_id' => $staffUser->id, 'period_year' => $year, 'period_month' => $periodMonth],
+                [
+                    'tenant_id'    => $tenant->id,
+                    'gross_amount' => 65127.69,
+                    'net_amount'   => 47149.72,
+                    'currency'     => 'NAD',
+                    'issued_at'    => Carbon::create($year, $periodMonth, 25),
+                ]
+            );
+            $payslip->update([
+                'employment_type'             => Payslip::EMPLOYMENT_TYPE_LOCAL,
+                'period_end_date'             => $periodEnd,
+                'total_deductions'            => 17977.97,
+                'total_company_contributions' => 18734.37,
+                'details'                    => [
+                    'header' => [
+                        'emp_code'         => '2109-300',
+                        'date_engaged'     => '2009-04-01',
+                        'pay_period_end'   => $periodEnd->format('Y-m-d'),
+                        'emp_name'         => $staffUser->name ?? 'Staff Member',
+                        'job_title'        => $staffUser->job_title ?? 'ICT Officer',
+                        'company_name'     => 'SADC Parliamentary Forum',
+                        'known_as'         => '',
+                        'job_grade'        => 'Grade 08',
+                        'company_address'  => '578 Love Street',
+                        'id_number'        => '86041500402',
+                        'rate_per_hour'    => 216.36,
+                        'emp_address'      => '',
+                        'hours_per_period' => 160.00,
+                        'city'             => 'Windhoek',
+                        'termination_date' => null,
+                        'paye_ref_no'      => '02777067',
+                        'account_no'       => '62072715900',
+                        'income_tax_no'     => '10442322',
+                        'branch_no'        => '280172',
+                        'payment_type'      => 'ACB',
+                    ],
+                    'earnings' => [
+                        ['description' => 'Basic Salary', 'amount' => 39971.66],
+                        ['description' => 'Housing Allow', 'amount' => 9992.91],
+                        ['description' => 'Car Allow', 'amount' => 5995.75],
+                        ['description' => 'Education Allow', 'amount' => 3997.17],
+                        ['description' => 'Cellphone Allow', 'amount' => 173.74],
+                        ['description' => '13th Cheque', 'amount' => 4996.46],
+                    ],
+                    'deductions' => [
+                        ['description' => 'PAYE Tax', 'amount' => 15371.54],
+                        ['description' => 'SSC - Social Security', 'amount' => 99.00],
+                        ['description' => 'Medical Aid', 'amount' => 2495.20],
+                        ['description' => 'Funeral Scheme', 'amount' => 12.23],
+                    ],
+                    'company_contributions' => [
+                        ['description' => 'SSC - Social Security', 'amount' => 99.00],
+                        ['description' => 'Medical Aid', 'amount' => 9980.80],
+                        ['description' => 'Gratuity', 'amount' => 8654.57],
+                    ],
+                    'ytd_totals' => [
+                        ['description' => 'Tax Paid', 'amount' => 183186.27],
+                        ['description' => 'Taxable Earnings', 'amount' => 777287.58],
+                        ['description' => 'Taxable Company Contributions', 'amount' => 0.00],
+                        ['description' => 'Fringe Benefits', 'amount' => 0.00],
+                        ['description' => 'Tax Deductible Deductions', 'amount' => 0.00],
+                        ['description' => 'Provisions', 'amount' => 0.00],
+                        ['description' => 'Private Contributions', 'amount' => 0.00],
+                    ],
+                    'leave_balances' => [
+                        ['description' => 'Annual Leave', 'balance_bfwd' => 25, 'accrued' => 53.1646, 'taken' => 2.0833, 'balance_cfwd' => 55.2479],
+                    ],
+                ],
+            ]);
+        }
     }
 
     /* ──────────────────────────────────────────── LEAVE BALANCES ── */
