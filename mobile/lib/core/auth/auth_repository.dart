@@ -37,11 +37,17 @@ class AuthRepository {
       if (e.response?.statusCode == 422 || e.response?.statusCode == 401) {
         return AuthResult.failure('Invalid email or password.');
       }
-      return AuthResult.failure(e.message ?? 'Login failed. Please try again.');
+      return AuthResult.failure(_networkErrorMessage(e));
     } catch (e) {
-      return AuthResult.failure(e.toString().contains('SocketException') || e.toString().contains('Connection')
-          ? 'Cannot reach server. Check network.'
-          : 'Login failed. Please try again.');
+      final msg = e.toString();
+      final isNetwork = msg.contains('SocketException') ||
+          msg.contains('Connection') ||
+          msg.contains('XMLHttpRequest') ||
+          msg.contains('onError') ||
+          msg.contains('network');
+      return AuthResult.failure(
+        isNetwork ? 'Cannot reach server. Check that the API is running and the app is using the correct API URL.' : 'Login failed. Please try again.',
+      );
     }
   }
 
@@ -73,6 +79,28 @@ class AuthRepository {
       return null;
     }
   }
+}
+
+/// Returns a user-friendly message for connection/network errors and timeouts.
+String _networkErrorMessage(DioException e) {
+  final msg = (e.message ?? e.type.name).toLowerCase();
+  final isTimeout = e.type == DioExceptionType.receiveTimeout ||
+      e.type == DioExceptionType.sendTimeout ||
+      e.type == DioExceptionType.connectionTimeout ||
+      msg.contains('timeout') ||
+      msg.contains('aborted');
+  if (isTimeout) {
+    return 'The request timed out. Check that the API is running and try again.';
+  }
+  if (e.type == DioExceptionType.connectionError ||
+      e.type == DioExceptionType.unknown ||
+      msg.contains('xmlhttprequest') ||
+      msg.contains('connection') ||
+      msg.contains('network') ||
+      msg.contains('onerror')) {
+    return 'Cannot reach server. Check that the API is running and the app is using the correct API URL.';
+  }
+  return e.message ?? 'Login failed. Please try again.';
 }
 
 class AuthResult {

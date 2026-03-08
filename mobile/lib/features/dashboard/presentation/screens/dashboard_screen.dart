@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -66,18 +67,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     if (_loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.bgDark,
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
-          child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          child: Center(child: CircularProgressIndicator(color: c.primary)),
         ),
       );
     }
 
     if (_error != null) {
       return Scaffold(
-        backgroundColor: AppColors.bgDark,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -85,18 +90,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.cloud_off_outlined, color: AppColors.textSecondary, size: 48),
+                  Icon(Icons.cloud_off_outlined, color: c.onSurface.withValues(alpha: 0.7), size: 48),
                   const SizedBox(height: 16),
                   Text(_error!, textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: c.onSurface.withValues(alpha: 0.7),
+                      fontSize: 14,
+                    )),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: _load,
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.bgDark,
+                      backgroundColor: c.primary,
+                      foregroundColor: c.onPrimary,
                     ),
                   ),
                 ],
@@ -115,15 +123,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final firstName = (_userName ?? 'User').split(' ').first;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // ── Sticky Header ──────────────────────────────────────────
             SliverAppBar(
               pinned: true,
               floating: true,
-              backgroundColor: AppColors.bgDark.withValues(alpha:0.96),
+              backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.96),
               elevation: 0,
               automaticallyImplyLeading: false,
               toolbarHeight: 64,
@@ -131,15 +138,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    // Avatar
+                    IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: ShellDrawerScope.openDrawerOf(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: c.surface,
+                        foregroundColor: c.onSurface,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
                       width: 42, height: 42,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withValues(alpha:0.4), width: 2),
-                        color: AppColors.bgSurface,
+                        border: Border.all(color: c.primary.withValues(alpha: 0.4), width: 2),
+                        color: c.surface,
                       ),
-                      child: const Icon(Icons.person_outline, color: AppColors.textSecondary, size: 22),
+                      child: Icon(Icons.person_outline, color: c.onSurface.withValues(alpha: 0.7), size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -148,33 +165,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('${_greeting()},',
-                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary,
-                              letterSpacing: 0.3)),
+                            style: textTheme.labelMedium?.copyWith(
+                              fontSize: 11, color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 0.3)),
                           Text(firstName,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary, height: 1.2)),
+                            style: textTheme.titleMedium?.copyWith(
+                              fontSize: 16, fontWeight: FontWeight.w800, height: 1.2)),
                         ],
                       ),
                     ),
-                    // Notification bell
                     Stack(
                       children: [
                         Container(
                           width: 40, height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: c.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: c.outline),
                           ),
-                          child: const Icon(Icons.notifications_outlined,
-                            color: AppColors.textSecondary, size: 20),
+                          child: Icon(Icons.notifications_outlined,
+                            color: c.onSurface.withValues(alpha: 0.7), size: 20),
                         ),
                         Positioned(
                           top: 8, right: 8,
                           child: Container(
                             width: 8, height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.danger, shape: BoxShape.circle),
+                            decoration: BoxDecoration(
+                              color: c.error, shape: BoxShape.circle),
                           ),
                         ),
                       ],
@@ -182,59 +198,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
-              // Search bar in header bottom
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(56),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.bgSurface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Row(
-                      children: [
-                        SizedBox(width: 12),
-                        Icon(Icons.search, color: AppColors.textSecondary, size: 20),
-                        SizedBox(width: 8),
-                        Text('Search resolutions, PIFs, requests…',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                ),
+            ),
+
+            // Search bar with autocomplete (below app bar so it never covers left icons)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: _DashboardSearchBar(theme: theme),
               ),
             ),
 
-            // ── Dashboard title ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Dashboard',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary, height: 1.2)),
+                    Text('Dashboard',
+                      style: textTheme.headlineSmall?.copyWith(fontSize: 22, height: 1.2)),
                     Text(_todayLabel(),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      style: textTheme.bodySmall?.copyWith(fontSize: 12)),
                   ],
                 ),
               ),
             ),
 
-            // ── KPI Cards ───────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('AT A GLANCE',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary, letterSpacing: 1.2)),
+                    Text('AT A GLANCE',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
                     const SizedBox(height: 12),
                     GridView.count(
                       crossAxisCount: 2,
@@ -283,16 +281,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
-            // ── Quick Actions ───────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('QUICK ACTIONS',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary, letterSpacing: 1.2)),
+                    Text('QUICK ACTIONS',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -314,16 +312,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
-            // ── Module Hub ──────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('ALL MODULES',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary, letterSpacing: 1.2)),
+                    Text('ALL MODULES',
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
                     const SizedBox(height: 12),
                     GridView.count(
                       crossAxisCount: 3,
@@ -379,7 +377,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ),
 
-            // ── Recent Activity ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
@@ -389,37 +386,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('RECENT ACTIVITY',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary, letterSpacing: 1.2)),
+                        Text('RECENT ACTIVITY',
+                          style: textTheme.labelSmall?.copyWith(
+                            fontSize: 10, fontWeight: FontWeight.w700,
+                            color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
                         GestureDetector(
                           onTap: () => context.go('/requests'),
-                          child: const Text('View all',
-                            style: TextStyle(fontSize: 11, color: AppColors.primary,
-                              fontWeight: FontWeight.w600)),
+                          child: Text('View all',
+                            style: textTheme.labelMedium?.copyWith(
+                              fontSize: 11, color: c.primary, fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.all(32),
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
                         child: Column(
                           children: [
-                            Icon(Icons.inbox_outlined, color: AppColors.border, size: 40),
-                            SizedBox(height: 12),
+                            Icon(Icons.inbox_outlined, color: c.outline, size: 40),
+                            const SizedBox(height: 12),
                             Text('No recent activity',
-                              style: TextStyle(color: AppColors.textPrimary,
+                              style: textTheme.titleSmall?.copyWith(
                                 fontSize: 13, fontWeight: FontWeight.w600)),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text('Your submissions and approvals will appear here.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              style: textTheme.bodySmall?.copyWith(fontSize: 12)),
                           ],
                         ),
                       ),
@@ -455,16 +453,17 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.bgSurface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.outline),
       ),
       child: Stack(
         children: [
-          // Ghost background icon
           Positioned(
             top: -4, right: -4,
             child: Opacity(
@@ -492,12 +491,8 @@ class _KpiCard extends StatelessWidget {
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(value,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          height: 1,
-                        )),
+                        style: textTheme.headlineMedium?.copyWith(
+                          fontSize: 26, fontWeight: FontWeight.w800, height: 1)),
                       if (badge != null) ...[
                         const SizedBox(width: 5),
                         Container(
@@ -505,20 +500,21 @@ class _KpiCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: badgeHighlight
                               ? color.withValues(alpha:0.15)
-                              : AppColors.bgCard.withValues(alpha:0.8),
+                              : c.surfaceContainerHighest.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(badge!,
                             style: TextStyle(
                               fontSize: 9, fontWeight: FontWeight.w700,
-                              color: badgeHighlight ? color : AppColors.textSecondary)),
+                              color: badgeHighlight ? color : c.onSurface.withValues(alpha: 0.7))),
                         ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 2),
                   Text(label,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: c.onSurface.withValues(alpha: 0.7), fontSize: 10),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 ],
               ),
@@ -530,7 +526,6 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-// ── Module Tile ───────────────────────────────────────────────────────────────
 class _ModuleTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -546,14 +541,16 @@ class _ModuleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: AppColors.bgSurface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.outline),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -568,8 +565,8 @@ class _ModuleTile extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: textTheme.labelSmall?.copyWith(
+                color: c.onSurface.withValues(alpha: 0.7),
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -584,7 +581,6 @@ class _ModuleTile extends StatelessWidget {
   }
 }
 
-// ── Action Button ─────────────────────────────────────────────────────────────
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -598,27 +594,134 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.bgSurface,
+            color: c.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.outline),
           ),
           child: Column(
             children: [
-              Icon(icon, color: AppColors.primary, size: 20),
+              Icon(icon, color: c.primary, size: 20),
               const SizedBox(height: 5),
               Text(label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 9, fontWeight: FontWeight.w600)),
+                style: textTheme.labelSmall?.copyWith(
+                  color: c.onSurface.withValues(alpha: 0.7),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600)),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Stitch-styled search bar with autocomplete (suggestions). Placed in body so it never covers app bar icons.
+class _DashboardSearchBar extends StatelessWidget {
+  final ThemeData theme;
+
+  const _DashboardSearchBar({required this.theme});
+
+  static const List<String> _kSuggestions = [
+    'Resolutions',
+    'PIFs',
+    'Travel requests',
+    'Budget',
+    'Leave requests',
+    'Approvals',
+    'Reports',
+    'Documents',
+    'Governance',
+    'Finance',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Autocomplete<String>(
+      optionsBuilder: (text) {
+        final value = text.text.toLowerCase();
+        if (value.isEmpty) return _kSuggestions;
+        return _kSuggestions.where((s) => s.toLowerCase().contains(value));
+      },
+      onSelected: (value) {
+        context.push('/search');
+      },
+      fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          onSubmitted: (_) => context.push('/search'),
+          style: textTheme.bodyMedium?.copyWith(color: c.onSurface, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'Search resolutions, PIFs, requests…',
+            hintStyle: textTheme.bodyMedium?.copyWith(
+              color: c.onSurface.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+              color: c.onSurface.withValues(alpha: 0.6),
+              size: 20,
+            ),
+            filled: true,
+            fillColor: c.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: c.outline),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: c.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: c.primary, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            color: c.surface,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Text(
+                        option,
+                        style: textTheme.bodyMedium?.copyWith(color: c.onSurface),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

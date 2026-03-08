@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 const _typeConfig = {
   'Travel':  _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary,  bg: Color(0x1A1D85ED)),
@@ -75,16 +76,19 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Header
             SliverAppBar(
               pinned: true,
               floating: true,
-              backgroundColor: AppColors.bgDark.withValues(alpha: 0.96),
+              backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.96),
               elevation: 0,
               automaticallyImplyLeading: false,
               toolbarHeight: 60,
@@ -92,20 +96,29 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    const Expanded(
+                    IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: ShellDrawerScope.openDrawerOf(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: c.surface,
+                        foregroundColor: c.onSurface,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('Pending Approvals',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary)),
+                            style: textTheme.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
                           Text('Review and action requests',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            style: textTheme.bodySmall?.copyWith(fontSize: 11)),
                         ],
                       ),
                     ),
-                    // Count badge
                     if (!_loading && _submitted.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(right: 8),
@@ -116,28 +129,27 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           border: Border.all(color: AppColors.warning.withValues(alpha:0.3)),
                         ),
                         child: Text('${_submitted.length} pending',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                             color: AppColors.warning)),
                       ),
                     Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
                       child: IconButton(
                         padding: EdgeInsets.zero,
                         icon: Icon(
                           _loading ? Icons.hourglass_top : Icons.refresh,
-                          size: 18, color: AppColors.textSecondary),
+                          size: 18, color: c.onSurface.withValues(alpha: 0.7)),
                         onPressed: _loading ? null : _load,
                       ),
                     ),
                   ],
                 ),
               ),
-              // Filter chips
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(52),
                 child: Padding(
@@ -160,19 +172,19 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                             margin: const EdgeInsets.only(right: 8),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                             decoration: BoxDecoration(
-                              color: isActive ? AppColors.primary : AppColors.bgSurface,
+                              color: isActive ? c.primary : c.surface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isActive ? AppColors.primary : AppColors.border),
+                                color: isActive ? c.primary : c.outline),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(f,
-                                  style: TextStyle(
+                                  style: textTheme.labelMedium?.copyWith(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: isActive ? AppColors.bgDark : AppColors.textSecondary,
+                                    color: isActive ? c.onPrimary : c.onSurface.withValues(alpha: 0.7),
                                   )),
                                 if (!_loading && count > 0) ...[
                                   const SizedBox(width: 5),
@@ -180,15 +192,15 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                     decoration: BoxDecoration(
                                       color: isActive
-                                          ? AppColors.bgDark.withValues(alpha:0.2)
-                                          : AppColors.primary.withValues(alpha:0.15),
+                                          ? c.onPrimary.withValues(alpha: 0.2)
+                                          : c.primary.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text('$count',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
-                                        color: isActive ? AppColors.bgDark : AppColors.primary,
+                                        color: isActive ? c.onPrimary : c.primary,
                                       )),
                                   ),
                                 ],
@@ -203,10 +215,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
               ),
             ),
 
-            // Body
             if (_loading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+              SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator(color: c.primary)),
               )
             else if (_error != null)
               SliverFillRemaining(
@@ -219,23 +230,23 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                         Container(
                           width: 64, height: 64,
                           decoration: BoxDecoration(
-                            color: AppColors.bgSurface,
+                            color: c.surface,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: c.outline),
                           ),
-                          child: const Icon(Icons.cloud_off_outlined, color: AppColors.textMuted, size: 28),
+                          child: Icon(Icons.cloud_off_outlined, color: c.onSurface.withValues(alpha: 0.5), size: 28),
                         ),
                         const SizedBox(height: 16),
                         Text(_error!, textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          style: textTheme.bodyMedium?.copyWith(fontSize: 13)),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           onPressed: _load,
                           icon: const Icon(Icons.refresh, size: 16),
                           label: const Text('Retry'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: AppColors.bgDark,
+                            backgroundColor: c.primary,
+                            foregroundColor: c.onPrimary,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
@@ -253,16 +264,16 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                       Container(
                         width: 72, height: 72,
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
+                          color: c.surface,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: c.outline),
                         ),
-                        child: const Icon(Icons.check_circle_outline,
+                        child: Icon(Icons.check_circle_outline,
                           color: AppColors.success, size: 36),
                       ),
                       const SizedBox(height: 16),
-                      const Text('All caught up!',
-                        style: TextStyle(color: AppColors.textPrimary,
+                      Text('All caught up!',
+                        style: textTheme.titleMedium?.copyWith(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 6),
                       Text(
@@ -270,7 +281,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           ? 'No pending approvals at this time.'
                           : 'No pending $_activeFilter approvals.',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        style: textTheme.bodyMedium?.copyWith(fontSize: 13)),
                     ],
                   ),
                 ),
@@ -293,18 +304,19 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           ? AppDateFormatter.short(submittedAt)
                           : '';
 
+                      final cardC = Theme.of(context).colorScheme;
+                      final cardText = Theme.of(context).textTheme;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
+                          color: cardC.surface,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: cardC.outline),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Row(
                             children: [
-                              // Icon
                               Container(
                                 width: 44, height: 44,
                                 decoration: BoxDecoration(
@@ -314,7 +326,6 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                                 child: Icon(tc.icon, color: tc.color, size: 22),
                               ),
                               const SizedBox(width: 12),
-                              // Content
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,24 +345,23 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                                         if (dateStr.isNotEmpty) ...[
                                           const SizedBox(width: 6),
                                           Text(dateStr,
-                                            style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                                            style: cardText.bodySmall?.copyWith(fontSize: 10)),
                                         ],
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(desc,
-                                      style: const TextStyle(color: AppColors.textPrimary,
+                                      style: cardText.titleSmall?.copyWith(
                                         fontSize: 13, fontWeight: FontWeight.w600),
                                       maxLines: 1, overflow: TextOverflow.ellipsis),
                                     const SizedBox(height: 2),
                                     Text(ref,
-                                      style: const TextStyle(color: AppColors.textSecondary,
+                                      style: cardText.bodySmall?.copyWith(
                                         fontSize: 11, fontFamily: 'monospace')),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Pending badge + chevron
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -367,8 +377,8 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                                         color: AppColors.warning)),
                                   ),
                                   const SizedBox(height: 8),
-                                  const Icon(Icons.chevron_right,
-                                    color: AppColors.textMuted, size: 18),
+                                  Icon(Icons.chevron_right,
+                                    color: cardC.onSurface.withValues(alpha: 0.5), size: 18),
                                 ],
                               ),
                             ],

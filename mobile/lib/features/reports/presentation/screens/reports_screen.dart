@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 const _reportTypes = [
   _ReportType(
@@ -75,23 +76,27 @@ class ReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Header
-            const SliverAppBar(
+            SliverAppBar(
               pinned: false,
-              backgroundColor: AppColors.bgDark,
+              backgroundColor: theme.scaffoldBackgroundColor,
               elevation: 0,
-              automaticallyImplyLeading: false,
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: ShellDrawerScope.openDrawerOf(context),
+              ),
               title: Text('Reports',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary)),
+                style: textTheme.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
             ),
 
-            // Summary banner
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -100,30 +105,29 @@ class ReportsScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.primary.withValues(alpha:0.15),
-                        AppColors.primary.withValues(alpha:0.05),
+                        c.primary.withValues(alpha: 0.15),
+                        c.primary.withValues(alpha: 0.05),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary.withValues(alpha:0.2)),
+                    border: Border.all(color: c.primary.withValues(alpha: 0.2)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.bar_chart_rounded, color: AppColors.primary, size: 32),
-                      SizedBox(width: 14),
+                      Icon(Icons.bar_chart_rounded, color: c.primary, size: 32),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Reporting Centre',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary)),
-                            SizedBox(height: 3),
+                              style: textTheme.titleSmall?.copyWith(
+                                fontSize: 14, fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 3),
                             Text('Access and download institutional reports across all modules.',
-                              style: TextStyle(fontSize: 11, color: AppColors.textSecondary,
-                                height: 1.4)),
+                              style: textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.4)),
                           ],
                         ),
                       ),
@@ -133,17 +137,17 @@ class ReportsScreen extends StatelessWidget {
               ),
             ),
 
-            // Section header
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 16, 10),
+                padding: const EdgeInsets.fromLTRB(20, 20, 16, 10),
                 child: Row(
                   children: [
-                    Icon(Icons.folder_outlined, size: 13, color: AppColors.textMuted),
-                    SizedBox(width: 6),
+                    Icon(Icons.folder_outlined, size: 13, color: c.onSurface.withValues(alpha: 0.5)),
+                    const SizedBox(width: 6),
                     Text('REPORT TYPES',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.textMuted, letterSpacing: 1.2)),
+                      style: textTheme.labelSmall?.copyWith(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: c.onSurface.withValues(alpha: 0.5), letterSpacing: 1.2)),
                   ],
                 ),
               ),
@@ -175,35 +179,36 @@ class _ReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.bgSurface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.outline),
       ),
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          splashColor: report.color.withValues(alpha:0.08),
+          splashColor: report.color.withValues(alpha: 0.08),
           onTap: () => context.push('/reports/detail?type=${report.apiKey}&title=${Uri.encodeComponent(report.title)}'),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
               children: [
-                // Icon container
                 Container(
                   width: 48, height: 48,
                   decoration: BoxDecoration(
-                    color: report.color.withValues(alpha:0.12),
+                    color: report.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(report.icon, color: report.color, size: 24),
                 ),
                 const SizedBox(width: 14),
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,14 +216,13 @@ class _ReportCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(report.title,
-                            style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary)),
+                            style: textTheme.titleSmall?.copyWith(
+                              fontSize: 13, fontWeight: FontWeight.w700)),
                           const Spacer(),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: report.color.withValues(alpha:0.1),
+                              color: report.color.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(report.tag,
@@ -229,13 +233,12 @@ class _ReportCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(report.subtitle,
-                        style: const TextStyle(
-                          fontSize: 11, color: AppColors.textSecondary, height: 1.4)),
+                        style: textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.4)),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted, size: 20),
+                Icon(Icons.chevron_right_rounded, color: c.onSurface.withValues(alpha: 0.5), size: 20),
               ],
             ),
           ),

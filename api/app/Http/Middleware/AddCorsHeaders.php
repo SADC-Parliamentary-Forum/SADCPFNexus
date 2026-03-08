@@ -22,10 +22,11 @@ class AddCorsHeaders
         if (! is_array($allowed) || empty($allowed)) {
             $allowed = ['http://localhost:3000', 'http://127.0.0.1:3000'];
         }
+        $patterns = config('cors.allowed_origins_patterns', []);
         $supportsCredentials = config('cors.supports_credentials', true);
 
         if ($request->isMethod('OPTIONS')) {
-            $originToAllow = $this->resolveOrigin($origin, $allowed);
+            $originToAllow = $this->resolveOrigin($origin, $allowed, $patterns);
             $headers = [
                 'Access-Control-Allow-Origin' => $originToAllow,
                 'Access-Control-Allow-Methods' => implode(', ', (array) config('cors.allowed_methods', ['*'])),
@@ -39,7 +40,7 @@ class AddCorsHeaders
         }
 
         $response = $next($request);
-        $originToAllow = $this->resolveOrigin($origin, $allowed);
+        $originToAllow = $this->resolveOrigin($origin, $allowed, $patterns);
 
         $response->headers->set('Access-Control-Allow-Origin', $originToAllow);
         if ($supportsCredentials) {
@@ -49,10 +50,21 @@ class AddCorsHeaders
         return $response;
     }
 
-    private function resolveOrigin(?string $origin, array $allowed): string
+    /**
+     * @param  array<string>  $allowed  Exact origin URLs
+     * @param  array<string>  $patterns  Regex patterns (e.g. for localhost with any port)
+     */
+    private function resolveOrigin(?string $origin, array $allowed, array $patterns = []): string
     {
-        if ($origin !== null && $origin !== '' && in_array($origin, $allowed, true)) {
-            return $origin;
+        if ($origin !== null && $origin !== '') {
+            if (in_array($origin, $allowed, true)) {
+                return $origin;
+            }
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $origin)) {
+                    return $origin;
+                }
+            }
         }
         return $allowed[0] ?? 'http://localhost:3000';
     }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 // Status config
 const _statusColors = {
@@ -95,8 +96,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       floatingActionButton: _NewRequestFab(
         onTravelTap: () => context.push('/requests/travel/new').then((_) => _load()),
         onLeaveTap:  () => context.push('/requests/leave/new').then((_) => _load()),
@@ -108,7 +113,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
             SliverAppBar(
               pinned: true,
               floating: true,
-              backgroundColor: AppColors.bgDark,
+              backgroundColor: theme.scaffoldBackgroundColor,
               elevation: 0,
               automaticallyImplyLeading: false,
               toolbarHeight: 60,
@@ -116,29 +121,39 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    const Expanded(
+                    IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: ShellDrawerScope.openDrawerOf(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: c.surface,
+                        foregroundColor: c.onSurface,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text('My Requests',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary)),
+                            style: textTheme.titleLarge?.copyWith(fontSize: 20, fontWeight: FontWeight.w800)),
                           Text('All your submitted requests',
-                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                            style: textTheme.bodySmall?.copyWith(fontSize: 11)),
                         ],
                       ),
                     ),
                     Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
                       child: IconButton(
                         padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.refresh, size: 18, color: AppColors.textSecondary),
+                        icon: Icon(Icons.refresh, size: 18, color: c.onSurface.withValues(alpha: 0.7)),
                         onPressed: _loading ? null : _load,
                       ),
                     ),
@@ -149,17 +164,17 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                 preferredSize: const Size.fromHeight(48),
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha:0.5))),
+                    border: Border(bottom: BorderSide(color: c.outline.withValues(alpha: 0.5))),
                   ),
                   child: TabBar(
                     controller: _tabController,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    indicatorColor: AppColors.primary,
+                    indicatorColor: c.primary,
                     indicatorWeight: 2,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                    unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    labelColor: c.primary,
+                    unselectedLabelColor: c.onSurface.withValues(alpha: 0.7),
+                    labelStyle: textTheme.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
+                    unselectedLabelStyle: textTheme.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
                     tabs: _tabs.asMap().entries.map((entry) {
                       final i = entry.key;
                       final t = entry.value;
@@ -176,11 +191,11 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha:0.2),
+                                  color: c.primary.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text('$count',
-                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: c.primary)),
                               ),
                             ],
                           ],
@@ -193,7 +208,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
             ),
           ],
           body: _loading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              ? Center(child: CircularProgressIndicator(color: c.primary))
               : _error != null
                   ? Center(
                       child: Padding(
@@ -204,23 +219,23 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                             Container(
                               width: 64, height: 64,
                               decoration: BoxDecoration(
-                                color: AppColors.bgSurface,
+                                color: c.surface,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
+                                border: Border.all(color: c.outline),
                               ),
-                              child: const Icon(Icons.cloud_off_outlined, color: AppColors.textMuted, size: 32),
+                              child: Icon(Icons.cloud_off_outlined, color: c.onSurface.withValues(alpha: 0.5), size: 32),
                             ),
                             const SizedBox(height: 16),
                             Text(_error!, textAlign: TextAlign.center,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                              style: textTheme.bodyMedium?.copyWith(fontSize: 13)),
                             const SizedBox(height: 16),
                             ElevatedButton.icon(
                               onPressed: _load,
                               icon: const Icon(Icons.refresh, size: 16),
                               label: const Text('Try Again'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.bgDark,
+                                backgroundColor: c.primary,
+                                foregroundColor: c.onPrimary,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             ),
@@ -236,7 +251,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                         final items = _data[i];
                         return RefreshIndicator(
                           onRefresh: _load,
-                          color: AppColors.primary,
+                          color: c.primary,
                           child: items.isEmpty
                               ? ListView(
                                   children: [
@@ -248,20 +263,20 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                           Container(
                                             width: 64, height: 64,
                                             decoration: BoxDecoration(
-                                              color: AppColors.bgSurface,
+                                              color: c.surface,
                                               borderRadius: BorderRadius.circular(16),
-                                              border: Border.all(color: AppColors.border),
+                                              border: Border.all(color: c.outline),
                                             ),
-                                            child: Icon(t.icon, color: AppColors.textMuted, size: 28),
+                                            child: Icon(t.icon, color: c.onSurface.withValues(alpha: 0.5), size: 28),
                                           ),
                                           const SizedBox(height: 16),
                                           Text('No ${t.label} requests yet',
-                                            style: const TextStyle(color: AppColors.textPrimary,
+                                            style: textTheme.titleSmall?.copyWith(
                                               fontSize: 14, fontWeight: FontWeight.w600)),
                                           const SizedBox(height: 4),
-                                          const Text('Your submitted requests will appear here.',
+                                          Text('Your submitted requests will appear here.',
                                             textAlign: TextAlign.center,
-                                            style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                            style: textTheme.bodySmall?.copyWith(fontSize: 12)),
                                         ],
                                       ),
                                     ),
@@ -314,19 +329,21 @@ class _NewRequestFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return FloatingActionButton.extended(
       onPressed: () {
         showModalBottomSheet(
           context: context,
-          backgroundColor: AppColors.bgSurface,
+          backgroundColor: c.surface,
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
           builder: (_) => SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
-                const Text('New Request', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+                  decoration: BoxDecoration(color: c.outline, borderRadius: BorderRadius.circular(2))),
+                Text('New Request', style: textTheme.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 16),
                 _fabOption(context, Icons.flight_takeoff, 'Travel Request', 'Mission, conference, workshop', AppColors.primary, onTravelTap),
                 const SizedBox(height: 10),
@@ -339,33 +356,50 @@ class _NewRequestFab extends StatelessWidget {
           ),
         );
       },
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      backgroundColor: c.primary,
+      foregroundColor: c.onPrimary,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       icon: const Icon(Icons.add, size: 20),
-      label: const Text('New Request', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      label: Text('New Request', style: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, fontSize: 13)),
     );
   }
 
-  Widget _fabOption(BuildContext ctx, IconData icon, String title, String sub, Color color, VoidCallback onTap) =>
-    GestureDetector(
+  Widget _fabOption(BuildContext ctx, IconData icon, String title, String sub, Color color, VoidCallback onTap) {
+    final textTheme = Theme.of(ctx).textTheme;
+    return GestureDetector(
       onTap: () { Navigator.pop(ctx); onTap(); },
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.06), borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withValues(alpha: 0.2))),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
         child: Row(children: [
-          Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 20)),
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-            Text(sub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-          ])),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: textTheme.titleSmall?.copyWith(fontSize: 13, fontWeight: FontWeight.w700)),
+                Text(sub, style: textTheme.bodySmall?.copyWith(fontSize: 11)),
+              ],
+            ),
+          ),
           Icon(Icons.chevron_right, color: color, size: 20),
         ]),
       ),
     );
+  }
 }
 
 class _RequestCard extends StatelessWidget {
@@ -401,18 +435,20 @@ class _RequestCard extends StatelessWidget {
         : dateStr;
     final displayDate = rangeStr != '—' ? rangeStr : dateStr;
 
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.bgSurface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.outline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            // Icon
             Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
@@ -422,17 +458,12 @@ class _RequestCard extends StatelessWidget {
               child: Icon(icon, color: iconColor, size: 20),
             ),
             const SizedBox(width: 12),
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(desc,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: textTheme.titleSmall?.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -440,16 +471,15 @@ class _RequestCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(ref,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: textTheme.bodySmall?.copyWith(
                           fontSize: 11,
                           fontFamily: 'monospace',
                         ),
                       ),
                       if (displayDate.isNotEmpty && displayDate != '—') ...[
-                        const Text('  ·  ', style: TextStyle(color: AppColors.border, fontSize: 11)),
+                        Text('  ·  ', style: textTheme.bodySmall?.copyWith(color: c.outline, fontSize: 11)),
                         Text(displayDate,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                          style: textTheme.bodySmall?.copyWith(fontSize: 11)),
                       ],
                     ],
                   ),

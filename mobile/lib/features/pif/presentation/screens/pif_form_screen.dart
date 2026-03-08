@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> {
         await dio.post('/programmes/$id/submit');
         if (!mounted) return;
         setState(() => _submitting = false);
-        Navigator.of(context).pop();
+        context.safePopOrGoHome();
         context.push('/pif/review?id=$id');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -175,7 +176,7 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> {
       backgroundColor: AppColors.bgDark,
       leading: IconButton(
         icon: const Icon(Icons.close, color: AppColors.textPrimary),
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => context.safePopOrGoHome(),
       ),
       title: const Text(
         'New PIF',
@@ -268,7 +269,7 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> {
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: _currentStep == 0 ? () => Navigator.of(context).pop() : _prevStep,
+              onPressed: _currentStep == 0 ? () => context.safePopOrGoHome() : _prevStep,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 side: const BorderSide(color: AppColors.border),

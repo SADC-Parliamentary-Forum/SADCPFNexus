@@ -1,6 +1,12 @@
-# sadcpf_nexus
+# SADC PF Nexus – Mobile
 
-A new Flutter project.
+Flutter mobile app for the SADC Parliamentary Forum Nexus (travel, leave, approvals, HR, etc.).
+
+## Login (demo)
+
+For local testing, use the seeded demo accounts. See **[MOBILE_LOGIN.md](MOBILE_LOGIN.md)** for credentials and API setup.
+
+Example: **admin@sadcpf.org** / **Admin@2024!**
 
 ## Getting Started
 

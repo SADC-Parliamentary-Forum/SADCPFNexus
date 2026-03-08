@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_theme.dart';
+
+import 'app_drawer.dart';
+import 'shell_drawer_scope.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
+
+  static final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
   int _getSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
@@ -39,14 +43,20 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedIndex = _getSelectedIndex(context);
+    final c = Theme.of(context).colorScheme;
+    void openDrawer() => scaffoldKey.currentState?.openDrawer();
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.bgSurface,
+    return ShellDrawerScope(
+      openDrawer: openDrawer,
+      child: Scaffold(
+        key: scaffoldKey,
+        drawer: const AppDrawer(),
+        body: child,
+        bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: c.surface,
           border: Border(
-            top: BorderSide(color: AppColors.border, width: 1),
+            top: BorderSide(color: c.outline, width: 1),
           ),
         ),
         child: SafeArea(
@@ -93,6 +103,7 @@ class AppShell extends StatelessWidget {
             ),
           ),
         ),
+        ),
       ),
     );
   }
@@ -115,6 +126,10 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final labelColor = isActive ? c.primary : c.onSurface.withValues(alpha: 0.7);
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -126,20 +141,20 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
+                color: isActive ? c.primary.withValues(alpha: 0.15) : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Icon(
                 isActive ? activeIcon : icon,
-                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                color: labelColor,
                 size: 22,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                color: isActive ? AppColors.primary : AppColors.textSecondary,
+              style: textTheme.labelSmall?.copyWith(
+                color: labelColor,
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
               ),

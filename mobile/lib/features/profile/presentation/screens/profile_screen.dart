@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -68,13 +69,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     pinned: false,
                     backgroundColor: theme.scaffoldBackgroundColor,
                     elevation: 0,
-                    automaticallyImplyLeading: false,
+                    leading: IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: ShellDrawerScope.openDrawerOf(context),
+                    ),
                     title: Text(
                       'Profile',
-                      style: TextStyle(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -84,31 +87,29 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                       child: Column(
                         children: [
-                          // Avatar card
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
-                              color: AppColors.bgSurface,
+                              color: theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: theme.colorScheme.outline),
                             ),
                             child: Column(
                               children: [
-                                // Avatar
                                 Stack(
                                   children: [
                                     Container(
                                       width: 80, height: 80,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: AppColors.primary.withValues(alpha:0.15),
+                                        color: theme.colorScheme.primary.withValues(alpha: 0.15),
                                         border: Border.all(
-                                          color: AppColors.primary.withValues(alpha:0.4), width: 2),
+                                          color: theme.colorScheme.primary.withValues(alpha: 0.4), width: 2),
                                       ),
                                       child: Center(
                                         child: Text(_initials,
-                                          style: const TextStyle(
-                                            color: AppColors.primary,
+                                          style: TextStyle(
+                                            color: theme.colorScheme.primary,
                                             fontSize: 28,
                                             fontWeight: FontWeight.w800,
                                           )),
@@ -118,7 +119,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       bottom: 2, right: 2,
                                       child: Container(
                                         width: 18, height: 18,
-                                        decoration: const BoxDecoration(
+                                        decoration: BoxDecoration(
                                           color: AppColors.success,
                                           shape: BoxShape.circle,
                                         ),
@@ -130,35 +131,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 const SizedBox(height: 16),
                                 Text(_name ?? 'User',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: theme.textTheme.titleMedium?.copyWith(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
                                   )),
                                 const SizedBox(height: 4),
                                 if (_email != null)
                                   Text(_email!,
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary,
-                                    )),
+                                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
                                 const SizedBox(height: 12),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha:0.1),
+                                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: AppColors.primary.withValues(alpha:0.2)),
+                                    border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.verified_user_outlined, size: 13, color: AppColors.primary),
-                                      SizedBox(width: 5),
+                                      Icon(Icons.verified_user_outlined, size: 13, color: theme.colorScheme.primary),
+                                      const SizedBox(width: 5),
                                       Text('Staff Member',
                                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                          color: AppColors.primary)),
+                                          color: theme.colorScheme.primary)),
                                     ],
                                   ),
                                 ),
@@ -202,8 +199,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               _ActionTile(
                                 icon: Icons.notifications_outlined,
                                 label: 'Notifications',
-                                iconColor: AppColors.primary,
-                                iconBg: AppColors.primary,
+                                iconColor: theme.colorScheme.primary,
+                                iconBg: theme.colorScheme.primary,
                                 onTap: () {},
                               ),
                               _ActionTile(
@@ -252,41 +249,40 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                           const SizedBox(height: 24),
 
-                          // Sign out button
                           GestureDetector(
                             onTap: _loggingOut ? null : _logout,
                             child: Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: AppColors.danger.withValues(alpha:0.08),
+                                color: theme.colorScheme.error.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: AppColors.danger.withValues(alpha:0.25)),
+                                border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.25)),
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     width: 38, height: 38,
                                     decoration: BoxDecoration(
-                                      color: AppColors.danger.withValues(alpha:0.12),
+                                      color: theme.colorScheme.error.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: _loggingOut
-                                        ? const Center(child: SizedBox(
+                                        ? Center(child: SizedBox(
                                             width: 18, height: 18,
                                             child: CircularProgressIndicator(
-                                              strokeWidth: 2, color: AppColors.danger)))
-                                        : const Icon(Icons.logout, color: AppColors.danger, size: 20),
+                                              strokeWidth: 2, color: theme.colorScheme.error)))
+                                        : Icon(Icons.logout, color: theme.colorScheme.error, size: 20),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     _loggingOut ? 'Signing out…' : 'Sign Out',
-                                    style: const TextStyle(
+                                    style: theme.textTheme.titleSmall?.copyWith(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: AppColors.danger,
+                                      color: theme.colorScheme.error,
                                     )),
                                   const Spacer(),
-                                  const Icon(Icons.chevron_right, color: AppColors.danger, size: 18),
+                                  Icon(Icons.chevron_right, color: theme.colorScheme.error, size: 18),
                                 ],
                               ),
                             ),
@@ -310,6 +306,8 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -317,13 +315,13 @@ class _Section extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8, left: 4),
           child: Row(
             children: [
-              Icon(icon, size: 13, color: AppColors.textMuted),
+              Icon(icon, size: 13, color: c.onSurface.withValues(alpha: 0.5)),
               const SizedBox(width: 5),
               Text(title.toUpperCase(),
-                style: const TextStyle(
+                style: textTheme.labelSmall?.copyWith(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: c.onSurface.withValues(alpha: 0.5),
                   letterSpacing: 1.2,
                 )),
             ],
@@ -331,9 +329,9 @@ class _Section extends StatelessWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.bgSurface,
+            color: c.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: c.outline),
           ),
           child: Column(
             children: children.asMap().entries.map((entry) {
@@ -342,7 +340,7 @@ class _Section extends StatelessWidget {
                 children: [
                   entry.value,
                   if (!isLast)
-                    Divider(height: 1, color: AppColors.border.withValues(alpha:0.5),
+                    Divider(height: 1, color: c.outline.withValues(alpha: 0.5),
                       indent: 60, endIndent: 16),
                 ],
               );
@@ -362,6 +360,8 @@ class _InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -369,10 +369,10 @@ class _InfoTile extends StatelessWidget {
           Container(
             width: 34, height: 34,
             decoration: BoxDecoration(
-              color: AppColors.bgDark,
+              color: c.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, size: 17, color: AppColors.textSecondary),
+            child: Icon(icon, size: 17, color: c.onSurface.withValues(alpha: 0.7)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -380,12 +380,12 @@ class _InfoTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                  style: const TextStyle(fontSize: 10, color: AppColors.textMuted,
-                    fontWeight: FontWeight.w600)),
+                  style: textTheme.labelSmall?.copyWith(
+                    fontSize: 10, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(value,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w500)),
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontSize: 13, fontWeight: FontWeight.w500)),
               ],
             ),
           ),
@@ -413,36 +413,34 @@ class _ThemeTile extends ConsumerWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(
                 isDark ? Icons.dark_mode : Icons.light_mode,
                 size: 17,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Appearance',
-                style: TextStyle(
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontSize: 13,
-                  color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             Text(
               isDark ? 'Dark' : 'Light',
-              style: const TextStyle(
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontSize: 12,
-                color: AppColors.textMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
+            Icon(Icons.chevron_right, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
           ],
         ),
       ),
@@ -499,6 +497,8 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final c = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -508,7 +508,7 @@ class _ActionTile extends StatelessWidget {
             Container(
               width: 34, height: 34,
               decoration: BoxDecoration(
-                color: iconBg.withValues(alpha:0.12),
+                color: iconBg.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(9),
               ),
               child: Icon(icon, size: 17, color: iconColor),
@@ -516,10 +516,12 @@ class _ActionTile extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(label,
-                style: const TextStyle(fontSize: 13, color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w500)),
+                style: textTheme.bodyMedium?.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                )),
             ),
-            const Icon(Icons.chevron_right, size: 16, color: AppColors.textMuted),
+            Icon(Icons.chevron_right, size: 16, color: c.onSurface.withValues(alpha: 0.5)),
           ],
         ),
       ),
