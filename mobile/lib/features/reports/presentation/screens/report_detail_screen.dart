@@ -85,8 +85,9 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
   String _itemSubtitle(Map<String, dynamic> item) {
     final parts = <String>[];
-    if (item['purpose'] != null) parts.add(item['purpose'].toString());
-    else if (item['title'] != null) parts.add(item['title'].toString());
+    if (item['purpose'] != null) {
+      parts.add(item['purpose'].toString());
+    } else if (item['title'] != null) parts.add(item['title'].toString());
     final start = item['start_date'] ?? item['departure_date'] ?? item['created_at'];
     final end = item['end_date'] ?? item['return_date'];
     if (start != null) {
@@ -133,12 +134,12 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   ),
                 )
               : _items.isEmpty
-                  ? Center(
+                  ? const Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.inbox_outlined, size: 48, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
+                          SizedBox(height: 12),
                           Text(
                             'No data for this report.',
                             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),

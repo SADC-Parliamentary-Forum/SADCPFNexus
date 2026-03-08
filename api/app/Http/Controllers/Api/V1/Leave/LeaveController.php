@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
+use App\Models\TravelRequest;
+use App\Models\WorkplanEvent;
 use App\Modules\Leave\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,24 +35,65 @@ class LeaveController extends Controller
         ]);
     }
 
-    /** Return LIL (leave-in-lieu) accruals available for the current user to link. */
+    /** Return LIL accruals: overtime accruals + meetings the user attended (approved travel requisition linked to that meeting). */
     public function lilAccruals(Request $request): JsonResponse
     {
         $user = $request->user();
-        $rows = OvertimeAccrual::where('user_id', $user->id)
+
+        $overtime = OvertimeAccrual::where('user_id', $user->id)
             ->where('is_linked', false)
             ->orderByDesc('accrual_date')
             ->get();
 
-        $data = $rows->map(fn ($r) => [
-            'id'           => (string) $r->id,
-            'code'         => $r->code,
-            'description'  => $r->description ?? '',
-            'hours'        => (float) $r->hours,
-            'date'         => $r->accrual_date->format('Y-m-d'),
-            'approved_by'  => $r->approved_by_name,
-            'is_verified'  => $r->is_verified,
-        ]);
+        // Meetings the user attended = workplan events (type=meeting) that have an approved travel request by this user with workplan_event_id set
+        $attendedMeetingIds = TravelRequest::where('requester_id', $user->id)
+            ->where('status', 'approved')
+            ->whereNotNull('workplan_event_id')
+            ->where('return_date', '>=', now()->subDays(90))
+            ->pluck('workplan_event_id')
+            ->unique()
+            ->values();
+
+        $meetings = WorkplanEvent::where('tenant_id', $user->tenant_id)
+            ->where('type', 'meeting')
+            ->whereIn('id', $attendedMeetingIds)
+            ->where('date', '>=', now()->subDays(90))
+            ->orderByDesc('date')
+            ->get();
+
+        $data = [];
+
+        foreach ($overtime as $r) {
+            $data[] = [
+                'id'          => 'overtime-' . $r->id,
+                'source_type' => 'overtime',
+                'code'        => $r->code,
+                'description' => $r->description ?? $r->code,
+                'hours'       => (float) $r->hours,
+                'date'        => $r->accrual_date->format('Y-m-d'),
+                'approved_by' => $r->approved_by_name,
+                'is_verified' => $r->is_verified,
+            ];
+        }
+
+        foreach ($meetings as $e) {
+            $start = $e->date;
+            $end = $e->end_date ?? $e->date;
+            $days = $start->diffInDays($end) + 1;
+            $hours = $days * 8;
+            $data[] = [
+                'id'          => 'meeting-' . $e->id,
+                'source_type' => 'meeting',
+                'code'        => 'MTG-' . $e->id,
+                'description' => $e->title,
+                'hours'       => (float) $hours,
+                'date'        => $e->date->format('Y-m-d'),
+                'approved_by' => $e->responsible,
+                'is_verified' => false,
+            ];
+        }
+
+        usort($data, fn ($a, $b) => strcmp($b['date'], $a['date']));
 
         return response()->json(['data' => $data]);
     }
@@ -74,6 +117,7 @@ class LeaveController extends Controller
             'end_date'    => ['required', 'date', 'after_or_equal:start_date'],
             'reason'      => ['nullable', 'string', 'max:2000'],
             'lil_linkings'               => ['nullable', 'array'],
+            'lil_linkings.*.source_id'           => ['nullable', 'string', 'max:64'],
             'lil_linkings.*.accrual_code'        => ['required_with:lil_linkings', 'string'],
             'lil_linkings.*.accrual_description' => ['required_with:lil_linkings', 'string'],
             'lil_linkings.*.hours'               => ['required_with:lil_linkings', 'numeric', 'min:0.5'],
@@ -120,10 +164,10 @@ class LeaveController extends Controller
             $leave = $this->leaveService->approve($leaveRequest, $request->user());
             return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
         }
-        
+
         $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
         $this->workflowService->approve($leaveRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
-        
+
         return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh('approvalRequest')]);
     }
 
@@ -137,7 +181,7 @@ class LeaveController extends Controller
         }
 
         $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $data['reason']);
-        
+
         return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh('approvalRequest')]);
     }
 }

@@ -154,6 +154,15 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('workplan/events', \App\Http\Controllers\Api\V1\Workplan\WorkplanController::class)
             ->parameters(['events' => 'event']);
 
+        // SADC PF Calendar, Public Holidays, UN Days
+        Route::prefix('calendar')->group(function () {
+            Route::get('entries', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'index']);
+            Route::post('entries', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'store']);
+            Route::post('entries/upload', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'upload']);
+            Route::put('entries/{calendarEntry}', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'update']);
+            Route::delete('entries/{calendarEntry}', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'destroy']);
+        });
+
         // Alerts
         Route::get('alerts/summary', [\App\Http\Controllers\Api\V1\Alerts\AlertsController::class, 'summary']);
 

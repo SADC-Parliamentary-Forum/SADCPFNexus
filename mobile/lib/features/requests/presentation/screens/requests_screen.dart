@@ -66,28 +66,31 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
-    try {
-      final dio = ref.read(apiClientProvider).dio;
-      final results = await Future.wait<List<Map<String, dynamic>>>(
-        _tabs.map((t) => dio.get<Map<String, dynamic>>(t.endpoint)
-          .then((r) => (r.data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [])),
-      );
-      if (!mounted) return;
-      setState(() {
-        for (var i = 0; i < results.length; i++) {
-          _data[i] = results[i];
+    final dio = ref.read(apiClientProvider).dio;
+    final results = <List<Map<String, dynamic>>>[];
+    String? firstError;
+    for (var i = 0; i < _tabs.length; i++) {
+      try {
+        final r = await dio.get<Map<String, dynamic>>(_tabs[i].endpoint);
+        final list = (r.data?['data'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? <Map<String, dynamic>>[];
+        results.add(list);
+      } catch (e) {
+        results.add([]);
+        if (firstError == null) {
+          firstError = e.toString().contains('SocketException') || e.toString().contains('Connection')
+              ? 'Cannot reach server. Check your connection.'
+              : 'Failed to load ${_tabs[i].label.toLowerCase()} requests.';
         }
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().contains('SocketException') || e.toString().contains('Connection')
-            ? 'Cannot reach server. Check your connection.'
-            : 'Failed to load requests.';
-        _loading = false;
-      });
+      }
     }
+    if (!mounted) return;
+    setState(() {
+      for (var i = 0; i < results.length && i < _data.length; i++) {
+        _data[i] = results[i];
+      }
+      _error = firstError;
+      _loading = false;
+    });
   }
 
   @override
@@ -391,7 +394,7 @@ class _RequestCard extends StatelessWidget {
         ? AppDateFormatter.short(submittedAt)
         : '';
     final rangeStr = (item['departure_date'] != null || item['start_date'] != null)
-        ? AppDateFormatter.range(
+        ? AppDateFormatter.rangeCompact(
             item['departure_date']?.toString() ?? item['start_date']?.toString(),
             item['return_date']?.toString() ?? item['end_date']?.toString(),
           )

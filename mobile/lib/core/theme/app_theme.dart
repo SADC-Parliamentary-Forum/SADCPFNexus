@@ -49,8 +49,6 @@ class AppTheme {
       onError: Colors.white,
       outline: AppColors.border,
     ),
-    fontFamily: 'PublicSans',
-
     // AppBar
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.bgDark,
@@ -108,7 +106,6 @@ class AppTheme {
         textStyle: const TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w700,
-          fontFamily: 'PublicSans',
         ),
       ),
     ),

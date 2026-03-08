@@ -403,7 +403,7 @@ class AuditComplianceScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ..._overrides.map((o) => _OverrideRow(
-                override: o,
+                overrideItem: o,
                 tagColor: _tagColor(o.tagColor),
               )),
         ],
@@ -490,13 +490,10 @@ class _MiniBarChart extends StatelessWidget {
 }
 
 class _OverrideRow extends StatelessWidget {
-  final _Override override;
+  final _Override overrideItem;
   final Color tagColor;
-  const _OverrideRow({required this.override, required this.tagColor});
+  const _OverrideRow({required this.overrideItem, required this.tagColor});
 
-  @override
-  @override
-  @override
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -524,7 +521,7 @@ class _OverrideRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  override.title,
+                  overrideItem.title,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -533,7 +530,7 @@ class _OverrideRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  override.time,
+                  overrideItem.time,
                   style: const TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 11,
@@ -552,7 +549,7 @@ class _OverrideRow extends StatelessWidget {
                   Border.all(color: tagColor.withValues(alpha: 0.35)),
             ),
             child: Text(
-              override.tag,
+              overrideItem.tag,
               style: TextStyle(
                 color: tagColor,
                 fontSize: 9,

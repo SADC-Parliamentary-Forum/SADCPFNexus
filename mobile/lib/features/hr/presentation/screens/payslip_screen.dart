@@ -1,192 +1,257 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
-class PayslipScreen extends StatefulWidget {
+class PayslipScreen extends ConsumerStatefulWidget {
   const PayslipScreen({super.key});
 
   @override
-  State<PayslipScreen> createState() => _PayslipScreenState();
+  ConsumerState<PayslipScreen> createState() => _PayslipScreenState();
 }
 
-class _PayslipScreenState extends State<PayslipScreen> {
-  int _selectedMonth = 1; // 0 = Mar, 1 = Feb, 2 = Jan
+class _PayslipScreenState extends ConsumerState<PayslipScreen> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _payslips = [];
+  int? _selectedIndex;
 
-  final _months = ['March 2026', 'February 2026', 'January 2026'];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  final _earnings = [
-    {'label': 'Basic Salary',         'amount': 28500.00},
-    {'label': 'Housing Allowance',    'amount': 4200.00},
-    {'label': 'Transport Allowance',  'amount': 1800.00},
-    {'label': 'Medical Allowance',    'amount': 1200.00},
-    {'label': 'Overtime (10 hrs)',    'amount': 890.00},
-  ];
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+      _selectedIndex = null;
+    });
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+            '/finance/payslips',
+            queryParameters: {'per_page': 24},
+          );
+      if (!mounted) return;
+      final data = res.data?['data'] ?? res.data;
+      final list = data is List ? List<dynamic>.from(data) : <dynamic>[];
+      setState(() {
+        _payslips = list;
+        _loading = false;
+        if (list.isNotEmpty) _selectedIndex = 0;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load payslips.';
+        _loading = false;
+      });
+    }
+  }
 
-  final _deductions = [
-    {'label': 'PAYE Tax',             'amount': 7240.00},
-    {'label': 'SSCOM Pension (7.5%)', 'amount': 2137.50},
-    {'label': 'Medical Aid (PSEMAS)', 'amount': 1100.00},
-    {'label': 'Staff Loan Repayment', 'amount': 800.00},
-  ];
+  Map<String, dynamic>? get _selected {
+    if (_selectedIndex == null || _selectedIndex! >= _payslips.length) return null;
+    final raw = _payslips[_selectedIndex!];
+    return raw is Map ? Map<String, dynamic>.from(raw) : null;
+  }
 
-  double get _grossPay => _earnings.fold(0.0, (s, e) => s + (e['amount'] as double));
-  double get _totalDeductions => _deductions.fold(0.0, (s, d) => s + (d['amount'] as double));
-  double get _netPay => _grossPay - _totalDeductions;
+  String _periodLabel(Map<String, dynamic> p) {
+    final m = p['period_month'];
+    final y = p['period_year'];
+    if (m != null && y != null) {
+      const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final mn = (m is int) ? m : int.tryParse(m.toString());
+      return '${months[mn != null && mn >= 1 && mn <= 12 ? mn : 0]} $y';
+    }
+    return p['period_label']?.toString() ?? '—';
+  }
 
-  String _fmt(double v) => 'N\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}';
+  double _num(dynamic v) => (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
+
+  String _fmt(double v) =>
+      'N\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}';
+
+  Future<void> _downloadPdf() async {
+    final p = _selected;
+    if (p == null) return;
+    final id = p['id'];
+    if (id == null) return;
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<List<int>>(
+        '/finance/payslips/$id/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (res.data == null || res.data!.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No PDF available for this payslip.')));
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/payslip_$id.pdf');
+      await file.writeAsBytes(res.data!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved: ${file.path}')));
+      }
+    } catch (e) {
+      final msg = e is DioException && e.response?.statusCode == 404
+          ? 'Payslip PDF not yet available.'
+          : 'Download failed.';
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
-        backgroundColor: AppColors.bgDark, elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
+        backgroundColor: AppColors.bgDark,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Payslip', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
         actions: [
-          TextButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.download_outlined, color: AppColors.primary, size: 16),
-            label: const Text('PDF', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
-          ),
+          if (_selected != null)
+            TextButton.icon(
+              onPressed: _downloadPdf,
+              icon: const Icon(Icons.download_outlined, color: AppColors.primary, size: 16),
+              label: const Text('PDF', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+            ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Period selector
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-            child: Row(children: List.generate(_months.length, (i) => Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedMonth = i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: _selectedMonth == i ? AppColors.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(9),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _load, child: const Text('Retry')),
+                      ],
+                    ),
                   ),
-                  child: Text(_months[i].split(' ')[0],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: _selectedMonth == i ? Colors.white : AppColors.textMuted,
-                      fontSize: 12, fontWeight: FontWeight.w600)),
+                )
+              : _payslips.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
+                          const SizedBox(height: 12),
+                          Text('No payslips yet', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          TextButton(onPressed: _load, child: const Text('Refresh')),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      color: AppColors.primary,
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          // Period selector (list of payslips)
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.bgSurface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: List.generate(_payslips.length, (i) {
+                                final p = _payslips[i] is Map ? _payslips[i] as Map<String, dynamic> : <String, dynamic>{};
+                                final label = _periodLabel(p);
+                                final isSelected = _selectedIndex == i;
+                                return Expanded(
+                                  child: GestureDetector(
+                                    onTap: () => setState(() => _selectedIndex = i),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? AppColors.primary : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(9),
+                                      ),
+                                      child: Text(
+                                        label.split(' ').first,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: isSelected ? Colors.white : AppColors.textMuted,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_selected != null) _buildSummaryCard(_selected!),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+    );
+  }
+
+  Widget _buildSummaryCard(Map<String, dynamic> p) {
+    final net = _num(p['net_amount']);
+    final gross = _num(p['gross_amount']);
+    final deductions = gross - net;
+    final periodLabel = _periodLabel(p);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.bgCard],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(periodLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+          const SizedBox(height: 8),
+          Text(_fmt(net), style: const TextStyle(color: AppColors.primary, fontSize: 30, fontWeight: FontWeight.w900)),
+          const Text('Net Pay', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(_fmt(gross), style: const TextStyle(color: AppColors.success, fontSize: 14, fontWeight: FontWeight.w800)),
+                    const Text('Gross', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  ],
                 ),
               ),
-            ))),
+              Container(width: 1, height: 40, color: AppColors.border),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(_fmt(deductions), style: const TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.w800)),
+                    const Text('Deductions', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-
-          // Pay summary hero
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.bgCard]),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-            ),
-            child: Column(children: [
-              Text(_months[_selectedMonth], style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-              const SizedBox(height: 8),
-              Text(_fmt(_netPay), style: const TextStyle(color: AppColors.primary, fontSize: 30, fontWeight: FontWeight.w900)),
-              const Text('Net Pay', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-              const SizedBox(height: 16),
-              Row(children: [
-                _heroPill('Gross', _fmt(_grossPay), AppColors.success),
-                Container(width: 1, height: 40, color: AppColors.border),
-                _heroPill('Deductions', _fmt(_totalDeductions), AppColors.danger),
-              ]),
-            ]),
-          ),
-          const SizedBox(height: 16),
-
-          // Earnings
-          _section(
-            title: 'Earnings',
-            icon: Icons.trending_up,
-            color: AppColors.success,
-            items: _earnings,
-            total: _grossPay,
-            totalLabel: 'Gross Pay',
-          ),
-          const SizedBox(height: 12),
-
-          // Deductions
-          _section(
-            title: 'Deductions',
-            icon: Icons.trending_down,
-            color: AppColors.danger,
-            items: _deductions,
-            total: _totalDeductions,
-            totalLabel: 'Total Deductions',
-          ),
-          const SizedBox(height: 12),
-
-          // YTD summary
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Row(children: [
-                Icon(Icons.calendar_today_outlined, color: AppColors.info, size: 14),
-                SizedBox(width: 8),
-                Text('Year-to-Date Summary', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-              ]),
-              const SizedBox(height: 12),
-              _ytdRow('YTD Gross', 'N\$108,590.00'),
-              _ytdRow('YTD Tax Paid', 'N\$21,720.00'),
-              _ytdRow('YTD Pension', 'N\$6,412.50'),
-              _ytdRow('YTD Net', 'N\$65,127.50'),
-            ]),
-          ),
-          const SizedBox(height: 32),
         ],
       ),
     );
   }
-
-  Widget _heroPill(String label, String val, Color color) => Expanded(
-    child: Column(children: [
-      Text(val, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w800)),
-      Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
-    ]),
-  );
-
-  Widget _section({required String title, required IconData icon, required Color color,
-      required List<Map<String, dynamic>> items, required double total, required String totalLabel}) =>
-    Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 14)),
-          const SizedBox(width: 8),
-          Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-        ]),
-        const SizedBox(height: 10),
-        ...items.map((e) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(children: [
-            Expanded(child: Text(e['label'] as String, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-            Text(_fmt(e['amount'] as double), style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-          ]),
-        )),
-        const Divider(color: AppColors.border, height: 20),
-        Row(children: [
-          Text(totalLabel, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-          const Spacer(),
-          Text(_fmt(total), style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w800)),
-        ]),
-      ]),
-    );
-
-  Widget _ytdRow(String label, String val) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(children: [
-      Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-      const Spacer(),
-      Text(val, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
-    ]),
-  );
 }

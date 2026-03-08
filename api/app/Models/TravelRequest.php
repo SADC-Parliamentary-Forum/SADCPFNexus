@@ -14,7 +14,7 @@ class TravelRequest extends Model
         'purpose', 'status', 'departure_date', 'return_date',
         'destination_country', 'destination_city', 'estimated_dsa',
         'actual_dsa', 'currency', 'justification', 'rejection_reason',
-        'submitted_at', 'approved_at',
+        'workplan_event_id', 'submitted_at', 'approved_at',
     ];
 
     protected $casts = [
@@ -37,6 +37,12 @@ class TravelRequest extends Model
     public function itineraries()
     {
         return $this->hasMany(TravelItinerary::class);
+    }
+
+    /** Meeting (workplan event) this travel is for — used for LIL “meetings attended”. */
+    public function workplanEvent()
+    {
+        return $this->belongsTo(WorkplanEvent::class, 'workplan_event_id');
     }
 
     public function isDraft(): bool { return $this->status === 'draft'; }

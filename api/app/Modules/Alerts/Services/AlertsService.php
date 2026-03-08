@@ -1,6 +1,7 @@
 <?php
 namespace App\Modules\Alerts\Services;
 
+use App\Models\CalendarEntry;
 use App\Models\User;
 use App\Models\WorkplanEvent;
 use Illuminate\Support\Carbon;
@@ -93,11 +94,21 @@ class AlertsService
             ->orderBy('date')
             ->get(['id', 'title', 'type', 'date', 'responsible', 'description']);
 
+        // 5. Upcoming UN Days (and other calendar entries with is_alert) — next 7 days
+        $unDaysEnd = $today->copy()->addDays(7);
+        $unDaysUpcoming = CalendarEntry::where('tenant_id', $tenantId)
+            ->where('is_alert', true)
+            ->whereDate('date', '>=', $today)
+            ->whereDate('date', '<=', $unDaysEnd)
+            ->orderBy('date')
+            ->get(['id', 'title', 'type', 'date', 'description']);
+
         return [
             'away_today'         => $awayToday,
             'active_missions'    => $activeMissions,
             'upcoming_deadlines' => $upcomingDeadlines,
             'events_this_week'   => $eventsThisWeek,
+            'un_days_upcoming'   => $unDaysUpcoming,
         ];
     }
 }

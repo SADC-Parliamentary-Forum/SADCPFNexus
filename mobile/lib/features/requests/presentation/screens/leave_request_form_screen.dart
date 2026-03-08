@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
 /// Maps UI leave type labels to API values.
 String _leaveTypeToApi(String label) {
@@ -12,6 +13,7 @@ String _leaveTypeToApi(String label) {
     'Paternity Leave': 'paternity',
     'Study Leave': 'special',
     'Compassionate': 'special',
+    'Leave in Lieu (LIL)': 'lil',
   };
   return map[label] ?? 'annual';
 }
@@ -33,6 +35,15 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
   bool _hasDoc = false;
   bool _submitting = false;
 
+  /// LIL: accruals from API (meetings/events that can be used as leave-in-lieu source).
+  List<Map<String, dynamic>> _lilAccruals = [];
+  bool _lilAccrualsLoading = false;
+  String? _lilAccrualsError;
+  /// Selected accrual IDs for LIL (user can select multiple meetings).
+  final Set<String> _selectedAccrualIds = {};
+
+  bool get _isLil => _leaveType == 'Leave in Lieu (LIL)';
+
   static const _leaveTypes = [
     {'label': 'Annual Leave', 'icon': Icons.beach_access_outlined, 'color': Color(0xFF059669)},
     {'label': 'Sick Leave', 'icon': Icons.medical_services_outlined, 'color': Color(0xFFDC2626)},
@@ -40,6 +51,7 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
     {'label': 'Paternity Leave', 'icon': Icons.family_restroom_outlined, 'color': Color(0xFF2563EB)},
     {'label': 'Study Leave', 'icon': Icons.school_outlined, 'color': Color(0xFF7C3AED)},
     {'label': 'Compassionate', 'icon': Icons.volunteer_activism_outlined, 'color': Color(0xFF0891B2)},
+    {'label': 'Leave in Lieu (LIL)', 'icon': Icons.more_time, 'color': Color(0xFF7C3AED)},
   ];
 
   int get _days {
@@ -82,6 +94,40 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
     }
   }
 
+  Future<void> _loadLilAccruals() async {
+    setState(() {
+      _lilAccrualsLoading = true;
+      _lilAccrualsError = null;
+      _lilAccruals = [];
+    });
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>('/leave/lil-accruals');
+      if (!mounted) return;
+      final data = res.data?['data'];
+      final list = data is List ? List<Map<String, dynamic>>.from(data.map((e) => Map<String, dynamic>.from(e as Map))) : <Map<String, dynamic>>[];
+      setState(() {
+        _lilAccruals = list;
+        _lilAccrualsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _lilAccrualsError = 'Failed to load accruals.';
+        _lilAccrualsLoading = false;
+      });
+    }
+  }
+
+  void _toggleAccrualSelection(String id) {
+    setState(() {
+      if (_selectedAccrualIds.contains(id)) {
+        _selectedAccrualIds.remove(id);
+      } else {
+        _selectedAccrualIds.add(id);
+      }
+    });
+  }
+
   @override
   void dispose() {
     _reasonCtrl.dispose();
@@ -108,7 +154,9 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
         Expanded(child: _step == 0 ? _buildStep1() : _buildStep2()),
         _BottomBar(
           step: _step,
-          canNext: _step == 0 ? (_startDate != null && _endDate != null) : _reasonCtrl.text.trim().isNotEmpty,
+          canNext: _step == 0
+              ? (_startDate != null && _endDate != null && (!_isLil || _selectedAccrualIds.isNotEmpty))
+              : _reasonCtrl.text.trim().isNotEmpty,
           submitting: _submitting,
           onBack: _step == 0 ? null : () => setState(() => _step = 0),
           onNext: () {
@@ -139,7 +187,10 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
           final isSelected = _leaveType == t['label'];
           final color = t['color'] as Color;
           return GestureDetector(
-            onTap: () => setState(() => _leaveType = t['label'] as String),
+            onTap: () {
+              setState(() => _leaveType = t['label'] as String);
+              if (_leaveType == 'Leave in Lieu (LIL)') _loadLilAccruals();
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -197,6 +248,99 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
           ],
         ]),
       ),
+      if (_isLil) ...[
+        const SizedBox(height: 20),
+        const Text('Select Accrual Source', style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        const Text('Select the meeting(s) or event(s) you attended that you are claiming leave in lieu for.', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+        const SizedBox(height: 12),
+        if (_lilAccrualsLoading)
+          const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
+        else if (_lilAccrualsError != null)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            child: Column(children: [
+              Text(_lilAccrualsError!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _loadLilAccruals, child: const Text('Retry')),
+            ]),
+          )
+        else if (_lilAccruals.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+            child: const Center(child: Text('No accruals available. Complete overtime or events to earn leave in lieu.', style: TextStyle(color: AppColors.textMuted, fontSize: 13))),
+          )
+        else
+          ..._lilAccruals.map((a) {
+            final id = a['id']?.toString() ?? '';
+            final code = a['code']?.toString() ?? '';
+            final desc = a['description']?.toString() ?? code;
+            final hours = (a['hours'] is num) ? (a['hours'] as num).toDouble() : 0.0;
+            final date = a['date']?.toString();
+            final selected = _selectedAccrualIds.contains(id);
+            return GestureDetector(
+              onTap: () => _toggleAccrualSelection(id),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.primary.withValues(alpha: 0.06) : AppColors.bgSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 2 : 1),
+                ),
+                child: Row(
+                  children: [
+                    Checkbox(
+                      value: selected,
+                      onChanged: (_) => _toggleAccrualSelection(id),
+                      activeColor: AppColors.primary,
+                      checkColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Expanded(child: Text(desc, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600))),
+                            if ((a['source_type'] ?? '') == 'meeting')
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text('Meeting', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.w700)),
+                              ),
+                          ]),
+                          const SizedBox(height: 2),
+                          Text('${AppDateFormatter.short(date)} · ${hours.toStringAsFixed(1)}h', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    Text('${hours.toStringAsFixed(1)}h', style: const TextStyle(color: AppColors.primary, fontSize: 14, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            );
+          }),
+        if (_selectedAccrualIds.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.primary.withValues(alpha: 0.25))),
+            child: Row(children: [
+              const Icon(Icons.check_circle_outline, color: AppColors.primary, size: 16),
+              const SizedBox(width: 8),
+              Text('${_selectedAccrualIds.length} meeting${_selectedAccrualIds.length == 1 ? '' : 's'} selected',
+                style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
+            ]),
+          ),
+        ],
+      ],
       if (_days > 0) ...[
         const SizedBox(height: 12),
         Container(
@@ -299,15 +443,28 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
 
   Future<void> _submit() async {
     if (_startDate == null || _endDate == null) return;
+    if (_isLil && _selectedAccrualIds.isEmpty) return;
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final createRes = await dio.post<Map<String, dynamic>>('/leave/requests', data: {
+      final payload = <String, dynamic>{
         'leave_type': _leaveTypeToApi(_leaveType),
         'start_date': _startDate!.toIso8601String().split('T').first,
         'end_date': _endDate!.toIso8601String().split('T').first,
         'reason': _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
-      });
+      };
+      if (_isLil && _selectedAccrualIds.isNotEmpty) {
+        final selectedAccruals = _lilAccruals.where((a) => _selectedAccrualIds.contains(a['id']?.toString()));
+        payload['lil_linkings'] = selectedAccruals.map((a) => {
+          'source_id': a['id']?.toString(),
+          'accrual_code': a['code']?.toString() ?? '',
+          'accrual_description': a['description']?.toString() ?? a['code']?.toString() ?? '',
+          'hours': (a['hours'] is num) ? (a['hours'] as num).toDouble() : 0.0,
+          'accrual_date': a['date']?.toString() ?? '',
+          'approved_by_name': a['approved_by']?.toString(),
+        }).toList();
+      }
+      final createRes = await dio.post<Map<String, dynamic>>('/leave/requests', data: payload);
       final id = createRes.data?['data']?['id'];
       if (id != null) {
         await dio.post('/leave/requests/$id/submit');

@@ -20,7 +20,7 @@ class TravelController extends Controller
     public function show(TravelRequest $travelRequest): JsonResponse
     {
         return response()->json(
-            $travelRequest->load(['requester', 'approver', 'itineraries'])
+            $travelRequest->load(['requester', 'approver', 'itineraries', 'workplanEvent'])
         );
     }
 
@@ -35,6 +35,7 @@ class TravelController extends Controller
             'estimated_dsa'       => ['nullable', 'numeric', 'min:0'],
             'currency'            => ['nullable', 'string', 'size:3'],
             'justification'       => ['nullable', 'string', 'max:2000'],
+            'workplan_event_id'   => ['nullable', 'integer', 'exists:workplan_events,id'],
             'itineraries'         => ['nullable', 'array'],
             'itineraries.*.from_location'  => ['required_with:itineraries', 'string'],
             'itineraries.*.to_location'    => ['required_with:itineraries', 'string'],
@@ -58,6 +59,7 @@ class TravelController extends Controller
             'destination_city'    => ['nullable', 'string', 'max:100'],
             'estimated_dsa'       => ['nullable', 'numeric', 'min:0'],
             'justification'       => ['nullable', 'string', 'max:2000'],
+            'workplan_event_id'   => ['nullable', 'integer', 'exists:workplan_events,id'],
         ]);
 
         $travel = $this->travelService->update($travelRequest, $data, $request->user());

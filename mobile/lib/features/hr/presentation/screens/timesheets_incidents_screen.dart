@@ -1,37 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
-class TimesheetsIncidentsScreen extends StatefulWidget {
+class TimesheetsIncidentsScreen extends ConsumerStatefulWidget {
   const TimesheetsIncidentsScreen({super.key});
 
   @override
-  State<TimesheetsIncidentsScreen> createState() =>
+  ConsumerState<TimesheetsIncidentsScreen> createState() =>
       _TimesheetsIncidentsScreenState();
 }
 
-class _TimesheetsIncidentsScreenState extends State<TimesheetsIncidentsScreen>
+class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsScreen>
     with SingleTickerProviderStateMixin {
-  int _selectedNav = 1; // Governance active
-  int _selectedTab = 0; // This Week | History
-  int _selectedDay = 2; // Wednesday (index 2 = Wed 14 = today)
+  int _selectedNav = 1;
+  int _selectedTab = 0;
 
-  static const _weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  static const _weekDates = [12, 13, 14, 15, 16, 17, 18];
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _timesheets = [];
 
-  static const _activities = [
-    _Activity(
-      title: 'Parl. Procedures',
-      time: '09:00 AM - 12:00 PM',
-      duration: '3.5h',
-      status: 'Approved',
-    ),
-    _Activity(
-      title: 'Policy Review',
-      time: '01:30 PM - 04:00 PM',
-      duration: '2.5h',
-      status: 'Pending',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadTimesheets();
+  }
+
+  Future<void> _loadTimesheets() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+            '/hr/timesheets',
+            queryParameters: {'per_page': 20},
+          );
+      if (!mounted) return;
+      final data = res.data?['data'] ?? res.data;
+      final list = data is List ? List<dynamic>.from(data) : <dynamic>[];
+      setState(() {
+        _timesheets = list;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load timesheets.';
+        _loading = false;
+      });
+    }
+  }
 
   static const _cases = [
     _IncidentCase(
@@ -132,12 +152,11 @@ class _TimesheetsIncidentsScreenState extends State<TimesheetsIncidentsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header + tab toggle
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Daily Log',
+              'Timesheets',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -183,104 +202,137 @@ class _TimesheetsIncidentsScreenState extends State<TimesheetsIncidentsScreen>
           ],
         ),
         const SizedBox(height: 12),
-
-        // Weekly calendar row
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(_weekDays.length, (i) {
-              final isToday = i == 2; // Wed 14
-              final isSelected = i == _selectedDay;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedDay = i),
-                child: Column(
-                  children: [
-                    Text(
-                      _weekDays[i],
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : (isToday
-                                ? AppColors.primary.withValues(alpha: 0.12)
-                                : Colors.transparent),
-                        shape: BoxShape.circle,
-                        border: isToday && !isSelected
-                            ? Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.5))
-                            : null,
-                      ),
-                      child: Center(
+        if (_loading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          )
+        else if (_error != null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.bgSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                const SizedBox(height: 8),
+                TextButton(onPressed: _loadTimesheets, child: const Text('Retry')),
+              ],
+            ),
+          )
+        else if (_timesheets.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.bgSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Center(
+              child: Text(
+                'No timesheets yet. Submit via HR or web.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+            ),
+          )
+        else
+          ..._timesheets.map((t) {
+            final m = t is Map ? t as Map<String, dynamic> : <String, dynamic>{};
+            final weekStart = m['week_start']?.toString();
+            final weekEnd = m['week_end']?.toString();
+            final total = (m['total_hours'] is num) ? (m['total_hours'] as num).toDouble() : 0.0;
+            final overtime = (m['overtime_hours'] is num) ? (m['overtime_hours'] as num).toDouble() : 0.0;
+            final status = m['status']?.toString() ?? 'draft';
+            final entries = m['entries'] is List ? m['entries'] as List<dynamic> : <dynamic>[];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.bgSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
                         child: Text(
-                          '${_weekDates[i]}',
-                          style: TextStyle(
-                            fontSize: 12,
+                          weekStart != null && weekEnd != null
+                              ? '${AppDateFormatter.short(weekStart)} – ${AppDateFormatter.short(weekEnd)}'
+                              : 'Week',
+                          style: const TextStyle(
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? AppColors.bgDark
-                                : (isToday
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Activity list
-        ..._activities.map((a) => _ActivityCard(activity: a)),
-        const SizedBox(height: 10),
-
-        // Log New Activity button
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.primary),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add, size: 16, color: AppColors.primary),
-                SizedBox(width: 6),
-                Text(
-                  'Log New Activity',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: status == 'approved'
+                              ? AppColors.success.withValues(alpha: 0.15)
+                              : status == 'submitted'
+                                  ? AppColors.info.withValues(alpha: 0.15)
+                                  : AppColors.bgCard,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: status == 'approved'
+                                ? AppColors.success
+                                : status == 'submitted'
+                                    ? AppColors.info
+                                    : AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text('Total: ${total.toStringAsFixed(1)}h', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      if (overtime > 0) ...[
+                        const SizedBox(width: 12),
+                        Text('OT: ${overtime.toStringAsFixed(1)}h', style: const TextStyle(color: AppColors.warning, fontSize: 12)),
+                      ],
+                    ],
+                  ),
+                  if (entries.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...entries.take(3).map((e) {
+                      final em = e is Map ? e as Map<String, dynamic> : <String, dynamic>{};
+                      final date = em['work_date']?.toString();
+                      final h = (em['hours'] is num) ? (em['hours'] as num).toDouble() : 0.0;
+                      final desc = em['description']?.toString() ?? 'Entry';
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Text(AppDateFormatter.short(date), style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(desc, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            Text('${h}h', style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            );
+          }),
       ],
     );
   }
@@ -464,19 +516,6 @@ class _TimesheetsIncidentsScreenState extends State<TimesheetsIncidentsScreen>
 }
 
 // ── Data models ───────────────────────────────────────────────────────────────
-class _Activity {
-  final String title;
-  final String time;
-  final String duration;
-  final String status;
-  const _Activity({
-    required this.title,
-    required this.time,
-    required this.duration,
-    required this.status,
-  });
-}
-
 class _IncidentCase {
   final String caseId;
   final String title;
@@ -497,94 +536,6 @@ class _IncidentCase {
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
-class _ActivityCard extends StatelessWidget {
-  final _Activity activity;
-  const _ActivityCard({required this.activity});
-
-  @override
-  Widget build(BuildContext context) {
-    final isApproved = activity.status == 'Approved';
-    final statusColor = isApproved ? AppColors.success : AppColors.warning;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 48,
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity.title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  activity.time,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border:
-                      Border.all(color: statusColor.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  activity.status,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                activity.duration,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _IncidentCaseCard extends StatelessWidget {
   final _IncidentCase caseData;
   const _IncidentCaseCard({required this.caseData});

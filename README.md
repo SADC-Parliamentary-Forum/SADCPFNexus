@@ -30,8 +30,12 @@ Demo logins (after seed): see [DOCKER.md](DOCKER.md).
 
 ## Mobile (Flutter)
 
-- Run: `cd mobile && flutter run`
+- **Run (pick a device):**
+  - No device / desktop: `cd mobile && flutter run -d chrome` or `flutter run -d windows`
+  - Android: `flutter run -d android` (device or emulator)
+  - iOS: `flutter run -d ios` (simulator or device)
 - Build Android: `flutter build apk` (release signing: configure keystore in `mobile/android/app/build.gradle.kts`; see REMAINING_WORK.md).
+- Build web: `flutter build web`. Build Windows: `flutter build windows`.
 
 ## API (Laravel)
 

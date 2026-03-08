@@ -349,7 +349,6 @@ class _SalaryAdvancePreviewSignScreenState
             textStyle: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              fontFamily: 'PublicSans',
             ),
           ),
         ),

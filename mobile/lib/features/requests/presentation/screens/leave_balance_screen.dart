@@ -213,7 +213,7 @@ class _LeaveBalanceScreenState extends ConsumerState<LeaveBalanceScreen> {
     final end = h['end_date']?.toString();
     final days = (h['days_requested'] as num?)?.toInt() ?? 0;
     final status = h['status']?.toString() ?? '—';
-    final dateStr = AppDateFormatter.range(start, end);
+    final dateStr = AppDateFormatter.rangeCompact(start, end);
     final typeLabel = type.length > 1 ? '${type[0].toUpperCase()}${type.substring(1)}' : type;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

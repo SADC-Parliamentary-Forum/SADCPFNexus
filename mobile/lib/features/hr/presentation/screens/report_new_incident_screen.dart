@@ -148,7 +148,6 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF1A1A1A),
-                  fontFamily: 'PublicSans',
                 ),
                 items: _incidentTypes.map((t) {
                   return DropdownMenuItem(value: t, child: Text(t));
@@ -498,7 +497,6 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
             textStyle: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              fontFamily: 'PublicSans',
             ),
           ),
         ),

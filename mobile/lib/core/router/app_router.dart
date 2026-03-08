@@ -58,6 +58,10 @@ import '../../features/assets/presentation/screens/fleet_transport_screen.dart';
 // Procurement detail
 import '../../features/procurement/presentation/screens/procurement_detail_screen.dart';
 
+// Calendar (SADC holidays, UN days)
+import '../../features/calendar/presentation/screens/calendar_holidays_screen.dart';
+import '../../features/calendar/presentation/screens/calendar_upload_screen.dart';
+
 // PIF
 import '../../features/pif/presentation/screens/pif_form_screen.dart';
 import '../../features/pif/presentation/screens/pif_review_approval_screen.dart';
@@ -290,6 +294,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OvertimeClaimFormScreen(),
       ),
 
+      // ─── SADC Calendar & Holidays ─────────────────────────────────────────
+      GoRoute(
+        path: '/calendar',
+        name: 'calendar-holidays',
+        builder: (context, state) => const CalendarHolidaysScreen(),
+        routes: [
+          GoRoute(
+            path: 'upload',
+            name: 'calendar-upload',
+            pageBuilder: (context, state) => const MaterialPage(
+              fullscreenDialog: true,
+              child: CalendarUploadScreen(),
+            ),
+          ),
+        ],
+      ),
+
       // ─── Assets ────────────────────────────────────────────────────────────
       GoRoute(
         path: '/assets/inventory',
@@ -429,16 +450,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   onUnauthorizedCallback = () => router.go('/login');
   return router;
 });
-
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
-    );
-  }
-}

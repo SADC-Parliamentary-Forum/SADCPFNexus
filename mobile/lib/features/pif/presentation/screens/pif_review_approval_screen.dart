@@ -90,8 +90,11 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
   @override
   void initState() {
     super.initState();
-    if (widget.programmeId != null) _loadProgramme();
-    else setState(() => _loading = false);
+    if (widget.programmeId != null) {
+      _loadProgramme();
+    } else {
+      setState(() => _loading = false);
+    }
   }
 
   Future<void> _loadProgramme() async {

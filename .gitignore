@@ -6,3 +6,5 @@ api/.env.docker.example
 api/.env.example
 web
 web
+mobile/windows/CMakeLists.txt
+.gitignore

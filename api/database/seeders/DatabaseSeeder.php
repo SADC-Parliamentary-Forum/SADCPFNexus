@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             DemoDataSeeder::class,
             ProgrammeSeeder::class,
             WorkplanSeeder::class,
+            CalendarSeeder::class,
         ]);
     }
 }

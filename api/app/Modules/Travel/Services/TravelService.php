@@ -50,6 +50,7 @@ class TravelService
             'estimated_dsa'       => $data['estimated_dsa'] ?? 0,
             'currency'            => $data['currency'] ?? 'USD',
             'justification'       => $data['justification'] ?? null,
+            'workplan_event_id'   => $data['workplan_event_id'] ?? null,
         ]);
 
         if (!empty($data['itineraries'])) {
@@ -74,7 +75,7 @@ class TravelService
             throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
         }
 
-        $travel->update(array_filter([
+        $payload = array_filter([
             'purpose'             => $data['purpose'] ?? null,
             'departure_date'      => $data['departure_date'] ?? null,
             'return_date'         => $data['return_date'] ?? null,
@@ -83,7 +84,11 @@ class TravelService
             'estimated_dsa'       => $data['estimated_dsa'] ?? null,
             'currency'            => $data['currency'] ?? null,
             'justification'       => $data['justification'] ?? null,
-        ], fn($v) => $v !== null));
+        ], fn ($v) => $v !== null);
+        if (array_key_exists('workplan_event_id', $data)) {
+            $payload['workplan_event_id'] = $data['workplan_event_id'];
+        }
+        $travel->update($payload);
 
         AuditLog::record('travel.updated', [
             'auditable_type' => TravelRequest::class,

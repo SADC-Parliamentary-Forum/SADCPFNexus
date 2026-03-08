@@ -2,9 +2,12 @@
 namespace App\Modules\Leave\Services;
 
 use App\Models\AuditLog;
+use App\Models\CalendarEntry;
 use App\Models\LeaveRequest;
+use App\Models\OvertimeAccrual;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +19,7 @@ class LeaveService
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = LeaveRequest::with(['requester'])
+            ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
         if ($user->hasRole('staff')) {
@@ -35,9 +39,9 @@ class LeaveService
 
     public function create(array $data, User $user): LeaveRequest
     {
-        $startDate = \Carbon\Carbon::parse($data['start_date']);
-        $endDate   = \Carbon\Carbon::parse($data['end_date']);
-        $daysRequested = $startDate->diffInWeekdays($endDate) + 1;
+        $startDate = Carbon::parse($data['start_date']);
+        $endDate   = Carbon::parse($data['end_date']);
+        $daysRequested = $this->countWorkingDaysExcludingNamibiaHolidays($startDate, $endDate, $user->tenant_id);
 
         $hasLil = ($data['leave_type'] === 'lil');
 
@@ -58,8 +62,19 @@ class LeaveService
         if ($hasLil && !empty($data['lil_linkings'])) {
             $totalLinked = 0;
             foreach ($data['lil_linkings'] as $linking) {
-                $leave->lilLinkings()->create($linking);
+                $sourceId = $linking['source_id'] ?? null;
+                $linkingData = array_diff_key($linking, ['source_id' => 1]);
+                $leave->lilLinkings()->create($linkingData);
                 $totalLinked += $linking['hours'];
+                // Mark overtime accrual as linked when source_id is overtime-{id}
+                if ($sourceId && str_starts_with($sourceId, 'overtime-')) {
+                    $accrualId = (int) substr($sourceId, strlen('overtime-'));
+                    if ($accrualId > 0) {
+                        OvertimeAccrual::where('id', $accrualId)
+                            ->where('user_id', $user->id)
+                            ->update(['is_linked' => true]);
+                    }
+                }
             }
             $leave->update(['lil_hours_linked' => $totalLinked]);
         }
@@ -80,12 +95,23 @@ class LeaveService
             throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
         }
 
-        $leave->update(array_filter([
+        $updates = array_filter([
             'leave_type'  => $data['leave_type'] ?? null,
             'start_date'  => $data['start_date'] ?? null,
             'end_date'    => $data['end_date'] ?? null,
             'reason'      => $data['reason'] ?? null,
-        ], fn($v) => $v !== null));
+        ], fn ($v) => $v !== null);
+
+        if (!empty($updates['start_date']) || !empty($updates['end_date'])) {
+            $start = Carbon::parse($updates['start_date'] ?? $leave->start_date);
+            $end   = Carbon::parse($updates['end_date'] ?? $leave->end_date);
+            $updates['days_requested'] = $this->countWorkingDaysExcludingNamibiaHolidays($start, $end, $leave->tenant_id);
+            if (($updates['leave_type'] ?? $leave->leave_type) === 'lil') {
+                $updates['lil_hours_required'] = $updates['days_requested'] * 8;
+            }
+        }
+
+        $leave->update($updates);
 
         AuditLog::record('leave.updated', [
             'auditable_type' => LeaveRequest::class,
@@ -219,5 +245,31 @@ class LeaveService
             'approved_by'      => $approver->id,
             'rejection_reason' => $reason,
         ]);
+    }
+
+    /**
+     * Count working days (Mon–Fri) excluding Namibia public holidays (LIL uses Namibia only).
+     */
+    private function countWorkingDaysExcludingNamibiaHolidays(Carbon $start, Carbon $end, int $tenantId): int
+    {
+        $namibiaHolidayDates = CalendarEntry::where('tenant_id', $tenantId)
+            ->where('type', CalendarEntry::TYPE_SADC_HOLIDAY)
+            ->where('country_code', 'NA')
+            ->where('date', '>=', $start)
+            ->where('date', '<=', $end)
+            ->pluck('date')
+            ->map(fn ($d) => $d->format('Y-m-d'))
+            ->flip()
+            ->all();
+
+        $count = 0;
+        $d = $start->copy();
+        while ($d->lte($end)) {
+            if ($d->isWeekday() && !isset($namibiaHolidayDates[$d->format('Y-m-d')])) {
+                $count++;
+            }
+            $d->addDay();
+        }
+        return $count;
     }
 }

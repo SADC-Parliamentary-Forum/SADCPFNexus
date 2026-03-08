@@ -406,7 +406,6 @@ class _SalaryAdvanceRequestScreenState
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF1A1A1A),
-                  fontFamily: 'PublicSans',
                 ),
                 items: _purposes.map((p) {
                   return DropdownMenuItem(value: p, child: Text(p));
@@ -524,7 +523,6 @@ class _SalaryAdvanceRequestScreenState
             textStyle: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              fontFamily: 'PublicSans',
             ),
           ),
         ),
