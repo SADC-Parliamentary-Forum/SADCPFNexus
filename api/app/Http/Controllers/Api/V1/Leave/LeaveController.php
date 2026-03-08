@@ -5,8 +5,6 @@ use App\Http\Controllers\Controller;
 use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
-use App\Models\TravelRequest;
-use App\Models\WorkplanEvent;
 use App\Modules\Leave\Services\LeaveService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +33,7 @@ class LeaveController extends Controller
         ]);
     }
 
-    /** Return LIL accruals: overtime accruals + meetings the user attended (approved travel requisition linked to that meeting). */
+    /** Return LIL accruals: overtime accruals + days from approved Travel Requisitions that fell on weekend or Namibia public holiday. */
     public function lilAccruals(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -43,22 +41,6 @@ class LeaveController extends Controller
         $overtime = OvertimeAccrual::where('user_id', $user->id)
             ->where('is_linked', false)
             ->orderByDesc('accrual_date')
-            ->get();
-
-        // Meetings the user attended = workplan events (type=meeting) that have an approved travel request by this user with workplan_event_id set
-        $attendedMeetingIds = TravelRequest::where('requester_id', $user->id)
-            ->where('status', 'approved')
-            ->whereNotNull('workplan_event_id')
-            ->where('return_date', '>=', now()->subDays(90))
-            ->pluck('workplan_event_id')
-            ->unique()
-            ->values();
-
-        $meetings = WorkplanEvent::where('tenant_id', $user->tenant_id)
-            ->where('type', 'meeting')
-            ->whereIn('id', $attendedMeetingIds)
-            ->where('date', '>=', now()->subDays(90))
-            ->orderByDesc('date')
             ->get();
 
         $data = [];
@@ -76,21 +58,9 @@ class LeaveController extends Controller
             ];
         }
 
-        foreach ($meetings as $e) {
-            $start = $e->date;
-            $end = $e->end_date ?? $e->date;
-            $days = $start->diffInDays($end) + 1;
-            $hours = $days * 8;
-            $data[] = [
-                'id'          => 'meeting-' . $e->id,
-                'source_type' => 'meeting',
-                'code'        => 'MTG-' . $e->id,
-                'description' => $e->title,
-                'hours'       => (float) $hours,
-                'date'        => $e->date->format('Y-m-d'),
-                'approved_by' => $e->responsible,
-                'is_verified' => false,
-            ];
+        $travelLil = $this->leaveService->getLilAccrualsFromApprovedTravel($user);
+        foreach ($travelLil as $item) {
+            $data[] = $item;
         }
 
         usort($data, fn ($a, $b) => strcmp($b['date'], $a['date']));

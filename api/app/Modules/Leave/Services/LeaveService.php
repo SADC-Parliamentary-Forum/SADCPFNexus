@@ -5,6 +5,7 @@ use App\Models\AuditLog;
 use App\Models\CalendarEntry;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
+use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
 use Carbon\Carbon;
@@ -248,7 +249,8 @@ class LeaveService
     }
 
     /**
-     * Count working days (Mon–Fri) excluding Namibia public holidays (LIL uses Namibia only).
+     * Count working days for normal leave: weekdays (Mon–Fri) only, excluding weekends
+     * and Namibia public holidays. Used for days_requested on leave requests.
      */
     private function countWorkingDaysExcludingNamibiaHolidays(Carbon $start, Carbon $end, int $tenantId): int
     {
@@ -271,5 +273,74 @@ class LeaveService
             $d->addDay();
         }
         return $count;
+    }
+
+    /**
+     * LIL accruals from approved Travel Requisitions: only days that fell on a weekend
+     * or Namibia public holiday (days the user worked on mission during non-working days).
+     * Deduplicated by date (max 8 hours per calendar day per user).
+     *
+     * @return array<int, array{id: string, source_type: string, code: string, description: string, hours: float, date: string, approved_by: string|null, is_verified: bool}>
+     */
+    public function getLilAccrualsFromApprovedTravel(User $user): array
+    {
+        $travels = TravelRequest::where('requester_id', $user->id)
+            ->where('status', 'approved')
+            ->where('return_date', '>=', now()->subDays(365))
+            ->orderByDesc('return_date')
+            ->get();
+
+        if ($travels->isEmpty()) {
+            return [];
+        }
+
+        $minDate = $travels->min('departure_date');
+        $maxDate = $travels->max('return_date');
+        if (!$minDate || !$maxDate) {
+            return [];
+        }
+
+        $naHolidayDates = CalendarEntry::where('tenant_id', $user->tenant_id)
+            ->where('type', CalendarEntry::TYPE_SADC_HOLIDAY)
+            ->where('country_code', 'NA')
+            ->where('date', '>=', $minDate)
+            ->where('date', '<=', $maxDate)
+            ->pluck('date')
+            ->map(fn ($d) => $d->format('Y-m-d'))
+            ->flip()
+            ->all();
+
+        $byDate = [];
+        foreach ($travels as $travel) {
+            $dep = Carbon::parse($travel->departure_date);
+            $ret = Carbon::parse($travel->return_date);
+            $destination = trim(($travel->destination_city ?? '') . ', ' . ($travel->destination_country ?? ''), ', ');
+            $ref = $travel->reference_number ?? 'TR-' . $travel->id;
+
+            for ($d = $dep->copy(); $d->lte($ret); $d->addDay()) {
+                $dateStr = $d->format('Y-m-d');
+                if (isset($byDate[$dateStr])) {
+                    continue;
+                }
+                $isWeekend = $d->isWeekend();
+                $isNaHoliday = isset($naHolidayDates[$dateStr]);
+                if (!$isWeekend && !$isNaHoliday) {
+                    continue;
+                }
+                $suffix = $isWeekend && $isNaHoliday ? ' (weekend, public holiday)' : ($isWeekend ? ' (weekend)' : ' (public holiday)');
+                $byDate[$dateStr] = [
+                    'id'          => 'travel-lil-' . $dateStr,
+                    'source_type' => 'travel',
+                    'code'        => $ref,
+                    'description' => ($destination ?: 'Mission') . $suffix,
+                    'hours'       => 8.0,
+                    'date'        => $dateStr,
+                    'approved_by' => null,
+                    'is_verified' => false,
+                ];
+            }
+        }
+
+        return array_values($byDate);
     }
 }

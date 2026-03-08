@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
-class UserSupportHealthScreen extends StatefulWidget {
+class UserSupportHealthScreen extends ConsumerStatefulWidget {
   const UserSupportHealthScreen({super.key});
   @override
-  State<UserSupportHealthScreen> createState() => _UserSupportHealthScreenState();
+  ConsumerState<UserSupportHealthScreen> createState() => _UserSupportHealthScreenState();
 }
 
-class _UserSupportHealthScreenState extends State<UserSupportHealthScreen> with SingleTickerProviderStateMixin {
+class _UserSupportHealthScreenState extends ConsumerState<UserSupportHealthScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabs;
+  bool _loadingTickets = true;
+  String? _ticketsError;
+  List<Map<String, dynamic>> _tickets = [];
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _loadTickets();
   }
 
   @override
@@ -22,11 +29,112 @@ class _UserSupportHealthScreenState extends State<UserSupportHealthScreen> with 
     super.dispose();
   }
 
-  final _tickets = [
-    {'id': '#TKT-0441', 'title': 'Cannot access Leave module', 'status': 'Open', 'priority': 'High', 'created': '2 days ago'},
-    {'id': '#TKT-0438', 'title': 'Report export not working', 'status': 'In Progress', 'priority': 'Medium', 'created': '4 days ago'},
-    {'id': '#TKT-0431', 'title': 'Dashboard data not refreshing', 'status': 'Resolved', 'priority': 'Low', 'created': '1 week ago'},
-  ];
+  Future<void> _loadTickets() async {
+    setState(() { _loadingTickets = true; _ticketsError = null; });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>('/support/tickets', queryParameters: {'per_page': 50});
+      if (!mounted) return;
+      final data = res.data?['data'] as List<dynamic>?;
+      setState(() {
+        _tickets = (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loadingTickets = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _ticketsError = 'Failed to load tickets.'; _loadingTickets = false; });
+    }
+  }
+
+  void _showNewTicketDialog() {
+    final subjectCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    var priority = 'medium';
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          backgroundColor: AppColors.bgSurface,
+          title: const Text('New Support Ticket', style: TextStyle(color: AppColors.textPrimary)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: subjectCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Subject',
+                    border: OutlineInputBorder(),
+                    labelStyle: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (optional)',
+                    border: OutlineInputBorder(),
+                    labelStyle: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                const Text('Priority', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Low'),
+                      selected: priority == 'low',
+                      onSelected: (_) => setDialog(() => priority = 'low'),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Medium'),
+                      selected: priority == 'medium',
+                      onSelected: (_) => setDialog(() => priority = 'medium'),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('High'),
+                      selected: priority == 'high',
+                      onSelected: (_) => setDialog(() => priority = 'high'),
+                      selectedColor: AppColors.primary.withValues(alpha: 0.3),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                if (subjectCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx);
+                try {
+                  final dio = ref.read(apiClientProvider).dio;
+                  await dio.post('/support/tickets', data: {
+                    'subject': subjectCtrl.text.trim(),
+                    'description': descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                    'priority': priority,
+                  });
+                  if (mounted) _loadTickets();
+                } catch (_) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to create ticket.')));
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   final _systemChecks = [
     {'service': 'API Server', 'status': 'Operational', 'latency': '42ms'},
@@ -72,11 +180,16 @@ class _UserSupportHealthScreenState extends State<UserSupportHealthScreen> with 
   Widget _ticketsTab() => ListView(
     padding: const EdgeInsets.all(16),
     children: [
-      SizedBox(width: double.infinity, height: 44,
+      SizedBox(
+        width: double.infinity,
+        height: 44,
         child: ElevatedButton.icon(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.bgDark,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          onPressed: _showNewTicketDialog,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.bgDark,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
           icon: const Icon(Icons.add, size: 16),
           label: const Text('New Support Ticket', style: TextStyle(fontWeight: FontWeight.w700)),
         ),
@@ -84,34 +197,66 @@ class _UserSupportHealthScreenState extends State<UserSupportHealthScreen> with 
       const SizedBox(height: 16),
       const Text('MY TICKETS', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
       const SizedBox(height: 10),
-      ..._tickets.map((t) {
-        final statusColor = t['status'] == 'Open' ? AppColors.danger : (t['status'] == 'In Progress' ? AppColors.warning : AppColors.success);
-        final priorityColor = t['priority'] == 'High' ? AppColors.danger : (t['priority'] == 'Medium' ? AppColors.warning : AppColors.success);
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text(t['id']!, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-              const Spacer(),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: priorityColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
-                child: Text(t['priority']!, style: TextStyle(color: priorityColor, fontSize: 9, fontWeight: FontWeight.w700))),
-            ]),
-            const SizedBox(height: 6),
-            Text(t['title']!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Row(children: [
-              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                child: Text(t['status']!, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700))),
-              const Spacer(),
-              Text(t['created']!, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-            ]),
-          ]),
-        );
-      }),
+      if (_loadingTickets)
+        const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
+      else if (_ticketsError != null)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text(_ticketsError!, style: const TextStyle(color: AppColors.danger)),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _loadTickets, child: const Text('Retry')),
+            ],
+          ),
+        )
+      else if (_tickets.isEmpty)
+        const Padding(padding: EdgeInsets.all(16), child: Text('No tickets yet.', style: TextStyle(color: AppColors.textMuted)))
+      else
+        ..._tickets.map((t) {
+          final status = (t['status'] as String?) ?? 'open';
+          final statusLabel = status == 'in_progress' ? 'In Progress' : (status == 'open' ? 'Open' : status == 'resolved' ? 'Resolved' : status);
+          final statusColor = status == 'open' ? AppColors.danger : (status == 'in_progress' ? AppColors.warning : AppColors.success);
+          final pri = (t['priority'] as String?) ?? 'medium';
+          final priorityLabel = pri == 'high' ? 'High' : (pri == 'low' ? 'Low' : 'Medium');
+          final priorityColor = pri == 'high' ? AppColors.danger : (pri == 'medium' ? AppColors.warning : AppColors.success);
+          final createdAt = t['created_at'] != null ? AppDateFormatter.short(t['created_at'] as String) : '—';
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('#${t['reference_number'] ?? t['id']}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: priorityColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
+                      child: Text(priorityLabel, style: TextStyle(color: priorityColor, fontSize: 9, fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(t['subject'] as String? ?? '', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                    ),
+                    const Spacer(),
+                    Text(createdAt, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
     ],
   );
 

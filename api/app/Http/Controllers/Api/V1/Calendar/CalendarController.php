@@ -39,6 +39,17 @@ class CalendarController extends Controller
     }
 
     /**
+     * Show a single calendar entry.
+     */
+    public function show(Request $request, CalendarEntry $calendarEntry): JsonResponse
+    {
+        if ($calendarEntry->tenant_id !== $request->user()->tenant_id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+        return response()->json($calendarEntry);
+    }
+
+    /**
      * Store a single calendar entry (public holiday, UN day, or SADC calendar event).
      */
     public function store(Request $request): JsonResponse

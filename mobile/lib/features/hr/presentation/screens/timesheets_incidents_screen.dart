@@ -20,11 +20,101 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
   bool _loading = true;
   String? _error;
   List<dynamic> _timesheets = [];
+  bool _loadingIncidents = true;
+  String? _incidentsError;
+  List<Map<String, dynamic>> _incidents = [];
 
   @override
   void initState() {
     super.initState();
     _loadTimesheets();
+    _loadIncidents();
+  }
+
+  Future<void> _loadIncidents() async {
+    setState(() { _loadingIncidents = true; _incidentsError = null; });
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+        '/hr/incidents',
+        queryParameters: {'per_page': 50},
+      );
+      if (!mounted) return;
+      final data = res.data?['data'] as List<dynamic>?;
+      setState(() {
+        _incidents = (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loadingIncidents = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _incidentsError = 'Failed to load incidents.'; _loadingIncidents = false; });
+    }
+  }
+
+  void _showReportIncidentDialog() {
+    final subjectCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    var severity = 'medium';
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          backgroundColor: AppColors.bgSurface,
+          title: const Text('Report Incident', style: TextStyle(color: AppColors.textPrimary)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: subjectCtrl,
+                  decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
+                  style: const TextStyle(color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(labelText: 'Description (optional)', border: OutlineInputBorder()),
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 12),
+                const Text('Severity', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Row(
+                  children: [
+                    ChoiceChip(label: const Text('Low'), selected: severity == 'low', onSelected: (_) => setDialog(() => severity = 'low'), selectedColor: AppColors.primary.withValues(alpha: 0.3)),
+                    const SizedBox(width: 8),
+                    ChoiceChip(label: const Text('Medium'), selected: severity == 'medium', onSelected: (_) => setDialog(() => severity = 'medium'), selectedColor: AppColors.primary.withValues(alpha: 0.3)),
+                    const SizedBox(width: 8),
+                    ChoiceChip(label: const Text('High'), selected: severity == 'high', onSelected: (_) => setDialog(() => severity = 'high'), selectedColor: AppColors.primary.withValues(alpha: 0.3)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () async {
+                if (subjectCtrl.text.trim().isEmpty) return;
+                Navigator.pop(ctx);
+                try {
+                  await ref.read(apiClientProvider).dio.post('/hr/incidents', data: {
+                    'subject': subjectCtrl.text.trim(),
+                    'description': descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                    'severity': severity,
+                  });
+                  if (mounted) _loadIncidents();
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Incident reported.')));
+                } catch (_) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to report incident.')));
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadTimesheets() async {
@@ -53,28 +143,6 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
     }
   }
 
-  static const _cases = [
-    _IncidentCase(
-      caseId: '#2023-001',
-      title: 'Unauthorized Access Attempt',
-      badge: 'Hearing Workflow',
-      badgeColor: AppColors.info,
-      description:
-          'Security breach reported in Sector 4 server room. Pending review by the disciplinary committee.',
-      avatarCount: 2,
-      timeAgo: '3d ago',
-    ),
-    _IncidentCase(
-      caseId: '#2023-052',
-      title: 'Asset Misallocation',
-      badge: 'Investigation',
-      badgeColor: AppColors.warning,
-      description:
-          'Discrepancies found in quarterly asset reconciliation. Finance department under review.',
-      avatarCount: 3,
-      timeAgo: '3d ago',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -353,7 +421,7 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
 
         // Quick Report Incident card
         GestureDetector(
-          onTap: () {},
+          onTap: _showReportIncidentDialog,
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -440,7 +508,21 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
           ],
         ),
         const SizedBox(height: 10),
-        ..._cases.map((c) => _IncidentCaseCard(caseData: c)),
+        if (_loadingIncidents)
+          const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
+        else if (_incidentsError != null)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Text(_incidentsError!, style: const TextStyle(color: AppColors.danger)),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _loadIncidents, child: const Text('Retry')),
+            ]),
+          )
+        else if (_incidents.isEmpty)
+          const Padding(padding: EdgeInsets.all(16), child: Text('No incidents reported.', style: TextStyle(color: AppColors.textMuted)))
+        else
+          ..._incidents.map((m) => _IncidentCardFromMap(incident: m)),
       ],
     );
   }
@@ -647,6 +729,91 @@ class _IncidentCaseCard extends StatelessWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IncidentCardFromMap extends StatelessWidget {
+  final Map<String, dynamic> incident;
+
+  const _IncidentCardFromMap({required this.incident});
+
+  static Color _statusColor(String? s) {
+    switch ((s ?? '').toLowerCase()) {
+      case 'investigation': return AppColors.info;
+      case 'hearing': return AppColors.primary;
+      case 'resolved': return AppColors.success;
+      case 'closed': return AppColors.textMuted;
+      default: return AppColors.warning;
+    }
+  }
+
+  static String _statusLabel(String? s) {
+    switch ((s ?? '').toLowerCase()) {
+      case 'reported': return 'Reported';
+      case 'investigation': return 'Investigation';
+      case 'hearing': return 'Hearing';
+      case 'resolved': return 'Resolved';
+      case 'closed': return 'Closed';
+      default: return 'Reported';
+    }
+  }
+
+  static String _timeAgo(String? reportedAt) {
+    if (reportedAt == null) return '—';
+    try {
+      final d = DateTime.parse(reportedAt);
+      final now = DateTime.now();
+      final diff = now.difference(d);
+      if (diff.inDays == 0) return 'Today';
+      if (diff.inDays == 1) return '1d ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+      return AppDateFormatter.short(reportedAt);
+    } catch (_) {
+      return '—';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final caseId = '#${incident['reference_number'] ?? incident['id']}';
+    final title = incident['subject'] as String? ?? '—';
+    final status = incident['status'] as String?;
+    final badge = _statusLabel(status);
+    final badgeColor = _statusColor(status);
+    final description = incident['description'] as String? ?? 'No description.';
+    final timeAgo = _timeAgo(incident['reported_at'] as String?);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('CASE $caseId', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textMuted, fontFamily: 'monospace')),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: badgeColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                child: Text(badge, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: badgeColor)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 4),
+          Text(description, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4)),
+          const SizedBox(height: 10),
+          Text('Reported $timeAgo', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
         ],
       ),
     );

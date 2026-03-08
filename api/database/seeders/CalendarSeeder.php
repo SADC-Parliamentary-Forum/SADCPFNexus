@@ -16,6 +16,8 @@ class CalendarSeeder extends Seeder
         }
 
         $this->seedNamibianPublicHolidays($tenant->id);
+        $this->seedSouthAfricaPublicHolidays($tenant->id);
+        $this->seedZimbabwePublicHolidays($tenant->id);
         $this->seedUnDays($tenant->id);
     }
 
@@ -80,6 +82,18 @@ class CalendarSeeder extends Seeder
             ['2027-12-10', 'Day of the Namibian Women and International Human Rights Day'],
             ['2027-12-25', 'Christmas Day'],
             ['2027-12-26', 'Family Day'],
+            // 2028
+            ['2028-01-01', 'New Year\'s Day'],
+            ['2028-03-21', 'Independence Day'],
+            ['2028-04-14', 'Good Friday'],
+            ['2028-04-17', 'Easter Monday'],
+            ['2028-05-01', 'Workers\' Day'],
+            ['2028-05-04', 'Cassinga Day'],
+            ['2028-05-25', 'Africa Day'],
+            ['2028-08-26', 'Heroes\' Day'],
+            ['2028-12-10', 'Day of the Namibian Women and International Human Rights Day'],
+            ['2028-12-25', 'Christmas Day'],
+            ['2028-12-26', 'Family Day'],
         ];
 
         foreach ($holidays as $h) {
@@ -99,7 +113,144 @@ class CalendarSeeder extends Seeder
         }
     }
 
-    /** UN International Days (with alerts). */
+    /** South Africa public holidays (SADC region). */
+    private function seedSouthAfricaPublicHolidays(int $tenantId): void
+    {
+        $holidays = [
+            ['2024-01-01', 'New Year\'s Day'],
+            ['2024-03-21', 'Human Rights Day'],
+            ['2024-03-29', 'Good Friday'],
+            ['2024-04-01', 'Family Day (Easter Monday)'],
+            ['2024-04-27', 'Freedom Day'],
+            ['2024-05-01', 'Workers\' Day'],
+            ['2024-06-16', 'Youth Day'],
+            ['2024-08-09', 'Women\'s Day'],
+            ['2024-09-24', 'Heritage Day'],
+            ['2024-12-16', 'Day of Reconciliation'],
+            ['2024-12-25', 'Christmas Day'],
+            ['2024-12-26', 'Day of Goodwill'],
+            ['2025-01-01', 'New Year\'s Day'],
+            ['2025-03-21', 'Human Rights Day'],
+            ['2025-04-18', 'Good Friday'],
+            ['2025-04-21', 'Family Day (Easter Monday)'],
+            ['2025-04-27', 'Freedom Day'],
+            ['2025-05-01', 'Workers\' Day'],
+            ['2025-06-16', 'Youth Day'],
+            ['2025-08-09', 'Women\'s Day'],
+            ['2025-09-24', 'Heritage Day'],
+            ['2025-12-16', 'Day of Reconciliation'],
+            ['2025-12-25', 'Christmas Day'],
+            ['2025-12-26', 'Day of Goodwill'],
+            ['2026-01-01', 'New Year\'s Day'],
+            ['2026-03-21', 'Human Rights Day'],
+            ['2026-04-03', 'Good Friday'],
+            ['2026-04-06', 'Family Day (Easter Monday)'],
+            ['2026-04-27', 'Freedom Day'],
+            ['2026-05-01', 'Workers\' Day'],
+            ['2026-06-16', 'Youth Day'],
+            ['2026-08-09', 'Women\'s Day'],
+            ['2026-09-24', 'Heritage Day'],
+            ['2026-12-16', 'Day of Reconciliation'],
+            ['2026-12-25', 'Christmas Day'],
+            ['2026-12-26', 'Day of Goodwill'],
+            ['2027-01-01', 'New Year\'s Day'],
+            ['2027-03-21', 'Human Rights Day'],
+            ['2027-03-26', 'Good Friday'],
+            ['2027-03-29', 'Family Day (Easter Monday)'],
+            ['2027-04-27', 'Freedom Day'],
+            ['2027-05-01', 'Workers\' Day'],
+            ['2027-06-16', 'Youth Day'],
+            ['2027-08-09', 'Women\'s Day'],
+            ['2027-09-24', 'Heritage Day'],
+            ['2027-12-16', 'Day of Reconciliation'],
+            ['2027-12-25', 'Christmas Day'],
+            ['2027-12-26', 'Day of Goodwill'],
+        ];
+
+        foreach ($holidays as $h) {
+            CalendarEntry::firstOrCreate(
+                [
+                    'tenant_id'     => $tenantId,
+                    'type'          => CalendarEntry::TYPE_SADC_HOLIDAY,
+                    'country_code'  => 'ZA',
+                    'date'          => $h[0],
+                ],
+                [
+                    'title'       => $h[1],
+                    'description' => 'South African public holiday',
+                    'is_alert'    => false,
+                ]
+            );
+        }
+    }
+
+    /** Zimbabwe public holidays (SADC region). */
+    private function seedZimbabwePublicHolidays(int $tenantId): void
+    {
+        $holidays = [
+            ['2024-01-01', 'New Year\'s Day'],
+            ['2024-04-18', 'Independence Day'],
+            ['2024-03-29', 'Good Friday'],
+            ['2024-04-01', 'Easter Monday'],
+            ['2024-05-01', 'Workers\' Day'],
+            ['2024-05-25', 'Africa Day'],
+            ['2024-08-11', 'Heroes\' Day'],
+            ['2024-08-12', 'Defence Forces Day'],
+            ['2024-12-22', 'Unity Day'],
+            ['2024-12-25', 'Christmas Day'],
+            ['2024-12-26', 'Boxing Day'],
+            ['2025-01-01', 'New Year\'s Day'],
+            ['2025-04-18', 'Independence Day (Good Friday)'],
+            ['2025-04-21', 'Easter Monday'],
+            ['2025-05-01', 'Workers\' Day'],
+            ['2025-05-25', 'Africa Day'],
+            ['2025-08-11', 'Heroes\' Day'],
+            ['2025-08-12', 'Defence Forces Day'],
+            ['2025-12-22', 'Unity Day'],
+            ['2025-12-25', 'Christmas Day'],
+            ['2025-12-26', 'Boxing Day'],
+            ['2026-01-01', 'New Year\'s Day'],
+            ['2026-04-18', 'Independence Day'],
+            ['2026-04-03', 'Good Friday'],
+            ['2026-04-06', 'Easter Monday'],
+            ['2026-05-01', 'Workers\' Day'],
+            ['2026-05-25', 'Africa Day'],
+            ['2026-08-11', 'Heroes\' Day'],
+            ['2026-08-12', 'Defence Forces Day'],
+            ['2026-12-22', 'Unity Day'],
+            ['2026-12-25', 'Christmas Day'],
+            ['2026-12-26', 'Boxing Day'],
+            ['2027-01-01', 'New Year\'s Day'],
+            ['2027-04-18', 'Independence Day'],
+            ['2027-03-26', 'Good Friday'],
+            ['2027-03-29', 'Easter Monday'],
+            ['2027-05-01', 'Workers\' Day'],
+            ['2027-05-25', 'Africa Day'],
+            ['2027-08-11', 'Heroes\' Day'],
+            ['2027-08-12', 'Defence Forces Day'],
+            ['2027-12-22', 'Unity Day'],
+            ['2027-12-25', 'Christmas Day'],
+            ['2027-12-26', 'Boxing Day'],
+        ];
+
+        foreach ($holidays as $h) {
+            CalendarEntry::firstOrCreate(
+                [
+                    'tenant_id'     => $tenantId,
+                    'type'          => CalendarEntry::TYPE_SADC_HOLIDAY,
+                    'country_code'  => 'ZW',
+                    'date'          => $h[0],
+                ],
+                [
+                    'title'       => $h[1],
+                    'description' => 'Zimbabwe public holiday',
+                    'is_alert'    => false,
+                ]
+            );
+        }
+    }
+
+    /** UN International Days (with alerts). Seeded for current year + 3 years. */
     private function seedUnDays(int $tenantId): void
     {
         $unDays = [
@@ -149,7 +300,7 @@ class CalendarSeeder extends Seeder
         ];
 
         $year = (int) date('Y');
-        foreach ([$year, $year + 1] as $y) {
+        foreach ([$year, $year + 1, $year + 2, $year + 3] as $y) {
             foreach ($unDays as $d) {
                 $date = "{$y}-{$d[0]}";
                 CalendarEntry::firstOrCreate(

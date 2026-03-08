@@ -1,32 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
-class MyAssignedAssetsScreen extends StatefulWidget {
+class MyAssignedAssetsScreen extends ConsumerStatefulWidget {
   const MyAssignedAssetsScreen({super.key});
   @override
-  State<MyAssignedAssetsScreen> createState() => _MyAssignedAssetsScreenState();
+  ConsumerState<MyAssignedAssetsScreen> createState() => _MyAssignedAssetsScreenState();
 }
 
-class _MyAssignedAssetsScreenState extends State<MyAssignedAssetsScreen> {
+class _MyAssignedAssetsScreenState extends ConsumerState<MyAssignedAssetsScreen> {
   String _filter = 'All';
   final _filters = ['All', 'IT', 'Fleet', 'Furniture', 'Equipment'];
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _assets = [];
 
-  final _assets = [
-    {'name': 'MacBook Pro 16" M2', 'id': 'SADC-TT-2304', 'category': 'IT', 'status': 'Active', 'issued': '12 Oct 2023', 'value': 'N\$45,000', 'icon': Icons.laptop_mac, 'conditionOk': true},
-    {'name': 'Toyota Land Cruiser 300', 'id': 'SADC-FL-055', 'category': 'Fleet', 'status': 'Service Due', 'issued': '05 Jan 2024', 'value': 'N\$850,000', 'icon': Icons.directions_car, 'conditionOk': false},
-    {'name': 'Herman Miller Chair', 'id': 'SADC-FN-112', 'category': 'Furniture', 'status': 'Active', 'issued': '01 Mar 2022', 'value': 'N\$12,500', 'icon': Icons.chair, 'conditionOk': true},
-    {'name': 'iPhone 15 Pro', 'id': 'SADC-TT-3301', 'category': 'IT', 'status': 'Active', 'issued': '20 Feb 2024', 'value': 'N\$18,000', 'icon': Icons.smartphone, 'conditionOk': true},
-    {'name': 'Projector Epson EB-X', 'id': 'SADC-EQ-044', 'category': 'Equipment', 'status': 'Loan Out', 'issued': '10 Nov 2023', 'value': 'N\$9,800', 'icon': Icons.video_camera_back, 'conditionOk': false},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  List<Map<String, dynamic>> get _filtered => _filter == 'All'
-      ? List<Map<String, dynamic>>.from(_assets)
-      : _assets.where((a) => a['category'] == _filter).map((a) => Map<String, dynamic>.from(a)).toList();
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>('/assets', queryParameters: {'assigned_to': 'me', 'per_page': 100});
+      if (!mounted) return;
+      final data = res.data?['data'] as List<dynamic>?;
+      setState(() {
+        _assets = (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _error = 'Failed to load assets.'; _loading = false; });
+    }
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_filter == 'All') return List<Map<String, dynamic>>.from(_assets);
+    final cat = _filter.toLowerCase();
+    return _assets.where((a) => (a['category'] as String? ?? '').toLowerCase() == cat).toList();
+  }
 
   Color _statusColor(String s) {
     if (s == 'Active') return AppColors.success;
     if (s == 'Service Due') return AppColors.warning;
-    return AppColors.info;
+    if (s == 'Loan Out') return AppColors.info;
+    return AppColors.textSecondary;
   }
 
   @override
@@ -92,12 +116,25 @@ class _MyAssignedAssetsScreenState extends State<MyAssignedAssetsScreen> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemCount: filtered.length,
-              itemBuilder: (_, i) => _assetTile(filtered[i]),
-            ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_error!, style: const TextStyle(color: AppColors.danger)),
+                            const SizedBox(height: 8),
+                            TextButton(onPressed: _load, child: const Text('Retry')),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) => _assetTile(filtered[i]),
+                      ),
           ),
         ],
       ),
@@ -119,41 +156,93 @@ class _MyAssignedAssetsScreenState extends State<MyAssignedAssetsScreen> {
 
   Widget _divider() => Container(width: 1, height: 32, color: AppColors.border);
 
+  IconData _categoryIcon(String? cat) {
+    switch ((cat ?? '').toLowerCase()) {
+      case 'fleet': return Icons.directions_car;
+      case 'furniture': return Icons.chair;
+      case 'equipment': return Icons.video_camera_back;
+      default: return Icons.laptop_mac;
+    }
+  }
+
+  String _statusLabel(String? s) {
+    switch ((s ?? '').toLowerCase()) {
+      case 'service_due': return 'Service Due';
+      case 'loan_out': return 'Loan Out';
+      case 'retired': return 'Retired';
+      default: return 'Active';
+    }
+  }
+
+  String _categoryLabel(String? c) {
+    switch ((c ?? '').toLowerCase()) {
+      case 'it': return 'IT';
+      case 'fleet': return 'Fleet';
+      case 'furniture': return 'Furniture';
+      case 'equipment': return 'Equipment';
+      default: return c ?? '—';
+    }
+  }
+
   Widget _assetTile(Map<String, dynamic> asset) {
-    final statusColor = _statusColor(asset['status'] as String);
+    final status = asset['status'] as String? ?? 'active';
+    final statusColor = _statusColor(_statusLabel(status));
+    final issuedAt = asset['issued_at'] != null ? AppDateFormatter.short(asset['issued_at'] as String) : '—';
+    final value = asset['value'] != null ? 'N\$${asset['value']}' : '—';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-      child: Column(children: [
-        Row(children: [
-          Container(width: 48, height: 48,
-            decoration: BoxDecoration(color: AppColors.bgDark, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
-            child: Icon(asset['icon'] as IconData, color: AppColors.textSecondary, size: 24)),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(asset['name'] as String, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            Text('ID: ${asset['id']}  ·  ${asset['category']}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-          ])),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-            child: Text(asset['status'] as String, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700))),
-        ]),
-        const SizedBox(height: 12),
-        Row(children: [
-          Expanded(child: _infoChip(Icons.calendar_today_outlined, 'Issued', asset['issued'] as String)),
-          const SizedBox(width: 8),
-          Expanded(child: _infoChip(Icons.attach_money, 'Value', asset['value'] as String)),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {},
-            child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3))),
-              child: const Text('Report', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700))),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(color: AppColors.bgDark, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+                child: Icon(_categoryIcon(asset['category'] as String?), color: AppColors.textSecondary, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(asset['name'] as String? ?? '', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text('ID: ${asset['asset_code'] ?? asset['id']}  ·  ${_categoryLabel(asset['category'] as String?)}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                child: Text(_statusLabel(status), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700)),
+              ),
+            ],
           ),
-        ]),
-      ]),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _infoChip(Icons.calendar_today_outlined, 'Issued', issuedAt)),
+              const SizedBox(width: 8),
+              Expanded(child: _infoChip(Icons.attach_money, 'Value', value)),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: const Text('Report', style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
