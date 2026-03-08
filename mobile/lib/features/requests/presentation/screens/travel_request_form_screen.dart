@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_buttons.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  MODEL
@@ -89,10 +91,11 @@ class _TravelRequestFormScreenState
       _showSuccess();
     } catch (_) {
       if (!mounted) return;
+      final c = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit. Please try again.'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Failed to submit. Please try again.'),
+          backgroundColor: c.error,
         ),
       );
     } finally {
@@ -101,14 +104,18 @@ class _TravelRequestFormScreenState
   }
 
   void _showSuccess() {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final textTheme = theme.textTheme;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => Dialog(
-        backgroundColor: AppColors.bgSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kStitchCardRoundness)),
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.all(kStitchSpace24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -116,43 +123,32 @@ class _TravelRequestFormScreenState
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: c.primary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_outline,
-                    color: AppColors.primary, size: 40),
+                child: Icon(Icons.check_circle_outline,
+                    color: c.primary, size: 40),
               ),
-              const SizedBox(height: 20),
-              const Text('Request Submitted',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
+              const SizedBox(height: kStitchSpace20),
+              Text('Request Submitted',
+                  style: textTheme.titleLarge?.copyWith(
+                      color: c.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w800)),
-              const SizedBox(height: 8),
-              const Text(
+              const SizedBox(height: kStitchSpace8),
+              Text(
                 'Your travel requisition has been submitted and is pending approval.',
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: textTheme.bodySmall?.copyWith(
+                    color: c.onSurface.withValues(alpha: 0.7), fontSize: 13),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.bgDark,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Done',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                ),
+              const SizedBox(height: kStitchSpace24),
+              StitchPrimaryButton(
+                label: 'Done',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.safePopOrGoHome();
+                },
               ),
             ],
           ),
@@ -163,16 +159,17 @@ class _TravelRequestFormScreenState
 
   // ── Save Draft ────────────────────────────────────────────
   void _saveDraft() {
+    final c = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Draft saved'),
-        backgroundColor: AppColors.bgSurface,
+        backgroundColor: c.surface,
         behavior: SnackBarBehavior.floating,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(kStitchRoundness)),
         action: SnackBarAction(
           label: 'OK',
-          textColor: AppColors.primary,
+          textColor: c.primary,
           onPressed: () {},
         ),
       ),
@@ -190,7 +187,7 @@ class _TravelRequestFormScreenState
             _Header(
               step: _step,
               onBack: _step == 0
-                  ? () => Navigator.of(context).pop()
+                  ? () => context.safePopOrGoHome()
                   : () => setState(() => _step--),
               onSaveDraft: _saveDraft,
               stepLabels: _stepLabels,
@@ -301,7 +298,7 @@ class _Header extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: c.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(_kStitchRoundness),
+                      borderRadius: BorderRadius.circular(kStitchRoundness),
                       border: Border.all(
                           color: c.primary.withValues(alpha: 0.3)),
                     ),
@@ -353,8 +350,6 @@ class _Header extends StatelessWidget {
     );
   }
 }
-
-const double _kStitchRoundness = 8.0;
 
 class _StepCircle extends StatelessWidget {
   final int number;
@@ -454,66 +449,66 @@ class _HeroBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      margin: const EdgeInsets.fromLTRB(kStitchSpace16, kStitchSpace16, kStitchSpace16, 0),
       height: 110,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kStitchCardRoundness),
         gradient: const LinearGradient(
           colors: [Color(0xFF0C2218), Color(0xFF0D3526)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.outline),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kStitchCardRoundness),
         child: Stack(
           children: [
-            // Subtle grid pattern
             CustomPaint(
               size: Size.infinite,
-              painter: _WorldGridPainter(),
+              painter: _WorldGridPainter(primaryColor: c.primary),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(kStitchSpace16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: kStitchSpace8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.15),
+                      color: c.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3)),
+                          color: c.primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shield_outlined,
-                            size: 10, color: AppColors.primary),
+                        Icon(Icons.shield_outlined,
+                            size: 10, color: c.primary),
                         const SizedBox(width: 4),
                         Text('STEP $stepNumber  |  SADCPFNexus Secure',
-                            style: const TextStyle(
-                                color: AppColors.primary,
+                            style: TextStyle(
+                                color: c.primary,
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5)),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: kStitchSpace8),
                   Text(title,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary,
+                      style: TextStyle(
+                          color: c.onSurface,
                           fontSize: 18,
                           fontWeight: FontWeight.w800)),
                   const SizedBox(height: 2),
                   Text(subtitle,
-                      style: const TextStyle(
-                          color: AppColors.textSecondary, fontSize: 11)),
+                      style: TextStyle(
+                          color: c.onSurface.withValues(alpha: 0.7), fontSize: 11)),
                 ],
               ),
             ),
@@ -526,10 +521,13 @@ class _HeroBanner extends StatelessWidget {
 
 // Simple dotted grid to evoke a "world map" feel
 class _WorldGridPainter extends CustomPainter {
+  _WorldGridPainter({required this.primaryColor});
+  final Color primaryColor;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.06)
+      ..color = primaryColor.withValues(alpha: 0.06)
       ..strokeWidth = 1;
     const spacing = 18.0;
     for (double x = 0; x < size.width; x += spacing) {
@@ -538,9 +536,8 @@ class _WorldGridPainter extends CustomPainter {
     for (double y = 0; y < size.height; y += spacing) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
-    // Arc sweeps for "globe" feel
     final arcPaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.08)
+      ..color = primaryColor.withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     for (var r = 30.0; r < 120; r += 30) {
@@ -574,32 +571,33 @@ class _FormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
             text: label,
-            style: const TextStyle(
-                color: AppColors.textSecondary,
+            style: TextStyle(
+                color: c.onSurface.withValues(alpha: 0.7),
                 fontSize: 12,
                 fontWeight: FontWeight.w600),
-            children: const [
+            children: [
               TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.danger, fontSize: 12))
+                  style: TextStyle(color: c.error, fontSize: 12))
             ],
           ),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(10),
+            color: c.surface,
+            borderRadius: BorderRadius.circular(kStitchRoundness),
             border: Border.all(
               color: valid
-                  ? AppColors.primary.withValues(alpha: 0.5)
-                  : AppColors.border,
+                  ? c.primary.withValues(alpha: 0.5)
+                  : c.outline,
             ),
           ),
           child: Row(
@@ -609,14 +607,14 @@ class _FormField extends StatelessWidget {
                   controller: controller,
                   maxLines: maxLines,
                   keyboardType: keyboardType,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary,
+                  style: TextStyle(
+                      color: c.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.w500),
                   decoration: InputDecoration(
                     hintText: hint,
-                    hintStyle: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 13),
+                    hintStyle: TextStyle(
+                        color: c.onSurface.withValues(alpha: 0.6), fontSize: 13),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
@@ -625,10 +623,10 @@ class _FormField extends StatelessWidget {
                 ),
               ),
               if (valid)
-                const Padding(
-                  padding: EdgeInsets.only(right: 12),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
                   child: Icon(Icons.check_circle,
-                      size: 18, color: AppColors.primary),
+                      size: 18, color: c.primary),
                 ),
             ],
           ),
@@ -649,6 +647,7 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -663,14 +662,14 @@ class _DateField extends StatelessWidget {
         RichText(
           text: TextSpan(
             text: label,
-            style: const TextStyle(
-                color: AppColors.textSecondary,
+            style: TextStyle(
+                color: c.onSurface.withValues(alpha: 0.7),
                 fontSize: 12,
                 fontWeight: FontWeight.w600),
-            children: const [
+            children: [
               TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.danger, fontSize: 12))
+                  style: TextStyle(color: c.error, fontSize: 12))
             ],
           ),
         ),
@@ -680,12 +679,12 @@ class _DateField extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.bgSurface,
-              borderRadius: BorderRadius.circular(10),
+              color: c.surface,
+              borderRadius: BorderRadius.circular(kStitchRoundness),
               border: Border.all(
                 color: value != null
-                    ? AppColors.primary.withValues(alpha: 0.4)
-                    : AppColors.border,
+                    ? c.primary.withValues(alpha: 0.4)
+                    : c.outline,
               ),
             ),
             child: Row(
@@ -693,14 +692,14 @@ class _DateField extends StatelessWidget {
                 Icon(Icons.calendar_today_outlined,
                     size: 15,
                     color: value != null
-                        ? AppColors.primary
-                        : AppColors.textMuted),
+                        ? c.primary
+                        : c.onSurface.withValues(alpha: 0.6)),
                 const SizedBox(width: 8),
                 Text(display,
                     style: TextStyle(
                         color: value != null
-                            ? AppColors.textPrimary
-                            : AppColors.textMuted,
+                            ? c.onSurface
+                            : c.onSurface.withValues(alpha: 0.6),
                         fontSize: 13)),
               ],
             ),
@@ -728,20 +727,21 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
             text: label,
-            style: const TextStyle(
-                color: AppColors.textSecondary,
+            style: TextStyle(
+                color: c.onSurface.withValues(alpha: 0.7),
                 fontSize: 12,
                 fontWeight: FontWeight.w600),
-            children: const [
+            children: [
               TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.danger, fontSize: 12))
+                  style: TextStyle(color: c.error, fontSize: 12))
             ],
           ),
         ),
@@ -749,12 +749,12 @@ class _DropdownField extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(10),
+            color: c.surface,
+            borderRadius: BorderRadius.circular(kStitchRoundness),
             border: Border.all(
               color: value != null
-                  ? AppColors.primary.withValues(alpha: 0.4)
-                  : AppColors.border,
+                  ? c.primary.withValues(alpha: 0.4)
+                  : c.outline,
             ),
           ),
           child: DropdownButtonHideUnderline(
@@ -763,19 +763,19 @@ class _DropdownField extends StatelessWidget {
               hint: Row(
                 children: [
                   if (leadingIcon != null) ...[
-                    Icon(leadingIcon, size: 16, color: AppColors.textMuted),
+                    Icon(leadingIcon, size: 16, color: c.onSurface.withValues(alpha: 0.6)),
                     const SizedBox(width: 8),
                   ],
                   Text('Select $label',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 13)),
+                      style: TextStyle(
+                          color: c.onSurface.withValues(alpha: 0.6), fontSize: 13)),
                 ],
               ),
               isExpanded: true,
-              dropdownColor: AppColors.bgSurface,
-              iconEnabledColor: AppColors.textSecondary,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 13),
+              dropdownColor: c.surface,
+              iconEnabledColor: c.onSurface.withValues(alpha: 0.7),
+              style: TextStyle(
+                  color: c.onSurface, fontSize: 13),
               items: items
                   .map((e) => DropdownMenuItem(
                       value: e,
@@ -783,7 +783,7 @@ class _DropdownField extends StatelessWidget {
                         children: [
                           if (leadingIcon != null) ...[
                             Icon(leadingIcon,
-                                size: 16, color: AppColors.textMuted),
+                                size: 16, color: c.onSurface.withValues(alpha: 0.6)),
                             const SizedBox(width: 8),
                           ],
                           Text(e),
@@ -898,7 +898,7 @@ class _BottomBar extends StatelessWidget {
                     onCta != null ? c.primary : c.outline,
                 foregroundColor: c.onPrimary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(_kStitchRoundness),
+                  borderRadius: BorderRadius.circular(kStitchRoundness),
                 ),
                 elevation: 0,
               ),
@@ -975,17 +975,20 @@ class _Step1MissionState extends State<_Step1Mission> {
           now,
       firstDate: now,
       lastDate: now.add(const Duration(days: 730)),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: AppColors.primary,
-            onPrimary: AppColors.bgDark,
-            surface: AppColors.bgSurface,
-            onSurface: AppColors.textPrimary,
+      builder: (ctx, child) {
+        final scheme = Theme.of(ctx).colorScheme;
+        return Theme(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: scheme.primary,
+              onPrimary: scheme.onPrimary,
+              surface: scheme.surface,
+              onSurface: scheme.onSurface,
+            ),
           ),
-        ),
-        child: child!,
-      ),
+          child: child!,
+        );
+      },
     );
     if (picked == null) return;
     if (isStart) {
@@ -1003,6 +1006,7 @@ class _Step1MissionState extends State<_Step1Mission> {
   @override
   Widget build(BuildContext context) {
     final f = widget.form;
+    final c = Theme.of(context).colorScheme;
     return Column(
       children: [
         Expanded(
@@ -1077,9 +1081,9 @@ class _Step1MissionState extends State<_Step1Mission> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
                       child: Row(
                         children: [
@@ -1087,20 +1091,20 @@ class _Step1MissionState extends State<_Step1Mission> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: AppColors.gold.withValues(alpha: 0.12),
+                              color: c.secondary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.security,
-                                color: AppColors.gold, size: 20),
+                            child: Icon(Icons.security,
+                                color: c.secondary, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('High Security Protocol',
+                                Text('High Security Protocol',
                                     style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                        color: c.onSurface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600)),
                                 const SizedBox(height: 2),
@@ -1109,21 +1113,21 @@ class _Step1MissionState extends State<_Step1Mission> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary
+                                      color: c.primary
                                           .withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text('BUDGET COMPLIANT',
+                                    child: Text('BUDGET COMPLIANT',
                                         style: TextStyle(
-                                            color: AppColors.primary,
+                                            color: c.primary,
                                             fontSize: 9,
                                             fontWeight: FontWeight.w700,
                                             letterSpacing: 0.5)),
                                   )
                                 else
-                                  const Text('Requires additional sign-off',
+                                  Text('Requires additional sign-off',
                                       style: TextStyle(
-                                          color: AppColors.textMuted,
+                                          color: c.onSurface.withValues(alpha: 0.6),
                                           fontSize: 11)),
                               ],
                             ),
@@ -1134,11 +1138,11 @@ class _Step1MissionState extends State<_Step1Mission> {
                               f.highSecurityProtocol = v;
                               widget.onChanged();
                             },
-                            activeColor: AppColors.primary,
+                            activeColor: c.primary,
                             activeTrackColor:
-                                AppColors.primary.withValues(alpha: 0.3),
-                            inactiveThumbColor: AppColors.textMuted,
-                            inactiveTrackColor: AppColors.border,
+                                c.primary.withValues(alpha: 0.3),
+                            inactiveThumbColor: c.onSurface.withValues(alpha: 0.6),
+                            inactiveTrackColor: c.outline,
                           ),
                         ],
                       ),
@@ -1322,6 +1326,7 @@ class _BudgetComplianceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final isCompliant = estimated <= available;
     final ratio = (estimated / available).clamp(0.0, 1.0);
 
@@ -1329,13 +1334,13 @@ class _BudgetComplianceCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isCompliant
-            ? AppColors.primary.withValues(alpha: 0.06)
-            : AppColors.danger.withValues(alpha: 0.06),
+            ? c.primary.withValues(alpha: 0.06)
+            : c.error.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isCompliant
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : AppColors.danger.withValues(alpha: 0.25),
+              ? c.primary.withValues(alpha: 0.25)
+              : c.error.withValues(alpha: 0.25),
         ),
       ),
       child: Column(
@@ -1348,14 +1353,14 @@ class _BudgetComplianceCard extends StatelessWidget {
                     ? Icons.check_circle_outline
                     : Icons.warning_amber_outlined,
                 size: 16,
-                color: isCompliant ? AppColors.primary : AppColors.danger,
+                color: isCompliant ? c.primary : c.error,
               ),
               const SizedBox(width: 8),
               Text(
                 isCompliant ? 'Within Budget' : 'Exceeds Budget',
                 style: TextStyle(
                     color:
-                        isCompliant ? AppColors.primary : AppColors.danger,
+                        isCompliant ? c.primary : c.error,
                     fontSize: 12,
                     fontWeight: FontWeight.w700),
               ),
@@ -1366,17 +1371,17 @@ class _BudgetComplianceCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: ratio,
-              backgroundColor: AppColors.border,
+              backgroundColor: c.outline,
               valueColor: AlwaysStoppedAnimation(
-                  isCompliant ? AppColors.primary : AppColors.danger),
+                  isCompliant ? c.primary : c.error),
               minHeight: 6,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             '${(ratio * 100).toStringAsFixed(0)}% of available funds',
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 10),
+            style: TextStyle(
+                color: c.onSurface.withValues(alpha: 0.7), fontSize: 10),
           ),
         ],
       ),
@@ -1426,6 +1431,7 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
   @override
   Widget build(BuildContext context) {
     final f = widget.form;
+    final c = Theme.of(context).colorScheme;
 
     // Auto-compute nights
     if (f.startDate != null && f.endDate != null) {
@@ -1486,9 +1492,9 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.bgSurface,
+                          color: c.surface,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: c.outline),
                         ),
                         child: Row(
                           children: [
@@ -1497,23 +1503,23 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
                               height: 38,
                               decoration: BoxDecoration(
                                 color:
-                                    AppColors.info.withValues(alpha: 0.12),
+                                    c.primary.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.hotel,
-                                  color: AppColors.info, size: 20),
+                              child: Icon(Icons.hotel,
+                                  color: c.primary, size: 20),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Duration',
+                                Text('Duration',
                                     style: TextStyle(
-                                        color: AppColors.textSecondary,
+                                        color: c.onSurface.withValues(alpha: 0.7),
                                         fontSize: 11)),
                                 Text('${f.nights} nights',
-                                    style: const TextStyle(
-                                        color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                        color: c.onSurface,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800)),
                               ],
@@ -1526,9 +1532,9 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
                       child: Row(
                         children: [
@@ -1536,27 +1542,27 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: AppColors.warning.withValues(alpha: 0.12),
+                              color: c.secondary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(
+                            child: Icon(
                                 Icons.account_balance_wallet_outlined,
-                                color: AppColors.warning,
+                                color: c.secondary,
                                 size: 20),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Per Diem Allowance',
                                     style: TextStyle(
-                                        color: AppColors.textPrimary,
+                                        color: c.onSurface,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600)),
                                 Text('Daily subsistence allowance',
                                     style: TextStyle(
-                                        color: AppColors.textMuted,
+                                        color: c.onSurface.withValues(alpha: 0.6),
                                         fontSize: 11)),
                               ],
                             ),
@@ -1567,11 +1573,11 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
                               f.perDiemRequired = v;
                               widget.onChanged();
                             },
-                            activeColor: AppColors.primary,
+                            activeColor: c.primary,
                             activeTrackColor:
-                                AppColors.primary.withValues(alpha: 0.3),
-                            inactiveThumbColor: AppColors.textMuted,
-                            inactiveTrackColor: AppColors.border,
+                                c.primary.withValues(alpha: 0.3),
+                            inactiveThumbColor: c.onSurface.withValues(alpha: 0.6),
+                            inactiveTrackColor: c.outline,
                           ),
                         ],
                       ),
@@ -1615,6 +1621,7 @@ class _Step4Review extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -1636,15 +1643,15 @@ class _Step4Review extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.primary.withValues(alpha: 0.12),
-                      AppColors.primary.withValues(alpha: 0.04),
+                      c.primary.withValues(alpha: 0.12),
+                      c.primary.withValues(alpha: 0.04),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.25)),
+                      color: c.primary.withValues(alpha: 0.25)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1655,12 +1662,12 @@ class _Step4Review extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.15),
+                            color: c.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text('DRAFT · PENDING REVIEW',
+                          child: Text('DRAFT · PENDING REVIEW',
                               style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: c.primary,
                                   fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5)),
@@ -1672,25 +1679,25 @@ class _Step4Review extends StatelessWidget {
                       form.missionTitle.isEmpty
                           ? 'Untitled Mission'
                           : form.missionTitle,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary,
+                      style: TextStyle(
+                          color: c.onSurface,
                           fontSize: 18,
                           fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 4),
-                    Text(form.destination.isEmpty ? '—' : form.destination,
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 13)),
+                    Text(                    form.destination.isEmpty ? '—' : form.destination,
+                        style: TextStyle(
+                            color: c.onSurface.withValues(alpha: 0.7), fontSize: 13)),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today_outlined,
-                            size: 13, color: AppColors.textMuted),
+                        Icon(Icons.calendar_today_outlined,
+                            size: 13, color: c.onSurface.withValues(alpha: 0.6)),
                         const SizedBox(width: 6),
                         Text(
                           '${formatDate(form.startDate)}  →  ${formatDate(form.endDate)}',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 12),
+                          style: TextStyle(
+                              color: c.onSurface.withValues(alpha: 0.7), fontSize: 12),
                         ),
                       ],
                     ),
@@ -1747,22 +1754,22 @@ class _Step4Review extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
+                  color: c.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: c.outline),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.info_outline,
-                        size: 16, color: AppColors.textMuted),
-                    SizedBox(width: 10),
+                        size: 16, color: c.onSurface.withValues(alpha: 0.6)),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'By submitting, I confirm that all information is accurate and '
                         'this request complies with SADC PF financial regulations and policies.',
                         style: TextStyle(
-                            color: AppColors.textSecondary, fontSize: 11, height: 1.5),
+                            color: c.onSurface.withValues(alpha: 0.7), fontSize: 11, height: 1.5),
                       ),
                     ),
                   ],
@@ -1800,11 +1807,12 @@ class _ReviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bgSurface,
+        color: c.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: c.outline),
       ),
       child: Column(
         children: [
@@ -1813,18 +1821,18 @@ class _ReviewSection extends StatelessWidget {
             child: Row(
               children: [
                 Text(title,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
+                    style: TextStyle(
+                        color: c.onSurface,
                         fontSize: 13,
                         fontWeight: FontWeight.w700)),
                 const Spacer(),
                 GestureDetector(
                   onTap: onEdit,
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
                     child: Text('Edit',
                         style: TextStyle(
-                            color: AppColors.primary,
+                            color: c.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -1832,8 +1840,8 @@ class _ReviewSection extends StatelessWidget {
               ],
             ),
           ),
-          Container(height: 1, color: AppColors.border),
-          ...rows.map((r) => r.build()),
+          Container(height: 1, color: c.outline),
+          ...rows.map((r) => r.build(context)),
         ],
       ),
     );
@@ -1846,7 +1854,8 @@ class _ReviewRow {
 
   const _ReviewRow(this.label, this.value);
 
-  Widget build() {
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       child: Row(
@@ -1855,13 +1864,13 @@ class _ReviewRow {
           SizedBox(
             width: 130,
             child: Text(label,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12)),
+                style: TextStyle(
+                    color: c.onSurface.withValues(alpha: 0.7), fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    color: AppColors.textPrimary,
+                style: TextStyle(
+                    color: c.onSurface,
                     fontSize: 12,
                     fontWeight: FontWeight.w500)),
           ),

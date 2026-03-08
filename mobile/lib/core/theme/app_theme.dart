@@ -50,9 +50,23 @@ class AppColors {
   AppColors._();
 }
 
-/// ROUND_EIGHT from Stitch
-const double _kStitchRoundness = 8.0;
-const double _kCardRoundness = 12.0;
+/// ROUND_EIGHT from Stitch — use for buttons, inputs, chips.
+const double kStitchRoundness = 8.0;
+/// Card/surface radius (Stitch-aligned).
+const double kStitchCardRoundness = 12.0;
+
+// Internal use in this file
+const double _kStitchRoundness = kStitchRoundness;
+const double _kCardRoundness = kStitchCardRoundness;
+
+/// Stitch-aligned spacing scale (dp).
+const double kStitchSpace4 = 4.0;
+const double kStitchSpace8 = 8.0;
+const double kStitchSpace12 = 12.0;
+const double kStitchSpace16 = 16.0;
+const double kStitchSpace20 = 20.0;
+const double kStitchSpace24 = 24.0;
+const double kStitchSpace32 = 32.0;
 
 TextTheme _textTheme(Color primary, Color onSurface, Color secondary) {
   final base = GoogleFonts.publicSansTextTheme();

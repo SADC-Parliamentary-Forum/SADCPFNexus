@@ -8,6 +8,10 @@ For local testing, use the seeded demo accounts. See **[MOBILE_LOGIN.md](MOBILE_
 
 Example: **admin@sadcpf.org** / **Admin@2024!**
 
+## Design system
+
+The app follows the **Travel Requisition Form** Stitch project (`projects/12240393499596954021`): primary `#13EC80`, Public Sans, 8dp roundness for controls and 12dp for cards. Light/dark theme is configurable in Profile > Settings. See **[DESIGN.md](DESIGN.md)** for tokens and implementation notes.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

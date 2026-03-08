@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
-// Status config
-const _statusColors = {
-  'approved':   AppColors.success,
-  'submitted':  AppColors.warning,
-  'rejected':   AppColors.danger,
-  'draft':      AppColors.textMuted,
-  'liquidated': AppColors.info,
-  'cancelled':  AppColors.textMuted,
+// Status config — resolved from theme in build
+Map<String, Color> _statusColors(ColorScheme c) => {
+  'approved':   c.primary,
+  'submitted':  c.secondary,
+  'rejected':   c.error,
+  'draft':      c.onSurface.withValues(alpha: 0.6),
+  'liquidated': c.primary,
+  'cancelled':  c.onSurface.withValues(alpha: 0.6),
 };
 const _statusLabels = {
   'approved':   'Approved',
@@ -33,10 +32,23 @@ class _Tab {
   const _Tab({required this.label, required this.icon, required this.endpoint, required this.descKey, required this.color});
 }
 
-const _tabs = [
-  _Tab(label: 'Travel',  icon: Icons.flight_takeoff,         endpoint: '/travel/requests',  descKey: 'purpose', color: AppColors.primary),
-  _Tab(label: 'Leave',   icon: Icons.event_available,        endpoint: '/leave/requests',   descKey: 'reason',  color: AppColors.success),
-  _Tab(label: 'Imprest', icon: Icons.account_balance_wallet, endpoint: '/imprest/requests', descKey: 'purpose', color: AppColors.warning),
+// Tab config (endpoints/labels for initState; color from theme in build)
+class _TabConfig {
+  final String label;
+  final IconData icon;
+  final String endpoint;
+  final String descKey;
+  const _TabConfig(this.label, this.icon, this.endpoint, this.descKey);
+}
+const _tabConfigs = [
+  _TabConfig('Travel', Icons.flight_takeoff, '/travel/requests', 'purpose'),
+  _TabConfig('Leave', Icons.event_available, '/leave/requests', 'reason'),
+  _TabConfig('Imprest', Icons.account_balance_wallet, '/imprest/requests', 'purpose'),
+];
+List<_Tab> _tabs(ColorScheme c) => [
+  _Tab(label: _tabConfigs[0].label, icon: _tabConfigs[0].icon, endpoint: _tabConfigs[0].endpoint, descKey: _tabConfigs[0].descKey, color: c.primary),
+  _Tab(label: _tabConfigs[1].label, icon: _tabConfigs[1].icon, endpoint: _tabConfigs[1].endpoint, descKey: _tabConfigs[1].descKey, color: c.primary),
+  _Tab(label: _tabConfigs[2].label, icon: _tabConfigs[2].icon, endpoint: _tabConfigs[2].endpoint, descKey: _tabConfigs[2].descKey, color: c.secondary),
 ];
 
 class RequestsScreen extends ConsumerStatefulWidget {
@@ -55,7 +67,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: _tabConfigs.length, vsync: this);
     _load();
   }
 
@@ -70,9 +82,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
     final dio = ref.read(apiClientProvider).dio;
     final results = <List<Map<String, dynamic>>>[];
     String? firstError;
-    for (var i = 0; i < _tabs.length; i++) {
+    for (var i = 0; i < _tabConfigs.length; i++) {
       try {
-        final r = await dio.get<Map<String, dynamic>>(_tabs[i].endpoint);
+        final r = await dio.get<Map<String, dynamic>>(_tabConfigs[i].endpoint);
         final list = (r.data?['data'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? <Map<String, dynamic>>[];
         results.add(list);
       } catch (e) {
@@ -80,7 +92,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
         if (firstError == null) {
           firstError = e.toString().contains('SocketException') || e.toString().contains('Connection')
               ? 'Cannot reach server. Check your connection.'
-              : 'Failed to load ${_tabs[i].label.toLowerCase()} requests.';
+              : 'Failed to load ${_tabConfigs[i].label.toLowerCase()} requests.';
         }
       }
     }
@@ -175,7 +187,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                     unselectedLabelColor: c.onSurface.withValues(alpha: 0.7),
                     labelStyle: textTheme.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w700),
                     unselectedLabelStyle: textTheme.labelMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
-                    tabs: _tabs.asMap().entries.map((entry) {
+                    tabs: _tabs(c).asMap().entries.map((entry) {
                       final i = entry.key;
                       final t = entry.value;
                       final count = _data[i].length;
@@ -245,7 +257,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                     )
                   : TabBarView(
                       controller: _tabController,
-                      children: _tabs.asMap().entries.map((entry) {
+                      children: _tabs(c).asMap().entries.map((entry) {
                         final i = entry.key;
                         final t = entry.value;
                         final items = _data[i];
@@ -290,7 +302,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                     final ref = item['reference_number']?.toString() ?? '—';
                                     final desc = item[t.descKey]?.toString() ?? item['purpose']?.toString() ?? '—';
                                     final status = item['status']?.toString() ?? 'draft';
-                                    final statusColor = _statusColors[status] ?? AppColors.textMuted;
+                                    final statusColor = _statusColors(c)[status] ?? c.onSurface.withValues(alpha: 0.6);
                                     final statusLabel = _statusLabels[status] ?? status;
                                     final detailRoute = i == 0
                                         ? '/requests/travel/detail'
@@ -345,11 +357,11 @@ class _NewRequestFab extends StatelessWidget {
                   decoration: BoxDecoration(color: c.outline, borderRadius: BorderRadius.circular(2))),
                 Text('New Request', style: textTheme.titleMedium?.copyWith(fontSize: 16, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 16),
-                _fabOption(context, Icons.flight_takeoff, 'Travel Request', 'Mission, conference, workshop', AppColors.primary, onTravelTap),
+                _fabOption(context, Icons.flight_takeoff, 'Travel Request', 'Mission, conference, workshop', c.primary, onTravelTap),
                 const SizedBox(height: 10),
-                _fabOption(context, Icons.event_available, 'Leave Request', 'Annual, sick, study or LIL', AppColors.success, onLeaveTap),
+                _fabOption(context, Icons.event_available, 'Leave Request', 'Annual, sick, study or LIL', c.primary, onLeaveTap),
                 const SizedBox(height: 10),
-                _fabOption(context, Icons.account_balance_wallet, 'Imprest Request', 'Petty cash advance', AppColors.warning, onImprestTap),
+                _fabOption(context, Icons.account_balance_wallet, 'Imprest Request', 'Petty cash advance', c.secondary, onImprestTap),
                 const SizedBox(height: 8),
               ]),
             ),

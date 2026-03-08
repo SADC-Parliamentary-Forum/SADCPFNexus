@@ -8,3 +8,4 @@ web
 web
 mobile/windows/CMakeLists.txt
 .gitignore
+mobile/DESIGN.md
