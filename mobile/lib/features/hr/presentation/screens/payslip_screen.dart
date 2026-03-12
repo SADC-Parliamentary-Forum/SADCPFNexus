@@ -162,41 +162,33 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
                       child: ListView(
                         padding: const EdgeInsets.all(16),
                         children: [
-                          // Period selector (list of payslips)
+                          // Period selector: date dropdown
                           Container(
-                            padding: const EdgeInsets.all(4),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppColors.bgSurface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: Row(
-                              children: List.generate(_payslips.length, (i) {
-                                final p = _payslips[i] is Map ? _payslips[i] as Map<String, dynamic> : <String, dynamic>{};
-                                final label = _periodLabel(p);
-                                final isSelected = _selectedIndex == i;
-                                return Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => setState(() => _selectedIndex = i),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 8),
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? AppColors.primary : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(9),
-                                      ),
-                                      child: Text(
-                                        label.split(' ').first,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: isSelected ? Colors.white : AppColors.textMuted,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                value: _selectedIndex,
+                                isExpanded: true,
+                                dropdownColor: AppColors.bgSurface,
+                                icon: const Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary, size: 20),
+                                hint: const Text('Select period', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                                items: List.generate(_payslips.length, (i) {
+                                  final p = _payslips[i] is Map ? _payslips[i] as Map<String, dynamic> : <String, dynamic>{};
+                                  final label = _periodLabel(p);
+                                  return DropdownMenuItem<int>(
+                                    value: i,
+                                    child: Text(label, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                                  );
+                                }),
+                                onChanged: (int? value) {
+                                  if (value != null) setState(() => _selectedIndex = value);
+                                },
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),

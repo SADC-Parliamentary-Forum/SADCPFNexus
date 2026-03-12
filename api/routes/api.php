@@ -55,6 +55,9 @@ Route::prefix('v1')->group(function () {
             Route::get('roles', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'index']);
             Route::post('roles', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'store']);
             Route::put('roles/{role}/permissions', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'syncPermissions']);
+
+            // Payslips (list all uploaded for tenant)
+            Route::get('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'index']);
         });
 
         // Module routes will be added here per module
@@ -151,6 +154,11 @@ Route::prefix('v1')->group(function () {
                 ->only(['store', 'update', 'destroy'])->parameters(['budget-lines' => 'budgetLine']);
             Route::apiResource('{programme}/procurement',  \App\Http\Controllers\Api\V1\Programmes\ProgrammeProcurementItemController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['procurement' => 'procurementItem']);
+
+            Route::get('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'index']);
+            Route::post('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'store']);
+            Route::delete('{programme}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'destroy']);
+            Route::get('{programme}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'download']);
         });
 
         // Workplan

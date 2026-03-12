@@ -76,6 +76,11 @@ class Programme extends Model
         return $this->hasMany(ProgrammeProcurementItem::class);
     }
 
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
     public function isDraft(): bool { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }

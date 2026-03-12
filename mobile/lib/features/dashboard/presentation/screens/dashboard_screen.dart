@@ -6,6 +6,9 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
+// Stitch horizontal padding
+const _paddingH = 20.0;
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -105,6 +108,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: c.primary,
                       foregroundColor: c.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(kStitchRoundness),
+                      ),
                     ),
                   ),
                 ],
@@ -179,7 +185,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           width: 40, height: 40,
                           decoration: BoxDecoration(
                             color: c.surface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(kStitchCardRoundness),
                             border: Border.all(color: c.outline),
                           ),
                           child: Icon(Icons.notifications_outlined,
@@ -203,14 +209,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // Search bar with autocomplete (below app bar so it never covers left icons)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.fromLTRB(kStitchSpace16, kStitchSpace12, kStitchSpace16, 0),
                 child: _DashboardSearchBar(theme: theme),
               ),
             ),
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace20, _paddingH, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -225,7 +231,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace16, _paddingH, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -233,20 +239,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kStitchSpace12),
                     GridView.count(
                       crossAxisCount: 2,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
+                      mainAxisSpacing: kStitchSpace12,
+                      crossAxisSpacing: kStitchSpace12,
                       childAspectRatio: 1.55,
                       children: [
                         _KpiCard(
                           label: 'Pending Approvals',
                           value: '$pending',
                           icon: Icons.pending_actions,
-                          color: AppColors.warning,
+                          color: c.secondary,
                           badge: pending > 0 ? '+$pending new' : 'None',
                           badgeHighlight: pending > 0,
                         ),
@@ -254,7 +260,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Active Travels',
                           value: '$travels',
                           icon: Icons.flight_takeoff,
-                          color: AppColors.primary,
+                          color: c.primary,
                           badge: travels > 0 ? 'In progress' : 'None',
                           badgeHighlight: false,
                         ),
@@ -262,7 +268,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Leave Requests',
                           value: '$leaveReqs',
                           icon: Icons.event_available,
-                          color: AppColors.success,
+                          color: c.primary,
                           badge: 'Pending review',
                           badgeHighlight: false,
                         ),
@@ -270,7 +276,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           label: 'Open Requisitions',
                           value: '$requisitions',
                           icon: Icons.shopping_cart,
-                          color: AppColors.info,
+                          color: c.primary,
                           badge: 'Awaiting',
                           badgeHighlight: false,
                         ),
@@ -283,7 +289,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace24, _paddingH, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -291,7 +297,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kStitchSpace12),
                     Row(
                       children: [
                         _ActionButton(icon: Icons.flight_takeoff, label: 'Travel',
@@ -314,7 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace24, _paddingH, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -322,7 +328,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: textTheme.labelSmall?.copyWith(
                         fontSize: 10, fontWeight: FontWeight.w700,
                         color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kStitchSpace12),
                     GridView.count(
                       crossAxisCount: 3,
                       shrinkWrap: true,
@@ -332,43 +338,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       childAspectRatio: 0.95,
                       children: [
                         _ModuleTile(icon: Icons.account_balance_outlined, label: 'Finance',
-                          color: const Color(0xFF13EC80),
+                          color: c.primary,
                           onTap: () => context.push('/finance/command-center')),
                         _ModuleTile(icon: Icons.inventory_2_outlined, label: 'Procurement',
-                          color: const Color(0xFFD4AF37),
+                          color: c.secondary,
                           onTap: () => context.push('/procurement/form')),
                         _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
-                          color: const Color(0xFF3B82F6),
+                          color: c.primary,
                           onTap: () => context.push('/imprest/form')),
                         _ModuleTile(icon: Icons.savings_outlined, label: 'Salary Adv.',
-                          color: const Color(0xFF8B5CF6),
+                          color: c.primary,
                           onTap: () => context.push('/salary/advance/new')),
                         _ModuleTile(icon: Icons.people_outline, label: 'HR',
-                          color: const Color(0xFF10B981),
+                          color: c.primary,
                           onTap: () => context.push('/hr/dashboard')),
                         _ModuleTile(icon: Icons.devices_outlined, label: 'Assets',
-                          color: const Color(0xFFF59E0B),
+                          color: c.secondary,
                           onTap: () => context.push('/assets/inventory')),
                         _ModuleTile(icon: Icons.description_outlined, label: 'PIF',
-                          color: const Color(0xFFEF4444),
+                          color: c.error,
                           onTap: () => context.push('/pif/form')),
                         _ModuleTile(icon: Icons.gavel_outlined, label: 'Governance',
-                          color: const Color(0xFF06B6D4),
+                          color: c.primary,
                           onTap: () => context.push('/governance/meetings')),
                         _ModuleTile(icon: Icons.search, label: 'Search',
-                          color: const Color(0xFF64748B),
+                          color: c.onSurface.withValues(alpha: 0.7),
                           onTap: () => context.push('/search')),
                         _ModuleTile(icon: Icons.directions_car_outlined, label: 'Fleet',
-                          color: const Color(0xFF0EA5E9),
+                          color: c.primary,
                           onTap: () => context.push('/assets/fleet')),
                         _ModuleTile(icon: Icons.analytics_outlined, label: 'Analytics',
-                          color: const Color(0xFFEC4899),
+                          color: c.primary,
                           onTap: () => context.push('/analytics/global-summary')),
                         _ModuleTile(icon: Icons.dashboard_customize_outlined, label: 'Cockpit',
-                          color: const Color(0xFFD4AF37),
+                          color: c.secondary,
                           onTap: () => context.push('/dashboard/executive-cockpit')),
                         _ModuleTile(icon: Icons.calendar_month_outlined, label: 'Calendar',
-                          color: const Color(0xFF0D9488),
+                          color: c.primary,
                           onTap: () => context.push('/calendar')),
                       ],
                     ),
@@ -398,11 +404,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: kStitchSpace12),
                     Container(
                       decoration: BoxDecoration(
                         color: c.surface,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(kStitchCardRoundness),
                         border: Border.all(color: c.outline),
                       ),
                       child: Padding(
@@ -410,7 +416,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Column(
                           children: [
                             Icon(Icons.inbox_outlined, color: c.outline, size: 40),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: kStitchSpace12),
                             Text('No recent activity',
                               style: textTheme.titleSmall?.copyWith(
                                 fontSize: 13, fontWeight: FontWeight.w600)),
@@ -456,10 +462,10 @@ class _KpiCard extends StatelessWidget {
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(kStitchSpace12),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(kStitchCardRoundness),
         border: Border.all(color: c.outline),
       ),
       child: Stack(
@@ -478,8 +484,8 @@ class _KpiCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha:0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(kStitchRoundness),
                 ),
                 child: Icon(icon, color: color, size: 16),
               ),
@@ -499,9 +505,9 @@ class _KpiCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
                             color: badgeHighlight
-                              ? color.withValues(alpha:0.15)
-                              : c.surfaceContainerHighest.withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(6),
+                              ? color.withValues(alpha: 0.15)
+                              : c.outline.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(kStitchRoundness),
                           ),
                           child: Text(badge!,
                             style: TextStyle(
@@ -549,7 +555,7 @@ class _ModuleTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(kStitchCardRoundness),
           border: Border.all(color: c.outline),
         ),
         child: Column(
@@ -559,7 +565,7 @@ class _ModuleTile extends StatelessWidget {
               width: 40, height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(kStitchRoundness),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
@@ -603,7 +609,7 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: c.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(kStitchCardRoundness),
             border: Border.all(color: c.outline),
           ),
           child: Column(
@@ -676,15 +682,15 @@ class _DashboardSearchBar extends StatelessWidget {
             filled: true,
             fillColor: c.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(kStitchRoundness),
               borderSide: BorderSide(color: c.outline),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(kStitchRoundness),
               borderSide: BorderSide(color: c.outline),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(kStitchRoundness),
               borderSide: BorderSide(color: c.primary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -696,7 +702,7 @@ class _DashboardSearchBar extends StatelessWidget {
           alignment: Alignment.topLeft,
           child: Material(
             elevation: 4,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(kStitchRoundness),
             color: c.surface,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 200),
