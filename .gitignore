@@ -9,3 +9,5 @@ web
 mobile/windows/CMakeLists.txt
 .gitignore
 mobile/DESIGN.md
+REMAINING_WORK.md
+DOCKER.md

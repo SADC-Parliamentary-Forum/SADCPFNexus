@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Support\CorsHelper;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,6 +12,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('v1')->group(function () {
+
+    // Explicit OPTIONS catch-all for CORS preflight (ensures preflight always gets CORS headers)
+    Route::options('{path?}', function (Request $request) {
+        return response('', 204)->withHeaders(CorsHelper::headersForRequest($request));
+    })->where('path', '.*')->name('api.cors.preflight');
 
     // Public auth routes
     Route::prefix('auth')->group(function () {
@@ -32,10 +39,12 @@ Route::prefix('v1')->group(function () {
         // User Profile (Self-Service)
         Route::get('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'show']);
         Route::put('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'update']);
+        Route::put('profile/password', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updatePassword']);
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
 
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
+        Route::get('tenant-users', [\App\Http\Controllers\Api\V1\TenantUsersController::class, 'index']);
 
         // Admin - User Management
         Route::prefix('admin')->group(function () {
@@ -51,13 +60,26 @@ Route::prefix('v1')->group(function () {
             // Portfolios
             Route::apiResource('portfolios', \App\Http\Controllers\Api\V1\Admin\PortfoliosController::class);
 
-            // Roles & Permissions
+            // Roles & Permissions (CRUD + assign permissions; assign role to user is via PUT /users/{id})
             Route::get('roles', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'index']);
             Route::post('roles', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'store']);
+            Route::get('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'show']);
+            Route::put('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'update']);
+            Route::delete('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'destroy']);
             Route::put('roles/{role}/permissions', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'syncPermissions']);
 
-            // Payslips (list all uploaded for tenant)
+            // Payslips (list, show, download, upload, delete)
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'index']);
+            Route::post('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'store']);
+            Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'show']);
+            Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'download']);
+            Route::delete('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'destroy']);
+
+            // Timesheet projects (admin CRUD)
+            Route::get('timesheet-projects', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'index']);
+            Route::post('timesheet-projects', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'store']);
+            Route::put('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'update']);
+            Route::delete('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'destroy']);
         });
 
         // Module routes will be added here per module
@@ -136,6 +158,44 @@ Route::prefix('v1')->group(function () {
             Route::get('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'show']);
         });
 
+        // HR - Performance Tracker
+        Route::prefix('hr')->group(function () {
+            Route::get('performance/overview', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'overview']);
+            Route::get('performance/team', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'team']);
+            Route::get('performance', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'index']);
+            Route::post('performance', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'store']);
+            Route::get('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'show']);
+            Route::put('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'update']);
+
+            // HR Personal Files
+            Route::get('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'index']);
+            Route::post('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'store']);
+            Route::get('files/{hrPersonalFile}', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'show']);
+            Route::put('files/{hrPersonalFile}', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'update']);
+            Route::get('files/{hrPersonalFile}/timeline', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'timeline']);
+            Route::post('files/{hrPersonalFile}/timeline', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'addTimelineEvent']);
+            Route::get('files/{hrPersonalFile}/documents', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'documents']);
+            Route::post('files/{hrPersonalFile}/documents', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'uploadDocument']);
+            Route::delete('files/{hrPersonalFile}/documents/{document}', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'deleteDocument']);
+
+            // Performance Appraisal
+            Route::get('appraisal-cycles', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'cycles']);
+            Route::get('appraisals', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'index']);
+            Route::get('appraisals/{appraisal}', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'show']);
+            Route::post('appraisals', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'store']);
+            Route::put('appraisals/{appraisal}', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'update']);
+            Route::post('appraisals/{appraisal}/submit-self-assessment', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'submitSelfAssessment']);
+            Route::post('appraisals/{appraisal}/supervisor-review', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'supervisorReview']);
+            Route::post('appraisals/{appraisal}/hod-review', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'hodReview']);
+            Route::post('appraisals/{appraisal}/finalize', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'finalize']);
+            Route::post('appraisals/{appraisal}/acknowledge', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'acknowledge']);
+
+            // Conduct, Discipline & Recognition
+            Route::get('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'index']);
+            Route::get('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'show']);
+            Route::post('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'store']);
+        });
+
         // Programmes (PIF)
         Route::prefix('programmes')->group(function () {
             Route::apiResource('', \App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class)
@@ -157,13 +217,23 @@ Route::prefix('v1')->group(function () {
 
             Route::get('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'index']);
             Route::post('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'store']);
+            Route::put('{programme}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'update']);
             Route::delete('{programme}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'destroy']);
             Route::get('{programme}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'download']);
         });
 
         // Workplan
-        Route::apiResource('workplan/events', \App\Http\Controllers\Api\V1\Workplan\WorkplanController::class)
-            ->parameters(['events' => 'event']);
+        Route::prefix('workplan')->group(function () {
+            Route::get('meeting-types', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'index']);
+            Route::post('meeting-types', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'store']);
+            Route::put('meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'update']);
+            Route::delete('meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'destroy']);
+            Route::get('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'index']);
+            Route::post('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'store']);
+            Route::delete('events/{event}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'destroy']);
+            Route::get('events/{event}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'download']);
+            Route::apiResource('events', \App\Http\Controllers\Api\V1\Workplan\WorkplanController::class)->parameters(['events' => 'event']);
+        });
 
         // SADC PF Calendar, Public Holidays, UN Days
         Route::prefix('calendar')->group(function () {
@@ -175,11 +245,30 @@ Route::prefix('v1')->group(function () {
             Route::delete('entries/{calendarEntry}', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'destroy']);
         });
 
-        // Reports (summary for hub)
+        // Reports (summary + list endpoints for hub)
         Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
+        Route::get('reports/travel', [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
+        Route::get('reports/leave', [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
+        Route::get('reports/dsa', [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
+        Route::get('reports/assets', [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
 
-        // Assets (inventory, fleet - filter by category or assigned_to=me)
+        // Asset categories (CRUD; same auth as asset create)
+        Route::get('asset-categories', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'index']);
+        Route::post('asset-categories', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'store']);
+        Route::put('asset-categories/{assetCategory}', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'update']);
+        Route::delete('asset-categories/{assetCategory}', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'destroy']);
+
+        // Assets (inventory, fleet - filter by category or assigned_to=me; create gated by admin/manager)
         Route::get('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'index']);
+        Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
+        Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
+        Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
+        Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
+        Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);
+
+        // Asset requests (any auth user can request; managers see all)
+        Route::get('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'index']);
+        Route::post('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'store']);
 
         // Governance (meetings from workplan, resolutions)
         Route::get('governance/meetings', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'meetings']);

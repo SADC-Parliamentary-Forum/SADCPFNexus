@@ -51,12 +51,18 @@ docker-compose up -d web
 
 ## Demo logins (after seed)
 
-| Role   | Email             | Password     |
-|--------|-------------------|--------------|
-| Admin  | admin@sadcpf.org  | Admin@2024!  |
-| Staff  | staff@sadcpf.org  | Staff@2024!  |
-| HR     | hr@sadcpf.org     | HR@2024!     |
-| Finance| finance@sadcpf.org| Finance@2024!|
+Seed data is for **local/dev only** and must not be used in production.
+
+| Role              | Email              | Password      |
+|-------------------|--------------------|---------------|
+| System Admin      | admin@sadcpf.org   | Admin@2024!   |
+| Staff (Programme) | staff@sadcpf.org   | Staff@2024!   |
+| HR Manager        | hr@sadcpf.org      | HR@2024!      |
+| Finance Controller| finance@sadcpf.org | Finance@2024! |
+| Secretary General | sg@sadcpf.org      | SG@2024!      |
+| Maria (Staff)     | maria@sadcpf.org   | Maria@2024!   |
+| John (Procurement)| john@sadcpf.org    | John@2024!    |
+| Thabo (Governance)| thabo@sadcpf.org   | Thabo@2024!   |
 
 ## Configuration (no hardcoding)
 
@@ -64,11 +70,21 @@ docker-compose up -d web
 - **API**: Uses `api/.env` (or env vars passed by Compose): `APP_NAME`, `DB_*`, `REDIS_*`, etc.
 - **Mobile**: Build with `--dart-define=API_BASE_URL=https://your-api/api/v1` for production; default is Android emulator host.
 
-## Re-seed database
+## Seed database
+
+**Full reseed (drops all tables, re-runs migrations and seeders)** — use for a clean dev/demo state:
+
+```bash
+docker-compose exec php php artisan migrate:fresh --seed --force
+```
+
+**Seed only** (adds/updates demo data without dropping tables; requires existing schema):
 
 ```bash
 docker-compose exec php php artisan db:seed --force
 ```
+
+Seed order: tenant, roles/permissions, departments, lookups, users, workflow, demo data (travel, leave, imprest, procurement, salary advances, assets, asset requests, timesheets, payslips, governance, etc.), programmes (PIF), workplan, calendar.
 
 ## Run migrations only
 
@@ -185,3 +201,19 @@ This happens when Laravel sees an empty or invalid `APP_KEY`. The **php** contai
   cd api && php artisan key:generate
   ```
 - If you use config cache, clear it: `php artisan config:clear`.
+
+## CORS (web app blocked by browser)
+
+If the browser blocks requests from the web app (e.g. "No 'Access-Control-Allow-Origin' header is present" when calling the API from http://localhost:3000):
+
+1. **Clear config cache** so CORS config is read from `api/config/cors.php` and env:
+   ```bash
+   docker compose exec php php artisan config:clear
+   ```
+   (Or, when running the API locally: `cd api && php artisan config:clear`.)
+
+2. **Ensure the frontend origin is allowed.** In `api/.env` set:
+   ```bash
+   FRONTEND_URL=http://localhost:3000
+   ```
+   When using Docker, the **php** service also receives `FRONTEND_URL` from the root `.env` (default `http://localhost:3000`). If the web app runs on another origin (e.g. different port), add it to `FRONTEND_URL` (comma-separated) or to the allowed list in `api/config/cors.php`.

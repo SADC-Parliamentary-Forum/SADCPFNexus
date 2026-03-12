@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApprovalStep extends Model
 {
+    protected $table = 'approval_workflow_steps';
+
     protected $fillable = [
         'workflow_id', 'step_order', 'approver_type', 'role_id', 'user_id'
     ];

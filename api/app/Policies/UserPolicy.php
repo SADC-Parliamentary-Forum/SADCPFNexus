@@ -10,12 +10,12 @@ class UserPolicy
     use HandlesAuthorization;
 
     /**
-     * Only System Admins and HR Managers can list users.
+     * Any authenticated user can list users (e.g. for PIF responsible officer dropdown).
      * RLS ensures they only see users in their tenant.
      */
     public function viewAny(User $authUser): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'HR Manager', 'super-admin']);
+        return true;
     }
 
     /**
@@ -24,7 +24,7 @@ class UserPolicy
     public function view(User $authUser, User $user): bool
     {
         if ($authUser->id === $user->id) return true;
-        return $authUser->hasAnyRole(['System Admin', 'HR Manager', 'super-admin'])
+        return ($authUser->isSystemAdmin() || $authUser->hasAnyRole(['HR Manager']))
             && $authUser->tenant_id === $user->tenant_id;
     }
 
@@ -33,7 +33,7 @@ class UserPolicy
      */
     public function create(User $authUser): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'super-admin']);
+        return $authUser->isSystemAdmin();
     }
 
     /**
@@ -42,8 +42,7 @@ class UserPolicy
     public function update(User $authUser, User $user): bool
     {
         if ($authUser->id === $user->id) return true;
-        return $authUser->hasAnyRole(['System Admin', 'super-admin'])
-            && $authUser->tenant_id === $user->tenant_id;
+        return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 
     /**
@@ -52,8 +51,7 @@ class UserPolicy
     public function delete(User $authUser, User $user): bool
     {
         if ($authUser->id === $user->id) return false; // Cannot deactivate self
-        return $authUser->hasAnyRole(['System Admin', 'super-admin'])
-            && $authUser->tenant_id === $user->tenant_id;
+        return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 
     /**
@@ -61,7 +59,6 @@ class UserPolicy
      */
     public function assignRole(User $authUser, User $user): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'super-admin'])
-            && $authUser->tenant_id === $user->tenant_id;
+        return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 }

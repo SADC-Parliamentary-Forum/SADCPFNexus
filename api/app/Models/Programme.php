@@ -15,7 +15,7 @@ class Programme extends Model
         'background', 'overall_objective', 'specific_objectives', 'expected_outputs',
         'target_beneficiaries', 'gender_considerations',
         'primary_currency', 'base_currency', 'exchange_rate', 'contingency_pct', 'total_budget',
-        'funding_source', 'responsible_officer', 'start_date', 'end_date',
+        'funding_source', 'responsible_officer', 'responsible_officer_id', 'start_date', 'end_date',
         'travel_required', 'delegates_count', 'member_states', 'travel_services',
         'procurement_required', 'media_options',
         'submitted_at', 'approved_at', 'rejection_reason',
@@ -49,6 +49,11 @@ class Programme extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function responsibleOfficer()
+    {
+        return $this->belongsTo(User::class, 'responsible_officer_id');
     }
 
     public function activities()

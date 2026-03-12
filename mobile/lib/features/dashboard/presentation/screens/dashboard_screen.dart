@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/auth/feature_access.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
@@ -21,6 +22,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Map<String, dynamic>? _stats;
   bool _loading = true;
   String? _error;
+  List<String> _permissions = [];
+  List<String> _roles = [];
 
   @override
   void initState() {
@@ -35,11 +38,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final repo = ref.read(authRepositoryProvider);
       final api = ref.read(apiClientProvider);
       final name = await repo.getStoredUserName();
+      final perms = await repo.getStoredPermissions();
+      final roles = await repo.getStoredRoles();
       final response = await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
       if (!mounted) return;
       setState(() {
         _userName = name ?? 'User';
         _stats = response.data;
+        _permissions = perms;
+        _roles = roles;
         _loading = false;
       });
     } catch (e) {
@@ -300,17 +307,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     const SizedBox(height: kStitchSpace12),
                     Row(
                       children: [
-                        _ActionButton(icon: Icons.flight_takeoff, label: 'Travel',
-                          onTap: () => context.push('/requests/travel/new')),
-                        const SizedBox(width: 10),
-                        _ActionButton(icon: Icons.event_available, label: 'Leave',
-                          onTap: () => context.go('/requests')),
-                        const SizedBox(width: 10),
-                        _ActionButton(icon: Icons.account_balance_wallet, label: 'Finance',
-                          onTap: () => context.push('/finance/command-center')),
-                        const SizedBox(width: 10),
-                        _ActionButton(icon: Icons.inventory_2_outlined, label: 'Procure',
-                          onTap: () => context.push('/procurement/form')),
+                        if (canAccessFeature(_permissions, _roles, '/requests/travel/new'))
+                          _ActionButton(icon: Icons.flight_takeoff, label: 'Travel',
+                            onTap: () => context.push('/requests/travel/new')),
+                        if (canAccessFeature(_permissions, _roles, '/requests')) ...[
+                          const SizedBox(width: 10),
+                          _ActionButton(icon: Icons.event_available, label: 'Leave',
+                            onTap: () => context.go('/requests')),
+                        ],
+                        if (canAccessFeature(_permissions, _roles, '/finance/command-center')) ...[
+                          const SizedBox(width: 10),
+                          _ActionButton(icon: Icons.account_balance_wallet, label: 'Finance',
+                            onTap: () => context.push('/finance/command-center')),
+                        ],
+                        if (canAccessFeature(_permissions, _roles, '/procurement/form')) ...[
+                          const SizedBox(width: 10),
+                          _ActionButton(icon: Icons.inventory_2_outlined, label: 'Procure',
+                            onTap: () => context.push('/procurement/form')),
+                        ],
                       ],
                     ),
                   ],
@@ -337,45 +351,58 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       crossAxisSpacing: 10,
                       childAspectRatio: 0.95,
                       children: [
-                        _ModuleTile(icon: Icons.account_balance_outlined, label: 'Finance',
-                          color: c.primary,
-                          onTap: () => context.push('/finance/command-center')),
-                        _ModuleTile(icon: Icons.inventory_2_outlined, label: 'Procurement',
-                          color: c.secondary,
-                          onTap: () => context.push('/procurement/form')),
-                        _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
-                          color: c.primary,
-                          onTap: () => context.push('/imprest/form')),
-                        _ModuleTile(icon: Icons.savings_outlined, label: 'Salary Adv.',
-                          color: c.primary,
-                          onTap: () => context.push('/salary/advance/new')),
-                        _ModuleTile(icon: Icons.people_outline, label: 'HR',
-                          color: c.primary,
-                          onTap: () => context.push('/hr/dashboard')),
-                        _ModuleTile(icon: Icons.devices_outlined, label: 'Assets',
-                          color: c.secondary,
-                          onTap: () => context.push('/assets/inventory')),
-                        _ModuleTile(icon: Icons.description_outlined, label: 'PIF',
-                          color: c.error,
-                          onTap: () => context.push('/pif/form')),
-                        _ModuleTile(icon: Icons.gavel_outlined, label: 'Governance',
-                          color: c.primary,
-                          onTap: () => context.push('/governance/meetings')),
-                        _ModuleTile(icon: Icons.search, label: 'Search',
-                          color: c.onSurface.withValues(alpha: 0.7),
-                          onTap: () => context.push('/search')),
-                        _ModuleTile(icon: Icons.directions_car_outlined, label: 'Fleet',
-                          color: c.primary,
-                          onTap: () => context.push('/assets/fleet')),
-                        _ModuleTile(icon: Icons.analytics_outlined, label: 'Analytics',
-                          color: c.primary,
-                          onTap: () => context.push('/analytics/global-summary')),
-                        _ModuleTile(icon: Icons.dashboard_customize_outlined, label: 'Cockpit',
-                          color: c.secondary,
-                          onTap: () => context.push('/dashboard/executive-cockpit')),
-                        _ModuleTile(icon: Icons.calendar_month_outlined, label: 'Calendar',
-                          color: c.primary,
-                          onTap: () => context.push('/calendar')),
+                        if (canAccessFeature(_permissions, _roles, '/finance/command-center'))
+                          _ModuleTile(icon: Icons.account_balance_outlined, label: 'Finance',
+                            color: c.primary,
+                            onTap: () => context.push('/finance/command-center')),
+                        if (canAccessFeature(_permissions, _roles, '/procurement/form'))
+                          _ModuleTile(icon: Icons.inventory_2_outlined, label: 'Procurement',
+                            color: c.secondary,
+                            onTap: () => context.push('/procurement/form')),
+                        if (canAccessFeature(_permissions, _roles, '/imprest/form'))
+                          _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
+                            color: c.primary,
+                            onTap: () => context.push('/imprest/form')),
+                        if (canAccessFeature(_permissions, _roles, '/salary/advance/new'))
+                          _ModuleTile(icon: Icons.savings_outlined, label: 'Salary Adv.',
+                            color: c.primary,
+                            onTap: () => context.push('/salary/advance/new')),
+                        if (canAccessFeature(_permissions, _roles, '/hr/dashboard'))
+                          _ModuleTile(icon: Icons.people_outline, label: 'HR',
+                            color: c.primary,
+                            onTap: () => context.push('/hr/dashboard')),
+                        if (canAccessFeature(_permissions, _roles, '/assets/inventory'))
+                          _ModuleTile(icon: Icons.devices_outlined, label: 'Assets',
+                            color: c.secondary,
+                            onTap: () => context.push('/assets/inventory')),
+                        if (canAccessFeature(_permissions, _roles, '/pif/form'))
+                          _ModuleTile(icon: Icons.description_outlined, label: 'PIF',
+                            color: c.error,
+                            onTap: () => context.push('/pif/form')),
+                        if (canAccessFeature(_permissions, _roles, '/governance/meetings'))
+                          _ModuleTile(icon: Icons.gavel_outlined, label: 'Governance',
+                            color: c.primary,
+                            onTap: () => context.push('/governance/meetings')),
+                        if (canAccessFeature(_permissions, _roles, '/search'))
+                          _ModuleTile(icon: Icons.search, label: 'Search',
+                            color: c.onSurface.withValues(alpha: 0.7),
+                            onTap: () => context.push('/search')),
+                        if (canAccessFeature(_permissions, _roles, '/assets/fleet'))
+                          _ModuleTile(icon: Icons.directions_car_outlined, label: 'Fleet',
+                            color: c.primary,
+                            onTap: () => context.push('/assets/fleet')),
+                        if (canAccessFeature(_permissions, _roles, '/analytics/global-summary'))
+                          _ModuleTile(icon: Icons.analytics_outlined, label: 'Analytics',
+                            color: c.primary,
+                            onTap: () => context.push('/analytics/global-summary')),
+                        if (canAccessFeature(_permissions, _roles, '/dashboard/executive-cockpit'))
+                          _ModuleTile(icon: Icons.dashboard_customize_outlined, label: 'Cockpit',
+                            color: c.secondary,
+                            onTap: () => context.push('/dashboard/executive-cockpit')),
+                        if (canAccessFeature(_permissions, _roles, '/calendar'))
+                          _ModuleTile(icon: Icons.calendar_month_outlined, label: 'Calendar',
+                            color: c.primary,
+                            onTap: () => context.push('/calendar')),
                       ],
                     ),
                   ],

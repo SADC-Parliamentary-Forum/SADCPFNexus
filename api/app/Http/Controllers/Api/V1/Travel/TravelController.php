@@ -69,7 +69,7 @@ class TravelController extends Controller
 
     public function destroy(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        $this->travelService->delete($travelRequest);
+        $this->travelService->delete($travelRequest, $request->user());
         return response()->json(['message' => 'Travel request deleted.']);
     }
 

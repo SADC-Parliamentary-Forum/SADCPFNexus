@@ -90,15 +90,40 @@ class WorkflowService
     }
 
     /**
+     * Get the requester/creator of the approvable entity (for workflow steps and self-approval check).
+     */
+    protected function getRequesterFromApprovable(ApprovalRequest $request): ?User
+    {
+        $entity = $request->approvable;
+        if (!$entity) {
+            return null;
+        }
+        if (method_exists($entity, 'requester') && $entity->requester) {
+            return $entity->requester;
+        }
+        if (method_exists($entity, 'creator') && $entity->creator) {
+            return $entity->creator;
+        }
+        $id = $entity->requester_id ?? $entity->created_by ?? null;
+
+        return $id ? User::find($id) : null;
+    }
+
+    /**
      * Get the current approver(s) for a request.
      */
     public function getCurrentApprovers(ApprovalRequest $request): array
     {
         $step = $request->workflow->steps->get($request->current_step_index);
-        
-        if (!$step) return [];
 
-        $requester = $request->approvable->requester; // Assuming entities have a requester relationship
+        if (!$step) {
+            return [];
+        }
+
+        $requester = $this->getRequesterFromApprovable($request);
+        if (!$requester) {
+            return [];
+        }
 
         switch ($step->approver_type) {
             case 'supervisor':
@@ -127,15 +152,27 @@ class WorkflowService
         $approverIds = collect($approvers)->pluck('id')->toArray();
 
         // System Admin bypass or specific check
-        if (!$actor->hasRole('System Admin') && !in_array($actor->id, $approverIds)) {
+        if (!$actor->isSystemAdmin() && !in_array($actor->id, $approverIds)) {
             throw ValidationException::withMessages(['approval' => 'You are not authorized to approve this request at this stage.']);
+        }
+
+        // No self-approval: requester cannot approve their own request, except Secretary General at final step (after workflow has been followed).
+        $requester = $this->getRequesterFromApprovable($request);
+        if ($requester && (int) $requester->id === (int) $actor->id) {
+            $isSecretaryGeneralAtFinalStep = $actor->isSecretaryGeneral()
+                && $request->current_step_index >= 1;
+            if (!$isSecretaryGeneralAtFinalStep) {
+                throw ValidationException::withMessages([
+                    'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+                ]);
+            }
         }
     }
 
     protected function finalizeApprovable(ApprovalRequest $request, string $status, User $actor, ?string $reason = null): void
     {
         $entity = $request->approvable;
-        
+
         if ($status === 'approved') {
             // This is a generic way to call methods on the model
             if (method_exists($entity, 'onWorkflowApproved')) {
@@ -160,7 +197,7 @@ class WorkflowService
         if (!$user->department_id) return null;
 
         $dept = Department::with('supervisor')->find($user->department_id);
-        
+
         // If current dept has no supervisor, look up the chain
         while ($dept && !$dept->supervisor_id) {
             if (!$dept->parent_id) break;
@@ -176,7 +213,7 @@ class WorkflowService
     protected function getNthLevelManager(User $user, int $level): array
     {
         $manager = $this->getManagerForUser($user);
-        
+
         for ($i = 1; $i < $level; $i++) {
             if (!$manager) break;
             $manager = $this->getManagerForUser($manager);

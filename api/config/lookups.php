@@ -23,4 +23,30 @@ return [
     ],
 
     'timesheet_projects' => array_filter(array_map('trim', explode('|', env('TIMESHEET_PROJECTS', 'Project A|Project B|Project C|Administration|Other')))),
+
+    'travel_countries' => [
+        'Angola', 'Botswana', 'Comoros', 'Democratic Republic of Congo',
+        'Eswatini', 'Lesotho', 'Madagascar', 'Malawi', 'Mauritius',
+        'Mozambique', 'Namibia', 'Seychelles', 'South Africa',
+        'Tanzania', 'Zambia', 'Zimbabwe',
+    ],
+
+    'travel_cities' => [
+        'Angola' => ['Luanda', 'Lubango', 'Benguela'],
+        'Botswana' => ['Gaborone', 'Francistown', 'Maun'],
+        'Comoros' => ['Moroni', 'Mutsamudu'],
+        'Democratic Republic of Congo' => ['Kinshasa', 'Lubumbashi', 'Goma'],
+        'Eswatini' => ['Mbabane', 'Manzini', 'Lobamba'],
+        'Lesotho' => ['Maseru', 'Teyateyaneng', 'Mafeteng'],
+        'Madagascar' => ['Antananarivo', 'Toamasina', 'Antsirabe'],
+        'Malawi' => ['Lilongwe', 'Blantyre', 'Mzuzu'],
+        'Mauritius' => ['Port Louis', 'Curepipe', 'Vacoas-Phoenix'],
+        'Mozambique' => ['Maputo', 'Beira', 'Nampula'],
+        'Namibia' => ['Windhoek', 'Walvis Bay', 'Rundu'],
+        'Seychelles' => ['Victoria', 'Anse Boileau'],
+        'South Africa' => ['Pretoria', 'Johannesburg', 'Cape Town', 'Durban', 'Bloemfontein'],
+        'Tanzania' => ['Dar es Salaam', 'Dodoma', 'Arusha', 'Mwanza'],
+        'Zambia' => ['Lusaka', 'Ndola', 'Kitwe', 'Livingstone'],
+        'Zimbabwe' => ['Harare', 'Bulawayo', 'Mutare', 'Gweru'],
+    ],
 ];

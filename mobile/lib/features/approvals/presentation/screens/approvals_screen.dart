@@ -129,7 +129,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           border: Border.all(color: AppColors.warning.withValues(alpha:0.3)),
                         ),
                         child: Text('${_submitted.length} pending',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                             color: AppColors.warning)),
                       ),
                     Container(
@@ -268,7 +268,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: c.outline),
                         ),
-                        child: Icon(Icons.check_circle_outline,
+                        child: const Icon(Icons.check_circle_outline,
                           color: AppColors.success, size: 36),
                       ),
                       const SizedBox(height: 16),

@@ -14,10 +14,25 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_HOTEL_QUOTE = 'hotel_quote';
     public const DOCUMENT_TYPE_TRANSPORT_QUOTE = 'transport_quote';
     public const DOCUMENT_TYPE_OTHER = 'other';
+    public const DOCUMENT_TYPE_WORKPLAN = 'workplan_document';
 
     public const DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_CONCEPT_NOTE,
         self::DOCUMENT_TYPE_MEMO,
+        self::DOCUMENT_TYPE_HOTEL_QUOTE,
+        self::DOCUMENT_TYPE_TRANSPORT_QUOTE,
+        self::DOCUMENT_TYPE_OTHER,
+        self::DOCUMENT_TYPE_WORKPLAN,
+    ];
+
+    /** Document types valid for workplan event attachments */
+    public const WORKPLAN_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_WORKPLAN,
+        self::DOCUMENT_TYPE_OTHER,
+    ];
+
+    /** Document types that can be marked as chosen quote with a reason */
+    public const QUOTE_DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_HOTEL_QUOTE,
         self::DOCUMENT_TYPE_TRANSPORT_QUOTE,
         self::DOCUMENT_TYPE_OTHER,
@@ -33,13 +48,21 @@ class Attachment extends Model
         'storage_path',
         'mime_type',
         'size_bytes',
+        'is_chosen_quote',
+        'selection_reason',
     ];
 
     protected function casts(): array
     {
         return [
-            'size_bytes' => 'integer',
+            'size_bytes'       => 'integer',
+            'is_chosen_quote'  => 'boolean',
         ];
+    }
+
+    public function isQuoteType(): bool
+    {
+        return \in_array($this->document_type, self::QUOTE_DOCUMENT_TYPES, true);
     }
 
     public function attachable(): MorphTo

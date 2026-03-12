@@ -37,7 +37,7 @@ return new class extends Migration
 
         // Supporting workflow tables (no tenant_id, linked via parent)
         $supportingWorkflows = [
-            'approval_steps',
+            'approval_workflow_steps',
             'approval_histories',
         ];
 

@@ -148,9 +148,9 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
+                          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
                           const SizedBox(height: 12),
-                          Text('No payslips yet', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                          const Text('No payslips yet', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
                           const SizedBox(height: 8),
                           TextButton(onPressed: _load, child: const Text('Refresh')),
                         ],

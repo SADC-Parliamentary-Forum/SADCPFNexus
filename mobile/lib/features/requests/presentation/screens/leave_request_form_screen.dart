@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
 
@@ -18,8 +23,24 @@ String _leaveTypeToApi(String label) {
   return map[label] ?? 'annual';
 }
 
+String _apiToLeaveType(String api) {
+  const map = {
+    'annual': 'Annual Leave',
+    'sick': 'Sick Leave',
+    'maternity': 'Maternity Leave',
+    'paternity': 'Paternity Leave',
+    'special': 'Study Leave',
+    'lil': 'Leave in Lieu (LIL)',
+  };
+  return map[api] ?? 'Annual Leave';
+}
+
 class LeaveRequestFormScreen extends ConsumerStatefulWidget {
-  const LeaveRequestFormScreen({super.key});
+  const LeaveRequestFormScreen({super.key, this.initialDraft, this.draftId});
+
+  final Map<String, dynamic>? initialDraft;
+  final int? draftId;
+
   @override
   ConsumerState<LeaveRequestFormScreen> createState() => _LeaveRequestFormScreenState();
 }
@@ -43,6 +64,23 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
   final Set<String> _selectedAccrualIds = {};
 
   bool get _isLil => _leaveType == 'Leave in Lieu (LIL)';
+
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialDraft();
+  }
+
+  void _applyInitialDraft() {
+    final d = widget.initialDraft;
+    if (d == null) return;
+    _leaveType = _apiToLeaveType(d['leave_type']?.toString() ?? 'annual');
+    if (d['start_date'] != null) _startDate = DateTime.tryParse(d['start_date'].toString());
+    if (d['end_date'] != null) _endDate = DateTime.tryParse(d['end_date'].toString());
+    if (d['reason'] != null) _reasonCtrl.text = d['reason'].toString();
+    final lil = d['lil_linkings'] as List<dynamic>?;
+    if (lil != null) for (final e in lil) { final map = e as Map<String, dynamic>?; if (map != null) { final id = map['source_id']?.toString(); if (id != null) _selectedAccrualIds.add(id); } }
+  }
 
   static const _leaveTypes = [
     {'label': 'Annual Leave', 'icon': Icons.beach_access_outlined, 'color': Color(0xFF059669)},
@@ -146,7 +184,7 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
         ),
         title: const Text('Leave Request', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
         actions: [
-          TextButton(onPressed: () {}, child: const Text('Save Draft', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600))),
+          TextButton(onPressed: _saveDraft, child: const Text('Save Draft', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600))),
         ],
       ),
       body: Column(children: [
@@ -441,35 +479,78 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
     ],
   );
 
+  Map<String, dynamic> _buildPayload() {
+    if (_startDate == null || _endDate == null) return {};
+    final payload = <String, dynamic>{
+      'leave_type': _leaveTypeToApi(_leaveType),
+      'start_date': _startDate!.toIso8601String().split('T').first,
+      'end_date': _endDate!.toIso8601String().split('T').first,
+      'reason': _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
+    };
+    if (_isLil && _selectedAccrualIds.isNotEmpty) {
+      final selectedAccruals = _lilAccruals.where((a) => _selectedAccrualIds.contains(a['id']?.toString()));
+      payload['lil_linkings'] = selectedAccruals.map((a) => {
+        'source_id': a['id']?.toString(),
+        'accrual_code': a['code']?.toString() ?? '',
+        'accrual_description': a['description']?.toString() ?? a['code']?.toString() ?? '',
+        'hours': (a['hours'] is num) ? (a['hours'] as num).toDouble() : 0.0,
+        'accrual_date': a['date']?.toString() ?? '',
+        'approved_by_name': a['approved_by']?.toString(),
+      }).toList();
+    }
+    return payload;
+  }
+
+  Future<void> _saveDraft() async {
+    final payload = _buildPayload();
+    if (payload.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select start and end dates to save draft.'), backgroundColor: AppColors.warning),
+      );
+      return;
+    }
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final title = 'Leave: $_leaveType';
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+        type: 'leave',
+        title: title,
+        payload: jsonEncode(payload),
+        createdAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Draft saved. Sync from Offline Drafts when ready.'), backgroundColor: AppColors.success),
+      );
+      context.pop();
+      context.push('/offline/drafts');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save draft.'), backgroundColor: AppColors.danger),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (_startDate == null || _endDate == null) return;
     if (_isLil && _selectedAccrualIds.isEmpty) return;
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final payload = <String, dynamic>{
-        'leave_type': _leaveTypeToApi(_leaveType),
-        'start_date': _startDate!.toIso8601String().split('T').first,
-        'end_date': _endDate!.toIso8601String().split('T').first,
-        'reason': _reasonCtrl.text.trim().isEmpty ? null : _reasonCtrl.text.trim(),
-      };
-      if (_isLil && _selectedAccrualIds.isNotEmpty) {
-        final selectedAccruals = _lilAccruals.where((a) => _selectedAccrualIds.contains(a['id']?.toString()));
-        payload['lil_linkings'] = selectedAccruals.map((a) => {
-          'source_id': a['id']?.toString(),
-          'accrual_code': a['code']?.toString() ?? '',
-          'accrual_description': a['description']?.toString() ?? a['code']?.toString() ?? '',
-          'hours': (a['hours'] is num) ? (a['hours'] as num).toDouble() : 0.0,
-          'accrual_date': a['date']?.toString() ?? '',
-          'approved_by_name': a['approved_by']?.toString(),
-        }).toList();
-      }
+      final payload = _buildPayload();
       final createRes = await dio.post<Map<String, dynamic>>('/leave/requests', data: payload);
       final id = createRes.data?['data']?['id'];
       if (id != null) {
         await dio.post('/leave/requests/$id/submit');
       }
       if (!mounted) return;
+      if (widget.draftId != null) {
+        try {
+          final db = ref.read(draftDatabaseProvider);
+          await (db.delete(db.draftEntries)..where((t) => t.id.equals(widget.draftId!))).go();
+        } catch (_) {}
+      }
       setState(() => _submitting = false);
       showDialog(
         context: context,

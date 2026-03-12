@@ -1,9 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/offline/draft_database.dart';
+import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/stitch_buttons.dart';
+import '../../data/travel_locations.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  MODEL
@@ -14,7 +20,10 @@ class _TravelFormData {
   String purpose = '';
   DateTime? startDate;
   DateTime? endDate;
-  String destination = '';
+  String destinationCountry = '';
+  String destinationCity = '';
+  String fromLocation = '';
+  String toLocation = '';
   bool highSecurityProtocol = false;
 
   // Step 2 – Funding
@@ -37,7 +46,9 @@ class _TravelFormData {
       purpose.isNotEmpty &&
       startDate != null &&
       endDate != null &&
-      destination.isNotEmpty;
+      destinationCountry.isNotEmpty &&
+      fromLocation.isNotEmpty &&
+      toLocation.isNotEmpty;
 
   bool get step2Valid =>
       budgetLine.isNotEmpty && estimatedCost > 0 && fundingSource.isNotEmpty;
@@ -49,7 +60,10 @@ class _TravelFormData {
 //  MAIN SCREEN
 // ─────────────────────────────────────────────────────────────
 class TravelRequestFormScreen extends ConsumerStatefulWidget {
-  const TravelRequestFormScreen({super.key});
+  const TravelRequestFormScreen({super.key, this.initialDraft, this.draftId});
+
+  final Map<String, dynamic>? initialDraft;
+  final int? draftId;
 
   @override
   ConsumerState<TravelRequestFormScreen> createState() =>
@@ -64,30 +78,54 @@ class _TravelRequestFormScreenState
 
   static const _stepLabels = ['Mission', 'Funding', 'Itinerary', 'Review'];
 
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialDraft();
+  }
+
+  void _applyInitialDraft() {
+    final d = widget.initialDraft;
+    if (d == null) return;
+    _form.missionTitle = d['purpose']?.toString() ?? '';
+    _form.purpose = d['justification']?.toString() ?? '';
+    if (d['departure_date'] != null) _form.startDate = DateTime.tryParse(d['departure_date'].toString());
+    if (d['return_date'] != null) _form.endDate = DateTime.tryParse(d['return_date'].toString());
+    _form.destinationCountry = d['destination_country']?.toString() ?? '';
+    _form.destinationCity = d['destination_city']?.toString() ?? '';
+    _form.estimatedCost = (d['estimated_cost'] is num) ? (d['estimated_cost'] as num).toDouble() : ((d['estimated_dsa'] is num) ? (d['estimated_dsa'] as num).toDouble() : 0);
+    _form.budgetLine = d['budget_line']?.toString() ?? '';
+    _form.advanceRequested = (d['advance_requested'] is num) ? (d['advance_requested'] as num).toDouble() : 0;
+    _form.fundingSource = d['funding_source']?.toString() ?? '';
+    _form.highSecurityProtocol = d['high_security_protocol'] == true;
+    _form.departureFlight = d['departure_flight']?.toString() ?? '';
+    _form.returnFlight = d['return_flight']?.toString() ?? '';
+    _form.accommodation = d['accommodation']?.toString() ?? '';
+    _form.nights = (d['nights'] is int) ? d['nights'] as int : ((d['nights'] is num) ? (d['nights'] as num).toInt() : 0);
+    _form.perDiemRequired = d['per_diem_required'] != false;
+    final it = d['itineraries'] as List<dynamic>?;
+    if (it != null && it.isNotEmpty) {
+      final first = it.first as Map<String, dynamic>?;
+      if (first != null) {
+        _form.fromLocation = first['from_location']?.toString() ?? '';
+        _form.toLocation = first['to_location']?.toString() ?? '';
+      }
+    }
+  }
+
   // ── Submit ──────────────────────────────────────────────────
   Future<void> _submit() async {
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      await dio.post('/travel/requests', data: {
-        'purpose': _form.missionTitle,
-        'justification': _form.purpose,
-        'destination': _form.destination,
-        'start_date':
-            _form.startDate?.toIso8601String().split('T').first ?? '',
-        'end_date': _form.endDate?.toIso8601String().split('T').first ?? '',
-        'high_security_protocol': _form.highSecurityProtocol,
-        'budget_line': _form.budgetLine,
-        'estimated_cost': _form.estimatedCost,
-        'advance_requested': _form.advanceRequested,
-        'funding_source': _form.fundingSource,
-        'departure_flight': _form.departureFlight,
-        'return_flight': _form.returnFlight,
-        'accommodation': _form.accommodation,
-        'nights': _form.nights,
-        'per_diem_required': _form.perDiemRequired,
-      });
+      await dio.post('/travel/requests', data: _buildPayload());
       if (!mounted) return;
+      if (widget.draftId != null) {
+        try {
+          final db = ref.read(draftDatabaseProvider);
+          await (db.delete(db.draftEntries)..where((t) => t.id.equals(widget.draftId!))).go();
+        } catch (_) {}
+      }
       _showSuccess();
     } catch (_) {
       if (!mounted) return;
@@ -157,23 +195,63 @@ class _TravelRequestFormScreenState
     );
   }
 
-  // ── Save Draft ────────────────────────────────────────────
-  void _saveDraft() {
-    final c = Theme.of(context).colorScheme;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Draft saved'),
-        backgroundColor: c.surface,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(kStitchRoundness)),
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: c.primary,
-          onPressed: () {},
-        ),
-      ),
-    );
+  Map<String, dynamic> _buildPayload() {
+    final departureDate = _form.startDate?.toIso8601String().split('T').first ?? '';
+    final returnDate = _form.endDate?.toIso8601String().split('T').first ?? '';
+    return {
+      'purpose': _form.missionTitle,
+      'justification': _form.purpose,
+      'departure_date': departureDate,
+      'return_date': returnDate,
+      'destination_country': _form.destinationCountry,
+      'destination_city': _form.destinationCity.isEmpty ? null : _form.destinationCity,
+      'estimated_dsa': _form.estimatedCost,
+      'currency': 'USD',
+      'high_security_protocol': _form.highSecurityProtocol,
+      'budget_line': _form.budgetLine,
+      'estimated_cost': _form.estimatedCost,
+      'advance_requested': _form.advanceRequested,
+      'funding_source': _form.fundingSource,
+      'departure_flight': _form.departureFlight,
+      'return_flight': _form.returnFlight,
+      'accommodation': _form.accommodation,
+      'nights': _form.nights,
+      'per_diem_required': _form.perDiemRequired,
+      'itineraries': [
+        {
+          'from_location': _form.fromLocation,
+          'to_location': _form.toLocation,
+          'travel_date': departureDate,
+          'transport_mode': 'flight',
+          'days_count': 1,
+        },
+      ],
+    };
+  }
+
+  Future<void> _saveDraft() async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = _buildPayload();
+      final title = _form.missionTitle.isNotEmpty ? _form.missionTitle : 'Travel draft';
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+        type: 'travel',
+        title: title,
+        payload: jsonEncode(payload),
+        createdAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Draft saved. Sync from Offline Drafts when ready.'), backgroundColor: AppColors.success),
+      );
+      context.pop();
+      context.push('/offline/drafts');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save draft.'), backgroundColor: AppColors.danger),
+      );
+    }
   }
 
   @override
@@ -945,13 +1023,6 @@ class _Step1MissionState extends State<_Step1Mission> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _purposeCtrl;
 
-  static const _countries = [
-    'Angola', 'Botswana', 'Comoros', 'Democratic Republic of Congo',
-    'Eswatini', 'Lesotho', 'Madagascar', 'Malawi', 'Mauritius',
-    'Mozambique', 'Namibia', 'Seychelles', 'South Africa',
-    'Tanzania', 'Zambia', 'Zimbabwe',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -1067,12 +1138,46 @@ class _Step1MissionState extends State<_Step1Mission> {
                     ),
                     const SizedBox(height: 16),
                     _DropdownField(
-                      label: 'Destination',
-                      value: f.destination.isEmpty ? null : f.destination,
-                      items: _countries,
-                      leadingIcon: Icons.language,
+                      label: 'Destination Country',
+                      value: f.destinationCountry.isEmpty ? null : f.destinationCountry,
+                      items: TravelLocations.countries,
+                      leadingIcon: Icons.public,
                       onChanged: (v) {
-                        f.destination = v ?? '';
+                        f.destinationCountry = v ?? '';
+                        f.destinationCity = '';
+                        widget.onChanged();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _DropdownField(
+                      label: 'City',
+                      value: f.destinationCity.isEmpty ? null : f.destinationCity,
+                      items: TravelLocations.citiesFor(f.destinationCountry),
+                      leadingIcon: Icons.location_city,
+                      onChanged: (v) {
+                        f.destinationCity = v ?? '';
+                        widget.onChanged();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _DropdownField(
+                      label: 'From',
+                      value: f.fromLocation.isEmpty ? null : f.fromLocation,
+                      items: TravelLocations.allLocations,
+                      leadingIcon: Icons.flight_takeoff,
+                      onChanged: (v) {
+                        f.fromLocation = v ?? '';
+                        widget.onChanged();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _DropdownField(
+                      label: 'To',
+                      value: f.toLocation.isEmpty ? null : f.toLocation,
+                      items: TravelLocations.allLocations,
+                      leadingIcon: Icons.flight_land,
+                      onChanged: (v) {
+                        f.toLocation = v ?? '';
                         widget.onChanged();
                       },
                     ),
@@ -1685,7 +1790,12 @@ class _Step4Review extends StatelessWidget {
                           fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 4),
-                    Text(                    form.destination.isEmpty ? '—' : form.destination,
+                    Text(
+                        form.destinationCountry.isEmpty
+                            ? '—'
+                            : form.destinationCity.isEmpty
+                                ? form.destinationCountry
+                                : '${form.destinationCity}, ${form.destinationCountry}',
                         style: TextStyle(
                             color: c.onSurface.withValues(alpha: 0.7), fontSize: 13)),
                     const SizedBox(height: 12),
@@ -1712,6 +1822,10 @@ class _Step4Review extends StatelessWidget {
                 onEdit: () => onEdit(0),
                 rows: [
                   _ReviewRow('Purpose', form.purpose.isEmpty ? '—' : form.purpose),
+                  _ReviewRow('Destination Country', form.destinationCountry.isEmpty ? '—' : form.destinationCountry),
+                  _ReviewRow('City', form.destinationCity.isEmpty ? '—' : form.destinationCity),
+                  _ReviewRow('From', form.fromLocation.isEmpty ? '—' : form.fromLocation),
+                  _ReviewRow('To', form.toLocation.isEmpty ? '—' : form.toLocation),
                   _ReviewRow('High Security', form.highSecurityProtocol ? 'Yes' : 'No'),
                 ],
               ),

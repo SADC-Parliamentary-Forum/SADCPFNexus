@@ -28,7 +28,7 @@ class ApprovalController extends Controller
 
         $myApprovals = $pending->filter(function ($request) use ($user) {
             $approvers = $this->workflowService->getCurrentApprovers($request);
-            return collect($approvers)->contains('id', $user->id) || $user->hasRole('System Admin');
+            return collect($approvers)->contains('id', $user->id) || $user->isSystemAdmin();
         });
 
         return response()->json(['data' => $myApprovals->values()]);

@@ -82,4 +82,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Portfolio::class);
     }
+
+    /**
+     * Whether the user has a system administrator role (accepts both "System Admin" and "System Administrator").
+     */
+    public function isSystemAdmin(): bool
+    {
+        return $this->hasAnyRole(['System Admin', 'System Administrator', 'super-admin']);
+    }
+
+    /**
+     * Whether the user has the Secretary General role (final approver in workflow; may approve own request only after workflow steps).
+     */
+    public function isSecretaryGeneral(): bool
+    {
+        return $this->hasRole('Secretary General');
+    }
 }

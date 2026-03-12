@@ -41,8 +41,10 @@ Demo logins (after seed): see [DOCKER.md](DOCKER.md).
 
 - Run inside container: `docker-compose exec php php artisan serve` or use nginx on port 8000.
 - Migrate: `docker-compose exec php php artisan migrate --force`
-- Seed: `docker-compose exec php php artisan db:seed --force`
+- Full reseed (dev/demo): `docker-compose exec php php artisan migrate:fresh --seed --force`
+- Seed only: `docker-compose exec php php artisan db:seed --force`
 - Tests: `php artisan test` (feature tests for Auth, Admin, Leave, Travel; require PHP with SQLite for in-memory DB).
+- **CORS:** If the web app is blocked by the browser when calling the API, see [DOCKER.md](DOCKER.md#cors-web-app-blocked-by-browser).
 
 ## Licence
 

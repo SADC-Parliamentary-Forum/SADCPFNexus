@@ -122,6 +122,12 @@ class TravelService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        if ((int) $travel->requester_id === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+            ]);
+        }
+
         $travel->update([
             'status'      => 'approved',
             'approved_by' => $approver->id,
@@ -175,10 +181,13 @@ class TravelService
         return $travel->fresh();
     }
 
-    public function delete(TravelRequest $travel): void
+    public function delete(TravelRequest $travel, User $user): void
     {
         if (!$travel->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft requests can be deleted.']);
+        }
+        if ((int) $travel->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+            throw ValidationException::withMessages(['request' => 'You can only delete your own travel requests.']);
         }
         $travel->delete();
     }

@@ -1,10 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/auth_providers.dart';
+import '../../core/auth/feature_access.dart';
+
 /// Stitch-aligned navigation drawer (hamburger menu).
-/// Uses theme colors, 8dp roundness, and theme text styles.
-class AppDrawer extends StatelessWidget {
+/// Menu items are filtered by user permissions/roles.
+class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  ConsumerState<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _DrawerEntry {
+  const _DrawerEntry({
+    required this.path,
+    required this.label,
+    required this.icon,
+    this.activeIcon,
+  });
+  final String path;
+  final String label;
+  final IconData icon;
+  final IconData? activeIcon;
+}
+
+const _mainEntries = [
+  _DrawerEntry(path: '/dashboard', label: 'Home', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard),
+  _DrawerEntry(path: '/requests', label: 'Requests', icon: Icons.description_outlined, activeIcon: Icons.description),
+  _DrawerEntry(path: '/approvals', label: 'Approvals', icon: Icons.approval_outlined, activeIcon: Icons.approval),
+  _DrawerEntry(path: '/reports', label: 'Reports', icon: Icons.analytics_outlined, activeIcon: Icons.analytics),
+  _DrawerEntry(path: '/profile', label: 'Profile', icon: Icons.person_outline, activeIcon: Icons.person),
+];
+
+const _moduleEntries = [
+  _DrawerEntry(path: '/requests/travel/new', label: 'Travel', icon: Icons.flight_takeoff),
+  _DrawerEntry(path: '/requests', label: 'Leave', icon: Icons.event_available),
+  _DrawerEntry(path: '/finance/command-center', label: 'Finance', icon: Icons.account_balance_outlined),
+  _DrawerEntry(path: '/procurement/form', label: 'Procurement', icon: Icons.inventory_2_outlined),
+  _DrawerEntry(path: '/imprest/form', label: 'Imprest', icon: Icons.account_balance_wallet_outlined),
+  _DrawerEntry(path: '/hr/dashboard', label: 'HR', icon: Icons.people_outline),
+  _DrawerEntry(path: '/hr/performance', label: 'Performance Tracker', icon: Icons.trending_up_outlined),
+  _DrawerEntry(path: '/hr/files', label: 'Employee Files', icon: Icons.folder_shared_outlined),
+  _DrawerEntry(path: '/pif/form', label: 'PIF', icon: Icons.description_outlined),
+  _DrawerEntry(path: '/governance/meetings', label: 'Governance', icon: Icons.gavel_outlined),
+  _DrawerEntry(path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
+];
+
+class _AppDrawerState extends ConsumerState<AppDrawer> {
+  List<String> _permissions = [];
+  List<String> _roles = [];
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAccess());
+  }
+
+  Future<void> _loadAccess() async {
+    final repo = ref.read(authRepositoryProvider);
+    final permissions = await repo.getStoredPermissions();
+    final roles = await repo.getStoredRoles();
+    if (mounted) {
+      setState(() {
+        _permissions = permissions;
+        _roles = roles;
+        _loaded = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +89,32 @@ class AppDrawer extends StatelessWidget {
       context.go(path);
     }
 
+    List<Widget> mainTiles = [];
+    for (final e in _mainEntries) {
+      if (!_loaded || canAccessFeature(_permissions, _roles, e.path)) {
+        mainTiles.add(_DrawerTile(
+          icon: e.icon,
+          activeIcon: e.activeIcon,
+          label: e.label,
+          isSelected: isSelected(e.path),
+          onTap: () => closeAndGo(e.path),
+        ));
+      }
+    }
+
+    List<Widget> moduleTiles = [];
+    for (final e in _moduleEntries) {
+      if (!_loaded || canAccessFeature(_permissions, _roles, e.path)) {
+        moduleTiles.add(_DrawerTile(
+          icon: e.icon,
+          activeIcon: e.activeIcon,
+          label: e.label,
+          isSelected: isSelected(e.path),
+          onTap: () => closeAndGo(e.path),
+        ));
+      }
+    }
+
     return Drawer(
       backgroundColor: c.surface,
       child: SafeArea(
@@ -29,7 +122,6 @@ class AppDrawer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header — Stitch branding (fixed at top)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
               child: Column(
@@ -54,127 +146,39 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
-            // Scrollable menu (prevents overflow on small screens)
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 children: [
-                  _DrawerTile(
-              icon: Icons.dashboard_outlined,
-              activeIcon: Icons.dashboard,
-              label: 'Home',
-              isSelected: isSelected('/dashboard'),
-              onTap: () => closeAndGo('/dashboard'),
-            ),
-            _DrawerTile(
-              icon: Icons.description_outlined,
-              activeIcon: Icons.description,
-              label: 'Requests',
-              isSelected: isSelected('/requests'),
-              onTap: () => closeAndGo('/requests'),
-            ),
-            _DrawerTile(
-              icon: Icons.approval_outlined,
-              activeIcon: Icons.approval,
-              label: 'Approvals',
-              isSelected: isSelected('/approvals'),
-              onTap: () => closeAndGo('/approvals'),
-            ),
-            _DrawerTile(
-              icon: Icons.analytics_outlined,
-              activeIcon: Icons.analytics,
-              label: 'Reports',
-              isSelected: isSelected('/reports'),
-              onTap: () => closeAndGo('/reports'),
-            ),
-            _DrawerTile(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
-              label: 'Profile',
-              isSelected: isSelected('/profile'),
-              onTap: () => closeAndGo('/profile'),
-            ),
-            const Divider(height: 24),
-            // Section label
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Text(
-                'MODULES',
-                style: textTheme.labelSmall?.copyWith(
-                  color: c.onSurface.withValues(alpha: 0.6),
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            // Modules (Stitch / dashboard features)
-            _DrawerTile(
-              icon: Icons.flight_takeoff,
-              label: 'Travel',
-              isSelected: false,
-              onTap: () => closeAndGo('/requests/travel/new'),
-            ),
-            _DrawerTile(
-              icon: Icons.event_available,
-              label: 'Leave',
-              isSelected: false,
-              onTap: () => closeAndGo('/requests'),
-            ),
-            _DrawerTile(
-              icon: Icons.account_balance_outlined,
-              label: 'Finance',
-              isSelected: false,
-              onTap: () => closeAndGo('/finance/command-center'),
-            ),
-            _DrawerTile(
-              icon: Icons.inventory_2_outlined,
-              label: 'Procurement',
-              isSelected: false,
-              onTap: () => closeAndGo('/procurement/form'),
-            ),
-            _DrawerTile(
-              icon: Icons.account_balance_wallet_outlined,
-              label: 'Imprest',
-              isSelected: false,
-              onTap: () => closeAndGo('/imprest/form'),
-            ),
-            _DrawerTile(
-              icon: Icons.people_outline,
-              label: 'HR',
-              isSelected: false,
-              onTap: () => closeAndGo('/hr/dashboard'),
-            ),
-            _DrawerTile(
-              icon: Icons.description_outlined,
-              label: 'PIF',
-              isSelected: false,
-              onTap: () => closeAndGo('/pif/form'),
-            ),
-            _DrawerTile(
-              icon: Icons.gavel_outlined,
-              label: 'Governance',
-              isSelected: false,
-              onTap: () => closeAndGo('/governance/meetings'),
-            ),
-            _DrawerTile(
-              icon: Icons.devices_outlined,
-              label: 'Assets',
-              isSelected: false,
-              onTap: () => closeAndGo('/assets/inventory'),
-            ),
-            const Divider(height: 24),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: Text(
-                'PREFERENCES',
-                style: textTheme.labelSmall?.copyWith(
-                  color: c.onSurface.withValues(alpha: 0.6),
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+                  ...mainTiles,
+                  if (moduleTiles.isNotEmpty) ...[
+                    const Divider(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                      child: Text(
+                        'MODULES',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: c.onSurface.withValues(alpha: 0.6),
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    ...moduleTiles,
+                  ],
+                  const Divider(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+                    child: Text(
+                      'PREFERENCES',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: c.onSurface.withValues(alpha: 0.6),
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                   _DrawerTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings',

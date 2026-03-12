@@ -79,6 +79,38 @@ class AuthRepository {
       return null;
     }
   }
+
+  /// Stored user permissions from login/me (empty if none).
+  Future<List<String>> getStoredPermissions() async {
+    final jsonStr = await _storage.getUserJson();
+    if (jsonStr == null) return [];
+    try {
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>?;
+      final list = map?['permissions'];
+      if (list is List) {
+        return list.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Stored user role names from login/me (empty if none).
+  Future<List<String>> getStoredRoles() async {
+    final jsonStr = await _storage.getUserJson();
+    if (jsonStr == null) return [];
+    try {
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>?;
+      final list = map?['roles'];
+      if (list is List) {
+        return list.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
 }
 
 /// Returns a user-friendly message for connection/network errors and timeouts.

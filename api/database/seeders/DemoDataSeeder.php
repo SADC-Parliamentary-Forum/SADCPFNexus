@@ -2,6 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Asset;
+use App\Models\AssetRequest;
+use App\Models\Budget;
+use App\Models\BudgetLine;
+use App\Models\GovernanceResolution;
+use App\Models\HrIncident;
 use App\Models\ImprestRequest;
 use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
@@ -9,8 +15,10 @@ use App\Models\OvertimeAccrual;
 use App\Models\Payslip;
 use App\Models\ProcurementRequest;
 use App\Models\SalaryAdvanceRequest;
+use App\Models\SupportTicket;
 use App\Models\Tenant;
 use App\Models\Timesheet;
+use App\Models\TimesheetProject;
 use App\Models\TimesheetEntry;
 use App\Models\TravelRequest;
 use App\Models\TravelItinerary;
@@ -47,6 +55,13 @@ class DemoDataSeeder extends Seeder
         $this->seedPayslips($tenant, $staff, $maria, $john, $thabo, $hr, $finance);
         $this->seedLeaveBalances($staff, $maria, $john, $thabo);
         $this->seedOvertimeAccruals($staff, $maria, $john);
+        $this->seedBudgets($tenant, $admin ?? $staff, $finance ?? $admin);
+        $this->seedSupportTickets($tenant, $staff, $maria);
+        $this->seedGovernanceResolutions($tenant);
+        $this->seedAssets($tenant, $staff, $maria, $john);
+        $this->seedAssetRequests($tenant, $staff, $maria, $john);
+        $this->seedHrIncidents($tenant, $staff, $maria, $hr);
+        $this->seedTimesheetProjects($tenant);
     }
 
     /* ──────────────────────────────────────────────────── TRAVEL ── */
@@ -775,6 +790,193 @@ class DemoDataSeeder extends Seeder
                     'is_verified'      => $item['verified'],
                     'is_linked'        => false,
                 ]
+            );
+        }
+    }
+
+    /* ─────────────────────────────────────────────────── BUDGETS ── */
+
+    private function seedBudgets(Tenant $tenant, User $creator, ?User $finance): void
+    {
+        $year = (int) Carbon::today()->year;
+        $budget = Budget::firstOrCreate(
+            ['tenant_id' => $tenant->id, 'year' => $year, 'name' => 'Operational Budget ' . $year],
+            [
+                'type'          => 'core',
+                'currency'      => 'NAD',
+                'total_amount'  => 5000000.00,
+                'description'   => 'Annual operational budget for Secretariat operations.',
+                'created_by'    => $creator->id,
+            ]
+        );
+        if ($budget->lines()->count() === 0) {
+            $lines = [
+                ['category' => 'personnel',    'account_code' => 'OP-100', 'description' => 'Salaries and benefits',     'amount_allocated' => 2500000, 'amount_spent' => 320000],
+                ['category' => 'travel',       'account_code' => 'OP-200', 'description' => 'Travel and DSA',             'amount_allocated' =>  400000, 'amount_spent' =>  85000],
+                ['category' => 'consultancy', 'account_code' => 'OP-300', 'description' => 'Consultants and experts',    'amount_allocated' =>  600000, 'amount_spent' => 120000],
+            ];
+            foreach ($lines as $line) {
+                $budget->lines()->create($line);
+            }
+        }
+    }
+
+    /* ───────────────────────────────────────── SUPPORT TICKETS ── */
+
+    private function seedSupportTickets(Tenant $tenant, User $staff, ?User $maria): void
+    {
+        $today = Carbon::today();
+        $records = [
+            ['ref' => 'TKT-DEMO-0001', 'user' => $staff, 'subject' => 'VPN access not working', 'description' => 'Unable to connect to VPN from home office.', 'status' => 'open', 'priority' => 'high'],
+            ['ref' => 'TKT-DEMO-0002', 'user' => $maria ?? $staff, 'subject' => 'Request for additional monitor', 'description' => 'Need second monitor for report writing.', 'status' => 'in_progress', 'priority' => 'medium'],
+            ['ref' => 'TKT-DEMO-0003', 'user' => $staff, 'subject' => 'Password reset completed', 'description' => 'Requested password reset last week.', 'status' => 'resolved', 'priority' => 'low', 'resolved_at' => $today->copy()->subDays(2), 'response' => 'Password has been reset. Please check your email.'],
+        ];
+        foreach ($records as $r) {
+            $user = $r['user'];
+            SupportTicket::firstOrCreate(
+                ['reference_number' => $r['ref']],
+                [
+                    'tenant_id'   => $tenant->id,
+                    'user_id'     => $user->id,
+                    'subject'     => $r['subject'],
+                    'description' => $r['description'],
+                    'status'     => $r['status'],
+                    'priority'   => $r['priority'],
+                    'resolved_at' => $r['resolved_at'] ?? null,
+                    'response'   => $r['response'] ?? null,
+                ]
+            );
+        }
+    }
+
+    /* ─────────────────────────────────── GOVERNANCE RESOLUTIONS ── */
+
+    private function seedGovernanceResolutions(Tenant $tenant): void
+    {
+        $today = Carbon::today();
+        $records = [
+            ['ref' => 'RES-2026-001', 'title' => 'Adoption of Annual Work Plan 2026', 'description' => 'Resolution to adopt the Secretariat annual work plan.', 'status' => 'adopted', 'adopted_at' => $today->copy()->subDays(30)],
+            ['ref' => 'RES-2026-002', 'title' => 'Budget Approval Q1 2026', 'description' => 'Approval of Q1 operational budget allocation.', 'status' => 'adopted', 'adopted_at' => $today->copy()->subDays(14)],
+            ['ref' => 'RES-2026-003', 'title' => 'Draft: Gender Policy Review', 'description' => 'Draft resolution for gender policy review.', 'status' => 'draft', 'adopted_at' => null],
+        ];
+        foreach ($records as $r) {
+            GovernanceResolution::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'reference_number' => $r['ref']],
+                [
+                    'title'       => $r['title'],
+                    'description' => $r['description'],
+                    'status'     => $r['status'],
+                    'adopted_at' => $r['adopted_at'],
+                ]
+            );
+        }
+    }
+
+    /* ─────────────────────────────────────────── ASSET REQUESTS ── */
+
+    private function seedAssetRequests(Tenant $tenant, User $staff, ?User $maria, ?User $john): void
+    {
+        $records = [
+            [
+                'requester'    => $staff,
+                'justification' => 'Need a second monitor for programme reporting and multitasking. Current setup slows down deliverables.',
+                'status'       => 'pending',
+            ],
+            [
+                'requester'    => $maria ?? $staff,
+                'justification' => 'Requesting laptop replacement for field missions. Current device is over 4 years old and no longer reliable for travel.',
+                'status'       => 'approved',
+            ],
+            [
+                'requester'    => $john ?? $staff,
+                'justification' => 'Standing desk and ergonomic chair for procurement office – medical recommendation on file.',
+                'status'       => 'pending',
+            ],
+        ];
+
+        foreach ($records as $r) {
+            AssetRequest::firstOrCreate(
+                [
+                    'tenant_id'    => $tenant->id,
+                    'requester_id' => $r['requester']->id,
+                    'justification' => $r['justification'],
+                ],
+                [
+                    'status'        => $r['status'],
+                    'document_path' => null,
+                ]
+            );
+        }
+    }
+
+    /* ─────────────────────────────────────────────── ASSETS ──── */
+
+    private function seedAssets(Tenant $tenant, User $staff, ?User $maria, ?User $john): void
+    {
+        $today = Carbon::today();
+        $records = [
+            ['code' => 'AST-LAP-001', 'name' => 'Dell Latitude 5520',           'category' => 'it',       'status' => 'active', 'assigned_to' => $staff->id,  'issued_at' => $today->copy()->subMonths(12), 'value' => 18000, 'notes' => 'Primary laptop'],
+            ['code' => 'AST-LAP-002', 'name' => 'HP EliteBook 840',             'category' => 'it',       'status' => 'active', 'assigned_to' => $maria?->id ?? $staff->id, 'issued_at' => $today->copy()->subMonths(6), 'value' => 16500, 'notes' => null],
+            ['code' => 'AST-MON-001', 'name' => 'Dell 24" Monitor',             'category' => 'equipment', 'status' => 'active', 'assigned_to' => $staff->id,  'issued_at' => $today->copy()->subMonths(18), 'value' => 3500, 'notes' => null],
+            ['code' => 'AST-DESK-001', 'name' => 'Office desk and chair set',   'category' => 'furniture', 'status' => 'active', 'assigned_to' => null, 'issued_at' => null, 'value' => 8500, 'notes' => 'Meeting room A'],
+            ['code' => 'AST-LAP-003', 'name' => 'Lenovo ThinkPad T14',          'category' => 'it',       'status' => 'service_due', 'assigned_to' => $john?->id ?? $staff->id, 'issued_at' => $today->copy()->subMonths(24), 'value' => 17200, 'notes' => 'Service due next month'],
+        ];
+        foreach ($records as $r) {
+            Asset::firstOrCreate(
+                ['asset_code' => $r['code']],
+                [
+                    'tenant_id'   => $tenant->id,
+                    'name'        => $r['name'],
+                    'category'    => $r['category'],
+                    'status'     => $r['status'],
+                    'assigned_to' => $r['assigned_to'],
+                    'issued_at'   => $r['issued_at'],
+                    'value'       => $r['value'],
+                    'notes'       => $r['notes'],
+                ]
+            );
+        }
+    }
+
+    /* ───────────────────────────────────────── HR INCIDENTS ──── */
+
+    private function seedHrIncidents(Tenant $tenant, User $staff, ?User $maria, ?User $hr): void
+    {
+        $today = Carbon::today();
+        $records = [
+            ['ref' => '2026-001', 'reporter' => $staff, 'subject' => 'Minor injury – paper cut', 'description' => 'Received paper cut in office; first aid applied.', 'status' => 'resolved', 'severity' => 'low', 'reported_at' => $today->copy()->subDays(5)],
+            ['ref' => '2026-002', 'reporter' => $maria ?? $staff, 'subject' => 'Near-miss in corridor', 'description' => 'Slippery floor near kitchen; no injury. Reported for awareness.', 'status' => 'open', 'severity' => 'medium', 'reported_at' => $today->copy()->subDays(1)],
+        ];
+        foreach ($records as $r) {
+            HrIncident::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'reference_number' => $r['ref']],
+                [
+                    'reported_by'  => $r['reporter']->id,
+                    'subject'     => $r['subject'],
+                    'description' => $r['description'],
+                    'status'     => $r['status'],
+                    'severity'   => $r['severity'],
+                    'reported_at' => $r['reported_at'],
+                ]
+            );
+        }
+    }
+
+    /* ───────────────────────────────────────── TIMESHEET PROJECTS ── */
+
+    private function seedTimesheetProjects(Tenant $tenant): void
+    {
+        $labels = [
+            'SADCPF-2026-PLN: Annual Planning',
+            'SADCPF-2026-GOV: Governance Support',
+            'SADCPF-2026-ADM: General Administration',
+            'SADCPF-2026-FIN: Finance Operations',
+            'SADCPF-2026-ICT: ICT Support',
+        ];
+        foreach ($labels as $i => $label) {
+            TimesheetProject::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'label' => $label],
+                ['sort_order' => $i]
             );
         }
     }

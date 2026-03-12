@@ -48,9 +48,15 @@ import '../../features/hr/presentation/screens/disciplinary_case_screen.dart';
 import '../../features/hr/presentation/screens/report_new_incident_screen.dart';
 import '../../features/hr/presentation/screens/payslip_screen.dart';
 import '../../features/hr/presentation/screens/overtime_claim_form_screen.dart';
+import '../../features/hr/presentation/screens/performance_tracker_screen.dart';
+import '../../features/hr/presentation/screens/employee_performance_profile_screen.dart';
+import '../../features/hr/presentation/screens/hr_directory_screen.dart';
+import '../../features/hr/presentation/screens/hr_file_summary_screen.dart';
+import '../../features/hr/presentation/screens/hr_file_documents_screen.dart';
 
 // Assets
 import '../../features/assets/presentation/screens/asset_inventory_screen.dart';
+import '../../features/assets/presentation/screens/asset_request_screen.dart';
 import '../../features/assets/presentation/screens/my_assigned_assets_screen.dart';
 import '../../features/assets/presentation/screens/asset_condition_report_screen.dart';
 import '../../features/assets/presentation/screens/fleet_transport_screen.dart';
@@ -89,11 +95,24 @@ import '../../features/dashboard/presentation/screens/executive_cockpit_screen.d
 import '../../features/analytics/presentation/screens/global_executive_summary_screen.dart';
 import '../../features/support/presentation/screens/user_support_health_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_security_screen.dart';
+import '../../core/auth/auth_providers.dart';
+import '../../core/auth/feature_access.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,
+    redirect: (context, state) async {
+      final loc = state.uri.toString();
+      if (loc.startsWith('/splash') || loc.startsWith('/login') || loc.startsWith('/biometric-entry')) return null;
+      try {
+        final repo = ref.read(authRepositoryProvider);
+        final perms = await repo.getStoredPermissions();
+        final roles = await repo.getStoredRoles();
+        if (!canAccessFeature(perms, roles, loc)) return '/dashboard';
+      } catch (_) {}
+      return null;
+    },
     routes: [
       // ─── Splash ────────────────────────────────────────────────────────────
       GoRoute(
@@ -133,10 +152,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'travel/new',
                 name: 'travel-new',
-                pageBuilder: (context, state) => const MaterialPage(
-                  fullscreenDialog: true,
-                  child: TravelRequestFormScreen(),
-                ),
+                pageBuilder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  return MaterialPage(
+                    fullscreenDialog: true,
+                    child: TravelRequestFormScreen(
+                      initialDraft: extra?['payload'] as Map<String, dynamic>?,
+                      draftId: extra?['draftId'] as int?,
+                    ),
+                  );
+                },
               ),
               GoRoute(
                 path: 'travel/detail',
@@ -146,10 +171,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'leave/new',
                 name: 'leave-new',
-                pageBuilder: (context, state) => const MaterialPage(
-                  fullscreenDialog: true,
-                  child: LeaveRequestFormScreen(),
-                ),
+                pageBuilder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  return MaterialPage(
+                    fullscreenDialog: true,
+                    child: LeaveRequestFormScreen(
+                      initialDraft: extra?['payload'] as Map<String, dynamic>?,
+                      draftId: extra?['draftId'] as int?,
+                    ),
+                  );
+                },
               ),
               GoRoute(
                 path: 'leave/balance',
@@ -237,7 +268,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/imprest/form',
         name: 'imprest-form',
-        builder: (context, state) => const ImprestRequisitionFormScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return ImprestRequisitionFormScreen(
+            initialDraft: extra?['payload'] as Map<String, dynamic>?,
+            draftId: extra?['draftId'] as int?,
+          );
+        },
       ),
       GoRoute(
         path: '/imprest/retirement',
@@ -318,6 +355,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AssetInventoryScreen(),
       ),
       GoRoute(
+        path: '/assets/request',
+        name: 'assets-request',
+        builder: (context, state) => const AssetRequestScreen(),
+      ),
+      GoRoute(
         path: '/assets/assigned',
         name: 'assets-assigned',
         builder: (context, state) => const MyAssignedAssetsScreen(),
@@ -381,7 +423,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/governance/resolutions/details',
         name: 'governance-resolution-details',
-        builder: (context, state) => const ResolutionImplementationDetailsScreen(),
+        builder: (context, state) {
+          final resolution = state.extra as Map<String, dynamic>?;
+          return ResolutionImplementationDetailsScreen(resolution: resolution);
+        },
       ),
       GoRoute(
         path: '/governance/compliance',
@@ -437,6 +482,45 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/support',
         name: 'support',
         builder: (context, state) => const UserSupportHealthScreen(),
+      ),
+
+      // ─── HR Performance & Files ────────────────────────────────────────────
+      GoRoute(
+        path: '/hr/performance',
+        name: 'hrPerformance',
+        builder: (context, state) => const PerformanceTrackerScreen(),
+      ),
+      GoRoute(
+        path: '/hr/performance/detail',
+        name: 'hrPerformanceDetail',
+        builder: (context, state) {
+          final tracker = state.extra as Map<String, dynamic>;
+          return EmployeePerformanceProfileScreen(tracker: tracker);
+        },
+      ),
+      GoRoute(
+        path: '/hr/files',
+        name: 'hrFiles',
+        builder: (context, state) => const HrDirectoryScreen(),
+      ),
+      GoRoute(
+        path: '/hr/files/detail',
+        name: 'hrFileDetail',
+        builder: (context, state) {
+          final fileId = state.extra as int;
+          return HrFileSummaryScreen(fileId: fileId);
+        },
+      ),
+      GoRoute(
+        path: '/hr/files/documents',
+        name: 'hrFileDocuments',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return HrFileDocumentsScreen(
+            fileId: extra['fileId'] as int,
+            employeeName: extra['employeeName'] as String,
+          );
+        },
       ),
 
       // ─── Profile Security ──────────────────────────────────────────────────

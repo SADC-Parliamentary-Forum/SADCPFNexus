@@ -137,6 +137,11 @@ class TimesheetController extends Controller
         if ($timesheet->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted timesheets can be approved.']);
         }
+        if ((int) $timesheet->user_id === (int) $request->user()->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+            ]);
+        }
         $timesheet->update([
             'status'      => 'approved',
             'approved_at' => now(),

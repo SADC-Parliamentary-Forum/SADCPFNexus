@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,7 +27,10 @@ class _ExpenseItem {
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class ImprestRequisitionFormScreen extends ConsumerStatefulWidget {
-  const ImprestRequisitionFormScreen({super.key});
+  const ImprestRequisitionFormScreen({super.key, this.initialDraft, this.draftId});
+
+  final Map<String, dynamic>? initialDraft;
+  final int? draftId;
 
   @override
   ConsumerState<ImprestRequisitionFormScreen> createState() =>
@@ -56,8 +64,73 @@ class _ImprestRequisitionFormScreenState
 
   double get _total => _items.fold(0, (s, i) => s + i.amount);
 
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialDraft();
+  }
+
+  void _applyInitialDraft() {
+    final d = widget.initialDraft;
+    if (d == null) return;
+    _selectedMission = d['budget_line']?.toString();
+    final amt = d['amount_requested'];
+    if (amt != null && (amt is num || amt is int)) {
+      final v = (amt is num) ? amt.toDouble() : (amt as int).toDouble();
+      if (_items.isEmpty) {
+        _items.add(_ExpenseItem(description: d['purpose']?.toString() ?? 'Imprest', amount: v, note: d['justification']?.toString() ?? ''));
+      } else { _items.first.amount = v; _items.first.description = d['purpose']?.toString() ?? _items.first.description; _items.first.note = d['justification']?.toString() ?? ''; }
+    }
+  }
+
   void _addItem() {
     setState(() => _items.add(_ExpenseItem()));
+  }
+
+  Map<String, dynamic> _buildPayload() {
+    final liquidationDate = DateTime.now().add(const Duration(days: 30));
+    final purpose = _items.isNotEmpty && _items.first.description.isNotEmpty
+        ? _items.first.description
+        : 'Imprest requisition';
+    final justification = _items.map((i) => i.note).where((n) => n.isNotEmpty).join('; ');
+    return {
+      'budget_line': _selectedMission ?? '2064.TRAVEL.INT',
+      'amount_requested': _total,
+      'currency': 'NAD',
+      'expected_liquidation_date': '${liquidationDate.year}-${liquidationDate.month.toString().padLeft(2, '0')}-${liquidationDate.day.toString().padLeft(2, '0')}',
+      'purpose': purpose,
+      'justification': justification.isEmpty ? null : justification,
+    };
+  }
+
+  Future<void> _saveDraft() async {
+    if (_total < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add at least one item to save draft.'), backgroundColor: AppColors.warning),
+      );
+      return;
+    }
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = _buildPayload();
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+        type: 'imprest',
+        title: payload['purpose'] as String? ?? 'Imprest draft',
+        payload: jsonEncode(payload),
+        createdAt: DateTime.now(),
+      ));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Draft saved. Sync from Offline Drafts when ready.'), backgroundColor: AppColors.success),
+      );
+      context.pop();
+      context.push('/offline/drafts');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save draft.'), backgroundColor: AppColors.danger),
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -65,24 +138,18 @@ class _ImprestRequisitionFormScreenState
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final liquidationDate = DateTime.now().add(const Duration(days: 30));
-      final purpose = _items.isNotEmpty && _items.first.description.isNotEmpty
-          ? _items.first.description
-          : 'Imprest requisition';
-      final justification = _items.map((i) => i.note).where((n) => n.isNotEmpty).join('; ');
-      final createRes = await dio.post<Map<String, dynamic>>('/imprest/requests', data: {
-        'budget_line': _selectedMission ?? '2064.TRAVEL.INT',
-        'amount_requested': _total,
-        'currency': 'NAD',
-        'expected_liquidation_date': '${liquidationDate.year}-${liquidationDate.month.toString().padLeft(2, '0')}-${liquidationDate.day.toString().padLeft(2, '0')}',
-        'purpose': purpose,
-        'justification': justification.isEmpty ? null : justification,
-      });
+      final createRes = await dio.post<Map<String, dynamic>>('/imprest/requests', data: _buildPayload());
       final id = createRes.data?['data']?['id'];
       if (id != null) {
         await dio.post('/imprest/requests/$id/submit');
       }
       if (!mounted) return;
+      if (widget.draftId != null) {
+        try {
+          final db = ref.read(draftDatabaseProvider);
+          await (db.delete(db.draftEntries)..where((t) => t.id.equals(widget.draftId!))).go();
+        } catch (_) {}
+      }
       setState(() => _submitting = false);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,6 +196,10 @@ class _ImprestRequisitionFormScreenState
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: _saveDraft,
+            child: const Text('Save Draft', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).maybePop(),
             child: const Text(

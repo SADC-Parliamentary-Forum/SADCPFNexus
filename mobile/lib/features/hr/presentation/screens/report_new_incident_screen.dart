@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 
-class ReportNewIncidentScreen extends StatefulWidget {
+class ReportNewIncidentScreen extends ConsumerStatefulWidget {
   const ReportNewIncidentScreen({super.key});
 
   @override
-  State<ReportNewIncidentScreen> createState() =>
+  ConsumerState<ReportNewIncidentScreen> createState() =>
       _ReportNewIncidentScreenState();
 }
 
-class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
+class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScreen> {
   String? _incidentType;
   String _severity = 'Medium';
+  bool _submitting = false;
   final _descriptionController = TextEditingController();
   final List<String> _witnesses = ['J.Shivac'];
   final _witnessController = TextEditingController();
@@ -34,6 +37,43 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
     _descriptionController.dispose();
     _witnessController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitReport() async {
+    final subject = _incidentType?.trim() ?? 'Other';
+    if (subject.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an incident type.')),
+      );
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      String description = _descriptionController.text.trim();
+      if (_witnesses.isNotEmpty) {
+        description = description.isEmpty
+            ? 'Witnesses: ${_witnesses.join(", ")}'
+            : '$description\n\nWitnesses: ${_witnesses.join(", ")}';
+      }
+      await dio.post('/hr/incidents', data: {
+        'subject': subject,
+        'description': description.isEmpty ? null : description,
+        'severity': _severity.toLowerCase(),
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Incident reported successfully.'), backgroundColor: Color(0xFF13EC80)),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit: ${e.toString()}'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -170,7 +210,6 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
             ),
             child: Row(
               children: _severities.asMap().entries.map((entry) {
-                final i = entry.key;
                 final s = entry.value;
                 final isActive = s == _severity;
                 Color activeColor;
@@ -485,9 +524,15 @@ class _ReportNewIncidentScreenState extends State<ReportNewIncidentScreen> {
           border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
         ),
         child: ElevatedButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.send, size: 18),
-          label: const Text('Submit Report'),
+          onPressed: _submitting ? null : _submitReport,
+          icon: _submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF102219)),
+                )
+              : const Icon(Icons.send, size: 18),
+          label: Text(_submitting ? 'Submitting...' : 'Submit Report'),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF13EC80),
             foregroundColor: const Color(0xFF102219),

@@ -16,7 +16,7 @@ class ProgrammeService
 {
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = Programme::with(['creator', 'approver', 'budgetLines'])
+        $query = Programme::with(['creator', 'approver', 'responsibleOfficer', 'budgetLines'])
             ->orderByDesc('created_at');
 
         if ($user->hasRole('staff')) {
@@ -40,7 +40,7 @@ class ProgrammeService
     public function get(Programme $programme): Programme
     {
         return $programme->load([
-            'creator', 'approver',
+            'creator', 'approver', 'responsibleOfficer',
             'activities', 'milestones', 'deliverables',
             'budgetLines', 'procurementItems',
         ]);
@@ -48,6 +48,8 @@ class ProgrammeService
 
     public function create(array $data, User $user): Programme
     {
+        $this->ensureResponsibleOfficerInTenant($data['responsible_officer_id'] ?? null, $user->tenant_id);
+
         $year = now()->year;
         $count = Programme::whereYear('created_at', $year)->count() + 1;
         $ref = 'PIF-' . $year . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
@@ -74,7 +76,7 @@ class ProgrammeService
             'contingency_pct'         => $data['contingency_pct'] ?? 10,
             'total_budget'            => $data['total_budget'] ?? 0,
             'funding_source'          => $data['funding_source'] ?? null,
-            'responsible_officer'     => $data['responsible_officer'] ?? null,
+            'responsible_officer_id'  => $data['responsible_officer_id'] ?? null,
             'start_date'              => $data['start_date'] ?? null,
             'end_date'                => $data['end_date'] ?? null,
             'travel_required'         => $data['travel_required'] ?? false,
@@ -103,6 +105,10 @@ class ProgrammeService
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be edited.']);
         }
 
+        if (array_key_exists('responsible_officer_id', $data)) {
+            $this->ensureResponsibleOfficerInTenant($data['responsible_officer_id'], $user->tenant_id);
+        }
+
         $programme->update(array_filter([
             'title'                   => $data['title'] ?? null,
             'strategic_alignment'     => $data['strategic_alignment'] ?? null,
@@ -121,7 +127,7 @@ class ProgrammeService
             'contingency_pct'         => $data['contingency_pct'] ?? null,
             'total_budget'            => $data['total_budget'] ?? null,
             'funding_source'          => $data['funding_source'] ?? null,
-            'responsible_officer'     => $data['responsible_officer'] ?? null,
+            'responsible_officer_id'  => array_key_exists('responsible_officer_id', $data) ? $data['responsible_officer_id'] : null,
             'start_date'              => $data['start_date'] ?? null,
             'end_date'                => $data['end_date'] ?? null,
             'travel_required'         => $data['travel_required'] ?? null,
@@ -162,6 +168,12 @@ class ProgrammeService
     {
         if (!$programme->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted programmes can be approved.']);
+        }
+
+        if ($programme->created_by && (int) $programme->created_by === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+            ]);
         }
 
         $programme->update([
@@ -327,6 +339,19 @@ class ProgrammeService
             foreach ($data['procurement_items'] as $row) {
                 $programme->procurementItems()->create($row);
             }
+        }
+    }
+
+    private function ensureResponsibleOfficerInTenant(?int $userId, int $tenantId): void
+    {
+        if ($userId === null) {
+            return;
+        }
+        $assigned = User::where('id', $userId)->where('tenant_id', $tenantId)->exists();
+        if (!$assigned) {
+            throw ValidationException::withMessages([
+                'responsible_officer_id' => ['The selected responsible officer must be a user in your organisation.'],
+            ]);
         }
     }
 }

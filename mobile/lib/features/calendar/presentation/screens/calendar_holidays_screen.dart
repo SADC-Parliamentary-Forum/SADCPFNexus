@@ -21,7 +21,7 @@ class _CalendarHolidaysScreenState extends ConsumerState<CalendarHolidaysScreen>
   List<Map<String, dynamic>> _unDays = [];
   bool _loading = true;
   String? _error;
-  int _year = DateTime.now().year;
+  final int _year = DateTime.now().year;
 
   @override
   void initState() {

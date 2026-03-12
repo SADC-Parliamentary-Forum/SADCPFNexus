@@ -119,7 +119,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       bottom: 2, right: 2,
                                       child: Container(
                                         width: 18, height: 18,
-                                        decoration: BoxDecoration(
+                                        decoration: const BoxDecoration(
                                           color: AppColors.success,
                                           shape: BoxShape.circle,
                                         ),
@@ -195,7 +195,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             title: 'Preferences',
                             icon: Icons.settings_outlined,
                             children: [
-                              _ThemeTile(),
+                              const _ThemeTile(),
                               _ActionTile(
                                 icon: Icons.notifications_outlined,
                                 label: 'Notifications',

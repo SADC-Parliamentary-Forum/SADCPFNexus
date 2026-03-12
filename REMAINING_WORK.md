@@ -1,6 +1,6 @@
 # SADC PF Nexus — What's Left to Do
 
-**App status: finalised.** All core flows are implemented and wired to the API. Remaining items are optional (release signing, payslip PDFs) or future scope (governance, assets, offline, support).
+**App status: active development.** Core flows complete. Performance Tracker and HR Personal File System modules added 2026-03-12.
 
 ---
 
@@ -28,33 +28,33 @@
 
 ---
 
-## 2b. Mobile — UI-only / future scope (documented)
+## 2b. Mobile — Completed (previously future scope)
 
-The following mobile screens are **UI-only** (no backend integration yet). Implement when product requires:
+The following are now wired to the API:
 
-| Area | Current state | To wire |
-|------|----------------|--------|
-| **Offline drafts** | Hardcoded draft list; "Sync All" is a fake delay. | Add local persistence (e.g. Drift/SQLite), real sync that POSTs to travel/leave/imprest endpoints and clears local state. |
-| **Support & health** | Hardcoded tickets, system checks, FAQs; "New ticket" is no-op. | Add support/ticketing API and (optionally) health endpoint; wire mobile to them. |
-| **Governance** | No API client in feature; API has no governance routes. | Add governance endpoints when required; wire delegation/meetings, resolutions, compliance screens. |
-| **Assets** | No API client in feature; API has no assets routes. | Add assets API (inventory, assignments, condition reports, fleet); wire mobile screens. |
-| **HR incidents** | Timesheets and payslip are API-wired. Incident/disciplinary screens are UI-only. | Add incident/disciplinary API if required; wire Report New Incident and Disciplinary Case screens. |
+| Area | Status |
+|------|--------|
+| **Offline drafts** | Drift DB; OfflineDraftsScreen loads from DB, Sync All POSTs to travel/leave/imprest/procurement and removes on success. **Save as draft** in travel, leave, and imprest forms; **Continue Editing** opens the matching form with payload and clears draft on submit. |
+| **Support** | List and New Ticket already call `/support/tickets`; response shape verified (paginated). |
+| **Governance** | Meetings wired; Plenary Resolutions and Resolutions Oversight screens load from `GET /governance/resolutions`. Tapping a resolution opens the detail screen with the selected resolution passed via route extra. |
+| **Assets** | Asset inventory screen loads from `GET /assets` (My Assigned + All); My Assigned Assets was already wired. |
+| **HR incidents** | List and quick-report dialog wired; Report New Incident full form submits via `POST /hr/incidents`. Disciplinary case screen remains UI-only. |
 
 ---
 
 ## 3. API — Optional additions
 
-| Item | When needed |
-|------|-------------|
-| **Reports** | If adding a dedicated reports flow: endpoints for travel/leave/DSA or other report data; mobile hub can then link to report list/detail. |
-| **Payslip files** | Payslips table and list/download endpoint exist; attach real PDF files via `file_path` and storage when payroll integration is ready. |
+| Item | Status |
+|------|--------|
+| **Reports** | Done. `GET /api/v1/reports/travel`, `reports/leave`, `reports/dsa` with query `period_from`, `period_to`, `per_page`; summary unchanged. |
+| **Payslip files** | Payslips table and list/download endpoint exist; attach real PDF files via `file_path` and storage when payroll integration is ready. **Storage:** Files are stored under `storage/app/payslips/{tenant_id}/{user_id}/` (created on first upload). **Upload:** Admin can POST a payslip via `POST /api/v1/admin/payslips` with multipart `file`, `user_id`, `period_month`, `period_year` (optional: `gross_amount`, `net_amount`, `currency`). Download: `GET /api/v1/admin/payslips/{id}/download` or staff `GET /api/v1/finance/payslips/{id}/download`. |
 
 ---
 
 ## 4. Documentation and quality
 
 - **REMAINING_WORK.md:** Kept as single source of truth; update as items are completed or new work is added.
-- **Android release:** Release signing is configured in `mobile/android/app/build.gradle.kts` with a placeholder; add your keystore and set `SADC_KEYSTORE_*` (or configure `signingConfigs.release` manually) when publishing to production.
+- **Android release:** Release signing is configured in `mobile/android/app/build.gradle.kts` with a placeholder; add your keystore and set `SADC_KEYSTORE_*` (or configure `signingConfigs.release` manually) when publishing to production. See [mobile/RELEASE.md](mobile/RELEASE.md) for keystore creation and build steps.
 
 ---
 
@@ -79,3 +79,4 @@ The following mobile screens are **UI-only** (no backend integration yet). Imple
 | Mobile HR       | `mobile/lib/features/hr/presentation/screens/timesheets_incidents_screen.dart`, `payslip_screen.dart` (API-wired); `path_provider` added for payslip PDF save |
 | Android | `mobile/android/app/build.gradle.kts` (release signing config) |
 | Tests   | `api/tests/Feature/Leave/LeaveRequestTest.php`, `api/tests/Feature/Travel/TravelRequestTest.php`, `mobile/test/features/reports_screen_test.dart` |
+| Optional/future (Mar 2026) | `mobile/RELEASE.md` (Android signing); `api/app/Http/Controllers/Api/V1/ReportsController.php` (travel, leave, dsa); `mobile/lib/core/offline/draft_provider.dart`, `offline_drafts_screen.dart` (Drift + Sync All); `mobile/lib/features/hr/presentation/screens/report_new_incident_screen.dart` (Submit to API); `mobile/lib/features/assets/presentation/screens/asset_inventory_screen.dart` (GET /assets); `mobile/lib/features/governance/presentation/screens/plenary_resolution_dashboard_screen.dart`, `resolutions_oversight_screen.dart` (GET /governance/resolutions) |

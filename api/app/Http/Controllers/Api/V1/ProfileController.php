@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
@@ -12,7 +15,7 @@ class ProfileController extends Controller
         return $request->user()->load('department', 'portfolios');
     }
 
-    public function update(Request $request)
+    public function update(Request $request): JsonResponse
     {
         $user = $request->user();
 
@@ -39,5 +42,32 @@ class ProfileController extends Controller
             'message' => 'Profile updated successfully',
             'user' => $user->load('department', 'portfolios')
         ]);
+    }
+
+    /**
+     * Change authenticated user's password.
+     */
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.confirmed' => 'The new password confirmation does not match.',
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['message' => 'Password changed successfully.']);
     }
 }

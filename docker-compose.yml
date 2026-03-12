@@ -113,6 +113,7 @@ services:
       - REDIS_HOST=10.20.30.3
       - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       - SESSION_DRIVER=redis
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
     networks:
       sadcpf:
         ipv4_address: 10.20.30.4

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        Schema::create('approval_steps', function (Blueprint $table) {
+        Schema::create('approval_workflow_steps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('workflow_id')->constrained('approval_workflows')->cascadeOnDelete();
             $table->integer('step_order');
@@ -55,7 +55,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('approval_histories');
         Schema::dropIfExists('approval_requests');
-        Schema::dropIfExists('approval_steps');
+        Schema::dropIfExists('approval_workflow_steps');
         Schema::dropIfExists('approval_workflows');
     }
 };

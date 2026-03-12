@@ -97,6 +97,12 @@ class ImprestService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        if ((int) $imprest->requester_id === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+            ]);
+        }
+
         $imprest->update([
             'status'          => 'approved',
             'approved_by'     => $approver->id,

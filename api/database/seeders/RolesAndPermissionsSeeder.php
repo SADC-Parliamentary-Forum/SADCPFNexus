@@ -21,7 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
-            'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin',
+            'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
             'reports.view', 'reports.export', 'reports.audit',
@@ -86,6 +86,23 @@ class RolesAndPermissionsSeeder extends Seeder
                     'finance.view', 'finance.create',
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
+                    'governance.view', 'reports.view', 'assets.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            // Secretary General: final approver; can approve after workflow steps (including own request at final step).
+            $secretaryGeneral = Role::firstOrCreate(['name' => 'Secretary General', 'guard_name' => $guard]);
+            $secretaryGeneral->syncPermissions(
+                Permission::whereIn('name', [
+                    'travel.view', 'travel.approve',
+                    'leave.view', 'leave.approve',
+                    'imprest.view', 'imprest.approve',
+                    'procurement.view', 'procurement.approve',
+                    'finance.view', 'finance.approve',
+                    'governance.view', 'governance.approve',
+                    'hr.view', 'hr.approve',
+                    'reports.view', 'reports.export',
+                    'audit.view',
                 ])->where('guard_name', $guard)->get()
             );
         }

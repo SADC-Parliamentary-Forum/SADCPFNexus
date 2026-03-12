@@ -44,6 +44,24 @@ class ProgrammeAttachmentController extends Controller
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
+    public function update(Request $request, Programme $programme, Attachment $attachment): JsonResponse
+    {
+        $this->ensureProgrammeTenant($programme);
+        if ($attachment->attachable_type !== Programme::class || (int) $attachment->attachable_id !== (int) $programme->id) {
+            abort(404);
+        }
+        if (! \in_array($attachment->document_type, Attachment::QUOTE_DOCUMENT_TYPES, true)) {
+            return response()->json(['message' => 'Only quote-type attachments can be marked as chosen.'], 422);
+        }
+        $request->validate([
+            'is_chosen_quote'  => ['sometimes', 'boolean'],
+            'selection_reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $attachment->update($request->only(['is_chosen_quote', 'selection_reason']));
+        $attachment->load('uploader:id,name');
+        return response()->json(['message' => 'Attachment updated.', 'data' => $attachment]);
+    }
+
     public function destroy(Programme $programme, Attachment $attachment): JsonResponse
     {
         $this->ensureProgrammeTenant($programme);

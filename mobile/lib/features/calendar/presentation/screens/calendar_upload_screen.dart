@@ -213,8 +213,11 @@ class _CalendarUploadScreenState extends ConsumerState<CalendarUploadScreen> {
           selected: {_type},
           onSelectionChanged: (s) => setState(() {
             _type = s.first;
-            if (_type == 'un_day') _countryCode = null;
-            else if (_countryCode == null) _countryCode = 'NA';
+            if (_type == 'un_day') {
+              _countryCode = null;
+            } else {
+              _countryCode ??= 'NA';
+            }
           }),
           style: ButtonStyle(
             backgroundColor: WidgetStateProperty.resolveWith((states) =>

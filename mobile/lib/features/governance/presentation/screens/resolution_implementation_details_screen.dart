@@ -1,11 +1,39 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
 class ResolutionImplementationDetailsScreen extends StatelessWidget {
-  const ResolutionImplementationDetailsScreen({super.key});
+  const ResolutionImplementationDetailsScreen({super.key, this.resolution});
+
+  final Map<String, dynamic>? resolution;
+
+  static String _statusLabel(String? s) {
+    switch ((s ?? '').toLowerCase().replaceAll(' ', '_')) {
+      case 'adopted': return 'Adopted';
+      case 'implemented': return 'Implemented';
+      case 'in_progress': return 'In Progress';
+      case 'deferred': return 'Deferred';
+      default: return s ?? '—';
+    }
+  }
+
+  static Color _statusColor(String s) {
+    if (s == 'Adopted' || s == 'Implemented') return AppColors.success;
+    if (s == 'In Progress') return AppColors.primary;
+    if (s == 'Deferred') return AppColors.warning;
+    return AppColors.textSecondary;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final ref = resolution?['reference_number'] ?? resolution?['ref'] ?? '—';
+    final title = resolution?['title'] as String? ?? 'Resolution Details';
+    final status = _statusLabel(resolution?['status'] as String?);
+    final statusColor = _statusColor(status);
+    final adoptedAt = resolution?['adopted_at'] as String?;
+    final dateStr = adoptedAt != null ? AppDateFormatter.short(adoptedAt) : '—';
+    final description = resolution?['description'] as String?;
+
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
@@ -17,16 +45,21 @@ class ResolutionImplementationDetailsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Header
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-            child: const Text('In Progress', style: TextStyle(color: AppColors.success, fontSize: 10, fontWeight: FontWeight.w700))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+            child: Text(status, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w700)),
+          ),
           const SizedBox(height: 8),
-          const Text('SADC-PF/P3/R012/2025', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          Text(ref, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
           const SizedBox(height: 4),
-          const Text('Climate Resilience Fund Establishment', style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          const Text('3rd Plenary Session  ·  10 Oct 2025  ·  Harare, Zimbabwe', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+          Text('Adopted: $dateStr', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+          if (description != null && description.toString().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(description.toString(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          ],
           const SizedBox(height: 20),
           // Progress
           _card(children: [

@@ -131,6 +131,12 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        if ((int) $request->requester_id === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+            ]);
+        }
+
         $request->update([
             'status'      => 'approved',
             'approved_by' => $approver->id,

@@ -89,11 +89,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
         results.add(list);
       } catch (e) {
         results.add([]);
-        if (firstError == null) {
-          firstError = e.toString().contains('SocketException') || e.toString().contains('Connection')
+        firstError ??= e.toString().contains('SocketException') || e.toString().contains('Connection')
               ? 'Cannot reach server. Check your connection.'
               : 'Failed to load ${_tabConfigs[i].label.toLowerCase()} requests.';
-        }
       }
     }
     if (!mounted) return;
@@ -104,6 +102,43 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
       _error = firstError;
       _loading = false;
     });
+  }
+
+  Future<void> _deleteTravelRequest(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete travel request?'),
+        content: const Text('This draft will be permanently deleted. You cannot undo this.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(apiClientProvider).dio.delete('/travel/requests/$id');
+      if (!mounted) return;
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().contains('422')
+          ? 'Only draft requests can be deleted.'
+          : e.toString().contains('403') || e.toString().contains('401')
+              ? 'You can only delete your own requests.'
+              : 'Failed to delete. Try again.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Theme.of(context).colorScheme.error),
+      );
+    }
   }
 
   @override
@@ -309,6 +344,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                         : i == 1
                                             ? '/requests/leave/detail'
                                             : '/requests/imprest/detail';
+                                    final isTravelDraft = i == 0 && status == 'draft';
+                                    final travelId = item['id'] as int?;
                                     return GestureDetector(
                                       onTap: () => context.push(detailRoute),
                                       child: _RequestCard(
@@ -319,6 +356,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                         icon: t.icon,
                                         iconColor: t.color,
                                         item: item,
+                                        onDelete: isTravelDraft && travelId != null
+                                            ? () => _deleteTravelRequest(travelId)
+                                            : null,
                                       ),
                                     );
                                   },
@@ -422,6 +462,7 @@ class _RequestCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final Map<String, dynamic> item;
+  final VoidCallback? onDelete;
 
   const _RequestCard({
     required this.ref,
@@ -431,6 +472,7 @@ class _RequestCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.item,
+    this.onDelete,
   });
 
   @override
@@ -499,6 +541,14 @@ class _RequestCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            if (onDelete != null)
+              IconButton(
+                icon: Icon(Icons.delete_outline, size: 20, color: c.error),
+                onPressed: onDelete,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+            const SizedBox(width: 4),
             // Status badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

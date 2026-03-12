@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
@@ -68,6 +73,15 @@ final _approvalHistory = [
   },
 ];
 
+const _pifQuoteDocTypes = ['hotel_quote', 'transport_quote', 'other'];
+const _pifDocTypeLabels = {
+  'concept_note': 'Concept Note',
+  'memo': 'Memo',
+  'hotel_quote': 'Hotel Quote',
+  'transport_quote': 'Transport Quote',
+  'other': 'Other',
+};
+
 // ─────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────
@@ -86,6 +100,10 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
   Map<String, dynamic>? _programme;
   bool _loading = true;
   String? _error;
+  List<Map<String, dynamic>> _attachments = [];
+  bool _attachmentsLoading = false;
+  String? _attachmentsError;
+  bool _uploadingAttachment = false;
 
   @override
   void initState() {
@@ -127,6 +145,7 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
           };
           _loading = false;
         });
+        _loadAttachments();
       } else {
         setState(() { _loading = false; });
       }
@@ -160,6 +179,250 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
   }
 
   Map<String, dynamic> get _pif => _programme ?? _mockPif;
+
+  Future<void> _loadAttachments() async {
+    if (widget.programmeId == null) return;
+    setState(() { _attachmentsLoading = true; _attachmentsError = null; });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>('/programmes/${widget.programmeId}/attachments');
+      if (!mounted) return;
+      final list = res.data?['data'];
+      final items = list is List ? list.map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}).toList() : <Map<String, dynamic>>[];
+      setState(() { _attachments = items; _attachmentsLoading = false; });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _attachmentsError = 'Failed to load attachments.'; _attachmentsLoading = false; });
+    }
+  }
+
+  Future<void> _downloadAttachment(Map<String, dynamic> att) async {
+    final id = att['id'];
+    final name = att['original_filename']?.toString() ?? 'download';
+    if (id == null) return;
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<List<int>>(
+        '/programmes/${widget.programmeId}/attachments/$id/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (res.data == null || res.data!.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File not available.')));
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$name');
+      await file.writeAsBytes(res.data!);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved: ${file.path}')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download failed.')));
+    }
+  }
+
+  Future<void> _pickAndUploadAttachment() async {
+    if (widget.programmeId == null) return;
+    final result = await FilePicker.platform.pickFiles(allowMultiple: false, type: FileType.any);
+    final path = result?.files.single.path;
+    if (path == null || !mounted) return;
+    final filename = result!.files.single.name;
+    final docType = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Document type'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(title: const Text('Concept Note'), onTap: () => Navigator.pop(ctx, 'concept_note')),
+              ListTile(title: const Text('Memo'), onTap: () => Navigator.pop(ctx, 'memo')),
+              ListTile(title: const Text('Hotel Quote'), onTap: () => Navigator.pop(ctx, 'hotel_quote')),
+              ListTile(title: const Text('Transport Quote'), onTap: () => Navigator.pop(ctx, 'transport_quote')),
+              ListTile(title: const Text('Other'), onTap: () => Navigator.pop(ctx, 'other')),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (docType == null || !mounted) return;
+    setState(() => _uploadingAttachment = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final form = FormData.fromMap({
+        'file': await MultipartFile.fromFile(path, filename: filename),
+        'document_type': docType,
+      });
+      await dio.post<Map<String, dynamic>>('/programmes/${widget.programmeId}/attachments', data: form);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attachment uploaded.'), backgroundColor: AppColors.success));
+      _loadAttachments();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload failed.')));
+    } finally {
+      if (mounted) setState(() => _uploadingAttachment = false);
+    }
+  }
+
+  Widget _buildAttachmentCard(Map<String, dynamic> a) {
+    final type = a['document_type']?.toString() ?? '';
+    final typeLabel = _pifDocTypeLabels[type] ?? type;
+    final name = a['original_filename']?.toString() ?? '—';
+    final isQuote = _pifQuoteDocTypes.contains(type);
+    final isChosen = a['is_chosen_quote'] == true;
+    final reason = a['selection_reason']?.toString();
+    final sizeBytes = a['size_bytes'];
+    final sizeStr = sizeBytes != null
+        ? (sizeBytes is int && sizeBytes < 1024)
+            ? '$sizeBytes B'
+            : '${((sizeBytes is int ? sizeBytes.toDouble() : (sizeBytes is num ? sizeBytes.toDouble() : 0)) / 1024).toStringAsFixed(1)} KB'
+        : null;
+    final createdAt = a['created_at']?.toString();
+    final dateStr = createdAt != null ? AppDateFormatter.short(createdAt) : null;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(typeLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                    if (sizeStr != null || dateStr != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        [if (sizeStr != null) sizeStr, if (dateStr != null) dateStr].join(' · '),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                      ),
+                    ],
+                    if (isChosen) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.success.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                        child: const Text('Chosen quote', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ),
+                      if (reason != null && reason.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(reason, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.download_outlined, size: 20, color: AppColors.primary),
+                    onPressed: () => _downloadAttachment(a),
+                    tooltip: 'Download',
+                  ),
+                  if (isQuote)
+                    if (isChosen)
+                      TextButton(
+                        onPressed: () => _setChosenQuote(a, clear: true),
+                        child: const Text('Clear chosen', style: TextStyle(fontSize: 12)),
+                      )
+                    else
+                      TextButton(
+                        onPressed: () => _setChosenQuote(a),
+                        child: const Text('Mark chosen', style: TextStyle(fontSize: 12)),
+                      ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
+                    onPressed: () => _deleteAttachment(a),
+                    tooltip: 'Delete',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAttachment(Map<String, dynamic> att) async {
+    if (widget.programmeId == null) return;
+    final id = att['id'];
+    final name = att['original_filename']?.toString() ?? 'this attachment';
+    if (id == null) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete attachment'),
+        content: Text('Remove "$name"? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      await dio.delete('/programmes/${widget.programmeId}/attachments/$id');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attachment removed.'), backgroundColor: AppColors.success));
+      _loadAttachments();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete.')));
+    }
+  }
+
+  Future<void> _setChosenQuote(Map<String, dynamic> att, {bool clear = false}) async {
+    if (widget.programmeId == null) return;
+    final id = att['id'];
+    if (id == null) return;
+    String? reason;
+    if (!clear) {
+      reason = await showDialog<String>(
+        context: context,
+        builder: (ctx) {
+          final c = TextEditingController(text: att['selection_reason']?.toString() ?? '');
+          return AlertDialog(
+            title: const Text('Reason for chosen quote'),
+            content: TextField(
+              controller: c,
+              decoration: const InputDecoration(hintText: 'Why was this quote selected?'),
+              maxLines: 3,
+              onSubmitted: (_) => Navigator.pop(ctx, c.text),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save')),
+            ],
+          );
+        },
+      );
+      if (reason == null) return;
+    }
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      await dio.put<Map<String, dynamic>>(
+        '/programmes/${widget.programmeId}/attachments/$id',
+        data: clear ? {'is_chosen_quote': false, 'selection_reason': null} : {'is_chosen_quote': true, 'selection_reason': reason},
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(clear ? 'Chosen quote cleared.' : 'Chosen quote updated.'), backgroundColor: AppColors.success));
+      _loadAttachments();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update failed.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,6 +621,49 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
                   : null,
               participantsExpanded: _participantsExpanded,
             )),
+        if (widget.programmeId != null) ...[
+          const SizedBox(height: 22),
+          const _SectionTitle(
+            icon: Icons.attach_file,
+            iconColor: AppColors.primary,
+            label: 'ATTACHMENTS',
+          ),
+          const SizedBox(height: 12),
+          if (_attachmentsLoading && _attachments.isEmpty)
+            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: AppColors.primary)))
+          else if (_attachmentsError != null && _attachments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Text(_attachmentsError!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  TextButton(onPressed: _loadAttachments, child: const Text('Retry')),
+                ],
+              ),
+            )
+          else ...[
+            if (_attachments.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: Text(
+                    'No attachments yet.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                ),
+              )
+            else
+              ..._attachments.map((a) => _buildAttachmentCard(a)),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _uploadingAttachment ? null : _pickAndUploadAttachment,
+              icon: _uploadingAttachment ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)) : const Icon(Icons.add, size: 18),
+              label: Text(_uploadingAttachment ? 'Uploading…' : 'Add attachment'),
+              style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
+            ),
+          ],
+        ],
         const SizedBox(height: 22),
         // Approval History
         const _SectionTitle(

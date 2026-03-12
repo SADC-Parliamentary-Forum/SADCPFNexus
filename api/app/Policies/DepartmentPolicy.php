@@ -22,18 +22,18 @@ class DepartmentPolicy
 
     public function create(User $authUser): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'super-admin']);
+        return $authUser->isSystemAdmin();
     }
 
     public function update(User $authUser, Department $department): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'super-admin'])
+        return $authUser->isSystemAdmin()
             && $authUser->tenant_id === $department->tenant_id;
     }
 
     public function delete(User $authUser, Department $department): bool
     {
-        return $authUser->hasAnyRole(['System Admin', 'super-admin'])
+        return $authUser->isSystemAdmin()
             && $authUser->tenant_id === $department->tenant_id;
     }
 }
