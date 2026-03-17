@@ -92,6 +92,10 @@ Route::prefix('v1')->group(function () {
             // Notification Templates
             Route::get('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'index']);
             Route::put('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'updateByTrigger']);
+
+            // Positions (establishment register)
+            Route::apiResource('positions', \App\Http\Controllers\Api\V1\Admin\PositionController::class);
+            Route::post('positions/{position}/assign', [\App\Http\Controllers\Api\V1\Admin\PositionController::class, 'assign']);
         });
 
         // Module routes will be added here per module

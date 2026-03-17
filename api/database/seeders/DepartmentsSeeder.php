@@ -8,9 +8,6 @@ use Illuminate\Database\Seeder;
 
 class DepartmentsSeeder extends Seeder
 {
-    /**
-     * Seed departments for the demo tenant. Depends on TenantSeeder.
-     */
     public function run(): void
     {
         $tenant = Tenant::where('slug', 'sadcpf')->first();
@@ -19,17 +16,13 @@ class DepartmentsSeeder extends Seeder
         }
 
         $departments = [
-            ['name' => 'Secretariat',        'code' => 'SEC'],
-            ['name' => 'Finance & Auditing', 'code' => 'FIN'],
-            ['name' => 'Human Resources',    'code' => 'HR'],
-            ['name' => 'IT Operations',      'code' => 'IT'],
-            ['name' => 'Procurement',        'code' => 'PROC'],
-            ['name' => 'Legal',              'code' => 'LEG'],
-            ['name' => 'Governance',         'code' => 'GOV'],
+            ['name' => 'Office of the Secretary General', 'code' => 'OSG'],
+            ['name' => 'Parliamentary Business',          'code' => 'PB'],
+            ['name' => 'Finance and Corporate Services',  'code' => 'FCS'],
         ];
 
         foreach ($departments as $dept) {
-            Department::firstOrCreate(
+            Department::updateOrCreate(
                 ['tenant_id' => $tenant->id, 'code' => $dept['code']],
                 ['name' => $dept['name']]
             );

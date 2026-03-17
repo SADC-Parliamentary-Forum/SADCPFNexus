@@ -20,7 +20,7 @@ class AssignmentService
             ->orderByDesc('created_at');
 
         // Role-based scoping
-        $isManager = $user->hasAnyRole(['admin', 'sg', 'director', 'manager', 'supervisor', 'hr']);
+        $isManager = $user->isSystemAdmin() || $user->isSecretaryGeneral() || $user->hasAnyRole(['HR Manager', 'Finance Controller']);
         if (!$isManager) {
             // Staff see assignments they created or are assigned to
             $query->where(function ($q) use ($user) {
@@ -30,7 +30,12 @@ class AssignmentService
         }
 
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $statuses = array_filter(array_map('trim', explode(',', $filters['status'])));
+            if (count($statuses) === 1) {
+                $query->where('status', $statuses[0]);
+            } elseif (count($statuses) > 1) {
+                $query->whereIn('status', $statuses);
+            }
         }
 
         if (!empty($filters['priority'])) {
@@ -65,7 +70,7 @@ class AssignmentService
     {
         $base = Assignment::query();
 
-        $isManager = $user->hasAnyRole(['admin', 'sg', 'director', 'manager', 'supervisor', 'hr']);
+        $isManager = $user->isSystemAdmin() || $user->isSecretaryGeneral() || $user->hasAnyRole(['HR Manager', 'Finance Controller']);
         if (!$isManager) {
             $base->where(function ($q) use ($user) {
                 $q->where('created_by', $user->id)->orWhere('assigned_to', $user->id);

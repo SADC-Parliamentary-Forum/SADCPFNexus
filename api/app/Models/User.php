@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'tenant_id',
         'department_id',
+        'position_id',
         'name',
         'email',
         'password',
@@ -76,6 +77,11 @@ class User extends Authenticatable
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function position(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 
     public function portfolios(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

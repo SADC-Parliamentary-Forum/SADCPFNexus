@@ -11,10 +11,6 @@ use Spatie\Permission\Models\Role;
 
 class UsersSeeder extends Seeder
 {
-    /**
-     * Seed demo users for the default tenant. Depends on TenantSeeder, RolesAndPermissionsSeeder, DepartmentsSeeder.
-     * Passwords are documented in README for dev/demo only.
-     */
     public function run(): void
     {
         $tenant = Tenant::where('slug', 'sadcpf')->first();
@@ -22,29 +18,27 @@ class UsersSeeder extends Seeder
             return;
         }
 
-        $itDept   = Department::where('tenant_id', $tenant->id)->where('code', 'IT')->first();
-        $hrDept   = Department::where('tenant_id', $tenant->id)->where('code', 'HR')->first();
-        $finDept  = Department::where('tenant_id', $tenant->id)->where('code', 'FIN')->first();
-        $procDept = Department::where('tenant_id', $tenant->id)->where('code', 'PROC')->first();
-        $secDept  = Department::where('tenant_id', $tenant->id)->where('code', 'SEC')->first();
-        $govDept  = Department::where('tenant_id', $tenant->id)->where('code', 'GOV')->first();
+        $osgDept  = Department::where('tenant_id', $tenant->id)->where('code', 'OSG')->first();
+        $pbDept   = Department::where('tenant_id', $tenant->id)->where('code', 'PB')->first();
+        $fcsDept  = Department::where('tenant_id', $tenant->id)->where('code', 'FCS')->first();
 
-        $systemAdminRole = Role::where('name', 'System Admin')->where('guard_name', 'sanctum')->first();
-        $staffRole      = Role::where('name', 'staff')->where('guard_name', 'sanctum')->first();
-        $hrManagerRole  = Role::where('name', 'HR Manager')->where('guard_name', 'sanctum')->first();
-        $financeRole    = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
-        $procurementRole = Role::where('name', 'Procurement Officer')->where('guard_name', 'sanctum')->first();
-        $sgRole         = Role::where('name', 'Secretary General')->where('guard_name', 'sanctum')->first();
+        $systemAdminRole  = Role::where('name', 'System Admin')->where('guard_name', 'sanctum')->first();
+        $staffRole        = Role::where('name', 'staff')->where('guard_name', 'sanctum')->first();
+        $hrManagerRole    = Role::where('name', 'HR Manager')->where('guard_name', 'sanctum')->first();
+        $financeRole      = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
+        $procurementRole  = Role::where('name', 'Procurement Officer')->where('guard_name', 'sanctum')->first();
+        $sgRole           = Role::where('name', 'Secretary General')->where('guard_name', 'sanctum')->first();
 
         if (! $systemAdminRole || ! $staffRole) {
             return;
         }
 
+        // System Admin
         $admin = User::firstOrCreate(
             ['email' => 'admin@sadcpf.org'],
             [
                 'tenant_id'       => $tenant->id,
-                'department_id'   => $itDept?->id,
+                'department_id'   => $osgDept?->id,
                 'name'            => 'System Administrator',
                 'password'        => Hash::make('Admin@2024!'),
                 'employee_number' => 'SADCPF-001',
@@ -56,11 +50,12 @@ class UsersSeeder extends Seeder
         );
         $admin->syncRoles([$systemAdminRole]);
 
+        // Staff / Programme Officer
         $staffUser = User::firstOrCreate(
             ['email' => 'staff@sadcpf.org'],
             [
                 'tenant_id'       => $tenant->id,
-                'department_id'   => $hrDept?->id ?? $itDept?->id,
+                'department_id'   => $pbDept?->id,
                 'name'            => 'Demo Staff',
                 'password'        => Hash::make('Staff@2024!'),
                 'employee_number' => 'SADCPF-002',
@@ -71,12 +66,13 @@ class UsersSeeder extends Seeder
         );
         $staffUser->syncRoles([$staffRole]);
 
+        // HR Manager
         if ($hrManagerRole) {
             $hrUser = User::firstOrCreate(
                 ['email' => 'hr@sadcpf.org'],
                 [
                     'tenant_id'       => $tenant->id,
-                    'department_id'   => $hrDept?->id,
+                    'department_id'   => $fcsDept?->id,
                     'name'            => 'HR Manager',
                     'password'        => Hash::make('HR@2024!'),
                     'employee_number' => 'SADCPF-003',
@@ -88,12 +84,13 @@ class UsersSeeder extends Seeder
             $hrUser->syncRoles([$hrManagerRole]);
         }
 
+        // Finance Controller
         if ($financeRole) {
             $financeUser = User::firstOrCreate(
                 ['email' => 'finance@sadcpf.org'],
                 [
                     'tenant_id'       => $tenant->id,
-                    'department_id'   => $finDept?->id,
+                    'department_id'   => $fcsDept?->id,
                     'name'            => 'Finance Controller',
                     'password'        => Hash::make('Finance@2024!'),
                     'employee_number' => 'SADCPF-004',
@@ -105,29 +102,29 @@ class UsersSeeder extends Seeder
             $financeUser->syncRoles([$financeRole]);
         }
 
-        if ($secDept) {
-            $mariaUser = User::firstOrCreate(
-                ['email' => 'maria@sadcpf.org'],
-                [
-                    'tenant_id'       => $tenant->id,
-                    'department_id'   => $secDept->id,
-                    'name'            => 'Maria Dlamini',
-                    'password'        => Hash::make('Maria@2024!'),
-                    'employee_number' => 'SADCPF-005',
-                    'job_title'       => 'Senior Programme Officer',
-                    'classification'  => 'CONFIDENTIAL',
-                    'is_active'       => true,
-                ]
-            );
-            $mariaUser->syncRoles([$staffRole]);
-        }
+        // Senior Programme Officer
+        $mariaUser = User::firstOrCreate(
+            ['email' => 'maria@sadcpf.org'],
+            [
+                'tenant_id'       => $tenant->id,
+                'department_id'   => $pbDept?->id,
+                'name'            => 'Maria Dlamini',
+                'password'        => Hash::make('Maria@2024!'),
+                'employee_number' => 'SADCPF-005',
+                'job_title'       => 'Senior Programme Officer',
+                'classification'  => 'CONFIDENTIAL',
+                'is_active'       => true,
+            ]
+        );
+        $mariaUser->syncRoles([$staffRole]);
 
-        if ($procDept && $procurementRole) {
+        // Procurement Officer
+        if ($procurementRole) {
             $johnUser = User::firstOrCreate(
                 ['email' => 'john@sadcpf.org'],
                 [
                     'tenant_id'       => $tenant->id,
-                    'department_id'   => $procDept->id,
+                    'department_id'   => $fcsDept?->id,
                     'name'            => 'John Mutamba',
                     'password'        => Hash::make('John@2024!'),
                     'employee_number' => 'SADCPF-006',
@@ -139,29 +136,29 @@ class UsersSeeder extends Seeder
             $johnUser->syncRoles([$procurementRole]);
         }
 
-        if ($govDept) {
-            $thaboUser = User::firstOrCreate(
-                ['email' => 'thabo@sadcpf.org'],
-                [
-                    'tenant_id'       => $tenant->id,
-                    'department_id'   => $govDept->id,
-                    'name'            => 'Thabo Nkosi',
-                    'password'        => Hash::make('Thabo@2024!'),
-                    'employee_number' => 'SADCPF-007',
-                    'job_title'       => 'Governance Officer',
-                    'classification'  => 'CONFIDENTIAL',
-                    'is_active'       => true,
-                ]
-            );
-            $thaboUser->syncRoles([$staffRole]);
-        }
+        // Governance Officer
+        $thaboUser = User::firstOrCreate(
+            ['email' => 'thabo@sadcpf.org'],
+            [
+                'tenant_id'       => $tenant->id,
+                'department_id'   => $pbDept?->id,
+                'name'            => 'Thabo Nkosi',
+                'password'        => Hash::make('Thabo@2024!'),
+                'employee_number' => 'SADCPF-007',
+                'job_title'       => 'Governance Officer',
+                'classification'  => 'CONFIDENTIAL',
+                'is_active'       => true,
+            ]
+        );
+        $thaboUser->syncRoles([$staffRole]);
 
-        if ($sgRole && $secDept) {
+        // Secretary General
+        if ($sgRole) {
             User::firstOrCreate(
                 ['email' => 'sg@sadcpf.org'],
                 [
                     'tenant_id'       => $tenant->id,
-                    'department_id'   => $secDept->id,
+                    'department_id'   => $osgDept?->id,
                     'name'            => 'Secretary General',
                     'password'        => Hash::make('SG@2024!'),
                     'employee_number' => 'SADCPF-000',
