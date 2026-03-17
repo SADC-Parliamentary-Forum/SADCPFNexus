@@ -20,7 +20,6 @@ class _AssetConditionReportScreenState extends State<AssetConditionReportScreen>
   };
 
   final _categories = ['No Issues', 'Minor Wear', 'Damage', 'Missing Parts', 'Needs Service'];
-  final _photos = <String>[];
 
   @override
   void dispose() {

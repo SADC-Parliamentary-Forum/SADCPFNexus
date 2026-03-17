@@ -88,9 +88,13 @@ Seed order: tenant, roles/permissions, departments, lookups, users, workflow, de
 
 ## Run migrations only
 
+After adding new migrations (e.g. `work_assignments` for HR assignments), run:
+
 ```bash
 docker-compose exec php php artisan migrate --force
 ```
+
+Or restart the stack so the php entrypoint runs migrations on start.
 
 ## PHP 8.4 required
 
@@ -206,14 +210,23 @@ This happens when Laravel sees an empty or invalid `APP_KEY`. The **php** contai
 
 If the browser blocks requests from the web app (e.g. "No 'Access-Control-Allow-Origin' header is present" when calling the API from http://localhost:3000):
 
-1. **Clear config cache** so CORS config is read from `api/config/cors.php` and env:
+1. **Clear config and cache** so CORS config is read from `api/config/cors.php` and env:
    ```bash
    docker compose exec php php artisan config:clear
+   docker compose exec php php artisan cache:clear
+   docker compose restart php
    ```
-   (Or, when running the API locally: `cd api && php artisan config:clear`.)
+   (Or, when running the API locally: `cd api && php artisan config:clear && php artisan cache:clear`.)
 
 2. **Ensure the frontend origin is allowed.** In `api/.env` set:
    ```bash
    FRONTEND_URL=http://localhost:3000
    ```
    When using Docker, the **php** service also receives `FRONTEND_URL` from the root `.env` (default `http://localhost:3000`). If the web app runs on another origin (e.g. different port), add it to `FRONTEND_URL` (comma-separated) or to the allowed list in `api/config/cors.php`.
+
+**Verifying CORS and API after changes**
+
+- From the browser at http://localhost:3000, open DevTools → Network. Trigger the dashboard (and workplan, etc.).
+- OPTIONS requests to `http://localhost:8000/api/v1/...` should return **204** with `Access-Control-Allow-Origin: http://localhost:3000`.
+- Subsequent GET/POST should return **200** (or 401/403) with the same CORS headers.
+- If an endpoint returns **502**, check `docker compose logs php` and `api/storage/logs/laravel.log` for the root cause. When PHP-FPM is down, nginx returns 502 with CORS headers so the browser shows 502 instead of a CORS error.

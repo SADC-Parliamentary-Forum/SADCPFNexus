@@ -65,13 +65,6 @@ class FinanceCommandCenterScreen extends StatelessWidget {
         name: 'Consultancy Fees', pct: 0.88, barColor: Color(0xFFF59E0B)),
   ];
 
-  String _fmt(double v) {
-    if (v >= 1000) {
-      return '\$${(v / 1000).toStringAsFixed(1)}k';
-    }
-    return '\$${v.toStringAsFixed(0)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

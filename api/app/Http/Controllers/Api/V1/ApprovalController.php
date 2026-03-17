@@ -18,12 +18,12 @@ class ApprovalController extends Controller
     public function pending(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         // This is a bit complex because approvers are dynamic
         // For now, we'll list all pending requests and filter in PHP or use a more optimized query later
         $pending = ApprovalRequest::where('status', 'pending')
             ->where('tenant_id', $user->tenant_id)
-            ->with(['approvable', 'workflow'])
+            ->with(['approvable', 'workflow.steps.role', 'workflow.steps.user'])
             ->get();
 
         $myApprovals = $pending->filter(function ($request) use ($user) {

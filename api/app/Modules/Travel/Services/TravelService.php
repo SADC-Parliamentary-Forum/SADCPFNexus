@@ -5,12 +5,15 @@ use App\Models\AuditLog;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class TravelService
 {
+    public function __construct(protected WorkflowService $workflowService) {}
+
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = TravelRequest::with(['requester', 'itineraries'])
@@ -107,6 +110,8 @@ class TravelService
 
         $travel->update(['status' => 'submitted', 'submitted_at' => now()]);
 
+        $this->workflowService->initiate($travel, 'travel', $user);
+
         AuditLog::record('travel.submitted', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
@@ -114,6 +119,58 @@ class TravelService
         ]);
 
         return $travel->fresh();
+    }
+
+    /**
+     * Called by WorkflowService when the workflow is fully approved.
+     */
+    public function onWorkflowApproved(TravelRequest $travel, User $approver): void
+    {
+        $travel->update([
+            'status'      => 'approved',
+            'approved_by' => $approver->id,
+            'approved_at' => now(),
+        ]);
+
+        AuditLog::record('travel.approved', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'tags'           => 'travel',
+        ]);
+
+        $travel->loadMissing('requester');
+        WorkplanEvent::updateOrCreate(
+            ['linked_module' => 'travel', 'linked_id' => $travel->id],
+            [
+                'tenant_id'   => $travel->tenant_id,
+                'created_by'  => $approver->id,
+                'title'       => 'Mission: ' . $travel->purpose . ' — ' . $travel->destination_country,
+                'type'        => 'travel',
+                'date'        => $travel->departure_date,
+                'end_date'    => $travel->return_date,
+                'responsible' => $travel->requester?->name,
+                'description' => $travel->reference_number,
+            ]
+        );
+    }
+
+    /**
+     * Called by WorkflowService when the workflow is rejected.
+     */
+    public function onWorkflowRejected(TravelRequest $travel, User $approver, ?string $reason = null): void
+    {
+        $travel->update([
+            'status'           => 'rejected',
+            'approved_by'      => $approver->id,
+            'rejection_reason' => $reason,
+        ]);
+
+        AuditLog::record('travel.rejected', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'new_values'     => ['reason' => $reason],
+            'tags'           => 'travel',
+        ]);
     }
 
     public function approve(TravelRequest $travel, User $approver): TravelRequest

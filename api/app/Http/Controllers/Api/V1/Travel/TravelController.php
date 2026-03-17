@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api\V1\Travel;
 use App\Http\Controllers\Controller;
 use App\Models\TravelRequest;
 use App\Modules\Travel\Services\TravelService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TravelController extends Controller
 {
-    public function __construct(private readonly TravelService $travelService) {}
+    public function __construct(
+        private readonly TravelService $travelService,
+        private readonly WorkflowService $workflowService
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -81,6 +85,15 @@ class TravelController extends Controller
 
     public function approve(Request $request, TravelRequest $travelRequest): JsonResponse
     {
+        if ($travelRequest->approvalRequest) {
+            $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+            $this->workflowService->approve($travelRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
+            return response()->json([
+                'message' => 'Travel request approved.',
+                'data'    => $travelRequest->fresh(['requester', 'approver', 'itineraries', 'approvalRequest']),
+            ]);
+        }
+
         $travel = $this->travelService->approve($travelRequest, $request->user());
         return response()->json(['message' => 'Travel request approved.', 'data' => $travel]);
     }
@@ -88,6 +101,15 @@ class TravelController extends Controller
     public function reject(Request $request, TravelRequest $travelRequest): JsonResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+
+        if ($travelRequest->approvalRequest) {
+            $this->workflowService->reject($travelRequest->approvalRequest, $request->user(), $data['reason']);
+            return response()->json([
+                'message' => 'Travel request rejected.',
+                'data'    => $travelRequest->fresh(['requester', 'approver', 'approvalRequest']),
+            ]);
+        }
+
         $travel = $this->travelService->reject($travelRequest, $data['reason'], $request->user());
         return response()->json(['message' => 'Travel request rejected.', 'data' => $travel]);
     }

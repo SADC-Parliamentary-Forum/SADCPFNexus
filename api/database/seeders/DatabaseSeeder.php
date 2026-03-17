@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             WorkflowSeeder::class,
             DemoDataSeeder::class,
+            HrModulesSeeder::class,
             ProgrammeSeeder::class,
             ProgrammeAttachmentSeeder::class,
             WorkplanSeeder::class,

@@ -15,6 +15,7 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_TRANSPORT_QUOTE = 'transport_quote';
     public const DOCUMENT_TYPE_OTHER = 'other';
     public const DOCUMENT_TYPE_WORKPLAN = 'workplan_document';
+    public const DOCUMENT_TYPE_APPRAISAL_EVIDENCE = 'appraisal_evidence';
 
     public const DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_CONCEPT_NOTE,
@@ -23,6 +24,13 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_TRANSPORT_QUOTE,
         self::DOCUMENT_TYPE_OTHER,
         self::DOCUMENT_TYPE_WORKPLAN,
+        self::DOCUMENT_TYPE_APPRAISAL_EVIDENCE,
+    ];
+
+    /** Document types valid for appraisal evidence attachments */
+    public const APPRAISAL_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_APPRAISAL_EVIDENCE,
+        self::DOCUMENT_TYPE_OTHER,
     ];
 
     /** Document types valid for workplan event attachments */

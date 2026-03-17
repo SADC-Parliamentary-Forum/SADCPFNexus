@@ -19,7 +19,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_values(array_unique(array_filter(array_merge(
-        array_map('trim', explode(',', (string) env('FRONTEND_URL', ''))),
+        array_map('trim', explode(',', (string) env('FRONTEND_URL', 'http://localhost:3000'))),
         [
             'http://localhost:3000',
             'http://127.0.0.1:3000',
@@ -39,11 +39,11 @@ return [
         '#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#',
     ],
 
-    'allowed_headers' => ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With', 'X-XSRF-TOKEN'],
+    'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400,
 
     'supports_credentials' => true,
 

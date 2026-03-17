@@ -5,7 +5,6 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -18,8 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->prepend(HandleCors::class);
-        $middleware->api(append: [\App\Http\Middleware\AddCorsHeaders::class]);
+        // Use custom AddCorsHeaders (with CorsHelper + config/cors.php) as the single CORS implementation.
+        $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);
+        // Prepend CORS to api group so it runs before auth/throttle on every API request.
+        $middleware->api(prepend: [\App\Http\Middleware\AddCorsHeaders::class], append: []);
         $middleware->alias([
             'rls' => \App\Http\Middleware\SetRlsContext::class,
         ]);

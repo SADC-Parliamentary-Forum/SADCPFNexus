@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\WorkAssignment;
 use App\Models\WorkAssignmentUpdate;
 use Illuminate\Http\JsonResponse;
@@ -10,6 +11,22 @@ use Illuminate\Support\Facades\DB;
 
 class WorkAssignmentController extends Controller
 {
+    /**
+     * Safe permission check: returns false if the permission system throws or the method does not exist.
+     */
+    private function safeHasPermission(User $user, string $permission): bool
+    {
+        try {
+            if (! method_exists($user, 'hasPermissionTo')) {
+                return false;
+            }
+
+            return $user->hasPermissionTo($permission);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /**
      * List work assignments with role-based visibility.
      */
@@ -25,8 +42,8 @@ class WorkAssignmentController extends Controller
         ])->where('tenant_id', $tenantId);
 
         // Role-based filtering
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         if (! $isHrAdmin) {
             if ($isSupervisor) {
@@ -77,8 +94,8 @@ class WorkAssignmentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         $canView = $isHrAdmin
             || $workAssignment->assigned_to === $user->id
@@ -108,8 +125,8 @@ class WorkAssignmentController extends Controller
     {
         $user = $request->user();
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         if (! $isHrAdmin && ! $isSupervisor) {
             return response()->json(['message' => 'Forbidden. Requires hr.admin or hr.supervisor permission.'], 403);
@@ -151,7 +168,7 @@ class WorkAssignmentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
 
         if (! $isHrAdmin && $workAssignment->assigned_by !== $user->id) {
             return response()->json(['message' => 'Forbidden.'], 403);
@@ -192,8 +209,8 @@ class WorkAssignmentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         $canUpdate = $isHrAdmin
             || $workAssignment->assigned_to === $user->id
@@ -251,8 +268,8 @@ class WorkAssignmentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         $canAct = $isHrAdmin
             || $workAssignment->assigned_to === $user->id
@@ -288,8 +305,8 @@ class WorkAssignmentController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         $canAct = $isHrAdmin
             || $workAssignment->assigned_to === $user->id
@@ -324,8 +341,8 @@ class WorkAssignmentController extends Controller
         $user = $request->user();
         $tenantId = $user->tenant_id;
 
-        $isHrAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
-        $isSupervisor = $user->hasPermissionTo('hr.supervisor');
+        $isHrAdmin = $user->isSystemAdmin() || $this->safeHasPermission($user, 'hr.admin');
+        $isSupervisor = $this->safeHasPermission($user, 'hr.supervisor');
 
         // Base query scoped to tenant
         $base = WorkAssignment::where('tenant_id', $tenantId);

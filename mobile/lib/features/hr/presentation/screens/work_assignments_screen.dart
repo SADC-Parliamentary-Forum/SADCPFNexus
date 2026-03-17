@@ -1,11 +1,18 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+
+Response<dynamic> _emptyResponse() => Response<dynamic>(
+      requestOptions: RequestOptions(path: '/'),
+      data: null,
+      statusCode: 500,
+    );
 
 Color _priorityColor(String? priority) {
   switch (priority?.toLowerCase()) {
@@ -116,16 +123,16 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
         dio
             .get<dynamic>('/hr/assignments',
                 queryParameters: {'assigned_to': _userId})
-            .catchError((_) => null),
+            .catchError((_, __) => Future<Response<dynamic>>.value(_emptyResponse())),
         dio
             .get<dynamic>('/hr/assignments',
                 queryParameters: {'assigned_by': _userId})
-            .catchError((_) => null),
+            .catchError((_, __) => Future<Response<dynamic>>.value(_emptyResponse())),
         dio
             .get<dynamic>('/hr/assignments',
                 queryParameters: {'overdue': true})
-            .catchError((_) => null),
-        dio.get<dynamic>('/hr/assignments/stats').catchError((_) => null),
+            .catchError((_, __) => Future<Response<dynamic>>.value(_emptyResponse())),
+        dio.get<dynamic>('/hr/assignments/stats').catchError((_, __) => Future<Response<dynamic>>.value(_emptyResponse())),
       ]);
 
       List<Map<String, dynamic>> parseList(dynamic resp) {
@@ -193,7 +200,7 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: AppColors.bgSurfaceDark,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -227,7 +234,7 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
               // Priority dropdown
               DropdownButtonFormField<String>(
                 value: _newPriority,
-                dropdownColor: AppColors.surfaceDark,
+                dropdownColor: AppColors.bgSurfaceDark,
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Priority',
@@ -338,7 +345,7 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
-        backgroundColor: AppColors.surfaceDark,
+        backgroundColor: AppColors.bgSurfaceDark,
         title: const Text('Work Assignments'),
         actions: [
           IconButton(
@@ -468,7 +475,7 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
     final inProgress = _stats?['in_progress'] ?? 0;
     final overdue = _stats?['overdue'] ?? 0;
     return Container(
-      color: AppColors.surfaceDark,
+      color: AppColors.bgSurfaceDark,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
@@ -560,7 +567,7 @@ class _AssignmentCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
+          color: AppColors.bgSurfaceDark,
           borderRadius: BorderRadius.circular(12),
           border: Border(
             left: BorderSide(

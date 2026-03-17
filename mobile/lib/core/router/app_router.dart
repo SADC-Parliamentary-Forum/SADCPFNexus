@@ -53,6 +53,8 @@ import '../../features/hr/presentation/screens/employee_performance_profile_scre
 import '../../features/hr/presentation/screens/hr_directory_screen.dart';
 import '../../features/hr/presentation/screens/hr_file_summary_screen.dart';
 import '../../features/hr/presentation/screens/hr_file_documents_screen.dart';
+import '../../features/hr/presentation/screens/hr_performance_dashboard_screen.dart';
+import '../../features/hr/presentation/screens/supervisor_team_detail_screen.dart';
 
 // Assets
 import '../../features/assets/presentation/screens/asset_inventory_screen.dart';
@@ -521,6 +523,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             employeeName: extra['employeeName'] as String,
           );
         },
+      ),
+      GoRoute(
+        path: '/hr/performance/hr-dashboard',
+        name: 'hrPerformanceDashboard',
+        builder: (context, state) => const HrPerformanceDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/hr/performance/team',
+        name: 'hrPerformanceTeam',
+        builder: (context, state) => const SupervisorTeamDetailScreen(),
       ),
 
       // ─── Profile Security ──────────────────────────────────────────────────

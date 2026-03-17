@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Workplan;
 
 use App\Http\Controllers\Controller;
 use App\Models\MeetingType;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -11,13 +12,16 @@ class MeetingTypeController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
-        $types = MeetingType::where('tenant_id', $tenantId)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        return response()->json(['data' => $types]);
+        $tenantId = $request->user()->tenant_id ?? 0;
+        try {
+            $types = MeetingType::where('tenant_id', $tenantId)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+            return response()->json(['data' => $types]);
+        } catch (QueryException $e) {
+            return response()->json(['data' => []]);
+        }
     }
 
     public function store(Request $request): JsonResponse

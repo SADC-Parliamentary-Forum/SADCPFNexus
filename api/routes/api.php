@@ -42,6 +42,7 @@ Route::prefix('v1')->group(function () {
         Route::put('profile/password', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updatePassword']);
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
+        Route::get('dashboard/upcoming-social', [\App\Http\Controllers\Api\V1\DashboardController::class, 'upcomingSocial']);
 
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
         Route::get('tenant-users', [\App\Http\Controllers\Api\V1\TenantUsersController::class, 'index']);
@@ -80,6 +81,17 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheet-projects', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'store']);
             Route::put('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'update']);
             Route::delete('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'destroy']);
+
+            // Audit Logs
+            Route::get('audit-logs', [\App\Http\Controllers\Api\V1\Admin\AuditLogController::class, 'index']);
+
+            // System Settings
+            Route::get('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'index']);
+            Route::put('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'update']);
+
+            // Notification Templates
+            Route::get('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'index']);
+            Route::put('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'updateByTrigger']);
         });
 
         // Module routes will be added here per module
@@ -147,6 +159,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('hr')->group(function () {
             Route::get('summary', [\App\Http\Controllers\Api\V1\Hr\HrSummaryController::class, 'summary']);
             Route::get('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'index']);
+            Route::post('timesheets/import', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'import']);
             Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);
             Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update']);
@@ -158,6 +171,17 @@ Route::prefix('v1')->group(function () {
             Route::get('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'show']);
         });
 
+        // HR - Work Assignments
+        Route::prefix('hr')->group(function () {
+            Route::get('assignments/stats', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'stats']);
+            Route::apiResource('assignments', \App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class)
+                ->only(['index', 'store', 'show', 'update'])
+                ->parameters(['assignment' => 'workAssignment']);
+            Route::post('assignments/{workAssignment}/updates', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'addUpdate']);
+            Route::post('assignments/{workAssignment}/start', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'start']);
+            Route::post('assignments/{workAssignment}/complete', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'complete']);
+        });
+
         // HR - Performance Tracker
         Route::prefix('hr')->group(function () {
             Route::get('performance/overview', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'overview']);
@@ -167,6 +191,10 @@ Route::prefix('v1')->group(function () {
             Route::get('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'show']);
             Route::put('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'update']);
 
+            // HR Documents (aggregated list; returns empty when no backend aggregation)
+            Route::get('documents', function () {
+                return response()->json(['data' => []]);
+            });
             // HR Personal Files
             Route::get('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'index']);
             Route::post('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'store']);
@@ -189,6 +217,10 @@ Route::prefix('v1')->group(function () {
             Route::post('appraisals/{appraisal}/hod-review', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'hodReview']);
             Route::post('appraisals/{appraisal}/finalize', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'finalize']);
             Route::post('appraisals/{appraisal}/acknowledge', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'acknowledge']);
+            Route::get('appraisals/{appraisal}/attachments', [\App\Http\Controllers\Api\V1\Hr\AppraisalAttachmentController::class, 'index']);
+            Route::post('appraisals/{appraisal}/attachments', [\App\Http\Controllers\Api\V1\Hr\AppraisalAttachmentController::class, 'store']);
+            Route::delete('appraisals/{appraisal}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Hr\AppraisalAttachmentController::class, 'destroy']);
+            Route::get('appraisals/{appraisal}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Hr\AppraisalAttachmentController::class, 'download']);
 
             // Conduct, Discipline & Recognition
             Route::get('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'index']);
@@ -245,6 +277,9 @@ Route::prefix('v1')->group(function () {
             Route::delete('entries/{calendarEntry}', [\App\Http\Controllers\Api\V1\Calendar\CalendarController::class, 'destroy']);
         });
 
+        // Analytics
+        Route::get('analytics/summary', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'summary']);
+
         // Reports (summary + list endpoints for hub)
         Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
         Route::get('reports/travel', [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
@@ -269,6 +304,21 @@ Route::prefix('v1')->group(function () {
         // Asset requests (any auth user can request; managers see all)
         Route::get('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'index']);
         Route::post('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'store']);
+
+        // Assignments, Oversight & Accountability
+        Route::prefix('assignments')->group(function () {
+            Route::get('stats', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'stats']);
+            Route::apiResource('/', \App\Http\Controllers\Api\V1\Assignments\AssignmentController::class)
+                ->parameter('', 'assignment');
+            Route::post('{assignment}/issue',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'issue']);
+            Route::post('{assignment}/accept',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'accept']);
+            Route::post('{assignment}/start',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'start']);
+            Route::post('{assignment}/updates',  [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addUpdate']);
+            Route::post('{assignment}/complete', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'complete']);
+            Route::post('{assignment}/close',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'close']);
+            Route::post('{assignment}/return',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'returnAssignment']);
+            Route::post('{assignment}/cancel',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
+        });
 
         // Governance (meetings from workplan, resolutions)
         Route::get('governance/meetings', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'meetings']);

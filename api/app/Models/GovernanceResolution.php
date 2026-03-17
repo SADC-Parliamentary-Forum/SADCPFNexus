@@ -9,6 +9,7 @@ class GovernanceResolution extends Model
 {
     protected $fillable = [
         'tenant_id', 'reference_number', 'title', 'description', 'status', 'adopted_at',
+        'type', 'committee', 'lead_member', 'lead_role',
     ];
 
     protected function casts(): array

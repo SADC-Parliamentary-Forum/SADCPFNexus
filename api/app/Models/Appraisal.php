@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Appraisal extends Model
 {
@@ -14,7 +16,7 @@ class Appraisal extends Model
         'hod_comments', 'hod_rating', 'hod_reviewed_at',
         'hr_comments', 'overall_rating', 'overall_rating_label',
         'probation_recommendation', 'probation_outcome', 'promotion_recommendation',
-        'development_plan', 'sg_decision',
+        'development_plan', 'evidence_links', 'sg_decision',
         'employee_acknowledged', 'employee_acknowledged_at',
         'submitted_at', 'finalized_at',
     ];
@@ -30,6 +32,7 @@ class Appraisal extends Model
             'hod_reviewed_at' => 'datetime',
             'submitted_at' => 'datetime',
             'finalized_at' => 'datetime',
+            'evidence_links' => 'array',
         ];
     }
 
@@ -56,5 +59,10 @@ class Appraisal extends Model
     public function kras(): HasMany
     {
         return $this->hasMany(AppraisalKra::class, 'appraisal_id');
+    }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 }

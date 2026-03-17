@@ -143,17 +143,27 @@ class _PerformanceTrackerScreenState
         ),
       ),
       floatingActionButton: _isSupervisorOrHr
-          ? FloatingActionButton(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textPrimary,
-              onPressed: () {
-                // Future: open new tracker form dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('New tracker form coming soon')),
-                );
-              },
-              child: const Icon(Icons.add),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'fab_team',
+                  backgroundColor: AppColors.bgSurface,
+                  foregroundColor: AppColors.primary,
+                  onPressed: () => context.push('/hr/performance/team'),
+                  tooltip: 'My Team',
+                  child: const Icon(Icons.group),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: 'fab_hr_dash',
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.bgDark,
+                  onPressed: () => context.push('/hr/performance/hr-dashboard'),
+                  tooltip: 'HR Dashboard',
+                  child: const Icon(Icons.insights),
+                ),
+              ],
             )
           : null,
       body: _loading

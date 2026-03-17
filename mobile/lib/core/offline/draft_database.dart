@@ -19,7 +19,7 @@ class DraftDatabase extends _$DraftDatabase {
   @override
   int get schemaVersion => 1;
 
-  static LazyDatabase driftDatabaseConnection() {
+  static QueryExecutor driftDatabaseConnection() {
     return driftDatabase(name: 'drafts');
   }
 }

@@ -618,6 +618,7 @@ class _IncidentCase {
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
+// ignore: unused_element
 class _IncidentCaseCard extends StatelessWidget {
   final _IncidentCase caseData;
   const _IncidentCaseCard({required this.caseData});

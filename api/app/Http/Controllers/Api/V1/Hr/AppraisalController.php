@@ -177,6 +177,7 @@ class AppraisalController extends Controller
             'supervisor:id,name,email',
             'hod:id,name,email',
             'kras' => fn ($q) => $q->orderBy('sort_order'),
+            'attachments:id,attachable_type,attachable_id,original_filename,mime_type,size_bytes,created_at,uploaded_by',
         ]);
 
         return response()->json($appraisal);
@@ -194,13 +195,15 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'cycle_id'      => 'required|integer|exists:appraisal_cycles,id',
-            'employee_id'   => 'required|integer|exists:users,id',
-            'supervisor_id' => 'nullable|integer|exists:users,id',
-            'hod_id'        => 'nullable|integer|exists:users,id',
-            'status'        => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
-            // Optional KRAs provided at creation
-            'kras'          => 'nullable|array',
+            'cycle_id'       => 'required|integer|exists:appraisal_cycles,id',
+            'employee_id'    => 'required|integer|exists:users,id',
+            'supervisor_id'  => 'nullable|integer|exists:users,id',
+            'hod_id'         => 'nullable|integer|exists:users,id',
+            'status'         => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
+            'evidence_links' => 'nullable|array',
+            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links.*.title' => 'nullable|string|max:255',
+            'kras'           => 'nullable|array',
             'kras.*.title'       => 'required_with:kras|string|max:255',
             'kras.*.description' => 'nullable|string',
             'kras.*.weight'      => 'nullable|numeric|min:0|max:100',
@@ -209,12 +212,17 @@ class AppraisalController extends Controller
 
         $appraisal = DB::transaction(function () use ($validated, $user) {
             $krasData = $validated['kras'] ?? null;
-            unset($validated['kras']);
+            $evidenceLinks = $validated['evidence_links'] ?? null;
+            unset($validated['kras'], $validated['evidence_links']);
 
             $appraisal = Appraisal::create([
-                'tenant_id' => $user->tenant_id,
-                ...$validated,
-                'status' => $validated['status'] ?? 'draft',
+                'tenant_id'       => $user->tenant_id,
+                'cycle_id'        => $validated['cycle_id'],
+                'employee_id'     => $validated['employee_id'],
+                'supervisor_id'   => $validated['supervisor_id'] ?? null,
+                'hod_id'          => $validated['hod_id'] ?? null,
+                'status'          => $validated['status'] ?? 'draft',
+                'evidence_links'  => $evidenceLinks,
             ]);
 
             if ($krasData) {
@@ -268,13 +276,15 @@ class AppraisalController extends Controller
             'sg_decision'          => 'nullable|string',
             'probation_outcome'    => 'nullable|string|max:32',
             'promotion_recommendation' => 'nullable|boolean',
-            // KRAs
-            'kras'               => 'nullable|array',
-            'kras.*.id'          => 'nullable|integer|exists:appraisal_kras,id',
-            'kras.*.title'       => 'required_with:kras|string|max:255',
-            'kras.*.description' => 'nullable|string',
-            'kras.*.weight'      => 'nullable|numeric|min:0|max:100',
-            'kras.*.sort_order'  => 'nullable|integer',
+            'evidence_links'       => 'nullable|array',
+            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links.*.title' => 'nullable|string|max:255',
+            'kras'                 => 'nullable|array',
+            'kras.*.id'            => 'nullable|integer|exists:appraisal_kras,id',
+            'kras.*.title'         => 'required_with:kras|string|max:255',
+            'kras.*.description'   => 'nullable|string',
+            'kras.*.weight'        => 'nullable|numeric|min:0|max:100',
+            'kras.*.sort_order'    => 'nullable|integer',
         ]);
 
         DB::transaction(function () use ($appraisal, $validated) {
@@ -338,21 +348,28 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'self_assessment'    => 'required|string',
-            'self_overall_rating'=> 'required|integer|min:1|max:5',
-            'kras'               => 'nullable|array',
-            'kras.*.id'          => 'required_with:kras|integer|exists:appraisal_kras,id',
-            'kras.*.self_rating' => 'nullable|integer|min:1|max:5',
-            'kras.*.self_comments' => 'nullable|string',
+            'self_assessment'     => 'required|string',
+            'self_overall_rating' => 'required|integer|min:1|max:5',
+            'evidence_links'      => 'nullable|array',
+            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links.*.title' => 'nullable|string|max:255',
+            'kras'                => 'nullable|array',
+            'kras.*.id'           => 'required_with:kras|integer|exists:appraisal_kras,id',
+            'kras.*.self_rating'  => 'nullable|integer|min:1|max:5',
+            'kras.*.self_comments'=> 'nullable|string',
         ]);
 
         DB::transaction(function () use ($appraisal, $validated) {
-            $appraisal->update([
+            $update = [
                 'self_assessment'     => $validated['self_assessment'],
                 'self_overall_rating' => $validated['self_overall_rating'],
                 'status'              => 'employee_submitted',
                 'submitted_at'        => now(),
-            ]);
+            ];
+            if (array_key_exists('evidence_links', $validated)) {
+                $update['evidence_links'] = $validated['evidence_links'];
+            }
+            $appraisal->update($update);
 
             if (! empty($validated['kras'])) {
                 foreach ($validated['kras'] as $kraData) {

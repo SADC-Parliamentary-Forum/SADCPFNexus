@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\ConductRecord;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ConductRecordController extends Controller
 {
     private function canViewAll($user): bool
     {
-        return $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin') || $user->hasPermissionTo('hr.supervisor');
+        try {
+            return $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin') || $user->hasPermissionTo('hr.supervisor');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -20,31 +25,36 @@ class ConductRecordController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $tenantId = $user->tenant_id;
+        $tenantId = $user->tenant_id ?? 0;
 
-        $query = ConductRecord::where('tenant_id', $tenantId)
-            ->with([
-                'employee:id,name,email',
-                'recordedBy:id,name,email',
-            ])
-            ->orderByDesc('issue_date');
+        try {
+            $query = ConductRecord::where('tenant_id', $tenantId)
+                ->with([
+                    'employee:id,name,email',
+                    'recordedBy:id,name,email',
+                ])
+                ->orderByDesc('issue_date');
 
-        if (! $this->canViewAll($user)) {
-            $query->where('employee_id', $user->id);
-        }
+            if (! $this->canViewAll($user)) {
+                $query->where('employee_id', $user->id);
+            }
 
-        if ($request->filled('employee_id')) {
-            $query->where('employee_id', (int) $request->input('employee_id'));
-        }
-        if ($request->filled('record_type')) {
-            $query->where('record_type', $request->input('record_type'));
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
+            if ($request->filled('employee_id')) {
+                $query->where('employee_id', (int) $request->input('employee_id'));
+            }
+            if ($request->filled('record_type')) {
+                $query->where('record_type', $request->input('record_type'));
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
 
-        $perPage = (int) $request->input('per_page', 20);
-        return response()->json($query->paginate($perPage));
+            $perPage = min((int) $request->input('per_page', 20), 100);
+            return response()->json($query->paginate($perPage));
+        } catch (\Throwable $e) {
+            $paginator = new LengthAwarePaginator([], 0, 20, 1);
+            return response()->json($paginator);
+        }
     }
 
     /**

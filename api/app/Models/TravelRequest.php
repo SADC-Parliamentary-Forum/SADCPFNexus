@@ -45,6 +45,21 @@ class TravelRequest extends Model
         return $this->belongsTo(WorkplanEvent::class, 'workplan_event_id');
     }
 
+    public function approvalRequest()
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\Travel\Services\TravelService::class)->onWorkflowApproved($this, $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        app(\App\Modules\Travel\Services\TravelService::class)->onWorkflowRejected($this, $approver, $reason);
+    }
+
     public function isDraft(): bool { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }

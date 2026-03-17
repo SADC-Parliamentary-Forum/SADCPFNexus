@@ -138,7 +138,7 @@ class LeaveController extends Controller
         $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
         $this->workflowService->approve($leaveRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
 
-        return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh('approvalRequest')]);
+        return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);
     }
 
     public function reject(Request $request, LeaveRequest $leaveRequest): JsonResponse
@@ -152,6 +152,6 @@ class LeaveController extends Controller
 
         $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $data['reason']);
 
-        return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh('approvalRequest')]);
+        return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);
     }
 }

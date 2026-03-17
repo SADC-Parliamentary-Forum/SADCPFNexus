@@ -65,6 +65,10 @@ class GovernanceController extends Controller
             $query->where('status', $status);
         }
 
+        if ($type = $request->input('type')) {
+            $query->where('type', $type);
+        }
+
         $perPage = min((int) $request->input('per_page', 20), 100);
         $resolutions = $query->paginate($perPage);
 

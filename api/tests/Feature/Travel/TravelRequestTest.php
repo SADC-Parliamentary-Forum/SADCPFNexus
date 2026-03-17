@@ -52,4 +52,41 @@ class TravelRequestTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['data', 'current_page']);
     }
+
+    public function test_authenticated_user_can_show_travel_request(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $create = $this->postJson('/api/v1/travel/requests', [
+            'purpose'             => 'Mission to workshop',
+            'destination_country' => 'Zambia',
+            'departure_date'      => now()->addDays(14)->format('Y-m-d'),
+            'return_date'         => now()->addDays(16)->format('Y-m-d'),
+        ]);
+        $create->assertStatus(201);
+        $id = $create->json('data.id');
+
+        $response = $this->getJson("/api/v1/travel/requests/{$id}");
+        $response->assertStatus(200)
+            ->assertJsonPath('id', $id)
+            ->assertJsonPath('status', 'draft');
+    }
+
+    public function test_authenticated_user_can_submit_travel_request(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $create = $this->postJson('/api/v1/travel/requests', [
+            'purpose'             => 'Mission to workshop',
+            'destination_country' => 'Zambia',
+            'departure_date'      => now()->addDays(14)->format('Y-m-d'),
+            'return_date'         => now()->addDays(16)->format('Y-m-d'),
+        ]);
+        $create->assertStatus(201);
+        $id = $create->json('data.id');
+
+        $response = $this->postJson("/api/v1/travel/requests/{$id}/submit");
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', 'submitted');
+    }
 }
