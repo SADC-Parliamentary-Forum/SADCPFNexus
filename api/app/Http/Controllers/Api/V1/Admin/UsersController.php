@@ -144,6 +144,7 @@ class UsersController extends Controller
             'qualifications'  => ['nullable', 'array'],
             'portfolio_ids'   => ['nullable', 'array'],
             'portfolio_ids.*' => ['exists:portfolios,id'],
+            'position_id'     => ['nullable', 'exists:positions,id'],
         ]);
 
         $user = $this->userService->update($user, $data, $request->user());

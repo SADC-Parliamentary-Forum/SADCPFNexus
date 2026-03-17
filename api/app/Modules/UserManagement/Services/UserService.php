@@ -139,6 +139,11 @@ class UserService
             'qualifications'  => $data['qualifications'] ?? null,
         ], fn ($v) => $v !== null));
 
+        // Handle position_id separately — allows explicitly clearing it to null
+        if (array_key_exists('position_id', $data)) {
+            $user->update(['position_id' => $data['position_id']]);
+        }
+
         if (isset($data['portfolio_ids'])) {
             $user->portfolios()->sync($data['portfolio_ids']);
         }
