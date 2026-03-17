@@ -26,12 +26,14 @@ class TenantUsersController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')
-            ->get(['id', 'name', 'email'])
+        $users = $query->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'job_title'])
             ->map(fn (User $u) => [
-                'id'    => $u->id,
-                'name'  => $u->name,
-                'email' => $u->email,
+                'id'        => $u->id,
+                'name'      => $u->name,
+                'email'     => $u->email,
+                'job_title' => $u->job_title,
             ]);
 
         return response()->json(['data' => $users]);
