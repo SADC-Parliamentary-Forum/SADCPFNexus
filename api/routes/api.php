@@ -41,6 +41,12 @@ Route::prefix('v1')->group(function () {
         Route::put('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'update']);
         Route::put('profile/password', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updatePassword']);
 
+        // Profile Documents (Self-Service)
+        Route::get('profile/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'index']);
+        Route::post('profile/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'store']);
+        Route::delete('profile/documents/{attachment}', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'destroy']);
+        Route::get('profile/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'download']);
+
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
         Route::get('dashboard/upcoming-social', [\App\Http\Controllers\Api\V1\DashboardController::class, 'upcomingSocial']);
 
@@ -53,6 +59,12 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);
             Route::get('users/{user}/audit', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'audit']);
+
+            // Admin: user profile documents
+            Route::get('users/{user}/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'adminIndex']);
+            Route::post('users/{user}/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'adminStore']);
+            Route::delete('users/{user}/documents/{attachment}', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'adminDestroy']);
+            Route::get('users/{user}/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'adminDownload']);
 
             // Departments
             Route::apiResource('departments', \App\Http\Controllers\Api\V1\Admin\DepartmentsController::class)

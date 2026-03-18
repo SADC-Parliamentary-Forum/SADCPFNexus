@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             TenantSeeder::class,
             RolesAndPermissionsSeeder::class,
             DepartmentsSeeder::class,
+            PortfolioSeeder::class,
             LookupsSeeder::class,
             AssetCategorySeeder::class,
             UsersSeeder::class,

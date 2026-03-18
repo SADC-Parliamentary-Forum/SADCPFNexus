@@ -17,6 +17,16 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_WORKPLAN = 'workplan_document';
     public const DOCUMENT_TYPE_APPRAISAL_EVIDENCE = 'appraisal_evidence';
 
+    // Profile / HR document types
+    public const DOCUMENT_TYPE_CV = 'cv';
+    public const DOCUMENT_TYPE_QUALIFICATION = 'qualification';
+    public const DOCUMENT_TYPE_ID_DOCUMENT = 'id_document';
+    public const DOCUMENT_TYPE_EMPLOYMENT_CONTRACT = 'employment_contract';
+    public const DOCUMENT_TYPE_TRAINING_CERTIFICATE = 'training_certificate';
+    public const DOCUMENT_TYPE_PERFORMANCE_REVIEW = 'performance_review';
+    public const DOCUMENT_TYPE_RECOMMENDATION = 'recommendation';
+    public const DOCUMENT_TYPE_PHOTO = 'photo';
+
     public const DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_CONCEPT_NOTE,
         self::DOCUMENT_TYPE_MEMO,
@@ -25,6 +35,27 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_OTHER,
         self::DOCUMENT_TYPE_WORKPLAN,
         self::DOCUMENT_TYPE_APPRAISAL_EVIDENCE,
+        self::DOCUMENT_TYPE_CV,
+        self::DOCUMENT_TYPE_QUALIFICATION,
+        self::DOCUMENT_TYPE_ID_DOCUMENT,
+        self::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT,
+        self::DOCUMENT_TYPE_TRAINING_CERTIFICATE,
+        self::DOCUMENT_TYPE_PERFORMANCE_REVIEW,
+        self::DOCUMENT_TYPE_RECOMMENDATION,
+        self::DOCUMENT_TYPE_PHOTO,
+    ];
+
+    /** Document types for user profile documents */
+    public const PROFILE_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_CV,
+        self::DOCUMENT_TYPE_QUALIFICATION,
+        self::DOCUMENT_TYPE_ID_DOCUMENT,
+        self::DOCUMENT_TYPE_EMPLOYMENT_CONTRACT,
+        self::DOCUMENT_TYPE_TRAINING_CERTIFICATE,
+        self::DOCUMENT_TYPE_PERFORMANCE_REVIEW,
+        self::DOCUMENT_TYPE_RECOMMENDATION,
+        self::DOCUMENT_TYPE_PHOTO,
+        self::DOCUMENT_TYPE_OTHER,
     ];
 
     /** Document types valid for appraisal evidence attachments */

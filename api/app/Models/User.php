@@ -89,6 +89,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Portfolio::class);
     }
 
+    public function profileDocuments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')
+            ->where('document_type', '!=', 'appraisal_evidence')
+            ->whereIn('document_type', Attachment::PROFILE_DOCUMENT_TYPES);
+    }
+
     /**
      * Whether the user has a system administrator role (accepts both "System Admin" and "System Administrator").
      */
