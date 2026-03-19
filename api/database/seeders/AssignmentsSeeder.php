@@ -19,13 +19,13 @@ class AssignmentsSeeder extends Seeder
             return;
         }
 
-        $sg    = User::where('email', 'sg@sadcpf.org')->first();
-        $maria = User::where('email', 'maria@sadcpf.org')->first();
-        $thabo = User::where('email', 'thabo@sadcpf.org')->first();
-        $staff = User::where('email', 'staff@sadcpf.org')->first();
-        $finance = User::where('email', 'finance@sadcpf.org')->first();
-        $hr    = User::where('email', 'hr@sadcpf.org')->first();
-        $john  = User::where('email', 'john@sadcpf.org')->first();
+        $sg    = User::where('email', 'bsekgoma@sadcpf.org')->first();   // Secretary General
+        $maria = User::where('email', 'skauvee@sadcpf.org')->first();   // HR Manager
+        $thabo = User::where('email', 'tmwaala@sadcpf.org')->first();   // Finance Controller
+        $staff = User::where('email', 'skurasha@sadcpf.org')->first();  // staff
+        $finance = User::where('email', 'lboois@sadcpf.org')->first();  // Finance Controller
+        $hr    = User::where('email', 'skauvee@sadcpf.org')->first();   // HR Manager
+        $john  = User::where('email', 'pkanguatjivi@sadcpf.org')->first(); // staff
 
         if (! $sg || ! $maria) {
             return;
