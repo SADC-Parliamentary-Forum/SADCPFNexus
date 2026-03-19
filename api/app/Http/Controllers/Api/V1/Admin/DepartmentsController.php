@@ -56,6 +56,16 @@ class DepartmentsController extends Controller
     }
 
     /**
+     * @OA\Get(path="/api/v1/admin/departments/{id}", summary="Get department", tags={"Admin - Departments"}, security={{"sanctum":{}}})
+     */
+    public function show(Request $request, Department $department): JsonResponse
+    {
+        $this->authorize('view', $department);
+
+        return response()->json(['data' => $department->load('parent', 'children', 'supervisor')->loadCount('users')]);
+    }
+
+    /**
      * @OA\Put(path="/api/v1/admin/departments/{id}", summary="Update department", tags={"Admin - Departments"}, security={{"sanctum":{}}})
      */
     public function update(Request $request, Department $department): JsonResponse

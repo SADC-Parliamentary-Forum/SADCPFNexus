@@ -26,6 +26,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Ensure API auth failures always return JSON 401, never redirect to route('login').
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (!$request->is('api/*') && !$request->is('api')) {
+                return null;
+            }
+            $response = response()->json(['message' => 'Unauthenticated.'], 401);
+            foreach (\App\Support\CorsHelper::headersForRequest($request) as $name => $value) {
+                $response->header($name, $value);
+            }
+            return $response;
+        });
+
         $exceptions->render(function (Throwable $e, Request $request) {
             if (!$request->is('api/*') && !$request->is('api')) {
                 return null;

@@ -7,7 +7,7 @@ use App\Models\Asset;
 use App\Models\AssetCategory;
 use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -206,13 +206,19 @@ class AssetController extends Controller
         if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
             abort(404);
         }
+        // Generate QR on-the-fly if not yet stored
         if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
-            abort(404, 'QR code not found.');
+            $this->generateAndSaveQr($asset);
+            $asset->refresh();
+        }
+        if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
+            abort(404, 'QR code could not be generated.');
         }
         $contents = Storage::disk('local')->get($asset->qr_path);
+        $isPng = str_ends_with($asset->qr_path, '.png');
         return response($contents, 200, [
-            'Content-Type'        => 'image/png',
-            'Content-Disposition' => 'inline; filename="asset-' . $asset->asset_code . '-qr.png"',
+            'Content-Type'        => $isPng ? 'image/png' : 'image/svg+xml',
+            'Content-Disposition' => 'inline; filename="asset-' . $asset->asset_code . '-qr.' . ($isPng ? 'png' : 'svg') . '"',
         ]);
     }
 
@@ -224,19 +230,19 @@ class AssetController extends Controller
         $data = $asset->asset_code;
         try {
             $result = Builder::create()
-                ->writer(new PngWriter())
+                ->writer(new SvgWriter())
                 ->data($data)
                 ->size(200)
                 ->margin(10)
                 ->build();
-            $png = $result->getString();
+            $svg = $result->getString();
         } catch (\Throwable $e) {
             return;
         }
         $dir = 'qr/assets/' . $asset->tenant_id;
-        $filename = $asset->id . '.png';
+        $filename = $asset->id . '.svg';
         $path = $dir . '/' . $filename;
-        Storage::disk('local')->put($path, $png);
+        Storage::disk('local')->put($path, $svg);
         $asset->qr_path = $path;
         $asset->save();
     }
