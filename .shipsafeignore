@@ -1,0 +1,7 @@
+Design/
+Design/**
+ship-safe-report.html
+.ship-safe/
+.ship-safe/**
+mobile/.dart_tool/
+mobile/.dart_tool/**
