@@ -79,4 +79,15 @@ class ImprestController extends Controller
         $imprest = $this->imprestService->reject($imprestRequest, $data['reason'], $request->user());
         return response()->json(['message' => 'Imprest request rejected.', 'data' => $imprest]);
     }
+
+    public function retire(Request $request, ImprestRequest $imprestRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'amount_liquidated'  => ['required', 'numeric', 'min:0'],
+            'notes'              => ['nullable', 'string', 'max:2000'],
+            'receipts_attached'  => ['nullable', 'boolean'],
+        ]);
+        $imprest = $this->imprestService->retire($imprestRequest, $data, $request->user());
+        return response()->json(['message' => 'Imprest request retired successfully.', 'data' => $imprest]);
+    }
 }

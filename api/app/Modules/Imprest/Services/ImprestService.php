@@ -140,4 +140,27 @@ class ImprestService
 
         return $imprest->fresh();
     }
+
+    public function retire(ImprestRequest $imprest, array $data, User $user): ImprestRequest
+    {
+        if (!$imprest->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved requests can be retired.']);
+        }
+
+        $imprest->update([
+            'status'            => 'liquidated',
+            'amount_liquidated' => $data['amount_liquidated'],
+            'liquidated_at'     => now(),
+            'justification'     => $data['notes'] ?? $imprest->justification,
+        ]);
+
+        AuditLog::record('imprest.liquidated', [
+            'auditable_type' => ImprestRequest::class,
+            'auditable_id'   => $imprest->id,
+            'new_values'     => ['amount_liquidated' => $data['amount_liquidated']],
+            'tags'           => 'imprest',
+        ]);
+
+        return $imprest->fresh('requester');
+    }
 }

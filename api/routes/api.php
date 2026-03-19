@@ -128,6 +128,7 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{imprestRequest}/submit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
             Route::post('requests/{imprestRequest}/approve', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
             Route::post('requests/{imprestRequest}/reject', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
+            Route::post('requests/{imprestRequest}/retire', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'retire']);
         });
 
         // Leave Module
