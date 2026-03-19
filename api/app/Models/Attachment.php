@@ -83,6 +83,7 @@ class Attachment extends Model
         'attachable_type',
         'attachable_id',
         'document_type',
+        'language',
         'original_filename',
         'storage_path',
         'mime_type',

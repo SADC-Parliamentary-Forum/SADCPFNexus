@@ -337,9 +337,16 @@ Route::prefix('v1')->group(function () {
             Route::post('{assignment}/cancel',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
         });
 
-        // Governance (meetings from workplan, resolutions)
+        // Governance (meetings from workplan, resolutions + multilingual documents)
         Route::get('governance/meetings', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'meetings']);
         Route::get('governance/resolutions', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'resolutions']);
+        Route::post('governance/resolutions', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'storeResolution']);
+        Route::get('governance/resolutions/{resolution}', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'showResolution']);
+        Route::put('governance/resolutions/{resolution}', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'updateResolution']);
+        Route::delete('governance/resolutions/{resolution}', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'destroyResolution']);
+        Route::post('governance/resolutions/{resolution}/documents', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'uploadDocument']);
+        Route::delete('governance/resolutions/{resolution}/documents/{attachment}', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'deleteDocument']);
+        Route::get('governance/resolutions/{resolution}/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'downloadDocument']);
 
         // Support tickets
         Route::get('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'index']);

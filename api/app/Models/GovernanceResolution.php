@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class GovernanceResolution extends Model
 {
@@ -20,5 +21,10 @@ class GovernanceResolution extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->orderBy('language');
     }
 }
