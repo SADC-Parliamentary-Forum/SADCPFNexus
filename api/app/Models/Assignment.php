@@ -31,6 +31,7 @@ class Assignment extends Model
         'checkin_frequency',
         'linked_programme_id',
         'linked_event_id',
+        'meeting_minutes_id',
         'is_confidential',
         'progress_percent',
         'acceptance_decision',

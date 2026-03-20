@@ -11,3 +11,43 @@ mobile/windows/CMakeLists.txt
 mobile/DESIGN.md
 REMAINING_WORK.md
 DOCKER.md
+
+# Sensitive / local-only files
+*.env
+.env*
+api/.env
+*.pem
+*.key
+*.p12
+*.pfx
+
+# LLM / document artefacts
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+
+# Markdown docs (local notes)
+*.md
+red-team-report.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/asset_inventory_control_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/asset_inventory_control_2/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/delegation_meetings_dashboard/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/disciplinary_case_management/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/expense_retirement_audit_summary/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/hr_governance_dashboard_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/hr_governance_dashboard_2/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/pif_general_info_venue/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/plenary_resolution_dashboard/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/procurement_approval_matrix_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/regional_compliance_tracker/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/resolution_implementation_details/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/resolutions_oversight_tracker_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/resolutions_oversight_tracker_2/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/secure_executive_approval_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/timesheets_incidents_1/code.html
+.ship-safe-backup/2026-03-19T08-53-13/Design/Mobile/timesheets_incidents_2/code.html
+.ship-safe-backup/2026-03-19T08-53-13/mobile/.dart_tool/chrome-device/Default/shared_proto_db/000003.log
+api/.ship-safe/context.json
+.ship-safe/history.json
+.ship-safe/context.json

@@ -190,6 +190,36 @@ class UsersController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/v1/admin/users/{id}/change-password",
+     *     summary="Admin: set a new password for a user",
+     *     tags={"Admin - Users"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(response=200, description="Password changed")
+     * )
+     */
+    public function changePassword(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $data = $request->validate([
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        $user->update(['password' => \Illuminate\Support\Facades\Hash::make($data['password'])]);
+
+        \App\Models\AuditLog::record('user.password_changed_by_admin', [
+            'auditable_type' => User::class,
+            'auditable_id'   => $user->id,
+            'actor_id'       => $request->user()->id,
+            'meta'           => ['target_user' => $user->email],
+        ]);
+
+        return response()->json(['message' => 'Password updated successfully.']);
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/v1/admin/users/{id}/audit",
      *     summary="Get audit trail for a user",

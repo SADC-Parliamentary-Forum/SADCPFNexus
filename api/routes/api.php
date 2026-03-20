@@ -58,6 +58,7 @@ Route::prefix('v1')->group(function () {
             // Users
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);
+            Route::post('users/{user}/change-password', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'changePassword']);
             Route::get('users/{user}/audit', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'audit']);
 
             // Admin: user profile documents
@@ -347,6 +348,20 @@ Route::prefix('v1')->group(function () {
         Route::post('governance/resolutions/{resolution}/documents', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'uploadDocument']);
         Route::delete('governance/resolutions/{resolution}/documents/{attachment}', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'deleteDocument']);
         Route::get('governance/resolutions/{resolution}/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'downloadDocument']);
+
+        // Meeting Minutes (staff meetings, action items, task assignment)
+        Route::get('governance/minutes', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'index']);
+        Route::post('governance/minutes', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'store']);
+        Route::get('governance/minutes/{meetingMinute}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'show']);
+        Route::put('governance/minutes/{meetingMinute}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'update']);
+        Route::delete('governance/minutes/{meetingMinute}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'destroy']);
+        Route::post('governance/minutes/{meetingMinute}/documents', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'uploadDocument']);
+        Route::delete('governance/minutes/{meetingMinute}/documents/{attachment}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteDocument']);
+        Route::get('governance/minutes/{meetingMinute}/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'downloadDocument']);
+        Route::post('governance/minutes/{meetingMinute}/action-items', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'addActionItem']);
+        Route::put('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'updateActionItem']);
+        Route::delete('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteActionItem']);
+        Route::post('governance/minutes/{meetingMinute}/action-items/{actionItem}/assign', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'assignActionItem']);
 
         // Support tickets
         Route::get('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'index']);

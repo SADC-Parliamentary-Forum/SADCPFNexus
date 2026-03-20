@@ -7,7 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tables = [
+        // Only grant on tables that actually exist
+        $allTables = [
             'portfolios',
             'portfolio_user',
             'positions',
@@ -21,12 +22,19 @@ return new class extends Migration
             'performance_trackers',
         ];
 
-        foreach ($tables as $table) {
-            DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
+        $existing = DB::select(
+            "SELECT tablename FROM pg_tables WHERE schemaname = current_schema()"
+        );
+        $existingNames = array_column($existing, 'tablename');
+
+        foreach ($allTables as $table) {
+            if (in_array($table, $existingNames, true)) {
+                DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
+            }
         }
 
         // Sequences for tables with auto-increment ids
-        $sequences = [
+        $allSequences = [
             'portfolios_id_seq',
             'positions_id_seq',
             'assignments_id_seq',
@@ -39,8 +47,15 @@ return new class extends Migration
             'performance_trackers_id_seq',
         ];
 
-        foreach ($sequences as $seq) {
-            DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$seq} TO app_user");
+        $existingSeqs = DB::select(
+            "SELECT sequencename FROM pg_sequences WHERE schemaname = current_schema()"
+        );
+        $existingSeqNames = array_column($existingSeqs, 'sequencename');
+
+        foreach ($allSequences as $seq) {
+            if (in_array($seq, $existingSeqNames, true)) {
+                DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$seq} TO app_user");
+            }
         }
     }
 
