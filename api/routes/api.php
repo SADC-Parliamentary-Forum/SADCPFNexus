@@ -23,13 +23,13 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     });
 
-    // External Integrations APIs
-    Route::prefix('external')->group(function () {
-        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
-    });
-
     // Authenticated routes
-    Route::middleware(['auth:sanctum', \App\Http\Middleware\SetRlsContext::class])->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
+
+        // External Integrations APIs (authenticated — requires valid Bearer token)
+        Route::prefix('external')->group(function () {
+            Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
+        });
 
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -40,6 +40,11 @@ Route::prefix('v1')->group(function () {
         Route::get('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'show']);
         Route::put('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'update']);
         Route::put('profile/password', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updatePassword']);
+
+        // Profile Change Requests (Self-Service Approval Workflow)
+        Route::get('profile/change-request', [\App\Http\Controllers\Api\V1\ProfileChangeRequestController::class, 'show']);
+        Route::post('profile/change-request', [\App\Http\Controllers\Api\V1\ProfileChangeRequestController::class, 'store']);
+        Route::delete('profile/change-request/{changeRequest}', [\App\Http\Controllers\Api\V1\ProfileChangeRequestController::class, 'cancel']);
 
         // Profile Documents (Self-Service)
         Route::get('profile/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'index']);
@@ -53,8 +58,8 @@ Route::prefix('v1')->group(function () {
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
         Route::get('tenant-users', [\App\Http\Controllers\Api\V1\TenantUsersController::class, 'index']);
 
-        // Admin - User Management
-        Route::prefix('admin')->group(function () {
+        // Admin - User Management (tighter rate limit for sensitive operations)
+        Route::prefix('admin')->middleware('throttle:20,1')->group(function () {
             // Users
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);
@@ -176,8 +181,16 @@ Route::prefix('v1')->group(function () {
         // HR - Timesheets & Summary
         Route::prefix('hr')->group(function () {
             Route::get('summary', [\App\Http\Controllers\Api\V1\Hr\HrSummaryController::class, 'summary']);
+
+            // Profile Change Approval (HR)
+            Route::get('profile-requests', [\App\Http\Controllers\Api\V1\Hr\ProfileRequestController::class, 'index']);
+            Route::get('profile-requests/{profileChangeRequest}', [\App\Http\Controllers\Api\V1\Hr\ProfileRequestController::class, 'show']);
+            Route::post('profile-requests/{profileChangeRequest}/approve', [\App\Http\Controllers\Api\V1\Hr\ProfileRequestController::class, 'approve']);
+            Route::post('profile-requests/{profileChangeRequest}/reject', [\App\Http\Controllers\Api\V1\Hr\ProfileRequestController::class, 'reject']);
             Route::get('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'index']);
             Route::post('timesheets/import', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'import']);
+            Route::get('timesheets/team', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'team']);
+            Route::get('timesheets/leave-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'leaveDays']);
             Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);
             Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update']);

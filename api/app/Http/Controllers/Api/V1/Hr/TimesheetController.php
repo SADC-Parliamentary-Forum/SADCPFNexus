@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
+use App\Models\LeaveRequest;
+use App\Models\PerformanceTracker;
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
 use Carbon\Carbon;
@@ -15,7 +17,7 @@ class TimesheetController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'per_page', 'week_start', 'month', 'year']);
-        $query = Timesheet::with(['user', 'entries'])
+        $query = Timesheet::with(['user', 'entries.project'])
             ->where('user_id', $request->user()->id)
             ->orderByDesc('week_start');
 
@@ -40,22 +42,26 @@ class TimesheetController extends Controller
 
     public function show(Timesheet $timesheet): JsonResponse
     {
-        if ($timesheet->user_id !== request()->user()->id) {
+        if ($timesheet->user_id !== request()->user()->id && !$this->canManageTimesheets(request()->user())) {
             abort(403);
         }
-        return response()->json($timesheet->load(['entries', 'user', 'approver']));
+        return response()->json($timesheet->load(['entries.project', 'entries.workAssignment', 'user', 'approver']));
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'week_start' => ['required', 'date'],
-            'week_end'   => ['required', 'date', 'after_or_equal:week_start'],
-            'entries'    => ['required', 'array', 'min:1'],
-            'entries.*.work_date'   => ['required', 'date'],
-            'entries.*.hours'       => ['required', 'numeric', 'min:0', 'max:24'],
-            'entries.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:12'],
-            'entries.*.description' => ['nullable', 'string', 'max:500'],
+            'week_start'                   => ['required', 'date'],
+            'week_end'                     => ['required', 'date', 'after_or_equal:week_start'],
+            'entries'                      => ['required', 'array', 'min:1'],
+            'entries.*.work_date'          => ['required', 'date'],
+            'entries.*.hours'              => ['required', 'numeric', 'min:0', 'max:24'],
+            'entries.*.overtime_hours'     => ['nullable', 'numeric', 'min:0', 'max:12'],
+            'entries.*.description'        => ['nullable', 'string', 'max:500'],
+            'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
+            'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
         ]);
 
         $user = $request->user();
@@ -67,26 +73,30 @@ class TimesheetController extends Controller
         }
 
         $timesheet = Timesheet::create([
-            'tenant_id'     => $user->tenant_id,
-            'user_id'       => $user->id,
-            'week_start'    => $data['week_start'],
-            'week_end'      => $data['week_end'],
-            'total_hours'   => $total,
-            'overtime_hours'=> $overtime,
-            'status'        => 'draft',
+            'tenant_id'      => $user->tenant_id,
+            'user_id'        => $user->id,
+            'week_start'     => $data['week_start'],
+            'week_end'       => $data['week_end'],
+            'total_hours'    => $total,
+            'overtime_hours' => $overtime,
+            'status'         => 'draft',
         ]);
 
         foreach ($data['entries'] as $e) {
             TimesheetEntry::create([
-                'timesheet_id'    => $timesheet->id,
-                'work_date'       => $e['work_date'],
-                'hours'           => $e['hours'],
-                'overtime_hours'  => $e['overtime_hours'] ?? 0,
-                'description'     => $e['description'] ?? null,
+                'timesheet_id'       => $timesheet->id,
+                'work_date'          => $e['work_date'],
+                'hours'              => $e['hours'],
+                'overtime_hours'     => $e['overtime_hours'] ?? 0,
+                'description'        => $e['description'] ?? null,
+                'project_id'         => $e['project_id'] ?? null,
+                'work_bucket'        => $e['work_bucket'] ?? null,
+                'activity_type'      => $e['activity_type'] ?? null,
+                'work_assignment_id' => $e['work_assignment_id'] ?? null,
             ]);
         }
 
-        return response()->json(['message' => 'Timesheet created.', 'data' => $timesheet->load(['entries', 'user'])], 201);
+        return response()->json(['message' => 'Timesheet created.', 'data' => $timesheet->load(['entries.project', 'entries.workAssignment', 'user'])], 201);
     }
 
     public function update(Request $request, Timesheet $timesheet): JsonResponse
@@ -99,11 +109,15 @@ class TimesheetController extends Controller
         }
 
         $data = $request->validate([
-            'entries' => ['required', 'array', 'min:1'],
-            'entries.*.work_date'   => ['required', 'date'],
-            'entries.*.hours'       => ['required', 'numeric', 'min:0', 'max:24'],
-            'entries.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:12'],
-            'entries.*.description' => ['nullable', 'string', 'max:500'],
+            'entries'                      => ['required', 'array', 'min:1'],
+            'entries.*.work_date'          => ['required', 'date'],
+            'entries.*.hours'              => ['required', 'numeric', 'min:0', 'max:24'],
+            'entries.*.overtime_hours'     => ['nullable', 'numeric', 'min:0', 'max:12'],
+            'entries.*.description'        => ['nullable', 'string', 'max:500'],
+            'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
+            'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
         ]);
 
         $total = 0;
@@ -117,15 +131,19 @@ class TimesheetController extends Controller
         $timesheet->entries()->delete();
         foreach ($data['entries'] as $e) {
             TimesheetEntry::create([
-                'timesheet_id'   => $timesheet->id,
-                'work_date'      => $e['work_date'],
-                'hours'          => $e['hours'],
-                'overtime_hours' => $e['overtime_hours'] ?? 0,
-                'description'    => $e['description'] ?? null,
+                'timesheet_id'       => $timesheet->id,
+                'work_date'          => $e['work_date'],
+                'hours'              => $e['hours'],
+                'overtime_hours'     => $e['overtime_hours'] ?? 0,
+                'description'        => $e['description'] ?? null,
+                'project_id'         => $e['project_id'] ?? null,
+                'work_bucket'        => $e['work_bucket'] ?? null,
+                'activity_type'      => $e['activity_type'] ?? null,
+                'work_assignment_id' => $e['work_assignment_id'] ?? null,
             ]);
         }
 
-        return response()->json(['message' => 'Updated.', 'data' => $timesheet->fresh(['entries', 'user'])]);
+        return response()->json(['message' => 'Updated.', 'data' => $timesheet->fresh(['entries.project', 'entries.workAssignment', 'user'])]);
     }
 
     public function submit(Request $request, Timesheet $timesheet): JsonResponse
@@ -147,7 +165,7 @@ class TimesheetController extends Controller
         }
         if ((int) $timesheet->user_id === (int) $request->user()->id) {
             throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+                'approval' => 'You cannot approve your own request.',
             ]);
         }
         $timesheet->update([
@@ -168,9 +186,86 @@ class TimesheetController extends Controller
         return response()->json(['message' => 'Rejected.', 'data' => $timesheet->fresh('user')]);
     }
 
+    public function leaveDays(Request $request): JsonResponse
+    {
+        $request->validate([
+            'week_start' => ['required', 'date'],
+            'week_end'   => ['required', 'date', 'after_or_equal:week_start'],
+        ]);
+
+        $user      = $request->user();
+        $weekStart = Carbon::parse($request->week_start);
+        $weekEnd   = Carbon::parse($request->week_end);
+
+        $leaves = LeaveRequest::where('requester_id', $user->id)
+            ->whereIn('status', ['approved', 'submitted'])
+            ->where('start_date', '<=', $weekEnd->format('Y-m-d'))
+            ->where('end_date', '>=', $weekStart->format('Y-m-d'))
+            ->get(['leave_type', 'status', 'start_date', 'end_date']);
+
+        $map = [];
+        foreach ($leaves as $leave) {
+            $current = Carbon::parse($leave->start_date);
+            $end     = Carbon::parse($leave->end_date);
+            while ($current->lte($end)) {
+                if ($current->isWeekday() && $current->between($weekStart, $weekEnd)) {
+                    $map[$current->format('Y-m-d')] = [
+                        'leave_type' => $leave->leave_type,
+                        'status'     => $leave->status,
+                    ];
+                }
+                $current->addDay();
+            }
+        }
+
+        return response()->json(['data' => $map]);
+    }
+
+    public function team(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$this->canManageTimesheets($user)) {
+            abort(403, 'Access restricted to HR supervisors and administrators.');
+        }
+
+        $filters = $request->only(['status', 'week_start', 'user_id', 'per_page']);
+
+        $query = Timesheet::with(['user:id,name,email', 'entries.project'])
+            ->where('timesheets.tenant_id', $user->tenant_id);
+
+        // Supervisors see their direct reports; HR admins see all in tenant
+        $isHrAdmin = $user->hasPermissionTo('hr.admin') || $user->hasPermissionTo('system.admin');
+        if (!$isHrAdmin) {
+            $superviseeIds = PerformanceTracker::where('supervisor_id', $user->id)
+                ->pluck('employee_id')
+                ->toArray();
+            if (empty($superviseeIds)) {
+                return response()->json(['data' => [], 'total' => 0, 'current_page' => 1, 'last_page' => 1]);
+            }
+            $query->whereIn('user_id', $superviseeIds);
+        }
+
+        // Exclude own timesheets
+        $query->where('user_id', '!=', $user->id);
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (!empty($filters['week_start'])) {
+            $query->where('week_start', $filters['week_start']);
+        }
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', (int) $filters['user_id']);
+        }
+
+        $query->orderByDesc('week_start');
+        $paginated = $query->paginate($filters['per_page'] ?? 20);
+
+        return response()->json($paginated);
+    }
+
     /**
      * Import timesheet entries from CSV.
-     * Expected columns: date, project_code, task, hours, notes
      */
     public function import(Request $request): JsonResponse
     {
@@ -183,30 +278,30 @@ class TimesheetController extends Controller
         $rows = array_map('str_getcsv', file($path));
         if (empty($rows)) {
             return response()->json([
-                'message' => 'File is empty or invalid.',
+                'message'  => 'File is empty or invalid.',
                 'imported' => 0,
-                'errors' => ['No rows found.'],
+                'errors'   => ['No rows found.'],
             ], 422);
         }
 
-        $header = array_map('strtolower', array_map('trim', $rows[0]));
-        $dateIdx = array_search('date', $header);
-        $hoursIdx = array_search('hours', $header);
-        $taskIdx = array_search('task', $header);
+        $header    = array_map('strtolower', array_map('trim', $rows[0]));
+        $dateIdx   = array_search('date', $header);
+        $hoursIdx  = array_search('hours', $header);
+        $taskIdx   = array_search('task', $header);
         $projectIdx = array_search('project_code', $header);
-        $notesIdx = array_search('notes', $header);
+        $notesIdx  = array_search('notes', $header);
 
         if ($dateIdx === false || $hoursIdx === false) {
             return response()->json([
-                'message' => 'CSV must have "date" and "hours" columns.',
+                'message'  => 'CSV must have "date" and "hours" columns.',
                 'imported' => 0,
-                'errors' => ['Missing required columns: date, hours'],
+                'errors'   => ['Missing required columns: date, hours'],
             ], 422);
         }
 
-        $user = $request->user();
-        $errors = [];
-        $imported = 0;
+        $user        = $request->user();
+        $errors      = [];
+        $imported    = 0;
         $timesheetIds = [];
 
         for ($i = 1; $i < count($rows); $i++) {
@@ -215,8 +310,8 @@ class TimesheetController extends Controller
                 $errors[] = "Row " . ($i + 1) . ": not enough columns.";
                 continue;
             }
-            $dateStr = trim($row[$dateIdx] ?? '');
-            $hoursStr = trim($row[$hoursIdx] ?? '');
+            $dateStr     = trim($row[$dateIdx] ?? '');
+            $hoursStr    = trim($row[$hoursIdx] ?? '');
             $description = trim($row[$taskIdx] ?? $row[$projectIdx] ?? '') ?: 'Work';
             if ($notesIdx !== false && isset($row[$notesIdx]) && trim($row[$notesIdx]) !== '') {
                 $description .= ' – ' . trim($row[$notesIdx]);
@@ -248,7 +343,7 @@ class TimesheetController extends Controller
             }
 
             $weekStart = Carbon::parse($date)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
-            $weekEnd = Carbon::parse($weekStart)->addDays(6)->format('Y-m-d');
+            $weekEnd   = Carbon::parse($weekStart)->addDays(6)->format('Y-m-d');
 
             $timesheet = Timesheet::where('user_id', $user->id)
                 ->where('week_start', $weekStart)
@@ -262,7 +357,7 @@ class TimesheetController extends Controller
                     'week_end'       => $weekEnd,
                     'total_hours'    => 0,
                     'overtime_hours' => 0,
-                    'status'        => 'draft',
+                    'status'         => 'draft',
                 ]);
                 $timesheetIds[] = $timesheet->id;
             } elseif ($timesheet->status !== 'draft') {
@@ -286,16 +381,29 @@ class TimesheetController extends Controller
         foreach (array_unique($timesheetIds) as $tid) {
             $ts = Timesheet::find($tid);
             if ($ts) {
-                $total = $ts->entries()->sum('hours');
+                $total    = $ts->entries()->sum('hours');
                 $overtime = $ts->entries()->sum('overtime_hours');
                 $ts->update(['total_hours' => $total, 'overtime_hours' => $overtime]);
             }
         }
 
         return response()->json([
-            'message' => $imported > 0 ? 'Import completed.' : 'No rows imported.',
+            'message'  => $imported > 0 ? 'Import completed.' : 'No rows imported.',
             'imported' => $imported,
-            'errors' => array_slice($errors, 0, 20),
+            'errors'   => array_slice($errors, 0, 20),
         ]);
+    }
+
+    private function canManageTimesheets($user): bool
+    {
+        return $user->hasPermissionTo('hr.admin')
+            || $user->hasPermissionTo('hr.approve')
+            || $user->hasPermissionTo('hr.edit');
+    }
+
+    private function isSystemAdmin($user): bool
+    {
+        return $user->hasPermissionTo('system.admin')
+            || $user->hasPermissionTo('hr.admin');
     }
 }

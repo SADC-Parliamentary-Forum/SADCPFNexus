@@ -18,26 +18,15 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => array_values(array_unique(array_filter(array_merge(
-        array_map('trim', explode(',', (string) env('FRONTEND_URL', 'http://localhost:3000'))),
-        [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            'http://localhost:8080',
-            'http://127.0.0.1:8080',
-            'http://localhost:5000',
-            'http://127.0.0.1:5000',
-            'http://localhost:5173',
-            'http://127.0.0.1:5173',
-            'http://localhost:49956',
-            'http://127.0.0.1:49956',
-        ]
-    )))) ?: ['http://localhost:3000'],
+    'allowed_origins' => array_values(array_unique(array_filter(
+        array_map('trim', explode(',', (string) env('FRONTEND_URL', 'http://localhost:3000')))
+    ))) ?: ['http://localhost:3000'],
 
-    // Allow Flutter web (Chrome): any port on localhost / 127.0.0.1
-    'allowed_origins_patterns' => [
-        '#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#',
-    ],
+    // Allow Flutter web (Chrome) any localhost port — dev environments only.
+    // In production (APP_ENV=production) this pattern is disabled; use FRONTEND_URL instead.
+    'allowed_origins_patterns' => in_array(env('APP_ENV', 'production'), ['local', 'development', 'testing'])
+        ? ['#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#']
+        : [],
 
     'allowed_headers' => ['*'],
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -121,7 +122,12 @@ class RolesController extends Controller
         }
 
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:roles,name,' . $role->id],
+            'name' => [
+                'required', 'string', 'max:100',
+                Rule::unique('roles', 'name')
+                    ->where('guard_name', $role->guard_name)
+                    ->ignore($role->id),
+            ],
         ]);
 
         $role->update(['name' => $data['name']]);

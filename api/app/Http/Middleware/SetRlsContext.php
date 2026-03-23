@@ -18,9 +18,23 @@ class SetRlsContext
 
         if ($user) {
             $tenantId = (int) $user->tenant_id;
-            $userId = (int) $user->id;
-            $role = $user->getRoleNames()->first() ?? 'staff';
-            $classification = $user->classification ?? '';
+            $userId   = (int) $user->id;
+
+            // Whitelist role — prevents any unrecognised value reaching the SQL SET
+            $rawRole = $user->getRoleNames()->first() ?? 'staff';
+            $allowedRoles = [
+                'System Admin', 'HR Manager', 'Finance Controller', 'Staff',
+                'Procurement Officer', 'Governance Officer', 'Secretary General',
+                'super-admin', 'staff', 'hr', 'finance', 'procurement', 'governance', 'sg',
+            ];
+            $role = in_array($rawRole, $allowedRoles, true) ? $rawRole : 'staff';
+
+            // Whitelist classification — prevents any unrecognised value reaching the SQL SET
+            $rawClassification = $user->classification ?? '';
+            $allowedClassifications = ['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET', ''];
+            $classification = in_array($rawClassification, $allowedClassifications, true)
+                ? $rawClassification
+                : 'UNCLASSIFIED';
 
             // Set PostgreSQL session variables for RLS (literals only; SET does not support bindings)
             DB::statement("SET app.tenant_id = {$tenantId}");

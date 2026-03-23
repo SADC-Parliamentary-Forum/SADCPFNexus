@@ -24,6 +24,22 @@ class RolesAndPermissionsSeeder extends Seeder
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
+            // Programmes / PIF
+            'pif.view', 'pif.create', 'pif.approve', 'pif.admin',
+            // Workplan
+            'workplan.view', 'workplan.create', 'workplan.approve', 'workplan.admin',
+            // Assignments (Oversight & Accountability)
+            'assignments.view', 'assignments.create', 'assignments.issue', 'assignments.admin',
+            // Timesheets
+            'timesheets.view', 'timesheets.create', 'timesheets.approve',
+            // Performance Appraisals
+            'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
+            // Conduct, Discipline & Recognition
+            'conduct.view', 'conduct.create', 'conduct.admin',
+            // Calendar
+            'calendar.view', 'calendar.create', 'calendar.admin',
+            // Support Tickets
+            'support.view', 'support.create', 'support.admin',
             'reports.view', 'reports.export', 'reports.audit',
             'audit.view', 'audit.export',
             'system.admin',

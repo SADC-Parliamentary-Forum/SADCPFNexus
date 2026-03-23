@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);
         // Prepend CORS to api group so it runs before auth/throttle on every API request.
         $middleware->api(prepend: [\App\Http\Middleware\AddCorsHeaders::class], append: []);
+        // Append security headers to all responses.
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([
             'rls' => \App\Http\Middleware\SetRlsContext::class,
         ]);

@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ProgrammeAttachmentSeeder::class,
             WorkplanSeeder::class,
             CalendarSeeder::class,
+            MissingModulesSeeder::class,
         ]);
     }
 }
