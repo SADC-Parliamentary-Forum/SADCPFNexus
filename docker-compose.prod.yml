@@ -5,9 +5,9 @@
 # CloudPanel manages Nginx + SSL (Let's Encrypt) on the host.
 # Docker containers bind to 127.0.0.1 only — CloudPanel proxies to them.
 #
-# Reverse proxy targets to configure in CloudPanel:
-#   nexus.sadcpf.org      → http://127.0.0.1:3000  (web / Next.js)
-#   api.nexus.sadcpf.org  → http://127.0.0.1:8000  (nginx / Laravel API)
+# Reverse proxy targets configured in CloudPanel:
+#   nexus.sadcpf.org      → http://127.0.0.1:7000  (web / Next.js)
+#   api.nexus.sadcpf.org  → http://127.0.0.1:6000  (nginx / Laravel API)
 
 services:
 
@@ -25,12 +25,12 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
     ports:
-      - "127.0.0.1:3000:3000"               # Localhost only — CloudPanel proxies this
+      - "127.0.0.1:7000:3000"               # Localhost only — CloudPanel proxies this
 
   # ── Nginx (Laravel API) — localhost only ────────────────────────────────────
   nginx:
     ports:
-      - "127.0.0.1:8000:80"                 # Localhost only — CloudPanel proxies this
+      - "127.0.0.1:6000:80"                 # Localhost only — CloudPanel proxies this
 
   # ── PHP (Laravel API) — production settings ──────────────────────────────────
   php:
