@@ -8,6 +8,10 @@
 # Reverse proxy targets configured in CloudPanel:
 #   nexus.sadcpf.org      → http://127.0.0.1:7000  (web / Next.js)
 #   api.nexus.sadcpf.org  → http://127.0.0.1:6000  (nginx / Laravel API)
+#
+# NOTE: Docker Compose merges (not replaces) port arrays across files.
+# All ports in docker-compose.yml are already bound to 127.0.0.1 for safety.
+# This overlay adds the CloudPanel proxy ports (6000, 7000).
 
 services:
 
@@ -25,12 +29,12 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
     ports:
-      - "127.0.0.1:7000:3000"               # Localhost only — CloudPanel proxies this
+      - "127.0.0.1:7000:3000"               # CloudPanel proxies this
 
-  # ── Nginx (Laravel API) — localhost only ────────────────────────────────────
+  # ── Nginx (Laravel API) — CloudPanel proxy port ─────────────────────────────
   nginx:
     ports:
-      - "127.0.0.1:6000:80"                 # Localhost only — CloudPanel proxies this
+      - "127.0.0.1:6000:80"                 # CloudPanel proxies this
 
   # ── PHP (Laravel API) — production settings ──────────────────────────────────
   php:
@@ -46,16 +50,3 @@ services:
     environment:
       MEILI_ENV: production
       MEILI_MASTER_KEY: ${MEILISEARCH_KEY:?MEILISEARCH_KEY must be set}
-    ports: []                                # Not accessible from outside
-
-  # ── Postgres — internal only ──────────────────────────────────────────────────
-  postgres:
-    ports: []
-
-  # ── Redis — internal only ─────────────────────────────────────────────────────
-  redis:
-    ports: []
-
-  # ── MinIO — internal only ─────────────────────────────────────────────────────
-  minio:
-    ports: []
