@@ -167,9 +167,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: c.primary.withValues(alpha: 0.4), width: 2),
-                        color: c.surface,
                       ),
-                      child: Icon(Icons.person_outline, color: c.onSurface.withValues(alpha: 0.7), size: 22),
+                      child: CircleAvatar(
+                        backgroundColor: c.primary.withValues(alpha: 0.15),
+                        child: Text(
+                          (_userName ?? 'U').trim().split(' ').where((p) => p.isNotEmpty).take(2).map((p) => p[0].toUpperCase()).join(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: c.primary,
+                            height: 1,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -488,19 +498,32 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(kStitchSpace12),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(kStitchCardRoundness),
-        border: Border.all(color: c.outline),
+        border: Border(
+          left: BorderSide(color: color, width: 3),
+          top: BorderSide(color: c.outline),
+          right: BorderSide(color: c.outline),
+          bottom: BorderSide(color: c.outline),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Stack(
         children: [
           Positioned(
             top: -4, right: -4,
             child: Opacity(
-              opacity: 0.06,
+              opacity: 0.10,
               child: Icon(icon, color: color, size: 60),
             ),
           ),
@@ -584,6 +607,13 @@ class _ModuleTile extends StatelessWidget {
           color: c.surface,
           borderRadius: BorderRadius.circular(kStitchCardRoundness),
           border: Border.all(color: c.outline),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.22 : 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

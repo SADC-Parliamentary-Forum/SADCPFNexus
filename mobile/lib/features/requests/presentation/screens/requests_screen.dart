@@ -149,10 +149,13 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      floatingActionButton: _NewRequestFab(
-        onTravelTap: () => context.push('/requests/travel/new').then((_) => _load()),
-        onLeaveTap:  () => context.push('/requests/leave/new').then((_) => _load()),
-        onImprestTap: () => context.push('/imprest/form').then((_) => _load()),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80),
+        child: _NewRequestFab(
+          onTravelTap: () => context.push('/requests/travel/new').then((_) => _load()),
+          onLeaveTap:  () => context.push('/requests/leave/new').then((_) => _load()),
+          onImprestTap: () => context.push('/imprest/form').then((_) => _load()),
+        ),
       ),
       body: SafeArea(
         child: NestedScrollView(

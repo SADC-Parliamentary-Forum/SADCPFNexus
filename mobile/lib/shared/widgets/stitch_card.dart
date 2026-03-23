@@ -21,12 +21,20 @@ class StitchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final card = Container(
       padding: padding ?? const EdgeInsets.all(kStitchSpace16),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(kStitchCardRoundness),
         border: Border.all(color: c.outline, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: child,
     );

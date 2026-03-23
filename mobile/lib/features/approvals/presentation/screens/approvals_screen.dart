@@ -6,7 +6,7 @@ import '../../../../core/utils/date_format.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 const _typeConfig = {
-  'Travel':  _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary,  bg: Color(0x1A1D85ED)),
+  'Travel':  _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary,  bg: Color(0x1A13EC80)),
   'Leave':   _TypeConfig(icon: Icons.event_available,        color: AppColors.success,  bg: Color(0x1A13EC80)),
   'Imprest': _TypeConfig(icon: Icons.account_balance_wallet, color: AppColors.warning,  bg: Color(0x1AD4AF37)),
 };
