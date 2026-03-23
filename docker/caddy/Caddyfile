@@ -1,0 +1,45 @@
+# SADCPFNexus — Caddy reverse proxy
+# Caddy automatically obtains and renews TLS certificates from Let's Encrypt.
+# Replace the domain names below with your actual domains.
+
+# ── Web app (Next.js frontend) ───────────────────────────────────────────────
+nexus.sadcpf.org {
+    reverse_proxy web:3000
+    encode gzip
+
+    # Security headers (in addition to what the app sets)
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    log {
+        output file /data/logs/web-access.log
+        format json
+    }
+}
+
+# ── API (Laravel via nginx) ───────────────────────────────────────────────────
+api.nexus.sadcpf.org {
+    reverse_proxy nginx:80
+
+    # Upload limit — match api.conf client_max_body_size 50M
+    request_body {
+        max_size 50MB
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        -Server
+    }
+
+    log {
+        output file /data/logs/api-access.log
+        format json
+    }
+}

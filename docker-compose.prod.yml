@@ -1,0 +1,61 @@
+# Production overlay for CloudPanel hosting — use alongside docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# CloudPanel manages Nginx + SSL (Let's Encrypt) on the host.
+# Docker containers bind to 127.0.0.1 only — CloudPanel proxies to them.
+#
+# Reverse proxy targets to configure in CloudPanel:
+#   nexus.sadcpf.org      → http://127.0.0.1:3000  (web / Next.js)
+#   api.nexus.sadcpf.org  → http://127.0.0.1:8000  (nginx / Laravel API)
+
+services:
+
+  # ── Web (Next.js) — production build ────────────────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: ../docker/web/Dockerfile
+      target: runner                         # Production stage (not dev server)
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.nexus.sadcpf.org/api/v1}
+        NEXT_OUTPUT: standalone
+    volumes: []                              # No source code mounts in production
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:3000:3000"               # Localhost only — CloudPanel proxies this
+
+  # ── Nginx (Laravel API) — localhost only ────────────────────────────────────
+  nginx:
+    ports:
+      - "127.0.0.1:8000:80"                 # Localhost only — CloudPanel proxies this
+
+  # ── PHP (Laravel API) — production settings ──────────────────────────────────
+  php:
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      FRONTEND_URL: ${FRONTEND_URL:-https://nexus.sadcpf.org}
+    volumes:
+      - ./api:/var/www/api                   # Keep: entrypoint needs artisan access
+
+  # ── MeiliSearch — production mode ────────────────────────────────────────────
+  meilisearch:
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY:?MEILISEARCH_KEY must be set}
+    ports: []                                # Not accessible from outside
+
+  # ── Postgres — internal only ──────────────────────────────────────────────────
+  postgres:
+    ports: []
+
+  # ── Redis — internal only ─────────────────────────────────────────────────────
+  redis:
+    ports: []
+
+  # ── MinIO — internal only ─────────────────────────────────────────────────────
+  minio:
+    ports: []
