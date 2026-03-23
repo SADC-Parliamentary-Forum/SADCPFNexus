@@ -211,7 +211,8 @@ Route::prefix('v1')->group(function () {
             Route::get('assignments/stats', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'stats']);
             Route::apiResource('assignments', \App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class)
                 ->only(['index', 'store', 'show', 'update'])
-                ->parameters(['assignment' => 'workAssignment']);
+                ->parameters(['assignment' => 'workAssignment'])
+                ->names('hr.assignments');
             Route::post('assignments/{workAssignment}/updates', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'addUpdate']);
             Route::post('assignments/{workAssignment}/start', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'start']);
             Route::post('assignments/{workAssignment}/complete', [\App\Http\Controllers\Api\V1\Hr\WorkAssignmentController::class, 'complete']);
@@ -266,7 +267,8 @@ Route::prefix('v1')->group(function () {
         // Programmes (PIF)
         Route::prefix('programmes')->group(function () {
             Route::apiResource('', \App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class)
-                ->parameter('', 'programme');
+                ->parameter('', 'programme')
+                ->names('programmes');
             Route::post('{programme}/submit',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
             Route::post('{programme}/approve', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'approve']);
             Route::post('{programme}/reject',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
@@ -344,7 +346,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('assignments')->group(function () {
             Route::get('stats', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'stats']);
             Route::apiResource('/', \App\Http\Controllers\Api\V1\Assignments\AssignmentController::class)
-                ->parameter('', 'assignment');
+                ->parameter('', 'assignment')
+                ->names('assignments');
             Route::post('{assignment}/issue',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'issue']);
             Route::post('{assignment}/accept',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'accept']);
             Route::post('{assignment}/start',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'start']);
