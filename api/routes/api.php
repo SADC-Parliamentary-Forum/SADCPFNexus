@@ -121,7 +121,8 @@ Route::prefix('v1')->group(function () {
         // Travel Module
         Route::prefix('travel')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
-                ->parameters(['requests' => 'travelRequest']);
+                ->parameters(['requests' => 'travelRequest'])
+                ->names('travel.requests');
             Route::post('requests/{travelRequest}/submit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
             Route::post('requests/{travelRequest}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
             Route::post('requests/{travelRequest}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
@@ -130,7 +131,8 @@ Route::prefix('v1')->group(function () {
         // Imprest Module
         Route::prefix('imprest')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Imprest\ImprestController::class)
-                ->parameters(['requests' => 'imprestRequest']);
+                ->parameters(['requests' => 'imprestRequest'])
+                ->names('imprest.requests');
             Route::post('requests/{imprestRequest}/submit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
             Route::post('requests/{imprestRequest}/approve', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
             Route::post('requests/{imprestRequest}/reject', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
@@ -142,7 +144,8 @@ Route::prefix('v1')->group(function () {
             Route::get('balances', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'balances']);
             Route::get('lil-accruals', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'lilAccruals']);
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
-                ->parameters(['requests' => 'leaveRequest']);
+                ->parameters(['requests' => 'leaveRequest'])
+                ->names('leave.requests');
             Route::post('requests/{leaveRequest}/submit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
             Route::post('requests/{leaveRequest}/approve', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
             Route::post('requests/{leaveRequest}/reject', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
@@ -151,7 +154,8 @@ Route::prefix('v1')->group(function () {
         // Procurement Module
         Route::prefix('procurement')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Procurement\ProcurementController::class)
-                ->parameters(['requests' => 'procurementRequest']);
+                ->parameters(['requests' => 'procurementRequest'])
+                ->names('procurement.requests');
             Route::post('requests/{procurementRequest}/submit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
             Route::post('requests/{procurementRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
             Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
