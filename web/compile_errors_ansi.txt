@@ -1,0 +1,50 @@
+app/(app)/admin/audit/page.tsx(129,49): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type 'Record<"DELETE" | "CREATE" | "UPDATE" | "APPROVE" | "REJECT" | "LOGIN" | "LOGOUT" | "SUBMIT" | "VIEW" | "EXPORT", string>'.
+  No index signature with a parameter of type 'string' was found on type 'Record<"DELETE" | "CREATE" | "UPDATE" | "APPROVE" | "REJECT" | "LOGIN" | "LOGOUT" | "SUBMIT" | "VIEW" | "EXPORT", string>'.
+app/(app)/admin/users/[id]/page.tsx(134,36): error TS2339: Property 'data' does not exist on type 'User'.
+app/(app)/admin/users/[id]/page.tsx(142,34): error TS2551: Property 'role' does not exist on type 'User'. Did you mean 'roles'?
+app/(app)/admin/users/[id]/page.tsx(147,42): error TS2551: Property 'role' does not exist on type 'User'. Did you mean 'roles'?
+app/(app)/hr/page.tsx(6,10): error TS2614: Module '"@/lib/api"' has no exported member 'hrApi'. Did you mean to use 'import hrApi from "@/lib/api"' instead?
+app/(app)/hr/page.tsx(47,14): error TS7006: Parameter 'res' implicitly has an 'any' type.
+app/(app)/hr/page.tsx(53,30): error TS7006: Parameter 'res' implicitly has an 'any' type.
+app/(app)/hr/timesheets/page.tsx(4,10): error TS2614: Module '"@/lib/api"' has no exported member 'hrApi'. Did you mean to use 'import hrApi from "@/lib/api"' instead?
+app/(app)/imprest/[id]/page.tsx(51,42): error TS2339: Property 'data' does not exist on type 'ImprestRequest'.
+app/(app)/imprest/[id]/page.tsx(62,27): error TS2339: Property 'data' does not exist on type 'ImprestRequest'.
+app/(app)/imprest/[id]/page.tsx(76,27): error TS2339: Property 'data' does not exist on type 'ImprestRequest'.
+app/(app)/leave/[id]/page.tsx(64,42): error TS2339: Property 'data' does not exist on type 'LeaveRequest'.
+app/(app)/leave/[id]/page.tsx(75,27): error TS2339: Property 'data' does not exist on type 'LeaveRequest'.
+app/(app)/leave/[id]/page.tsx(89,27): error TS2339: Property 'data' does not exist on type 'LeaveRequest'.
+app/(app)/leave/[id]/page.tsx(175,43): error TS2339: Property 'data' does not exist on type 'LeaveRequest'.
+app/(app)/pif/[id]/page.tsx(128,78): error TS2345: Argument of type '{ budget_allocation: number; name: string; description: string; responsible: string; location: string; start_date: string; end_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeActivity>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"approved" | "draft" | "cancelled" | "completed" | "in_progress" | "postponed" | undefined'.
+app/(app)/pif/[id]/page.tsx(131,54): error TS2345: Argument of type '{ budget_allocation: number; name: string; description: string; responsible: string; location: string; start_date: string; end_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeActivity>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"approved" | "draft" | "cancelled" | "completed" | "in_progress" | "postponed" | undefined'.
+app/(app)/pif/[id]/page.tsx(167,78): error TS2345: Argument of type '{ completion_pct: number; name: string; target_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeMilestone>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"pending" | "achieved" | "missed" | undefined'.
+app/(app)/pif/[id]/page.tsx(170,55): error TS2345: Argument of type '{ completion_pct: number; name: string; target_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeMilestone>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"pending" | "achieved" | "missed" | undefined'.
+app/(app)/pif/[id]/page.tsx(194,81): error TS2345: Argument of type '{ name: string; description: string; due_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeDeliverable>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"submitted" | "pending" | "accepted" | undefined'.
+app/(app)/pif/[id]/page.tsx(197,57): error TS2345: Argument of type '{ name: string; description: string; due_date: string; status: string; }' is not assignable to parameter of type 'Partial<ProgrammeDeliverable>'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"submitted" | "pending" | "accepted" | undefined'.
+app/(app)/pif/[id]/page.tsx(699,27): error TS2367: This comparison appears to be unintentional because the types '"approved" | "submitted" | "draft" | "active" | "on_hold" | "completed" | "financially_closed" | "archived"' and '"rejected"' have no overlap.
+app/(app)/pif/[id]/page.tsx(700,27): error TS2367: This comparison appears to be unintentional because the types '"approved" | "submitted" | "draft" | "active" | "on_hold" | "completed" | "financially_closed" | "archived"' and '"rejected"' have no overlap.
+app/(app)/pif/[id]/page.tsx(705,31): error TS2367: This comparison appears to be unintentional because the types '"approved" | "submitted" | "draft" | "active" | "on_hold" | "completed" | "financially_closed" | "archived"' and '"rejected"' have no overlap.
+app/(app)/pif/[id]/page.tsx(746,12): error TS2367: This comparison appears to be unintentional because the types '"approved" | "submitted" | "draft" | "active" | "on_hold" | "completed" | "financially_closed" | "archived"' and '"rejected"' have no overlap.
+app/(app)/travel/[id]/page.tsx(53,42): error TS2339: Property 'data' does not exist on type 'TravelRequest'.
+app/(app)/travel/[id]/page.tsx(64,27): error TS2339: Property 'data' does not exist on type 'TravelRequest'.
+app/(app)/travel/[id]/page.tsx(78,27): error TS2339: Property 'data' does not exist on type 'TravelRequest'.
+app/(app)/travel/[id]/page.tsx(161,43): error TS2339: Property 'data' does not exist on type 'TravelRequest'.
+app/(app)/travel/create/page.tsx(93,47): error TS2345: Argument of type '{ purpose: string; destination_country: string; destination_city: string | undefined; departure_date: string; return_date: string; currency: string; justification: string | undefined; itineraries: { ...; }[]; }' is not assignable to parameter of type 'Partial<TravelRequest> & { itineraries?: Partial<TravelItinerary>[] | undefined; }'.
+  Type '{ purpose: string; destination_country: string; destination_city: string | undefined; departure_date: string; return_date: string; currency: string; justification: string | undefined; itineraries: { ...; }[]; }' is not assignable to type 'Partial<TravelRequest>'.
+    Types of property 'itineraries' are incompatible.
+      Type '{ from_location: string; to_location: string; travel_date: string; transport_mode: string; dsa_rate: number; days_count: number; }[]' is not assignable to type 'TravelItinerary[]'.
+        Type '{ from_location: string; to_location: string; travel_date: string; transport_mode: string; dsa_rate: number; days_count: number; }' is missing the following properties from type 'TravelItinerary': id, calculated_dsa
+tailwind.config.ts(4,3): error TS2322: Type '["class"]' is not assignable to type 'DarkModeStrategy | undefined'.
+  Type '["class"]' is not assignable to type '["class", string]'.
+    Source has 1 element(s) but target requires 2.

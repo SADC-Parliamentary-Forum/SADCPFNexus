@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+@config "../tailwind.config.ts";
+
+@theme {
+  --font-sans: "Public Sans", system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    --primary: #1d85ed;
+    --surface: #f6f7f8;
+    --sidebar-width: 260px;
+  }
+
+  body {
+    @apply font-sans antialiased bg-surface-muted text-neutral-900;
+  }
+
+  .dark body {
+    @apply bg-neutral-900 text-neutral-100;
+  }
+
+  /* Material Symbols – must set font-family so icons render (Design URL: wght,FILL only) */
+  .material-symbols-outlined {
+    font-family: "Material Symbols Outlined" !important;
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-variation-settings: "FILL" 0, "wght" 400;
+    text-decoration: none !important;
+  }
+
+  * {
+    @apply border-neutral-200;
+  }
+
+  /* Pointer cursor on every clickable element */
+  a,
+  button,
+  [role="button"],
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"] {
+    cursor: pointer;
+  }
+
+  /* Disabled elements should never show pointer */
+  button:disabled,
+  [disabled] {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+
+  /* Sidebar nav item — light sidebar */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors;
+  }
+
+  .nav-item.active {
+    @apply bg-primary text-white shadow-sm;
+  }
+
+  /* Hide scrollbar on sidebar while keeping scroll (Design: no visible scrollbar) */
+  .sidebar-nav,
+  aside .sidebar-nav {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .sidebar-nav::-webkit-scrollbar,
+  aside .sidebar-nav::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Cards */
+  .card {
+    @apply rounded-xl bg-white border border-neutral-200 shadow-card;
+  }
+
+  .card-header {
+    @apply flex items-center justify-between px-5 py-4 border-b border-neutral-100;
+  }
+
+  /* Badge base + variants */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary;
+  }
+
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700;
+  }
+
+  .badge-danger {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700;
+  }
+
+  .badge-muted {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600;
+  }
+
+  /* Form inputs */
+  .form-input {
+    @apply w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition-colors;
+  }
+
+  /* Page header pattern */
+  .page-title {
+    @apply text-2xl font-bold text-neutral-900;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-neutral-500 mt-0.5;
+  }
+
+  /* Filter tabs */
+  .filter-tab {
+    @apply rounded-full px-4 py-1.5 text-xs font-semibold border transition-colors bg-white text-neutral-600 border-neutral-200 hover:border-primary hover:text-primary;
+  }
+
+  .filter-tab.active {
+    @apply bg-primary text-white border-primary;
+  }
+
+  /* Table styles */
+  .data-table {
+    @apply w-full text-sm;
+  }
+
+  .data-table thead tr {
+    @apply border-b border-neutral-100 bg-neutral-50;
+  }
+
+  .data-table thead th {
+    @apply px-5 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider;
+  }
+
+  .data-table tbody {
+    @apply divide-y divide-neutral-50;
+  }
+
+  .data-table tbody tr {
+    @apply hover:bg-neutral-50/50 transition-colors;
+  }
+
+  .data-table tbody td {
+    @apply px-5 py-4;
+  }
+
+  /* Hide scrollbar for overflow elements but keep scrolling functionality */
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .overflow-x-auto {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  /* Highlight unedited inputs */
+  .form-input:placeholder-shown,
+  select.form-input:invalid {
+    @apply border-amber-300 bg-amber-50/50;
+  }
+
+  /* ── Dark mode overrides ──────────────────────────────────────────── */
+  .dark .card {
+    @apply bg-neutral-800 border-neutral-700/60;
+  }
+
+  .dark .card-header {
+    @apply border-neutral-700/60;
+  }
+
+  .dark .form-input {
+    @apply border-neutral-700 bg-neutral-700/50 text-neutral-100 placeholder-neutral-500 focus:border-primary focus:ring-primary/30;
+  }
+
+  .dark .form-input:placeholder-shown,
+  .dark select.form-input:invalid {
+    @apply border-neutral-700 bg-neutral-700/50;
+  }
+
+  .dark .btn-secondary {
+    @apply border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700;
+  }
+
+  .dark .page-title {
+    @apply text-neutral-100;
+  }
+
+  .dark .page-subtitle {
+    @apply text-neutral-400;
+  }
+
+  .dark .filter-tab {
+    @apply bg-neutral-800 text-neutral-400 border-neutral-700;
+  }
+
+  .dark .filter-tab.active {
+    @apply bg-primary text-white border-primary;
+  }
+
+  .dark .data-table thead tr {
+    @apply border-neutral-700 bg-neutral-800/80;
+  }
+
+  .dark .data-table thead th {
+    @apply text-neutral-400;
+  }
+
+  .dark .data-table tbody {
+    @apply divide-neutral-700/50;
+  }
+
+  .dark .data-table tbody tr {
+    @apply hover:bg-neutral-700/30;
+  }
+
+  .dark .data-table tbody td {
+    @apply text-neutral-200;
+  }
+
+  .dark .nav-item {
+    @apply text-neutral-300 hover:text-white hover:bg-white/10;
+  }
+
+  .dark .nav-item.active {
+    @apply bg-primary text-white;
+  }
+}
