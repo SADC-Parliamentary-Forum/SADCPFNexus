@@ -25,7 +25,4 @@ WORKDIR /var/www/api
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh
 
-RUN addgroup -g 1000 www && adduser -u 1000 -G www -s /bin/sh -D www
-USER www
-
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
