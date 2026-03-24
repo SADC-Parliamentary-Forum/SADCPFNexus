@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { authApi, setAuthCookie } from "@/lib/api";
 
-const DEMO_CREDENTIALS = [
-  { role: "System Admin",       email: "rwindwaai@sadcpf.org", icon: "admin_panel_settings", color: "text-purple-600 bg-purple-50" },
-  { role: "Secretary General",  email: "bsekgoma@sadcpf.org",  icon: "gavel",                color: "text-neutral-700 bg-neutral-100" },
-  { role: "HR Manager",         email: "skauvee@sadcpf.org",   icon: "people",               color: "text-green-600 bg-green-50"  },
-  { role: "Finance Controller", email: "tmwaala@sadcpf.org",   icon: "payments",             color: "text-amber-600 bg-amber-50"  },
-];
+const IS_DEV = process.env.NODE_ENV === "development";
+
+const DEMO_CREDENTIALS = IS_DEV ? [
+  { role: "System Admin",       email: "admin@sadcpf.org",   icon: "admin_panel_settings", color: "text-purple-600 bg-purple-50" },
+  { role: "Secretary General",  email: "sg@sadcpf.org",      icon: "gavel",                color: "text-neutral-700 bg-neutral-100" },
+  { role: "HR Manager",         email: "hr@sadcpf.org",      icon: "people",               color: "text-green-600 bg-green-50"  },
+  { role: "Finance Controller", email: "finance@sadcpf.org", icon: "payments",             color: "text-amber-600 bg-amber-50"  },
+] : [];
 
 const FEATURES = [
   { icon: "flight_takeoff",        label: "Travel & Mission Management"  },
@@ -189,37 +191,39 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Demo credentials */}
-          <div className="mt-6 pt-5 border-t border-neutral-200">
-            <button
-              type="button"
-              onClick={() => setShowDemo(!showDemo)}
-              className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">info</span>
-              {showDemo ? "Hide" : "Show"} demo login credentials
-            </button>
-            {showDemo && (
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {DEMO_CREDENTIALS.map((cred) => (
-                  <button
-                    key={cred.role}
-                    type="button"
-                    onClick={() => fillDemo(cred)}
-                    className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 text-left hover:border-primary/40 hover:shadow-sm transition-all"
-                  >
-                    <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${cred.color}`}>
-                      <span className="material-symbols-outlined text-[14px]">{cred.icon}</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-neutral-800">{cred.role}</p>
-                      <p className="text-[10px] text-neutral-400 truncate">{cred.email}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Demo credentials — development only, stripped from production build */}
+          {IS_DEV && (
+            <div className="mt-6 pt-5 border-t border-neutral-200">
+              <button
+                type="button"
+                onClick={() => setShowDemo(!showDemo)}
+                className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">info</span>
+                {showDemo ? "Hide" : "Show"} demo login credentials
+              </button>
+              {showDemo && (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {DEMO_CREDENTIALS.map((cred) => (
+                    <button
+                      key={cred.role}
+                      type="button"
+                      onClick={() => fillDemo(cred)}
+                      className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white p-2.5 text-left hover:border-primary/40 hover:shadow-sm transition-all"
+                    >
+                      <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${cred.color}`}>
+                        <span className="material-symbols-outlined text-[14px]">{cred.icon}</span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-neutral-800">{cred.role}</p>
+                        <p className="text-[10px] text-neutral-400 truncate">{cred.email}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <p className="mt-6 text-center text-xs text-neutral-400">
             Forgot your password? Contact IT Support.
