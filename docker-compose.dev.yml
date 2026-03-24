@@ -1,0 +1,21 @@
+# Development overlay — adds hot-reload volume mounts and polling for HMR.
+# Use with the base compose file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# Required on Docker Desktop / Windows because inotify events don't cross the
+# Hyper-V / WSL2 boundary — polling is used instead.
+
+services:
+  web:
+    volumes:
+      - ./web:/app
+      # Preserve node_modules from the image so Windows-native host folder doesn't override
+      - /app/node_modules
+      # Persist Next.js build cache across restarts for faster hot-reload
+      - /app/.next
+    environment:
+      # Required for file-change detection (HMR) on Docker Desktop / Windows
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=500

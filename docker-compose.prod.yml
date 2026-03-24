@@ -2,6 +2,10 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 #
+# For local development use docker-compose.dev.yml instead:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
 # CloudPanel manages Nginx + SSL (Let's Encrypt) on the host.
 # Docker containers bind to 127.0.0.1 only — CloudPanel proxies to them.
 #
@@ -24,7 +28,6 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.nexus.sadcpf.org/api/v1}
         NEXT_OUTPUT: standalone
-    volumes: []                              # No source code mounts in production
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
