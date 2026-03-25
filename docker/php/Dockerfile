@@ -25,4 +25,7 @@ WORKDIR /var/www/api
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh
 
+# Allow Docker env vars (FRONTEND_URL, APP_ENV, etc.) to reach PHP-FPM workers
+COPY www.conf /usr/local/etc/php-fpm.d/zzz-clear-env.conf
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
