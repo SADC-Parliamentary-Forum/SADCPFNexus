@@ -2254,6 +2254,96 @@ export interface HrGradeBandImpact {
   positions: { id: number; title: string; department: string | null }[];
 }
 
+export interface HrContractType {
+  id: number;
+  tenant_id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  is_permanent: boolean;
+  has_probation: boolean;
+  probation_months: number;
+  notice_period_days: number;
+  is_renewable: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HrLeaveProfile {
+  id: number;
+  tenant_id: number;
+  profile_code: string;
+  profile_name: string;
+  annual_leave_days: number;
+  sick_leave_days: number;
+  lil_days: number;
+  special_leave_days: number;
+  maternity_days: number;
+  paternity_days: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HrAllowanceProfile {
+  id: number;
+  tenant_id: number;
+  profile_code: string;
+  profile_name: string;
+  currency: string;
+  transport_allowance: number;
+  housing_allowance: number;
+  communication_allowance: number;
+  medical_allowance: number;
+  subsistence_allowance: number;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HrAppraisalTemplate {
+  id: number;
+  tenant_id: number;
+  name: string;
+  description: string | null;
+  cycle_frequency: "annual" | "bi_annual" | "quarterly";
+  rating_scale_max: number;
+  kra_count_default: number;
+  is_probation_template: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HrPersonnelFileSection {
+  id: number;
+  tenant_id: number;
+  section_code: string;
+  section_name: string;
+  visibility: "employee" | "hr_only" | "supervisor" | "director" | "sg" | "hidden";
+  is_editable_by_employee: boolean;
+  is_mandatory: boolean;
+  retention_months: number;
+  confidentiality_level: "public" | "restricted" | "confidential";
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface HrApprovalMatrix {
+  id: number;
+  tenant_id: number;
+  module: string;
+  action_name: string;
+  step_number: number;
+  role_id: number | null;
+  approver_user_id: number | null;
+  role?: { id: number; name: string };
+  approver_user?: { id: number; name: string };
+  is_mandatory: boolean;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export const hrSettingsApi = {
   // ── Job Families ────────────────────────────────────────────────────────────
   listJobFamilies: () =>
@@ -2318,4 +2408,70 @@ export const hrSettingsApi = {
     api.post<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}/approve`),
   publishSalaryScale: (id: number) =>
     api.post<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}/publish`),
+
+  // ── Contract Types ──────────────────────────────────────────────────────────
+  listContractTypes: () =>
+    api.get<{ data: HrContractType[] }>("/admin/hr-settings/contract-types"),
+  createContractType: (data: Partial<HrContractType>) =>
+    api.post<{ data: HrContractType; message: string }>("/admin/hr-settings/contract-types", data),
+  updateContractType: (id: number, data: Partial<HrContractType>) =>
+    api.put<{ data: HrContractType; message: string }>(`/admin/hr-settings/contract-types/${id}`, data),
+  deleteContractType: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/contract-types/${id}`),
+
+  // ── Leave Profiles ──────────────────────────────────────────────────────────
+  listLeaveProfiles: () =>
+    api.get<{ data: HrLeaveProfile[] }>("/admin/hr-settings/leave-profiles"),
+  createLeaveProfile: (data: Partial<HrLeaveProfile>) =>
+    api.post<{ data: HrLeaveProfile; message: string }>("/admin/hr-settings/leave-profiles", data),
+  updateLeaveProfile: (id: number, data: Partial<HrLeaveProfile>) =>
+    api.put<{ data: HrLeaveProfile; message: string }>(`/admin/hr-settings/leave-profiles/${id}`, data),
+  deleteLeaveProfile: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/leave-profiles/${id}`),
+
+  // ── Allowance Profiles ──────────────────────────────────────────────────────
+  listAllowanceProfiles: () =>
+    api.get<{ data: HrAllowanceProfile[] }>("/admin/hr-settings/allowance-profiles"),
+  createAllowanceProfile: (data: Partial<HrAllowanceProfile>) =>
+    api.post<{ data: HrAllowanceProfile; message: string }>("/admin/hr-settings/allowance-profiles", data),
+  updateAllowanceProfile: (id: number, data: Partial<HrAllowanceProfile>) =>
+    api.put<{ data: HrAllowanceProfile; message: string }>(`/admin/hr-settings/allowance-profiles/${id}`, data),
+  deleteAllowanceProfile: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/allowance-profiles/${id}`),
+
+  // ── Appraisal Templates ─────────────────────────────────────────────────────
+  listAppraisalTemplates: () =>
+    api.get<{ data: HrAppraisalTemplate[] }>("/admin/hr-settings/appraisal-templates"),
+  createAppraisalTemplate: (data: Partial<HrAppraisalTemplate>) =>
+    api.post<{ data: HrAppraisalTemplate; message: string }>("/admin/hr-settings/appraisal-templates", data),
+  updateAppraisalTemplate: (id: number, data: Partial<HrAppraisalTemplate>) =>
+    api.put<{ data: HrAppraisalTemplate; message: string }>(`/admin/hr-settings/appraisal-templates/${id}`, data),
+  deleteAppraisalTemplate: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/appraisal-templates/${id}`),
+
+  // ── Personnel File Sections ─────────────────────────────────────────────────
+  listPersonnelFileSections: () =>
+    api.get<{ data: HrPersonnelFileSection[] }>("/admin/hr-settings/personnel-file-sections"),
+  createPersonnelFileSection: (data: Partial<HrPersonnelFileSection>) =>
+    api.post<{ data: HrPersonnelFileSection; message: string }>("/admin/hr-settings/personnel-file-sections", data),
+  updatePersonnelFileSection: (id: number, data: Partial<HrPersonnelFileSection>) =>
+    api.put<{ data: HrPersonnelFileSection; message: string }>(`/admin/hr-settings/personnel-file-sections/${id}`, data),
+  deletePersonnelFileSection: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/personnel-file-sections/${id}`),
+  reorderPersonnelFileSections: (items: { id: number; sort_order: number }[]) =>
+    api.post<{ message: string }>("/admin/hr-settings/personnel-file-sections/reorder", { items }),
+
+  // ── Approval Matrix ─────────────────────────────────────────────────────────
+  listApprovalMatrix: (params?: { module?: string }) =>
+    api.get<{ data: HrApprovalMatrix[] }>("/admin/hr-settings/approval-matrix", { params }),
+  createApprovalMatrixEntry: (data: Partial<HrApprovalMatrix>) =>
+    api.post<{ data: HrApprovalMatrix; message: string }>("/admin/hr-settings/approval-matrix", data),
+  updateApprovalMatrixEntry: (id: number, data: Partial<HrApprovalMatrix>) =>
+    api.put<{ data: HrApprovalMatrix; message: string }>(`/admin/hr-settings/approval-matrix/${id}`, data),
+  deleteApprovalMatrixEntry: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/approval-matrix/${id}`),
+
+  // ── Settings Audit Log ──────────────────────────────────────────────────────
+  listHrSettingsAudit: (params?: { page?: number; per_page?: number }) =>
+    api.get<any>("/admin/audit-logs", { params: { ...params, tags: "hr_settings" } }),
 };

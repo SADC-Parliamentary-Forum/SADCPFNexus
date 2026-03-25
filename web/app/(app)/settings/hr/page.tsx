@@ -44,8 +44,8 @@ const settingsLinks = [
     color: "text-amber-600",
     bg: "bg-amber-50",
     border: "border-amber-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 2",
+    available: true,
   },
   {
     title: "Leave Profiles",
@@ -55,8 +55,8 @@ const settingsLinks = [
     color: "text-teal-600",
     bg: "bg-teal-50",
     border: "border-teal-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 2",
+    available: true,
   },
   {
     title: "Allowance Profiles",
@@ -66,8 +66,8 @@ const settingsLinks = [
     color: "text-emerald-600",
     bg: "bg-emerald-50",
     border: "border-emerald-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 2",
+    available: true,
   },
   {
     title: "Appraisal Templates",
@@ -77,8 +77,8 @@ const settingsLinks = [
     color: "text-pink-600",
     bg: "bg-pink-50",
     border: "border-pink-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 3",
+    available: true,
   },
   {
     title: "Personnel File Sections",
@@ -88,8 +88,8 @@ const settingsLinks = [
     color: "text-indigo-600",
     bg: "bg-indigo-50",
     border: "border-indigo-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 3",
+    available: true,
   },
   {
     title: "Approval Matrix",
@@ -99,8 +99,8 @@ const settingsLinks = [
     color: "text-orange-600",
     bg: "bg-orange-50",
     border: "border-orange-100",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 3",
+    available: true,
   },
   {
     title: "Settings Audit Log",
@@ -110,8 +110,8 @@ const settingsLinks = [
     color: "text-neutral-600",
     bg: "bg-neutral-100",
     border: "border-neutral-200",
-    badge: "Coming Soon",
-    available: false,
+    badge: "Phase 3",
+    available: true,
   },
 ];
 
@@ -162,7 +162,13 @@ export default function HrSettingsDashboard() {
                     {item.title}
                   </span>
                   {item.badge && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                    <span className={
+                      item.badge === "Core"
+                        ? "text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
+                        : item.badge === "Phase 2"
+                        ? "text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700"
+                        : "text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500"
+                    }>
                       {item.badge}
                     </span>
                   )}

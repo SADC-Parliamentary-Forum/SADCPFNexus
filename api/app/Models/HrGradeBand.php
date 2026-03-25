@@ -42,6 +42,10 @@ class HrGradeBand extends Model
         'approved_at',
         'published_at',
         'notes',
+        'contract_type_id',
+        'leave_profile_id',
+        'allowance_profile_id',
+        'appraisal_template_id',
     ];
 
     protected $casts = [
@@ -67,6 +71,26 @@ class HrGradeBand extends Model
     public function jobFamily(): BelongsTo
     {
         return $this->belongsTo(HrJobFamily::class, 'job_family_id');
+    }
+
+    public function contractType(): BelongsTo
+    {
+        return $this->belongsTo(HrContractType::class, 'contract_type_id');
+    }
+
+    public function leaveProfile(): BelongsTo
+    {
+        return $this->belongsTo(HrLeaveProfile::class, 'leave_profile_id');
+    }
+
+    public function allowanceProfile(): BelongsTo
+    {
+        return $this->belongsTo(HrAllowanceProfile::class, 'allowance_profile_id');
+    }
+
+    public function appraisalTemplate(): BelongsTo
+    {
+        return $this->belongsTo(HrAppraisalTemplate::class, 'appraisal_template_id');
     }
 
     public function salaryScales(): HasMany

@@ -137,6 +137,24 @@ Route::prefix('v1')->group(function () {
                 Route::post('salary-scales/{salaryScale}/submit',  [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'submit'])->name('hr-settings.salary-scales.submit');
                 Route::post('salary-scales/{salaryScale}/approve', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'approve'])->name('hr-settings.salary-scales.approve');
                 Route::post('salary-scales/{salaryScale}/publish', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'publish'])->name('hr-settings.salary-scales.publish');
+
+                // Phase 2
+                Route::apiResource('contract-types', \App\Http\Controllers\Api\V1\HrSettings\ContractTypeController::class)
+                    ->names('hr-settings.contract-types');
+                Route::apiResource('leave-profiles', \App\Http\Controllers\Api\V1\HrSettings\LeaveProfileController::class)
+                    ->names('hr-settings.leave-profiles');
+                Route::apiResource('allowance-profiles', \App\Http\Controllers\Api\V1\HrSettings\AllowanceProfileController::class)
+                    ->names('hr-settings.allowance-profiles');
+
+                // Phase 3
+                Route::apiResource('appraisal-templates', \App\Http\Controllers\Api\V1\HrSettings\AppraisalTemplateController::class)
+                    ->names('hr-settings.appraisal-templates');
+                Route::post('personnel-file-sections/reorder', [\App\Http\Controllers\Api\V1\HrSettings\PersonnelFileSectionController::class, 'reorder'])
+                    ->name('hr-settings.personnel-file-sections.reorder');
+                Route::apiResource('personnel-file-sections', \App\Http\Controllers\Api\V1\HrSettings\PersonnelFileSectionController::class)
+                    ->names('hr-settings.personnel-file-sections');
+                Route::apiResource('approval-matrix', \App\Http\Controllers\Api\V1\HrSettings\ApprovalMatrixController::class)
+                    ->names('hr-settings.approval-matrix');
             });
         });
 

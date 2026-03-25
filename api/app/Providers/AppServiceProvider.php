@@ -3,14 +3,26 @@
 namespace App\Providers;
 
 use App\Models\Department;
+use App\Models\HrAllowanceProfile;
+use App\Models\HrAppraisalTemplate;
+use App\Models\HrApprovalMatrix;
+use App\Models\HrContractType;
 use App\Models\HrGradeBand;
 use App\Models\HrJobFamily;
+use App\Models\HrLeaveProfile;
+use App\Models\HrPersonnelFileSection;
 use App\Models\HrSalaryScale;
 use App\Models\Portfolio;
 use App\Models\User;
 use App\Policies\DepartmentPolicy;
+use App\Policies\HrAllowanceProfilePolicy;
+use App\Policies\HrAppraisalTemplatePolicy;
+use App\Policies\HrApprovalMatrixPolicy;
+use App\Policies\HrContractTypePolicy;
 use App\Policies\HrGradeBandPolicy;
 use App\Policies\HrJobFamilyPolicy;
+use App\Policies\HrLeaveProfilePolicy;
+use App\Policies\HrPersonnelFileSectionPolicy;
 use App\Policies\HrSalaryScalePolicy;
 use App\Policies\PortfolioPolicy;
 use App\Policies\UserPolicy;
@@ -38,5 +50,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HrJobFamily::class, HrJobFamilyPolicy::class);
         Gate::policy(HrGradeBand::class, HrGradeBandPolicy::class);
         Gate::policy(HrSalaryScale::class, HrSalaryScalePolicy::class);
+        Gate::policy(HrContractType::class, HrContractTypePolicy::class);
+        Gate::policy(HrLeaveProfile::class, HrLeaveProfilePolicy::class);
+        Gate::policy(HrAllowanceProfile::class, HrAllowanceProfilePolicy::class);
+        Gate::policy(HrAppraisalTemplate::class, HrAppraisalTemplatePolicy::class);
+        Gate::policy(HrPersonnelFileSection::class, HrPersonnelFileSectionPolicy::class);
+        Gate::policy(HrApprovalMatrix::class, HrApprovalMatrixPolicy::class);
     }
 }
