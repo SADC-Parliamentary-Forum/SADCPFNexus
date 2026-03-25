@@ -6,14 +6,16 @@ COPY scripts ./scripts
 RUN npm ci
 
 # ── Stage 2: Development ───────────────────────────────────────────────────────
-# Volume-mount ./web:/app at runtime; node_modules come from this image layer.
+# Source is baked in via COPY so the image works standalone.
+# When a volume mount (./web:/app) is present it overrides COPY'd source,
+# enabling live HMR without rebuilding the image.
 FROM node:20-alpine AS dev
 WORKDIR /app
-# Copy pre-installed deps from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+# Bake source into image as fallback (volume mount overrides this at runtime)
+COPY . .
 ENV NODE_ENV=development \
     NEXT_TELEMETRY_DISABLED=1 \
-    # Required for HMR to work inside Docker on Windows (inotify events don't cross VM boundary)
     WATCHPACK_POLLING=true \
     CHOKIDAR_USEPOLLING=true \
     CHOKIDAR_INTERVAL=500

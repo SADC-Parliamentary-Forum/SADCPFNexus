@@ -1,14 +1,22 @@
-# Development overlay — enables HMR polling for Docker Desktop / Windows.
-# Volume mounts are already in docker-compose.yml (base file).
-# Use with the base compose file:
+# Development overlay — live source mount + HMR polling for Docker Desktop / Windows.
+# Source is also baked into the dev image (COPY in Dockerfile), so the image works
+# without this overlay. This overlay adds the volume mount for live hot-reload editing
+# and enables polling-based file watching (required on Windows / WSL2 / Docker Desktop).
 #
+# Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 #
-# Required on Docker Desktop / Windows because inotify events don't cross the
-# Hyper-V / WSL2 boundary — polling is used instead.
+# Without this overlay (base file only) the container runs the baked-in source,
+# which is fine for testing but changes require a rebuild.
 
 services:
   web:
+    volumes:
+      - ./web:/app
+      # Preserve node_modules from the image so the host folder doesn't override them
+      - /app/node_modules
+      # Persist Next.js build cache across restarts for faster HMR
+      - /app/.next
     environment:
       # Required for file-change detection (HMR) on Docker Desktop / Windows
       - WATCHPACK_POLLING=true
