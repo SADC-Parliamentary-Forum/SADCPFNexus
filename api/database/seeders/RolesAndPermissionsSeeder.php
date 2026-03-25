@@ -24,6 +24,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
+            // HR Settings (master data governance — restricted to HR Manager & Finance Director)
+            'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
             // Programmes / PIF
             'pif.view', 'pif.create', 'pif.approve', 'pif.admin',
             // Workplan
@@ -66,6 +68,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'users.view', 'hr.view', 'hr.create', 'hr.edit', 'hr.approve',
                     'travel.view', 'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
                     'governance.view',
+                    'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -74,6 +77,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
                     'travel.view', 'procurement.view', 'governance.view', 'audit.view',
+                    'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
             );
 
