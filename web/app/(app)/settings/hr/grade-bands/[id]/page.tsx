@@ -75,11 +75,11 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
     mutationFn: (form: Partial<HrGradeBand>) =>
       hrSettingsApi.updateGradeBand(Number(id), form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast({ title: res.message ?? "Saved.", type: "success" });
+      toast("success", res.message ?? "Saved.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "grade-bands", id] });
       setEditOpen(false);
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Failed.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed."),
   });
 
   const lifecycleMutation = useMutation({
@@ -92,10 +92,10 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
       return Promise.reject("Unknown action");
     },
     onSuccess: (res: any) => {
-      toast({ title: res.message ?? "Done.", type: "success" });
+      toast("success", res.message ?? "Done.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "grade-bands"] });
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Action failed.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Action failed."),
   });
 
   if (isLoading) {

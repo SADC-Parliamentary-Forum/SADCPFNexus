@@ -135,21 +135,21 @@ export default function JobFamiliesPage() {
         ? hrSettingsApi.updateJobFamily(form.id, form).then((r) => r.data)
         : hrSettingsApi.createJobFamily(form).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast({ title: res.message ?? "Saved.", type: "success" });
+      toast("success", res.message ?? "Saved.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "job-families"] });
       setModal(undefined);
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Failed to save.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hrSettingsApi.deleteJobFamily(id).then((r) => r.data),
     onSuccess: () => {
-      toast({ title: "Job family deleted.", type: "success" });
+      toast("success", "Job family deleted.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "job-families"] });
       setDeleting(null);
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Cannot delete.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Cannot delete."),
   });
 
   const families = data ?? [];

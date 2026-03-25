@@ -68,11 +68,11 @@ export default function SalaryScalesPage() {
         ? hrSettingsApi.updateSalaryScale((form as any).id, form).then((r) => r.data)
         : hrSettingsApi.createSalaryScale(form as any).then((r) => r.data),
     onSuccess: (res: any) => {
-      toast({ title: res.message ?? "Saved.", type: "success" });
+      toast("success", res.message ?? "Saved.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "salary-scales"] });
       setSlideOver({ open: false, scale: null });
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Failed to save.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Failed to save."),
   });
 
   const lifecycleMutation = useMutation({
@@ -83,11 +83,11 @@ export default function SalaryScalesPage() {
       return Promise.reject("Unknown action");
     },
     onSuccess: (res: any) => {
-      toast({ title: res.message ?? "Done.", type: "success" });
+      toast("success", res.message ?? "Done.");
       qc.invalidateQueries({ queryKey: ["hr-settings", "salary-scales"] });
       setSlideOver({ open: false, scale: null });
     },
-    onError: (e: any) => toast({ title: e?.response?.data?.message ?? "Action failed.", type: "error" }),
+    onError: (e: any) => toast("error", e?.response?.data?.message ?? "Action failed."),
   });
 
   // Group scales by grade band for display
