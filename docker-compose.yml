@@ -154,6 +154,12 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./web:/app
+      # Preserve node_modules from the image — host folder must not override them
+      - /app/node_modules
+      # Persist Next.js build cache across restarts
+      - /app/.next
     env_file:
       - .env
     environment:
