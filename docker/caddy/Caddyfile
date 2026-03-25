@@ -23,7 +23,7 @@ nexus.sadcpf.org {
 }
 
 # ── API (Laravel via nginx) ───────────────────────────────────────────────────
-api.nexus.sadcpf.org {
+nexus-api.sadcpf.org {
     reverse_proxy nginx:80
 
     # Upload limit — match api.conf client_max_body_size 50M

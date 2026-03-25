@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             WorkflowSeeder::class,
             DemoDataSeeder::class,
             HrModulesSeeder::class,
+            HrSettingsSeeder::class,
             PositionsSeeder::class,
             AssignmentsSeeder::class,
             ProgrammeSeeder::class,

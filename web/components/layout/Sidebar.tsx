@@ -106,6 +106,15 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Audit Ledger", href: "/analytics/ledger", icon: "receipt_long" },
     ],
   },
+  {
+    label: "Settings",
+    href: "/settings/hr",
+    icon: "tune",
+    section: "Configuration",
+    children: [
+      { label: "HR Administration", href: "/settings/hr", icon: "manage_accounts" },
+    ],
+  },
   { label: "Help & Support", href: "/profile/support", icon: "help" },
   { label: "Admin", href: "/admin", icon: "admin_panel_settings" },
 ];

@@ -114,6 +114,30 @@ Route::prefix('v1')->group(function () {
             // Positions (establishment register)
             Route::apiResource('positions', \App\Http\Controllers\Api\V1\Admin\PositionController::class);
             Route::post('positions/{position}/assign', [\App\Http\Controllers\Api\V1\Admin\PositionController::class, 'assign']);
+
+            // HR Settings — Master Data & Rules
+            Route::prefix('hr-settings')->group(function () {
+                // Job Families
+                Route::apiResource('job-families', \App\Http\Controllers\Api\V1\HrSettings\JobFamilyController::class)
+                    ->names('hr-settings.job-families');
+
+                // Grade Bands (full lifecycle)
+                Route::apiResource('grade-bands', \App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class)
+                    ->names('hr-settings.grade-bands');
+                Route::post('grade-bands/{gradeBand}/submit',      [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'submit'])->name('hr-settings.grade-bands.submit');
+                Route::post('grade-bands/{gradeBand}/approve',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'approve'])->name('hr-settings.grade-bands.approve');
+                Route::post('grade-bands/{gradeBand}/publish',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'publish'])->name('hr-settings.grade-bands.publish');
+                Route::post('grade-bands/{gradeBand}/archive',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'archive'])->name('hr-settings.grade-bands.archive');
+                Route::post('grade-bands/{gradeBand}/new-version', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'newVersion'])->name('hr-settings.grade-bands.new-version');
+                Route::get( 'grade-bands/{gradeBand}/impact',      [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'impactCheck'])->name('hr-settings.grade-bands.impact');
+
+                // Salary Scales (full lifecycle)
+                Route::apiResource('salary-scales', \App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class)
+                    ->names('hr-settings.salary-scales');
+                Route::post('salary-scales/{salaryScale}/submit',  [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'submit'])->name('hr-settings.salary-scales.submit');
+                Route::post('salary-scales/{salaryScale}/approve', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'approve'])->name('hr-settings.salary-scales.approve');
+                Route::post('salary-scales/{salaryScale}/publish', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'publish'])->name('hr-settings.salary-scales.publish');
+            });
         });
 
         // Module routes will be added here per module

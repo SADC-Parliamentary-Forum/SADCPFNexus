@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Guard: columns were already added outside of Artisan (e.g. via a prior migration run)
+        if (Schema::hasColumn('timesheet_entries', 'project_id')) {
+            return;
+        }
+
         Schema::table('timesheet_entries', function (Blueprint $table) {
             $table->foreignId('project_id')->nullable()->after('timesheet_id')
                   ->constrained('timesheet_projects')->nullOnDelete();

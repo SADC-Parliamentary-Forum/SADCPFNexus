@@ -2160,3 +2160,162 @@ export const assignmentsApi = {
   cancel: (id: number, data?: { reason?: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/cancel`, data),
 };
+
+// ─── HR Settings — Master Data & Rules ───────────────────────────────────────
+
+export type HrSettingsStatus = "draft" | "review" | "approved" | "published" | "archived";
+
+export interface HrJobFamily {
+  id: number;
+  tenant_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  color: string | null;
+  icon: string | null;
+  status: string;
+  grade_bands_count?: number;
+  created_at: string;
+}
+
+export interface HrGradeBand {
+  id: number;
+  tenant_id: number;
+  code: string;
+  label: string;
+  band_group: "A" | "B" | "C" | "D";
+  employment_category: "local" | "regional" | "researcher";
+  min_notch: number;
+  max_notch: number;
+  probation_months: number;
+  notice_period_days: number;
+  leave_days_per_year: number;
+  overtime_eligible: boolean;
+  acting_allowance_rate: number | null;
+  travel_class: "economy" | "business" | "first" | null;
+  medical_aid_eligible: boolean;
+  housing_allowance_eligible: boolean;
+  job_family_id: number | null;
+  job_family?: HrJobFamily;
+  status: HrSettingsStatus;
+  effective_from: string;
+  effective_to: string | null;
+  version_number: number;
+  created_by: number | null;
+  reviewed_by: number | null;
+  approved_by: number | null;
+  published_by: number | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  published_at: string | null;
+  notes: string | null;
+  positions_count?: number;
+  staff_count?: number;
+  salary_scales?: HrSalaryScale[];
+  reviewer?: Pick<User, "id" | "name">;
+  approver?: Pick<User, "id" | "name">;
+  publisher?: Pick<User, "id" | "name">;
+  created_at: string;
+}
+
+export interface HrSalaryScaleNotch {
+  notch: number;
+  annual: number;
+  monthly: number;
+}
+
+export interface HrSalaryScale {
+  id: number;
+  tenant_id: number;
+  grade_band_id: number;
+  grade_band?: HrGradeBand;
+  currency: string;
+  notches: HrSalaryScaleNotch[];
+  status: HrSettingsStatus;
+  effective_from: string;
+  effective_to: string | null;
+  version_number: number;
+  created_by: number | null;
+  reviewed_by: number | null;
+  approved_by: number | null;
+  published_by: number | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  published_at: string | null;
+  notes: string | null;
+  approver?: Pick<User, "id" | "name">;
+  publisher?: Pick<User, "id" | "name">;
+  created_at: string;
+}
+
+export interface HrGradeBandImpact {
+  positions_count: number;
+  active_staff_count: number;
+  positions: { id: number; title: string; department: string | null }[];
+}
+
+export const hrSettingsApi = {
+  // ── Job Families ────────────────────────────────────────────────────────────
+  listJobFamilies: () =>
+    api.get<{ data: HrJobFamily[] }>("/admin/hr-settings/job-families"),
+  createJobFamily: (data: Partial<HrJobFamily>) =>
+    api.post<{ data: HrJobFamily; message: string }>("/admin/hr-settings/job-families", data),
+  updateJobFamily: (id: number, data: Partial<HrJobFamily>) =>
+    api.put<{ data: HrJobFamily; message: string }>(`/admin/hr-settings/job-families/${id}`, data),
+  deleteJobFamily: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/job-families/${id}`),
+
+  // ── Grade Bands ─────────────────────────────────────────────────────────────
+  listGradeBands: (params?: {
+    status?: string;
+    band_group?: string;
+    employment_category?: string;
+    search?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
+    api.get<PaginatedResponse<HrGradeBand>>("/admin/hr-settings/grade-bands", { params }),
+  getGradeBand: (id: number) =>
+    api.get<{ data: HrGradeBand }>(`/admin/hr-settings/grade-bands/${id}`),
+  createGradeBand: (data: Partial<HrGradeBand>) =>
+    api.post<{ data: HrGradeBand; message: string }>("/admin/hr-settings/grade-bands", data),
+  updateGradeBand: (id: number, data: Partial<HrGradeBand>) =>
+    api.put<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}`, data),
+  deleteGradeBand: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/grade-bands/${id}`),
+  submitGradeBand: (id: number) =>
+    api.post<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}/submit`),
+  approveGradeBand: (id: number) =>
+    api.post<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}/approve`),
+  publishGradeBand: (id: number) =>
+    api.post<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}/publish`),
+  archiveGradeBand: (id: number) =>
+    api.post<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}/archive`),
+  newVersionGradeBand: (id: number) =>
+    api.post<{ data: HrGradeBand; message: string }>(`/admin/hr-settings/grade-bands/${id}/new-version`),
+  impactCheckGradeBand: (id: number) =>
+    api.get<{ data: HrGradeBandImpact }>(`/admin/hr-settings/grade-bands/${id}/impact`),
+
+  // ── Salary Scales ───────────────────────────────────────────────────────────
+  listSalaryScales: (params?: {
+    grade_band_id?: number;
+    status?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
+    api.get<PaginatedResponse<HrSalaryScale>>("/admin/hr-settings/salary-scales", { params }),
+  getSalaryScale: (id: number) =>
+    api.get<{ data: HrSalaryScale }>(`/admin/hr-settings/salary-scales/${id}`),
+  createSalaryScale: (data: Partial<HrSalaryScale> & { notches: HrSalaryScaleNotch[] }) =>
+    api.post<{ data: HrSalaryScale; message: string }>("/admin/hr-settings/salary-scales", data),
+  updateSalaryScale: (id: number, data: Partial<HrSalaryScale>) =>
+    api.put<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}`, data),
+  deleteSalaryScale: (id: number) =>
+    api.delete<{ message: string }>(`/admin/hr-settings/salary-scales/${id}`),
+  submitSalaryScale: (id: number) =>
+    api.post<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}/submit`),
+  approveSalaryScale: (id: number) =>
+    api.post<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}/approve`),
+  publishSalaryScale: (id: number) =>
+    api.post<{ data: HrSalaryScale; message: string }>(`/admin/hr-settings/salary-scales/${id}/publish`),
+};

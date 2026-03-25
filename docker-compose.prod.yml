@@ -11,7 +11,7 @@
 #
 # Reverse proxy targets configured in CloudPanel:
 #   nexus.sadcpf.org      → http://127.0.0.1:7000  (web / Next.js)
-#   api.nexus.sadcpf.org  → http://127.0.0.1:6000  (nginx / Laravel API)
+#   nexus-api.sadcpf.org  → http://127.0.0.1:6000  (nginx / Laravel API)
 #
 # NOTE: Docker Compose merges (not replaces) port arrays across files.
 # All ports in docker-compose.yml are already bound to 127.0.0.1 for safety.
@@ -26,7 +26,7 @@ services:
       dockerfile: ../docker/web/Dockerfile
       target: runner                         # Production stage (not dev server)
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.nexus.sadcpf.org/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nexus-api.sadcpf.org/api/v1}
         NEXT_OUTPUT: standalone
     environment:
       NODE_ENV: production

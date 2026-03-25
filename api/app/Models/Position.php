@@ -13,6 +13,7 @@ class Position extends Model
         'department_id',
         'title',
         'grade',
+        'grade_band_id',
         'description',
         'headcount',
         'is_active',
@@ -31,6 +32,11 @@ class Position extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function gradeBand(): BelongsTo
+    {
+        return $this->belongsTo(HrGradeBand::class, 'grade_band_id');
     }
 
     public function users(): HasMany
