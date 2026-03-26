@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminApi, type Role } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { cn } from "@/lib/utils";
 
 const PROTECTED_NAMES = ["System Admin", "System Administrator", "super-admin"];
 
@@ -28,6 +29,7 @@ const MODULE_GROUPS = [
   { label: "Users",        icon: "manage_accounts",      color: "indigo", perms: ["users.view","users.create","users.edit","users.deactivate","users.delete"] },
   { label: "Roles",        icon: "admin_panel_settings", color: "slate",  perms: ["roles.view","roles.manage","system.admin"] },
   { label: "Reports",      icon: "bar_chart",            color: "cyan",   perms: ["reports.view","reports.export","reports.audit","audit.view","audit.export"] },
+  { label: "HR Settings",  icon: "tune",                 color: "green",  perms: ["hr_settings.view","hr_settings.edit","hr_settings.approve","hr_settings.publish"] },
 ];
 
 const GROUP_COLORS: Record<string, { header: string; pill: string }> = {
@@ -50,7 +52,14 @@ const GROUP_COLORS: Record<string, { header: string; pill: string }> = {
   indigo:  { header: "bg-indigo-50",  pill: "bg-indigo-100 text-indigo-700" },
   slate:   { header: "bg-slate-50",   pill: "bg-slate-100 text-slate-700" },
   cyan:    { header: "bg-cyan-50",    pill: "bg-cyan-100 text-cyan-700" },
+  green:   { header: "bg-green-50",   pill: "bg-green-100 text-green-700" },
 };
+
+const CATEGORY_TABS = [
+  { id: "operations", label: "Operations",   icon: "hub",      groups: ["Travel","Leave","Imprest","Finance","Procurement","Assets","Governance","Timesheets","Calendar","Support"] },
+  { id: "management", label: "Management",   icon: "layers",   groups: ["HR","Appraisals","Conduct","PIF","Workplan","Assignments","Reports"] },
+  { id: "system",     label: "System Config", icon: "settings", groups: ["HR Settings","Users","Roles"] },
+];
 
 function permLabel(perm: string): string {
   const part = perm.split(".")[1] ?? perm;
@@ -71,6 +80,7 @@ export default function AdminRolesPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState("operations");
   const { confirm } = useConfirm();
 
   useEffect(() => {
@@ -243,101 +253,129 @@ export default function AdminRolesPage() {
       </div>
 
       {/* Permission Matrix */}
-      {!loading && roles.length > 0 && (
-        <div className="card overflow-hidden">
-          <div className="px-6 py-4 border-b border-neutral-100">
-            <h2 className="text-base font-semibold text-neutral-900">Permission Matrix</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              Click a checkbox to instantly toggle a permission for a role. Protected roles are read-only.
-            </p>
-          </div>
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="text-xs border-collapse min-w-max">
-              <thead>
-                <tr>
-                  <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-2 text-left min-w-[160px]">
-                    Role
-                  </th>
-                  {MODULE_GROUPS.map((group) => {
-                    const colors = GROUP_COLORS[group.color] ?? GROUP_COLORS.slate;
+      {!loading && roles.length > 0 && (() => {
+        const visibleGroups = MODULE_GROUPS.filter((g) =>
+          CATEGORY_TABS.find((t) => t.id === activeTab)?.groups.includes(g.label)
+        );
+        return (
+          <div className="card overflow-hidden">
+            {/* Card title */}
+            <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-neutral-400 text-[20px]">grid_view</span>
+                <div>
+                  <h2 className="text-base font-semibold text-neutral-900">Permission Matrix</h2>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Click a checkbox to instantly toggle a permission for a role. Protected roles are read-only.
+                  </p>
+                </div>
+              </div>
+            </div>
+            {/* Tab bar */}
+            <div className="flex gap-1 px-6 py-2.5 border-b border-neutral-200 bg-neutral-50">
+              {CATEGORY_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    "filter-tab flex items-center gap-1.5",
+                    activeTab === tab.id && "active"
+                  )}
+                >
+                  <span className="material-symbols-outlined text-[15px]">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="text-xs border-collapse min-w-max">
+                <thead>
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-2 text-left min-w-[160px]">
+                      Role
+                    </th>
+                    {visibleGroups.map((group) => {
+                      const colors = GROUP_COLORS[group.color] ?? GROUP_COLORS.slate;
+                      return (
+                        <th
+                          key={group.label}
+                          colSpan={group.perms.length}
+                          className={`border-b border-r border-neutral-200 px-2 py-2 text-center ${colors.header}`}
+                        >
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${colors.pill}`}>
+                            <span className="material-symbols-outlined text-[11px]">{group.icon}</span>
+                            {group.label}
+                          </span>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-1.5" />
+                    {visibleGroups.flatMap((group) =>
+                      group.perms.map((perm) => (
+                        <th
+                          key={perm}
+                          className="border-b border-r border-neutral-100 px-2 py-1.5 text-center font-medium text-neutral-500 whitespace-nowrap"
+                          title={perm}
+                        >
+                          {permLabel(perm)}
+                        </th>
+                      ))
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {roles.map((role) => {
+                    const isProtected = PROTECTED_NAMES.includes(role.name);
                     return (
-                      <th
-                        key={group.label}
-                        colSpan={group.perms.length}
-                        className={`border-b border-r border-neutral-200 px-2 py-2 text-center ${colors.header}`}
-                      >
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${colors.pill}`}>
-                          <span className="material-symbols-outlined text-[11px]">{group.icon}</span>
-                          {group.label}
-                        </span>
-                      </th>
+                      <tr key={role.id} className={isProtected ? "bg-neutral-50 opacity-70" : "hover:bg-neutral-50/50"}>
+                        <td className="sticky left-0 z-10 bg-inherit border-b border-r border-neutral-200 px-4 py-2 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            {isProtected && (
+                              <span className="material-symbols-outlined text-[12px] text-neutral-400">lock</span>
+                            )}
+                            <span className="font-medium text-neutral-800">{role.name}</span>
+                            {isAdmin && !isProtected && (
+                              <Link href={`/admin/roles/${role.id}/edit`} className="text-[10px] text-primary hover:underline ml-1">
+                                Edit
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                        {visibleGroups.flatMap((group) =>
+                          group.perms.map((perm) => {
+                            const key = `${role.id}-${perm}`;
+                            const checked = permSets[role.id]?.has(perm) ?? false;
+                            const isSaving = savingCell === key;
+                            return (
+                              <td key={perm} className="border-b border-r border-neutral-100 px-2 py-2 text-center">
+                                {isSaving ? (
+                                  <span className="material-symbols-outlined animate-spin text-[14px] text-primary">progress_activity</span>
+                                ) : (
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={isProtected || !isAdmin}
+                                    onChange={() => togglePerm(role, perm)}
+                                    className="rounded border-neutral-300 text-primary focus:ring-primary disabled:opacity-40 cursor-pointer disabled:cursor-default"
+                                    title={`${checked ? "Revoke" : "Grant"} ${perm} for ${role.name}`}
+                                  />
+                                )}
+                              </td>
+                            );
+                          })
+                        )}
+                      </tr>
                     );
                   })}
-                </tr>
-                <tr>
-                  <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-1.5" />
-                  {MODULE_GROUPS.flatMap((group) =>
-                    group.perms.map((perm) => (
-                      <th
-                        key={perm}
-                        className="border-b border-r border-neutral-100 px-2 py-1.5 text-center font-medium text-neutral-500 whitespace-nowrap"
-                        title={perm}
-                      >
-                        {permLabel(perm)}
-                      </th>
-                    ))
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {roles.map((role) => {
-                  const isProtected = PROTECTED_NAMES.includes(role.name);
-                  return (
-                    <tr key={role.id} className={isProtected ? "bg-neutral-50 opacity-70" : "hover:bg-neutral-50/50"}>
-                      <td className="sticky left-0 z-10 bg-inherit border-b border-r border-neutral-200 px-4 py-2 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          {isProtected && (
-                            <span className="material-symbols-outlined text-[12px] text-neutral-400">lock</span>
-                          )}
-                          <span className="font-medium text-neutral-800">{role.name}</span>
-                          {isAdmin && !isProtected && (
-                            <Link href={`/admin/roles/${role.id}/edit`} className="text-[10px] text-primary hover:underline ml-1">
-                              Edit
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                      {MODULE_GROUPS.flatMap((group) =>
-                        group.perms.map((perm) => {
-                          const key = `${role.id}-${perm}`;
-                          const checked = permSets[role.id]?.has(perm) ?? false;
-                          const isSaving = savingCell === key;
-                          return (
-                            <td key={perm} className="border-b border-r border-neutral-100 px-2 py-2 text-center">
-                              {isSaving ? (
-                                <span className="material-symbols-outlined animate-spin text-[14px] text-primary">progress_activity</span>
-                              ) : (
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  disabled={isProtected || !isAdmin}
-                                  onChange={() => togglePerm(role, perm)}
-                                  className="rounded border-neutral-300 text-primary focus:ring-primary disabled:opacity-40 cursor-pointer disabled:cursor-default"
-                                  title={`${checked ? "Revoke" : "Grant"} ${perm} for ${role.name}`}
-                                />
-                              )}
-                            </td>
-                          );
-                        })
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4 text-sm text-neutral-600">
         <p className="font-medium text-neutral-800">Assigning roles to users</p>

@@ -111,6 +111,15 @@ const adminLinks = [
     bg: "bg-sky-50",
     border: "border-sky-100",
   },
+  {
+    title: "HR Administration",
+    description: "Configure grade bands, salary scales, job families, contract types, leave profiles, and HR governance settings.",
+    href: "/settings/hr",
+    icon: "tune",
+    color: "text-green-700",
+    bg: "bg-green-50",
+    border: "border-green-100",
+  },
 ];
 
 export default function AdminPage() {

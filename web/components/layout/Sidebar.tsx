@@ -106,17 +106,25 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Audit Ledger", href: "/analytics/ledger", icon: "receipt_long" },
     ],
   },
+  { label: "Help & Support", href: "/profile/support", icon: "help" },
   {
-    label: "Settings",
-    href: "/settings/hr",
-    icon: "tune",
+    label: "Administration",
+    href: "/admin",
+    icon: "admin_panel_settings",
     section: "Configuration",
     children: [
-      { label: "HR Administration", href: "/settings/hr", icon: "manage_accounts" },
+      { label: "Overview",             href: "/admin",               icon: "space_dashboard" },
+      { label: "Users",                href: "/admin/users",         icon: "manage_accounts" },
+      { label: "Roles & Permissions",  href: "/admin/roles",         icon: "security" },
+      { label: "Departments",          href: "/admin/departments",   icon: "corporate_fare" },
+      { label: "Positions",            href: "/admin/positions",     icon: "work" },
+      { label: "Approval Workflows",   href: "/admin/workflows",     icon: "account_tree" },
+      { label: "System Settings",      href: "/admin/settings",      icon: "settings" },
+      { label: "Notifications",        href: "/admin/notifications", icon: "notifications" },
+      { label: "Audit Logs",           href: "/admin/audit",         icon: "manage_search" },
+      { label: "HR Administration",    href: "/settings/hr",         icon: "tune" },
     ],
   },
-  { label: "Help & Support", href: "/profile/support", icon: "help" },
-  { label: "Admin", href: "/admin", icon: "admin_panel_settings" },
 ];
 
 interface SidebarProps {
@@ -136,12 +144,13 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
     setUser(getStoredUser());
   }, []);
 
-  const navItems = useMemo(() => NAV_ITEMS.filter((item) => canAccessRoute(user, item.href)).map((item) => {
+  const navItems = useMemo(() => NAV_ITEMS.map((item) => {
     if (item.children) {
       const children = item.children.filter((c) => canAccessRoute(user, c.href));
       if (children.length === 0) return null;
       return { ...item, children };
     }
+    if (!canAccessRoute(user, item.href)) return null;
     return item;
   }).filter((item): item is NavItem => item !== null), [user]);
 
@@ -200,12 +209,15 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
 
     const isExpanded = expanded[item.href] ?? false;
 
-    // Collapsed: icon-only link (parent goes to main href)
+    // Collapsed: icon-only link (parent goes to first accessible child)
     if (isCollapsed) {
+      const collapsedHref = hasChildren
+        ? (item.children!.find((c) => canAccessRoute(user, c.href))?.href ?? item.href)
+        : item.href;
       return (
         <Link
           key={item.href}
-          href={item.href}
+          href={collapsedHref}
           title={item.label}
           className={cn(
             "flex items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-all min-w-0",

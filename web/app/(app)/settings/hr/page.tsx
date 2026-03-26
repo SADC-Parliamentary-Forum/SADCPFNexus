@@ -121,7 +121,7 @@ export default function HrSettingsDashboard() {
       {/* Page header */}
       <div>
         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <span>Settings</span>
+          <Link href="/admin" className="hover:text-neutral-700 transition-colors">Admin</Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
           <span className="text-neutral-700 font-medium">HR Administration</span>
         </div>
