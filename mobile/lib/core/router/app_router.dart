@@ -55,6 +55,7 @@ import '../../features/hr/presentation/screens/hr_file_summary_screen.dart';
 import '../../features/hr/presentation/screens/hr_file_documents_screen.dart';
 import '../../features/hr/presentation/screens/hr_performance_dashboard_screen.dart';
 import '../../features/hr/presentation/screens/supervisor_team_detail_screen.dart';
+import '../../features/hr/presentation/screens/work_assignments_screen.dart';
 
 // Assets
 import '../../features/assets/presentation/screens/asset_inventory_screen.dart';
@@ -311,6 +312,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/hr/timesheets',
         name: 'hr-timesheets',
         builder: (context, state) => const TimesheetsIncidentsScreen(),
+      ),
+      GoRoute(
+        path: '/hr/assignments',
+        name: 'hr-assignments',
+        builder: (context, state) => const WorkAssignmentsScreen(),
       ),
       GoRoute(
         path: '/hr/disciplinary',

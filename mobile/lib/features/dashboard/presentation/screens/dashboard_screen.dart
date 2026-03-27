@@ -381,6 +381,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _ModuleTile(icon: Icons.people_outline, label: 'HR',
                             color: c.primary,
                             onTap: () => context.push('/hr/dashboard')),
+                        if (canAccessFeature(_permissions, _roles, '/hr/assignments'))
+                          _ModuleTile(icon: Icons.assignment_outlined, label: 'Assignments',
+                            color: c.primary,
+                            onTap: () => context.push('/hr/assignments')),
                         if (canAccessFeature(_permissions, _roles, '/assets/inventory'))
                           _ModuleTile(icon: Icons.devices_outlined, label: 'Assets',
                             color: c.secondary,
