@@ -10,7 +10,7 @@ class ApprovalWorkflow extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['tenant_id', 'name', 'module_type', 'is_active'];
+    protected $fillable = ['tenant_id', 'name', 'module_type', 'is_active', 'target_type', 'target_id'];
 
     public function steps(): HasMany
     {

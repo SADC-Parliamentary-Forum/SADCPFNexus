@@ -23,7 +23,7 @@ class WorkplanController extends Controller
         $user = $request->user();
         $data = $request->validate([
             'title'                 => ['required', 'string', 'max:255'],
-            'type'                  => ['required', 'string', 'in:meeting,travel,leave,milestone,deadline'],
+            'type'                  => ['required', 'string', 'max:32'],
             'meeting_type_id'       => ['nullable', 'integer', 'exists:meeting_types,id'],
             'date'                  => ['required', 'date'],
             'end_date'              => ['nullable', 'date', 'after_or_equal:date'],
@@ -55,7 +55,7 @@ class WorkplanController extends Controller
         $user = $request->user();
         $data = $request->validate([
             'title'                 => ['sometimes', 'string', 'max:255'],
-            'type'                  => ['sometimes', 'string', 'in:meeting,travel,leave,milestone,deadline'],
+            'type'                  => ['sometimes', 'string', 'max:32'],
             'meeting_type_id'       => ['nullable', 'integer', 'exists:meeting_types,id'],
             'date'                  => ['sometimes', 'date'],
             'end_date'              => ['nullable', 'date'],

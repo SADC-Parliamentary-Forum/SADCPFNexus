@@ -3,26 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { workplanApi, workplanMeetingTypesApi, tenantUsersApi, type MeetingType, type TenantUserOption } from "@/lib/api";
-
-const TYPE_OPTIONS = [
-  { value: "meeting", label: "Meeting" },
-  { value: "travel", label: "Travel" },
-  { value: "leave", label: "Leave" },
-  { value: "milestone", label: "Milestone" },
-  { value: "deadline", label: "Deadline" },
-];
+import { workplanApi, workplanMeetingTypesApi, workplanEventTypesApi, tenantUsersApi, type MeetingType, type WorkplanEventType, type TenantUserOption } from "@/lib/api";
 
 export default function NewWorkplanEventPage() {
   const router = useRouter();
   const [meetingTypes, setMeetingTypes] = useState<MeetingType[]>([]);
+  const [eventTypes, setEventTypes] = useState<WorkplanEventType[]>([]);
   const [userOptions, setUserOptions] = useState<TenantUserOption[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<"meeting" | "travel" | "leave" | "milestone" | "deadline">("meeting");
+  const [type, setType] = useState<string>("meeting");
   const [meetingTypeId, setMeetingTypeId] = useState<number | "">("");
   const [date, setDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -33,6 +26,11 @@ export default function NewWorkplanEventPage() {
 
   useEffect(() => {
     workplanMeetingTypesApi.list().then((r) => setMeetingTypes(r.data?.data ?? [])).catch(() => setMeetingTypes([]));
+    workplanEventTypesApi.list().then((r) => {
+      const types = r.data?.data ?? [];
+      setEventTypes(types);
+      if (types.length > 0) setType(types[0].slug);
+    }).catch(() => setEventTypes([]));
   }, []);
 
   const loadUsers = useCallback(() => {
@@ -113,15 +111,15 @@ export default function NewWorkplanEventPage() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
-          <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as "meeting" | "travel" | "leave" | "milestone" | "deadline")} required>
-            {TYPE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+          <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value)} required>
+            {eventTypes.map((et) => (
+              <option key={et.slug} value={et.slug}>{et.name}</option>
             ))}
           </select>
         </div>
         {type === "meeting" && (
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Kind of meeting</label>
+            <label className="block text-sm font-semibold text-neutral-700 mb-1">Meeting Category</label>
             <select
               className="form-input w-full"
               value={meetingTypeId}

@@ -6,21 +6,15 @@ import { useParams, useRouter } from "next/navigation";
 import {
   workplanApi,
   workplanMeetingTypesApi,
+  workplanEventTypesApi,
   workplanAttachmentsApi,
   tenantUsersApi,
   type WorkplanEvent,
   type MeetingType,
+  type WorkplanEventType,
   type TenantUserOption,
   type WorkplanAttachment,
 } from "@/lib/api";
-
-const TYPE_OPTIONS = [
-  { value: "meeting", label: "Meeting" },
-  { value: "travel", label: "Travel" },
-  { value: "leave", label: "Leave" },
-  { value: "milestone", label: "Milestone" },
-  { value: "deadline", label: "Deadline" },
-];
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -32,6 +26,7 @@ export default function WorkplanEventDetailPage() {
   const id = params?.id != null ? Number(params.id) : NaN;
   const [event, setEvent] = useState<WorkplanEvent | null>(null);
   const [meetingTypes, setMeetingTypes] = useState<MeetingType[]>([]);
+  const [eventTypes, setEventTypes] = useState<WorkplanEventType[]>([]);
   const [userOptions, setUserOptions] = useState<TenantUserOption[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [attachments, setAttachments] = useState<WorkplanAttachment[]>([]);
@@ -42,7 +37,7 @@ export default function WorkplanEventDetailPage() {
   const [editMode, setEditMode] = useState(false);
 
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<"meeting" | "travel" | "leave" | "milestone" | "deadline">("meeting");
+  const [type, setType] = useState<string>("meeting");
   const [meetingTypeId, setMeetingTypeId] = useState<number | "">("");
   const [date, setDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -88,6 +83,7 @@ export default function WorkplanEventDetailPage() {
 
   useEffect(() => {
     workplanMeetingTypesApi.list().then((r) => setMeetingTypes(r.data?.data ?? [])).catch(() => setMeetingTypes([]));
+    workplanEventTypesApi.list().then((r) => setEventTypes(r.data?.data ?? [])).catch(() => setEventTypes([]));
   }, []);
 
   const loadUsers = useCallback(() => {
@@ -242,15 +238,15 @@ export default function WorkplanEventDetailPage() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
-            <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as "meeting" | "travel" | "leave" | "milestone" | "deadline")}>
-              {TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+            <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value)}>
+              {eventTypes.map((et) => (
+                <option key={et.slug} value={et.slug}>{et.name}</option>
               ))}
             </select>
           </div>
           {type === "meeting" && (
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Kind of meeting</label>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1">Meeting Category</label>
               <select
                 className="form-input w-full"
                 value={meetingTypeId}

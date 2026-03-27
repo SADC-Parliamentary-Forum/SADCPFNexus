@@ -64,7 +64,8 @@ const NAV_ITEMS: NavItem[] = [
     icon: "calendar_month",
     children: [
       { label: "Events", href: "/workplan", icon: "calendar_month" },
-      { label: "Meeting types", href: "/workplan/meeting-types", icon: "category" },
+      { label: "Meeting categories", href: "/workplan/meeting-types", icon: "meeting_room" },
+      { label: "Event types", href: "/workplan/event-types", icon: "category" },
     ],
   },
   {

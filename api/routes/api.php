@@ -339,6 +339,10 @@ Route::prefix('v1')->group(function () {
             Route::post('meeting-types', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'store']);
             Route::put('meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'update']);
             Route::delete('meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'destroy']);
+            Route::get('event-types', [\App\Http\Controllers\Api\V1\Workplan\WorkplanEventTypeController::class, 'index']);
+            Route::post('event-types', [\App\Http\Controllers\Api\V1\Workplan\WorkplanEventTypeController::class, 'store']);
+            Route::put('event-types/{eventType}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanEventTypeController::class, 'update']);
+            Route::delete('event-types/{eventType}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanEventTypeController::class, 'destroy']);
             Route::get('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'index']);
             Route::post('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'store']);
             Route::delete('events/{event}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'destroy']);
@@ -496,6 +500,7 @@ Route::prefix('v1')->group(function () {
              Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
              Route::post('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'store']);
              Route::put('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'update']);
+             Route::delete('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'destroy']);
         });
     });
 });

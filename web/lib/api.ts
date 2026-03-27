@@ -231,6 +231,8 @@ export interface ApprovalWorkflow {
   name: string;
   module_type: string;
   is_active: boolean;
+  target_type?: "programme" | "department" | null;
+  target_id?: number | null;
   steps: ApprovalStep[];
 }
 
@@ -323,6 +325,7 @@ export const adminApi = {
   listWorkflows: () => api.get<{ data: ApprovalWorkflow[] }>("/admin/workflows"),
   createWorkflow: (data: any) => api.post("/admin/workflows", data),
   updateWorkflow: (id: number, data: any) => api.put(`/admin/workflows/${id}`, data),
+  deleteWorkflow: (id: number) => api.delete(`/admin/workflows/${id}`),
 
   // Payslips (list, filter, get one, download, upload, delete)
   listPayslips: (params?: {
@@ -1442,6 +1445,26 @@ export const workplanMeetingTypesApi = {
   update: (id: number, data: { name?: string; description?: string; sort_order?: number }) =>
     api.put<{ data: MeetingType; message: string }>(`/workplan/meeting-types/${id}`, data),
   delete: (id: number) => api.delete(`/workplan/meeting-types/${id}`),
+};
+
+export interface WorkplanEventType {
+  id: number;
+  tenant_id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  color: string;
+  is_system: boolean;
+  sort_order: number;
+}
+
+export const workplanEventTypesApi = {
+  list: () => api.get<{ data: WorkplanEventType[] }>("/workplan/event-types"),
+  create: (data: { name: string; icon?: string; color?: string; sort_order?: number }) =>
+    api.post<{ data: WorkplanEventType; message: string }>("/workplan/event-types", data),
+  update: (id: number, data: { name?: string; icon?: string; color?: string; sort_order?: number }) =>
+    api.put<{ data: WorkplanEventType; message: string }>(`/workplan/event-types/${id}`, data),
+  delete: (id: number) => api.delete(`/workplan/event-types/${id}`),
 };
 
 export const workplanApi = {
