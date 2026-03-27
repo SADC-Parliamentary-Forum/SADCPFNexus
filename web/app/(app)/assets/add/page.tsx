@@ -189,28 +189,28 @@ export default function AddAssetPage() {
     return null;
   }
 
-  const inputCls = "w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50";
-  const labelCls = "block text-xs font-medium text-gray-700 mb-1";
-  const cardCls = "rounded-xl bg-white border border-gray-100 shadow-card p-6 space-y-5";
+  const inputCls = "w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none disabled:opacity-50";
+  const labelCls = "block text-xs font-medium text-neutral-700 mb-1";
+  const cardCls = "rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5";
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header - same style as leave/create, imprest/create */}
       <div>
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
           <Link href="/assets" className="hover:text-primary transition-colors">Assets</Link>
           <span>/</span>
-          <span className="text-gray-700 font-medium">Add Asset</span>
+          <span className="text-neutral-700 font-medium">Add Asset</span>
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Add Asset</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h2 className="text-xl font-bold text-neutral-900">Add Asset</h2>
+        <p className="text-sm text-neutral-500 mt-0.5">
           Complete each step. You can attach an invoice (PDF or image) and see a preview before submitting.
         </p>
       </div>
 
       {/* Stepper - "Step X of 4" + horizontal circles + labels like other modules */}
-      <div className="rounded-xl bg-white border border-gray-100 shadow-card p-5">
-        <p className="text-sm font-medium text-gray-600 mb-3">
+      <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
+        <p className="text-sm font-medium text-neutral-600 mb-3">
           Step {currentStep} of {STEP_LABELS.length}
         </p>
         <div className="flex items-center gap-2">
@@ -220,16 +220,16 @@ export default function AddAssetPage() {
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                   i + 1 < currentStep ? "bg-primary text-white" :
                   i + 1 === currentStep ? "bg-primary text-white" :
-                  "bg-gray-100 text-gray-400"
+                  "bg-neutral-100 text-neutral-400"
                 }`}>
                   {i + 1 < currentStep ? <span className="material-symbols-outlined text-[14px]">check</span> : i + 1}
                 </div>
-                <span className={`text-xs font-medium hidden sm:block ${i + 1 === currentStep ? "text-primary" : i + 1 < currentStep ? "text-gray-700" : "text-gray-400"}`}>
+                <span className={`text-xs font-medium hidden sm:block ${i + 1 === currentStep ? "text-primary" : i + 1 < currentStep ? "text-neutral-700" : "text-neutral-400"}`}>
                   {label}
                 </span>
               </div>
               {i < STEP_LABELS.length - 1 && (
-                <div className={`flex-1 h-px mx-2 ${i + 1 < currentStep ? "bg-primary" : "bg-gray-200"}`} />
+                <div className={`flex-1 h-px mx-2 ${i + 1 < currentStep ? "bg-primary" : "bg-neutral-200"}`} />
               )}
             </div>
           ))}
@@ -247,11 +247,11 @@ export default function AddAssetPage() {
         {/* Step 1 – Basic info */}
         {currentStep === 1 && (
           <div className={cardCls}>
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">1</span>
               Basic asset information
             </h3>
-            <p className="text-xs text-gray-500">Fields marked with <span className="text-red-500">*</span> are required.</p>
+            <p className="text-xs text-neutral-500">Fields marked with <span className="text-red-500">*</span> are required.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="asset_code" className={labelCls}>Asset code <span className="text-red-500">*</span></label>
@@ -359,7 +359,7 @@ export default function AddAssetPage() {
         {/* Step 2 – Invoice & amount */}
         {currentStep === 2 && (
           <div className={cardCls}>
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">2</span>
               Invoice & amount
             </h3>
@@ -397,15 +397,15 @@ export default function AddAssetPage() {
                 type="file"
                 accept=".pdf,image/jpeg,image/png,image/jpg,image/webp,application/pdf"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20"
+                className="block w-full text-sm text-neutral-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20"
                 disabled={submitting}
               />
-              <p className="text-xs text-gray-500 mt-1">PDF, JPEG, PNG or WebP. Max 10 MB.</p>
+              <p className="text-xs text-neutral-500 mt-1">PDF, JPEG, PNG or WebP. Max 10 MB.</p>
             </div>
             {invoicePreviewUrl && invoiceFile && (
               <div className="mt-4">
-                <p className="text-xs font-medium text-gray-700 mb-2">Invoice contents (preview)</p>
-                <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 max-h-[400px] overflow-auto">
+                <p className="text-xs font-medium text-neutral-700 mb-2">Invoice contents (preview)</p>
+                <div className="border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50 max-h-[400px] overflow-auto">
                   {invoiceFile.type.startsWith("image/") ? (
                     <img
                       src={invoicePreviewUrl}
@@ -419,7 +419,7 @@ export default function AddAssetPage() {
                         title="Invoice contents"
                         className="w-full min-h-[400px] border-0"
                       />
-                      <p className="text-xs text-gray-500 px-3 py-2 border-t border-gray-100">
+                      <p className="text-xs text-neutral-500 px-3 py-2 border-t border-neutral-100">
                         PDF selected: {invoiceFile.name}. It will be attached when you submit.
                       </p>
                     </>
@@ -433,7 +433,7 @@ export default function AddAssetPage() {
         {/* Step 3 – Financial & depreciation */}
         {currentStep === 3 && (
           <div className={cardCls}>
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">3</span>
               Financial & depreciation
             </h3>
@@ -448,7 +448,7 @@ export default function AddAssetPage() {
                   className={inputCls}
                   disabled={submitting}
                 />
-                <p className="text-xs text-gray-500 mt-0.5">Used for age and depreciation start.</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Used for age and depreciation start.</p>
               </div>
               <div className="space-y-2">
                 <label htmlFor="purchase_value" className={labelCls}>Purchase value ($)</label>
@@ -514,8 +514,8 @@ export default function AddAssetPage() {
 
         {/* Step 4 – Review */}
         {currentStep === 4 && (
-          <div className={`${cardCls} bg-gray-50 border-gray-100`}>
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <div className={`${cardCls} bg-neutral-50 border-neutral-100`}>
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">4</span>
               Review and submit
             </h3>
@@ -532,20 +532,20 @@ export default function AddAssetPage() {
                 { label: "Purchase value", value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
                 { label: "Invoice attached", value: invoiceFile ? invoiceFile.name : "No" },
               ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-start py-2 border-b border-gray-50">
-                  <span className="text-xs text-gray-500 flex-shrink-0 w-40">{label}</span>
-                  <span className="text-xs font-medium text-gray-900 text-right">{value}</span>
+                <div key={label} className="flex justify-between items-start py-2 border-b border-neutral-50">
+                  <span className="text-xs text-neutral-500 flex-shrink-0 w-40">{label}</span>
+                  <span className="text-xs font-medium text-neutral-900 text-right">{value}</span>
                 </div>
               ))}
             </div>
-            <div className="pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="pt-4 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <span className="text-xs text-gray-500 block mb-1">Age</span>
-                <p className="text-sm font-semibold text-gray-900">{previewAge}</p>
+                <span className="text-xs text-neutral-500 block mb-1">Age</span>
+                <p className="text-sm font-semibold text-neutral-900">{previewAge}</p>
               </div>
               <div>
-                <span className="text-xs text-gray-500 block mb-1">Current (depreciated) value</span>
-                <p className="text-sm font-semibold text-gray-900">
+                <span className="text-xs text-neutral-500 block mb-1">Current (depreciated) value</span>
+                <p className="text-sm font-semibold text-neutral-900">
                   {previewCurrentValue != null
                     ? `$${previewCurrentValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : "—"}
@@ -566,7 +566,7 @@ export default function AddAssetPage() {
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s - 1)}
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
                 disabled={submitting}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -577,7 +577,7 @@ export default function AddAssetPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/assets"
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               Cancel
             </Link>

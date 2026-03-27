@@ -38,13 +38,13 @@ export default function PayslipsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
           <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
           <span>/</span>
-          <span className="text-gray-700 font-medium">Payslips</span>
+          <span className="text-neutral-700 font-medium">Payslips</span>
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Payslips</h2>
-        <p className="text-sm text-gray-500 mt-0.5">View and download your payslip history.</p>
+        <h2 className="text-xl font-bold text-neutral-900">Payslips</h2>
+        <p className="text-sm text-neutral-500 mt-0.5">View and download your payslip history.</p>
       </div>
 
       {error && (
@@ -52,33 +52,33 @@ export default function PayslipsPage() {
       )}
 
       {loading ? (
-        <div className="rounded-xl bg-white border border-gray-100 shadow-card px-5 py-12 text-center text-sm text-gray-500">Loading…</div>
+        <div className="rounded-xl bg-white border border-neutral-100 shadow-card px-5 py-12 text-center text-sm text-neutral-500">Loading…</div>
       ) : payslips.length === 0 ? (
-        <div className="rounded-xl bg-white border border-gray-100 shadow-card px-5 py-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-gray-300">description</span>
-          <p className="mt-3 text-sm text-gray-500">No payslips yet.</p>
+        <div className="rounded-xl bg-white border border-neutral-100 shadow-card px-5 py-16 text-center">
+          <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
+          <p className="mt-3 text-sm text-neutral-500">No payslips yet.</p>
           <Link href="/finance" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">Back to Finance</Link>
         </div>
       ) : (
-        <div className="rounded-xl bg-white border border-gray-100 shadow-card overflow-hidden">
+        <div className="rounded-xl bg-white border border-neutral-100 shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500">Period</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500">Gross</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500">Net</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500">Currency</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500">Actions</th>
+                <tr className="bg-neutral-50 border-b border-neutral-100">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500">Period</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Gross</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Net</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Currency</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-neutral-50">
                 {payslips.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-3 font-medium text-gray-900">{formatPeriod(p)}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{Number(p.gross_amount).toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-gray-700">{Number(p.net_amount).toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-gray-600">{p.currency}</td>
+                  <tr key={p.id} className="hover:bg-neutral-50/50">
+                    <td className="px-5 py-3 font-medium text-neutral-900">{formatPeriod(p)}</td>
+                    <td className="px-5 py-3 text-right text-neutral-700">{Number(p.gross_amount).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right text-neutral-700">{Number(p.net_amount).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-right text-neutral-600">{p.currency}</td>
                     <td className="px-5 py-3 text-right">
                       <button
                         type="button"
@@ -98,7 +98,7 @@ export default function PayslipsPage() {
       )}
 
       <div>
-        <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary transition-colors">
+        <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Back to Finance
         </Link>
