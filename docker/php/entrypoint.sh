@@ -28,6 +28,11 @@ done
 if [ "$migrate_ok" -eq 1 ]; then
   php artisan db:seed --force 2>/dev/null || true
 fi
+# Ensure www-data (PHP-FPM worker) can read all source files and write to storage.
+# Volume files are owned by the host UID; fix on every start so restarts don't break this.
+chmod -R o+rX /var/www/api 2>/dev/null || true
+chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+chmod -R 755 storage bootstrap/cache 2>/dev/null || true
 # Clear config cache so Laravel reads fresh .env (and env) on next request
 php artisan config:clear 2>/dev/null || true
 # Export APP_KEY so PHP-FPM inherits it; Laravel env() will then see it even if .env/cache is wrong
