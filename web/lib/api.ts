@@ -1930,6 +1930,10 @@ export interface SystemSettings {
   fiscal_start_month: string;
   default_currency: string;
   timezone: string;
+  letterhead_tagline?: string;
+  letterhead_phone?: string;
+  letterhead_fax?: string;
+  letterhead_website?: string;
 }
 
 export const settingsApi = {
@@ -2474,4 +2478,112 @@ export const hrSettingsApi = {
   // ── Settings Audit Log ──────────────────────────────────────────────────────
   listHrSettingsAudit: (params?: { page?: number; per_page?: number }) =>
     api.get<any>("/admin/audit-logs", { params: { ...params, tags: "hr_settings" } }),
+};
+
+// ── ICRMS — Correspondence & Registry ────────────────────────────────────────
+
+export interface CorrespondenceLetter {
+  id: number;
+  reference_number: string | null;
+  title: string;
+  subject: string;
+  body: string | null;
+  type: "internal_memo" | "external" | "diplomatic_note" | "procurement";
+  priority: "low" | "normal" | "high" | "urgent";
+  language: "en" | "fr" | "pt";
+  status: "draft" | "pending_review" | "pending_approval" | "approved" | "sent" | "archived";
+  direction: "outgoing" | "incoming";
+  file_code: string | null;
+  signatory_code: string | null;
+  department_id: number | null;
+  department?: { id: number; name: string };
+  original_filename: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  review_comment: string | null;
+  rejection_reason: string | null;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  sent_at: string | null;
+  created_at: string;
+  updated_at: string;
+  creator?: { id: number; name: string; email: string };
+  reviewer?: { id: number; name: string } | null;
+  approver?: { id: number; name: string } | null;
+  recipients?: CorrespondenceRecipient[];
+}
+
+export interface CorrespondenceRecipient {
+  id: number;
+  contact_id: number;
+  recipient_type: "to" | "cc" | "bcc";
+  email_status: string | null;
+  email_sent_at: string | null;
+  contact?: CorrespondenceContact;
+}
+
+export interface CorrespondenceContact {
+  id: number;
+  full_name: string;
+  organization: string | null;
+  country: string | null;
+  email: string;
+  phone: string | null;
+  stakeholder_type: string;
+  tags: string[];
+}
+
+export interface ContactGroup {
+  id: number;
+  name: string;
+  description: string | null;
+  contacts_count?: number;
+  contacts?: CorrespondenceContact[];
+}
+
+export const correspondenceApi = {
+  // Letters
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<CorrespondenceLetter>>("/correspondence/letters", { params }),
+  create: (formData: FormData) =>
+    api.post<{ data: CorrespondenceLetter; message: string }>("/correspondence/letters", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  get: (id: number) =>
+    api.get<{ data: CorrespondenceLetter }>(`/correspondence/letters/${id}`),
+  update: (id: number, data: FormData | Partial<CorrespondenceLetter>) =>
+    api.put<{ data: CorrespondenceLetter }>(`/correspondence/letters/${id}`, data),
+  delete: (id: number) => api.delete(`/correspondence/letters/${id}`),
+  submit: (id: number) => api.post(`/correspondence/letters/${id}/submit`),
+  review: (id: number, data: { action: "approve" | "reject"; comment?: string }) =>
+    api.post(`/correspondence/letters/${id}/review`, data),
+  approve: (id: number) => api.post(`/correspondence/letters/${id}/approve`),
+  send: (id: number, recipients: { contact_id: number; type: "to" | "cc" | "bcc" }[]) =>
+    api.post(`/correspondence/letters/${id}/send`, { recipients }),
+  download: (id: number) =>
+    api.get(`/correspondence/letters/${id}/download`, { responseType: "blob" }),
+
+  // Contacts
+  listContacts: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<CorrespondenceContact>>("/correspondence/contacts", { params }),
+  getContact: (id: number) =>
+    api.get<{ data: CorrespondenceContact }>(`/correspondence/contacts/${id}`),
+  createContact: (data: Partial<CorrespondenceContact>) =>
+    api.post<{ data: CorrespondenceContact; message: string }>("/correspondence/contacts", data),
+  updateContact: (id: number, data: Partial<CorrespondenceContact>) =>
+    api.put<{ data: CorrespondenceContact; message: string }>(`/correspondence/contacts/${id}`, data),
+  deleteContact: (id: number) => api.delete(`/correspondence/contacts/${id}`),
+
+  // Groups
+  listGroups: () => api.get<{ data: ContactGroup[] }>("/correspondence/groups"),
+  createGroup: (data: { name: string; description?: string }) =>
+    api.post<{ data: ContactGroup; message: string }>("/correspondence/groups", data),
+  updateGroup: (id: number, data: { name?: string; description?: string }) =>
+    api.put<{ data: ContactGroup; message: string }>(`/correspondence/groups/${id}`, data),
+  deleteGroup: (id: number) => api.delete(`/correspondence/groups/${id}`),
+  addMembers: (groupId: number, contactIds: number[]) =>
+    api.post(`/correspondence/groups/${groupId}/members`, { contact_ids: contactIds }),
+  removeMembers: (groupId: number, contactIds: number[]) =>
+    api.delete(`/correspondence/groups/${groupId}/members`, { data: { contact_ids: contactIds } }),
 };

@@ -85,6 +85,15 @@ const adminLinks = [
     border: "border-neutral-200",
   },
   {
+    title: "Ledger Verification",
+    description: "Cryptographic integrity checks, manifest hashes, and compliance audit status.",
+    href: "/admin/ledger",
+    icon: "verified_user",
+    color: "text-green-700",
+    bg: "bg-green-50",
+    border: "border-green-100",
+  },
+  {
     title: "Governance Configuration",
     description: "Manage data policies, thresholds, and institution-wide governance settings.",
     href: "/admin/governance",
@@ -119,6 +128,15 @@ const adminLinks = [
     color: "text-green-700",
     bg: "bg-green-50",
     border: "border-green-100",
+  },
+  {
+    title: "Correspondence Settings",
+    description: "Configure file codes, signatory roles, and reference number rules for the registry.",
+    href: "/admin/correspondence",
+    icon: "mark_email_read",
+    color: "text-sky-600",
+    bg: "bg-sky-50",
+    border: "border-sky-100",
   },
 ];
 

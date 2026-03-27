@@ -13,6 +13,10 @@ const DEFAULTS: SystemSettings = {
   fiscal_start_month: "January",
   default_currency: "NAD",
   timezone: "Africa/Windhoek",
+  letterhead_tagline: "Enhancing Parliamentary Democracy in the SADC Region",
+  letterhead_phone: "+264 61 287 2158",
+  letterhead_fax: "+264 61 254 642",
+  letterhead_website: "www.sadcpf.org",
 };
 
 export default function AdminSettingsPage() {
@@ -131,6 +135,34 @@ export default function AdminSettingsPage() {
                 <select className="form-input" value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}>
                   {TIMEZONES.map((t) => <option key={t}>{t}</option>)}
                 </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Letterhead & Branding */}
+          <div className="card p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50">
+                <span className="material-symbols-outlined text-sky-600 text-[18px]">mark_email_read</span>
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-900">Letterhead &amp; Branding</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
+                <input className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} placeholder="Enhancing Parliamentary Democracy…" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
+                <input className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} placeholder="+264 61 287 2158" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
+                <input className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} placeholder="+264 61 254 642" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
+                <input className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} placeholder="www.sadcpf.org" />
               </div>
             </div>
           </div>

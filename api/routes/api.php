@@ -425,6 +425,34 @@ Route::prefix('v1')->group(function () {
         Route::delete('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteActionItem']);
         Route::post('governance/minutes/{meetingMinute}/action-items/{actionItem}/assign', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'assignActionItem']);
 
+        // Correspondence & Registry (ICRMS)
+        Route::prefix('correspondence')->group(function () {
+            Route::get('letters', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'index']);
+            Route::post('letters', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'store']);
+            Route::get('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'show']);
+            Route::put('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'update']);
+            Route::delete('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'destroy']);
+            Route::post('letters/{correspondence}/submit', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'submit']);
+            Route::post('letters/{correspondence}/review', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'review']);
+            Route::post('letters/{correspondence}/approve', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'approve']);
+            Route::post('letters/{correspondence}/send', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'send']);
+            Route::get('letters/{correspondence}/download', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'download']);
+
+            Route::get('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'index']);
+            Route::post('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'store']);
+            Route::get('contacts/{contact}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'show']);
+            Route::put('contacts/{contact}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'update']);
+            Route::delete('contacts/{contact}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'destroy']);
+
+            Route::get('groups', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'index']);
+            Route::post('groups', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'store']);
+            Route::get('groups/{group}', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'show']);
+            Route::put('groups/{group}', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'update']);
+            Route::delete('groups/{group}', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'destroy']);
+            Route::post('groups/{group}/members', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'addMembers']);
+            Route::delete('groups/{group}/members', [\App\Http\Controllers\Api\V1\Correspondence\ContactGroupController::class, 'removeMembers']);
+        });
+
         // Support tickets
         Route::get('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'index']);
         Route::post('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'store']);
