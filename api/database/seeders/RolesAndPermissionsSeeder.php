@@ -110,6 +110,23 @@ class RolesAndPermissionsSeeder extends Seeder
                 ])->where('guard_name', $guard)->get()
             );
 
+            // HR Administrator: manages departments, positions, HR settings, appraisals, conduct, timesheets.
+            $hrAdmin = Role::firstOrCreate(['name' => 'HR Administrator', 'guard_name' => $guard]);
+            $hrAdmin->syncPermissions(
+                Permission::whereIn('name', [
+                    'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
+                    'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
+                    'users.view',
+                    'leave.view', 'leave.approve',
+                    'travel.view',
+                    'timesheets.view', 'timesheets.create', 'timesheets.approve',
+                    'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
+                    'conduct.view', 'conduct.create', 'conduct.admin',
+                    'governance.view',
+                    'reports.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
             // Secretary General: final approver; can approve after workflow steps (including own request at final step).
             $secretaryGeneral = Role::firstOrCreate(['name' => 'Secretary General', 'guard_name' => $guard]);
             $secretaryGeneral->syncPermissions(
