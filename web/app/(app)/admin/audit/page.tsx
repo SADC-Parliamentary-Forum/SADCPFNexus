@@ -7,6 +7,7 @@ import { AUDIT_ACTION_BADGE, ADMIN_MODULES } from "@/lib/constants";
 
 const MODULES = ["All", ...ADMIN_MODULES];
 const ACTION_BADGE = AUDIT_ACTION_BADGE;
+const ACTIONS = ["All", "created", "updated", "deleted", "approved", "rejected", "submitted", "login", "logout"];
 const PAGE_SIZE = 25;
 
 export default function AuditPage() {
@@ -15,6 +16,7 @@ export default function AuditPage() {
   const [error, setError] = useState<string | null>(null);
   const [filterUser, setFilterUser] = useState("");
   const [filterModule, setFilterModule] = useState("All");
+  const [filterAction, setFilterAction] = useState("All");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [page, setPage] = useState(1);
@@ -27,6 +29,7 @@ export default function AuditPage() {
     auditApi.list({
       ...(filterUser ? { user: filterUser } : {}),
       ...(filterModule !== "All" ? { module: filterModule } : {}),
+      ...(filterAction !== "All" ? { action: filterAction } : {}),
       ...(filterDateFrom ? { date_from: filterDateFrom } : {}),
       ...(filterDateTo ? { date_to: filterDateTo } : {}),
       page,
@@ -39,7 +42,7 @@ export default function AuditPage() {
       })
       .catch(() => setError("Could not load audit logs. The audit endpoint may not be available yet."))
       .finally(() => setLoading(false));
-  }, [filterUser, filterModule, filterDateFrom, filterDateTo, page]);
+  }, [filterUser, filterModule, filterAction, filterDateFrom, filterDateTo, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -62,7 +65,7 @@ export default function AuditPage() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="card p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <label className="block text-xs font-semibold text-neutral-600 mb-1">User</label>
           <input className="form-input text-xs" placeholder="Filter by user…" value={filterUser} onChange={handleFilterChange(setFilterUser)} />
@@ -71,6 +74,12 @@ export default function AuditPage() {
           <label className="block text-xs font-semibold text-neutral-600 mb-1">Module</label>
           <select className="form-input text-xs" value={filterModule} onChange={handleFilterChange(setFilterModule)}>
             {MODULES.map((m) => <option key={m}>{m}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-neutral-600 mb-1">Action Type</label>
+          <select className="form-input text-xs" value={filterAction} onChange={handleFilterChange(setFilterAction)}>
+            {ACTIONS.map((a) => <option key={a}>{a}</option>)}
           </select>
         </div>
         <div>

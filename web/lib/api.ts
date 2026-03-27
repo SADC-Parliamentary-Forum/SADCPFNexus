@@ -1917,7 +1917,7 @@ export interface AuditLogEntry {
 }
 
 export const auditApi = {
-  list: (params?: { user?: string; module?: string; date_from?: string; date_to?: string; per_page?: number; page?: number }) =>
+  list: (params?: { user?: string; module?: string; action?: string; date_from?: string; date_to?: string; per_page?: number; page?: number }) =>
     api.get<{ data: AuditLogEntry[]; current_page: number; last_page: number; total: number }>("/admin/audit-logs", { params }),
 };
 

@@ -31,6 +31,9 @@ class AuditLogController extends Controller
         if ($to = $request->input('date_to')) {
             $query->whereDate('created_at', '<=', $to);
         }
+        if ($action = $request->input('action')) {
+            $query->where('event', $action);
+        }
 
         $perPage = min((int) $request->input('per_page', 25), 100);
         $logs = $query->paginate($perPage);
