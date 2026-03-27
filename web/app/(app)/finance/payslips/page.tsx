@@ -36,73 +36,81 @@ export default function PayslipsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center gap-2 text-sm text-neutral-500">
+        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
+        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span className="text-neutral-900 font-medium">Payslips</span>
+      </div>
+
       <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">Payslips</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">Payslips</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">View and download your payslip history.</p>
+        <h1 className="page-title">Payslips</h1>
+        <p className="page-subtitle">View and download your payslip history.</p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span className="material-symbols-outlined text-[18px]">error_outline</span>
+          {error}
+        </div>
       )}
 
       {loading ? (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card px-5 py-12 text-center text-sm text-neutral-500">Loading…</div>
+        <div className="card divide-y divide-neutral-50">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between px-5 py-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-neutral-100" />
+                <div>
+                  <div className="h-3 w-24 bg-neutral-100 rounded mb-1.5" />
+                  <div className="h-2.5 w-32 bg-neutral-100 rounded" />
+                </div>
+              </div>
+              <div className="h-3 w-16 bg-neutral-100 rounded" />
+            </div>
+          ))}
+        </div>
       ) : payslips.length === 0 ? (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card px-5 py-16 text-center">
+        <div className="card px-5 py-16 text-center">
           <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
-          <p className="mt-3 text-sm text-neutral-500">No payslips yet.</p>
-          <Link href="/finance" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">Back to Finance</Link>
+          <p className="mt-3 text-sm text-neutral-500">No payslips available yet.</p>
         </div>
       ) : (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-neutral-50 border-b border-neutral-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-neutral-500">Period</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Gross</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Net</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Currency</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-neutral-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-50">
-                {payslips.map((p) => (
-                  <tr key={p.id} className="hover:bg-neutral-50/50">
-                    <td className="px-5 py-3 font-medium text-neutral-900">{formatPeriod(p)}</td>
-                    <td className="px-5 py-3 text-right text-neutral-700">{Number(p.gross_amount).toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-neutral-700">{Number(p.net_amount).toLocaleString()}</td>
-                    <td className="px-5 py-3 text-right text-neutral-600">{p.currency}</td>
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleDownload(p)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">download</span>
-                        Download
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-neutral-400 text-[18px]">description</span>
+              <h3 className="text-sm font-semibold text-neutral-900">Payslip History</h3>
+            </div>
+            <span className="text-xs text-neutral-400">{payslips.length} records</span>
+          </div>
+          <div className="divide-y divide-neutral-50">
+            {payslips.map((p) => (
+              <div key={p.id} className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[20px]">description</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900">{formatPeriod(p)}</p>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      Gross: {p.currency} {Number(p.gross_amount).toLocaleString()} &nbsp;·&nbsp; Net: {p.currency} {Number(p.net_amount).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDownload(p)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">download</span>
+                  Download
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
-
-      <div>
-        <Link href="/finance" className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Finance
-        </Link>
-      </div>
     </div>
   );
 }
