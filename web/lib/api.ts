@@ -2587,3 +2587,134 @@ export const correspondenceApi = {
   removeMembers: (groupId: number, contactIds: number[]) =>
     api.delete(`/correspondence/groups/${groupId}/members`, { data: { contact_ids: contactIds } }),
 };
+
+// ─── SAAM — Signature & Approval Authentication Module ────────────────────────
+export interface SignatureVersion {
+  id: number;
+  profile_id: number;
+  version_no: number;
+  hash: string;
+  effective_from: string;
+  revoked_at: string | null;
+  image_url?: string;
+}
+
+export interface SignatureProfile {
+  id: number;
+  user_id: number;
+  type: "full" | "initials";
+  status: "active" | "revoked";
+  active_version?: SignatureVersion;
+}
+
+export interface SignatureEvent {
+  id: number;
+  signable_type: string;
+  signable_id: number;
+  step_key: string | null;
+  action: string;
+  comment: string | null;
+  auth_level: string;
+  signed_at: string;
+  is_delegated: boolean;
+  document_hash: string | null;
+  signer?: { id: number; name: string; job_title?: string };
+  signature_version?: SignatureVersion;
+  delegated_authority?: { id: number; principal?: { id: number; name: string } };
+}
+
+export interface DelegatedAuthority {
+  id: number;
+  tenant_id: number;
+  principal_user_id: number;
+  delegate_user_id: number;
+  start_date: string;
+  end_date: string;
+  role_scope: string | null;
+  reason: string | null;
+  principal?: { id: number; name: string; email?: string };
+  delegate?: { id: number; name: string; email?: string };
+}
+
+export interface SignedDocument {
+  id: number;
+  signable_type: string;
+  signable_id: number;
+  version: number;
+  hash: string;
+  finalized_at: string;
+}
+
+export const saamApi = {
+  getProfile: () =>
+    api.get<{ data: SignatureProfile[] }>("/saam/profile"),
+
+  draw: (type: "full" | "initials", imageDataUrl: string) =>
+    api.post<{ message: string; data: SignatureVersion }>("/saam/profile/draw", {
+      type,
+      image_data_url: imageDataUrl,
+    }),
+
+  upload: (type: "full" | "initials", file: File) => {
+    const fd = new FormData();
+    fd.append("type", type);
+    fd.append("file", file);
+    return api.post<{ message: string; data: SignatureVersion }>("/saam/profile/upload", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  revoke: (type: "full" | "initials") =>
+    api.delete(`/saam/profile/${type}`),
+
+  signDocument: (
+    signableType: string,
+    signableId: number,
+    data: {
+      action: string;
+      step_key?: string;
+      comment?: string;
+      signature_type?: "full" | "initials";
+      confirm_password: string;
+    }
+  ) =>
+    api.post<{ message: string; data: SignatureEvent }>(
+      `/saam/sign/${signableType}/${signableId}`,
+      data
+    ),
+
+  getEvents: (signableType: string, signableId: number) =>
+    api.get<{ data: SignatureEvent[] }>(`/saam/events/${signableType}/${signableId}`),
+
+  listDelegations: () =>
+    api.get<{ data: { outgoing: DelegatedAuthority[]; incoming: DelegatedAuthority[] } }>(
+      "/saam/delegations"
+    ),
+
+  createDelegation: (data: {
+    delegate_user_id: number;
+    start_date: string;
+    end_date: string;
+    role_scope?: string;
+    reason?: string;
+  }) =>
+    api.post<{ message: string; data: DelegatedAuthority }>("/saam/delegations", data),
+
+  revokeDelegation: (id: number) =>
+    api.delete(`/saam/delegations/${id}`),
+
+  getSignedDocument: (signableType: string, signableId: number) =>
+    api.get<{ data: SignedDocument | null }>(`/saam/documents/${signableType}/${signableId}`),
+
+  generateDocument: (signableType: string, signableId: number) =>
+    api.post<{ message: string; data: SignedDocument }>(
+      `/saam/documents/generate/${signableType}/${signableId}`
+    ),
+
+  downloadDocument: (documentId: number) =>
+    api.get(`/saam/documents/download/${documentId}`, { responseType: "blob" }),
+
+  /** Build the image URL for a signature version (served via the secure image endpoint) */
+  signatureImageUrl: (versionId: number): string =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/saam/signature-image/${versionId}`,
+};

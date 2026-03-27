@@ -120,6 +120,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Audit Ledger", href: "/analytics/ledger", icon: "receipt_long" },
     ],
   },
+  { label: "My Signature", href: "/profile/signature", icon: "draw" },
   { label: "Help & Support", href: "/profile/support", icon: "help" },
   {
     label: "Administration",

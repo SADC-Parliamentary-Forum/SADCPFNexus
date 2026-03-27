@@ -469,6 +469,28 @@ Route::prefix('v1')->group(function () {
             Route::get('{approvalRequest}/history', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'history']);
         });
 
+        // SAAM — Signature & Approval Authentication Module
+        Route::prefix('saam')->group(function () {
+            Route::get('profile', [\App\Http\Controllers\Api\V1\Saam\SignatureProfileController::class, 'show']);
+            Route::post('profile/draw', [\App\Http\Controllers\Api\V1\Saam\SignatureProfileController::class, 'draw']);
+            Route::post('profile/upload', [\App\Http\Controllers\Api\V1\Saam\SignatureProfileController::class, 'upload']);
+            Route::delete('profile/{type}', [\App\Http\Controllers\Api\V1\Saam\SignatureProfileController::class, 'revoke']);
+
+            Route::get('signature-image/{signatureVersion}', [\App\Http\Controllers\Api\V1\Saam\SignatureImageController::class, 'show'])
+                ->name('saam.signature-image');
+
+            Route::post('sign/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignatureEventController::class, 'store']);
+            Route::get('events/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignatureEventController::class, 'index']);
+
+            Route::get('delegations', [\App\Http\Controllers\Api\V1\Saam\DelegationController::class, 'index']);
+            Route::post('delegations', [\App\Http\Controllers\Api\V1\Saam\DelegationController::class, 'store']);
+            Route::delete('delegations/{delegation}', [\App\Http\Controllers\Api\V1\Saam\DelegationController::class, 'destroy']);
+
+            Route::post('documents/generate/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'generate']);
+            Route::get('documents/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'show']);
+            Route::get('documents/download/{document}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'download']);
+        });
+
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
              Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);

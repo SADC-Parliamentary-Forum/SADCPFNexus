@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { correspondenceApi, type CorrespondenceLetter, type CorrespondenceContact } from "@/lib/api";
+import { correspondenceApi, saamApi, type CorrespondenceLetter, type CorrespondenceContact, type SignatureEvent } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { SigningModal } from "@/components/saam/SigningModal";
 
 const statusSteps = ["draft", "pending_review", "pending_approval", "approved", "sent"];
 const statusLabel: Record<string, string> = {
@@ -38,6 +39,8 @@ export default function CorrespondenceDetailPage() {
   const [contacts, setContacts] = useState<CorrespondenceContact[]>([]);
   const [contactSearch, setContactSearch] = useState("");
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
+  const [signingModal, setSigningModal] = useState<{ action: "approve" | "reject" | "review" | "return"; stepKey: string } | null>(null);
+  const [signingEvents, setSigningEvents] = useState<SignatureEvent[]>([]);
 
   useEffect(() => {
     correspondenceApi
@@ -45,6 +48,10 @@ export default function CorrespondenceDetailPage() {
       .then((res) => setLetter(res.data.data))
       .catch(() => setError("Failed to load correspondence."))
       .finally(() => setLoading(false));
+    // Load signing events (best-effort)
+    saamApi.getEvents("correspondence", Number(id))
+      .then((res) => setSigningEvents(res.data.data ?? []))
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -156,13 +163,25 @@ export default function CorrespondenceDetailPage() {
             )}
             {letter.status === "pending_review" && canReview && (
               <>
-                <button onClick={() => setShowReviewModal("approve")} disabled={actionLoading} className="btn-primary text-sm">Approve Review</button>
-                <button onClick={() => setShowReviewModal("reject")} disabled={actionLoading} className="btn-secondary text-sm">Request Changes</button>
+                <button
+                  onClick={() => setSigningModal({ action: "review", stepKey: "review" })}
+                  disabled={actionLoading}
+                  className="btn-primary text-sm"
+                >
+                  Approve Review
+                </button>
+                <button
+                  onClick={() => setSigningModal({ action: "return", stepKey: "review" })}
+                  disabled={actionLoading}
+                  className="btn-secondary text-sm"
+                >
+                  Request Changes
+                </button>
               </>
             )}
             {letter.status === "pending_approval" && canApprove && (
               <button
-                onClick={() => runAction(() => correspondenceApi.approve(letter.id), "")}
+                onClick={() => setSigningModal({ action: "approve", stepKey: "approve" })}
                 disabled={actionLoading}
                 className="btn-primary text-sm"
               >
@@ -288,6 +307,89 @@ export default function CorrespondenceDetailPage() {
           <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">Cover Note</h3>
           <p className="text-sm text-neutral-700 whitespace-pre-wrap">{letter.body}</p>
         </div>
+      )}
+
+      {/* Approval Chain */}
+      {signingEvents.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Signing Chain</h3>
+            <a
+              href={`/saam/verify/correspondence/${id}`}
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5"
+              target="_blank"
+            >
+              Full audit trail
+              <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+            </a>
+          </div>
+          <div className="divide-y divide-neutral-100">
+            {signingEvents.map((e) => (
+              <div key={e.id} className="px-5 py-3 flex items-center gap-3">
+                <div className={`h-7 w-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  e.action === "approve" ? "bg-green-100" : e.action === "reject" ? "bg-red-100" : "bg-amber-100"
+                }`}>
+                  <span className={`material-symbols-outlined text-[14px] ${
+                    e.action === "approve" ? "text-green-600" : e.action === "reject" ? "text-red-600" : "text-amber-600"
+                  }`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {e.action === "approve" ? "check_circle" : e.action === "reject" ? "cancel" : "rate_review"}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-neutral-900">{e.signer?.name ?? "Unknown"}</span>
+                    <span className={`badge badge-${e.action === "approve" ? "success" : e.action === "reject" ? "danger" : "warning"} text-[10px]`}>
+                      {e.action}
+                    </span>
+                    {e.is_delegated && <span className="badge badge-muted text-[10px]">Delegated</span>}
+                  </div>
+                  <p className="text-xs text-neutral-400">{new Date(e.signed_at).toLocaleString()}</p>
+                </div>
+                {e.signature_version?.image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={e.signature_version.image_url} alt="sig" className="max-h-8 max-w-[70px] object-contain" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SAAM Signing Modal */}
+      {signingModal && letter && (
+        <SigningModal
+          isOpen={true}
+          onClose={() => setSigningModal(null)}
+          signableType="correspondence"
+          signableId={letter.id}
+          action={signingModal.action}
+          stepKey={signingModal.stepKey}
+          onSigned={async (event) => {
+            // After signing, run the actual correspondence workflow action
+            setSigningModal(null);
+            const apiAction = signingModal.action === "review" ? "approve"
+              : signingModal.action === "return" ? "reject"
+              : signingModal.action;
+
+            if (apiAction === "approve" && letter.status === "pending_review") {
+              await runAction(
+                () => correspondenceApi.review(letter.id, { action: "approve", comment: event.comment ?? undefined }),
+                ""
+              );
+            } else if (apiAction === "reject" && letter.status === "pending_review") {
+              await runAction(
+                () => correspondenceApi.review(letter.id, { action: "reject", comment: event.comment ?? undefined }),
+                ""
+              );
+            } else if (apiAction === "approve" && letter.status === "pending_approval") {
+              await runAction(() => correspondenceApi.approve(letter.id), "");
+            }
+            // Refresh signing events
+            saamApi.getEvents("correspondence", letter.id)
+              .then((res) => setSigningEvents(res.data.data ?? []))
+              .catch(() => {});
+          }}
+        />
       )}
 
       {/* Review Modal */}
