@@ -89,16 +89,38 @@ function localToday(): string {
   return localYMD(new Date());
 }
 
+function parseYMDDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const y = Number(match[1]);
+  const mo = Number(match[2]);
+  const d = Number(match[3]);
+  const date = new Date(y, mo - 1, d);
+
+  // Reject invalid calendar dates like 2026-02-30.
+  if (
+    isNaN(date.getTime()) ||
+    date.getFullYear() !== y ||
+    date.getMonth() !== mo - 1 ||
+    date.getDate() !== d
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
 function getWeekDays(weekStart: string): { label: string; value: string }[] {
   if (!weekStart) return [];
-  const [y, mo, d] = weekStart.split("-").map(Number);
-  if (!y || !mo || !d) return [];
-  const start = new Date(y, mo - 1, d);
-  if (isNaN(start.getTime())) return [];
+  const start = parseYMDDate(weekStart);
+  if (!start) return [];
   const days = [];
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   for (let i = 0; i < 5; i++) {
-    const date = new Date(y, mo - 1, d + i);
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    if (isNaN(date.getTime())) continue;
     const ymd = localYMD(date);
     const label = `${dayNames[i]} ${date.getDate()} ${date.toLocaleDateString("en-GB", { month: "short" })}`;
     days.push({ label, value: ymd });
@@ -108,12 +130,13 @@ function getWeekDays(weekStart: string): { label: string; value: string }[] {
 
 function todayInWeek(weekStart: string): string {
   if (!weekStart) return "";
-  const [y, mo, d] = weekStart.split("-").map(Number);
-  if (!y || !mo || !d) return "";
+  const start = parseYMDDate(weekStart);
+  if (!start) return "";
   const today = localToday();
-  const startStr = weekStart;
-  const end = new Date(y, mo - 1, d + 4);
-  if (isNaN(end.getTime())) return weekStart;
+  const startStr = localYMD(start);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 4);
+  if (isNaN(end.getTime())) return startStr;
   const endStr = localYMD(end);
   if (today >= startStr && today <= endStr) return today;
   return startStr;
