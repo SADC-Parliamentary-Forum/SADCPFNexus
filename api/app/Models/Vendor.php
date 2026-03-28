@@ -9,4 +9,16 @@ class Vendor extends Model
     protected $casts = ['is_approved' => 'boolean', 'is_active' => 'boolean'];
 
     public function quotes() { return $this->hasMany(ProcurementQuote::class); }
+
+    public function procurementRequests()
+    {
+        return $this->hasManyThrough(
+            ProcurementRequest::class,
+            ProcurementQuote::class,
+            'vendor_id',
+            'id',
+            'id',
+            'procurement_request_id'
+        );
+    }
 }

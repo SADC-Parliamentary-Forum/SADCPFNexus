@@ -25,7 +25,7 @@ export function Stepper({ steps, currentStep }: StepperProps) {
                 "flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all",
                 isCompleted && "border-primary bg-primary text-white",
                 isActive && "border-primary bg-white text-primary",
-                !isCompleted && !isActive && "border-gray-200 bg-white text-gray-400"
+                !isCompleted && !isActive && "border-neutral-200 bg-white text-neutral-400"
               )}>
                 {isCompleted ? (
                   <span className="material-symbols-outlined text-[16px]">check</span>
@@ -36,7 +36,7 @@ export function Stepper({ steps, currentStep }: StepperProps) {
               <div className="mt-1.5 text-center">
                 <p className={cn(
                   "text-xs font-medium whitespace-nowrap",
-                  isActive ? "text-primary" : isCompleted ? "text-gray-700" : "text-gray-400"
+                  isActive ? "text-primary" : isCompleted ? "text-neutral-700" : "text-neutral-400"
                 )}>
                   {step.label}
                 </p>
@@ -45,7 +45,7 @@ export function Stepper({ steps, currentStep }: StepperProps) {
             {index < steps.length - 1 && (
               <div className={cn(
                 "h-0.5 flex-1 mx-2 mb-5 transition-colors",
-                isCompleted ? "bg-primary" : "bg-gray-200"
+                isCompleted ? "bg-primary" : "bg-neutral-200"
               )} />
             )}
           </div>

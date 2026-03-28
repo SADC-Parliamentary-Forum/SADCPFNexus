@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
 export default function DelegationsPage() {
   const [outgoing, setOutgoing] = useState<DelegatedAuthority[]>([]);
@@ -132,7 +133,7 @@ export default function DelegationsPage() {
                         )}
                       </div>
                       <p className="text-xs text-neutral-400">
-                        {d.start_date} → {d.end_date}
+                        {formatDateShort(d.start_date)} → {formatDateShort(d.end_date)}
                         {d.role_scope && <> · Scope: <span className="font-mono">{d.role_scope}</span></>}
                       </p>
                       {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}
@@ -149,7 +150,7 @@ export default function DelegationsPage() {
           {/* Incoming */}
           <div className="card overflow-hidden">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-500 text-[18px]">arrow_inward</span>
+              <span className="material-symbols-outlined text-amber-500 text-[18px]">south_west</span>
               <h2 className="text-sm font-semibold text-neutral-900">Delegated to Me ({incoming.length})</h2>
             </div>
             {incoming.length === 0 ? (
@@ -167,7 +168,7 @@ export default function DelegationsPage() {
                       )}
                     </div>
                     <p className="text-xs text-neutral-400">
-                      {d.start_date} → {d.end_date}
+                      {formatDateShort(d.start_date)} → {formatDateShort(d.end_date)}
                       {d.role_scope && <> · Scope: <span className="font-mono">{d.role_scope}</span></>}
                     </p>
                     {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}

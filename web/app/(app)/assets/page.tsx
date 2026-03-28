@@ -39,6 +39,9 @@ export default function AssetsPage() {
   const [showRequestButton, setShowRequestButton] = useState(false);
   const [showAddAssetButton, setShowAddAssetButton] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -130,6 +133,23 @@ export default function AssetsPage() {
       .finally(() => setReqLoading(false));
   }, []);
 
+  const categories = Array.from(new Set(assets.map((a) => a.category).filter(Boolean)));
+
+  const filteredAssets = assets.filter((a) => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.asset_code?.toLowerCase().includes(q);
+    const matchStatus = filterStatus === "all" || a.status === filterStatus;
+    const matchCat = filterCategory === "all" || a.category === filterCategory;
+    return matchSearch && matchStatus && matchCat;
+  });
+
+  const statusCounts = {
+    active: assets.filter((a) => a.status === "active").length,
+    service_due: assets.filter((a) => a.status === "service_due").length,
+    loan_out: assets.filter((a) => a.status === "loan_out").length,
+    retired: assets.filter((a) => a.status === "retired").length,
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -204,6 +224,77 @@ export default function AssetsPage() {
         </button>
       </div>
 
+      {/* Summary stats — only when viewing inventory */}
+      {view === "inventory" && !loading && assets.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Active",      count: statusCounts.active,      icon: "check_circle",  color: "text-green-600",  bg: "bg-green-50"  },
+            { label: "Service Due", count: statusCounts.service_due, icon: "build",         color: "text-amber-600",  bg: "bg-amber-50"  },
+            { label: "Loan Out",    count: statusCounts.loan_out,    icon: "swap_horiz",    color: "text-blue-600",   bg: "bg-blue-50"   },
+            { label: "Retired",     count: statusCounts.retired,     icon: "archive",       color: "text-neutral-500", bg: "bg-neutral-100"},
+          ].map((s) => (
+            <div key={s.label} className="card p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-neutral-500">{s.label}</p>
+                  <p className="text-lg font-bold text-neutral-900 mt-0.5">{s.count}</p>
+                </div>
+                <div className={`h-9 w-9 rounded-xl ${s.bg} flex items-center justify-center`}>
+                  <span className={`material-symbols-outlined ${s.color} text-[18px]`}>{s.icon}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Search + filter — only when viewing inventory */}
+      {view === "inventory" && !loading && assets.length > 0 && (
+        <div className="card p-3 flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
+              <input
+                className="form-input pl-8 text-sm"
+                placeholder="Name or asset code…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="min-w-[130px]">
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+            <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="service_due">Service Due</option>
+              <option value="loan_out">Loan Out</option>
+              <option value="retired">Retired</option>
+            </select>
+          </div>
+          {categories.length > 0 && (
+            <div className="min-w-[130px]">
+              <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
+              <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                <option value="all">All Categories</option>
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+          {(search || filterStatus !== "all" || filterCategory !== "all") && (
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setFilterStatus("all"); setFilterCategory("all"); }}
+              className="text-xs text-neutral-500 hover:text-neutral-700 flex items-center gap-1 mt-5"
+            >
+              <span className="material-symbols-outlined text-[15px]">close</span>
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
       {view === "my-requests" ? (
         <>
           {reqLoading ? (
@@ -257,9 +348,9 @@ export default function AssetsPage() {
                 <span className="text-sm">Loading…</span>
               </div>
             </div>
-          ) : assets.length > 0 ? (
+          ) : filteredAssets.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              {assets.map((asset) => {
+              {filteredAssets.map((asset) => {
                 const s = statusConfig[asset.status] ?? { label: asset.status, cls: "badge-muted" };
                 return (
                   <div key={asset.id} className="card p-5 hover:shadow-elevated transition-shadow">
@@ -298,6 +389,12 @@ export default function AssetsPage() {
                   </div>
                 );
               })}
+            </div>
+          ) : assets.length > 0 ? (
+            <div className="card p-10 text-center">
+              <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
+              <p className="mt-2 text-sm font-semibold text-neutral-600">No assets match your filters</p>
+              <button type="button" onClick={() => { setSearch(""); setFilterStatus("all"); setFilterCategory("all"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
             </div>
           ) : (
             <div className="card p-16 text-center">

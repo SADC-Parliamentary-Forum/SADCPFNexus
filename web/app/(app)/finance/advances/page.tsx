@@ -5,6 +5,23 @@ import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 
+function getListData<T>(payload: unknown): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && typeof payload === "object" && "data" in payload) {
+    const nested = (payload as { data?: unknown }).data;
+    if (Array.isArray(nested)) return nested as T[];
+  }
+  return [];
+}
+
+function getLastPage(payload: unknown): number {
+  if (payload && typeof payload === "object" && "last_page" in payload) {
+    const n = Number((payload as { last_page?: unknown }).last_page);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 1;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft:     { label: "Draft",     badge: "badge-muted" },
   submitted: { label: "Submitted", badge: "badge-warning" },
@@ -40,9 +57,8 @@ export default function AdvancesPage() {
       const params: Record<string, string | number> = { per_page: 15, page: pg };
       if (status !== "all") params.status = status;
       const res = await financeApi.listAdvances(params);
-      const data = (res.data as any).data ?? res.data;
-      setAdvances(Array.isArray(data) ? data : []);
-      setLastPage((res.data as any).last_page ?? 1);
+      setAdvances(getListData<SalaryAdvanceRequest>(res.data));
+      setLastPage(getLastPage(res.data));
       setPage(pg);
     } catch {
       setError("Failed to load advances.");

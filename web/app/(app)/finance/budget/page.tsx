@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { financeApi, type Budget } from "@/lib/api";
 
+function getListData<T>(payload: unknown): T[] {
+    if (Array.isArray(payload)) return payload as T[];
+    if (payload && typeof payload === "object" && "data" in payload) {
+        const nested = (payload as { data?: unknown }).data;
+        if (Array.isArray(nested)) return nested as T[];
+    }
+    return [];
+}
+
 export default function BudgetDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -13,7 +22,7 @@ export default function BudgetDashboardPage() {
     useEffect(() => {
         financeApi.listBudgets()
             .then((res) => {
-                setBudgets((res.data as any).data);
+                setBudgets(getListData<Budget>(res.data));
             })
             .catch(() => setError("Failed to load budgets."))
             .finally(() => setLoading(false));

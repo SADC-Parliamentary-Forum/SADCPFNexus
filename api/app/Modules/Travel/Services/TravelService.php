@@ -5,6 +5,7 @@ use App\Models\AuditLog;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -12,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class TravelService
 {
-    public function __construct(protected WorkflowService $workflowService) {}
+    public function __construct(
+        protected WorkflowService $workflowService,
+        protected NotificationService $notificationService,
+    ) {}
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
@@ -78,6 +82,12 @@ class TravelService
             throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
         }
 
+        if ((int) $travel->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+            throw ValidationException::withMessages([
+                'request' => 'You can only edit your own travel requests.',
+            ]);
+        }
+
         $payload = array_filter([
             'purpose'             => $data['purpose'] ?? null,
             'departure_date'      => $data['departure_date'] ?? null,
@@ -112,6 +122,16 @@ class TravelService
 
         $this->workflowService->initiate($travel, 'travel', $user);
 
+        // Notify approvers (HR Manager / Secretary General)
+        $approvers = User::role(['hr_manager', 'secretary_general'])
+            ->where('tenant_id', $user->tenant_id)->get();
+        $this->notificationService->dispatchToMany($approvers, 'travel.submitted', [
+            'reference'   => $travel->reference_number,
+            'requester'   => $user->name,
+            'destination' => $travel->destination_country,
+            'date'        => $travel->departure_date,
+        ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+
         AuditLog::record('travel.submitted', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
@@ -139,6 +159,16 @@ class TravelService
         ]);
 
         $travel->loadMissing('requester');
+
+        // Notify the requester
+        if ($travel->requester) {
+            $this->notificationService->dispatch($travel->requester, 'travel.approved', [
+                'name'        => $travel->requester->name,
+                'reference'   => $travel->reference_number,
+                'destination' => $travel->destination_country,
+                'date'        => $travel->departure_date,
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+        }
         WorkplanEvent::updateOrCreate(
             ['linked_module' => 'travel', 'linked_id' => $travel->id],
             [
@@ -171,6 +201,16 @@ class TravelService
             'new_values'     => ['reason' => $reason],
             'tags'           => 'travel',
         ]);
+
+        $travel->loadMissing('requester');
+        if ($travel->requester) {
+            $this->notificationService->dispatch($travel->requester, 'travel.rejected', [
+                'name'        => $travel->requester->name,
+                'reference'   => $travel->reference_number,
+                'destination' => $travel->destination_country,
+                'comment'     => $reason ?? '',
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+        }
     }
 
     public function approve(TravelRequest $travel, User $approver): TravelRequest
@@ -197,8 +237,18 @@ class TravelService
             'tags'           => 'travel',
         ]);
 
-        // Add approved mission to the workplan calendar
         $travel->loadMissing('requester');
+
+        if ($travel->requester) {
+            $this->notificationService->dispatch($travel->requester, 'travel.approved', [
+                'name'        => $travel->requester->name,
+                'reference'   => $travel->reference_number,
+                'destination' => $travel->destination_country,
+                'date'        => $travel->departure_date,
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+        }
+
+        // Add approved mission to the workplan calendar
         WorkplanEvent::updateOrCreate(
             ['linked_module' => 'travel', 'linked_id' => $travel->id],
             [
@@ -234,6 +284,16 @@ class TravelService
             'new_values'     => ['reason' => $reason],
             'tags'           => 'travel',
         ]);
+
+        $travel->loadMissing('requester');
+        if ($travel->requester) {
+            $this->notificationService->dispatch($travel->requester, 'travel.rejected', [
+                'name'        => $travel->requester->name,
+                'reference'   => $travel->reference_number,
+                'destination' => $travel->destination_country,
+                'comment'     => $reason,
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+        }
 
         return $travel->fresh();
     }

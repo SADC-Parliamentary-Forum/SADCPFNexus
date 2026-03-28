@@ -4,12 +4,14 @@ namespace App\Modules\Imprest\Services;
 use App\Models\AuditLog;
 use App\Models\ImprestRequest;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ImprestService
 {
+    public function __construct(protected NotificationService $notificationService) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ImprestRequest::with(['requester'])
@@ -82,6 +84,15 @@ class ImprestService
 
         $imprest->update(['status' => 'submitted', 'submitted_at' => now()]);
 
+        // Notify Finance approvers
+        $approvers = User::role(['finance_controller', 'secretary_general'])
+            ->where('tenant_id', $user->tenant_id)->get();
+        $this->notificationService->dispatchToMany($approvers, 'imprest.submitted', [
+            'reference' => $imprest->reference_number,
+            'requester' => $user->name,
+            'amount'    => number_format($imprest->amount_requested, 2) . ' ' . $imprest->currency,
+        ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
+
         AuditLog::record('imprest.submitted', [
             'auditable_type' => ImprestRequest::class,
             'auditable_id'   => $imprest->id,
@@ -116,6 +127,15 @@ class ImprestService
             'tags'           => 'imprest',
         ]);
 
+        $imprest->loadMissing('requester');
+        if ($imprest->requester) {
+            $this->notificationService->dispatch($imprest->requester, 'imprest.approved', [
+                'name'      => $imprest->requester->name,
+                'reference' => $imprest->reference_number,
+                'amount'    => number_format($imprest->amount_approved ?? $imprest->amount_requested, 2) . ' ' . $imprest->currency,
+            ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
+        }
+
         return $imprest->fresh();
     }
 
@@ -137,6 +157,15 @@ class ImprestService
             'new_values'     => ['reason' => $reason],
             'tags'           => 'imprest',
         ]);
+
+        $imprest->loadMissing('requester');
+        if ($imprest->requester) {
+            $this->notificationService->dispatch($imprest->requester, 'imprest.rejected', [
+                'name'      => $imprest->requester->name,
+                'reference' => $imprest->reference_number,
+                'comment'   => $reason,
+            ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
+        }
 
         return $imprest->fresh();
     }

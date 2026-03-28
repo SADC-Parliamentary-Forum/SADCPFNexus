@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
@@ -36,6 +37,7 @@ const SEVERITY_LABEL: Record<HrIncident["severity"], string> = {
 
 export default function HrIncidentsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [showForm, setShowForm] = useState(false);
@@ -231,7 +233,7 @@ export default function HrIncidentsPage() {
           </div>
         ) : (
           incidents.map((incident) => (
-            <div key={incident.id} className="card p-5">
+            <div key={incident.id} className="card p-5 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => router.push(`/hr/incidents/${incident.id}`)}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -262,7 +264,8 @@ export default function HrIncidentsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="shrink-0">
+                <div className="shrink-0 flex items-center gap-2">
+                  <Link href={`/hr/incidents/${incident.id}`} onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-primary hover:underline">View</Link>
                   <span
                     className={`inline-flex items-center justify-center w-9 h-9 rounded-full ${
                       incident.severity === "high"

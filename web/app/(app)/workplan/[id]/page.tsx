@@ -37,7 +37,7 @@ export default function WorkplanEventDetailPage() {
   const [editMode, setEditMode] = useState(false);
 
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<string>("meeting");
+  const [type, setType] = useState<WorkplanEvent["type"]>("meeting");
   const [meetingTypeId, setMeetingTypeId] = useState<number | "">("");
   const [date, setDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -238,7 +238,7 @@ export default function WorkplanEventDetailPage() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
-            <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value)}>
+            <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
               {eventTypes.map((et) => (
                 <option key={et.slug} value={et.slug}>{et.name}</option>
               ))}

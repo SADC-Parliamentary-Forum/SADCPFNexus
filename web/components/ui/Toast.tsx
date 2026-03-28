@@ -88,14 +88,14 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => 
         {ICONS[toast.type]}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900">{toast.title}</p>
-        {toast.message && <p className="text-xs text-gray-500 mt-0.5">{toast.message}</p>}
+        <p className="text-sm font-semibold text-neutral-900">{toast.title}</p>
+        {toast.message && <p className="text-xs text-neutral-500 mt-0.5">{toast.message}</p>}
       </div>
-      <button onClick={() => dismiss(toast.id)} className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0 mt-0.5">
+      <button onClick={() => dismiss(toast.id)} className="text-neutral-300 hover:text-neutral-500 transition-colors flex-shrink-0 mt-0.5">
         <span className="material-symbols-outlined text-[16px]">close</span>
       </button>
       {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-100">
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-100">
         <div className={`h-full ${style.progress} animate-[shrink_4s_linear_forwards]`} style={{ width: "100%" }} />
       </div>
     </div>

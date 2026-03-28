@@ -2,52 +2,138 @@
 
 namespace Tests\Feature\Imprest;
 
+use App\Models\ImprestRequest;
 use App\Models\Tenant;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ImprestRequestTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
+    private function imprestPayload(array $overrides = []): array
     {
-        parent::setUp();
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        return array_merge([
+            'budget_line'               => 'Programme 1 — Activities',
+            'amount_requested'          => 1500.00,
+            'currency'                  => 'NAD',
+            'expected_liquidation_date' => now()->addDays(30)->toDateString(),
+            'purpose'                   => 'Procure stationery for workshop',
+        ], $overrides);
+    }
+
+    public function test_unauthenticated_request_is_rejected(): void
+    {
+        $this->getJson('/api/v1/imprest/requests')->assertUnauthorized();
+    }
+
+    public function test_staff_can_create_an_imprest_request(): void
+    {
+        [$http, $user] = $this->asStaff();
+
+        $response = $http->postJson('/api/v1/imprest/requests', $this->imprestPayload());
+
+        $response->assertCreated()
+                 ->assertJsonPath('data.status', 'draft')
+                 ->assertJsonPath('data.budget_line', 'Programme 1 — Activities');
+
+        $this->assertDatabaseHas('imprest_requests', [
+            'requester_id' => $user->id,
+            'status'       => 'draft',
+        ]);
+    }
+
+    public function test_creating_request_requires_mandatory_fields(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->postJson('/api/v1/imprest/requests', [])
+             ->assertUnprocessable()
+             ->assertJsonValidationErrors([
+                 'budget_line',
+                 'amount_requested',
+                 'expected_liquidation_date',
+                 'purpose',
+             ]);
+    }
+
+    public function test_amount_must_be_positive(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->postJson('/api/v1/imprest/requests', $this->imprestPayload(['amount_requested' => 0]))
+             ->assertUnprocessable()
+             ->assertJsonValidationErrors(['amount_requested']);
+    }
+
+    public function test_liquidation_date_must_be_in_the_future(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->postJson('/api/v1/imprest/requests', $this->imprestPayload([
+            'expected_liquidation_date' => now()->toDateString(), // today, not after today
+        ]))->assertUnprocessable()
+           ->assertJsonValidationErrors(['expected_liquidation_date']);
+    }
+
+    public function test_staff_can_submit_their_draft(): void
+    {
+        [$http, $user] = $this->asStaff();
+
+        $create = $http->postJson('/api/v1/imprest/requests', $this->imprestPayload());
+        $create->assertCreated();
+        $id = $create->json('data.id');
+
+        $submit = $http->postJson("/api/v1/imprest/requests/{$id}/submit");
+        $submit->assertOk()
+               ->assertJsonPath('data.status', 'submitted');
+    }
+
+    public function test_finance_controller_can_approve_submitted_imprest(): void
+    {
         $tenant = Tenant::factory()->create();
-        $this->user = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'is_active' => true,
-        ]);
-        $this->user->assignRole('Staff');
-    }
 
-    public function test_authenticated_user_can_list_imprest_requests(): void
-    {
-        Sanctum::actingAs($this->user);
+        $staff   = $this->makeUser('staff', $tenant);
+        $finance = $this->makeUser('Finance Controller', $tenant);
 
-        $response = $this->getJson('/api/v1/imprest/requests');
-
-        $response->assertStatus(200);
-        $response->assertJsonStructure(['data', 'current_page']);
-    }
-
-    public function test_authenticated_user_can_create_imprest_request(): void
-    {
-        Sanctum::actingAs($this->user);
-
-        $response = $this->postJson('/api/v1/imprest/requests', [
-            'budget_line'               => 'Travel',
-            'amount_requested'           => 5000,
-            'currency'                   => 'USD',
-            'expected_liquidation_date'  => now()->addDays(30)->format('Y-m-d'),
-            'purpose'                    => 'Mission advance',
+        $imprest = ImprestRequest::factory()->submitted()->create([
+            'tenant_id'    => $tenant->id,
+            'requester_id' => $staff->id,
         ]);
 
-        $response->assertStatus(201)
-            ->assertJsonStructure(['message', 'data' => ['id', 'reference_number', 'status']])
-            ->assertJsonPath('data.status', 'draft');
+        $response = $this->asUser($finance)
+             ->postJson("/api/v1/imprest/requests/{$imprest->id}/approve", [
+                 'amount_approved' => 1500.00,
+             ]);
+
+        $response->assertOk()
+                 ->assertJsonPath('data.status', 'approved');
+    }
+
+    public function test_draft_request_can_be_deleted(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $imprest = ImprestRequest::factory()->create([
+            'tenant_id'    => $tenant->id,
+            'requester_id' => $user->id,
+        ]);
+
+        $http->deleteJson("/api/v1/imprest/requests/{$imprest->id}")
+             ->assertOk();
+
+        $this->assertSoftDeleted('imprest_requests', ['id' => $imprest->id]);
+    }
+
+    public function test_submitted_request_cannot_be_deleted(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $imprest = ImprestRequest::factory()->submitted()->create([
+            'tenant_id'    => $tenant->id,
+            'requester_id' => $user->id,
+        ]);
+
+        $http->deleteJson("/api/v1/imprest/requests/{$imprest->id}")
+             ->assertStatus(422);
     }
 }

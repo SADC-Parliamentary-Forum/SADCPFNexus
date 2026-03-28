@@ -1,0 +1,14 @@
+# Dependency update PRs for supply-chain security (see docs/security-assessment-report.txt).
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: "npm"
+    directory: "/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10

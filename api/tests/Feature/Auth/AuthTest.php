@@ -4,68 +4,106 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
-    use RefreshDatabase;
+    private Tenant $tenant;
+    private User   $user;
 
-    public function test_user_can_login_with_valid_credentials(): void
+    protected function setUp(): void
     {
-        $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'password' => bcrypt('password'),
+        parent::setUp();
+
+        $this->tenant = Tenant::factory()->create();
+        $this->user   = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'email'     => 'test@sadcpf.org',
+            'password'  => Hash::make('Password@123'),
             'is_active' => true,
         ]);
+        $this->user->assignRole('staff');
+    }
 
+    public function test_login_returns_token_for_valid_credentials(): void
+    {
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
-            'password' => 'password',
+            'email'    => 'test@sadcpf.org',
+            'password' => 'Password@123',
         ]);
 
-        $response->assertStatus(200)
-                 ->assertJsonStructure(['token', 'user']);
+        $response->assertOk()
+                 ->assertJsonStructure([
+                     'token',
+                     'user' => ['id', 'name', 'email', 'tenant_id', 'roles', 'permissions'],
+                 ]);
+
+        $this->assertNotEmpty($response->json('token'));
     }
 
-    public function test_login_fails_with_wrong_password(): void
+    public function test_login_rejects_wrong_password(): void
     {
-        $tenant = Tenant::factory()->create();
-        $user = User::factory()->create([
-            'tenant_id' => $tenant->id,
-            'password' => bcrypt('correct-password'),
-        ]);
-
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
-            'password' => 'wrong-password',
+            'email'    => 'test@sadcpf.org',
+            'password' => 'WrongPassword!',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['email']);
     }
 
-    public function test_authenticated_user_can_get_profile(): void
+    public function test_login_rejects_unknown_email(): void
     {
-        $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email'    => 'nobody@example.com',
+            'password' => 'Password@123',
+        ]);
 
-        Sanctum::actingAs($user);
-        $response = $this->getJson('/api/v1/auth/me');
-
-        $response->assertStatus(200)
-                 ->assertJsonFragment(['email' => $user->email]);
+        $response->assertUnprocessable();
     }
 
-    public function test_user_can_logout(): void
+    public function test_me_returns_authenticated_user(): void
     {
-        $tenant = Tenant::factory()->create();
-        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $response = $this->asUser($this->user)->getJson('/api/v1/auth/me');
 
-        Sanctum::actingAs($user);
-        $response = $this->postJson('/api/v1/auth/logout');
+        $response->assertOk()
+                 ->assertJsonPath('id', $this->user->id)
+                 ->assertJsonPath('email', $this->user->email);
+    }
 
-        $response->assertStatus(200);
+    public function test_protected_endpoint_rejects_unauthenticated_request(): void
+    {
+        $this->getJson('/api/v1/auth/me')->assertUnauthorized();
+    }
+
+    public function test_logout_revokes_token(): void
+    {
+        $token = $this->user->createToken('test')->plainTextToken;
+        $http  = $this->withHeader('Authorization', "Bearer {$token}");
+
+        $http->postJson('/api/v1/auth/logout')->assertOk();
+
+        // Subsequent request with the same token must be rejected
+        $this->withHeader('Authorization', "Bearer {$token}")
+             ->getJson('/api/v1/auth/me')
+             ->assertUnauthorized();
+    }
+
+    public function test_login_requires_email_and_password(): void
+    {
+        $this->postJson('/api/v1/auth/login', [])
+             ->assertUnprocessable()
+             ->assertJsonValidationErrors(['email', 'password']);
+    }
+
+    public function test_inactive_user_cannot_login(): void
+    {
+        $this->user->update(['is_active' => false]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email'    => 'test@sadcpf.org',
+            'password' => 'Password@123',
+        ])->assertUnprocessable();
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->string('full_name');
             $table->string('organization')->nullable();
-            $table->string('country', 4)->nullable();
+            $table->string('country', 128)->nullable();
             $table->string('email');
             $table->string('phone', 32)->nullable();
             $table->string('stakeholder_type', 32)->default('other');

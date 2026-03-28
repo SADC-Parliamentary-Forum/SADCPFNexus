@@ -20,8 +20,8 @@ export function Toggle({ checked, onChange, label, description, icon, disabled }
           </div>
         )}
         <div>
-          {label && <p className="text-sm font-medium text-gray-800">{label}</p>}
-          {description && <p className="text-xs text-gray-500">{description}</p>}
+          {label && <p className="text-sm font-medium text-neutral-800">{label}</p>}
+          {description && <p className="text-xs text-neutral-500">{description}</p>}
         </div>
       </div>
       <button
@@ -32,7 +32,7 @@ export function Toggle({ checked, onChange, label, description, icon, disabled }
         onClick={() => onChange(!checked)}
         className={cn(
           "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1",
-          checked ? "bg-primary" : "bg-gray-200",
+          checked ? "bg-primary" : "bg-neutral-200",
           disabled && "opacity-50 cursor-not-allowed"
         )}
       >

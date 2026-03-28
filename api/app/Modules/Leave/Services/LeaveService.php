@@ -8,6 +8,7 @@ use App\Models\OvertimeAccrual;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -15,7 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class LeaveService
 {
-    public function __construct(protected \App\Services\WorkflowService $workflowService) {}
+    public function __construct(
+        protected \App\Services\WorkflowService $workflowService,
+        protected NotificationService $notificationService,
+    ) {}
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
@@ -40,6 +44,16 @@ class LeaveService
 
     public function create(array $data, User $user): LeaveRequest
     {
+        // SRHR Researchers have leave managed by their host parliament, not SADC-PF
+        $hrFile = \App\Models\HrPersonalFile::where('tenant_id', $user->tenant_id)
+            ->where('employee_id', $user->id)
+            ->first();
+        if ($hrFile?->hr_managed_externally) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'general' => ['Your leave is managed by your host parliament. Leave requests cannot be submitted through this system.'],
+            ]);
+        }
+
         $startDate = Carbon::parse($data['start_date']);
         $endDate   = Carbon::parse($data['end_date']);
         $daysRequested = $this->countWorkingDaysExcludingNamibiaHolidays($startDate, $endDate, $user->tenant_id);
@@ -138,6 +152,17 @@ class LeaveService
         // Initiate workflow
         $this->workflowService->initiate($leave, 'leave', $user);
 
+        // Notify HR approvers
+        $approvers = User::role(['hr_manager', 'hr_administrator', 'secretary_general'])
+            ->where('tenant_id', $user->tenant_id)->get();
+        $this->notificationService->dispatchToMany($approvers, 'leave.submitted', [
+            'reference'  => $leave->reference_number,
+            'requester'  => $user->name,
+            'leave_type' => ucfirst(str_replace('_', ' ', $leave->leave_type)),
+            'start_date' => $leave->start_date,
+            'end_date'   => $leave->end_date,
+        ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+
         AuditLog::record('leave.submitted', [
             'auditable_type' => LeaveRequest::class,
             'auditable_id'   => $leave->id,
@@ -171,8 +196,18 @@ class LeaveService
             'tags'           => 'leave',
         ]);
 
-        // Add approved leave to the workplan calendar
         $leave->loadMissing('requester');
+
+        if ($leave->requester) {
+            $this->notificationService->dispatch($leave->requester, 'leave.approved', [
+                'name'       => $leave->requester->name,
+                'leave_type' => ucfirst(str_replace('_', ' ', $leave->leave_type)),
+                'start_date' => $leave->start_date,
+                'end_date'   => $leave->end_date,
+            ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+        }
+
+        // Add approved leave to the workplan calendar
         $typeLabel = ucfirst(str_replace('_', ' ', $leave->leave_type)) . ' Leave';
         WorkplanEvent::updateOrCreate(
             ['linked_module' => 'leave', 'linked_id' => $leave->id],
@@ -210,6 +245,18 @@ class LeaveService
             'tags'           => 'leave',
         ]);
 
+        $leave->loadMissing('requester');
+        if ($leave->requester) {
+            $this->notificationService->dispatch($leave->requester, 'leave.rejected', [
+                'name'       => $leave->requester->name,
+                'reference'  => $leave->reference_number,
+                'leave_type' => ucfirst(str_replace('_', ' ', $leave->leave_type)),
+                'start_date' => $leave->start_date,
+                'end_date'   => $leave->end_date,
+                'comment'    => $reason,
+            ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+        }
+
         return $leave->fresh();
     }
 
@@ -224,8 +271,18 @@ class LeaveService
             'approved_at' => now(),
         ]);
 
-        // Add approved leave to the workplan calendar
+        // Notify requester
         $leave->loadMissing('requester');
+        if ($leave->requester) {
+            $this->notificationService->dispatch($leave->requester, 'leave.approved', [
+                'name'       => $leave->requester->name,
+                'leave_type' => ucfirst(str_replace('_', ' ', $leave->leave_type)),
+                'start_date' => $leave->start_date,
+                'end_date'   => $leave->end_date,
+            ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+        }
+
+        // Add approved leave to the workplan calendar
         $typeLabel = ucfirst(str_replace('_', ' ', $leave->leave_type)) . ' Leave';
         WorkplanEvent::updateOrCreate(
             ['linked_module' => 'leave', 'linked_id' => $leave->id],
@@ -252,6 +309,18 @@ class LeaveService
             'approved_by'      => $approver->id,
             'rejection_reason' => $reason,
         ]);
+
+        $leave->loadMissing('requester');
+        if ($leave->requester) {
+            $this->notificationService->dispatch($leave->requester, 'leave.rejected', [
+                'name'       => $leave->requester->name,
+                'reference'  => $leave->reference_number,
+                'leave_type' => ucfirst(str_replace('_', ' ', $leave->leave_type)),
+                'start_date' => $leave->start_date,
+                'end_date'   => $leave->end_date,
+                'comment'    => $reason ?? '',
+            ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+        }
     }
 
     /**

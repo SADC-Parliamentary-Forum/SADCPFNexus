@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { adminApi, type Department, type User } from "@/lib/api";
+import { adminApi, auditApi, type Department, type User, type AuditLogEntry } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -196,6 +196,20 @@ export default function OrganogramPage() {
     const [formParentId, setFormParentId] = useState<number | null>(null);
     const [form, setForm] = useState({ name: "", code: "", supervisor_id: null as number | null });
     const [saving, setSaving] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
+    const [history, setHistory] = useState<AuditLogEntry[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    const loadHistory = async () => {
+        setHistoryLoading(true);
+        try {
+            const res = await auditApi.list({ module: "Department", per_page: 50 });
+            setHistory(res.data.data ?? []);
+        } catch { /* ignore */ }
+        finally { setHistoryLoading(false); }
+    };
+
+    const openHistory = () => { setShowHistory(true); loadHistory(); };
 
     const fetchData = async () => {
         try {
@@ -310,10 +324,17 @@ export default function OrganogramPage() {
                     <h1 className="page-title">Interactive Organogram</h1>
                     <p className="page-subtitle text-neutral-500">Manage structure via Drag-and-Drop. Use node actions to build your units.</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={openHistory}
+                        className="btn-secondary flex items-center gap-1.5"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">history</span>
+                        Change History
+                    </button>
                     <button
                         onClick={() => openCreateModal(null)}
-                        className="btn-primary"
+                        className="btn-primary flex items-center gap-1.5"
                     >
                         <span className="material-symbols-outlined text-[18px]">add</span>
                         New Root Unit
@@ -367,6 +388,73 @@ export default function OrganogramPage() {
                                     <p className="text-xs">Start by creating a root unit.</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Change History Drawer */}
+            {showHistory && (
+                <div className="fixed inset-0 z-50 flex justify-end">
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
+                    <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[20px] text-primary">history</span>
+                                <h3 className="text-sm font-semibold text-neutral-900">Organogram Change History</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1" title="Refresh">
+                                    <span className={`material-symbols-outlined text-[18px] ${historyLoading ? "animate-spin" : ""}`}>refresh</span>
+                                </button>
+                                <button onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-neutral-600 p-1">
+                                    <span className="material-symbols-outlined text-[18px]">close</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto">
+                            {historyLoading ? (
+                                <div className="space-y-3 p-5 animate-pulse">
+                                    {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-14 bg-neutral-100 rounded-xl" />)}
+                                </div>
+                            ) : history.length === 0 ? (
+                                <div className="py-20 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-neutral-200">history</span>
+                                    <p className="text-sm text-neutral-400 mt-3">No changes recorded yet.</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-neutral-50">
+                                    {history.map((entry) => {
+                                        const isCreate  = entry.action.includes("created");
+                                        const isDelete  = entry.action.includes("deleted");
+                                        const iconColor = isCreate ? "text-green-600 bg-green-50" : isDelete ? "text-red-500 bg-red-50" : "text-primary bg-primary/10";
+                                        const icon      = isCreate ? "add_circle" : isDelete ? "delete" : "edit";
+                                        const label     = entry.action.replace("department.", "").replace("_", " ");
+                                        return (
+                                            <div key={entry.id} className="flex items-start gap-3 px-5 py-3.5">
+                                                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${iconColor}`}>
+                                                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-semibold text-neutral-800 capitalize">{label}</p>
+                                                        <span className="text-[11px] text-neutral-400 flex-shrink-0">
+                                                            {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-neutral-500">{entry.user_name ?? entry.user ?? "System"}</p>
+                                                    {entry.record_id && entry.record_id !== "—" && (
+                                                        <p className="text-[11px] font-mono text-neutral-400">ID: {entry.record_id}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        <div className="border-t border-neutral-100 px-5 py-3">
+                            <p className="text-[11px] text-neutral-400">Showing latest 50 changes. Full history available in the Admin Audit Ledger.</p>
                         </div>
                     </div>
                 </div>

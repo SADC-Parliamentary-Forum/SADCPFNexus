@@ -50,6 +50,14 @@ class TimesheetController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // SRHR Researchers have timesheets managed by their host parliament, not SADC-PF
+        $hrFile = \App\Models\HrPersonalFile::where('tenant_id', $request->user()->tenant_id)
+            ->where('employee_id', $request->user()->id)
+            ->first();
+        if ($hrFile?->hr_managed_externally) {
+            return response()->json(['message' => 'Your daily schedule is managed by your host parliament. Timesheets cannot be submitted through this system.'], 422);
+        }
+
         $data = $request->validate([
             'week_start'                   => ['required', 'date'],
             'week_end'                     => ['required', 'date', 'after_or_equal:week_start'],

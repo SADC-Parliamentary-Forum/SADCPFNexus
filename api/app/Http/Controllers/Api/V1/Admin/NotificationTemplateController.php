@@ -1,19 +1,56 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Admin;
+
 use App\Http\Controllers\Controller;
+use App\Mail\ModuleNotificationMail;
 use App\Models\NotificationTemplate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationTemplateController extends Controller
 {
     private array $defaults = [
-        ['name' => 'Travel Approved',    'trigger_key' => 'travel.approved',        'subject' => 'Your travel request has been approved',        'body' => "Dear {{name}},\n\nYour travel request to {{destination}} departing on {{date}} has been approved.\n\nRegards,\nSADC-PF HR"],
-        ['name' => 'Leave Approved',     'trigger_key' => 'leave.approved',         'subject' => 'Your leave request has been approved',          'body' => "Dear {{name}},\n\nYour {{leave_type}} leave from {{start_date}} to {{end_date}} has been approved.\n\nRegards,\nSADC-PF HR"],
-        ['name' => 'Imprest Due',        'trigger_key' => 'imprest.retirement_due', 'subject' => 'Imprest retirement due — Action required',      'body' => "Dear {{name}},\n\nYour imprest of {{amount}} is due for retirement by {{due_date}}. Please submit your receipts.\n\nRegards,\nFinance"],
-        ['name' => 'Request Rejected',   'trigger_key' => 'request.rejected',       'subject' => 'Your request has been returned',                'body' => "Dear {{name}},\n\nYour {{module}} request has been returned with the following comment:\n\n{{comment}}\n\nPlease revise and resubmit."],
-        ['name' => 'Salary Advance Due', 'trigger_key' => 'finance.advance_due',    'subject' => 'Salary advance repayment due',                  'body' => "Dear {{name}},\n\nYour salary advance of {{amount}} has a repayment due on {{due_date}}.\n\nRegards,\nFinance"],
-        ['name' => 'New Assignment',     'trigger_key' => 'hr.task_assigned',       'subject' => 'New task assigned to you',                      'body' => "Dear {{name}},\n\nYou have been assigned a new task: {{task_title}}.\nDue date: {{due_date}}\n\nRegards,\nSADC-PF Nexus"],
+        // Travel
+        ['name' => 'Travel Submitted (Approver)',  'trigger_key' => 'travel.submitted',          'subject' => 'Travel request submitted — Action required',          'body' => "Dear {{name}},\n\nA travel request ({{reference}}) has been submitted by {{requester}} for your approval.\n\nDestination: {{destination}}\nDeparture: {{date}}\n\nPlease log in to review and action this request.\n\nRegards,\nSADC-PF Nexus"],
+        ['name' => 'Travel Approved',              'trigger_key' => 'travel.approved',            'subject' => 'Your travel request has been approved',                'body' => "Dear {{name}},\n\nYour travel request ({{reference}}) to {{destination}} departing on {{date}} has been approved.\n\nRegards,\nSADC-PF HR"],
+        ['name' => 'Travel Rejected',              'trigger_key' => 'travel.rejected',            'subject' => 'Your travel request has been returned',                'body' => "Dear {{name}},\n\nYour travel request ({{reference}}) to {{destination}} has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF HR"],
+
+        // Leave
+        ['name' => 'Leave Submitted (Approver)',   'trigger_key' => 'leave.submitted',            'subject' => 'Leave request submitted — Action required',            'body' => "Dear {{name}},\n\nA leave request ({{reference}}) has been submitted by {{requester}} for your approval.\n\nLeave type: {{leave_type}}\nFrom: {{start_date}} to {{end_date}}\n\nPlease log in to review and action this request.\n\nRegards,\nSADC-PF Nexus"],
+        ['name' => 'Leave Approved',               'trigger_key' => 'leave.approved',             'subject' => 'Your leave request has been approved',                 'body' => "Dear {{name}},\n\nYour {{leave_type}} leave from {{start_date}} to {{end_date}} has been approved.\n\nRegards,\nSADC-PF HR"],
+        ['name' => 'Leave Rejected',               'trigger_key' => 'leave.rejected',             'subject' => 'Your leave request has been returned',                 'body' => "Dear {{name}},\n\nYour {{leave_type}} leave request ({{reference}}) has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF HR"],
+
+        // Imprest
+        ['name' => 'Imprest Submitted (Approver)', 'trigger_key' => 'imprest.submitted',          'subject' => 'Imprest request submitted — Action required',          'body' => "Dear {{name}},\n\nAn imprest request ({{reference}}) of {{amount}} has been submitted by {{requester}} for your approval.\n\nPlease log in to review and action this request.\n\nRegards,\nSADC-PF Finance"],
+        ['name' => 'Imprest Approved',             'trigger_key' => 'imprest.approved',           'subject' => 'Your imprest request has been approved',               'body' => "Dear {{name}},\n\nYour imprest request ({{reference}}) of {{amount}} has been approved.\n\nPlease arrange collection with the Finance office.\n\nRegards,\nSADC-PF Finance"],
+        ['name' => 'Imprest Rejected',             'trigger_key' => 'imprest.rejected',           'subject' => 'Your imprest request has been returned',               'body' => "Dear {{name}},\n\nYour imprest request ({{reference}}) has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Finance"],
+        ['name' => 'Imprest Retirement Due',       'trigger_key' => 'imprest.retirement_due',     'subject' => 'Imprest retirement due — Action required',             'body' => "Dear {{name}},\n\nYour imprest of {{amount}} is due for retirement by {{due_date}}. Please submit your receipts to the Finance office.\n\nRegards,\nSADC-PF Finance"],
+
+        // Procurement
+        ['name' => 'Procurement Submitted',        'trigger_key' => 'procurement.submitted',      'subject' => 'Procurement request submitted — Action required',      'body' => "Dear {{name}},\n\nA procurement request ({{reference}}) has been submitted by {{requester}} for your approval.\n\nDescription: {{description}}\nEstimated value: {{amount}}\n\nPlease log in to review and action this request.\n\nRegards,\nSADC-PF Nexus"],
+        ['name' => 'Procurement Approved',         'trigger_key' => 'procurement.approved',       'subject' => 'Your procurement request has been approved',           'body' => "Dear {{name}},\n\nYour procurement request ({{reference}}) has been approved.\n\nPlease coordinate with the Procurement office for next steps.\n\nRegards,\nSADC-PF Procurement"],
+        ['name' => 'Procurement Rejected',         'trigger_key' => 'procurement.rejected',       'subject' => 'Your procurement request has been returned',           'body' => "Dear {{name}},\n\nYour procurement request ({{reference}}) has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Procurement"],
+
+        // Finance
+        ['name' => 'Salary Advance Due',           'trigger_key' => 'finance.advance_due',        'subject' => 'Salary advance repayment due',                         'body' => "Dear {{name}},\n\nYour salary advance of {{amount}} has a repayment due on {{due_date}}.\n\nRegards,\nSADC-PF Finance"],
+        ['name' => 'Budget Line Warning (80%)',    'trigger_key' => 'budget.warning',             'subject' => 'Budget line nearing limit',                            'body' => "Dear {{name}},\n\nA budget line has reached 80% or more of its allocated amount.\n\n{{description}}\n\nPlease review expenditure and take corrective action if necessary.\n\nRegards,\nSADC-PF Finance"],
+        ['name' => 'Budget Line Exceeded',         'trigger_key' => 'budget.exceeded',            'subject' => 'Budget line exceeded — immediate action required',     'body' => "Dear {{name}},\n\nA budget line has exceeded its allocated amount.\n\n{{description}}\n\nPlease review immediately and contact the Finance Controller.\n\nRegards,\nSADC-PF Finance"],
+
+        // Assignments / HR
+        ['name' => 'New Assignment',               'trigger_key' => 'assignment.issued',          'subject' => 'New task assigned to you',                             'body' => "Dear {{name}},\n\nYou have been assigned a new task: {{task_title}}\nDue date: {{due_date}}\n\n{{description}}\n\nRegards,\nSADC-PF Nexus"],
+        ['name' => 'New Task (HR)',                 'trigger_key' => 'hr.task_assigned',           'subject' => 'New task assigned to you',                             'body' => "Dear {{name}},\n\nYou have been assigned a new task: {{task_title}}.\nDue date: {{due_date}}\n\nRegards,\nSADC-PF Nexus"],
+
+        // SRHR / Field Researchers
+        ['name' => 'Deployment Started',           'trigger_key' => 'srhr.deployment.started',    'subject' => 'Field deployment confirmed — {{reference}}',           'body' => "Dear {{name}},\n\nYour field deployment has been confirmed.\n\nReference: {{reference}}\nParliament: {{parliament}}\nStart date: {{start_date}}\n\nPlease liaise with your supervisor and submit monthly reports through the SRHR portal.\n\nRegards,\nSADC-PF HR"],
+        ['name' => 'Deployment Recalled',          'trigger_key' => 'srhr.deployment.recalled',   'subject' => 'Your field deployment has been recalled — {{reference}}', 'body' => "Dear {{name}},\n\nYour field deployment ({{reference}}) has been recalled with the following reason:\n\n{{reason}}\n\nPlease contact HR for further instructions.\n\nRegards,\nSADC-PF HR"],
+        ['name' => 'Report Submitted (Reviewer)',  'trigger_key' => 'srhr.report.submitted',      'subject' => 'Field researcher report submitted — Action required',  'body' => "Dear {{name}},\n\nA field researcher report ({{reference}}) has been submitted and requires your acknowledgement.\n\nResearcher: {{employee}}\nReport title: {{title}}\nPeriod: {{period}}\n\nPlease log in to review and acknowledge this report.\n\nRegards,\nSADC-PF Nexus"],
+        ['name' => 'Report Acknowledged',          'trigger_key' => 'srhr.report.acknowledged',   'subject' => 'Your report has been acknowledged — {{reference}}',    'body' => "Dear {{name}},\n\nYour field researcher report ({{reference}}) — \"{{title}}\" — has been acknowledged.\n\nThank you for your submission.\n\nRegards,\nSADC-PF HR"],
+        ['name' => 'Report Revision Requested',    'trigger_key' => 'srhr.report.revision_requested', 'subject' => 'Revision requested on your report — {{reference}}', 'body' => "Dear {{name}},\n\nA revision has been requested on your report ({{reference}}) — \"{{title}}\".\n\nReviewer notes:\n{{notes}}\n\nPlease update and resubmit your report.\n\nRegards,\nSADC-PF HR"],
+
+        // Generic
+        ['name' => 'Request Rejected (Generic)',   'trigger_key' => 'request.rejected',           'subject' => 'Your request has been returned',                       'body' => "Dear {{name}},\n\nYour {{module}} request has been returned with the following comment:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Nexus"],
     ];
 
     public function index(Request $request): JsonResponse
@@ -23,14 +60,15 @@ class NotificationTemplateController extends Controller
             ->get()
             ->keyBy('trigger_key');
 
-        $result = array_map(function ($def) use ($stored, $tenantId) {
+        $result = array_map(function ($def) use ($stored) {
             $t = $stored[$def['trigger_key']] ?? null;
             return [
-                'id' => $t?->id ?? null,
-                'name' => $def['name'],
+                'id'          => $t?->id ?? null,
+                'name'        => $def['name'],
                 'trigger_key' => $def['trigger_key'],
-                'subject' => $t?->subject ?? $def['subject'],
-                'body' => $t?->body ?? $def['body'],
+                'subject'     => $t?->subject ?? $def['subject'],
+                'body'        => $t?->body ?? $def['body'],
+                'customised'  => $t !== null,
             ];
         }, $this->defaults);
 
@@ -39,15 +77,14 @@ class NotificationTemplateController extends Controller
 
     public function updateByTrigger(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId  = $request->user()->tenant_id;
         $validated = $request->validate([
             'trigger_key' => 'required|string',
-            'subject' => 'required|string|max:255',
-            'body' => 'required|string',
+            'subject'     => 'required|string|max:255',
+            'body'        => 'required|string',
         ]);
 
-        // Find the default name for this trigger
-        $def = collect($this->defaults)->firstWhere('trigger_key', $validated['trigger_key']);
+        $def  = collect($this->defaults)->firstWhere('trigger_key', $validated['trigger_key']);
         $name = $def['name'] ?? $validated['trigger_key'];
 
         $template = NotificationTemplate::updateOrCreate(
@@ -56,5 +93,55 @@ class NotificationTemplateController extends Controller
         );
 
         return response()->json($template);
+    }
+
+    /**
+     * Send a test email to the currently authenticated admin using a given template.
+     */
+    public function testSend(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'trigger_key' => 'required|string',
+        ]);
+
+        $tenantId = $request->user()->tenant_id;
+        $user     = $request->user();
+
+        $stored = NotificationTemplate::where('tenant_id', $tenantId)
+            ->where('trigger_key', $validated['trigger_key'])
+            ->first();
+
+        $def = collect($this->defaults)->firstWhere('trigger_key', $validated['trigger_key']);
+
+        $subject = $stored?->subject ?? $def['subject'] ?? 'Test Notification';
+        $body    = $stored?->body    ?? $def['body']    ?? 'This is a test notification from SADC-PF Nexus.';
+
+        // Replace placeholders with sample data for the test
+        $samples = [
+            'name'         => $user->name,
+            'reference'    => 'TRV-SAMPLE001',
+            'requester'    => 'Jane Doe',
+            'destination'  => 'Windhoek, Namibia',
+            'date'         => now()->addDays(7)->format('d M Y'),
+            'start_date'   => now()->addDays(3)->format('d M Y'),
+            'end_date'     => now()->addDays(8)->format('d M Y'),
+            'leave_type'   => 'Annual Leave',
+            'amount'       => 'NAD 5,000.00',
+            'due_date'     => now()->addDays(14)->format('d M Y'),
+            'comment'      => 'Please provide additional justification.',
+            'module'       => 'Travel',
+            'description'  => 'Sample task description.',
+            'task_title'   => 'Review Q1 Programme Report',
+        ];
+
+        foreach ($samples as $key => $value) {
+            $subject = str_replace('{{' . $key . '}}', $value, $subject);
+            $body    = str_replace('{{' . $key . '}}', $value, $body);
+        }
+
+        Mail::to($user->email)
+            ->queue(new ModuleNotificationMail('[TEST] ' . $subject, $body, $user->name));
+
+        return response()->json(['message' => 'Test email queued to ' . $user->email]);
     }
 }

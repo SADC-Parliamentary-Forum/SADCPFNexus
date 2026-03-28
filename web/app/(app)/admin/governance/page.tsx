@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { governanceConfigApi, auditApi, type GovernanceConfig, type AuditLogEntry } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -170,7 +171,7 @@ export default function AdminGovernanceConfigPage() {
                     <tr><td colSpan={5} className="text-center py-8 text-neutral-400 text-xs">No audit entries available</td></tr>
                   ) : recentLogs.map((l) => (
                     <tr key={l.id}>
-                      <td className="font-mono text-xs text-neutral-400 whitespace-nowrap">{l.timestamp}</td>
+                      <td className="text-xs text-neutral-400 whitespace-nowrap">{formatDateShort(l.timestamp)}</td>
                       <td className="text-xs text-neutral-700">{l.user}</td>
                       <td><span className="badge badge-muted">{l.action}</span></td>
                       <td className="text-neutral-600">{l.module}</td>

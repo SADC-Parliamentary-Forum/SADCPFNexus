@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { leaveApi, lookupsApi, type LilAccrual } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
 const STEPS = ["Leave Type", "Details", "LIL Linking", "Review & Submit"];
 
@@ -294,7 +295,7 @@ export default function LeaveCreatePage() {
                         <span className="text-sm font-mono font-bold text-primary">{accrual.hours.toFixed(1)} hrs</span>
                       </div>
                       <p className="text-xs text-neutral-500 mt-0.5">
-                        Accrued on {accrual.date}{accrual.approved_by ? ` · Approved by ${accrual.approved_by}` : " · Auto-Approved"}
+                        Accrued on {formatDateShort(accrual.date)}{accrual.approved_by ? ` · Approved by ${accrual.approved_by}` : " · Auto-Approved"}
                       </p>
                       <div className="mt-2 flex items-center gap-2">
                         {accrual.is_verified && (
@@ -344,7 +345,7 @@ export default function LeaveCreatePage() {
           <div className="space-y-2">
             {[
               { label: "Leave Type", value: form.leave_type ? form.leave_type.charAt(0).toUpperCase() + form.leave_type.slice(1) + " Leave" : "—" },
-              { label: "Duration", value: `${form.start_date} → ${form.end_date} (${daysRequested} days)` },
+              { label: "Duration", value: `${formatDateShort(form.start_date)} → ${formatDateShort(form.end_date)} (${daysRequested} days)` },
               { label: "Reason", value: form.reason || "Not provided" },
               ...(isLil ? [{ label: "LIL Hours Linked", value: `${totalLinkedHours.toFixed(1)} / ${hoursRequired.toFixed(1)} hrs` }] : []),
             ].map(({ label, value }) => (

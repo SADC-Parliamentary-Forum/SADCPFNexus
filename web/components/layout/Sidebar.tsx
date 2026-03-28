@@ -26,7 +26,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Approvals", href: "/approvals", icon: "fact_check" },
-  { label: "Alerts", href: "/alerts", icon: "notifications_active" },
+  { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active" },
   {
     label: "Assignments",
     href: "/assignments",
@@ -46,18 +46,39 @@ const NAV_ITEMS: NavItem[] = [
   },
   { label: "Leave", href: "/leave", icon: "event_available" },
   {
+    label: "Procurement",
+    href: "/procurement",
+    icon: "shopping_cart",
+    children: [
+      { label: "Requests",    href: "/procurement",         icon: "bar_chart_4_bars" },
+      { label: "Vendors",     href: "/procurement/vendors", icon: "store" },
+      { label: "New Request", href: "/procurement/create",  icon: "add_shopping_cart" },
+    ],
+  },
+  {
     label: "Finance",
     href: "/finance",
     icon: "payments",
     children: [
       { label: "Overview", href: "/finance", icon: "bar_chart_4_bars" },
       { label: "Budgets", href: "/finance/budget", icon: "account_balance" },
-      { label: "Advances", href: "/finance/advances", icon: "payments" },
+      { label: "Salary Advance", href: "/finance/advances", icon: "payments" },
       { label: "Payslips", href: "/finance/payslips", icon: "receipt_long" },
       { label: "Imprest", href: "/imprest", icon: "account_balance_wallet" },
     ],
   },
   { label: "Programmes", href: "/pif", icon: "account_tree", section: "Management" },
+  {
+    label: "Field Researchers",
+    href: "/srhr",
+    icon: "science",
+    children: [
+      { label: "Overview",     href: "/srhr",                  icon: "bar_chart_4_bars" },
+      { label: "Parliaments",  href: "/srhr/parliaments",      icon: "account_balance" },
+      { label: "Deployments",  href: "/srhr/deployments",      icon: "transfer_within_a_station" },
+      { label: "Reports",      href: "/srhr/reports",          icon: "summarize" },
+    ],
+  },
   {
     label: "Workplan",
     href: "/workplan",
@@ -77,6 +98,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Timesheets", href: "/hr/timesheets", icon: "schedule" },
       { label: "Team View", href: "/hr/timesheets/team", icon: "groups" },
       { label: "Leave", href: "/hr/leave", icon: "event_available" },
+      { label: "Leave Balances", href: "/hr/leave/balances", icon: "balance" },
       { label: "Appraisals", href: "/hr/appraisals", icon: "rate_review" },
       { label: "Conduct", href: "/hr/conduct", icon: "gavel" },
       { label: "Performance", href: "/hr/performance", icon: "trending_up" },
@@ -84,8 +106,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Employee Files", href: "/hr/files", icon: "folder_shared" },
       { label: "Documents", href: "/hr/documents", icon: "description" },
       { label: "Profile Requests", href: "/hr/profile-requests", icon: "manage_accounts" },
-      { label: "Departments", href: "/admin/departments", icon: "corporate_fare" },
-      { label: "Positions", href: "/admin/positions", icon: "work" },
+      { label: "Departments", href: "/hr/departments", icon: "corporate_fare" },
+      { label: "Positions", href: "/hr/positions", icon: "work" },
       { label: "HR Settings", href: "/settings/hr", icon: "tune" },
     ],
   },
@@ -99,7 +121,17 @@ const NAV_ITEMS: NavItem[] = [
       { label: "My Requests", href: "/assets/requests", icon: "request_quote" },
     ],
   },
-  { label: "Governance", href: "/governance", icon: "policy", section: "Governance" },
+  {
+    label: "Governance",
+    href: "/governance",
+    icon: "policy",
+    section: "Governance",
+    children: [
+      { label: "Resolutions",        href: "/governance",          icon: "gavel" },
+      { label: "Plenary Sessions",   href: "/governance/plenary",  icon: "groups_3" },
+      { label: "Meetings & Minutes", href: "/governance",          icon: "meeting_room" },
+    ],
+  },
   {
     label: "Correspondence",
     href: "/correspondence",
@@ -124,7 +156,16 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Audit Ledger", href: "/analytics/ledger", icon: "receipt_long" },
     ],
   },
-  { label: "My Signature", href: "/profile/signature", icon: "draw" },
+  {
+    label: "Signatures",
+    href: "/saam",
+    icon: "draw",
+    children: [
+      { label: "My Signature",  href: "/saam",              icon: "signature" },
+      { label: "Delegations",   href: "/saam/delegations",  icon: "supervised_user_circle" },
+      { label: "Verify",        href: "/saam/verify/document", icon: "verified" },
+    ],
+  },
   { label: "Help & Support", href: "/profile/support", icon: "help" },
   {
     label: "Administration",

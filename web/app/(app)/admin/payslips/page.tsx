@@ -5,13 +5,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES } from "@/lib/constants";
 import { adminApi } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
-import type { AdminPayslip } from "@/lib/api";
+import type { AdminPayslip, User } from "@/lib/api";
 
 interface PayslipRow {
   id: number;
   filename: string;
   employeeNum: string;
   period: string;
+  file: File;
 }
 
 function parseFilename(filename: string): { employeeNum: string; period: string } {
@@ -150,6 +151,7 @@ export default function PayslipsPage() {
     const newRows: PayslipRow[] = accepted.map((f) => ({
       id: Date.now() + Math.random(),
       filename: f.name,
+      file: f,
       ...parseFilename(f.name),
     }));
     setRows((prev) => [...prev, ...newRows]);
@@ -164,10 +166,52 @@ export default function PayslipsPage() {
   const handleUploadAll = async () => {
     if (rows.length === 0) return;
     setUploading(true);
-    // Stub: simulate API call
-    await new Promise((r) => setTimeout(r, 1200));
-    showToast(`${rows.length} payslip${rows.length !== 1 ? "s" : ""} uploaded successfully.`);
-    setRows([]);
+    let success = 0;
+    let failed = 0;
+    // Pre-load users for employee number lookup
+    let allUsers: User[] = [];
+    try {
+      const res = await adminApi.listUsers({ per_page: 200 });
+      allUsers = res.data.data ?? [];
+    } catch { /* proceed without lookup */ }
+
+    for (const row of rows) {
+      try {
+        // Match employee number to a user
+        const empNum = row.employeeNum.toUpperCase();
+        const user = allUsers.find(
+          (u) => u.employee_number && u.employee_number.toUpperCase() === empNum
+        );
+        if (!user) { failed++; continue; }
+
+        // Parse period month/year from display string e.g. "March 2026"
+        const [monthName, yearStr] = row.period.split(" ");
+        const monthIdx = new Date(`${monthName} 1, 2000`).getMonth() + 1;
+        const year = parseInt(yearStr ?? "");
+        if (!monthIdx || !year) { failed++; continue; }
+
+        const form = new FormData();
+        form.append("file", row.file);
+        form.append("user_id", String(user.id));
+        form.append("period_month", String(monthIdx));
+        form.append("period_year", String(year));
+        await adminApi.uploadPayslip(form);
+        success++;
+      } catch { failed++; }
+    }
+
+    if (success > 0) {
+      showToast(`${success} payslip${success !== 1 ? "s" : ""} uploaded successfully.${failed > 0 ? ` ${failed} failed.` : ""}`);
+      setRows([]);
+      fetchList();
+    } else {
+      showToast(
+        failed > 0
+          ? `Upload failed for all ${failed} payslips. Check employee numbers and periods.`
+          : "Nothing to upload.",
+        true
+      );
+    }
     setUploading(false);
   };
 

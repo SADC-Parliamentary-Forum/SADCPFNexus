@@ -19,6 +19,7 @@ class HrPersonalFile extends Model
         'payroll_number', 'latest_appraisal_summary', 'active_warning_flag',
         'commendation_count', 'open_development_action_count', 'training_hours_current_cycle',
         'last_file_review_date', 'archival_status',
+        'hr_managed_externally', 'active_deployment_id',
     ];
 
     protected function casts(): array
@@ -33,7 +34,8 @@ class HrPersonalFile extends Model
             'promotion_history' => 'array',
             'transfer_history' => 'array',
             'active_warning_flag' => 'boolean',
-            'archival_status' => 'boolean',
+            'archival_status'        => 'boolean',
+            'hr_managed_externally'  => 'boolean',
         ];
     }
 

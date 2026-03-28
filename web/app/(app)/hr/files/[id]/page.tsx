@@ -361,7 +361,7 @@ export default function HrFileDetailPage() {
               <h3 className="text-sm font-semibold text-neutral-900 mb-2">Promotion history</h3>
               <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
                 {file.promotion_history.map((p: { date?: string; from_position?: string; to_position?: string }, i: number) => (
-                  <li key={i}>{p.date} – {p.from_position} → {p.to_position}</li>
+                  <li key={i}>{formatDate(p.date)} – {p.from_position} → {p.to_position}</li>
                 ))}
               </ul>
             </div>
@@ -371,7 +371,7 @@ export default function HrFileDetailPage() {
               <h3 className="text-sm font-semibold text-neutral-900 mb-2">Transfer history</h3>
               <ul className="list-disc list-inside text-sm text-neutral-700 space-y-1">
                 {file.transfer_history.map((t: { date?: string; from_dept?: string; to_dept?: string }, i: number) => (
-                  <li key={i}>{t.date} – {t.from_dept} → {t.to_dept}</li>
+                  <li key={i}>{formatDate(t.date)} – {t.from_dept} → {t.to_dept}</li>
                 ))}
               </ul>
             </div>

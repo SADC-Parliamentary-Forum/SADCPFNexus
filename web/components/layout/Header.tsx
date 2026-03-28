@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { authApi, alertsApi, clearAuthCookie } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authApi, userNotificationsApi, clearAuthCookie, type UserNotification } from "@/lib/api";
 import { GlobalSearch } from "./GlobalSearch";
 
 interface StoredUser {
@@ -24,9 +24,9 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const [user, setUser] = useState<StoredUser | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifRead, setNotifRead] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const raw = localStorage.getItem("sadcpf_user");
@@ -35,38 +35,38 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     }
   }, []);
 
-  // Load notifications — cached 60 s so it doesn't re-fetch on every page nav
-  const { data: alertsData } = useQuery({
-    queryKey: ["alerts", "summary"],
-    queryFn: () => alertsApi.getSummary().then((r) => r.data),
-    staleTime: 60_000,
+  // Unread count for bell badge — polls every 60 s
+  const { data: countData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: () => userNotificationsApi.unreadCount().then((r) => r.data.count),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
 
-  const notifItems = useMemo(() => {
-    if (!alertsData) return [];
-    const items: { icon: string; color: string; bg: string; title: string; sub: string }[] = [];
-    (alertsData.active_missions ?? []).forEach((m) => {
-      items.push({ icon: "flight_takeoff", color: "text-primary", bg: "bg-primary/10", title: `Mission: ${m.requester_name}`, sub: `Active in ${m.destination_country} · returns ${m.return_date}` });
-    });
-    (alertsData.away_today ?? []).forEach((a) => {
-      if (a.type === "leave") {
-        items.push({ icon: "event_available", color: "text-green-600", bg: "bg-green-50", title: `On leave: ${a.name}`, sub: `Away today` });
-      }
-    });
-    (alertsData.upcoming_deadlines ?? []).forEach((dl) => {
-      const isImprest = dl.module === "imprest";
-      items.push({
-        icon: isImprest ? "account_balance_wallet" : "event",
-        color: isImprest ? "text-amber-600" : "text-purple-600",
-        bg: isImprest ? "bg-amber-50" : "bg-purple-50",
-        title: dl.title ?? dl.reference_number ?? "Deadline",
-        sub: `Due ${dl.deadline_date}`,
-      });
-    });
-    return items;
-  }, [alertsData]);
+  // Recent notifications for dropdown — fetched when panel opens
+  const { data: notifPage, isLoading: notifLoading } = useQuery({
+    queryKey: ["notifications", "recent"],
+    queryFn: () => userNotificationsApi.list({ per_page: 10 }).then((r) => r.data),
+    enabled: showNotifications,
+    staleTime: 20_000,
+  });
 
-  const notifCount = notifItems.length;
+  const unreadCount = countData ?? 0;
+  const notifItems: UserNotification[] = notifPage?.data ?? [];
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await userNotificationsApi.markRead(id);
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    } catch { /* ignore */ }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await userNotificationsApi.markAllRead();
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    } catch { /* ignore */ }
+  };
 
   // Close notifications panel on outside click
   useEffect(() => {
@@ -150,14 +150,14 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
           <button
-            onClick={() => { setShowNotifications(!showNotifications); setNotifRead(true); }}
+            onClick={() => setShowNotifications(!showNotifications)}
             className="relative flex size-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
             title="Notifications"
           >
             <span className="material-symbols-outlined text-[20px]">notifications</span>
-            {notifCount > 0 && !notifRead && (
-              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white">
-                {notifCount > 9 ? "9+" : notifCount}
+            {unreadCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
+                {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </button>
@@ -165,39 +165,70 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             <div className="absolute right-0 top-full mt-2 w-80 rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-xl z-50 overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-700">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-neutral-500 dark:text-neutral-400">notifications</span>
+                  <span className="material-symbols-outlined text-[18px] text-neutral-500">notifications</span>
                   <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Notifications</h3>
-                  {notifCount > 0 && <span className="rounded-full bg-primary text-white text-[10px] font-bold px-1.5 py-0.5">{notifCount}</span>}
+                  {unreadCount > 0 && <span className="rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5">{unreadCount}</span>}
                 </div>
-                <button onClick={() => setShowNotifications(false)} className="text-neutral-400 hover:text-neutral-600">
-                  <span className="material-symbols-outlined text-[18px]">close</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-primary hover:underline">
+                      Mark all read
+                    </button>
+                  )}
+                  <button onClick={() => setShowNotifications(false)} className="text-neutral-400 hover:text-neutral-600">
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
               </div>
               <div className="max-h-80 overflow-y-auto divide-y divide-neutral-50 dark:divide-neutral-700/50">
-                {notifItems.length === 0 ? (
+                {notifLoading ? (
+                  <div className="px-4 py-6 space-y-3 animate-pulse">
+                    {[1,2,3].map(i => <div key={i} className="h-10 bg-neutral-100 rounded-lg" />)}
+                  </div>
+                ) : notifItems.length === 0 ? (
                   <div className="px-4 py-10 text-center">
                     <span className="material-symbols-outlined text-3xl text-neutral-200 dark:text-neutral-600">check_circle</span>
                     <p className="text-sm text-neutral-400 mt-2">You&apos;re all caught up!</p>
                   </div>
-                ) : notifItems.map((n, i) => (
-                  <div key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors">
-                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${n.bg}`}>
-                      <span className={`material-symbols-outlined text-[16px] ${n.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{n.icon}</span>
+                ) : notifItems.map((n) => {
+                  const isUnread = !n.read_at;
+                  const moduleIconMap: Record<string, { icon: string; color: string; bg: string }> = {
+                    travel:      { icon: "flight_takeoff",         color: "text-primary",     bg: "bg-primary/10" },
+                    leave:       { icon: "event_available",        color: "text-green-600",   bg: "bg-green-50" },
+                    imprest:     { icon: "account_balance_wallet", color: "text-amber-600",   bg: "bg-amber-50" },
+                    procurement: { icon: "shopping_cart",          color: "text-purple-600",  bg: "bg-purple-50" },
+                    assignment:  { icon: "task_alt",               color: "text-blue-600",    bg: "bg-blue-50" },
+                    finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50" },
+                  };
+                  const mod = n.meta?.module ?? "";
+                  const ic = moduleIconMap[mod] ?? { icon: "notifications", color: "text-neutral-500", bg: "bg-neutral-100" };
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => { if (isUnread) handleMarkRead(n.id); if (n.meta?.url) router.push(n.meta.url); setShowNotifications(false); }}
+                      className={`flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors ${isUnread ? "bg-primary/5" : ""}`}
+                    >
+                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${ic.bg}`}>
+                        <span className={`material-symbols-outlined text-[16px] ${ic.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{ic.icon}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-1">
+                          <p className={`text-xs leading-tight ${isUnread ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-700 dark:text-neutral-300"}`}>{n.subject}</p>
+                          {isUnread && <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                          {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">{n.title}</p>
-                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-tight">{n.sub}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              {notifItems.length > 0 && (
-                <div className="border-t border-neutral-100 dark:border-neutral-700 px-4 py-2.5">
-                  <Link href="/alerts" onClick={() => setShowNotifications(false)} className="text-xs font-semibold text-primary hover:underline">
-                    View all alerts →
-                  </Link>
-                </div>
-              )}
+              <div className="border-t border-neutral-100 dark:border-neutral-700 px-4 py-2.5">
+                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs font-semibold text-primary hover:underline">
+                  View all notifications →
+                </Link>
+              </div>
             </div>
           )}
         </div>

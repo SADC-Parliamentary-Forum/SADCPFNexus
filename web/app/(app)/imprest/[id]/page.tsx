@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
+import { Stepper } from "@/components/ui/Stepper";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:   { label: "Approved",   cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
@@ -43,8 +44,9 @@ export default function ImprestDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
-  // Retirement form
-  const [showRetireForm, setShowRetireForm] = useState(false);
+  // Retirement wizard
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
   const [retireAmount, setRetireAmount] = useState("");
   const [retireNotes, setRetireNotes] = useState("");
   const [retireReceipts, setRetireReceipts] = useState(true);
@@ -86,15 +88,26 @@ export default function ImprestDetailPage() {
       await imprestApi.retire(request.id, { amount_liquidated: amount, notes: retireNotes.trim() || undefined, receipts_attached: retireReceipts });
       const res = await imprestApi.get(request.id);
       setRequest((res.data as any).data ?? res.data);
-      setShowRetireForm(false);
+      setShowWizard(false);
+      setWizardStep(1);
       setRetireAmount("");
       setRetireNotes("");
+      setRetireReceipts(true);
     } catch (e: unknown) {
       const msg = (e as any)?.response?.data?.message ?? "Failed to submit retirement.";
       setRetireError(msg);
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const openWizard = () => {
+    setShowWizard(true);
+    setWizardStep(1);
+    setRetireAmount("");
+    setRetireNotes("");
+    setRetireReceipts(true);
+    setRetireError(null);
   };
 
   const handleReject = async () => {
@@ -376,56 +389,241 @@ export default function ImprestDetailPage() {
         </div>
       )}
 
-      {/* Retirement / Liquidation Form */}
+      {/* Retirement / Liquidation Wizard */}
       {request.status === "approved" && request.amount_liquidated == null && (
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-3">
             <SectionIcon icon="receipt_long" color="text-blue-600" bg="bg-blue-50" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Retire / Liquidate Imprest</h3>
-            <div className="ml-auto">
-              {!showRetireForm && (
-                <button type="button" onClick={() => setShowRetireForm(true)} className="btn-primary text-sm py-1.5 px-3 flex items-center gap-1">
+            {!showWizard && (
+              <div className="ml-auto">
+                <button type="button" onClick={openWizard} className="btn-primary text-sm py-1.5 px-3 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">receipt_long</span>
                   Submit Retirement
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-          {!showRetireForm ? (
+
+          {!showWizard ? (
             <p className="text-sm text-neutral-600">
-              This imprest has been approved for <strong>{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</strong>.
-              Submit your retirement with receipts before <strong>{formatDate(request.expected_liquidation_date)}</strong>.
+              This imprest has been approved for{" "}
+              <strong>{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</strong>.
+              Submit your retirement with receipts before{" "}
+              <strong>{formatDate(request.expected_liquidation_date)}</strong>.
             </p>
           ) : (
-            <div className="space-y-4">
-              {retireError && <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{retireError}</div>}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Amount Spent ({request.currency}) <span className="text-red-500">*</span></label>
-                  <input type="number" step="0.01" min="0" className="form-input w-full" placeholder={`Max: ${request.amount_approved ?? request.amount_requested}`}
-                    value={retireAmount} onChange={(e) => setRetireAmount(e.target.value)} />
-                  {request.amount_approved && retireAmount && Number(retireAmount) > request.amount_approved && (
-                    <p className="text-xs text-amber-600 mt-1">Amount exceeds approved value</p>
+            <div className="space-y-6">
+              {/* Stepper */}
+              <Stepper
+                steps={[
+                  { label: "Summary",   description: "Review details"   },
+                  { label: "Receipts",  description: "Expenditure info" },
+                  { label: "Confirm",   description: "Submit"           },
+                ]}
+                currentStep={wizardStep}
+              />
+
+              {/* ── Step 1: Summary ── */}
+              {wizardStep === 1 && (
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-2">Original Imprest Details</p>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Reference</p>
+                        <p className="font-mono font-semibold text-neutral-800">{request.reference_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Purpose</p>
+                        <p className="font-medium text-neutral-800">{request.purpose}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Amount Approved</p>
+                        <p className="text-lg font-bold text-green-700">{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Liquidation Deadline</p>
+                        <p className={cn("font-semibold", daysLeft <= 0 ? "text-red-600" : daysLeft <= 5 ? "text-amber-600" : "text-neutral-800")}>
+                          {formatDate(request.expected_liquidation_date)}
+                          {daysLeft <= 0
+                            ? " — Overdue"
+                            : daysLeft <= 5
+                              ? ` — ${daysLeft}d left`
+                              : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button type="button" onClick={() => setWizardStep(2)} className="btn-primary py-2 px-5 text-sm flex items-center gap-2">
+                      Next: Receipts
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Step 2: Receipts ── */}
+              {wizardStep === 2 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                        Amount Spent ({request.currency}) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="form-input w-full"
+                        placeholder={`Max: ${request.amount_approved ?? request.amount_requested}`}
+                        value={retireAmount}
+                        onChange={(e) => setRetireAmount(e.target.value)}
+                      />
+                      {request.amount_approved && retireAmount && Number(retireAmount) > request.amount_approved && (
+                        <p className="text-xs text-amber-600 mt-1">Amount exceeds approved value</p>
+                      )}
+                      {request.amount_approved && retireAmount && Number(retireAmount) < request.amount_approved && Number(retireAmount) > 0 && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          Surplus: {request.currency} {(request.amount_approved - Number(retireAmount)).toLocaleString()} to be returned
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
+                      <input
+                        type="text"
+                        className="form-input w-full"
+                        placeholder="Optional: notes on expenditure"
+                        value={retireNotes}
+                        onChange={(e) => setRetireNotes(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
+                    <p className="text-xs font-semibold text-neutral-600 mb-2">Receipt Upload</p>
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={retireReceipts}
+                        onChange={(e) => setRetireReceipts(e.target.checked)}
+                        className="h-4 w-4 rounded border-neutral-300 text-primary accent-primary"
+                      />
+                      <span className="text-sm text-neutral-700">
+                        I confirm receipts / supporting documents are attached or will be submitted to Finance
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <button type="button" onClick={() => setWizardStep(1)} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRetireError(null); setWizardStep(3); }}
+                      disabled={!retireAmount || Number(retireAmount) <= 0}
+                      className="btn-primary py-2 px-5 text-sm flex items-center gap-2 disabled:opacity-50"
+                    >
+                      Next: Confirm
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── Step 3: Confirm & Submit ── */}
+              {wizardStep === 3 && (
+                <div className="space-y-4">
+                  {retireError && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">error_outline</span>
+                      {retireError}
+                    </div>
                   )}
+
+                  <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="bg-neutral-50 px-4 py-3 border-b border-neutral-100">
+                      <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Retirement Summary</p>
+                    </div>
+                    <div className="p-4 space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-500">Approved amount</span>
+                        <span className="font-semibold text-neutral-800">
+                          {request.currency} {(request.amount_approved ?? 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-500">Amount spent</span>
+                        <span className="font-bold text-neutral-900">
+                          {request.currency} {Number(retireAmount).toLocaleString()}
+                        </span>
+                      </div>
+                      {request.amount_approved && Number(retireAmount) !== request.amount_approved && (
+                        <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+                          <span className={cn("text-sm font-semibold", Number(retireAmount) > (request.amount_approved ?? 0) ? "text-red-600" : "text-blue-600")}>
+                            {Number(retireAmount) > (request.amount_approved ?? 0) ? "Over by" : "Surplus to return"}
+                          </span>
+                          <span className={cn("font-bold", Number(retireAmount) > (request.amount_approved ?? 0) ? "text-red-600" : "text-blue-600")}>
+                            {request.currency} {Math.abs((request.amount_approved ?? 0) - Number(retireAmount)).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-500">Receipts attached</span>
+                        <span className={cn("font-semibold", retireReceipts ? "text-green-700" : "text-amber-600")}>
+                          {retireReceipts ? "Yes" : "No — to be submitted separately"}
+                        </span>
+                      </div>
+                      {retireNotes && (
+                        <div className="pt-2 border-t border-neutral-100">
+                          <span className="text-neutral-400 text-xs">Notes: </span>
+                          <span className="text-neutral-700 text-sm">{retireNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 flex items-start gap-2">
+                    <span className="material-symbols-outlined text-amber-500 text-[18px] flex-shrink-0 mt-0.5">info</span>
+                    <p className="text-xs text-amber-700">
+                      Once submitted, this retirement cannot be modified. Ensure all figures are correct before proceeding.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <button type="button" onClick={() => setWizardStep(2)} disabled={actionLoading} className="btn-secondary py-2 px-4 text-sm flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                      Back
+                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { setShowWizard(false); setWizardStep(1); setRetireError(null); }}
+                        disabled={actionLoading}
+                        className="btn-secondary py-2 px-4 text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRetire}
+                        disabled={actionLoading}
+                        className="btn-primary flex items-center gap-2 py-2 px-5 text-sm disabled:opacity-60"
+                      >
+                        {actionLoading
+                          ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                          : <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                        }
+                        {actionLoading ? "Submitting…" : "Submit Retirement"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
-                  <input type="text" className="form-input w-full" placeholder="Optional: any notes on expenditure" value={retireNotes} onChange={(e) => setRetireNotes(e.target.value)} />
-                </div>
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={retireReceipts} onChange={(e) => setRetireReceipts(e.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-300 text-primary accent-primary" />
-                <span className="text-sm text-neutral-700">I confirm receipts/supporting documents are attached or will be submitted to Finance</span>
-              </label>
-              <div className="flex gap-3">
-                <button type="button" onClick={handleRetire} disabled={actionLoading || !retireAmount}
-                  className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60">
-                  {actionLoading ? <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-[16px]">check_circle</span>}
-                  {actionLoading ? "Submitting…" : "Submit Retirement"}
-                </button>
-                <button type="button" onClick={() => { setShowRetireForm(false); setRetireError(null); }} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
-              </div>
+              )}
             </div>
           )}
         </div>

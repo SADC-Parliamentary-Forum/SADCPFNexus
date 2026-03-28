@@ -2,82 +2,132 @@
 
 namespace Tests\Feature\Leave;
 
+use App\Models\LeaveRequest;
 use App\Models\Tenant;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class LeaveRequestTest extends TestCase
 {
-    use RefreshDatabase;
-
-    private Tenant $tenant;
-    private User $user;
-
-    protected function setUp(): void
+    private function leavePayload(array $overrides = []): array
     {
-        parent::setUp();
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
-        $this->tenant = Tenant::factory()->create();
-        $this->user = User::factory()->create([
-            'tenant_id' => $this->tenant->id,
-            'is_active' => true,
+        return array_merge([
+            'leave_type'  => 'annual',
+            'start_date'  => now()->addDays(7)->toDateString(),
+            'end_date'    => now()->addDays(9)->toDateString(),
+            'reason'      => 'Family commitment',
+        ], $overrides);
+    }
+
+    public function test_unauthenticated_request_is_rejected(): void
+    {
+        $this->getJson('/api/v1/leave/requests')->assertUnauthorized();
+    }
+
+    public function test_staff_can_create_a_leave_request(): void
+    {
+        [$http, $user] = $this->asStaff();
+
+        $response = $http->postJson('/api/v1/leave/requests', $this->leavePayload());
+
+        $response->assertCreated()
+                 ->assertJsonPath('data.status', 'draft')
+                 ->assertJsonPath('data.leave_type', 'annual');
+
+        $this->assertDatabaseHas('leave_requests', [
+            'requester_id' => $user->id,
+            'leave_type'   => 'annual',
+            'status'       => 'draft',
         ]);
-        $this->user->assignRole('Staff');
     }
 
-    public function test_authenticated_user_can_create_leave_request(): void
+    public function test_creating_request_requires_mandatory_fields(): void
     {
-        Sanctum::actingAs($this->user);
+        [$http] = $this->asStaff();
 
-        $response = $this->postJson('/api/v1/leave/requests', [
-            'leave_type' => 'annual',
-            'start_date' => now()->addDays(7)->format('Y-m-d'),
-            'end_date'   => now()->addDays(9)->format('Y-m-d'),
-            'reason'     => 'Family leave',
-        ]);
-
-        $response->assertStatus(201)
-            ->assertJsonStructure(['message', 'data' => ['id', 'reference_number', 'leave_type', 'status']])
-            ->assertJsonPath('data.status', 'draft');
+        $http->postJson('/api/v1/leave/requests', [])
+             ->assertUnprocessable()
+             ->assertJsonValidationErrors(['leave_type', 'start_date', 'end_date']);
     }
 
-    public function test_authenticated_user_can_list_leave_requests(): void
+    public function test_invalid_leave_type_is_rejected(): void
     {
-        Sanctum::actingAs($this->user);
+        [$http] = $this->asStaff();
 
-        $response = $this->getJson('/api/v1/leave/requests');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['data', 'current_page']);
+        $http->postJson('/api/v1/leave/requests', $this->leavePayload(['leave_type' => 'holiday']))
+             ->assertUnprocessable()
+             ->assertJsonValidationErrors(['leave_type']);
     }
 
-    public function test_authenticated_user_can_fetch_leave_balances(): void
+    public function test_end_date_must_not_be_before_start_date(): void
     {
-        Sanctum::actingAs($this->user);
+        [$http] = $this->asStaff();
 
-        $response = $this->getJson('/api/v1/leave/balances');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure(['annual_balance_days', 'lil_hours_available', 'period_year']);
+        $http->postJson('/api/v1/leave/requests', $this->leavePayload([
+            'start_date' => now()->addDays(10)->toDateString(),
+            'end_date'   => now()->addDays(5)->toDateString(),
+        ]))->assertUnprocessable()
+           ->assertJsonValidationErrors(['end_date']);
     }
 
-    public function test_authenticated_user_can_submit_leave_request(): void
+    public function test_staff_can_submit_their_draft(): void
     {
-        Sanctum::actingAs($this->user);
+        [$http, $user] = $this->asStaff();
 
-        $create = $this->postJson('/api/v1/leave/requests', [
-            'leave_type' => 'annual',
-            'start_date' => now()->addDays(7)->format('Y-m-d'),
-            'end_date'   => now()->addDays(9)->format('Y-m-d'),
-            'reason'     => 'Family leave',
-        ]);
-        $create->assertStatus(201);
+        $create = $http->postJson('/api/v1/leave/requests', $this->leavePayload());
+        $create->assertCreated();
         $id = $create->json('data.id');
 
-        $response = $this->postJson("/api/v1/leave/requests/{$id}/submit");
-        $response->assertStatus(200);
-        $response->assertJsonPath('data.status', 'submitted');
+        $submit = $http->postJson("/api/v1/leave/requests/{$id}/submit");
+        $submit->assertOk()
+               ->assertJsonPath('data.status', 'submitted');
+    }
+
+    public function test_staff_only_see_their_own_requests(): void
+    {
+        $tenant = Tenant::factory()->create();
+
+        [$http, $myUser] = $this->asStaff($tenant);
+        $otherUser = $this->makeUser('staff', $tenant);
+
+        LeaveRequest::factory()->create(['tenant_id' => $tenant->id, 'requester_id' => $otherUser->id]);
+        LeaveRequest::factory()->create(['tenant_id' => $tenant->id, 'requester_id' => $myUser->id]);
+
+        $response = $http->getJson('/api/v1/leave/requests');
+        $response->assertOk();
+
+        $requesterIds = collect($response->json('data'))->pluck('requester_id')->unique()->values();
+        $this->assertCount(1, $requesterIds);
+        $this->assertEquals($myUser->id, $requesterIds->first());
+    }
+
+    public function test_hr_manager_can_list_all_leave_requests(): void
+    {
+        $tenant = Tenant::factory()->create();
+
+        $staffA = $this->makeUser('staff', $tenant);
+        $staffB = $this->makeUser('staff', $tenant);
+
+        LeaveRequest::factory()->create(['tenant_id' => $tenant->id, 'requester_id' => $staffA->id]);
+        LeaveRequest::factory()->create(['tenant_id' => $tenant->id, 'requester_id' => $staffB->id]);
+
+        $hrManager = $this->makeUser('HR Manager', $tenant);
+        $response  = $this->asUser($hrManager)->getJson('/api/v1/leave/requests');
+
+        $response->assertOk();
+        $this->assertGreaterThanOrEqual(2, count($response->json('data')));
+    }
+
+    public function test_staff_cannot_delete_a_submitted_request(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $leave = LeaveRequest::factory()->submitted()->create([
+            'tenant_id'    => $tenant->id,
+            'requester_id' => $user->id,
+        ]);
+
+        $http->deleteJson("/api/v1/leave/requests/{$leave->id}")
+             ->assertStatus(422);
     }
 }

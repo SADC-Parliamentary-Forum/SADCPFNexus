@@ -17,7 +17,7 @@ interface SearchResult {
 const SEARCH_INDEX: SearchResult[] = [
   // ── Modules / Pages ─────────────────────────────────────────────────────
   { id: "m-dashboard",   label: "Dashboard",                 description: "Overview & KPI summary",                href: "/dashboard",           category: "Modules",     icon: "dashboard"              },
-  { id: "m-alerts",      label: "Alerts & Notifications",    description: "Who's away, missions, deadlines",       href: "/alerts",              category: "Modules",     icon: "notifications_active"   },
+  { id: "m-alerts",      label: "Alerts & Notifications",    description: "Who's away, missions, deadlines, inbox",href: "/notifications",       category: "Modules",     icon: "notifications_active"   },
   { id: "m-travel",      label: "Travel Requests",           description: "Submit and track travel authorisations",href: "/travel",              category: "Modules",     icon: "flight_takeoff"         },
   { id: "m-travel-new",  label: "New Travel Request",        description: "Submit a new travel request",           href: "/travel/create",       category: "Actions",     icon: "add_circle"             },
   { id: "m-leave",       label: "Leave Management",          description: "Leave requests and balances",           href: "/leave",               category: "Modules",     icon: "event_available"        },

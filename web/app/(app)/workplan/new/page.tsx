@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { workplanApi, workplanMeetingTypesApi, workplanEventTypesApi, tenantUsersApi, type MeetingType, type WorkplanEventType, type TenantUserOption } from "@/lib/api";
+import { workplanApi, workplanMeetingTypesApi, workplanEventTypesApi, tenantUsersApi, type MeetingType, type WorkplanEventType, type TenantUserOption, type WorkplanEvent } from "@/lib/api";
 
 export default function NewWorkplanEventPage() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function NewWorkplanEventPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<string>("meeting");
+  const [type, setType] = useState<WorkplanEvent["type"]>("meeting");
   const [meetingTypeId, setMeetingTypeId] = useState<number | "">("");
   const [date, setDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,7 +29,7 @@ export default function NewWorkplanEventPage() {
     workplanEventTypesApi.list().then((r) => {
       const types = r.data?.data ?? [];
       setEventTypes(types);
-      if (types.length > 0) setType(types[0].slug);
+      if (types.length > 0) setType(types[0].slug as WorkplanEvent["type"]);
     }).catch(() => setEventTypes([]));
   }, []);
 
@@ -111,7 +111,7 @@ export default function NewWorkplanEventPage() {
         </div>
         <div>
           <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
-          <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value)} required>
+          <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])} required>
             {eventTypes.map((et) => (
               <option key={et.slug} value={et.slug}>{et.name}</option>
             ))}

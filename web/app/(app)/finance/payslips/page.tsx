@@ -4,6 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { financeApi, type Payslip } from "@/lib/api";
 
+function getListData<T>(payload: unknown): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && typeof payload === "object" && "data" in payload) {
+    const nested = (payload as { data?: unknown }).data;
+    if (Array.isArray(nested)) return nested as T[];
+  }
+  return [];
+}
+
 function formatPeriod(p: Payslip): string {
   const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${months[p.period_month] ?? p.period_month} ${p.period_year}`;
@@ -16,7 +25,7 @@ export default function PayslipsPage() {
 
   useEffect(() => {
     financeApi.listPayslips({ per_page: 50 })
-      .then((res) => setPayslips((res.data as any).data ?? []))
+      .then((res) => setPayslips(getListData<Payslip>(res.data)))
       .catch(() => setError("Failed to load payslips."))
       .finally(() => setLoading(false));
   }, []);
@@ -87,7 +96,7 @@ export default function PayslipsPage() {
           <div className="divide-y divide-neutral-50">
             {payslips.map((p) => (
               <div key={p.id} className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 transition-colors">
-                <div className="flex items-center gap-3">
+                <Link href={`/finance/payslips/${p.id}`} className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <span className="material-symbols-outlined text-primary text-[20px]">description</span>
                   </div>
@@ -97,15 +106,24 @@ export default function PayslipsPage() {
                       Gross: {p.currency} {Number(p.gross_amount).toLocaleString()} &nbsp;·&nbsp; Net: {p.currency} {Number(p.net_amount).toLocaleString()}
                     </p>
                   </div>
+                </Link>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <Link
+                    href={`/finance/payslips/${p.id}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-700 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+                    View
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(p)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">download</span>
+                    Download
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDownload(p)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[15px]">download</span>
-                  Download
-                </button>
               </div>
             ))}
           </div>

@@ -29,6 +29,115 @@ function formatCurrency(amount: number, currency: string) {
   return `${currency} ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function getEntity<T>(payload: unknown): T | null {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return ((payload as { data?: unknown }).data as T) ?? null;
+  }
+  return (payload as T) ?? null;
+}
+
+function RepaymentSchedule({
+  advance,
+  formatCurrency,
+}: {
+  advance: SalaryAdvanceRequest;
+  formatCurrency: (amount: number, currency: string) => string;
+}) {
+  const monthly = advance.amount / advance.repayment_months;
+  const startDate = advance.approved_at ? new Date(advance.approved_at) : new Date();
+  // Repayments begin the month after approval
+  startDate.setDate(1);
+  startDate.setMonth(startDate.getMonth() + 1);
+
+  const now = new Date();
+  const rows = Array.from({ length: advance.repayment_months }, (_, i) => {
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + i);
+    const isPast = d < now;
+    const balance = advance.amount - monthly * (i + 1);
+    return { month: d, installment: monthly, balance: Math.max(0, balance), isPast };
+  });
+
+  const paidCount  = rows.filter((r) => r.isPast).length;
+  const paidAmount = paidCount * monthly;
+  const remaining  = advance.amount - paidAmount;
+  const progress   = Math.round((paidAmount / advance.amount) * 100);
+
+  return (
+    <div className="card p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+          <span className="material-symbols-outlined text-emerald-600 text-[16px]">calendar_month</span>
+        </div>
+        <h2 className="text-sm font-semibold text-neutral-900">Repayment Schedule</h2>
+        <span className="ml-auto text-xs text-neutral-400">{paidCount}/{advance.repayment_months} installments</span>
+      </div>
+
+      {/* Progress bar */}
+      <div>
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          <span className="text-neutral-500">Repaid: <span className="font-semibold text-neutral-800">{formatCurrency(paidAmount, advance.currency)}</span></span>
+          <span className="text-neutral-500">Remaining: <span className="font-semibold text-neutral-800">{formatCurrency(remaining, advance.currency)}</span></span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-neutral-100 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-[11px] text-neutral-400 mt-1">{progress}% repaid</p>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-neutral-100">
+              <th className="text-left py-2 text-xs font-semibold text-neutral-500">#</th>
+              <th className="text-left py-2 text-xs font-semibold text-neutral-500">Month</th>
+              <th className="text-right py-2 text-xs font-semibold text-neutral-500">Deduction</th>
+              <th className="text-right py-2 text-xs font-semibold text-neutral-500">Balance</th>
+              <th className="text-center py-2 text-xs font-semibold text-neutral-500">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-50">
+            {rows.map((row, i) => (
+              <tr key={i} className={row.isPast ? "opacity-60" : ""}>
+                <td className="py-2 pr-3 text-neutral-400 font-mono text-xs">{i + 1}</td>
+                <td className="py-2 font-medium text-neutral-800">
+                  {row.month.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                </td>
+                <td className="py-2 text-right font-semibold text-neutral-900">
+                  {formatCurrency(row.installment, advance.currency)}
+                </td>
+                <td className="py-2 text-right text-neutral-600">
+                  {formatCurrency(row.balance, advance.currency)}
+                </td>
+                <td className="py-2 text-center">
+                  {row.isPast ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                      Deducted
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-500 bg-neutral-100 rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-[12px]">schedule</span>
+                      Upcoming
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-[11px] text-neutral-400">
+        Deduction status is estimated based on approval date. Actual payroll records may differ.
+      </p>
+    </div>
+  );
+}
+
 export default function AdvanceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -51,7 +160,7 @@ export default function AdvanceDetailPage() {
     if (!Number.isFinite(id)) { router.replace("/finance/advances"); return; }
     setLoading(true);
     financeApi.getAdvance(id)
-      .then((res) => setAdvance(res.data))
+      .then((res) => setAdvance(getEntity<SalaryAdvanceRequest>(res.data)))
       .catch(() => setError("Could not load advance request."))
       .finally(() => setLoading(false));
   }, [id, router]);
@@ -230,6 +339,11 @@ export default function AdvanceDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Repayment Schedule */}
+      {(advance.status === "approved" || advance.status === "paid") && advance.repayment_months > 0 && (
+        <RepaymentSchedule advance={advance} formatCurrency={formatCurrency} />
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">

@@ -100,7 +100,7 @@ class CorrespondenceSeeder extends Seeder
             ['full_name' => 'Rev. Samuel Nkhoma',         'organization' => 'Council of Churches in Malawi',      'country' => 'Malawi',       'email' => 'snkhoma@ccm.org.mw',          'stakeholder_type' => 'ngo',            'group' => 'Civil Society'],
             // Regional Bodies
             ['full_name' => 'Mr. Leonard Shumba',         'organization' => 'SADC Secretariat',                   'country' => 'Botswana',     'email' => 'lshumba@sadc.int',            'stakeholder_type' => 'regional_body',  'group' => 'Regional Bodies'],
-            ['full_name' => 'Ms. Isabelle Nakagawa',      'organization' => 'African Parliamentary Union',         'country' => 'Côte d'Ivoire','email' => 'inakagawa@apu-upa.org',       'stakeholder_type' => 'regional_body',  'group' => 'Regional Bodies'],
+            ['full_name' => 'Ms. Isabelle Nakagawa',      'organization' => 'African Parliamentary Union',         'country' => "Côte d'Ivoire",'email' => 'inakagawa@apu-upa.org',       'stakeholder_type' => 'regional_body',  'group' => 'Regional Bodies'],
         ];
 
         $out = [];

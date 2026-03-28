@@ -990,12 +990,42 @@ export interface Vendor {
   address: string | null;
   is_approved: boolean;
   is_active: boolean;
+  quotes_count?: number;
+  created_at?: string;
+  recent_quotes?: VendorQuote[];
+}
+
+export interface VendorQuote {
+  id: number;
+  vendor_name: string;
+  quoted_amount: number;
+  currency: string;
+  is_recommended: boolean;
+  notes: string | null;
+  quote_date: string | null;
+  created_at: string;
+  procurement_request?: {
+    id: number;
+    reference_number: string;
+    title: string;
+    status: string;
+    category: string;
+    estimated_value: number;
+    currency: string;
+  };
 }
 
 export const vendorsApi = {
-  list: () => api.get<{ data: Vendor[] }>("/procurement/vendors"),
+  list: (params?: { search?: string; status?: string }) =>
+    api.get<{ data: Vendor[] }>("/procurement/vendors", { params }),
+  get: (id: number) =>
+    api.get<{ data: Vendor }>(`/procurement/vendors/${id}`),
   create: (data: Partial<Vendor>) =>
     api.post<{ data: Vendor; message: string }>("/procurement/vendors", data),
+  update: (id: number, data: Partial<Vendor>) =>
+    api.put<{ data: Vendor; message: string }>(`/procurement/vendors/${id}`, data),
+  destroy: (id: number) =>
+    api.delete<{ message: string }>(`/procurement/vendors/${id}`),
 };
 
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────
@@ -1870,6 +1900,13 @@ export const conductApi = {
     is_confidential?: boolean;
     hr_file_id?: number;
   }) => api.post<ConductRecord>("/hr/conduct", data),
+  update: (id: number, data: {
+    status?: string;
+    outcome?: string;
+    appeal_notes?: string;
+    resolution_date?: string;
+    reviewed_by?: number;
+  }) => api.put<ConductRecord>(`/hr/conduct/${id}`, data),
 };
 
 // ─── Work Assignments ─────────────────────────────────────────────────────────
@@ -1971,12 +2008,47 @@ export interface NotifTemplate {
   trigger_key: string;
   subject: string;
   body: string;
+  customised?: boolean;
 }
 
 export const notificationTemplatesApi = {
   list: () => api.get<NotifTemplate[]>("/admin/notification-templates"),
   update: (data: { trigger_key: string; subject: string; body: string }) =>
     api.put<NotifTemplate>("/admin/notification-templates", data),
+  testSend: (data: { trigger_key: string }) =>
+    api.post<{ message: string }>("/admin/notification-templates/test-send", data),
+};
+
+// ─── User Notifications ───────────────────────────────────────────────────────
+export interface UserNotification {
+  id: string;
+  trigger_key: string | null;
+  subject: string;
+  body: string;
+  meta: {
+    module?: string;
+    record_id?: number;
+    url?: string;
+  };
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationPage {
+  data: UserNotification[];
+  current_page: number;
+  last_page: number;
+  total: number;
+  per_page: number;
+}
+
+export const userNotificationsApi = {
+  list: (params?: { filter?: "all" | "unread" | "read"; per_page?: number; page?: number }) =>
+    api.get<NotificationPage>("/notifications", { params }),
+  unreadCount: () => api.get<{ count: number }>("/notifications/unread-count"),
+  markRead: (id: string) => api.post<{ message: string }>(`/notifications/${id}/read`),
+  markAllRead: () => api.post<{ message: string }>("/notifications/read-all"),
+  destroy: (id: string) => api.delete<{ message: string }>(`/notifications/${id}`),
 };
 
 // ─── Governance Config ───────────────────────────────────────────────────────
@@ -2050,6 +2122,8 @@ export const hrIncidentsApi = {
   get: (id: number) => api.get<HrIncident>(`/hr/incidents/${id}`),
   create: (data: { subject: string; description?: string; severity?: string }) =>
     api.post<{ data: HrIncident; message: string }>("/hr/incidents", data),
+  update: (id: number, data: { status?: HrIncident["status"]; description?: string; severity?: HrIncident["severity"] }) =>
+    api.put<{ data: HrIncident; message: string }>(`/hr/incidents/${id}`, data),
 };
 
 // ─── Support Tickets ───────────────────────────────────────────────────────────
@@ -2740,4 +2814,252 @@ export const saamApi = {
   /** Build the image URL for a signature version (served via the secure image endpoint) */
   signatureImageUrl: (versionId: number): string =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/saam/signature-image/${versionId}`,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SRHR — Field Researcher Deployment & Reporting Module
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface Parliament {
+  id: number;
+  tenant_id: number;
+  name: string;
+  country_code: string;
+  country_name: string;
+  city: string | null;
+  address: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
+  is_active: boolean;
+  notes: string | null;
+  created_at: string;
+  deployments_count?: number;
+  active_deployments_count?: number;
+  active_deployments?: Array<{
+    id: number;
+    employee: { id: number; name: string; email: string; job_title?: string | null };
+  }>;
+}
+
+export interface StaffDeployment {
+  id: number;
+  tenant_id: number;
+  employee_id: number;
+  parliament_id: number;
+  reference_number: string;
+  deployment_type: "field_researcher" | "srhr_researcher" | "secondment" | "other";
+  research_area: string | null;
+  research_focus: string | null;
+  start_date: string;
+  end_date: string | null;
+  status: "active" | "completed" | "recalled" | "suspended";
+  supervisor_name: string | null;
+  supervisor_title: string | null;
+  supervisor_email: string | null;
+  supervisor_phone: string | null;
+  terms_of_reference: string | null;
+  hr_managed_externally: boolean;
+  payroll_active: boolean;
+  notes: string | null;
+  recalled_at: string | null;
+  recalled_reason: string | null;
+  created_at: string;
+  employee?: { id: number; name: string; email: string; job_title?: string | null };
+  parliament?: Parliament;
+  created_by_user?: { id: number; name: string };
+  reports_count?: number;
+  reports?: ResearcherReport[];
+}
+
+export interface ResearcherReportActivity {
+  title: string;
+  description?: string;
+  date?: string;
+  outcome?: string;
+}
+
+export interface ResearcherReportAttachment {
+  id: number;
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  document_type: string;
+  created_at: string;
+  uploader?: { id: number; name: string };
+}
+
+export interface ResearcherReport {
+  id: number;
+  tenant_id: number;
+  deployment_id: number;
+  employee_id: number;
+  parliament_id: number;
+  reference_number: string;
+  report_type: "monthly" | "quarterly" | "annual" | "ad_hoc";
+  period_start: string;
+  period_end: string;
+  title: string;
+  status: "draft" | "submitted" | "acknowledged" | "revision_requested" | "archived";
+  executive_summary: string | null;
+  activities_undertaken: ResearcherReportActivity[] | null;
+  challenges_faced: string | null;
+  recommendations: string | null;
+  next_period_plan: string | null;
+  srhr_indicators: Record<string, string | number> | null;
+  submitted_at: string | null;
+  acknowledged_at: string | null;
+  revision_notes: string | null;
+  created_at: string;
+  employee?: { id: number; name: string; email: string };
+  parliament?: Parliament;
+  deployment?: StaffDeployment;
+  acknowledged_by_user?: { id: number; name: string };
+  attachments?: ResearcherReportAttachment[];
+}
+
+export const parliamentsApi = {
+  list: (params?: {
+    country_code?: string;
+    is_active?: boolean;
+    search?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
+    api.get<PaginatedResponse<Parliament>>("/srhr/parliaments", { params }),
+
+  get: (id: number) =>
+    api.get<{ data: Parliament }>(`/srhr/parliaments/${id}`),
+
+  create: (data: Partial<Parliament>) =>
+    api.post<{ message: string; data: Parliament }>("/srhr/parliaments", data),
+
+  update: (id: number, data: Partial<Parliament>) =>
+    api.put<{ message: string; data: Parliament }>(`/srhr/parliaments/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/srhr/parliaments/${id}`),
+};
+
+export const deploymentsApi = {
+  list: (params?: {
+    parliament_id?: number;
+    employee_id?: number;
+    status?: string;
+    deployment_type?: string;
+    search?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
+    api.get<PaginatedResponse<StaffDeployment>>("/srhr/deployments", { params }),
+
+  get: (id: number) =>
+    api.get<{ data: StaffDeployment }>(`/srhr/deployments/${id}`),
+
+  create: (data: {
+    employee_id: number;
+    parliament_id: number;
+    deployment_type?: string;
+    research_area?: string;
+    research_focus?: string;
+    start_date: string;
+    end_date?: string | null;
+    supervisor_name?: string;
+    supervisor_title?: string;
+    supervisor_email?: string;
+    supervisor_phone?: string;
+    terms_of_reference?: string;
+    payroll_active?: boolean;
+    notes?: string;
+  }) =>
+    api.post<{ message: string; data: StaffDeployment }>("/srhr/deployments", data),
+
+  update: (id: number, data: Partial<StaffDeployment>) =>
+    api.put<{ message: string; data: StaffDeployment }>(`/srhr/deployments/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/srhr/deployments/${id}`),
+
+  recall: (id: number, recalled_reason: string) =>
+    api.post<{ message: string; data: StaffDeployment }>(`/srhr/deployments/${id}/recall`, { recalled_reason }),
+
+  complete: (id: number) =>
+    api.post<{ message: string; data: StaffDeployment }>(`/srhr/deployments/${id}/complete`),
+};
+
+export const researcherReportsApi = {
+  list: (params?: {
+    deployment_id?: number;
+    parliament_id?: number;
+    employee_id?: number;
+    status?: string;
+    report_type?: string;
+    search?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
+    api.get<PaginatedResponse<ResearcherReport>>("/srhr/reports", { params }),
+
+  get: (id: number) =>
+    api.get<{ data: ResearcherReport }>(`/srhr/reports/${id}`),
+
+  create: (data: {
+    deployment_id: number;
+    report_type: string;
+    period_start: string;
+    period_end: string;
+    title: string;
+    executive_summary?: string;
+    activities_undertaken?: ResearcherReportActivity[];
+    challenges_faced?: string;
+    recommendations?: string;
+    next_period_plan?: string;
+    srhr_indicators?: Record<string, string | number>;
+  }) =>
+    api.post<{ message: string; data: ResearcherReport }>("/srhr/reports", data),
+
+  update: (id: number, data: Partial<ResearcherReport>) =>
+    api.put<{ message: string; data: ResearcherReport }>(`/srhr/reports/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/srhr/reports/${id}`),
+
+  submit: (id: number) =>
+    api.post<{ message: string; data: ResearcherReport }>(`/srhr/reports/${id}/submit`),
+
+  acknowledge: (id: number) =>
+    api.post<{ message: string; data: ResearcherReport }>(`/srhr/reports/${id}/acknowledge`),
+
+  requestRevision: (id: number, revision_notes: string) =>
+    api.post<{ message: string; data: ResearcherReport }>(`/srhr/reports/${id}/request-revision`, { revision_notes }),
+
+  listAttachments: (id: number) =>
+    api.get<{ data: ResearcherReportAttachment[] }>(`/srhr/reports/${id}/attachments`),
+
+  uploadAttachment: (id: number, file: File, document_type?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (document_type) form.append("document_type", document_type);
+    return api.post<{ message: string; data: ResearcherReportAttachment }>(
+      `/srhr/reports/${id}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  deleteAttachment: (reportId: number, attachmentId: number) =>
+    api.delete(`/srhr/reports/${reportId}/attachments/${attachmentId}`),
+
+  downloadAttachment: (reportId: number, attachmentId: number, filename: string) =>
+    api
+      .get(`/srhr/reports/${reportId}/attachments/${attachmentId}/download`, { responseType: "blob" })
+      .then((res) => {
+        const url = URL.createObjectURL(res.data as Blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }),
 };

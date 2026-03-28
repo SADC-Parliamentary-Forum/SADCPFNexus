@@ -52,6 +52,15 @@ Route::prefix('v1')->group(function () {
         Route::delete('profile/documents/{attachment}', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'destroy']);
         Route::get('profile/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'download']);
 
+        // User Notifications (in-app notification centre)
+        Route::prefix('notifications')->group(function () {
+            Route::get('/',            [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'index']);
+            Route::get('/unread-count',[\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'unreadCount']);
+            Route::post('/{id}/read', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markRead']);
+            Route::post('/read-all',  [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markAllRead']);
+            Route::delete('/{id}',    [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'destroy']);
+        });
+
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
         Route::get('dashboard/upcoming-social', [\App\Http\Controllers\Api\V1\DashboardController::class, 'upcomingSocial']);
 
@@ -110,6 +119,7 @@ Route::prefix('v1')->group(function () {
             // Notification Templates
             Route::get('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'index']);
             Route::put('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'updateByTrigger']);
+            Route::post('notification-templates/test-send', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'testSend']);
 
             // Positions (establishment register)
             Route::apiResource('positions', \App\Http\Controllers\Api\V1\Admin\PositionController::class);
@@ -203,8 +213,8 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
 
             // Vendors
-            Route::get('vendors', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'index']);
-            Route::post('vendors', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'store']);
+            Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)
+                ->names('procurement.vendors');
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets
@@ -304,6 +314,7 @@ Route::prefix('v1')->group(function () {
             Route::get('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'index']);
             Route::get('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'show']);
             Route::post('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'store']);
+            Route::put('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'update']);
         });
 
         // Programmes (PIF)
@@ -493,6 +504,41 @@ Route::prefix('v1')->group(function () {
             Route::post('documents/generate/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'generate']);
             Route::get('documents/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'show']);
             Route::get('documents/download/{document}', [\App\Http\Controllers\Api\V1\Saam\SignedDocumentController::class, 'download']);
+        });
+
+        // SRHR — Field Researcher Deployment & Reporting Module
+        Route::prefix('srhr')->group(function () {
+            // Parliaments
+            Route::get('parliaments', [\App\Http\Controllers\Api\V1\Srhr\ParliamentController::class, 'index']);
+            Route::post('parliaments', [\App\Http\Controllers\Api\V1\Srhr\ParliamentController::class, 'store']);
+            Route::get('parliaments/{parliament}', [\App\Http\Controllers\Api\V1\Srhr\ParliamentController::class, 'show']);
+            Route::put('parliaments/{parliament}', [\App\Http\Controllers\Api\V1\Srhr\ParliamentController::class, 'update']);
+            Route::delete('parliaments/{parliament}', [\App\Http\Controllers\Api\V1\Srhr\ParliamentController::class, 'destroy']);
+
+            // Staff Deployments
+            Route::get('deployments', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'index']);
+            Route::post('deployments', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'store']);
+            Route::get('deployments/{staffDeployment}', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'show']);
+            Route::put('deployments/{staffDeployment}', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'update']);
+            Route::delete('deployments/{staffDeployment}', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'destroy']);
+            Route::post('deployments/{staffDeployment}/recall', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'recall']);
+            Route::post('deployments/{staffDeployment}/complete', [\App\Http\Controllers\Api\V1\Srhr\StaffDeploymentController::class, 'complete']);
+
+            // Researcher Reports
+            Route::get('reports', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'index']);
+            Route::post('reports', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'store']);
+            Route::get('reports/{researcherReport}', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'show']);
+            Route::put('reports/{researcherReport}', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'update']);
+            Route::delete('reports/{researcherReport}', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'destroy']);
+            Route::post('reports/{researcherReport}/submit', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'submit']);
+            Route::post('reports/{researcherReport}/acknowledge', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'acknowledge']);
+            Route::post('reports/{researcherReport}/request-revision', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportController::class, 'requestRevision']);
+
+            // Report Attachments
+            Route::get('reports/{researcherReport}/attachments', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportAttachmentController::class, 'index']);
+            Route::post('reports/{researcherReport}/attachments', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportAttachmentController::class, 'store']);
+            Route::delete('reports/{researcherReport}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportAttachmentController::class, 'destroy']);
+            Route::get('reports/{researcherReport}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportAttachmentController::class, 'download']);
         });
 
         // Admin Workflows

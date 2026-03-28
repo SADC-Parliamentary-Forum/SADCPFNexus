@@ -2,9 +2,100 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { analyticsApi, type AnalyticsSummary } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
 const MONTHS_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// ─── Module colour map for bar chart ─────────────────────────────────────────
+const MODULE_COLORS: Record<string, { bar: string; bg: string; icon: string; iconColor: string }> = {
+  travel:      { bar: "bg-blue-500",    bg: "bg-blue-50",    icon: "flight",          iconColor: "text-blue-500" },
+  leave:       { bar: "bg-emerald-500", bg: "bg-emerald-50", icon: "event_busy",      iconColor: "text-emerald-600" },
+  imprest:     { bar: "bg-amber-500",   bg: "bg-amber-50",   icon: "payments",        iconColor: "text-amber-600" },
+  procurement: { bar: "bg-violet-500",  bg: "bg-violet-50",  icon: "shopping_cart",   iconColor: "text-violet-600" },
+  finance:     { bar: "bg-sky-500",     bg: "bg-sky-50",     icon: "account_balance",  iconColor: "text-sky-600" },
+  hr:          { bar: "bg-rose-500",    bg: "bg-rose-50",    icon: "people",          iconColor: "text-rose-500" },
+  governance:  { bar: "bg-indigo-500",  bg: "bg-indigo-50",  icon: "gavel",           iconColor: "text-indigo-600" },
+  assets:      { bar: "bg-orange-500",  bg: "bg-orange-50",  icon: "inventory",       iconColor: "text-orange-600" },
+  workplan:    { bar: "bg-teal-500",    bg: "bg-teal-50",    icon: "calendar_month",  iconColor: "text-teal-600" },
+};
+const DEFAULT_MODULE_COLOR = { bar: "bg-neutral-400", bg: "bg-neutral-50", icon: "folder", iconColor: "text-neutral-500" };
+
+const MODULE_URLS: Record<string, string> = {
+  travel:      "/travel",
+  leave:       "/leave",
+  imprest:     "/imprest",
+  procurement: "/procurement",
+  finance:     "/finance",
+  hr:          "/hr",
+  governance:  "/governance",
+  assets:      "/assets",
+  workplan:    "/workplan",
+};
+
+function ModuleBarChart({ modules }: { modules: { module: string; label: string; count: number }[] }) {
+  const router = useRouter();
+  if (modules.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-neutral-300 gap-2">
+        <span className="material-symbols-outlined text-[36px]">bar_chart</span>
+        <p className="text-sm text-neutral-400">No module data available</p>
+      </div>
+    );
+  }
+
+  const totalCount = modules.reduce((s, m) => s + m.count, 0) || 1;
+  const maxCount = Math.max(...modules.map((m) => m.count), 1);
+
+  return (
+    <div className="space-y-3">
+      {modules.map((mod) => {
+        const pct = Math.round((mod.count / totalCount) * 100);
+        const barPct = Math.round((mod.count / maxCount) * 100);
+        const colors = MODULE_COLORS[mod.module?.toLowerCase()] ?? DEFAULT_MODULE_COLOR;
+        const url = MODULE_URLS[mod.module?.toLowerCase()];
+        return (
+          <div
+            key={mod.module}
+            className={`flex items-center gap-4 group ${url ? "cursor-pointer" : ""}`}
+            onClick={() => url && router.push(url)}
+            title={url ? `View ${mod.label || mod.module} records` : undefined}
+          >
+            {/* Module icon */}
+            <div className={`h-8 w-8 rounded-lg ${colors.bg} flex items-center justify-center shrink-0`}>
+              <span className={`material-symbols-outlined text-[16px] ${colors.iconColor}`}>{colors.icon}</span>
+            </div>
+            {/* Module label */}
+            <div className={`w-24 text-sm font-medium shrink-0 capitalize truncate ${url ? "text-primary group-hover:underline" : "text-neutral-700"}`}>
+              {mod.label || mod.module}
+            </div>
+            {/* Bar track */}
+            <div className="flex-1 h-7 bg-neutral-100 rounded-lg overflow-hidden">
+              <div
+                className={`h-full ${colors.bar} rounded-lg transition-all duration-500 group-hover:brightness-110`}
+                style={{ width: `${Math.max(barPct, 1)}%` }}
+              />
+            </div>
+            {/* Count */}
+            <div className="w-14 text-right">
+              <span className="text-sm font-bold text-neutral-900">{mod.count.toLocaleString()}</span>
+            </div>
+            {/* Percentage + arrow */}
+            <div className="w-10 text-right flex items-center justify-end gap-1">
+              <span className="text-xs text-neutral-400">{pct}%</span>
+              {url && <span className="material-symbols-outlined text-[12px] text-neutral-300 group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all">arrow_forward</span>}
+            </div>
+          </div>
+        );
+      })}
+      <div className="pt-2 border-t border-neutral-100 flex justify-between text-xs text-neutral-400">
+        <span>Total requests across all modules</span>
+        <span className="font-semibold text-neutral-600">{totalCount.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
 
 // Build SVG polyline path from data points
 function buildPath(pts: number[], w: number, h: number): string {
@@ -193,6 +284,33 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Module Activity Breakdown — horizontal bar chart (CSS only) */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+              <span className="material-symbols-outlined text-neutral-400 text-lg">bar_chart</span>
+              Module Activity Breakdown
+            </h3>
+            <p className="text-sm text-neutral-500">Request counts per module for the selected period.</p>
+          </div>
+          <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-1 rounded font-medium">{period}</span>
+        </div>
+        {loading ? (
+          <div className="space-y-3 animate-pulse">
+            {[85, 60, 45, 72, 38].map((w, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="h-3 w-20 bg-neutral-100 rounded" />
+                <div className="flex-1 h-7 bg-neutral-100 rounded-lg" style={{ maxWidth: `${w}%` }} />
+                <div className="h-3 w-8 bg-neutral-100 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ModuleBarChart modules={data?.by_module ?? []} />
+        )}
+      </div>
+
       {/* Bottom row: heatmap + recent activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Heatmap */}
@@ -263,7 +381,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-neutral-800 group-hover:text-primary transition-colors">{r.event} · {r.module}</p>
-                      <p className="text-xs text-neutral-400">{r.user} · {r.timestamp}</p>
+                      <p className="text-xs text-neutral-400">{r.user} · {formatDateShort(r.timestamp)}</p>
                     </div>
                   </div>
                 </div>

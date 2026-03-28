@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { adminApi, lookupsApi, type Department, type Role, type Portfolio } from "@/lib/api";
+import { adminApi, lookupsApi, positionsApi, type Department, type Role, type Portfolio, type Position } from "@/lib/api";
 
 // ─── Module Permission Matrix ────────────────────────────────────────────────
 export interface ModulePermission {
@@ -26,6 +26,7 @@ const MODULE_DEFINITIONS: Omit<ModulePermission, "granted">[] = [
   { module: "Reports", icon: "assessment", actions: ["view", "export"] },
   { module: "Assets", icon: "inventory_2", actions: ["view", "create", "edit", "admin"] },
   { module: "Governance", icon: "policy", actions: ["view", "create", "edit", "admin"] },
+  { module: "SRHR", icon: "biotech", actions: ["view", "create", "edit", "admin"] },
   { module: "Admin", icon: "admin_panel_settings", actions: ["view", "users", "roles", "settings", "audit"] },
 ];
 
@@ -57,6 +58,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Programmes: ["view", "create", "edit", "admin"], Workplan: ["view", "create", "edit", "admin"],
     HR: ["view", "create", "edit", "approve", "admin"], Reports: ["view", "export"],
     Assets: ["view", "create", "edit", "admin"], Governance: ["view", "create", "edit", "admin"],
+    SRHR: ["view", "create", "edit", "admin"],
     Admin: ["view", "users", "roles", "settings", "audit"],
   },
   "Finance Officer": {
@@ -66,7 +68,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Programmes: ["view"], Workplan: ["view"],
     HR: ["view"], Reports: ["view", "export"],
     Assets: ["view"], Governance: ["view"],
-    Admin: [],
+    SRHR: [], Admin: [],
   },
   "HR Officer": {
     Dashboard: ["view"], Alerts: ["view"],
@@ -75,7 +77,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Programmes: ["view"], Workplan: ["view"],
     HR: ["view", "create", "edit", "approve"], Reports: ["view", "export"],
     Assets: ["view"], Governance: ["view"],
-    Admin: ["view"],
+    SRHR: [], Admin: ["view"],
   },
   Staff: {
     Dashboard: ["view"], Alerts: ["view"],
@@ -84,7 +86,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Programmes: ["view"], Workplan: ["view"],
     HR: ["view"], Reports: ["view"],
     Assets: ["view"], Governance: ["view"],
-    Admin: [],
+    SRHR: [], Admin: [],
   },
   "Read Only": {
     Dashboard: ["view"], Alerts: ["view"],
@@ -93,6 +95,16 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Programmes: ["view"], Workplan: ["view"],
     HR: ["view"], Reports: ["view"],
     Assets: ["view"], Governance: ["view"],
+    SRHR: [], Admin: [],
+  },
+  "SRHR Researcher": {
+    Dashboard: ["view"], Alerts: ["view"],
+    Travel: ["view", "create"], Leave: ["view", "create"],
+    Finance: ["view"], Imprest: ["view", "create"],
+    Programmes: ["view"], Workplan: ["view"],
+    HR: ["view"], Reports: ["view", "export"],
+    Assets: ["view"], Governance: ["view"],
+    SRHR: ["view", "create", "edit"],
     Admin: [],
   },
 };
@@ -158,23 +170,47 @@ export default function AdminUserCreatePage() {
     address_line1: "", address_line2: "", city: "", country: "",
     portfolio_ids: [],
   });
+  const [positions, setPositions] = useState<Position[]>([]);
   const [isCreatingDept, setIsCreatingDept] = useState(false);
   const [newDeptName, setNewDeptName] = useState("");
+  const [isCreatingJobTitle, setIsCreatingJobTitle] = useState(false);
+  const [newJobTitle, setNewJobTitle] = useState("");
 
   useEffect(() => {
     Promise.all([
       adminApi.listDepartments(),
       adminApi.listRoles(),
       adminApi.listPortfolios(),
+      positionsApi.list({ all: true }),
       lookupsApi.get(["classifications"])
     ])
-      .then(([deptRes, rolesRes, portRes]) => {
+      .then(([deptRes, rolesRes, portRes, posRes]) => {
         setDepartments(deptRes.data.data ?? []);
         setRoles(rolesRes.data.roles ?? []);
         setPortfolios(portRes.data ?? []);
+        setPositions((posRes.data as any).data ?? []);
       })
       .catch(() => setError("Failed to load departments, roles, and portfolios."));
   }, []);
+
+  const handleCreateJobTitle = async () => {
+    if (!newJobTitle.trim()) return;
+    try {
+      await positionsApi.create({
+        title: newJobTitle.trim(),
+        department_id: form.department_id ? Number(form.department_id) : undefined as any,
+        headcount: 1,
+        is_active: true,
+      });
+      const posRes = await positionsApi.list({ all: true });
+      setPositions((posRes.data as any).data ?? []);
+      set("job_title", newJobTitle.trim());
+      setIsCreatingJobTitle(false);
+      setNewJobTitle("");
+    } catch {
+      setError("Failed to create job title.");
+    }
+  };
 
   const handleCreateDepartment = async () => {
     if (!newDeptName.trim()) return;
@@ -326,26 +362,6 @@ export default function AdminUserCreatePage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Employee Number</label>
               <input className="form-input" placeholder="EMP-0001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Job Title</label>
-              <input className="form-input" placeholder="e.g. Finance Officer" value={form.job_title} onChange={(e) => set("job_title", e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
-              <input type="tel" className="form-input" placeholder="+264 61 000 0000" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date of Birth</label>
-              <input type="date" className="form-input" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Join Date</label>
-              <input type="date" className="form-input" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Bio</label>
-              <textarea className="form-input" placeholder="A brief biography" value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
-            </div>
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Department <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
@@ -365,6 +381,70 @@ export default function AdminUserCreatePage() {
                   </button>
                 )}
               </div>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Job Title</label>
+              <div className="flex gap-2">
+                <select
+                  className="form-input flex-1"
+                  value={form.job_title}
+                  onChange={(e) => set("job_title", e.target.value)}
+                  disabled={isCreatingJobTitle}
+                >
+                  <option value="">Select job title…</option>
+                  {positions.map((p) => (
+                    <option key={p.id} value={p.title}>{p.title}{p.department ? ` — ${p.department.name}` : ""}</option>
+                  ))}
+                  {form.job_title && !positions.some((p) => p.title === form.job_title) && (
+                    <option value={form.job_title}>{form.job_title}</option>
+                  )}
+                </select>
+                {isCreatingJobTitle ? (
+                  <div className="flex gap-2 flex-1">
+                    <input
+                      autoFocus
+                      className="form-input flex-1"
+                      placeholder="e.g. Finance Officer"
+                      value={newJobTitle}
+                      onChange={(e) => setNewJobTitle(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateJobTitle())}
+                    />
+                    <button type="button" onClick={handleCreateJobTitle} className="btn-primary px-3 text-xs" disabled={!newJobTitle.trim()}>Save</button>
+                    <button type="button" onClick={() => { setIsCreatingJobTitle(false); setNewJobTitle(""); }} className="btn-secondary px-3 text-xs">Cancel</button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingJobTitle(true)}
+                    title={!form.department_id ? "Select a department first" : "Create a new job title"}
+                    className="btn-secondary px-3 flex items-center gap-1 text-xs whitespace-nowrap"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add</span> New
+                  </button>
+                )}
+              </div>
+              {!form.department_id && isCreatingJobTitle && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[13px]">info</span>
+                  Select a department first — the new position will be linked to it.
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
+              <input type="tel" className="form-input" placeholder="+264 61 000 0000" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date of Birth</label>
+              <input type="date" className="form-input" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Join Date</label>
+              <input type="date" className="form-input" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Bio</label>
+              <textarea className="form-input" placeholder="A brief biography" value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
             </div>
           </div>
         </div>

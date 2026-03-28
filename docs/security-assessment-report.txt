@@ -1,0 +1,144 @@
+SADCPFNexus — Security assessment report
+Date: 2026-03-28
+Scope: Laravel API (api/), Next.js web (web/), repository configuration and authorization patterns.
+
+================================================================================
+1. DEPENDENCY AUDIT (Phase 1)
+================================================================================
+
+PHP / Composer (api/)
+  Command: composer audit
+  Result after remediation: No security vulnerability advisories found.
+
+  Actions taken:
+  - Upgraded league/commonmark 2.8.0 -> 2.8.2 (transitive via Laravel stack; addresses
+    CVE-2026-30838 and CVE-2026-33347 per published ranges for league/commonmark).
+
+  Ongoing: Review weekly Dependabot PRs (.github/dependabot.yml).
+
+JavaScript / npm (web/)
+  Command: npm audit
+  Result: 3 vulnerabilities remain (1 moderate, 1 high, 1 critical) — all via transitive chain:
+
+  Root cause: jspdf ^2.5.2 (direct) and jspdf-autotable ^3.8.4 pull dompurify <=3.3.1 and
+  jspdf versions with multiple published GHSA advisories (ReDoS, path traversal, PDF/JS
+  injection class issues — severity varies by advisory).
+
+  Recommended remediation (requires QA of PDF flows):
+  - Upgrade jspdf to >=4.2.1 and jspdf-autotable to a compatible 5.x release (npm audit
+    suggests jspdf-autotable@5.0.7). This is a breaking-change upgrade: regression-test
+    all PDF generation (payslips, exports, reports).
+
+  Actions taken:
+  - Upgraded next 16.1.6 -> 16.2.1 to address Next.js advisories (HTTP smuggling in rewrites,
+    image cache growth, postponed resume buffering, Server Actions / HMR CSRF issues — ranges
+    were <16.1.7).
+
+================================================================================
+2. CONFIGURATION & SECRETS (Phase 2)
+================================================================================
+
+Repository scan (pattern search for sk_live, sk_test, AKIA…): No matches in tracked code
+extensions commonly used for secrets.
+
+Environment files:
+  - api/.env.example and web/.env* patterns: Use APP_DEBUG=false and APP_ENV=production in
+    real deployments. api/bootstrap/app.php includes exception details in JSON when
+    APP_DEBUG is true — unsafe for shared or production-like environments.
+
+  - Root .env.example contains AWS_SECRET_ACCESS_KEY=secret123456 — illustrative only;
+    ensure this file is never copied into production as-is; prefer non-credential placeholders
+    in shared examples.
+
+  - web/.env.local is gitignored (web/.gitignore); do not commit real tokens.
+
+Sanctum / CORS (review checklist for production):
+  - FRONTEND_URL and SANCTUM_STATEFUL_DOMAINS must match actual browser origins.
+  - api/config/cors.php allows localhost patterns only when APP_ENV is local/development/testing.
+
+================================================================================
+3. AUTHORIZATION & BOLA / IDOR (Phase 3) — CODE REVIEW + MANUAL TEST CHECKLIST
+================================================================================
+
+Pattern observed:
+  - Admin and HR Settings controllers use $this->authorize() with policies (e.g. Users,
+    Departments, Portfolios, GradeBand, etc.).
+  - Many module controllers (Travel, Imprest, etc.) rely on service-layer checks and/or
+    PostgreSQL RLS (SetRlsContext) rather than explicit Gate calls in the controller.
+
+Notable findings:
+
+  (A) External workplan API — MEDIUM (intent / scope)
+  File: api/app/Http/Controllers/Api/V1/Workplan/WorkplanExternalController.php
+  Route: GET /api/v1/external/workplan
+  Issue: No permission check beyond auth:sanctum. Any authenticated user with a valid token
+  can list workplan events for the tenant (RLS may still scope rows by tenant in PostgreSQL).
+  Remediation if stricter scope is required: middleware such as permission:external.workplan
+  or a dedicated integration role; document intended consumers.
+
+  (B) Travel module — MEDIUM (verify in staging; code review)
+  File: api/app/Modules/Travel/Services/TravelService.php
+  - REMEDIATED (2026-03-28): update() now enforces the same requester / System Admin rule as
+    delete() before mutating a draft. Re-test with RLS on/off.
+  - Historical note: Previously, update() did not verify requester_id (BOLA risk within tenant).
+  File: api/app/Http/Controllers/Api/V1/Travel/TravelController.php
+  - show() returns TravelRequest via route model binding without an explicit authorize() call;
+    confirm whether peers may read each other’s requests by ID (product/RLS decision).
+  Manual tests:
+  - Staff A: GET /api/v1/travel/requests/{id} for Staff B’s request in same tenant — expect
+    403/404 if policy requires; if RLS only, confirm DB policy matches product intent.
+  - Cross-tenant ID guess: expect 404 or empty (RLS or global scope).
+
+  (C) Regression testing gap
+  Many Feature tests under api/tests/Feature/ appear removed in the working tree. Restore
+  targeted API tests for authz on critical routes to prevent regressions.
+
+Authorization matrix (manual pass/fail — fill in during staging run):
+
+  Role \\ Area              | /api/v1/admin/* | /api/v1/travel/* | /api/v1/external/workplan
+  --------------------------|------------------|------------------|---------------------------
+  Staff / typical user      | 403 expected     | own + workflow   | 200 (current) — confirm OK
+  HR Manager / Finance etc. | per policy       | list/approve     | 200 — confirm OK
+  System Admin              | allow            | allow            | allow
+
+================================================================================
+4. OWASP ZAP — BASELINE DAST (Phase 4, optional)
+================================================================================
+
+Prerequisites: Running stack (e.g. docker-compose) and target URL(s).
+
+  A) Passive/baseline against the Next.js origin (replace URL and token as needed):
+
+     docker run --rm -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+       -t http://host.docker.internal:3000 \
+       -r zap-baseline-report.html
+
+  B) API with Bearer token: use ZAP authentication context (Manual Explore) or import OpenAPI
+     if available; attach Authorization: Bearer <token> for authenticated routes. SPAs limit
+     crawl coverage — combine with the manual API checks in section 3.
+
+  C) Store reports outside the repo or under a local-only path; do not commit live scan
+     outputs with real URLs/tokens.
+
+================================================================================
+5. SEVERITY SUMMARY
+================================================================================
+
+  Critical / High (npm): jspdf + dompurify chain — remediation planned as major upgrade + QA.
+  Medium: External workplan route scope (if integration-only was intended).
+  Low: Debug leakage risk if APP_DEBUG=true in non-local environments; weak example secret
+       string in sample .env (documentation hygiene).
+
+================================================================================
+6. NEXT STEPS
+================================================================================
+
+  1. Schedule jspdf / jspdf-autotable major upgrade with full PDF regression testing.
+  2. Run manual authorization matrix in a staging environment with PostgreSQL + RLS enabled.
+  3. Optionally tighten WorkplanExternalController with role/permission middleware.
+  4. Re-enable or add API Feature tests for critical authz paths.
+  5. Run OWASP ZAP baseline after major releases or infra changes.
+
+================================================================================
+End of report
+================================================================================

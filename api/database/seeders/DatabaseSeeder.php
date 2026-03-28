@@ -23,7 +23,8 @@ use Illuminate\Database\Seeder;
  * 13. Workplan events + calendar
  * 14. Correspondence + contacts
  * 15. SAAM (delegated authorities)
- * 16. Missing modules (meeting types, vendors, quotes, meeting minutes, timesheets)
+ * 16. SRHR (parliaments, researcher deployments, sample reports)
+ * 17. Missing modules (meeting types, vendors, quotes, meeting minutes, timesheets)
  */
 class DatabaseSeeder extends Seeder
 {
@@ -65,6 +66,9 @@ class DatabaseSeeder extends Seeder
 
             // ── SAAM ───────────────────────────────────────
             SaamSeeder::class,
+
+            // ── SRHR — Field Researcher Module ─────────────
+            SrhrSeeder::class,
 
             // ── Supplementary Data ─────────────────────────
             MissingModulesSeeder::class,

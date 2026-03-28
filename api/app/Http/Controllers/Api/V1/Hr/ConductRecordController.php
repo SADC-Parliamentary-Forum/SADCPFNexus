@@ -82,6 +82,44 @@ class ConductRecordController extends Controller
     }
 
     /**
+     * Update a conduct record (status, outcome, investigation notes). HR/admin/supervisor only.
+     */
+    public function update(Request $request, ConductRecord $conductRecord): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($conductRecord->tenant_id !== $user->tenant_id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if (! $this->canViewAll($user)) {
+            return response()->json(['message' => 'Forbidden. Requires HR or supervisor role.'], 403);
+        }
+
+        if ($conductRecord->status === 'closed') {
+            return response()->json(['message' => 'Closed records cannot be modified.'], 422);
+        }
+
+        $validated = $request->validate([
+            'status'          => 'nullable|string|in:open,acknowledged,under_appeal,resolved,closed',
+            'outcome'         => 'nullable|string',
+            'appeal_notes'    => 'nullable|string',
+            'resolution_date' => 'nullable|date',
+            'reviewed_by'     => 'nullable|integer|exists:users,id',
+        ]);
+
+        $conductRecord->update(array_filter($validated, fn ($v) => $v !== null));
+
+        $conductRecord->load([
+            'employee:id,name,email',
+            'recordedBy:id,name,email',
+            'reviewedBy:id,name,email',
+        ]);
+
+        return response()->json($conductRecord);
+    }
+
+    /**
      * Create a conduct record. HR/admin/supervisor only.
      */
     public function store(Request $request): JsonResponse

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { auditApi, type AuditLogEntry } from "@/lib/api";
 import { AUDIT_ACTION_BADGE, ADMIN_MODULES } from "@/lib/constants";
+import { formatDateShort } from "@/lib/utils";
 
 const MODULES = ["All", ...ADMIN_MODULES];
 const ACTION_BADGE = AUDIT_ACTION_BADGE;
@@ -134,7 +135,7 @@ export default function AuditPage() {
                   <tr><td colSpan={6} className="text-center py-12 text-neutral-400">No audit entries found</td></tr>
                 ) : logs.map((l) => (
                   <tr key={l.id}>
-                    <td className="font-mono text-xs text-neutral-500 whitespace-nowrap">{l.timestamp}</td>
+                    <td className="text-xs text-neutral-500 whitespace-nowrap">{formatDateShort(l.timestamp)}</td>
                     <td className="text-xs text-neutral-700">{l.user}</td>
                     <td><span className={`badge ${ACTION_BADGE[l.action as keyof typeof ACTION_BADGE] ?? "badge-muted"}`}>{l.action}</span></td>
                     <td className="text-neutral-600">{l.module}</td>

@@ -25,7 +25,8 @@ const TYPE_COLOR: Record<string, { bg: string; text: string; border: string; bar
 };
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+// Mon-first week. For grid offset math we use Mon=0 ... Sun=6
+const DAY_NAMES_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
 type ViewMode = "list" | "calendar" | "gantt";
 
@@ -67,12 +68,22 @@ function formatDate(s: string) {
 // Multi-day event segment in one week row: event + start day (1-31) + end day (1-31) for that segment
 type CalendarSpan = { ev: WorkplanEvent; startDay: number; endDay: number };
 
+// Icon per event type for the side panel
+const TYPE_ICON: Record<string, string> = {
+  meeting:   "groups",
+  travel:    "flight_takeoff",
+  leave:     "beach_access",
+  milestone: "flag",
+  deadline:  "alarm",
+};
+
 function CalendarView({
   events,
   year,
   month,
   onPrev,
   onNext,
+  onToday,
   onOpenEvent,
   onDeleteEvent,
 }: {
@@ -81,20 +92,30 @@ function CalendarView({
   month: number; // 0-indexed
   onPrev: () => void;
   onNext: () => void;
+  onToday: () => void;
   onOpenEvent: (id: number) => void;
   onDeleteEvent: (id: number) => void;
 }) {
-  const today = ymd(new Date());
+  const todayStr = ymd(new Date());
+  const todayDate = new Date();
+  const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
 
-  // Build day grid
+  // Selected day for the side panel (null = closed)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  // Close panel when month changes
+  useEffect(() => { setSelectedDay(null); }, [year, month]);
+
+  // Build day grid (Mon-first: Mon=0 … Sun=6)
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startOffset = firstDay.getDay(); // 0 = Sunday
+  // Convert JS getDay() (0=Sun … 6=Sat) → Mon-first offset (Mon=0 … Sun=6)
+  const startOffset = (firstDay.getDay() + 6) % 7;
 
   const totalCells = startOffset + daysInMonth;
   const rows = Math.ceil(totalCells / 7);
 
-  // Single-day events per day (events that start and end on same day, or no end_date)
+  // Single-day events per day
   const singleDayByDay = useMemo(() => {
     const map: Record<number, WorkplanEvent[]> = {};
     for (let d = 1; d <= daysInMonth; d++) map[d] = [];
@@ -108,7 +129,7 @@ function CalendarView({
       const clampedStart = start < monthStart ? monthStart : start;
       const clampedEnd = end > monthEnd ? monthEnd : end;
       const isMultiDay = ev.end_date && ev.end_date !== ev.date && diffDays(clampedStart, clampedEnd) >= 1;
-      if (isMultiDay) continue; // handled by spans
+      if (isMultiDay) continue;
       const day = clampedStart.getDate();
       map[day] = map[day] ?? [];
       if (!map[day].find((e) => e.id === ev.id)) map[day].push(ev);
@@ -116,7 +137,7 @@ function CalendarView({
     return map;
   }, [events, year, month, daysInMonth]);
 
-  // Multi-day event segments per week row: bars that span across cells
+  // Multi-day event spans per week row
   const spansByWeekRow = useMemo(() => {
     const monthStart = new Date(year, month, 1);
     const monthEnd = new Date(year, month, daysInMonth);
@@ -129,11 +150,10 @@ function CalendarView({
       if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
       if (!ev.end_date || ev.end_date === ev.date) continue;
       if (end < monthStart || start > monthEnd) continue;
-      const firstDayInMonth = Math.max(1, start.getDate());
-      const lastDayInMonth = Math.min(daysInMonth, end.getDate());
+      const firstDayInMonth = Math.max(1, start < monthStart ? 1 : start.getDate());
+      const lastDayInMonth = Math.min(daysInMonth, end > monthEnd ? daysInMonth : end.getDate());
       if (firstDayInMonth > lastDayInMonth) continue;
 
-      // Segment per week row
       for (let r = 0; r < rows; r++) {
         const weekStartDay = Math.max(1, r * 7 - startOffset + 1);
         const weekEndDay = Math.min(daysInMonth, (r + 1) * 7 - startOffset);
@@ -155,162 +175,330 @@ function CalendarView({
     return n;
   }, [singleDayByDay, spansByWeekRow, daysInMonth]);
 
+  // Events for selected day (includes multi-day spans that cover that day too)
+  const selectedDayEvents = useMemo(() => {
+    if (!selectedDay) return [];
+    const allForDay: WorkplanEvent[] = [];
+    const cellDateStr = ymd(new Date(year, month, selectedDay));
+    for (const ev of events) {
+      const start = parseDate(ev.date);
+      const end = ev.end_date ? parseDate(ev.end_date) : start;
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) continue;
+      const startStr = ymd(start);
+      const endStr = ymd(end);
+      if (cellDateStr >= startStr && cellDateStr <= endStr) {
+        if (!allForDay.find((e) => e.id === ev.id)) allForDay.push(ev);
+      }
+    }
+    return allForDay;
+  }, [selectedDay, events, year, month]);
+
   return (
-    <div>
-      {/* Month navigator */}
-      <div className="flex items-center justify-between mb-4">
-        <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
-          <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          Prev
-        </button>
-        <h2 className="text-base font-bold text-neutral-900">{MONTHS[month]} {year}</h2>
-        <button type="button" onClick={onNext} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
-          Next
-          <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-        </button>
-      </div>
-
-      {events.length === 0 && (
-        <div className="rounded-xl border border-neutral-200 bg-neutral-50 py-10 text-center mb-4">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">event_busy</span>
-          <p className="mt-2 text-sm font-medium text-neutral-600">No events loaded for this year.</p>
-          <p className="text-xs text-neutral-500 mt-1">Add an event or check your filters.</p>
-        </div>
-      )}
-      {events.length > 0 && eventsThisMonth === 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800">
-          <span className="material-symbols-outlined text-[20px]">info</span>
-          <span>No events in {MONTHS[month]} {year}. Use Prev/Next to switch month, or add an event.</span>
-        </div>
-      )}
-
-      {/* Day-name header */}
-      <div className="grid grid-cols-7 border-l border-t border-neutral-200">
-        {DAY_NAMES.map((d) => (
-          <div key={d} className="text-center text-xs font-semibold text-neutral-500 py-2 border-r border-b border-neutral-200 bg-neutral-50">
-            {d}
+    <div className="flex gap-4">
+      {/* ── Main calendar grid ── */}
+      <div className="flex-1 min-w-0">
+        {/* Month navigator */}
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+            Prev
+          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-neutral-900">{MONTHS[month]} {year}</h2>
+            {!isCurrentMonth && (
+              <button
+                type="button"
+                onClick={onToday}
+                className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              >
+                Today
+              </button>
+            )}
           </div>
-        ))}
-      </div>
+          <button type="button" onClick={onNext} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
+            Next
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
 
-      {/* Week rows: each week has a bar row (multi-day spans) then day cells (single-day events) */}
-      <div className="border-l border-neutral-200">
-        {Array.from({ length: rows }).map((_, rowIdx) => (
-          <div key={rowIdx} className="contents">
-            {/* Bar row: one spanning bar per multi-day event in this week */}
+        {events.length === 0 && (
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 py-10 text-center mb-4">
+            <span className="material-symbols-outlined text-4xl text-neutral-300">event_busy</span>
+            <p className="mt-2 text-sm font-medium text-neutral-600">No events loaded for this year.</p>
+            <p className="text-xs text-neutral-500 mt-1">Add an event or check your filters.</p>
+          </div>
+        )}
+        {events.length > 0 && eventsThisMonth === 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800">
+            <span className="material-symbols-outlined text-[20px]">info</span>
+            <span>No events in {MONTHS[month]} {year}. Use Prev/Next to switch month, or add an event.</span>
+          </div>
+        )}
+
+        {/* Day-name header — Mon … Sun */}
+        <div className="grid grid-cols-7 border-l border-t border-neutral-200 rounded-t-lg overflow-hidden">
+          {DAY_NAMES_MON.map((d) => (
             <div
-              className="grid grid-cols-7 border-r border-b border-neutral-200 bg-neutral-50/30"
-              style={{ minHeight: 26 }}
+              key={d}
+              className={`text-center text-xs font-semibold py-2 border-r border-b border-neutral-200 bg-neutral-50 ${
+                d === "Sat" || d === "Sun" ? "text-neutral-400" : "text-neutral-500"
+              }`}
             >
-              {spansByWeekRow[rowIdx]?.map(({ ev, startDay, endDay }) => {
-                const colStart = (startDay - 1 + startOffset) % 7;
-                const colEnd = (endDay - 1 + startOffset) % 7;
-                const c = TYPE_COLOR[ev.type] ?? TYPE_COLOR.meeting;
-                return (
-                  <div
-                    key={ev.id}
-                    role="button"
-                    tabIndex={0}
-                    className="rounded px-2 py-1 text-[11px] font-medium leading-tight border truncate flex items-center justify-between gap-1 hover:opacity-90 transition-opacity cursor-pointer"
-                    style={{
-                      gridColumn: `${colStart + 1} / ${colEnd + 2}`,
-                      backgroundColor: c.bar,
-                      color: "#fff",
-                      borderColor: "rgba(0,0,0,0.15)",
-                    }}
-                    title={`${ev.title} · ${formatDate(ev.date)}${ev.end_date ? ` – ${formatDate(ev.end_date)}` : ""}`}
-                    onDoubleClick={(e) => { e.preventDefault(); onOpenEvent(ev.id); }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="truncate">{ev.title}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDeleteEvent(ev.id); }}
-                      className="flex-shrink-0 opacity-70 hover:opacity-100 p-0.5 rounded"
-                      title="Delete event"
-                      aria-label="Delete"
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Week rows */}
+        <div className="border-l border-neutral-200">
+          {Array.from({ length: rows }).map((_, rowIdx) => (
+            <div key={rowIdx} className="contents">
+              {/* Bar row — multi-day spans */}
+              <div
+                className="grid grid-cols-7 border-r border-b border-neutral-200 bg-neutral-50/30"
+                style={{ minHeight: 26 }}
+              >
+                {spansByWeekRow[rowIdx]?.map(({ ev, startDay, endDay }) => {
+                  // Mon-first column positions
+                  const colStart = (startDay - 1 + startOffset) % 7;
+                  const colEnd = (endDay - 1 + startOffset) % 7;
+                  const c = TYPE_COLOR[ev.type] ?? TYPE_COLOR.meeting;
+                  return (
+                    <div
+                      key={ev.id}
+                      role="button"
+                      tabIndex={0}
+                      className="rounded px-2 py-1 text-[11px] font-medium leading-tight border truncate flex items-center justify-between gap-1 hover:opacity-90 transition-opacity cursor-pointer"
+                      style={{
+                        gridColumn: `${colStart + 1} / ${colEnd + 2}`,
+                        backgroundColor: c.bar,
+                        color: "#fff",
+                        borderColor: "rgba(0,0,0,0.15)",
+                      }}
+                      title={`${ev.title} · ${formatDate(ev.date)}${ev.end_date ? ` – ${formatDate(ev.end_date)}` : ""}`}
+                      onDoubleClick={(e) => { e.preventDefault(); onOpenEvent(ev.id); }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="material-symbols-outlined text-[14px]">close</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Day cells row */}
-            <div className="grid grid-cols-7 border-r border-neutral-200">
-              {Array.from({ length: 7 }).map((_, colIdx) => {
-                const cellIdx = rowIdx * 7 + colIdx;
-                const day = cellIdx - startOffset + 1;
-                const isCurrentMonth = day >= 1 && day <= daysInMonth;
-                const cellDate = isCurrentMonth ? ymd(new Date(year, month, day)) : null;
-                const isToday = cellDate === today;
-                const dayEvents = isCurrentMonth ? (singleDayByDay[day] ?? []) : [];
-                const MAX_VISIBLE = 4;
-                const visible = dayEvents.slice(0, MAX_VISIBLE);
-                const overflow = dayEvents.length - MAX_VISIBLE;
+                      <span className="truncate">{ev.title}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDeleteEvent(ev.id); }}
+                        className="flex-shrink-0 opacity-70 hover:opacity-100 p-0.5 rounded"
+                        title="Delete event"
+                        aria-label="Delete"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
 
-                return (
-                  <div
-                    key={cellIdx}
-                    className={`min-h-[100px] border-r border-b border-neutral-200 p-1.5 ${
-                      isCurrentMonth ? "bg-white" : "bg-neutral-50/60"
-                    }`}
-                  >
-                    {isCurrentMonth && (
-                      <>
-                        <div className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-semibold mb-1 ${
-                          isToday ? "bg-primary text-white" : "text-neutral-700"
-                        }`}>
-                          {day}
-                        </div>
-                        <div className="space-y-0.5">
-                          {visible.map((ev) => {
-                            const c = TYPE_COLOR[ev.type] ?? TYPE_COLOR.meeting;
-                            return (
-                              <div
-                                key={ev.id}
-                                role="button"
-                                tabIndex={0}
-                                className={`block truncate rounded px-2 py-1 text-[11px] font-medium leading-tight border ${c.bg} ${c.text} ${c.border} hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-between gap-1`}
-                                title={`${ev.title} · Double-click to open`}
-                                onDoubleClick={(e) => { e.preventDefault(); onOpenEvent(ev.id); }}
-                              >
-                                <span className="truncate">{ev.title}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDeleteEvent(ev.id); }}
-                                  className="flex-shrink-0 opacity-60 hover:opacity-100 p-0.5 rounded"
-                                  title="Delete event"
-                                  aria-label="Delete"
+              {/* Day cells row */}
+              <div className="grid grid-cols-7 border-r border-neutral-200">
+                {Array.from({ length: 7 }).map((_, colIdx) => {
+                  const cellIdx = rowIdx * 7 + colIdx;
+                  const day = cellIdx - startOffset + 1;
+                  const inMonth = day >= 1 && day <= daysInMonth;
+                  const cellDateStr = inMonth ? ymd(new Date(year, month, day)) : null;
+                  const isToday = cellDateStr === todayStr;
+                  const isSelected = inMonth && day === selectedDay;
+                  // Weekend: colIdx 5 = Sat, 6 = Sun in Mon-first
+                  const isWeekend = colIdx === 5 || colIdx === 6;
+                  const dayEvents = inMonth ? (singleDayByDay[day] ?? []) : [];
+                  const MAX_VISIBLE = 3;
+                  const visible = dayEvents.slice(0, MAX_VISIBLE);
+                  const overflow = dayEvents.length - MAX_VISIBLE;
+
+                  return (
+                    <div
+                      key={cellIdx}
+                      role={inMonth ? "button" : undefined}
+                      tabIndex={inMonth ? 0 : undefined}
+                      onClick={inMonth ? () => setSelectedDay(day === selectedDay ? null : day) : undefined}
+                      onKeyDown={inMonth ? (e) => { if (e.key === "Enter" || e.key === " ") setSelectedDay(day === selectedDay ? null : day); } : undefined}
+                      className={[
+                        "min-h-[96px] border-r border-b border-neutral-200 p-1.5 transition-colors",
+                        inMonth ? "cursor-pointer" : "bg-neutral-50/60",
+                        isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : inMonth ? (isWeekend ? "bg-neutral-50/40 hover:bg-neutral-50" : "bg-white hover:bg-neutral-50/80") : "",
+                      ].filter(Boolean).join(" ")}
+                    >
+                      {inMonth && (
+                        <>
+                          <div className={[
+                            "w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold mb-1",
+                            isToday ? "bg-primary text-white shadow-sm" : isSelected ? "bg-primary/15 text-primary" : isWeekend ? "text-neutral-400" : "text-neutral-700",
+                          ].join(" ")}>
+                            {day}
+                          </div>
+                          <div className="space-y-0.5">
+                            {visible.map((ev) => {
+                              const c = TYPE_COLOR[ev.type] ?? TYPE_COLOR.meeting;
+                              return (
+                                <div
+                                  key={ev.id}
+                                  role="button"
+                                  tabIndex={0}
+                                  className={`flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight border ${c.bg} ${c.text} ${c.border} hover:opacity-80 transition-opacity`}
+                                  title={ev.title}
+                                  onDoubleClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenEvent(ev.id); }}
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  <span className="material-symbols-outlined text-[12px]">close</span>
-                                </button>
-                              </div>
-                            );
-                          })}
-                          {overflow > 0 && <p className="text-[10px] text-neutral-400 pl-1">+{overflow} more</p>}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: c.bar }}
+                                  />
+                                  <span className="truncate">{ev.title}</span>
+                                </div>
+                              );
+                            })}
+                            {overflow > 0 && (
+                              <p className="text-[10px] font-semibold text-primary/70 pl-1 hover:text-primary">
+                                +{overflow} more
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-neutral-100">
+          {Object.entries(TYPE_LABELS).map(([type, label]) => {
+            const c = TYPE_COLOR[type];
+            return (
+              <span key={type} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.bar }} />
+                {label}
+              </span>
+            );
+          })}
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-500 bg-neutral-50">
+            <span className="material-symbols-outlined text-[12px]">touch_app</span>
+            Click day to see details
+          </span>
+        </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 mt-4 pt-4 border-t border-neutral-100">
-        {Object.entries(TYPE_LABELS).map(([type, label]) => {
-          const c = TYPE_COLOR[type];
-          return (
-            <span key={type} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>
-              {label}
-            </span>
-          );
-        })}
-      </div>
+      {/* ── Side panel: selected day events ── */}
+      {selectedDay !== null && (
+        <div className="w-72 flex-shrink-0">
+          <div className="rounded-xl border border-neutral-200 bg-white shadow-sm overflow-hidden sticky top-4">
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+              <div>
+                <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+                  {new Date(year, month, selectedDay).toLocaleDateString("en-GB", { weekday: "long" })}
+                </p>
+                <p className="text-lg font-bold text-neutral-900 leading-tight">
+                  {selectedDay} {MONTHS[month].slice(0, 3)} {year}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg hover:bg-neutral-100 transition-colors"
+                aria-label="Close"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+
+            {/* Events list */}
+            <div className="p-3 space-y-2 max-h-[520px] overflow-y-auto">
+              {selectedDayEvents.length === 0 ? (
+                <div className="py-8 text-center">
+                  <span className="material-symbols-outlined text-3xl text-neutral-200">event_available</span>
+                  <p className="mt-2 text-xs text-neutral-400 font-medium">No events this day</p>
+                </div>
+              ) : (
+                selectedDayEvents.map((ev) => {
+                  const c = TYPE_COLOR[ev.type] ?? TYPE_COLOR.meeting;
+                  const icon = TYPE_ICON[ev.type] ?? "event";
+                  const isMultiDay = ev.end_date && ev.end_date !== ev.date;
+                  return (
+                    <div
+                      key={ev.id}
+                      className={`rounded-lg border p-3 ${c.bg} ${c.border} group`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        {/* Type icon */}
+                        <div
+                          className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
+                          style={{ backgroundColor: c.bar + "22" }}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[15px]"
+                            style={{ color: c.bar }}
+                          >
+                            {icon}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-bold leading-snug truncate ${c.text}`}>{ev.title}</p>
+                          <p className={`text-[10px] font-medium mt-0.5 ${c.text} opacity-70`}>
+                            {TYPE_LABELS[ev.type] ?? ev.type}
+                            {ev.meeting_type?.name ? ` · ${ev.meeting_type.name}` : ""}
+                          </p>
+                          {isMultiDay && (
+                            <p className={`text-[10px] mt-0.5 ${c.text} opacity-60`}>
+                              {formatDate(ev.date)} – {formatDate(ev.end_date!)}
+                            </p>
+                          )}
+                          {ev.responsible_users && ev.responsible_users.length > 0 && (
+                            <p className={`text-[10px] mt-0.5 ${c.text} opacity-60 truncate`}>
+                              {ev.responsible_users.map((u) => u.name).join(", ")}
+                            </p>
+                          )}
+                          {ev.description && (
+                            <p className={`text-[10px] mt-1 leading-snug line-clamp-2 ${c.text} opacity-60`}>
+                              {ev.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={() => onOpenEvent(ev.id)}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${c.text} hover:underline`}
+                        >
+                          Open
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteEvent(ev.id)}
+                          className="text-red-500 hover:text-red-700 p-0.5 rounded"
+                          title="Delete"
+                          aria-label="Delete"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer hint */}
+            {selectedDayEvents.length > 0 && (
+              <div className="px-4 py-2.5 border-t border-neutral-100 bg-neutral-50/60">
+                <p className="text-[10px] text-neutral-400 text-center">
+                  {selectedDayEvents.length} event{selectedDayEvents.length !== 1 ? "s" : ""} · Hover to reveal actions
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -697,6 +885,11 @@ export default function WorkplanListPage() {
     if (calMonth === 11) { setCalMonth(0); setCalYear((y) => y + 1); }
     else setCalMonth((m) => m + 1);
   };
+  const goToToday = useCallback(() => {
+    const t = new Date();
+    setCalYear(t.getFullYear());
+    setCalMonth(t.getMonth());
+  }, []);
 
   const exportPdfRef = useRef<HTMLDivElement>(null);
 
@@ -913,6 +1106,7 @@ export default function WorkplanListPage() {
             month={calMonth}
             onPrev={prevMonth}
             onNext={nextMonth}
+            onToday={goToToday}
             onOpenEvent={handleOpenEvent}
             onDeleteEvent={handleDeleteEvent}
           />
