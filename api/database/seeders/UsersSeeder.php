@@ -25,8 +25,10 @@ class UsersSeeder extends Seeder
         $systemAdminRole  = Role::where('name', 'System Admin')->where('guard_name', 'sanctum')->first();
         $staffRole        = Role::where('name', 'staff')->where('guard_name', 'sanctum')->first();
         $hrManagerRole    = Role::where('name', 'HR Manager')->where('guard_name', 'sanctum')->first();
+        $hrAdminRole      = Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
         $financeRole      = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
         $procurementRole  = Role::where('name', 'Procurement Officer')->where('guard_name', 'sanctum')->first();
+        $govRole          = Role::where('name', 'Governance Officer')->where('guard_name', 'sanctum')->first();
         $sgRole           = Role::where('name', 'Secretary General')->where('guard_name', 'sanctum')->first();
 
         if (! $systemAdminRole || ! $staffRole) {
@@ -151,6 +153,28 @@ class UsersSeeder extends Seeder
             ]
         );
         $thaboUser->syncRoles([$staffRole]);
+
+        // HR Administrator
+        if ($hrAdminRole) {
+            User::firstOrCreate(
+                ['email' => 'hradmin@sadcpf.org'],
+                [
+                    'tenant_id'       => $tenant->id,
+                    'department_id'   => $fcsDept?->id,
+                    'name'            => 'HR Administrator',
+                    'password'        => Hash::make('HRAdmin@2024!'),
+                    'employee_number' => 'SADCPF-008',
+                    'job_title'       => 'HR Administration Manager',
+                    'classification'  => 'CONFIDENTIAL',
+                    'is_active'       => true,
+                ]
+            )->syncRoles([$hrAdminRole]);
+        }
+
+        // Governance Officer (Thabo)
+        if ($govRole) {
+            $thaboUser->syncRoles([$staffRole, $govRole]);
+        }
 
         // Secretary General
         if ($sgRole) {
