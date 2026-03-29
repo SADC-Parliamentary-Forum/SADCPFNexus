@@ -70,6 +70,9 @@ class DatabaseSeeder extends Seeder
             // ── SRHR — Field Researcher Module ─────────────
             SrhrSeeder::class,
 
+            // ── Governance Config ──────────────────────────
+            GovernanceConfigSeeder::class,
+
             // ── Supplementary Data ─────────────────────────
             MissingModulesSeeder::class,
         ]);

@@ -415,6 +415,16 @@ Route::prefix('v1')->group(function () {
             Route::post('{assignment}/cancel',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
         });
 
+        // Governance — committees & meeting-type config
+        Route::get('governance/committees', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'indexCommittees']);
+        Route::post('governance/committees', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'storeCommittee']);
+        Route::put('governance/committees/{committee}', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'updateCommittee']);
+        Route::delete('governance/committees/{committee}', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'destroyCommittee']);
+        Route::get('governance/meeting-types', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'indexMeetingTypes']);
+        Route::post('governance/meeting-types', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'storeMeetingType']);
+        Route::put('governance/meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'updateMeetingType']);
+        Route::delete('governance/meeting-types/{meetingType}', [\App\Http\Controllers\Api\V1\Governance\CommitteeController::class, 'destroyMeetingType']);
+
         // Governance (meetings from workplan, resolutions + multilingual documents)
         Route::get('governance/meetings', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'meetings']);
         Route::get('governance/resolutions', [\App\Http\Controllers\Api\V1\Governance\GovernanceController::class, 'resolutions']);

@@ -653,6 +653,41 @@ export const governanceApi = {
     }>("/governance/meetings", { params }),
 };
 
+export interface GovernanceCommittee {
+  id: number;
+  tenant_id: number;
+  name: string;
+  color: string; // hex e.g. "#3b82f6"
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface GovernanceMeetingType {
+  id: number;
+  tenant_id: number;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export const committeeApi = {
+  list: () => api.get<{ data: GovernanceCommittee[] }>("/governance/committees"),
+  create: (data: { name: string; color?: string; is_active?: boolean; sort_order?: number }) =>
+    api.post<{ data: GovernanceCommittee }>("/governance/committees", data),
+  update: (id: number, data: Partial<GovernanceCommittee>) =>
+    api.put<{ data: GovernanceCommittee }>(`/governance/committees/${id}`, data),
+  remove: (id: number) => api.delete<{ message: string }>(`/governance/committees/${id}`),
+};
+
+export const governanceMeetingTypeApi = {
+  list: () => api.get<{ data: GovernanceMeetingType[] }>("/governance/meeting-types"),
+  create: (data: { name: string; is_active?: boolean; sort_order?: number }) =>
+    api.post<{ data: GovernanceMeetingType }>("/governance/meeting-types", data),
+  update: (id: number, data: Partial<GovernanceMeetingType>) =>
+    api.put<{ data: GovernanceMeetingType }>(`/governance/meeting-types/${id}`, data),
+  remove: (id: number) => api.delete<{ message: string }>(`/governance/meeting-types/${id}`),
+};
+
 export const workflowApi = {
   getPending: () => api.get<{ data: ApprovalRequest[] }>("/approvals/pending"),
   approve: (id: number, comment?: string) => api.post(`/approvals/${id}/approve`, { comment }),

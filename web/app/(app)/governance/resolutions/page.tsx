@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { governanceApi, minutesApi, type GovernanceResolution, type GovernanceDocument, type GovernanceMeeting, type MeetingMinutesRecord, type MeetingActionItem } from "@/lib/api";
+import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type GovernanceResolution, type GovernanceDocument, type GovernanceMeeting, type MeetingMinutesRecord, type MeetingActionItem, type GovernanceCommittee, type GovernanceMeetingType } from "@/lib/api";
 import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
 
@@ -33,12 +33,7 @@ const STATUS_DOT: Record<ResStatus, string> = {
   "Rejected": "bg-red-500", "Actioned": "bg-purple-500",
 };
 
-const COMMITTEES = ["Finance", "Health & Safety", "Public Accounts", "Foreign Affairs", "Education", "Infrastructure", "Legal & Constitutional", "Gender & Development"];
-const COMMITTEE_COLOR: Record<string, string> = {
-  "Finance": "bg-blue-500", "Health & Safety": "bg-rose-500", "Public Accounts": "bg-amber-500",
-  "Foreign Affairs": "bg-indigo-500", "Education": "bg-purple-500", "Infrastructure": "bg-orange-500",
-  "Legal & Constitutional": "bg-teal-500", "Gender & Development": "bg-pink-500", "Plenary": "bg-emerald-600",
-};
+// Committees and meeting types are loaded from the API — see committeeApi / governanceMeetingTypeApi
 
 function statusStyle(s: string) { return STATUS_STYLE[s as ResStatus] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"; }
 function statusDot(s: string) { return STATUS_DOT[s as ResStatus] ?? "bg-neutral-400"; }
@@ -187,11 +182,12 @@ type ResolutionType = "committee" | "plenary";
 interface ResolutionFormProps {
   type: ResolutionType;
   initial?: Partial<GovernanceResolution>;
+  committees: GovernanceCommittee[];
   onClose: () => void;
   onSaved: (r: GovernanceResolution) => void;
 }
 
-function ResolutionFormModal({ type, initial, onClose, onSaved }: ResolutionFormProps) {
+function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: ResolutionFormProps) {
   const { toast } = useToast();
   const isEdit = !!initial?.id;
   const [saving, setSaving] = useState(false);
@@ -201,7 +197,7 @@ function ResolutionFormModal({ type, initial, onClose, onSaved }: ResolutionForm
     description: initial?.description ?? "",
     status: initial?.status ?? "Draft",
     adopted_at: initial?.adopted_at ? initial.adopted_at.slice(0, 10) : "",
-    committee: initial?.committee ?? (type === "committee" ? COMMITTEES[0] : ""),
+    committee: initial?.committee ?? (type === "committee" ? (committees[0]?.name ?? "") : ""),
     lead_member: initial?.lead_member ?? "",
     lead_role: initial?.lead_role ?? "",
   });
@@ -270,7 +266,7 @@ function ResolutionFormModal({ type, initial, onClose, onSaved }: ResolutionForm
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Committee</label>
                 <select className="form-input" value={form.committee} onChange={(e) => set("committee", e.target.value)}>
-                  {COMMITTEES.map((c) => <option key={c}>{c}</option>)}
+                  {committees.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
             )}
@@ -425,6 +421,286 @@ function ResolutionDrawer({
   );
 }
 
+// ─── Colour swatches for committee picker ─────────────────────────────────────
+
+const COLOR_SWATCHES = [
+  "#3b82f6", "#f43f5e", "#f59e0b", "#6366f1",
+  "#a855f7", "#f97316", "#14b8a6", "#ec4899",
+  "#10b981", "#64748b", "#ef4444", "#0ea5e9",
+];
+
+// ─── Manage Committees Modal ──────────────────────────────────────────────────
+
+function ManageCommitteesModal({
+  committees: initial,
+  onClose,
+  onChanged,
+}: {
+  committees: GovernanceCommittee[];
+  onClose: () => void;
+  onChanged: (updated: GovernanceCommittee[]) => void;
+}) {
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
+  const [items, setItems] = useState<GovernanceCommittee[]>(initial);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState(COLOR_SWATCHES[0]);
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = (c: GovernanceCommittee) => {
+    setEditingId(c.id);
+    setEditName(c.name);
+    setEditColor(c.color);
+  };
+
+  const saveEdit = async () => {
+    if (!editName.trim() || editingId === null) return;
+    setSaving(true);
+    try {
+      const res = await committeeApi.update(editingId, { name: editName.trim(), color: editColor });
+      const updated = items.map((i) => (i.id === editingId ? res.data.data : i));
+      setItems(updated);
+      onChanged(updated);
+      setEditingId(null);
+    } catch {
+      toast("error", "Error", "Could not update committee.");
+    } finally {
+      setSaving(false); }
+  };
+
+  const deleteItem = async (c: GovernanceCommittee) => {
+    if (!(await confirm({ title: "Delete Committee", message: `Delete "${c.name}"? Existing resolutions will retain the name.`, variant: "danger" }))) return;
+    try {
+      await committeeApi.remove(c.id);
+      const updated = items.filter((i) => i.id !== c.id);
+      setItems(updated);
+      onChanged(updated);
+    } catch {
+      toast("error", "Error", "Could not delete committee.");
+    }
+  };
+
+  const addNew = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await committeeApi.create({ name: newName.trim(), color: newColor, sort_order: items.length });
+      const updated = [...items, res.data.data];
+      setItems(updated);
+      onChanged(updated);
+      setNewName("");
+      setNewColor(COLOR_SWATCHES[0]);
+    } catch {
+      toast("error", "Error", "Could not add committee.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl flex flex-col" style={{ maxHeight: "85vh" }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
+            <h2 className="font-semibold text-neutral-900">Manage Committees</h2>
+          </div>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
+          {items.map((c) => (
+            <div key={c.id} className="flex items-center gap-2 py-2 border-b border-neutral-100 last:border-0">
+              {editingId === c.id ? (
+                <>
+                  <div className="flex gap-1 flex-wrap">
+                    {COLOR_SWATCHES.map((sw) => (
+                      <button key={sw} onClick={() => setEditColor(sw)}
+                        className={`size-5 rounded-full border-2 transition-transform ${editColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
+                        style={{ backgroundColor: sw }} />
+                    ))}
+                  </div>
+                  <input autoFocus className="form-input flex-1 text-sm py-1"
+                    value={editName} onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">Save</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <div className="size-3 rounded-full flex-shrink-0" style={{ backgroundColor: c.color }} />
+                  <span className="flex-1 text-sm text-neutral-800">{c.name}</span>
+                  <button onClick={() => startEdit(c)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                  </button>
+                  <button onClick={() => deleteItem(c)} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="text-sm text-neutral-400 py-4 text-center">No committees yet. Add one below.</p>
+          )}
+        </div>
+
+        {/* Add new */}
+        <div className="px-5 py-4 border-t border-neutral-200 space-y-3 shrink-0">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Add Committee</p>
+          <div className="flex gap-1 flex-wrap">
+            {COLOR_SWATCHES.map((sw) => (
+              <button key={sw} onClick={() => setNewColor(sw)}
+                className={`size-5 rounded-full border-2 transition-transform ${newColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
+                style={{ backgroundColor: sw }} />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input className="form-input flex-1 text-sm" placeholder="Committee name…"
+              value={newName} onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addNew(); }} />
+            <button onClick={addNew} disabled={saving || !newName.trim()} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Manage Meeting Types Modal ───────────────────────────────────────────────
+
+function ManageMeetingTypesModal({
+  meetingTypes: initial,
+  onClose,
+  onChanged,
+}: {
+  meetingTypes: GovernanceMeetingType[];
+  onClose: () => void;
+  onChanged: (updated: GovernanceMeetingType[]) => void;
+}) {
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
+  const [items, setItems] = useState<GovernanceMeetingType[]>(initial);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = (t: GovernanceMeetingType) => {
+    setEditingId(t.id);
+    setEditName(t.name);
+  };
+
+  const saveEdit = async () => {
+    if (!editName.trim() || editingId === null) return;
+    setSaving(true);
+    try {
+      const res = await governanceMeetingTypeApi.update(editingId, { name: editName.trim() });
+      const updated = items.map((i) => (i.id === editingId ? res.data.data : i));
+      setItems(updated);
+      onChanged(updated);
+      setEditingId(null);
+    } catch {
+      toast("error", "Error", "Could not update meeting type.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteItem = async (t: GovernanceMeetingType) => {
+    if (!(await confirm({ title: "Delete Meeting Type", message: `Delete "${t.name}"?`, variant: "danger" }))) return;
+    try {
+      await governanceMeetingTypeApi.remove(t.id);
+      const updated = items.filter((i) => i.id !== t.id);
+      setItems(updated);
+      onChanged(updated);
+    } catch {
+      toast("error", "Error", "Could not delete meeting type.");
+    }
+  };
+
+  const addNew = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await governanceMeetingTypeApi.create({ name: newName.trim(), sort_order: items.length });
+      const updated = [...items, res.data.data];
+      setItems(updated);
+      onChanged(updated);
+      setNewName("");
+    } catch {
+      toast("error", "Error", "Could not add meeting type.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl flex flex-col" style={{ maxHeight: "80vh" }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
+            <h2 className="font-semibold text-neutral-900">Manage Meeting Types</h2>
+          </div>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1">
+          {items.map((t) => (
+            <div key={t.id} className="flex items-center gap-2 py-2 border-b border-neutral-100 last:border-0">
+              {editingId === t.id ? (
+                <>
+                  <input autoFocus className="form-input flex-1 text-sm py-1"
+                    value={editName} onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingId(null); }} />
+                  <button onClick={saveEdit} disabled={saving} className="btn-primary px-3 py-1 text-xs">Save</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary px-3 py-1 text-xs">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-neutral-400 text-[16px]">event_note</span>
+                  <span className="flex-1 text-sm text-neutral-800">{t.name}</span>
+                  <button onClick={() => startEdit(t)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                  </button>
+                  <button onClick={() => deleteItem(t)} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="text-sm text-neutral-400 py-4 text-center">No meeting types yet.</p>
+          )}
+        </div>
+
+        <div className="px-5 py-4 border-t border-neutral-200 space-y-2 shrink-0">
+          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Add Type</p>
+          <div className="flex gap-2">
+            <input className="form-input flex-1 text-sm" placeholder="e.g. Workshop, Review…"
+              value={newName} onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addNew(); }} />
+            <button onClick={addNew} disabled={saving || !newName.trim()} className="btn-primary px-4 py-2 text-sm disabled:opacity-50">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Resolutions List (shared by Committee + Plenary) ────────────────────────
 
 function ResolutionsList({ type }: { type: ResolutionType }) {
@@ -438,7 +714,15 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
   const [showForm, setShowForm] = useState(false);
   const [editingResolution, setEditingResolution] = useState<GovernanceResolution | null>(null);
   const [viewingResolution, setViewingResolution] = useState<GovernanceResolution | null>(null);
+  const [committees, setCommittees] = useState<GovernanceCommittee[]>([]);
+  const [showManageCommittees, setShowManageCommittees] = useState(false);
   const { toast } = useToast();
+
+  // Load committees once (only needed for committee tab)
+  useEffect(() => {
+    if (type !== "committee") return;
+    committeeApi.list().then((r) => setCommittees(r.data.data ?? [])).catch(() => {});
+  }, [type]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -498,6 +782,11 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
               </button>
             </>
           )}
+          {isCommittee && (
+            <button onClick={() => setShowManageCommittees(true)} className="btn-secondary px-3 py-2 text-sm flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">settings</span>Committees
+            </button>
+          )}
           <button onClick={() => { setEditingResolution(null); setShowForm(true); }} className="btn-primary px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
             <span className="material-symbols-outlined text-[18px]">add</span>New Resolution
           </button>
@@ -553,7 +842,10 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                       <td>
                         {r.committee ? (
                           <div className="flex items-center gap-1.5">
-                            <div className={`size-2 rounded-full flex-shrink-0 ${COMMITTEE_COLOR[r.committee] ?? "bg-neutral-400"}`} />
+                            <div
+                              className="size-2 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: committees.find((c) => c.name === r.committee)?.color ?? "#94a3b8" }}
+                            />
                             <span className="text-neutral-600 text-sm">{r.committee}</span>
                           </div>
                         ) : <span className="text-neutral-400">—</span>}
@@ -626,8 +918,18 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
         <ResolutionFormModal
           type={type}
           initial={editingResolution ?? undefined}
+          committees={committees}
           onClose={() => { setShowForm(false); setEditingResolution(null); }}
           onSaved={handleSaved}
+        />
+      )}
+
+      {/* Manage Committees Modal */}
+      {showManageCommittees && (
+        <ManageCommitteesModal
+          committees={committees}
+          onClose={() => setShowManageCommittees(false)}
+          onChanged={(updated) => setCommittees(updated)}
         />
       )}
 
@@ -646,61 +948,42 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
 
 // ─── Meeting Minutes Tab ──────────────────────────────────────────────────────
 
-const MEETING_TYPE_LABEL: Record<string, string> = {
-  staff: "Staff Meeting", committee: "Committee", board: "Board Meeting",
-  ad_hoc: "Ad Hoc", plenary: "Plenary Assembly",
-};
-const MEETING_TYPE_COLOR: Record<string, string> = {
-  staff: "bg-blue-100 text-blue-700", committee: "bg-purple-100 text-purple-700",
-  board: "bg-indigo-100 text-indigo-700", ad_hoc: "bg-amber-100 text-amber-700",
-  plenary: "bg-teal-100 text-teal-700",
-};
-function meetingTypeLabel(t: string) { return MEETING_TYPE_LABEL[t] ?? t; }
-function meetingTypeColor(t: string) { return MEETING_TYPE_COLOR[t] ?? "bg-neutral-100 text-neutral-600"; }
+// Meeting type display helpers — types are stored by name, display as-is
+function meetingTypeLabel(t: string) { return t; }
+function meetingTypeColor(_t: string) { return "bg-blue-50 text-blue-700"; }
 const ACTION_STATUS_STYLE: Record<string, string> = {
   open: "bg-neutral-100 text-neutral-600", in_progress: "bg-blue-100 text-blue-700",
   completed: "bg-emerald-100 text-emerald-700", cancelled: "bg-red-100 text-red-600",
 };
 
-const PRESET_MEETING_TYPES = [
-  { value: "staff",     label: "Staff Meeting" },
-  { value: "committee", label: "Committee Meeting" },
-  { value: "board",     label: "Board Meeting" },
-  { value: "ad_hoc",    label: "Ad Hoc Meeting" },
-  { value: "plenary",   label: "Plenary Assembly" },
-  { value: "__other__", label: "Other (specify)…" },
-];
-
 // ── Record / Edit Meeting Modal ───────────────────────────────────────────────
 function MeetingFormModal({
   existing,
+  meetingTypes,
   onClose,
   onSaved,
 }: {
   existing?: MeetingMinutesRecord;
+  meetingTypes: GovernanceMeetingType[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
-  const isPreset = (t: string) => PRESET_MEETING_TYPES.some((p) => p.value === t && p.value !== "__other__");
-  const initialTypeSelect = existing ? (isPreset(existing.meeting_type) ? existing.meeting_type : "__other__") : "staff";
-  const initialCustomType = existing && !isPreset(existing.meeting_type) ? existing.meeting_type : "";
+  const defaultType = meetingTypes[0]?.name ?? "";
+  const initialType = existing?.meeting_type ?? defaultType;
 
   const [form, setForm] = useState({
     title: existing?.title ?? "",
     meeting_date: existing?.meeting_date ?? "",
     location: existing?.location ?? "",
-    typeSelect: initialTypeSelect,
-    customType: initialCustomType,
+    meeting_type: initialType,
     chairperson: existing?.chairperson ?? "",
     attendeesText: (existing?.attendees ?? []).join("\n"),
     apologiesText: (existing?.apologies ?? []).join("\n"),
     notes: existing?.notes ?? "",
   });
-
-  const resolvedType = form.typeSelect === "__other__" ? form.customType.trim() || "other" : form.typeSelect;
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.meeting_date) return;
@@ -710,7 +993,7 @@ function MeetingFormModal({
         title: form.title.trim(),
         meeting_date: form.meeting_date,
         location: form.location || undefined,
-        meeting_type: resolvedType,
+        meeting_type: form.meeting_type,
         chairperson: form.chairperson || undefined,
         attendees: form.attendeesText.split("\n").map((s) => s.trim()).filter(Boolean),
         apologies: form.apologiesText.split("\n").map((s) => s.trim()).filter(Boolean),
@@ -771,22 +1054,15 @@ function MeetingFormModal({
             </div>
             <div>
               <F label="Meeting Type" />
-              <select className="form-input" value={form.typeSelect}
-                onChange={(e) => setForm((p) => ({ ...p, typeSelect: e.target.value }))}>
-                {PRESET_MEETING_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+              <select className="form-input" value={form.meeting_type}
+                onChange={(e) => setForm((p) => ({ ...p, meeting_type: e.target.value }))}>
+                {meetingTypes.map((t) => (
+                  <option key={t.id} value={t.name}>{t.name}</option>
                 ))}
               </select>
             </div>
           </div>
-          {form.typeSelect === "__other__" && (
-            <div>
-              <F label="Specify Meeting Type" required />
-              <input className="form-input" placeholder="e.g. Finance Review, Workshop, Training..."
-                value={form.customType}
-                onChange={(e) => setForm((p) => ({ ...p, customType: e.target.value }))} />
-            </div>
-          )}
+
 
           {/* Row 3: Location + Chairperson */}
           <div className="grid grid-cols-2 gap-3">
@@ -835,7 +1111,7 @@ function MeetingFormModal({
           <button onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
           <button
             onClick={handleSave}
-            disabled={saving || !form.title.trim() || !form.meeting_date || (form.typeSelect === "__other__" && !form.customType.trim())}
+            disabled={saving || !form.title.trim() || !form.meeting_date}
             className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
             {saving ? "Saving…" : existing ? "Save Changes" : "Record Minutes"}
           </button>
@@ -849,11 +1125,13 @@ function MeetingFormModal({
 function MeetingDrawer({
   meeting: initialMeeting,
   tenantUsers,
+  meetingTypes,
   onClose,
   onUpdated,
 }: {
   meeting: MeetingMinutesRecord;
   tenantUsers: TenantUserOption[];
+  meetingTypes: GovernanceMeetingType[];
   onClose: () => void;
   onUpdated: () => void;
 }) {
@@ -1254,7 +1532,7 @@ function MeetingDrawer({
 
       {/* Edit modal */}
       {showEdit && (
-        <MeetingFormModal existing={meeting} onClose={() => setShowEdit(false)}
+        <MeetingFormModal existing={meeting} meetingTypes={meetingTypes} onClose={() => setShowEdit(false)}
           onSaved={() => { setShowEdit(false); reload(); }} />
       )}
 
@@ -1392,6 +1670,12 @@ function MeetingMinutes() {
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<MeetingMinutesRecord | null>(null);
   const [tenantUsers, setTenantUsers] = useState<TenantUserOption[]>([]);
+  const [meetingTypes, setMeetingTypes] = useState<GovernanceMeetingType[]>([]);
+  const [showManageTypes, setShowManageTypes] = useState(false);
+
+  useEffect(() => {
+    governanceMeetingTypeApi.list().then((r) => setMeetingTypes(r.data.data ?? [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1453,11 +1737,17 @@ function MeetingMinutes() {
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
-          {[{ v: "", l: "All Types" }, { v: "staff", l: "Staff" }, { v: "committee", l: "Committee" }, { v: "board", l: "Board" }, { v: "ad_hoc", l: "Ad Hoc" }].map(({ v, l }) => (
-            <button key={v || "all-t"} onClick={() => { setTypeFilter(v); setPage(1); }}
-              className={`filter-tab ${typeFilter === v ? "active" : ""}`}>{l}</button>
+          <button key="all-t" onClick={() => { setTypeFilter(""); setPage(1); }}
+            className={`filter-tab ${typeFilter === "" ? "active" : ""}`}>All Types</button>
+          {meetingTypes.map((t) => (
+            <button key={t.id} onClick={() => { setTypeFilter(t.name); setPage(1); }}
+              className={`filter-tab ${typeFilter === t.name ? "active" : ""}`}>{t.name}</button>
           ))}
         </div>
+        <button onClick={() => setShowManageTypes(true)} title="Manage meeting types"
+          className="ml-auto text-neutral-400 hover:text-neutral-700 transition-colors p-1.5 rounded-lg hover:bg-neutral-100">
+          <span className="material-symbols-outlined text-[18px]">settings</span>
+        </button>
       </div>
 
       {/* List */}
@@ -1494,8 +1784,8 @@ function MeetingMinutes() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${MEETING_TYPE_COLOR[m.meeting_type] ?? "bg-neutral-100"}`}>
-                        {MEETING_TYPE_LABEL[m.meeting_type] ?? m.meeting_type}
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-700">
+                        {m.meeting_type}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${m.status === "final" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                         {m.status === "final" ? "Final" : "Draft"}
@@ -1553,7 +1843,16 @@ function MeetingMinutes() {
 
       {/* Create modal */}
       {showCreate && (
-        <MeetingFormModal onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); load(); }} />
+        <MeetingFormModal meetingTypes={meetingTypes} onClose={() => setShowCreate(false)} onSaved={() => { setShowCreate(false); load(); }} />
+      )}
+
+      {/* Manage meeting types modal */}
+      {showManageTypes && (
+        <ManageMeetingTypesModal
+          meetingTypes={meetingTypes}
+          onClose={() => setShowManageTypes(false)}
+          onChanged={(updated) => setMeetingTypes(updated)}
+        />
       )}
 
       {/* Detail drawer */}
@@ -1561,6 +1860,7 @@ function MeetingMinutes() {
         <MeetingDrawer
           meeting={selected}
           tenantUsers={tenantUsers}
+          meetingTypes={meetingTypes}
           onClose={() => setSelected(null)}
           onUpdated={load}
         />
