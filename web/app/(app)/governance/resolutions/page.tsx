@@ -772,7 +772,11 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
             : "Full plenary session resolutions, motions, and official decisions."}
         </p>
         <div className="flex items-center gap-2">
-          {!isCommittee && (
+          {isCommittee ? (
+            <button onClick={() => setShowManageCommittees(true)} className="btn-secondary px-3 py-2 text-sm flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">settings</span>Committees
+            </button>
+          ) : (
             <>
               <button className="btn-secondary px-3 py-2 text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>Official Report
@@ -781,11 +785,6 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                 <span className="material-symbols-outlined text-[16px]">download</span>Export
               </button>
             </>
-          )}
-          {isCommittee && (
-            <button onClick={() => setShowManageCommittees(true)} className="btn-secondary px-3 py-2 text-sm flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px]">settings</span>Committees
-            </button>
           )}
           <button onClick={() => { setEditingResolution(null); setShowForm(true); }} className="btn-primary px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">
             <span className="material-symbols-outlined text-[18px]">add</span>New Resolution
