@@ -127,9 +127,9 @@ const NAV_ITEMS: NavItem[] = [
     icon: "policy",
     section: "Governance",
     children: [
-      { label: "Resolutions",        href: "/governance",          icon: "gavel" },
-      { label: "Plenary Sessions",   href: "/governance/plenary",  icon: "groups_3" },
-      { label: "Meetings & Minutes", href: "/governance",          icon: "meeting_room" },
+      { label: "Resolutions",        href: "/governance/resolutions", icon: "gavel" },
+      { label: "Plenary Sessions",   href: "/governance/plenary",     icon: "groups_3" },
+      { label: "Meetings & Minutes", href: "/governance",              icon: "meeting_room" },
     ],
   },
   {
@@ -335,7 +335,10 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
           {isExpanded && (
             <div className="mt-0.5 ml-3 pl-3 border-l border-neutral-700/60 space-y-0.5">
               {item.children!.map((child) => {
-                const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                // Use exact match for index-style hrefs (e.g. /governance) to avoid
+                // matching siblings like /governance/resolutions as also active.
+                const isChildActive = pathname === child.href ||
+                  (child.href !== item.href && pathname.startsWith(child.href + "/"));
                 return (
                   <Link
                     key={child.href}
