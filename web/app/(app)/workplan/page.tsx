@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useFormatDate } from "@/lib/useFormatDate";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { workplanApi, type WorkplanEvent } from "@/lib/api";
@@ -59,9 +60,6 @@ function formatShort(d: Date) {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function formatDate(s: string) {
-  return parseDate(s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
 
 // ─── CalendarView ──────────────────────────────────────────────────────────────
 
@@ -96,6 +94,7 @@ function CalendarView({
   onOpenEvent: (id: number) => void;
   onDeleteEvent: (id: number) => void;
 }) {
+  const { fmt: formatDate } = useFormatDate();
   const todayStr = ymd(new Date());
   const todayDate = new Date();
   const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
@@ -814,6 +813,7 @@ function GanttView({
 // ─── Main page ──────────────────────────────────────────────────────────────────
 
 export default function WorkplanListPage() {
+  const { fmt: formatDate } = useFormatDate();
   const router = useRouter();
   const now = new Date();
   const [viewMode, setViewMode] = useState<ViewMode>("list");

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userNotificationsApi, alertsApi, type UserNotification, type AlertsSummary } from "@/lib/api";
-import { formatDateShort } from "@/lib/utils";
+import { useFormatDate } from "@/lib/useFormatDate";
 
 // ─── Alerts helpers ──────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ const MODULE_ICONS: Record<string, { icon: string; color: string; bg: string }> 
   finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50" },
 };
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, fmt: (d: string) => string): string {
   const diff  = Date.now() - new Date(iso).getTime();
   const mins  = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
@@ -48,12 +48,13 @@ function timeAgo(iso: string): string {
   if (mins < 60)  return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7)   return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return fmt(iso);
 }
 
 // ─── Alerts tab ──────────────────────────────────────────────────────────────
 
 function AlertsTab() {
+  const { fmt } = useFormatDate();
   const [summary, setSummary] = useState<AlertsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -150,7 +151,7 @@ function AlertsTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-900">{s.name}</p>
-                    <p className="text-xs text-neutral-500">Until {formatDateShort(s.to_date)}</p>
+                    <p className="text-xs text-neutral-500">Until {fmt(s.to_date)}</p>
                   </div>
                   <span className={`badge ${s.type === "leave" ? "badge-warning" : "badge-primary"} capitalize`}>
                     {s.type === "leave" ? "On Leave" : "On Mission"}
@@ -182,11 +183,14 @@ function AlertsTab() {
                 </thead>
                 <tbody>
                   {activeMissions.map((m) => (
-                    <tr key={m.id}>
-                      <td className="font-medium text-neutral-900">{m.requester_name}</td>
+                    <tr key={m.id} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => window.location.href = `/travel/${m.id}`}>
+                      <td>
+                        <p className="font-semibold text-neutral-900">{m.requester_name}</p>
+                        <p className="text-xs text-neutral-400 font-mono">{m.reference_number}</p>
+                      </td>
                       <td className="text-neutral-600">{m.destination_country}</td>
-                      <td className="text-xs text-neutral-500">{formatDateShort(m.departure_date)}</td>
-                      <td><span className="badge badge-primary">{formatDateShort(m.return_date)}</span></td>
+                      <td className="text-xs text-neutral-500">{fmt(m.departure_date)}</td>
+                      <td><span className="badge badge-primary">{fmt(m.return_date)}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -225,7 +229,7 @@ function AlertsTab() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-neutral-900 truncate">{d.title}</p>
                     <p className="text-xs text-neutral-400 mt-0.5">
-                      Due: {formatDateShort(d.deadline_date)}
+                      Due: {fmt(d.deadline_date)}
                       {d.responsible && ` · ${d.responsible}`}
                       {` · ${d.module}`}
                     </p>
@@ -254,10 +258,11 @@ function AlertsTab() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5">
             {weekEvents.map((e) => {
-              const d = new Date((e.date ?? "") + "T00:00:00");
-              const valid = !Number.isNaN(d.getTime());
-              const dayLabel  = valid ? DAYS_LABEL[d.getDay()] : "—";
-              const dayNum    = valid ? d.getDate() : "—";
+              const raw = (e.date ?? "").slice(0, 10);
+              const d = new Date(raw + "T00:00:00");
+              const valid = raw.length === 10 && !Number.isNaN(d.getTime());
+              const dayLabel   = valid ? DAYS_LABEL[d.getDay()] : "—";
+              const dayNum     = valid ? d.getDate() : "—";
               const monthLabel = valid ? d.toLocaleDateString("en-GB", { month: "short" }) : "";
               const yearLabel  = valid && d.getFullYear() !== new Date().getFullYear()
                 ? ` ${d.getFullYear()}` : "";
@@ -270,8 +275,13 @@ function AlertsTab() {
                 meeting: "text-primary", travel: "text-teal-700", leave: "text-amber-700",
                 milestone: "text-purple-700", deadline: "text-red-700",
               };
+              const typeIcons: Record<string, string> = {
+                meeting: "groups", travel: "flight_takeoff", leave: "event_available",
+                milestone: "flag", deadline: "timer",
+              };
               return (
-                <div key={e.id} className={`rounded-xl border p-4 ${typeColors[e.type] || "border-neutral-100 bg-neutral-50"}`}>
+                <Link key={e.id} href={`/workplan?event=${e.id}`}
+                  className={`rounded-xl border p-4 block hover:shadow-md transition-shadow ${typeColors[e.type] || "border-neutral-100 bg-neutral-50"}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs font-bold uppercase tracking-wider ${labelColors[e.type] || "text-neutral-500"}`}>{dayLabel}</span>
                     <span className="text-lg font-bold text-neutral-800 leading-tight">
@@ -280,8 +290,11 @@ function AlertsTab() {
                   </div>
                   <p className={`text-sm font-semibold ${labelColors[e.type] || "text-neutral-700"}`}>{e.title}</p>
                   {e.responsible && <p className="text-xs text-neutral-400 mt-1">{e.responsible}</p>}
-                  <p className="text-xs text-neutral-400 mt-0.5 capitalize">{e.type}</p>
-                </div>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <span className={`material-symbols-outlined text-[12px] ${labelColors[e.type] || "text-neutral-400"}`}>{typeIcons[e.type] || "event"}</span>
+                    <p className={`text-xs font-medium capitalize ${labelColors[e.type] || "text-neutral-400"}`}>{e.type}</p>
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -296,6 +309,7 @@ function AlertsTab() {
 type InboxFilter = "all" | "unread" | "read";
 
 function InboxTab() {
+  const { fmt } = useFormatDate();
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [page, setPage]     = useState(1);
   const [toast, setToast]   = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -434,7 +448,7 @@ function InboxTab() {
                   </p>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isUnread && <span className="h-2 w-2 rounded-full bg-primary" />}
-                    <span className="text-[11px] text-neutral-400 whitespace-nowrap">{timeAgo(n.created_at)}</span>
+                    <span className="text-[11px] text-neutral-400 whitespace-nowrap">{timeAgo(n.created_at, fmt)}</span>
                   </div>
                 </div>
                 {n.body && (

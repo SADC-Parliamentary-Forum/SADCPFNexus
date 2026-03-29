@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
-import { formatDate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useFormatDate } from "@/lib/useFormatDate";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { Stepper } from "@/components/ui/Stepper";
@@ -36,6 +37,7 @@ function SkeletonCard() {
 }
 
 export default function ImprestDetailPage() {
+  const { fmt } = useFormatDate();
   const params = useParams();
   const id = Number(params?.id);
   const [request, setRequest] = useState<ImprestRequest | null>(null);
@@ -285,7 +287,7 @@ export default function ImprestDetailPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Submitted By</h3>
             {request.submitted_at && (
               <span className="ml-auto text-xs text-neutral-400">
-                {new Date(request.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {fmt(request.submitted_at)}
               </span>
             )}
           </div>
@@ -365,7 +367,7 @@ export default function ImprestDetailPage() {
             </h3>
             {request.approved_at && (
               <span className="ml-auto text-xs text-neutral-400">
-                {new Date(request.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {fmt(request.approved_at)}
               </span>
             )}
           </div>
@@ -410,7 +412,7 @@ export default function ImprestDetailPage() {
               This imprest has been approved for{" "}
               <strong>{request.currency} {(request.amount_approved ?? 0).toLocaleString()}</strong>.
               Submit your retirement with receipts before{" "}
-              <strong>{formatDate(request.expected_liquidation_date)}</strong>.
+              <strong>{fmt(request.expected_liquidation_date)}</strong>.
             </p>
           ) : (
             <div className="space-y-6">
@@ -445,7 +447,7 @@ export default function ImprestDetailPage() {
                       <div>
                         <p className="text-[11px] text-neutral-400 uppercase tracking-wide mb-0.5">Liquidation Deadline</p>
                         <p className={cn("font-semibold", daysLeft <= 0 ? "text-red-600" : daysLeft <= 5 ? "text-amber-600" : "text-neutral-800")}>
-                          {formatDate(request.expected_liquidation_date)}
+                          {fmt(request.expected_liquidation_date)}
                           {daysLeft <= 0
                             ? " — Overdue"
                             : daysLeft <= 5

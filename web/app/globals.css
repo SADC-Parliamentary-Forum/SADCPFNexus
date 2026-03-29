@@ -90,6 +90,14 @@
     height: 0;
   }
 
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Cards */
   .card {
     @apply rounded-xl bg-white border border-neutral-200 shadow-card;

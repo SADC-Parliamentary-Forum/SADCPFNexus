@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import api, { governanceApi, type GovernanceResolution, type GovernanceDocument } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useFormatDate } from "@/lib/useFormatDate";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,11 +55,6 @@ function statusDot(s: string) {
   return STATUS_DOT[s] ?? "bg-neutral-400";
 }
 
-function fmtDate(d: string | null) {
-  return d
-    ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-    : "—";
-}
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
@@ -144,6 +140,7 @@ function ResolutionRow({
   downloading: Record<string, boolean>;
   onDownload: (res: GovernanceResolution, lang: "en" | "fr" | "pt", doc: GovernanceDocument) => void;
 }) {
+  const { fmt: fmtDate } = useFormatDate();
   const [expanded, setExpanded] = useState(false);
 
   return (

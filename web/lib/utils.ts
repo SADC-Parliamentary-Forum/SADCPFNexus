@@ -14,6 +14,38 @@ export function formatDate(date: string | Date): string {
 }
 
 /**
+ * Format a date according to the user-chosen format string.
+ * Supported formats: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD" | "DD-MMM-YYYY"
+ */
+export function formatDateByFormat(
+  date: string | Date | null | undefined,
+  format: string
+): string {
+  if (!date) return "—";
+  const d =
+    date instanceof Date
+      ? date
+      : new Date(
+          typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)
+            ? date + "T00:00:00"
+            : typeof date === "string" && date.length > 10
+            ? date.slice(0, 10) + "T00:00:00"
+            : date
+        );
+  if (isNaN(d.getTime())) return "—";
+  const dd   = String(d.getDate()).padStart(2, "0");
+  const mm   = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(d.getFullYear());
+  const mmm  = d.toLocaleDateString("en-GB", { month: "short" });
+  switch (format) {
+    case "MM/DD/YYYY":  return `${mm}/${dd}/${yyyy}`;
+    case "YYYY-MM-DD":  return `${yyyy}-${mm}-${dd}`;
+    case "DD-MMM-YYYY": return `${dd}-${mmm}-${yyyy}`;
+    default:            return `${dd}/${mm}/${yyyy}`; // DD/MM/YYYY
+  }
+}
+
+/**
  * Friendly short date: "31 Mar 2027" (always include year for clarity).
  */
 export function formatDateShort(date: string | Date | null | undefined): string {
@@ -48,7 +80,10 @@ export function formatDateRange(
 /**
  * Returns relative label: "Today", "Yesterday", "In 3 days", "5 days ago", or formatted date.
  */
-export function formatDateRelative(date: string | Date | null | undefined): string {
+export function formatDateRelative(
+  date: string | Date | null | undefined,
+  format?: string
+): string {
   if (!date) return "—";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "—";
@@ -61,7 +96,7 @@ export function formatDateRelative(date: string | Date | null | undefined): stri
   if (diffDays === -1) return "Yesterday";
   if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
   if (diffDays < -1 && diffDays >= -7) return `${Math.abs(diffDays)} days ago`;
-  return formatDateShort(date);
+  return format ? formatDateByFormat(date, format) : formatDateShort(date);
 }
 
 /**

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { hrApi, type Timesheet, type TimesheetEntry, type AuthUser } from "@/lib/api";
-import { cn, formatDateShort, formatDateRelative } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { useFormatDate } from "@/lib/useFormatDate";
 import { USER_KEY } from "@/lib/constants";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ function initials(name: string): string {
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function TimesheetDetailPage() {
+  const { fmt: formatDateShort, fmtRelative: formatDateRelative } = useFormatDate();
   const params = useParams();
   const router = useRouter();
   const id = Number(params?.id);

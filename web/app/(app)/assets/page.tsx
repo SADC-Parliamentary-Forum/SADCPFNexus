@@ -14,6 +14,215 @@ const statusConfig: Record<string, { label: string; cls: string }> = {
   retired:      { label: "Retired",       cls: "badge-muted" },
 };
 
+// ─── Depreciation helpers ────────────────────────────────────────────────────
+
+const DEPR_METHODS = [
+  { value: "straight_line",    label: "Straight Line"    },
+  { value: "declining_balance", label: "Declining Balance (Double)" },
+] as const;
+
+function calcDepreciation(
+  purchaseValue: number,
+  usefulLifeYears: number,
+  salvageValue: number,
+  method: string,
+  purchaseDate: string | null | undefined,
+  issuedAt: string | null | undefined,
+): { currentValue: number; pct: number; yearsElapsed: number; annualDepr: number | null } | null {
+  if (!purchaseValue || !usefulLifeYears || usefulLifeYears <= 0) return null;
+  const raw = purchaseDate ?? issuedAt;
+  if (!raw) return null;
+  const ref = new Date(raw.slice(0, 10) + "T00:00:00");
+  if (isNaN(ref.getTime())) return null;
+  const yearsElapsed = Math.max(0, Math.min(
+    usefulLifeYears,
+    (Date.now() - ref.getTime()) / (365.25 * 86_400_000),
+  ));
+  let currentValue: number;
+  let annualDepr: number | null = null;
+  if (method === "declining_balance") {
+    const rate = 2 / usefulLifeYears;
+    currentValue = Math.max(salvageValue, purchaseValue * Math.pow(1 - rate, yearsElapsed));
+  } else {
+    const annual = (purchaseValue - salvageValue) / usefulLifeYears;
+    annualDepr = Math.round(annual * 100) / 100;
+    currentValue = Math.max(salvageValue, purchaseValue - annual * yearsElapsed);
+  }
+  currentValue = Math.round(currentValue * 100) / 100;
+  const pct = Math.min(100, (yearsElapsed / usefulLifeYears) * 100);
+  return { currentValue, pct, yearsElapsed, annualDepr };
+}
+
+function fmtMoney(n: number) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ─── Depreciation Modal ───────────────────────────────────────────────────────
+
+function DepreciationModal({
+  asset,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  onClose: () => void;
+  onSaved: (updated: Asset) => void;
+}) {
+  const [purchaseDate,    setPurchaseDate]    = useState(asset.purchase_date?.slice(0, 10) ?? "");
+  const [purchaseValue,   setPurchaseValue]   = useState(asset.purchase_value != null ? String(asset.purchase_value) : "");
+  const [usefulLife,      setUsefulLife]      = useState(asset.useful_life_years != null ? String(asset.useful_life_years) : "");
+  const [salvageValue,    setSalvageValue]    = useState(asset.salvage_value != null ? String(asset.salvage_value) : "0");
+  const [method,          setMethod]          = useState(asset.depreciation_method ?? "straight_line");
+  const [saving,          setSaving]          = useState(false);
+  const [error,           setError]           = useState<string | null>(null);
+
+  const pv  = purchaseValue  === "" ? null : Number(purchaseValue);
+  const ul  = usefulLife     === "" ? null : Number(usefulLife);
+  const sv  = salvageValue   === "" ? 0    : Number(salvageValue);
+
+  const preview = pv && ul ? calcDepreciation(pv, ul, sv, method, purchaseDate || null, asset.issued_at) : null;
+
+  const handleSave = async () => {
+    if (!pv || !ul) { setError("Purchase value and useful life are required."); return; }
+    setSaving(true); setError(null);
+    try {
+      const res = await assetsApi.update(asset.id, {
+        asset_code:         asset.asset_code,
+        name:               asset.name,
+        category:           asset.category,
+        purchase_date:      purchaseDate  || undefined,
+        purchase_value:     pv,
+        useful_life_years:  ul,
+        salvage_value:      sv,
+        depreciation_method: method,
+      });
+      onSaved(res.data as unknown as Asset);
+    } catch {
+      setError("Failed to save depreciation settings.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <div>
+      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}</label>
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+              <span className="material-symbols-outlined text-amber-600 text-[18px]">trending_down</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 text-sm">Set Depreciation</h3>
+              <p className="text-xs text-neutral-400">{asset.asset_code} — {asset.name}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">error_outline</span>{error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <F label="Purchase Date">
+              <input type="date" className="form-input" value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)} />
+            </F>
+            <F label="Purchase Value *">
+              <input type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
+                value={purchaseValue} onChange={(e) => setPurchaseValue(e.target.value)} />
+            </F>
+            <F label="Useful Life (years) *">
+              <input type="number" min={1} max={100} className="form-input" placeholder="e.g. 5"
+                value={usefulLife} onChange={(e) => setUsefulLife(e.target.value)} />
+            </F>
+            <F label="Salvage / Residual Value">
+              <input type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
+                value={salvageValue} onChange={(e) => setSalvageValue(e.target.value)} />
+            </F>
+            <div className="col-span-2">
+              <F label="Depreciation Method">
+                <select className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
+                  {DEPR_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </F>
+            </div>
+          </div>
+
+          {/* Live preview */}
+          {preview ? (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <p className="text-xs font-bold text-primary uppercase tracking-wide">Calculated Depreciation</p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-neutral-500">Current Book Value</p>
+                  <p className="text-lg font-bold text-neutral-900">{fmtMoney(preview.currentValue)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">% Depreciated</p>
+                  <p className="text-lg font-bold text-neutral-900">{preview.pct.toFixed(1)}%</p>
+                </div>
+                {preview.annualDepr != null && (
+                  <div>
+                    <p className="text-xs text-neutral-500">Annual Depreciation</p>
+                    <p className="text-sm font-semibold text-neutral-700">{fmtMoney(preview.annualDepr)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-neutral-500">Years Elapsed</p>
+                  <p className="text-sm font-semibold text-neutral-700">{preview.yearsElapsed.toFixed(1)} yr</p>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between text-[10px] text-neutral-400 mb-1">
+                  <span>Purchase</span>
+                  <span>End of life ({ul} yr)</span>
+                </div>
+                <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${preview.pct >= 80 ? "bg-red-500" : preview.pct >= 50 ? "bg-amber-500" : "bg-primary"}`}
+                    style={{ width: `${preview.pct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-neutral-200 p-4 text-center text-xs text-neutral-400">
+              Enter purchase value and useful life to see a live calculation.
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+          <button type="button" onClick={handleSave} disabled={saving || !pv || !ul}
+            className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">save</span>
+            {saving ? "Saving…" : "Save Depreciation"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const requestStatusConfig: Record<string, { label: string; cls: string }> = {
   pending:  { label: "Pending",  cls: "badge-warning" },
   approved: { label: "Approved", cls: "badge-success" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFormatDate } from "@/lib/useFormatDate";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type GovernanceResolution, type GovernanceDocument, type GovernanceMeeting, type MeetingMinutesRecord, type MeetingActionItem, type GovernanceCommittee, type GovernanceMeetingType } from "@/lib/api";
@@ -35,11 +36,14 @@ const STATUS_DOT: Record<ResStatus, string> = {
 
 // Committees and meeting types are loaded from the API — see committeeApi / governanceMeetingTypeApi
 
+const COMMITTEE_COLORS = ["bg-blue-400", "bg-emerald-400", "bg-purple-400", "bg-amber-400", "bg-teal-400", "bg-rose-400", "bg-indigo-400"];
+const committeeColorCache: Record<string, string> = {};
+const COMMITTEE_COLOR = new Proxy(committeeColorCache, {
+  get: (_, key: string) => committeeColorCache[key] ?? (committeeColorCache[key] = COMMITTEE_COLORS[Object.keys(committeeColorCache).length % COMMITTEE_COLORS.length]),
+});
+
 function statusStyle(s: string) { return STATUS_STYLE[s as ResStatus] ?? "bg-neutral-100 text-neutral-700 border-neutral-200"; }
 function statusDot(s: string) { return STATUS_DOT[s as ResStatus] ?? "bg-neutral-400"; }
-function fmtDate(d: string | null) {
-  return d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
-}
 function fmtBytes(n: number | null) {
   if (!n) return "";
   if (n < 1024) return `${n} B`;
@@ -191,6 +195,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
   const { toast } = useToast();
   const isEdit = !!initial?.id;
   const [saving, setSaving] = useState(false);
+  const [queuedFiles, setQueuedFiles] = useState<{ lang: "en" | "fr" | "pt"; file: File }[]>([]);
   const [form, setForm] = useState({
     reference_number: initial?.reference_number ?? "",
     title: initial?.title ?? "",
@@ -202,7 +207,21 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
     lead_role: initial?.lead_role ?? "",
   });
 
+  const LANG_OPTIONS = [
+    { code: "en" as const, label: "English" },
+    { code: "fr" as const, label: "French" },
+    { code: "pt" as const, label: "Portuguese" },
+  ];
+
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  const addFile = (lang: "en" | "fr" | "pt", file: File) => {
+    setQueuedFiles((p) => [...p.filter((q) => q.lang !== lang), { lang, file }]);
+  };
+
+  const removeQueued = (lang: "en" | "fr" | "pt") => {
+    setQueuedFiles((p) => p.filter((q) => q.lang !== lang));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +239,18 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
         res = await governanceApi.updateResolution(initial.id, payload);
       } else {
         res = await governanceApi.createResolution(payload);
+      }
+      const savedId = res.data.data.id;
+      // Upload any queued documents
+      for (const { lang, file } of queuedFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("language", lang);
+        try {
+          await governanceApi.uploadDocument(savedId, fd);
+        } catch {
+          toast("error", "Upload failed", `Could not upload ${lang.toUpperCase()} document.`);
+        }
       }
       toast("success", isEdit ? "Updated" : "Created", isEdit ? "Resolution updated." : "Resolution created.");
       onSaved(res.data.data);
@@ -246,7 +277,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-hide">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Reference No. *</label>
@@ -287,6 +318,41 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
               <textarea rows={3} className="form-input resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Resolution details…" />
             </div>
           </div>
+
+          {/* Document Upload */}
+          <div className="pt-2 border-t border-neutral-100">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="material-symbols-outlined text-neutral-400 text-[16px]">attach_file</span>
+              <p className="text-xs font-semibold text-neutral-700">Attach Documents <span className="font-normal text-neutral-400">(optional — upload by language)</span></p>
+            </div>
+            <div className="space-y-2">
+              {LANG_OPTIONS.map(({ code, label }) => {
+                const queued = queuedFiles.find((q) => q.lang === code);
+                return (
+                  <div key={code} className="flex items-center gap-3 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
+                    <span className="text-xs font-semibold text-neutral-500 w-20 flex-shrink-0">{label}</span>
+                    {queued ? (
+                      <div className="flex flex-1 items-center gap-2 min-w-0">
+                        <span className="material-symbols-outlined text-green-600 text-[15px]">check_circle</span>
+                        <span className="text-xs text-neutral-700 truncate flex-1">{queued.file.name}</span>
+                        <button type="button" onClick={() => removeQueued(code)} className="text-neutral-300 hover:text-red-500">
+                          <span className="material-symbols-outlined text-[15px]">close</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary hover:underline">
+                        <span className="material-symbols-outlined text-[15px]">upload_file</span>
+                        Choose file…
+                        <input type="file" accept=".pdf,.doc,.docx,.odt" className="sr-only"
+                          onChange={(ev) => { if (ev.target.files?.[0]) addFile(code, ev.target.files[0]); ev.target.value = ""; }} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-1 border-t border-neutral-100">
             <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
@@ -311,6 +377,7 @@ function ResolutionDrawer({
 }) {
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { fmt: fmtDate } = useFormatDate();
   const [detail, setDetail] = useState<GovernanceResolution>(resolution);
   const [loading, setLoading] = useState(false);
 
@@ -704,6 +771,7 @@ function ManageMeetingTypesModal({
 // ─── Resolutions List (shared by Committee + Plenary) ────────────────────────
 
 function ResolutionsList({ type }: { type: ResolutionType }) {
+  const { fmt: fmtDate } = useFormatDate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [resolutions, setResolutions] = useState<GovernanceResolution[]>([]);
@@ -964,6 +1032,7 @@ function MeetingFormModal({
 }) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
 
   const defaultType = meetingTypes[0]?.name ?? "";
   const initialType = existing?.meeting_type ?? defaultType;
@@ -979,6 +1048,13 @@ function MeetingFormModal({
     notes: existing?.notes ?? "",
   });
 
+  const addFiles = (files: FileList | null) => {
+    if (!files) return;
+    setQueuedFiles((p) => [...p, ...Array.from(files)]);
+  };
+
+  const removeQueued = (idx: number) => setQueuedFiles((p) => p.filter((_, i) => i !== idx));
+
   const handleSave = async () => {
     if (!form.title.trim() || !form.meeting_date) return;
     setSaving(true);
@@ -993,12 +1069,25 @@ function MeetingFormModal({
         apologies: form.apologiesText.split("\n").map((s) => s.trim()).filter(Boolean),
         notes: form.notes || undefined,
       };
+      let savedId: number;
       if (existing) {
         await minutesApi.update(existing.id, payload);
+        savedId = existing.id;
         toast("success", "Updated", "Meeting minutes updated.");
       } else {
-        await minutesApi.create(payload);
+        const res = await minutesApi.create(payload);
+        savedId = res.data.data.id;
         toast("success", "Created", "Meeting minutes recorded.");
+      }
+      // Upload queued documents
+      for (const file of queuedFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          await minutesApi.uploadDocument(savedId, fd);
+        } catch {
+          toast("error", "Upload failed", `Could not upload ${file.name}.`);
+        }
       }
       onSaved();
     } catch {
@@ -1098,6 +1187,34 @@ function MeetingFormModal({
               value={form.notes}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
           </div>
+
+          {/* Row 6: Document attachments */}
+          <div className="pt-1 border-t border-neutral-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-outlined text-neutral-400 text-[16px]">attach_file</span>
+              <p className="text-xs font-semibold text-neutral-700">Attachments <span className="font-normal text-neutral-400">(minutes, verbatim reports, supporting docs)</span></p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-neutral-300 px-4 py-3 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+              <span className="material-symbols-outlined text-primary text-[20px]">upload_file</span>
+              <span className="text-xs text-neutral-600">Click to add files <span className="text-neutral-400">(PDF, DOC, DOCX, ODT)</span></span>
+              <input type="file" accept=".pdf,.doc,.docx,.odt" multiple className="sr-only"
+                onChange={(ev) => { addFiles(ev.target.files); ev.target.value = ""; }} />
+            </label>
+            {queuedFiles.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                {queuedFiles.map((f, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-1.5">
+                    <span className="material-symbols-outlined text-primary text-[15px]">description</span>
+                    <span className="text-xs text-neutral-700 flex-1 truncate">{f.name}</span>
+                    <span className="text-xs text-neutral-400">{f.size < 1024 ? `${f.size} B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(0)} KB` : `${(f.size / 1048576).toFixed(1)} MB`}</span>
+                    <button type="button" onClick={() => removeQueued(i)} className="text-neutral-300 hover:text-red-500">
+                      <span className="material-symbols-outlined text-[15px]">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Footer (fixed) ── */}
@@ -1131,6 +1248,7 @@ function MeetingDrawer({
 }) {
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const { fmt: fmtDate } = useFormatDate();
   const [meeting, setMeeting] = useState(initialMeeting);
   const [activeTab, setActiveTab] = useState<"details" | "action_items" | "documents">("details");
   const [showEdit, setShowEdit] = useState(false);
@@ -1599,6 +1717,7 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
   onDelete: () => void;
   onAssign: () => void;
 }) {
+  const { fmt: fmtDate } = useFormatDate();
   const done = item.status === "completed" || item.status === "cancelled";
   return (
     <div className={`rounded-xl border px-4 py-3 flex items-start gap-3 transition-colors ${done ? "border-neutral-100 bg-neutral-50/50 opacity-70" : "border-neutral-200 bg-white"}`}>
@@ -1768,10 +1887,10 @@ function MeetingMinutes() {
                   <div className="flex-shrink-0 w-12 text-center">
                     <div className="rounded-xl bg-primary/10 px-2 py-1.5">
                       <p className="text-[10px] text-primary font-bold uppercase">
-                        {new Date(m.meeting_date + "T00:00:00").toLocaleDateString("en-GB", { month: "short" })}
+                        {m.meeting_date ? new Date(m.meeting_date.slice(0, 10) + "T00:00:00").toLocaleDateString("en-GB", { month: "short" }) : "—"}
                       </p>
                       <p className="text-lg font-bold text-primary leading-none">
-                        {new Date(m.meeting_date + "T00:00:00").getDate()}
+                        {m.meeting_date ? String(new Date(m.meeting_date.slice(0, 10) + "T00:00:00").getDate()) : "—"}
                       </p>
                     </div>
                   </div>
@@ -1866,6 +1985,7 @@ function MeetingMinutes() {
 // ─── Implementation Tracker Tab ───────────────────────────────────────────────
 
 function ImplementationTracker() {
+  const { fmt: fmtDate } = useFormatDate();
   const [resolutions, setResolutions] = useState<GovernanceResolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("Adopted");

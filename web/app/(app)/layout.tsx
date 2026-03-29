@@ -4,18 +4,21 @@ import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { PrefsProvider } from "@/components/providers/PrefsProvider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <QueryProvider>
-        <ToastProvider>
-          <ConfirmProvider>
-            <RouteProgressBar />
-            <AppShell>{children}</AppShell>
-          </ConfirmProvider>
-        </ToastProvider>
-      </QueryProvider>
+      <PrefsProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <RouteProgressBar />
+              <AppShell>{children}</AppShell>
+            </ConfirmProvider>
+          </ToastProvider>
+        </QueryProvider>
+      </PrefsProvider>
     </ThemeProvider>
   );
 }

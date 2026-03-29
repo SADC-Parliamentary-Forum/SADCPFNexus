@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { formatDateShort } from "@/lib/utils";
+import { useFormatDate } from "@/lib/useFormatDate";
 import {
   programmeApi,
   QUOTE_ATTACHMENT_TYPES,
@@ -88,6 +88,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PifDetailPage() {
+  const { fmt: formatDateShort } = useFormatDate();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -1086,7 +1087,7 @@ export default function PifDetailPage() {
                       <p className={`text-sm font-semibold ${s.done || s.active ? "text-neutral-900" : "text-neutral-400"}`}>{s.step}</p>
                       {(s.date || s.by) && (
                         <p className="text-xs text-neutral-400 mt-0.5">
-                          {s.date && new Date(s.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                          {s.date && formatDateShort(s.date)}
                           {s.by && ` · ${s.by}`}
                         </p>
                       )}

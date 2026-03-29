@@ -15,14 +15,109 @@ import {
   type TenantUserOption,
   type WorkplanAttachment,
 } from "@/lib/api";
+import { useFormatDate } from "@/lib/useFormatDate";
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// ─── Reusable inline manage-types modal ──────────────────────────────────────
+
+function ManageTypesModal({
+  title,
+  items,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onClose,
+}: {
+  title: string;
+  items: { id: number; name: string; locked: boolean }[];
+  onCreate: (name: string) => Promise<unknown>;
+  onUpdate: (id: number, name: string) => Promise<unknown>;
+  onDelete: (id: number) => Promise<unknown>;
+  onClose: () => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const [editId, setEditId]   = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState<string | null>(null);
+
+  const doCreate = async () => {
+    if (!newName.trim()) return;
+    setBusy(true); setErr(null);
+    try { await onCreate(newName.trim()); setNewName(""); } catch { setErr("Could not create."); }
+    finally { setBusy(false); }
+  };
+
+  const doUpdate = async () => {
+    if (editId === null || !editName.trim()) return;
+    setBusy(true); setErr(null);
+    try { await onUpdate(editId, editName.trim()); setEditId(null); } catch { setErr("Could not update."); }
+    finally { setBusy(false); }
+  };
+
+  const doDelete = async (id: number) => {
+    if (!confirm("Delete this item?")) return;
+    setBusy(true); setErr(null);
+    try { await onDelete(id); } catch { setErr("Could not delete."); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+          <h3 className="font-semibold text-neutral-900">Manage {title}</h3>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+          {err && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</p>}
+          <div className="space-y-1.5">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2">
+                {editId === item.id ? (
+                  <>
+                    <input autoFocus className="form-input flex-1 py-1 text-sm" value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") doUpdate(); if (e.key === "Escape") setEditId(null); }} />
+                    <button type="button" disabled={busy} onClick={doUpdate} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">Save</button>
+                    <button type="button" onClick={() => setEditId(null)} className="text-xs text-neutral-400 hover:text-neutral-600">Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm font-medium text-neutral-800">{item.name}</span>
+                    {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">system</span>}
+                    {!item.locked && (
+                      <>
+                        <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }}
+                          className="text-xs text-primary hover:underline">Edit</button>
+                        <button type="button" disabled={busy} onClick={() => doDelete(item.id)}
+                          className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+            {items.length === 0 && <p className="text-xs text-neutral-400 text-center py-4">No items yet.</p>}
+          </div>
+          <div className="flex gap-2 pt-1 border-t border-neutral-100">
+            <input className="form-input flex-1 text-sm" placeholder={`New ${title.replace(/s$/, "")} name…`}
+              value={newName} onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") doCreate(); }} />
+            <button type="button" disabled={busy || !newName.trim()} onClick={doCreate}
+              className="btn-primary px-4 py-2 text-sm disabled:opacity-50">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function WorkplanEventDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { fmt: formatDate } = useFormatDate();
   const id = params?.id != null ? Number(params.id) : NaN;
   const [event, setEvent] = useState<WorkplanEvent | null>(null);
   const [meetingTypes, setMeetingTypes] = useState<MeetingType[]>([]);
@@ -35,6 +130,8 @@ export default function WorkplanEventDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [manageEventTypes, setManageEventTypes] = useState(false);
+  const [manageMeetingTypes, setManageMeetingTypes] = useState(false);
 
   const [title, setTitle] = useState("");
   const [type, setType] = useState<WorkplanEvent["type"]>("meeting");
@@ -81,9 +178,13 @@ export default function WorkplanEventDetailPage() {
     loadEvent();
   }, [loadEvent]);
 
+  const reloadEventTypes   = () => workplanEventTypesApi.list().then((r) => setEventTypes(r.data?.data ?? [])).catch(() => {});
+  const reloadMeetingTypes = () => workplanMeetingTypesApi.list().then((r) => setMeetingTypes(r.data?.data ?? [])).catch(() => {});
+
   useEffect(() => {
-    workplanMeetingTypesApi.list().then((r) => setMeetingTypes(r.data?.data ?? [])).catch(() => setMeetingTypes([]));
-    workplanEventTypesApi.list().then((r) => setEventTypes(r.data?.data ?? [])).catch(() => setEventTypes([]));
+    reloadMeetingTypes();
+    reloadEventTypes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUsers = useCallback(() => {
@@ -237,7 +338,13 @@ export default function WorkplanEventDetailPage() {
             <input type="text" className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-semibold text-neutral-700">Event type *</label>
+              <button type="button" onClick={() => setManageEventTypes(true)}
+                className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                <span className="material-symbols-outlined text-[13px]">settings</span>Manage
+              </button>
+            </div>
             <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
               {eventTypes.map((et) => (
                 <option key={et.slug} value={et.slug}>{et.name}</option>
@@ -246,7 +353,13 @@ export default function WorkplanEventDetailPage() {
           </div>
           {type === "meeting" && (
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Meeting Category</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
+                <button type="button" onClick={() => setManageMeetingTypes(true)}
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                  <span className="material-symbols-outlined text-[13px]">settings</span>Manage
+                </button>
+              </div>
               <select
                 className="form-input w-full"
                 value={meetingTypeId}
@@ -359,6 +472,30 @@ export default function WorkplanEventDetailPage() {
       <div className="flex gap-3">
         <Link href="/workplan" className="text-sm font-semibold text-primary hover:underline">Back to Workplan</Link>
       </div>
+
+      {/* Manage Event Types modal */}
+      {manageEventTypes && (
+        <ManageTypesModal
+          title="Event Types"
+          items={eventTypes.map((et) => ({ id: et.id, name: et.name, locked: et.is_system }))}
+          onCreate={(name) => workplanEventTypesApi.create({ name }).then(() => reloadEventTypes())}
+          onUpdate={(id, name) => workplanEventTypesApi.update(id, { name }).then(() => reloadEventTypes())}
+          onDelete={(id) => workplanEventTypesApi.delete(id).then(() => reloadEventTypes())}
+          onClose={() => setManageEventTypes(false)}
+        />
+      )}
+
+      {/* Manage Meeting Categories modal */}
+      {manageMeetingTypes && (
+        <ManageTypesModal
+          title="Meeting Categories"
+          items={meetingTypes.map((mt) => ({ id: mt.id, name: mt.name, locked: false }))}
+          onCreate={(name) => workplanMeetingTypesApi.create({ name }).then(() => reloadMeetingTypes())}
+          onUpdate={(id, name) => workplanMeetingTypesApi.update(id, { name }).then(() => reloadMeetingTypes())}
+          onDelete={(id) => workplanMeetingTypesApi.delete(id).then(() => reloadMeetingTypes())}
+          onClose={() => setManageMeetingTypes(false)}
+        />
+      )}
     </div>
   );
 }

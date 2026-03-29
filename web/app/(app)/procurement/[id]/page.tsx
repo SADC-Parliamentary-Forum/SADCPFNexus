@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
+import { useFormatDate } from "@/lib/useFormatDate";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:  { label: "Approved",  cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"  },
@@ -37,6 +38,7 @@ function SkeletonCard() {
 }
 
 export default function ProcurementDetailPage({ params }: { params: { id: string } }) {
+  const { fmt } = useFormatDate();
   const [request, setRequest] = useState<ProcurementRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,7 +132,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Requested By</h3>
             {request.submitted_at && (
               <span className="ml-auto text-xs text-neutral-400">
-                {new Date(request.submitted_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {fmt(request.submitted_at)}
               </span>
             )}
           </div>

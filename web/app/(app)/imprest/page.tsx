@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
-import { formatDateShort } from "@/lib/utils";
+import { useFormatDate } from "@/lib/useFormatDate";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   approved:   { label: "Approved",   cls: "badge-success" },
@@ -20,6 +20,7 @@ const filterMap: Record<string, string | undefined> = {
 };
 
 export default function ImprestPage() {
+  const { fmt: formatDateShort } = useFormatDate();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [selected, setSelected] = useState<Set<number>>(new Set());

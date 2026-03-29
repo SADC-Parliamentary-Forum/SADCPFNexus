@@ -82,6 +82,7 @@ export default function ProfileSettingsPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(prefs));
+    window.dispatchEvent(new Event("sadcpf:prefs-updated"));
     showToast("Preferences saved.");
   };
 
@@ -163,6 +164,21 @@ export default function ProfileSettingsPage() {
               <select className="form-input" value={prefs.dateFormat} onChange={(e) => set("dateFormat", e.target.value)}>
                 {DATE_FORMATS.map((f) => <option key={f}>{f}</option>)}
               </select>
+              <p className="text-[11px] text-neutral-400 mt-1">
+                Preview: {(() => {
+                  const d = new Date(2026, 2, 22); // 22 Mar 2026
+                  const dd = String(d.getDate()).padStart(2, "0");
+                  const mm = String(d.getMonth() + 1).padStart(2, "0");
+                  const yyyy = String(d.getFullYear());
+                  const mmm = "Mar";
+                  switch (prefs.dateFormat) {
+                    case "MM/DD/YYYY":  return `${mm}/${dd}/${yyyy}`;
+                    case "YYYY-MM-DD":  return `${yyyy}-${mm}-${dd}`;
+                    case "DD-MMM-YYYY": return `${dd}-${mmm}-${yyyy}`;
+                    default:            return `${dd}/${mm}/${yyyy}`;
+                  }
+                })()}
+              </p>
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Display Currency</label>

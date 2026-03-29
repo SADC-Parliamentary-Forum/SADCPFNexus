@@ -14,6 +14,7 @@ export function middleware(request: NextRequest) {
     "/dashboard", "/admin", "/travel", "/leave", "/imprest", "/procurement",
     "/finance", "/hr", "/pif", "/workplan", "/approvals", "/alerts", "/governance",
     "/reports", "/profile", "/assets", "/organogram", "/analytics", "/assignments",
+    "/srhr", "/notifications", "/saam",
   ];
   const isProtected = protectedPrefixes.some((prefix) => path.startsWith(prefix));
   if (isProtected) {
@@ -64,5 +65,8 @@ export const config = {
     "/organogram/:path*",
     "/analytics/:path*",
     "/assignments/:path*",
+    "/srhr/:path*",
+    "/notifications/:path*",
+    "/saam/:path*",
   ],
 };
