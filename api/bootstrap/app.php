@@ -26,6 +26,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'rls' => \App\Http\Middleware\SetRlsContext::class,
         ]);
+
+        // Exclude email-approval POST routes from CSRF: the token in the URL path
+        // acts as the shared secret (only the email recipient has it).
+        $middleware->validateCsrfTokens(except: [
+            'email-approval/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Ensure API auth failures always return JSON 401, never redirect to route('login').

@@ -13,9 +13,11 @@ class ModuleNotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly string $notifSubject,
-        public readonly string $notifBody,
-        public readonly string $recipientName,
+        public readonly string  $notifSubject,
+        public readonly string  $notifBody,
+        public readonly string  $recipientName,
+        public readonly ?string $approveUrl = null,
+        public readonly ?string $rejectUrl  = null,
     ) {}
 
     public function envelope(): Envelope
@@ -31,6 +33,8 @@ class ModuleNotificationMail extends Mailable
                 'subject'       => $this->notifSubject,
                 'body'          => $this->notifBody,
                 'recipientName' => $this->recipientName,
+                'approveUrl'    => $this->approveUrl,
+                'rejectUrl'     => $this->rejectUrl,
             ],
         );
     }

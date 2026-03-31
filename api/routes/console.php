@@ -12,3 +12,9 @@ Artisan::command('inspire', function () {
 // dispatch in-app / email notifications to Finance Controller and SG.
 // Runs every weekday morning at 07:00.
 Schedule::command('budget:check-variance')->weekdays()->at('07:00');
+
+// Prune signed action tokens that are expired AND older than 30 days.
+// Keeps the table lean while retaining recent tokens for audit purposes.
+Schedule::call(function () {
+    \App\Models\SignedActionToken::where('expires_at', '<', now()->subDays(30))->delete();
+})->daily()->name('prune-expired-action-tokens');

@@ -4,12 +4,18 @@ namespace App\Modules\Procurement\Services;
 use App\Models\AuditLog;
 use App\Models\ProcurementRequest;
 use App\Models\User;
+use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ProcurementService
 {
+    public function __construct(
+        protected NotificationService $notificationService,
+        protected WorkflowService     $workflowService,
+    ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ProcurementRequest::with(['requester', 'items', 'quotes'])
@@ -122,6 +128,10 @@ class ProcurementService
             'tags'           => 'procurement',
         ]);
 
+        // Initiate workflow — WorkflowService::initiate() calls notifyApprovers() internally,
+        // which sends approval emails with action buttons to the first-step approvers.
+        $this->workflowService->initiate($request, 'procurement', $user);
+
         return $request->fresh();
     }
 
@@ -149,6 +159,16 @@ class ProcurementService
             'tags'           => 'procurement',
         ]);
 
+        $request->loadMissing('requester');
+        if ($request->requester) {
+            $this->notificationService->dispatch(
+                $request->requester,
+                'procurement.approved',
+                ['name' => $request->requester->name, 'reference' => $request->reference_number],
+                ['module' => 'procurement', 'record_id' => $request->id, 'url' => '/procurement/' . $request->id]
+            );
+        }
+
         return $request->fresh();
     }
 
@@ -170,6 +190,16 @@ class ProcurementService
             'new_values'     => ['reason' => $reason],
             'tags'           => 'procurement',
         ]);
+
+        $request->loadMissing('requester');
+        if ($request->requester) {
+            $this->notificationService->dispatch(
+                $request->requester,
+                'procurement.rejected',
+                ['name' => $request->requester->name, 'reference' => $request->reference_number, 'comment' => $reason],
+                ['module' => 'procurement', 'record_id' => $request->id, 'url' => '/procurement/' . $request->id]
+            );
+        }
 
         return $request->fresh();
     }

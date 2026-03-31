@@ -43,8 +43,11 @@ class NotificationService
 
         // Queue email
         if ($sendEmail && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
+            $approveUrl = $meta['approve_url'] ?? null;
+            $rejectUrl  = $meta['reject_url']  ?? null;
+
             Mail::to($recipient->email)
-                ->queue(new ModuleNotificationMail($subject, $body, $recipient->name));
+                ->queue(new ModuleNotificationMail($subject, $body, $recipient->name, $approveUrl, $rejectUrl));
         }
     }
 
@@ -191,6 +194,26 @@ class NotificationService
             'srhr.report.revision_requested' => [
                 'subject' => 'Revision requested on your report — {{reference}}',
                 'body'    => "Dear {{name}},\n\nA revision has been requested on your report ({{reference}}) — \"{{title}}\".\n\nReviewer notes:\n{{notes}}\n\nPlease update and resubmit your report.\n\nRegards,\nSADC-PF HR",
+            ],
+
+            // Workflow — approver step assignment (sent with email action buttons)
+            'workflow.approval_required' => [
+                'subject' => 'Action required: {{module_label}} request {{reference}} pending your approval',
+                'body'    => "Dear {{name}},\n\nA {{module_label}} request ({{reference}}) submitted by {{requester}} is awaiting your approval.\n\n{{summary}}\n\nPlease use the buttons below to approve or return this request, or log in to the portal to review the full details.\n\nThis action link expires in 72 hours.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
+            // Salary advance
+            'salary_advance.approved' => [
+                'subject' => 'Your salary advance request has been approved',
+                'body'    => "Dear {{name}},\n\nYour salary advance request ({{reference}}) of {{amount}} has been approved.\n\nPlease coordinate with the Finance office for disbursement arrangements.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'salary_advance.rejected' => [
+                'subject' => 'Your salary advance request has been returned',
+                'body'    => "Dear {{name}},\n\nYour salary advance request ({{reference}}) has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'salary_advance.submitted' => [
+                'subject' => 'Salary advance request submitted — Action required',
+                'body'    => "Dear {{name}},\n\nA salary advance request ({{reference}}) of {{amount}} has been submitted by {{requester}} for approval.\n\nPlease review and action this request.\n\nRegards,\nSADC-PF Finance",
             ],
 
             // Generic rejection fallback

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Finance;
 use App\Http\Controllers\Controller;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
+use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class SalaryAdvanceController extends Controller
 {
+    public function __construct(
+        protected NotificationService $notificationService,
+        protected WorkflowService     $workflowService,
+    ) {}
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'per_page']);
@@ -106,6 +112,10 @@ class SalaryAdvanceController extends Controller
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }
         $salaryAdvanceRequest->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+        // Initiate workflow — will notify first-step approvers with email action buttons.
+        $this->workflowService->initiate($salaryAdvanceRequest, 'salary_advance', $request->user());
+
         return response()->json(['message' => 'Submitted.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
     }
 
@@ -124,6 +134,21 @@ class SalaryAdvanceController extends Controller
             'approved_at' => now(),
             'approved_by' => $request->user()->id,
         ]);
+
+        $salaryAdvanceRequest->loadMissing('requester');
+        if ($salaryAdvanceRequest->requester) {
+            $this->notificationService->dispatch(
+                $salaryAdvanceRequest->requester,
+                'salary_advance.approved',
+                [
+                    'name'      => $salaryAdvanceRequest->requester->name,
+                    'reference' => $salaryAdvanceRequest->reference_number,
+                    'amount'    => number_format((float) $salaryAdvanceRequest->amount, 2) . ' ' . $salaryAdvanceRequest->currency,
+                ],
+                ['module' => 'salary_advance', 'record_id' => $salaryAdvanceRequest->id, 'url' => '/finance/salary-advance/' . $salaryAdvanceRequest->id]
+            );
+        }
+
         return response()->json(['message' => 'Approved.', 'data' => $salaryAdvanceRequest->fresh(['requester', 'approver'])]);
     }
 
@@ -137,6 +162,21 @@ class SalaryAdvanceController extends Controller
             'status'            => 'rejected',
             'rejection_reason'  => $data['reason'],
         ]);
+
+        $salaryAdvanceRequest->loadMissing('requester');
+        if ($salaryAdvanceRequest->requester) {
+            $this->notificationService->dispatch(
+                $salaryAdvanceRequest->requester,
+                'salary_advance.rejected',
+                [
+                    'name'      => $salaryAdvanceRequest->requester->name,
+                    'reference' => $salaryAdvanceRequest->reference_number,
+                    'comment'   => $data['reason'],
+                ],
+                ['module' => 'salary_advance', 'record_id' => $salaryAdvanceRequest->id, 'url' => '/finance/salary-advance/' . $salaryAdvanceRequest->id]
+            );
+        }
+
         return response()->json(['message' => 'Rejected.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
     }
 }

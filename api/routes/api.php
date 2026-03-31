@@ -23,6 +23,11 @@ Route::prefix('v1')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     });
 
+    // Email action preview — unauthenticated (token is the access control)
+    Route::get('email-action/preview/{token}',
+        [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'preview']
+    )->middleware('throttle:20,1');
+
     // Authenticated routes
     Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
 
@@ -51,6 +56,11 @@ Route::prefix('v1')->group(function () {
         Route::post('profile/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'store']);
         Route::delete('profile/documents/{attachment}', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'destroy']);
         Route::get('profile/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'download']);
+
+        // Email action processing — authenticated (token + user must match)
+        Route::post('email-action/process',
+            [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'process']
+        );
 
         // User Notifications (in-app notification centre)
         Route::prefix('notifications')->group(function () {

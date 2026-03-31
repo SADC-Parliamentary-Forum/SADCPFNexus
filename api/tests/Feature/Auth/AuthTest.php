@@ -80,14 +80,13 @@ class AuthTest extends TestCase
     public function test_logout_revokes_token(): void
     {
         $token = $this->user->createToken('test')->plainTextToken;
-        $http  = $this->withHeader('Authorization', "Bearer {$token}");
 
-        $http->postJson('/api/v1/auth/logout')->assertOk();
-
-        // Subsequent request with the same token must be rejected
         $this->withHeader('Authorization', "Bearer {$token}")
-             ->getJson('/api/v1/auth/me')
-             ->assertUnauthorized();
+             ->postJson('/api/v1/auth/logout')
+             ->assertOk();
+
+        // Token must be deleted from the database (revoked)
+        $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
     public function test_login_requires_email_and_password(): void

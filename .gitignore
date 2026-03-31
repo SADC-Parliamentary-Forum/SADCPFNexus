@@ -32,3 +32,5 @@ api/.ship-safe/context.json
 .ship-safe/history.json
 .ship-safe/context.json
 docs/security-assessment-report.txt
+run-tests.sh
+api/.env.example

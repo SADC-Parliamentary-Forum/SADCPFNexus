@@ -11,9 +11,24 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class WorkflowService
 {
+    /** Human-readable labels for each module type. */
+    private const MODULE_LABELS = [
+        'travel'         => 'Travel',
+        'leave'          => 'Leave',
+        'imprest'        => 'Imprest',
+        'procurement'    => 'Procurement',
+        'salary_advance' => 'Salary Advance',
+    ];
+
+    public function __construct(
+        protected NotificationService $notificationService,
+        protected SignedTokenService  $signedTokenService,
+    ) {}
+
     /**
      * Start a workflow for an approvable entity.
      */
@@ -37,6 +52,9 @@ class WorkflowService
             'status'          => 'pending',
         ]);
 
+        // Notify the first-step approvers (with email action buttons)
+        $this->notifyApprovers($request);
+
         return $request;
     }
 
@@ -47,7 +65,9 @@ class WorkflowService
     {
         $this->verifyActorCanApprove($request, $actor);
 
-        DB::transaction(function () use ($request, $actor, $comment) {
+        $advancedToStep = null;
+
+        DB::transaction(function () use ($request, $actor, $comment, &$advancedToStep) {
             ApprovalHistory::create([
                 'approval_request_id' => $request->id,
                 'user_id'             => $actor->id,
@@ -65,8 +85,16 @@ class WorkflowService
             } else {
                 // Move to next step
                 $request->update(['current_step_index' => $nextStepIndex]);
+                $advancedToStep = $nextStepIndex;
             }
         });
+
+        // Notify next-step approvers AFTER the transaction commits (so queued
+        // jobs don't run against uncommitted data).
+        if ($advancedToStep !== null) {
+            $request->refresh();
+            $this->notifyApprovers($request);
+        }
     }
 
     /**
@@ -220,5 +248,89 @@ class WorkflowService
         }
 
         return $manager ? [$manager] : [];
+    }
+
+    /**
+     * Notify all current-step approvers with email action buttons (approve / reject).
+     */
+    private function notifyApprovers(ApprovalRequest $request): void
+    {
+        try {
+            $approvers = $this->getCurrentApprovers($request);
+            if (empty($approvers)) {
+                return;
+            }
+
+            $entity    = $request->approvable;
+            $requester = $this->getRequesterFromApprovable($request);
+            $module    = $this->resolveModuleType($request);
+            $label     = self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
+
+            // Build a brief human-readable summary of the request
+            $summary = $this->buildSummary($entity, $module);
+
+            foreach ($approvers as $approver) {
+                try {
+                    $urls = $this->signedTokenService->createPair($request, $approver);
+
+                    $vars = [
+                        'name'         => $approver->name,
+                        'module_label' => $label,
+                        'reference'    => $entity->reference_number ?? "#{$request->id}",
+                        'requester'    => $requester?->name ?? 'A staff member',
+                        'summary'      => $summary,
+                    ];
+
+                    $meta = [
+                        'module'      => $module,
+                        'record_id'   => $entity->id,
+                        'url'         => "/{$module}/" . ($entity->id ?? ''),
+                        'approve_url' => $urls['approve_url'],
+                        'reject_url'  => $urls['reject_url'],
+                    ];
+
+                    $this->notificationService->dispatch(
+                        $approver,
+                        'workflow.approval_required',
+                        $vars,
+                        $meta
+                    );
+                } catch (Throwable) {
+                    // Never block the approval flow due to notification failures
+                }
+            }
+        } catch (Throwable) {
+            // Silently swallow — notification errors must not bubble up
+        }
+    }
+
+    private function resolveModuleType(ApprovalRequest $request): string
+    {
+        $type = $request->approvable_type ?? '';
+        $map  = [
+            'App\\Models\\TravelRequest'        => 'travel',
+            'App\\Models\\LeaveRequest'         => 'leave',
+            'App\\Models\\ImprestRequest'       => 'imprest',
+            'App\\Models\\ProcurementRequest'   => 'procurement',
+            'App\\Models\\SalaryAdvanceRequest' => 'salary_advance',
+        ];
+
+        return $map[$type] ?? strtolower(class_basename($type));
+    }
+
+    private function buildSummary(?object $entity, string $module): string
+    {
+        if (!$entity) {
+            return '';
+        }
+
+        return match ($module) {
+            'travel'         => 'Destination: ' . ($entity->destination_city ?? '') . ', ' . ($entity->destination_country ?? '') . "\nDeparture: " . ($entity->departure_date ?? ''),
+            'leave'          => 'Type: ' . ($entity->leave_type ?? '') . "\nFrom: " . ($entity->start_date ?? '') . ' to ' . ($entity->end_date ?? ''),
+            'imprest'        => 'Amount: ' . number_format((float) ($entity->amount_requested ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
+            'procurement'    => 'Item: ' . ($entity->title ?? '') . "\nEstimated value: " . number_format((float) ($entity->estimated_value ?? 0), 2) . ' ' . ($entity->currency ?? 'USD'),
+            'salary_advance' => 'Amount: ' . number_format((float) ($entity->amount ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
+            default          => '',
+        };
     }
 }

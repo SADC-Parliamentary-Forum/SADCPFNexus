@@ -52,6 +52,35 @@
         <p class="subject-label">Notification</p>
         <p class="subject-text">{{ $subject }}</p>
         <div class="message">{{ $body }}</div>
+
+        @if(!empty($approveUrl) || !empty($rejectUrl))
+        <!-- Action buttons — link to the portal approval page (handles both logged-in and guest flows) -->
+        <div style="margin: 28px 0 8px;">
+            @if(!empty($approveUrl))
+            <a href="{{ $approveUrl }}"
+               style="display:inline-block; padding: 14px 36px; background: #16a34a; color: #ffffff;
+                      font-family: Arial, sans-serif; font-weight: 700; font-size: 15px;
+                      text-decoration: none; border-radius: 8px; border: 2px solid #15803d;
+                      margin-right: 12px; margin-bottom: 10px; letter-spacing: .01em;">
+                &#10003;&nbsp; Review &amp; Approve
+            </a>
+            @endif
+            @if(!empty($rejectUrl))
+            <a href="{{ $rejectUrl }}"
+               style="display:inline-block; padding: 14px 36px; background: #ffffff; color: #dc2626;
+                      font-family: Arial, sans-serif; font-weight: 700; font-size: 15px;
+                      text-decoration: none; border-radius: 8px; border: 2px solid #dc2626;
+                      margin-bottom: 10px; letter-spacing: .01em;">
+                &#10007;&nbsp; Return / Reject
+            </a>
+            @endif
+        </div>
+        <p style="font-size: 11px; color: #9ca3af; margin: 4px 0 20px; line-height: 1.5;">
+            If you are logged in to SADC-PF Nexus, you can sign this approval with your saved signature.
+            These links are single-use and expire 72 hours after this email was sent.
+        </p>
+        @endif
+
         <hr class="divider">
         <p style="font-size:12px;color:#6b7280;margin:0;">
             This message was sent to <strong>{{ $recipientName }}</strong>. If you have questions, please contact your HR or Finance department.
