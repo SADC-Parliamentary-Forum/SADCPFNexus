@@ -229,6 +229,23 @@ Route::prefix('v1')->group(function () {
                 ->names('procurement.vendors');
             Route::post('vendors/{vendor}/approve', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
             Route::post('vendors/{vendor}/reject',  [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+
+            // Purchase Orders
+            Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
+                ->parameters(['purchase-orders' => 'purchaseOrder'])
+                ->names('procurement.purchase-orders');
+            Route::post('purchase-orders/{purchaseOrder}/issue',  [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
+            Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'cancel']);
+
+            // Goods Receipts — top-level listing
+            Route::get('receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'indexAll']);
+
+            // Goods Receipts (nested under POs)
+            Route::get('purchase-orders/{purchaseOrder}/receipts',             [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'index']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts',            [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'store']);
+            Route::get('purchase-orders/{purchaseOrder}/receipts/{receipt}',   [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'show']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/accept', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'accept']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/reject', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'reject']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

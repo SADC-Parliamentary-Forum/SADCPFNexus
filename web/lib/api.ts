@@ -1072,6 +1072,90 @@ export const vendorsApi = {
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
 };
 
+// ─── Purchase Orders ─────────────────────────────────────────────────────────
+
+export interface PurchaseOrderItem {
+  id: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  reference_number: string;
+  title: string;
+  description: string | null;
+  delivery_address: string | null;
+  payment_terms: string;
+  total_amount: number;
+  currency: string;
+  status: "draft" | "issued" | "partially_received" | "received" | "invoiced" | "closed" | "cancelled";
+  issued_at: string | null;
+  expected_delivery_date: string | null;
+  cancellation_reason: string | null;
+  vendor?: Vendor;
+  items?: PurchaseOrderItem[];
+  procurement_request?: ProcurementRequest;
+  created_at?: string;
+}
+
+export interface GoodsReceiptItem {
+  id: number;
+  purchase_order_item_id: number;
+  quantity_ordered: number;
+  quantity_received: number;
+  quantity_accepted: number;
+  condition_notes: string | null;
+  purchase_order_item?: PurchaseOrderItem;
+}
+
+export interface GoodsReceiptNote {
+  id: number;
+  reference_number: string;
+  purchase_order_id: number;
+  received_date: string;
+  delivery_note_number: string | null;
+  notes: string | null;
+  status: "pending" | "inspected" | "accepted" | "rejected";
+  items?: GoodsReceiptItem[];
+  purchase_order?: PurchaseOrder;
+  received_by?: { id: number; name: string };
+  created_at?: string;
+}
+
+export const purchaseOrdersApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<PurchaseOrder>>("/procurement/purchase-orders", { params }),
+  get: (id: number) =>
+    api.get<{ data: PurchaseOrder }>(`/procurement/purchase-orders/${id}`),
+  create: (data: Partial<PurchaseOrder> & { procurement_request_id: number; vendor_id: number; items?: Partial<PurchaseOrderItem>[] }) =>
+    api.post<{ data: PurchaseOrder; message: string }>("/procurement/purchase-orders", data),
+  update: (id: number, data: Partial<PurchaseOrder>) =>
+    api.put<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}`, data),
+  issue: (id: number) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/issue`),
+  cancel: (id: number, reason: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
+};
+
+export const goodsReceiptsApi = {
+  listAll: (params?: { status?: string; po_id?: number }) =>
+    api.get<{ data: GoodsReceiptNote[] }>("/procurement/receipts", { params }),
+  list: (poId: number) =>
+    api.get<{ data: GoodsReceiptNote[] }>(`/procurement/purchase-orders/${poId}/receipts`),
+  get: (poId: number, grnId: number) =>
+    api.get<{ data: GoodsReceiptNote }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}`),
+  create: (poId: number, data: { received_date: string; notes?: string; items: { purchase_order_item_id: number; quantity_received: number; quantity_accepted?: number }[] }) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts`, data),
+  accept: (poId: number, grnId: number) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/accept`),
+  reject: (poId: number, grnId: number, reason: string) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/reject`, { reason }),
+};
+
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────
 
 export interface SalaryAdvanceRequest {
