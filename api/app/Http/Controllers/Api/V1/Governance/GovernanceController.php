@@ -107,7 +107,9 @@ class GovernanceController extends Controller
 
     public function showResolution(Request $request, GovernanceResolution $resolution): JsonResponse
     {
-        abort_unless((int) $resolution->tenant_id === (int) $request->user()->tenant_id, 404);
+        $resolution = GovernanceResolution::where('id', $resolution->id)
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->firstOrFail();
         return response()->json(['data' => $resolution->load('documents')]);
     }
 

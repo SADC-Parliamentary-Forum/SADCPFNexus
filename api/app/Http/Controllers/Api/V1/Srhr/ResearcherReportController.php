@@ -15,6 +15,9 @@ class ResearcherReportController extends Controller
     private function checkPerm(Request $request, string $permission): void
     {
         $user = $request->user();
+        if ($user->isSystemAdmin() || $user->hasAnyRole(['System Admin', 'HR Manager', 'HR Administrator'])) {
+            return;
+        }
         if (!$user->isSystemAdmin()) {
             abort_unless($user->hasPermissionTo($permission, 'sanctum'), 403);
         }

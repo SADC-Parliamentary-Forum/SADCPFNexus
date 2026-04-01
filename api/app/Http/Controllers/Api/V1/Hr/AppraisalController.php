@@ -571,4 +571,27 @@ class AppraisalController extends Controller
             'employee:id,name,email',
         ]));
     }
+
+    /**
+     * Delete a draft appraisal. HR/admin only. Cannot delete submitted/finalized appraisals.
+     */
+    public function destroy(Request $request, Appraisal $appraisal): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($appraisal->tenant_id !== $user->tenant_id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+        if (! $this->isHrAdmin($user)) {
+            return response()->json(['message' => 'Forbidden. Requires hr.admin permission.'], 403);
+        }
+        if ($appraisal->status !== 'draft') {
+            return response()->json(['message' => 'Only draft appraisals can be deleted.'], 422);
+        }
+
+        $appraisal->kras()->delete();
+        $appraisal->delete();
+
+        return response()->json(['message' => 'Appraisal deleted.']);
+    }
 }

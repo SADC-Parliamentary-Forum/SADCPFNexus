@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\ModuleNotificationMail;
+use App\Models\Notification;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
@@ -29,16 +30,15 @@ class NotificationService
         $subject  = $this->replacePlaceholders($template['subject'], $vars);
         $body     = $this->replacePlaceholders($template['body'], $vars);
 
-        // Store in-app notification (Laravel DB notifications channel)
-        $recipient->notifications()->create([
-            'id'   => \Illuminate\Support\Str::uuid(),
-            'type' => 'App\\Notifications\\ModuleNotification',
-            'data' => json_encode([
-                'trigger_key' => $triggerKey,
-                'subject'     => $subject,
-                'body'        => $body,
-                'meta'        => $meta,
-            ]),
+        Notification::create([
+            'tenant_id' => $recipient->tenant_id,
+            'user_id'   => $recipient->id,
+            'type'      => 'App\\Notifications\\ModuleNotification',
+            'trigger'   => $triggerKey,
+            'subject'   => $subject,
+            'body'      => $body,
+            'meta'      => $meta ?: null,
+            'is_read'   => false,
         ]);
 
         // Queue email

@@ -130,6 +130,7 @@ Route::prefix('v1')->group(function () {
             Route::get('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'index']);
             Route::put('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'updateByTrigger']);
             Route::post('notification-templates/test-send', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'testSend']);
+            Route::delete('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'resetToDefault']);
 
             // Positions (establishment register)
             Route::apiResource('positions', \App\Http\Controllers\Api\V1\Admin\PositionController::class);
@@ -266,6 +267,8 @@ Route::prefix('v1')->group(function () {
             Route::get('incidents', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'index']);
             Route::post('incidents', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'store']);
             Route::get('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'show']);
+            Route::put('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'update']);
+            Route::delete('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'destroy']);
         });
 
         // HR - Work Assignments
@@ -288,11 +291,10 @@ Route::prefix('v1')->group(function () {
             Route::post('performance', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'store']);
             Route::get('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'show']);
             Route::put('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'update']);
+            Route::delete('performance/{performanceTracker}', [\App\Http\Controllers\Api\V1\Hr\PerformanceTrackerController::class, 'destroy']);
 
-            // HR Documents (aggregated list; returns empty when no backend aggregation)
-            Route::get('documents', function () {
-                return response()->json(['data' => []]);
-            });
+            // HR Documents (aggregated list across all HR personal files — HR admin sees all, staff sees own)
+            Route::get('documents', [\App\Http\Controllers\Api\V1\Hr\HrDocumentsController::class, 'index']);
             // HR Personal Files
             Route::get('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'index']);
             Route::post('files', [\App\Http\Controllers\Api\V1\Hr\HrPersonalFileController::class, 'store']);
@@ -310,6 +312,7 @@ Route::prefix('v1')->group(function () {
             Route::get('appraisals/{appraisal}', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'show']);
             Route::post('appraisals', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'store']);
             Route::put('appraisals/{appraisal}', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'update']);
+            Route::delete('appraisals/{appraisal}', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'destroy']);
             Route::post('appraisals/{appraisal}/submit-self-assessment', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'submitSelfAssessment']);
             Route::post('appraisals/{appraisal}/supervisor-review', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'supervisorReview']);
             Route::post('appraisals/{appraisal}/hod-review', [\App\Http\Controllers\Api\V1\Hr\AppraisalController::class, 'hodReview']);
@@ -325,6 +328,7 @@ Route::prefix('v1')->group(function () {
             Route::get('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'show']);
             Route::post('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'store']);
             Route::put('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'update']);
+            Route::delete('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'destroy']);
         });
 
         // Programmes (PIF)
@@ -383,6 +387,7 @@ Route::prefix('v1')->group(function () {
 
         // Analytics
         Route::get('analytics/summary', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'summary']);
+        Route::get('analytics/module/{module}', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'byModule']);
 
         // Reports (summary + list endpoints for hub)
         Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
@@ -399,15 +404,19 @@ Route::prefix('v1')->group(function () {
 
         // Assets (inventory, fleet - filter by category or assigned_to=me; create gated by admin/manager)
         Route::get('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'index']);
+        Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
         Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
         Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
+        Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);
         Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
-        Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
         Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);
 
         // Asset requests (any auth user can request; managers see all)
         Route::get('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'index']);
         Route::post('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'store']);
+        Route::get('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'show']);
+        Route::put('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'update']);
+        Route::delete('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'destroy']);
 
         // Assignments, Oversight & Accountability
         Route::prefix('assignments')->group(function () {
@@ -492,6 +501,8 @@ Route::prefix('v1')->group(function () {
         Route::get('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'index']);
         Route::post('support/tickets', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'store']);
         Route::get('support/tickets/{supportTicket}', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'show']);
+        Route::put('support/tickets/{supportTicket}', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'update']);
+        Route::delete('support/tickets/{supportTicket}', [\App\Http\Controllers\Api\V1\Support\SupportTicketController::class, 'destroy']);
 
         // Alerts
         Route::get('alerts/summary', [\App\Http\Controllers\Api\V1\Alerts\AlertsController::class, 'summary']);

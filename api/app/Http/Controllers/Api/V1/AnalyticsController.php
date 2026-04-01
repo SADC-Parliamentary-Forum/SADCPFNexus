@@ -13,6 +13,81 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    /**
+     * Map module slug → [Eloquent model class, date column for period filter].
+     */
+    private static array $moduleMap = [
+        'travel'      => [TravelRequest::class,    'created_at'],
+        'leave'       => [LeaveRequest::class,      'created_at'],
+        'imprest'     => [ImprestRequest::class,    'created_at'],
+        'procurement' => [ProcurementRequest::class,'created_at'],
+    ];
+
+    /**
+     * Per-module drill-down: monthly breakdown, status distribution, top requesters.
+     * GET /analytics/module/{module}?period_from=Y-m-d&period_to=Y-m-d&months=12
+     */
+    public function byModule(Request $request, string $module): JsonResponse
+    {
+        if (!array_key_exists($module, self::$moduleMap)) {
+            return response()->json(['message' => 'Unknown module. Valid: ' . implode(', ', array_keys(self::$moduleMap))], 422);
+        }
+
+        [$modelClass, $dateCol] = self::$moduleMap[$module];
+        $tenantId   = $request->user()->tenant_id;
+        $periodFrom = $request->input('period_from');
+        $periodTo   = $request->input('period_to');
+        $months     = max(1, min((int) $request->input('months', 12), 24));
+
+        $baseQuery = $modelClass::where('tenant_id', $tenantId);
+        if ($periodFrom) $baseQuery->whereDate($dateCol, '>=', $periodFrom);
+        if ($periodTo)   $baseQuery->whereDate($dateCol, '<=', $periodTo);
+
+        // Monthly breakdown
+        $monthly = [];
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date  = now()->subMonths($i);
+            $q     = clone $baseQuery;
+            $count = $q->whereYear($dateCol, $date->year)->whereMonth($dateCol, $date->month)->count();
+            $monthly[] = ['month' => $date->format('Y-m'), 'label' => $date->format('M y'), 'count' => $count];
+        }
+
+        // Status distribution
+        $statusDist = (clone $baseQuery)
+            ->select('status', DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->orderByDesc('count')
+            ->pluck('count', 'status');
+
+        // Top 5 requesters — resolve user names via a separate lookup to avoid aliased-column eager-load issues
+        $requesterCol = $modelClass === LeaveRequest::class ? 'user_id' : 'requester_id';
+        $topRaw = (clone $baseQuery)
+            ->select($requesterCol, DB::raw('COUNT(*) as count'))
+            ->groupBy($requesterCol)
+            ->orderByDesc('count')
+            ->limit(5)
+            ->get();
+
+        $userIds = $topRaw->pluck($requesterCol)->filter()->unique()->values();
+        $userNames = \App\Models\User::whereIn('id', $userIds)->pluck('name', 'id');
+
+        $topRequesters = $topRaw->map(fn($r) => [
+            'user_id' => $r->{$requesterCol},
+            'name'    => $userNames[$r->{$requesterCol}] ?? 'Unknown',
+            'count'   => (int) $r->count,
+        ]);
+
+        return response()->json([
+            'module'          => $module,
+            'total'           => (clone $baseQuery)->count(),
+            'monthly'         => $monthly,
+            'status_dist'     => $statusDist,
+            'top_requesters'  => $topRequesters,
+            'period_from'     => $periodFrom,
+            'period_to'       => $periodTo,
+        ]);
+    }
+
     public function summary(Request $request): JsonResponse
     {
         $tenantId = $request->user()->tenant_id;

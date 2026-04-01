@@ -143,14 +143,24 @@ class LeaveController extends Controller
 
     public function reject(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $reason = $data['reason'] ?? $data['comment'] ?? null;
+        if (!$reason) {
+            return response()->json([
+                'message' => 'The comment field is required.',
+                'errors' => ['comment' => ['The comment field is required.']],
+            ], 422);
+        }
 
         if (!$leaveRequest->approvalRequest) {
-            $leave = $this->leaveService->reject($leaveRequest, $data['reason'], $request->user());
+            $leave = $this->leaveService->reject($leaveRequest, $reason, $request->user());
             return response()->json(['message' => 'Leave request rejected.', 'data' => $leave]);
         }
 
-        $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $data['reason']);
+        $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $reason);
 
         return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);
     }

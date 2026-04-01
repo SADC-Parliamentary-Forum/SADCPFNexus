@@ -144,4 +144,22 @@ class NotificationTemplateController extends Controller
 
         return response()->json(['message' => 'Test email queued to ' . $user->email]);
     }
+
+    /**
+     * Reset a customised template back to its system default by deleting the tenant override.
+     */
+    public function resetToDefault(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'trigger_key' => 'required|string',
+        ]);
+
+        $tenantId = $request->user()->tenant_id;
+
+        NotificationTemplate::where('tenant_id', $tenantId)
+            ->where('trigger_key', $validated['trigger_key'])
+            ->delete();
+
+        return response()->json(['message' => 'Template reset to system default.']);
+    }
 }

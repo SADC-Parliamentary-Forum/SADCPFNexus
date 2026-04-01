@@ -173,6 +173,16 @@ class PerformanceTrackerController extends Controller
         return response()->json($performanceTracker);
     }
 
+    public function destroy(Request $request, PerformanceTracker $performanceTracker): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($performanceTracker->tenant_id === $user->tenant_id, 403);
+        abort_unless($this->hasHrAdmin($request), 403);
+
+        $performanceTracker->delete();
+        return response()->json(['message' => 'Performance tracker deleted.']);
+    }
+
     public function team(Request $request): JsonResponse
     {
         $user = $request->user();

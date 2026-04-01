@@ -31,8 +31,9 @@ class ProfileChangeRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-
         $validated = $request->validate([
+            'changes'                        => 'nullable|array',
+            'reason'                         => 'nullable|string|max:1000',
             'phone'                          => 'nullable|string|max:20',
             'bio'                            => 'nullable|string',
             'nationality'                    => 'nullable|string|max:100',
@@ -48,8 +49,16 @@ class ProfileChangeRequestController extends Controller
             'notes'                          => 'nullable|string|max:1000',
         ]);
 
-        $notes = $validated['notes'] ?? null;
-        unset($validated['notes']);
+        $payloadChanges = $validated['changes'] ?? null;
+        unset($validated['changes']);
+
+        $notes = $validated['notes'] ?? $validated['reason'] ?? null;
+        unset($validated['notes'], $validated['reason']);
+
+        // Backward compatibility with existing tests/clients that send a `changes` object.
+        if (is_array($payloadChanges)) {
+            $validated = array_merge($validated, $payloadChanges);
+        }
 
         // Only keep fields that actually changed vs current profile
         $changes = [];

@@ -5,6 +5,7 @@ namespace Tests\Feature\EmailApproval;
 use App\Exceptions\TokenExpiredException;
 use App\Exceptions\TokenUsedException;
 use App\Models\ApprovalRequest;
+use App\Models\ApprovalWorkflow;
 use App\Models\SignedActionToken;
 use App\Models\Tenant;
 use App\Models\TravelRequest;
@@ -20,6 +21,25 @@ class EmailApprovalTest extends TestCase
      */
     private function makeSubmittedTravelRequest(User $requester, User $approver): array
     {
+        $workflow = ApprovalWorkflow::firstOrCreate(
+            [
+                'tenant_id' => $requester->tenant_id,
+                'module_type' => 'travel',
+                'name' => 'Email Approval Test Workflow',
+            ],
+            [
+                'is_active' => true,
+            ]
+        );
+
+        if (!$workflow->steps()->exists()) {
+            $workflow->steps()->create([
+                'step_order' => 0,
+                'approver_type' => 'specific_user',
+                'user_id' => $approver->id,
+            ]);
+        }
+
         $travel = TravelRequest::factory()->create([
             'tenant_id'    => $requester->tenant_id,
             'requester_id' => $requester->id,
@@ -30,8 +50,8 @@ class EmailApprovalTest extends TestCase
             'tenant_id'       => $requester->tenant_id,
             'approvable_id'   => $travel->id,
             'approvable_type' => TravelRequest::class,
-            'requester_id'    => $requester->id,
-            'current_step'    => 1,
+            'workflow_id'     => $workflow->id,
+            'current_step_index' => 0,
             'status'          => 'pending',
         ]);
 
@@ -318,12 +338,22 @@ class EmailApprovalTest extends TestCase
             'requester_id' => $requester->id,
             'status'       => 'submitted',
         ]);
+        $workflow = ApprovalWorkflow::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'module_type' => 'travel',
+                'name' => 'Email Approval Test Workflow',
+            ],
+            [
+                'is_active' => true,
+            ]
+        );
         $approvalRequest = ApprovalRequest::create([
             'tenant_id'       => $tenant->id,
             'approvable_id'   => $travel->id,
             'approvable_type' => TravelRequest::class,
-            'requester_id'    => $requester->id,
-            'current_step'    => 1,
+            'workflow_id'     => $workflow->id,
+            'current_step_index' => 0,
             'status'          => 'pending',
         ]);
 

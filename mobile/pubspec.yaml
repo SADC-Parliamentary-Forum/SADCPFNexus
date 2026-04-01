@@ -40,6 +40,9 @@ dependencies:
   # Paths for file download
   path_provider: ^2.1.2
 
+  # Open downloaded files (PDFs, etc.) with native viewer
+  open_file: ^3.3.2
+
   # File picker (PIF attachments upload)
   file_picker: ^8.0.0+1
 

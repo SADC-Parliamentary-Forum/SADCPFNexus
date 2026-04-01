@@ -21,7 +21,17 @@ class ProcurementRequest extends Model
         'required_by_date' => 'date',
         'submitted_at'     => 'datetime',
         'approved_at'      => 'datetime',
+        'estimated_value'  => 'float',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $request): void {
+            if (empty($request->reference_number)) {
+                $request->reference_number = 'PRQ-' . strtoupper(\Illuminate\Support\Str::random(8));
+            }
+        });
+    }
 
     public function requester() { return $this->belongsTo(User::class, 'requester_id'); }
     public function approver()  { return $this->belongsTo(User::class, 'approved_by'); }

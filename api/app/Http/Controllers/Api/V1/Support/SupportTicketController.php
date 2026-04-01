@@ -53,4 +53,39 @@ class SupportTicketController extends Controller
         }
         return response()->json($supportTicket);
     }
+
+    public function update(Request $request, SupportTicket $supportTicket): JsonResponse
+    {
+        $user = $request->user();
+        if ($supportTicket->user_id !== $user->id) {
+            abort(403);
+        }
+        if (in_array($supportTicket->status, ['resolved', 'closed'])) {
+            return response()->json(['message' => 'Resolved or closed tickets cannot be edited.'], 422);
+        }
+
+        $data = $request->validate([
+            'subject'     => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'priority'    => ['sometimes', 'string', 'in:low,medium,high'],
+            'status'      => ['sometimes', 'string', 'in:open,in_progress,resolved,closed'],
+        ]);
+
+        if (isset($data['status']) && in_array($data['status'], ['resolved', 'closed']) && ! $supportTicket->resolved_at) {
+            $data['resolved_at'] = now();
+        }
+
+        $supportTicket->update($data);
+        return response()->json(['message' => 'Ticket updated.', 'data' => $supportTicket]);
+    }
+
+    public function destroy(Request $request, SupportTicket $supportTicket): JsonResponse
+    {
+        $user = $request->user();
+        if ($supportTicket->user_id !== $user->id && ! $user->isSystemAdmin()) {
+            abort(403);
+        }
+        $supportTicket->delete();
+        return response()->json(['message' => 'Ticket deleted.']);
+    }
 }

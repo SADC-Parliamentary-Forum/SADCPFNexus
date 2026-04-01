@@ -23,9 +23,9 @@ class TravelController extends Controller
 
     public function show(TravelRequest $travelRequest): JsonResponse
     {
-        return response()->json(
-            $travelRequest->load(['requester', 'approver', 'itineraries', 'workplanEvent'])
-        );
+        return response()->json([
+            'data' => $travelRequest->load(['requester', 'approver', 'itineraries', 'workplanEvent']),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -100,17 +100,27 @@ class TravelController extends Controller
 
     public function reject(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $reason = $data['reason'] ?? $data['comment'] ?? null;
+        if (!$reason) {
+            return response()->json([
+                'message' => 'The comment field is required.',
+                'errors' => ['comment' => ['The comment field is required.']],
+            ], 422);
+        }
 
         if ($travelRequest->approvalRequest) {
-            $this->workflowService->reject($travelRequest->approvalRequest, $request->user(), $data['reason']);
+            $this->workflowService->reject($travelRequest->approvalRequest, $request->user(), $reason);
             return response()->json([
                 'message' => 'Travel request rejected.',
                 'data'    => $travelRequest->fresh(['requester', 'approver', 'approvalRequest']),
             ]);
         }
 
-        $travel = $this->travelService->reject($travelRequest, $data['reason'], $request->user());
+        $travel = $this->travelService->reject($travelRequest, $reason, $request->user());
         return response()->json(['message' => 'Travel request rejected.', 'data' => $travel]);
     }
 }

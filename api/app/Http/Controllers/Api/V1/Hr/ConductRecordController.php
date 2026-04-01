@@ -156,4 +156,23 @@ class ConductRecordController extends Controller
 
         return response()->json($record, 201);
     }
+
+    /**
+     * Archive (soft-delete) a conduct record. HR/admin only. Closed records only.
+     */
+    public function destroy(Request $request, ConductRecord $conductRecord): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($conductRecord->tenant_id !== $user->tenant_id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+        if (! $this->canViewAll($user)) {
+            return response()->json(['message' => 'Forbidden. Requires HR or supervisor role.'], 403);
+        }
+
+        // Archive rather than hard-delete — set status to closed
+        $conductRecord->update(['status' => 'closed']);
+        return response()->json(['message' => 'Conduct record closed.']);
+    }
 }

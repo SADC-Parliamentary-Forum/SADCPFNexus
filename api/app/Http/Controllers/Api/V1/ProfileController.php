@@ -20,6 +20,7 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
+            'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'bio' => 'nullable|string',
             'nationality' => 'nullable|string|max:100',
@@ -38,10 +39,7 @@ class ProfileController extends Controller
 
         $user->update($validated);
 
-        return response()->json([
-            'message' => 'Profile updated successfully',
-            'user' => $user->load('department', 'portfolios')
-        ]);
+        return response()->json($user->load('department', 'portfolios'));
     }
 
     /**

@@ -60,4 +60,48 @@ class HrIncidentController extends Controller
         $hrIncident->load('reporter:id,name,email');
         return response()->json($hrIncident);
     }
+
+    public function update(Request $request, HrIncident $hrIncident): JsonResponse
+    {
+        $user = $request->user();
+        if ($hrIncident->tenant_id !== $user->tenant_id) {
+            abort(404);
+        }
+
+        $isAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('hr.admin');
+        $isOwner = $hrIncident->reported_by === $user->id;
+
+        if (! $isAdmin && ! $isOwner) {
+            abort(403);
+        }
+
+        // Only admins can change status; owners can edit description/severity while reported
+        $rules = [
+            'description' => ['sometimes', 'string', 'max:5000'],
+            'severity'    => ['sometimes', 'string', 'in:low,medium,high'],
+        ];
+        if ($isAdmin) {
+            $rules['status'] = ['sometimes', 'string', 'in:reported,investigating,resolved,closed'];
+            $rules['subject'] = ['sometimes', 'string', 'max:255'];
+        }
+
+        $data = $request->validate($rules);
+        $hrIncident->update($data);
+        $hrIncident->load('reporter:id,name,email');
+
+        return response()->json(['message' => 'Incident updated.', 'data' => $hrIncident]);
+    }
+
+    public function destroy(Request $request, HrIncident $hrIncident): JsonResponse
+    {
+        $user = $request->user();
+        if ($hrIncident->tenant_id !== $user->tenant_id) {
+            abort(404);
+        }
+        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('hr.admin')) {
+            abort(403);
+        }
+        $hrIncident->delete();
+        return response()->json(['message' => 'Incident deleted.']);
+    }
 }

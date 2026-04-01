@@ -48,7 +48,13 @@ class EmailActionController extends Controller
     public function preview(string $token): JsonResponse
     {
         try {
-            $record = SignedActionToken::valid()->where('token', $token)->firstOrFail();
+            $record = SignedActionToken::where('token', $token)->firstOrFail();
+            if ($record->isExpired()) {
+                return response()->json(['error' => 'This link has expired.', 'reason' => 'expired'], 410);
+            }
+            if ($record->isUsed()) {
+                return response()->json(['error' => 'This link has already been used.', 'reason' => 'used'], 409);
+            }
             $approvalRequest = $record->approvalRequest()->with('approvable')->first();
 
             if (!$approvalRequest) {
@@ -99,7 +105,7 @@ class EmailActionController extends Controller
         } catch (TokenExpiredException) {
             return response()->json(['error' => 'This approval link has expired.', 'reason' => 'expired'], 422);
         } catch (TokenUsedException) {
-            return response()->json(['error' => 'This approval link has already been used.', 'reason' => 'used'], 422);
+            return response()->json(['error' => 'This approval link has already been used.', 'reason' => 'used'], 409);
         } catch (ModelNotFoundException) {
             return response()->json(['error' => 'This approval link is invalid.', 'reason' => 'invalid'], 404);
         }

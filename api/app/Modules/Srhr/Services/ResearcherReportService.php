@@ -22,8 +22,8 @@ class ResearcherReportService
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('period_start');
 
-        // Researchers only see their own reports
-        if ($user->hasRole('Field Researcher') && !$user->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin'])) {
+        // Non-admin users should only see their own reports.
+        if (!$user->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin'])) {
             $query->where('employee_id', $user->id);
         }
 
@@ -65,8 +65,8 @@ class ResearcherReportService
             'acknowledgedBy', 'attachments.uploader',
         ])->where('tenant_id', $user->tenant_id);
 
-        // Researchers can only fetch their own reports
-        if ($user->hasRole('Field Researcher') && !$user->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin'])) {
+        // Non-admin users can only fetch their own reports.
+        if (!$user->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin'])) {
             $query->where('employee_id', $user->id);
         }
 
@@ -152,7 +152,7 @@ class ResearcherReportService
         $report->load('employee');
 
         // Notify HR managers/administrators that a report needs acknowledgement
-        $hrManagers = User::role(['hr_manager', 'hr_administrator'])
+        $hrManagers = User::role(['HR Manager', 'HR Administrator'])
             ->where('tenant_id', $report->tenant_id)->get();
         $this->notificationService->dispatchToMany($hrManagers, 'srhr.report.submitted', [
             'reference' => $report->reference_number,

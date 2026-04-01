@@ -43,7 +43,11 @@ Demo logins (after seed): see [DOCKER.md](DOCKER.md).
 - Migrate: `docker-compose exec php php artisan migrate --force`
 - Full reseed (dev/demo): `docker-compose exec php php artisan migrate:fresh --seed --force`
 - Seed only: `docker-compose exec php php artisan db:seed --force`
-- Tests: `php artisan test` (feature tests for Auth, Admin, Leave, Travel; require PHP with SQLite for in-memory DB).
+- Tests: `php artisan test` (feature tests run on PostgreSQL test DB `sadcpfnexus_test`).
+- Test setup (API):
+  - Copy `api/.env.testing.example` to `api/.env.testing` and adjust credentials if needed.
+  - Ensure PostgreSQL is running and credentials in `api/.env` / `api/.env.testing` are valid.
+  - Run `./run-tests.sh --backend` from repo root (auto-creates `sadcpfnexus_test` if missing), or run `cd api && php artisan test`.
 - **CORS:** If the web app is blocked by the browser when calling the API, see [DOCKER.md](DOCKER.md#cors-web-app-blocked-by-browser).
 
 ## Licence

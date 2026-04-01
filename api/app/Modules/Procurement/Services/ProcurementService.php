@@ -19,6 +19,7 @@ class ProcurementService
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ProcurementRequest::with(['requester', 'items', 'quotes'])
+            ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
         if ($user->hasRole('staff')) {
@@ -116,6 +117,12 @@ class ProcurementService
 
     public function submit(ProcurementRequest $request, User $user): ProcurementRequest
     {
+        if ((int) $request->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+        if ((int) $request->requester_id !== (int) $user->id && !$user->hasAnyRole(['Procurement Officer', 'procurement_officer', 'System Admin', 'super-admin'])) {
+            abort(403);
+        }
         if (!$request->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }

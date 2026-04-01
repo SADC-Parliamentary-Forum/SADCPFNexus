@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Laravel\Sanctum\Sanctum;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -83,8 +84,8 @@ abstract class TestCase extends BaseTestCase
 
     protected function asUser(User $user): static
     {
-        $token = $user->createToken('phpunit')->plainTextToken;
-        return $this->withHeader('Authorization', "Bearer {$token}");
+        Sanctum::actingAs($user);
+        return $this;
     }
 
     protected function asStaff(?Tenant $tenant = null): array

@@ -19,6 +19,12 @@ class ProcurementController extends Controller
 
     public function show(ProcurementRequest $procurementRequest): JsonResponse
     {
+        $procurementRequest = ProcurementRequest::where('id', $procurementRequest->id)
+            ->where('tenant_id', request()->user()->tenant_id)
+            ->firstOrFail();
+        if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
+            abort(404);
+        }
         return response()->json($procurementRequest->load(['requester', 'approver', 'items', 'quotes.vendor']));
     }
 
@@ -68,29 +74,60 @@ class ProcurementController extends Controller
 
     public function destroy(ProcurementRequest $procurementRequest): JsonResponse
     {
+        if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
+            abort(404);
+        }
+        if ((int) $procurementRequest->requester_id !== (int) request()->user()->id) {
+            abort(403);
+        }
         if (!$procurementRequest->isDraft()) {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
-        $procurementRequest->delete();
+        $procurementRequest->forceDelete();
         return response()->json(['message' => 'Procurement request deleted.']);
     }
 
     public function submit(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
         $procurement = $this->procurementService->submit($procurementRequest, $request->user());
         return response()->json(['message' => 'Procurement request submitted.', 'data' => $procurement]);
     }
 
     public function approve(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
         $procurement = $this->procurementService->approve($procurementRequest, $request->user());
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
     }
 
     public function reject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-        $procurement = $this->procurementService->reject($procurementRequest, $data['reason'], $request->user());
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $reason = $data['reason'] ?? $data['comment'] ?? null;
+        if (!$reason) {
+            return response()->json([
+                'message' => 'The comment field is required.',
+                'errors' => ['comment' => ['The comment field is required.']],
+            ], 422);
+        }
+        $procurement = $this->procurementService->reject($procurementRequest, $reason, $request->user());
         return response()->json(['message' => 'Procurement request rejected.', 'data' => $procurement]);
     }
 }

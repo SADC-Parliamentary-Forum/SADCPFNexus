@@ -39,7 +39,7 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->requester_id !== request()->user()->id) {
             abort(403);
         }
-        return response()->json($salaryAdvanceRequest->load(['requester', 'approver']));
+        return response()->json(['data' => $salaryAdvanceRequest->load(['requester', 'approver'])]);
     }
 
     public function store(Request $request): JsonResponse
@@ -99,7 +99,7 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->status !== 'draft') {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
-        $salaryAdvanceRequest->delete();
+        $salaryAdvanceRequest->forceDelete();
         return response()->json(['message' => 'Deleted.']);
     }
 
@@ -121,6 +121,9 @@ class SalaryAdvanceController extends Controller
 
     public function approve(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
+        }
         if ($salaryAdvanceRequest->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
@@ -154,13 +157,23 @@ class SalaryAdvanceController extends Controller
 
     public function reject(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
+        }
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $reason = $data['reason'] ?? $data['comment'] ?? null;
+        if (!$reason) {
+            throw ValidationException::withMessages(['comment' => ['The comment field is required.']]);
+        }
         if ($salaryAdvanceRequest->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be rejected.']);
         }
         $salaryAdvanceRequest->update([
             'status'            => 'rejected',
-            'rejection_reason'  => $data['reason'],
+            'rejection_reason'  => $reason,
         ]);
 
         $salaryAdvanceRequest->loadMissing('requester');
@@ -171,7 +184,7 @@ class SalaryAdvanceController extends Controller
                 [
                     'name'      => $salaryAdvanceRequest->requester->name,
                     'reference' => $salaryAdvanceRequest->reference_number,
-                    'comment'   => $data['reason'],
+                    'comment'   => $reason,
                 ],
                 ['module' => 'salary_advance', 'record_id' => $salaryAdvanceRequest->id, 'url' => '/finance/salary-advance/' . $salaryAdvanceRequest->id]
             );

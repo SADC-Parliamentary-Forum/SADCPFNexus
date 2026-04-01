@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Notifications;
 
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,20 +18,28 @@ class UserNotificationController extends Controller
         $user   = $request->user();
         $filter = $request->query('filter', 'all');
 
-        $query = $user->notifications()->latest();
+        $query = Notification::query()
+            ->where('user_id', $user->id)
+            ->where('tenant_id', $user->tenant_id)
+            ->latest();
 
         if ($filter === 'unread') {
-            $query->whereNull('read_at');
+            $query->where('is_read', false);
         } elseif ($filter === 'read') {
-            $query->whereNotNull('read_at');
+            $query->where('is_read', true);
         }
 
         $paginated = $query->paginate((int) $request->query('per_page', 20));
 
-        // Decode JSON data field for each item
-        $paginated->getCollection()->transform(fn ($n) => $this->format($n));
-
-        return response()->json($paginated);
+        return response()->json([
+            'data' => $paginated->getCollection()->map(fn ($n) => $this->format($n))->values(),
+            'meta' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
+        ]);
     }
 
     /**
@@ -38,7 +47,11 @@ class UserNotificationController extends Controller
      */
     public function unreadCount(Request $request): JsonResponse
     {
-        $count = $request->user()->unreadNotifications()->count();
+        $user = $request->user();
+        $count = Notification::where('user_id', $user->id)
+            ->where('tenant_id', $user->tenant_id)
+            ->where('is_read', false)
+            ->count();
         return response()->json(['count' => $count]);
     }
 
@@ -47,8 +60,11 @@ class UserNotificationController extends Controller
      */
     public function markRead(Request $request, string $id): JsonResponse
     {
-        $notification = $request->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
+        $notification = Notification::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->firstOrFail();
+        $notification->update(['is_read' => true, 'read_at' => now()]);
         return response()->json(['message' => 'Marked as read.']);
     }
 
@@ -57,7 +73,10 @@ class UserNotificationController extends Controller
      */
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+        Notification::where('user_id', $request->user()->id)
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
         return response()->json(['message' => 'All notifications marked as read.']);
     }
 
@@ -66,25 +85,26 @@ class UserNotificationController extends Controller
      */
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $notification = $request->user()->notifications()->findOrFail($id);
+        $notification = Notification::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->firstOrFail();
         $notification->delete();
         return response()->json(['message' => 'Notification deleted.']);
     }
 
     // -------------------------------------------------------------------------
 
-    private function format(object $notification): array
+    private function format(Notification $notification): array
     {
-        $data = is_string($notification->data)
-            ? json_decode($notification->data, true)
-            : (array) $notification->data;
-
         return [
             'id'          => $notification->id,
-            'trigger_key' => $data['trigger_key'] ?? null,
-            'subject'     => $data['subject'] ?? 'Notification',
-            'body'        => $data['body'] ?? '',
-            'meta'        => $data['meta'] ?? [],
+            'user_id'     => $notification->user_id,
+            'trigger_key' => $notification->trigger,
+            'subject'     => $notification->subject,
+            'body'        => $notification->body,
+            'meta'        => $notification->meta ?? [],
+            'is_read'     => $notification->is_read,
             'read_at'     => $notification->read_at?->toISOString(),
             'created_at'  => $notification->created_at->toISOString(),
         ];

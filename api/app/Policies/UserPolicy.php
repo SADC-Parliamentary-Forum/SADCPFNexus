@@ -9,13 +9,9 @@ class UserPolicy
 {
     use HandlesAuthorization;
 
-    /**
-     * Any authenticated user can list users (e.g. for PIF responsible officer dropdown).
-     * RLS ensures they only see users in their tenant.
-     */
     public function viewAny(User $authUser): bool
     {
-        return true;
+        return $authUser->isSystemAdmin() || $authUser->hasRole('HR Manager');
     }
 
     /**

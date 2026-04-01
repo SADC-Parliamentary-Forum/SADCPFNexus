@@ -153,7 +153,7 @@ class LeaveService
         $this->workflowService->initiate($leave, 'leave', $user);
 
         // Notify HR approvers
-        $approvers = User::role(['hr_manager', 'hr_administrator', 'secretary_general'])
+        $approvers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
             ->where('tenant_id', $user->tenant_id)->get();
         $this->notificationService->dispatchToMany($approvers, 'leave.submitted', [
             'reference'  => $leave->reference_number,
@@ -176,12 +176,6 @@ class LeaveService
     {
         if (!$leave->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
-        }
-
-        if ((int) $leave->requester_id === (int) $approver->id) {
-            throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
-            ]);
         }
 
         $leave->update([

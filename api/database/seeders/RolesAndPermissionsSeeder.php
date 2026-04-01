@@ -42,6 +42,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'calendar.view', 'calendar.create', 'calendar.admin',
             // Support Tickets
             'support.view', 'support.create', 'support.admin',
+            'srhr.view', 'srhr.create', 'srhr.manage', 'srhr.admin',
+            'parliaments.view', 'parliaments.manage',
+            'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
             'reports.view', 'reports.export', 'reports.audit',
             'audit.view', 'audit.export',
             'system.admin',
@@ -89,6 +92,14 @@ class RolesAndPermissionsSeeder extends Seeder
                 ])->where('guard_name', $guard)->get()
             );
 
+            $governanceOfficer = Role::firstOrCreate(['name' => 'Governance Officer', 'guard_name' => $guard]);
+            $governanceOfficer->syncPermissions(
+                Permission::whereIn('name', [
+                    'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
+                    'reports.view', 'reports.export',
+                ])->where('guard_name', $guard)->get()
+            );
+
             $externalAuditor = Role::firstOrCreate(['name' => 'External Auditor', 'guard_name' => $guard]);
             $externalAuditor->syncPermissions(
                 Permission::whereIn('name', [
@@ -107,6 +118,14 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
                     'governance.view', 'reports.view', 'assets.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $fieldResearcher = Role::firstOrCreate(['name' => 'Field Researcher', 'guard_name' => $guard]);
+            $fieldResearcher->syncPermissions(
+                Permission::whereIn('name', [
+                    'researcher_reports.view', 'researcher_reports.submit',
+                    'parliaments.view', 'srhr.view',
                 ])->where('guard_name', $guard)->get()
             );
 

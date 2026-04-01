@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
@@ -95,8 +96,11 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/payslip_$id.pdf');
       await file.writeAsBytes(res.data!);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved: ${file.path}')));
+      final openResult = await OpenFile.open(file.path);
+      if (mounted && openResult.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payslip saved. Open with a PDF viewer.')),
+        );
       }
     } catch (e) {
       final msg = e is DioException && e.response?.statusCode == 404

@@ -35,7 +35,7 @@ class DepartmentsController extends Controller
 
         $data = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
-            'code'      => ['nullable', 'string', 'max:20'],
+            'code'      => ['required', 'string', 'max:20'],
             'parent_id' => ['nullable', 'exists:departments,id'],
             'supervisor_id' => ['nullable', 'exists:users,id'],
         ]);
@@ -106,7 +106,7 @@ class DepartmentsController extends Controller
             return response()->json(['message' => 'Cannot delete department with assigned staff.'], 422);
         }
 
-        $department->delete();
+        $department->forceDelete();
 
         AuditLog::record('department.deleted', [
             'auditable_type' => Department::class,

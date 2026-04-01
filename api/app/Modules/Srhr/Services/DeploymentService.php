@@ -120,7 +120,7 @@ class DeploymentService
         }
 
         // Notify HR Managers
-        $hrManagers = User::role(['hr_manager', 'hr_administrator'])
+        $hrManagers = User::role(['HR Manager', 'HR Administrator'])
             ->where('tenant_id', $actor->tenant_id)->get();
         $this->notificationService->dispatchToMany($hrManagers, 'srhr.deployment.started', [
             'employee'   => $deployment->employee?->name ?? '',

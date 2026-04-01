@@ -141,11 +141,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
           ? FloatingActionButton(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textPrimary,
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Create HR file coming soon')),
-                );
-              },
+              onPressed: () => _showCreateFileSheet(context),
               child: const Icon(Icons.person_add_outlined),
             )
           : null,
@@ -198,6 +194,188 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
                 ),
     );
   }
+
+  Future<void> _showCreateFileSheet(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final employeeIdCtrl = TextEditingController();
+    final staffNumberCtrl = TextEditingController();
+    final positionCtrl = TextEditingController();
+    bool submitting = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(builder: (ctx, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Expanded(
+                      child: Text('New HR File',
+                          style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close,
+                          color: AppColors.textMuted, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ]),
+                  const SizedBox(height: 16),
+                  // Employee ID
+                  TextFormField(
+                    controller: employeeIdCtrl,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14),
+                    decoration: _inputDecoration('Employee ID *'),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'Employee ID is required';
+                      }
+                      if (int.tryParse(v.trim()) == null) {
+                        return 'Must be a numeric ID';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Staff number
+                  TextFormField(
+                    controller: staffNumberCtrl,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14),
+                    decoration: _inputDecoration('Staff Number'),
+                  ),
+                  const SizedBox(height: 12),
+                  // Current position
+                  TextFormField(
+                    controller: positionCtrl,
+                    style: const TextStyle(
+                        color: AppColors.textPrimary, fontSize: 14),
+                    decoration: _inputDecoration('Current Position'),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: submitting
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              setSheetState(() => submitting = true);
+
+                              try {
+                                final body = <String, dynamic>{
+                                  'employee_id':
+                                      int.parse(employeeIdCtrl.text.trim()),
+                                };
+                                if (staffNumberCtrl.text.trim().isNotEmpty) {
+                                  body['staff_number'] =
+                                      staffNumberCtrl.text.trim();
+                                }
+                                if (positionCtrl.text.trim().isNotEmpty) {
+                                  body['current_position'] =
+                                      positionCtrl.text.trim();
+                                }
+
+                                await ref
+                                    .read(apiClientProvider)
+                                    .dio
+                                    .post('/hr/files', data: body);
+
+                                if (mounted) {
+                                  Navigator.pop(ctx);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('HR file created successfully.')),
+                                  );
+                                  _loadData();
+                                }
+                              } catch (e) {
+                                setSheetState(() => submitting = false);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text(
+                                            'Failed to create file: ${e.toString()}')),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textPrimary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: submitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.textPrimary))
+                          : const Text('Create File',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) => InputDecoration(
+        labelText: label,
+        labelStyle:
+            const TextStyle(color: AppColors.textMuted, fontSize: 13),
+        filled: true,
+        fillColor: AppColors.bgDark,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.danger),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        isDense: true,
+      );
 
   Widget _buildError() {
     return Center(

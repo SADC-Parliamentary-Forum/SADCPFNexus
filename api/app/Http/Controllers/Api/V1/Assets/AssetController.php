@@ -248,6 +248,26 @@ class AssetController extends Controller
     }
 
     /**
+     * Retire (soft-delete via status change) or hard-delete an asset. Requires assets.admin.
+     */
+    public function destroy(Request $request, Asset $asset): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
+            abort(403, 'Only system administrators or asset managers can delete assets.');
+        }
+        if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+
+        // Mark as retired rather than hard-delete to preserve audit history
+        $asset->status = 'retired';
+        $asset->save();
+
+        return response()->json(['message' => 'Asset retired.']);
+    }
+
+    /**
      * Upload invoice document for an asset (PDF or image). Same auth as store.
      */
     public function uploadInvoice(Request $request, Asset $asset): JsonResponse

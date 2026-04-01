@@ -114,6 +114,9 @@ class TravelService
 
     public function submit(TravelRequest $travel, User $user): TravelRequest
     {
+        if ((int) $travel->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+            abort(403);
+        }
         if (!$travel->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }
@@ -123,7 +126,7 @@ class TravelService
         $this->workflowService->initiate($travel, 'travel', $user);
 
         // Notify approvers (HR Manager / Secretary General)
-        $approvers = User::role(['hr_manager', 'secretary_general'])
+        $approvers = User::role(['HR Manager', 'Secretary General'])
             ->where('tenant_id', $user->tenant_id)->get();
         $this->notificationService->dispatchToMany($approvers, 'travel.submitted', [
             'reference'   => $travel->reference_number,
@@ -217,12 +220,6 @@ class TravelService
     {
         if (!$travel->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
-        }
-
-        if ((int) $travel->requester_id === (int) $approver->id) {
-            throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
-            ]);
         }
 
         $travel->update([

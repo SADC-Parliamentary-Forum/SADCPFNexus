@@ -21,6 +21,7 @@ class SalaryAdvanceRequest extends Model
     protected $casts = [
         'submitted_at' => 'datetime',
         'approved_at'  => 'datetime',
+        'amount'       => 'float',
     ];
 
     public function requester()

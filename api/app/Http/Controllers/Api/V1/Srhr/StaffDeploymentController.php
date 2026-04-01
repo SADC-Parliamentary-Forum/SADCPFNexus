@@ -101,10 +101,17 @@ class StaffDeploymentController extends Controller
         abort_unless((int) $staffDeployment->tenant_id === (int) $request->user()->tenant_id, 404);
 
         $data = $request->validate([
-            'recalled_reason' => ['required', 'string', 'max:1000'],
+            'reason' => ['nullable', 'string', 'max:1000'],
+            'recalled_reason' => ['nullable', 'string', 'max:1000'],
         ]);
-
-        $deployment = $this->service->recall($staffDeployment, $data['recalled_reason'], $request->user());
+        $reason = $data['reason'] ?? $data['recalled_reason'] ?? null;
+        if (!$reason) {
+            return response()->json([
+                'message' => 'The reason field is required.',
+                'errors' => ['reason' => ['The reason field is required.']],
+            ], 422);
+        }
+        $deployment = $this->service->recall($staffDeployment, $reason, $request->user());
         return response()->json(['message' => 'Deployment recalled.', 'data' => $deployment]);
     }
 
