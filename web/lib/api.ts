@@ -1204,6 +1204,75 @@ export const invoicesApi = {
     api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/reject`, { reason }),
 };
 
+// ─── Procurement — Contracts ─────────────────────────────────────────────────
+
+export interface Contract {
+  id: number;
+  tenant_id: number;
+  procurement_request_id: number | null;
+  vendor_id: number;
+  purchase_order_id: number | null;
+  reference_number: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  value: number;
+  currency: string;
+  status: "draft" | "active" | "completed" | "terminated";
+  signed_at: string | null;
+  terminated_at: string | null;
+  termination_reason: string | null;
+  is_expired: boolean;
+  is_expiring_soon: boolean;
+  vendor?: Vendor;
+  procurement_request?: { id: number; reference_number: string; title: string };
+  created_at?: string;
+}
+
+export const contractsApi = {
+  list: (params?: { status?: string }) =>
+    api.get<{ data: Contract[] }>("/procurement/contracts", { params }),
+  get: (id: number) =>
+    api.get<{ data: Contract }>(`/procurement/contracts/${id}`),
+  create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
+    api.post<{ data: Contract; message: string }>("/procurement/contracts", data),
+  activate: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/activate`),
+  terminate: (id: number, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/terminate`, { reason }),
+  destroy: (id: number) =>
+    api.delete<{ message: string }>(`/procurement/contracts/${id}`),
+};
+
+// ─── Procurement — Analytics ──────────────────────────────────────────────────
+
+export interface ProcurementSummary {
+  total_requests: number;
+  total_spend: number;
+  avg_cycle_time_days: number;
+  active_contracts: number;
+}
+
+export interface ProcurementFlag {
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  message: string;
+  vendor_id?: number;
+  request_id?: number;
+}
+
+export const procurementAnalyticsApi = {
+  summary: () =>
+    api.get<{ data: ProcurementSummary }>("/procurement/analytics/summary"),
+  spendByCategory: () =>
+    api.get<{ data: { category: string; total: number }[] }>("/procurement/analytics/spend-by-category"),
+  vendorPerformance: () =>
+    api.get<{ data: { vendor_id: number; vendor_name: string; po_count: number; total_value: number }[] }>("/procurement/analytics/vendor-performance"),
+  flags: () =>
+    api.get<{ data: ProcurementFlag[] }>("/procurement/analytics/flags"),
+};
+
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────
 
 export interface SalaryAdvanceRequest {

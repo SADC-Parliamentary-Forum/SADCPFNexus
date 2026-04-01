@@ -243,6 +243,20 @@ Route::prefix('v1')->group(function () {
             Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'approve']);
             Route::post('invoices/{invoice}/reject',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
 
+            // Contracts
+            Route::apiResource('contracts', \App\Http\Controllers\Api\V1\Procurement\ContractController::class)
+                ->only(['index', 'show', 'store', 'destroy']);
+            Route::post('contracts/{contract}/activate',  [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'activate']);
+            Route::post('contracts/{contract}/terminate', [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'terminate']);
+
+            // Analytics
+            Route::prefix('analytics')->group(function () {
+                Route::get('summary',            [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'summary']);
+                Route::get('spend-by-category',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'spendByCategory']);
+                Route::get('vendor-performance', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'vendorPerformance']);
+                Route::get('flags',              [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'flags']);
+            });
+
             // Goods Receipts — top-level listing
             Route::get('receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'indexAll']);
 
