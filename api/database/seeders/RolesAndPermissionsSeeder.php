@@ -21,6 +21,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
+            'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
+            'procurement.receive_goods', 'procurement.approve_invoice',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
@@ -79,7 +81,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $financeController->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
-                    'travel.view', 'procurement.view', 'governance.view', 'audit.view',
+                    'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
+                    'governance.view', 'audit.view',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
             );
@@ -87,7 +90,9 @@ class RolesAndPermissionsSeeder extends Seeder
             $procurementOfficer = Role::firstOrCreate(['name' => 'Procurement Officer', 'guard_name' => $guard]);
             $procurementOfficer->syncPermissions(
                 Permission::whereIn('name', [
-                    'procurement.view', 'procurement.create',
+                    'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
+                    'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
+                    'procurement.receive_goods',
                     'assets.view', 'assets.create', 'finance.view', 'governance.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -153,7 +158,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'travel.approve',
                     'leave.view', 'leave.approve',
                     'imprest.view', 'imprest.approve',
-                    'procurement.view', 'procurement.approve',
+                    'procurement.view', 'procurement.approve', 'procurement.award', 'procurement.manage_vendors',
                     'finance.view', 'finance.approve',
                     'governance.view', 'governance.approve',
                     'hr.view', 'hr.approve',

@@ -5,6 +5,15 @@ import Link from "next/link";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
 
+function getStoredUser(): { roles?: string[] } | null {
+  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+}
+
+function canAward(user: { roles?: string[] } | null): boolean {
+  const allowed = ["Procurement Officer", "Secretary General", "System Admin", "super-admin"];
+  return (user?.roles ?? []).some((r) => allowed.includes(r));
+}
+
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:  { label: "Approved",  cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"  },
   submitted: { label: "Pending",   cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"       },
@@ -39,9 +48,19 @@ function SkeletonCard() {
 
 export default function ProcurementDetailPage({ params }: { params: { id: string } }) {
   const { fmt } = useFormatDate();
-  const [request, setRequest] = useState<ProcurementRequest | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [request, setRequest]     = useState<ProcurementRequest | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ roles?: string[] } | null>(null);
+
+  // Award modal state
+  const [showAward, setShowAward]       = useState(false);
+  const [awardQuoteId, setAwardQuoteId] = useState<number | "">("");
+  const [awardNotes, setAwardNotes]     = useState("");
+  const [awarding, setAwarding]         = useState(false);
+  const [awardError, setAwardError]     = useState<string | null>(null);
+
+  useEffect(() => { setCurrentUser(getStoredUser()); }, []);
 
   useEffect(() => {
     const id = Number(params.id);
@@ -55,6 +74,24 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
       .catch(() => setError("Failed to load procurement request."))
       .finally(() => setLoading(false));
   }, [params.id]);
+
+  async function handleAward() {
+    if (!request || !awardQuoteId) return;
+    setAwarding(true);
+    setAwardError(null);
+    try {
+      const res = await procurementApi.award(request.id, Number(awardQuoteId), awardNotes);
+      setRequest(res.data);
+      setShowAward(false);
+      setAwardQuoteId("");
+      setAwardNotes("");
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award contract.";
+      setAwardError(msg);
+    } finally {
+      setAwarding(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -117,10 +154,21 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             </div>
             <h1 className="text-xl font-bold text-neutral-900">{request.title}</h1>
           </div>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold flex-shrink-0 ${s.cls}`}>
-            <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
-            {s.label}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
+              <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
+              {s.label}
+            </span>
+            {request.status === "approved" && canAward(currentUser) && quotes.length > 0 && (
+              <button
+                onClick={() => setShowAward(true)}
+                className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">emoji_events</span>
+                Award Contract
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -295,11 +343,97 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
         </div>
       )}
 
+      {/* Awarded banner */}
+      {request.status === "awarded" && request.awarded_quote_id && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-blue-500 text-[22px] flex-shrink-0 mt-0.5">emoji_events</span>
+          <div>
+            <p className="text-sm font-semibold text-blue-800">Contract Awarded</p>
+            <p className="text-xs text-blue-600 mt-0.5">
+              Awarded to <strong>{quotes.find(q => q.id === request.awarded_quote_id)?.vendor_name ?? "vendor"}</strong>
+              {request.award_notes && ` — ${request.award_notes}`}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Back link */}
       <Link href="/procurement" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Procurement
       </Link>
+
+      {/* Award Contract Modal */}
+      {showAward && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowAward(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-[20px]">emoji_events</span>
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-neutral-900">Award Contract</h2>
+                <p className="text-xs text-neutral-500">{request.reference_number}</p>
+              </div>
+            </div>
+
+            {awardError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">{awardError}</div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Select Winning Quote <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="form-input w-full"
+                value={awardQuoteId}
+                onChange={(e) => setAwardQuoteId(e.target.value ? Number(e.target.value) : "")}
+              >
+                <option value="">— Choose a vendor quote —</option>
+                {[...quotes].sort((a, b) => (a.quoted_amount ?? 0) - (b.quoted_amount ?? 0)).map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.vendor_name} — {q.currency ?? currency} {(q.quoted_amount ?? 0).toLocaleString()}
+                    {q.is_recommended ? " ★ Recommended" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Award Notes</label>
+              <textarea
+                className="form-input w-full h-20 resize-none"
+                placeholder="Reason for selection, evaluation summary…"
+                value={awardNotes}
+                onChange={(e) => setAwardNotes(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                className="btn-secondary flex-1"
+                onClick={() => { setShowAward(false); setAwardError(null); }}
+                disabled={awarding}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary flex-1 inline-flex items-center justify-center gap-1.5"
+                onClick={handleAward}
+                disabled={awarding || !awardQuoteId}
+              >
+                {awarding ? (
+                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-[14px]">emoji_events</span>
+                )}
+                {awarding ? "Awarding…" : "Confirm Award"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

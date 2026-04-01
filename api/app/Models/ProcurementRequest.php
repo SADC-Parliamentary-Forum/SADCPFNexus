@@ -15,12 +15,14 @@ class ProcurementRequest extends Model
         'title', 'description', 'category', 'estimated_value', 'currency',
         'procurement_method', 'status', 'budget_line', 'justification',
         'rejection_reason', 'required_by_date', 'submitted_at', 'approved_at',
+        'awarded_quote_id', 'awarded_at', 'award_notes',
     ];
 
     protected $casts = [
         'required_by_date' => 'date',
         'submitted_at'     => 'datetime',
         'approved_at'      => 'datetime',
+        'awarded_at'       => 'datetime',
         'estimated_value'  => 'float',
     ];
 
@@ -33,10 +35,11 @@ class ProcurementRequest extends Model
         });
     }
 
-    public function requester() { return $this->belongsTo(User::class, 'requester_id'); }
-    public function approver()  { return $this->belongsTo(User::class, 'approved_by'); }
-    public function items()     { return $this->hasMany(ProcurementItem::class); }
-    public function quotes()    { return $this->hasMany(ProcurementQuote::class); }
+    public function requester()    { return $this->belongsTo(User::class, 'requester_id'); }
+    public function approver()     { return $this->belongsTo(User::class, 'approved_by'); }
+    public function items()        { return $this->hasMany(ProcurementItem::class); }
+    public function quotes()       { return $this->hasMany(ProcurementQuote::class); }
+    public function awardedQuote() { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
 
     public function approvalRequest(): MorphOne
     {
@@ -46,6 +49,7 @@ class ProcurementRequest extends Model
     public function isDraft(): bool     { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool  { return $this->status === 'approved'; }
+    public function isAwarded(): bool   { return $this->status === 'awarded'; }
 
     public function onWorkflowApproved(User $approver): void
     {

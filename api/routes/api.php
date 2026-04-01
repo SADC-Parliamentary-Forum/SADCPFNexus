@@ -222,10 +222,13 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{procurementRequest}/submit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
             Route::post('requests/{procurementRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
             Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/award', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
 
             // Vendors
             Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)
                 ->names('procurement.vendors');
+            Route::post('vendors/{vendor}/approve', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
+            Route::post('vendors/{vendor}/reject',  [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

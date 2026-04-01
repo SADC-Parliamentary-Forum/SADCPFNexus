@@ -108,6 +108,30 @@ class ProcurementController extends Controller
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
     }
 
+    public function award(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin'])) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'quote_id'    => ['required', 'integer'],
+            'award_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $procurement = $this->procurementService->award(
+            $procurementRequest,
+            $data['quote_id'],
+            $data['award_notes'] ?? null,
+            $request->user()
+        );
+
+        return response()->json(['message' => 'Contract awarded successfully.', 'data' => $procurement]);
+    }
+
     public function reject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
         if ($request->user()->hasRole('staff')) {

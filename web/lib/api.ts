@@ -989,10 +989,13 @@ export interface ProcurementRequest {
   budget_line: string | null;
   justification: string | null;
   required_by_date: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled";
+  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "awarded";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
+  awarded_quote_id: number | null;
+  awarded_at: string | null;
+  award_notes: string | null;
   requester?: User;
   approver?: User;
   items?: ProcurementItem[];
@@ -1014,6 +1017,8 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/reject`, { reason }),
+  award: (id: number, quoteId: number, awardNotes?: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, { quote_id: quoteId, award_notes: awardNotes }),
 };
 
 export interface Vendor {
@@ -1061,6 +1066,10 @@ export const vendorsApi = {
     api.put<{ data: Vendor; message: string }>(`/procurement/vendors/${id}`, data),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/procurement/vendors/${id}`),
+  approve: (id: number) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
 };
 
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────
