@@ -44,8 +44,8 @@ return new class extends Migration
             $table->index(['tenant_id', 'end_date']);
         });
 
-        DB::statement('GRANT ALL PRIVILEGES ON TABLE contracts TO sadcpfnexus;');
-        DB::statement('GRANT USAGE, SELECT ON SEQUENCE contracts_id_seq TO sadcpfnexus;');
+        DB::statement('GRANT SELECT, INSERT, UPDATE, DELETE ON contracts TO app_user;');
+        DB::statement('GRANT USAGE, SELECT ON SEQUENCE contracts_id_seq TO app_user;');
     }
 
     public function down(): void
