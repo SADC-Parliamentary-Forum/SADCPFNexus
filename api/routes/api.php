@@ -237,6 +237,12 @@ Route::prefix('v1')->group(function () {
             Route::post('purchase-orders/{purchaseOrder}/issue',  [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
             Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'cancel']);
 
+            // Invoices
+            Route::apiResource('invoices', \App\Http\Controllers\Api\V1\Procurement\InvoiceController::class)
+                ->only(['index', 'show', 'store']);
+            Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'approve']);
+            Route::post('invoices/{invoice}/reject',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
+
             // Goods Receipts — top-level listing
             Route::get('receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'indexAll']);
 

@@ -1156,6 +1156,54 @@ export const goodsReceiptsApi = {
     api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/reject`, { reason }),
 };
 
+// ─── Procurement — Invoices ───────────────────────────────────────────────────
+
+export interface Invoice {
+  id: number;
+  tenant_id: number;
+  purchase_order_id: number;
+  goods_receipt_note_id: number | null;
+  vendor_id: number;
+  reference_number: string;
+  vendor_invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  amount: number;
+  currency: string;
+  status: "received" | "matched" | "approved" | "rejected" | "paid";
+  match_status: "pending" | "matched" | "variance";
+  match_notes: string | null;
+  rejection_reason: string | null;
+  reviewed_by?: { id: number; name: string } | null;
+  reviewed_at: string | null;
+  vendor?: Vendor;
+  purchase_order?: PurchaseOrder;
+  goods_receipt_note?: GoodsReceiptNote;
+  created_at?: string;
+}
+
+export const invoicesApi = {
+  list: (params?: { status?: string }) =>
+    api.get<{ data: Invoice[] }>("/procurement/invoices", { params }),
+  get: (id: number) =>
+    api.get<{ data: Invoice }>(`/procurement/invoices/${id}`),
+  create: (data: {
+    purchase_order_id: number;
+    vendor_id: number;
+    goods_receipt_note_id?: number;
+    vendor_invoice_number: string;
+    invoice_date: string;
+    due_date: string;
+    amount: number;
+    currency?: string;
+  }) =>
+    api.post<{ data: Invoice; message: string }>("/procurement/invoices", data),
+  approve: (id: number) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/approve`),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/reject`, { reason }),
+};
+
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────
 
 export interface SalaryAdvanceRequest {
