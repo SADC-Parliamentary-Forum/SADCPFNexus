@@ -90,7 +90,7 @@ export default function RiskDashboardPage() {
 
   const { data: matrix } = useQuery({
     queryKey: ["risk", "matrix", "dashboard"],
-    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data.data as RiskMatrixData),
+    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data),
     staleTime: 60_000,
   });
 

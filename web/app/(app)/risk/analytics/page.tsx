@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskMatrixData, type RiskDashboardData, type RiskCategory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
@@ -46,7 +47,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function RiskAnalyticsPage() {
   const { data: matrix, isLoading: matrixLoading } = useQuery({
     queryKey: ["risk", "matrix", "analytics"],
-    queryFn: () => riskApi.getMatrix().then((r) => r.data.data as RiskMatrixData),
+    queryFn: () => riskApi.getMatrix().then((r) => r.data),
     staleTime: 60_000,
   });
 
@@ -135,8 +136,8 @@ export default function RiskAnalyticsPage() {
                   <div key={i} className="text-center text-[10px] text-neutral-400 font-medium pb-0.5">{i}</div>
                 ))}
                 {[5, 4, 3, 2, 1].map((l) => (
-                  <>
-                    <div key={`l${l}`} className="flex items-center justify-center text-[10px] text-neutral-400 font-medium">{l}</div>
+                  <React.Fragment key={l}>
+                    <div className="flex items-center justify-center text-[10px] text-neutral-400 font-medium">{l}</div>
                     {[1, 2, 3, 4, 5].map((im) => {
                       const score = l * im;
                       const cell  = matrix?.cells.find((c) => c.likelihood === l && c.impact === im);
@@ -151,7 +152,7 @@ export default function RiskAnalyticsPage() {
                         </div>
                       );
                     })}
-                  </>
+                  </React.Fragment>
                 ))}
               </div>
               <div className="text-center text-[10px] text-neutral-400 mt-1.5">Impact →</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
@@ -77,7 +77,7 @@ export default function RiskRegisterPage() {
 
   const { data: matrix } = useQuery({
     queryKey: ["risk", "matrix"],
-    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data.data as RiskMatrixData),
+    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data),
     staleTime: 60_000,
   });
 
@@ -191,8 +191,8 @@ export default function RiskRegisterPage() {
 
                 {/* Rows: likelihood 5 → 1 */}
                 {[5, 4, 3, 2, 1].map((l) => (
-                  <>
-                    <div key={`l${l}`} className="flex items-center justify-center text-[10px] text-neutral-400 font-medium pr-1">{l}</div>
+                  <React.Fragment key={l}>
+                    <div className="flex items-center justify-center text-[10px] text-neutral-400 font-medium pr-1">{l}</div>
                     {[1, 2, 3, 4, 5].map((im) => {
                       const score = l * im;
                       const cell  = matrix?.cells.find((c) => c.likelihood === l && c.impact === im);
@@ -209,7 +209,7 @@ export default function RiskRegisterPage() {
                         </button>
                       );
                     })}
-                  </>
+                  </React.Fragment>
                 ))}
               </div>
 

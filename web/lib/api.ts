@@ -3524,7 +3524,7 @@ export const riskApi = {
 
   // Matrix
   getMatrix: (params?: { exclude_closed?: boolean }) =>
-    api.get<{ data: RiskMatrixData }>("/risk/matrix", { params }),
+    api.get<RiskMatrixData>("/risk/matrix", { params }),
 
   // Dashboard & Audit Trail
   getDashboard: () =>
