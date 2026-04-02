@@ -16,6 +16,7 @@ class ProcurementRequest extends Model
         'procurement_method', 'status', 'budget_line', 'justification',
         'rejection_reason', 'required_by_date', 'submitted_at', 'approved_at',
         'awarded_quote_id', 'awarded_at', 'award_notes',
+        'hod_id', 'hod_reviewed_at',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class ProcurementRequest extends Model
         'submitted_at'     => 'datetime',
         'approved_at'      => 'datetime',
         'awarded_at'       => 'datetime',
+        'hod_reviewed_at'  => 'datetime',
         'estimated_value'  => 'float',
     ];
 
@@ -35,21 +37,26 @@ class ProcurementRequest extends Model
         });
     }
 
-    public function requester()    { return $this->belongsTo(User::class, 'requester_id'); }
-    public function approver()     { return $this->belongsTo(User::class, 'approved_by'); }
-    public function items()        { return $this->hasMany(ProcurementItem::class); }
-    public function quotes()       { return $this->hasMany(ProcurementQuote::class); }
-    public function awardedQuote() { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
+    public function requester()         { return $this->belongsTo(User::class, 'requester_id'); }
+    public function approver()          { return $this->belongsTo(User::class, 'approved_by'); }
+    public function hod()               { return $this->belongsTo(User::class, 'hod_id'); }
+    public function items()             { return $this->hasMany(ProcurementItem::class); }
+    public function quotes()            { return $this->hasMany(ProcurementQuote::class); }
+    public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
+    public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
 
     public function approvalRequest(): MorphOne
     {
         return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
 
-    public function isDraft(): bool     { return $this->status === 'draft'; }
-    public function isSubmitted(): bool { return $this->status === 'submitted'; }
-    public function isApproved(): bool  { return $this->status === 'approved'; }
-    public function isAwarded(): bool   { return $this->status === 'awarded'; }
+    public function isDraft(): bool          { return $this->status === 'draft'; }
+    public function isSubmitted(): bool      { return $this->status === 'submitted'; }
+    public function isHodApproved(): bool    { return $this->status === 'hod_approved'; }
+    public function isHodRejected(): bool    { return $this->status === 'hod_rejected'; }
+    public function isBudgetReserved(): bool { return $this->status === 'budget_reserved'; }
+    public function isApproved(): bool       { return $this->status === 'approved'; }
+    public function isAwarded(): bool        { return $this->status === 'awarded'; }
 
     public function onWorkflowApproved(User $approver): void
     {

@@ -28,13 +28,13 @@ Route::prefix('v1')->group(function () {
         [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'preview']
     )->middleware('throttle:20,1');
 
+    // Public external integration endpoints (no auth required)
+    Route::prefix('external')->group(function () {
+        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
+    });
+
     // Authenticated routes
     Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
-
-        // External Integrations APIs (authenticated — requires valid Bearer token)
-        Route::prefix('external')->group(function () {
-            Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
-        });
 
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -219,10 +219,17 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Procurement\ProcurementController::class)
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');
-            Route::post('requests/{procurementRequest}/submit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
-            Route::post('requests/{procurementRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
-            Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
-            Route::post('requests/{procurementRequest}/award', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
+            Route::post('requests/{procurementRequest}/submit',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
+            Route::post('requests/{procurementRequest}/hod-approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodApprove']);
+            Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
+            Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
+            Route::post('requests/{procurementRequest}/reject',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
+            Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
+
+            // Budget Reservations
+            Route::get('budget-reservations', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'index']);
+            Route::delete('budget-reservations/{budgetReservation}', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'destroy']);
 
             // Vendors
             Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)

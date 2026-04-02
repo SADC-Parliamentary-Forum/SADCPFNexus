@@ -96,6 +96,33 @@ class ProcurementController extends Controller
         return response()->json(['message' => 'Procurement request submitted.', 'data' => $procurement]);
     }
 
+    public function hodApprove(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        $procurement = $this->procurementService->hodApprove($procurementRequest, $request->user());
+        return response()->json(['message' => 'HOD approval recorded.', 'data' => $procurement]);
+    }
+
+    public function hodReject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+        $procurement = $this->procurementService->hodReject($procurementRequest, $data['reason'], $request->user());
+        return response()->json(['message' => 'HOD rejection recorded.', 'data' => $procurement]);
+    }
+
     public function approve(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
         if ($request->user()->hasRole('staff')) {
