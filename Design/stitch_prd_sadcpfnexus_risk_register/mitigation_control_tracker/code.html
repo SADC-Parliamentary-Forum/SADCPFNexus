@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mitigation &amp; Control Tracker | Sovereign Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-tint": "#3a5f94",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "surface-container": "#eceef0",
+              "on-primary": "#ffffff",
+              "surface-bright": "#f7f9fb",
+              "surface-container-highest": "#e0e3e5",
+              "on-secondary-fixed-variant": "#3a485b",
+              "surface-variant": "#e0e3e5",
+              "secondary-fixed-dim": "#b9c7df",
+              "on-secondary-fixed": "#0d1c2e",
+              "primary": "#001e40",
+              "surface": "#f7f9fb",
+              "primary-fixed-dim": "#a7c8ff",
+              "on-error-container": "#93000a",
+              "inverse-surface": "#2d3133",
+              "tertiary-container": "#6e0006",
+              "on-secondary-container": "#57657a",
+              "background": "#f7f9fb",
+              "surface-container-low": "#f2f4f6",
+              "primary-fixed": "#d5e3ff",
+              "surface-container-lowest": "#ffffff",
+              "tertiary": "#460002",
+              "outline": "#737780",
+              "on-error": "#ffffff",
+              "outline-variant": "#c3c6d1",
+              "on-surface": "#191c1e",
+              "error-container": "#ffdad6",
+              "secondary-fixed": "#d5e3fc",
+              "on-background": "#191c1e",
+              "inverse-primary": "#a7c8ff",
+              "secondary-container": "#d5e3fc",
+              "on-primary-container": "#799dd6",
+              "surface-dim": "#d8dadc",
+              "on-primary-fixed": "#001b3c",
+              "on-tertiary-fixed": "#410002",
+              "primary-container": "#003366",
+              "on-primary-fixed-variant": "#1f477b",
+              "on-tertiary-container": "#ff6d60",
+              "on-tertiary-fixed-variant": "#93000b",
+              "error": "#ba1a1a",
+              "secondary": "#515f74",
+              "tertiary-fixed-dim": "#ffb4ab",
+              "surface-container-high": "#e6e8ea",
+              "tertiary-fixed": "#ffdad6",
+              "on-surface-variant": "#43474f",
+              "inverse-on-surface": "#eff1f3"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background font-body text-on-surface min-h-screen flex">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full border-r border-[#c3c6d1]/15 py-6 bg-[#f2f4f6] dark:bg-[#001e40] text-[#001e40] dark:text-[#ffffff] font-inter text-xs uppercase tracking-widest font-semibold docked h-screen w-64 flex flex-col">
+<div class="px-6 mb-8">
+<h1 class="text-lg font-black text-[#001e40] dark:text-white">Governance Portal</h1>
+<p class="text-[10px] text-slate-500 mt-1">Institutional Archive</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-3 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="shield">shield</span>
+                Risk Registry
+            </a>
+<a class="flex items-center bg-white dark:bg-[#003366] text-[#001e40] dark:text-white rounded-l-lg ml-2 pl-4 py-3 shadow-sm translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="edit_document">edit_document</span>
+                Mitigation Logs
+            </a>
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-3 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="history_edu">history_edu</span>
+                Audit Trail
+            </a>
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-3 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="gavel">gavel</span>
+                Compliance
+            </a>
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-3 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="analytics">analytics</span>
+                Institutional Reports
+            </a>
+</nav>
+<div class="mt-auto px-4 py-4">
+<button class="w-full bg-primary text-on-primary py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                New Audit
+            </button>
+<div class="mt-6 space-y-1">
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-2 hover:text-[#001e40] transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                    Settings
+                </a>
+<a class="flex items-center text-slate-500 dark:text-slate-400 pl-6 py-2 hover:text-[#001e40] transition-all" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="contact_support">contact_support</span>
+                    Support
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col min-w-0">
+<!-- TopAppBar (Shared Component) -->
+<header class="bg-[#f7f9fb] dark:bg-[#001e40] text-[#001e40] dark:text-[#ffffff] font-manrope text-sm font-medium tracking-tight flex justify-between items-center w-full px-8 py-3 h-16 border-b border-[#c3c6d1]/15 docked full-width top-0">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-tighter text-[#001e40] dark:text-white uppercase">Sovereign Ledger</span>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<div class="flex items-center gap-2 text-on-surface-variant font-label text-xs uppercase tracking-widest">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="sync">sync</span>
+                    System Synchronized
+                </div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400" data-icon="search">search</span>
+<input class="bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-sm w-64 focus:ring-1 focus:ring-primary/40" placeholder="Search Archives..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-slate-200 p-2 rounded-full transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-slate-200 p-2 rounded-full transition-colors" data-icon="help_outline">help_outline</span>
+<div class="flex items-center gap-2 pl-4">
+<img class="h-8 w-8 rounded-full object-cover grayscale" data-alt="Institutional User Profile portrait of a professional male executive in a suit, soft professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPs8fB4cX6y3AZpRqA_P7vcgUxtXBRvWqyAD36iTLuijBAPekvtXGmyZTaSNOiqOyDLW3li-ZbcsJF_M7YvWWMaMgVOV_lzHAUzTL5odlBzlVG-xNZbWKRgW4Cygbh7MqGZjrYQ97E5F6aQRwyT-FiobIHm50WfTyQFgF66yqIjKLuPBZbSX47MWsCBLkPJyx9M0OGMdFHGI5deEqGIuxje2GqnOt1f5JqMaNmQDkNs37Mh8SvLrtWEsr4UBTvJFJsOP7wlVXQddk"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Screen Content -->
+<div class="p-10 max-w-[1600px] mx-auto w-full space-y-10">
+<!-- Header Section -->
+<section class="flex justify-between items-end">
+<div>
+<h2 class="font-headline text-3xl font-extrabold text-primary tracking-tight">Mitigation &amp; Control Tracker</h2>
+<p class="font-body text-on-surface-variant mt-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="folder_managed">folder_managed</span>
+                        Operational Oversight: <span class="font-bold text-primary">Risk ID GOV-2024-089</span>
+</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high text-on-surface font-bold py-2.5 px-5 rounded-lg flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+                        Generate Audit Report
+                    </button>
+<button class="bg-primary text-on-primary font-bold py-2.5 px-5 rounded-lg flex items-center gap-2 hover:shadow-lg transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                        Add Mitigation Action
+                    </button>
+</div>
+</section>
+<!-- Asymmetric Bento Grid Start -->
+<div class="grid grid-cols-12 gap-8 items-start">
+<!-- Left Column: Risk Context & Table (8 Columns) -->
+<div class="col-span-8 space-y-8">
+<!-- Risk Context Card -->
+<div class="bg-gradient-to-br from-primary to-primary-container p-8 rounded-xl text-on-primary shadow-xl flex justify-between items-center relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+<div class="relative z-10 max-w-xl">
+<div class="flex items-center gap-3 mb-4">
+<span class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest">Critical Alert</span>
+<span class="text-white/60 font-label text-xs">Updated 2h ago</span>
+</div>
+<h3 class="font-headline text-2xl font-bold mb-2">Cyber Resilience Breach</h3>
+<p class="text-on-primary-container leading-relaxed font-medium">Potential disruption of regional data ledger integrity due to unauthorized node access within the sovereign network infrastructure.</p>
+</div>
+<div class="flex gap-8 relative z-10">
+<div class="text-center">
+<p class="text-[10px] uppercase tracking-widest opacity-70 mb-1">Inherent</p>
+<p class="text-3xl font-black text-on-tertiary-container">92</p>
+</div>
+<div class="h-12 w-[1px] bg-white/20"></div>
+<div class="text-center">
+<p class="text-[10px] uppercase tracking-widest opacity-70 mb-1">Residual</p>
+<p class="text-3xl font-black text-secondary-fixed">48</p>
+</div>
+<div class="h-12 w-[1px] bg-white/20"></div>
+<div class="text-center">
+<p class="text-[10px] uppercase tracking-widest opacity-70 mb-1">Status</p>
+<div class="mt-1 bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-xs font-bold border border-green-500/30">Stable</div>
+</div>
+</div>
+</div>
+<!-- Mitigation Actions Table -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="px-6 py-5 bg-surface-container-low flex justify-between items-center">
+<h4 class="font-headline font-bold text-primary uppercase text-xs tracking-widest">Mitigation Actions Inventory</h4>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-lg" data-icon="filter_list">filter_list</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-lg" data-icon="download">download</span>
+</div>
+</div>
+<table class="w-full border-collapse">
+<thead>
+<tr class="text-left text-on-surface-variant font-label text-[10px] uppercase tracking-widest border-b border-outline-variant/10">
+<th class="px-6 py-4 font-semibold">ID</th>
+<th class="px-6 py-4 font-semibold">Description</th>
+<th class="px-6 py-4 font-semibold">Owner</th>
+<th class="px-6 py-4 font-semibold text-center">Progress</th>
+<th class="px-6 py-4 font-semibold">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-label text-xs text-primary font-bold">ACT-001</td>
+<td class="px-6 py-4">
+<div class="font-medium text-sm">Deploy Institutional MFA</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Due: Oct 24, 2024</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<img class="h-6 w-6 rounded-full object-cover" data-alt="Female technology leader, focused professional expression, high key lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBXBE6xJYcznZ_x7fIFq6V92LnIpNQBlR_z_1ucSNU8pK687mp8A1I9cVkUI3Ms-BgxnnQP3jIzcZmv4ve5p9ZTeoE9zI1qTLmGQ6mc5niGgI8K_TpBplUHe0letfzGJIzujoLZD44_1t1ZF36lEN33PdX_ENQ9lXjDOw2gqv-l7q53ZHSvSX1aeoytWbzZBiCSoMIoaBCbW_VzL5JduBQHtyAKeqmAfZQsIaQcI7R-Esy0cFSz_SZwy1bctwl787RGrC8BwQGc3U"/>
+<span class="text-xs font-medium">Dr. Elena Ross</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 85%"></div>
+</div>
+<p class="text-[10px] text-right mt-1 font-bold">85%</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container">In Progress</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-label text-xs text-primary font-bold">ACT-002</td>
+<td class="px-6 py-4">
+<div class="font-medium text-sm">Conduct Phishing Simulation</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Due: Oct 20, 2024</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<img class="h-6 w-6 rounded-full object-cover" data-alt="Male cybersecurity specialist, neutral background, studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPe_mGrMmbbkNsJgtZTO4o5ikFq3n-wm9E_h4jrzv3eAFdsslCML7CX9meChZYqDeSOYMVVXZKR5dOaSTJkQbDU9bTvL3WJAF_dtVL9P-b8bH7V8lMGpZVaMKZrnYZwkHgxuEVJRPZdhZtp2OlvhC_H6my9KCX8CY2_MQfL2RrcURjlp6ULQRENCpayM9oEascQ1whYp_0iTVBSd5t1S0omDFgqm2ZWhsNOPKaZOVA3gBhZk-s89dKX1zXuqpyhNvkvpjqSbFCB8Q"/>
+<span class="text-xs font-medium">Marc J. Walters</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-green-600 h-full w-full"></div>
+</div>
+<p class="text-[10px] text-right mt-1 font-bold">100%</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">Completed</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="px-6 py-4 font-label text-xs text-primary font-bold">ACT-003</td>
+<td class="px-6 py-4">
+<div class="font-medium text-sm">Update Firewall Policy</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Due: Oct 15, 2024</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-primary flex items-center justify-center text-[10px] text-white font-bold">SC</div>
+<span class="text-xs font-medium">Security Council</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full" style="width: 15%"></div>
+</div>
+<p class="text-[10px] text-right mt-1 font-bold">15%</p>
+</td>
+<td class="px-6 py-4">
+<span class="inline-block px-2.5 py-0.5 rounded text-[10px] font-bold bg-tertiary-container text-on-tertiary-container">Overdue</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Evidence Gallery -->
+<section>
+<h4 class="font-headline font-extrabold text-lg text-primary mb-6">Evidence &amp; Controls Gallery</h4>
+<div class="grid grid-cols-3 gap-4">
+<div class="group relative bg-surface-container-lowest p-4 rounded-lg shadow-sm border border-outline-variant/10 hover:border-primary/20 transition-all cursor-pointer">
+<div class="h-32 bg-surface-container-low rounded flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<p class="text-xs font-bold truncate">mfa_compliance_q3.pdf</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Verified: 12 Oct 2024</p>
+<div class="absolute top-2 right-2 bg-green-500 w-2 h-2 rounded-full"></div>
+</div>
+<div class="group relative bg-surface-container-lowest p-4 rounded-lg shadow-sm border border-outline-variant/10 hover:border-primary/20 transition-all cursor-pointer">
+<div class="h-32 bg-surface-container-low rounded flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant" data-icon="screenshot">screenshot</span>
+</div>
+<p class="text-xs font-bold truncate">firewall_log_snip.png</p>
+<p class="text-[10px] text-on-surface-variant mt-1">Verified: 14 Oct 2024</p>
+<div class="absolute top-2 right-2 bg-yellow-500 w-2 h-2 rounded-full"></div>
+</div>
+<div class="border-2 border-dashed border-outline-variant/40 rounded-lg flex flex-col items-center justify-center hover:bg-surface-container-low transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:scale-110 transition-transform" data-icon="upload_file">upload_file</span>
+<p class="text-[10px] font-bold text-on-surface-variant mt-2">Upload Evidence</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Effectiveness & Timeline (4 Columns) -->
+<div class="col-span-4 space-y-8">
+<!-- Control Effectiveness Assessment -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10">
+<h4 class="font-headline font-bold text-xs uppercase tracking-widest text-primary mb-6">Effectiveness Rating</h4>
+<div class="space-y-4">
+<div class="p-4 bg-white rounded-lg border-2 border-primary shadow-md flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+<div>
+<p class="text-sm font-bold text-primary">Substantial</p>
+<p class="text-[10px] text-on-surface-variant">Standard Operating Level</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+</div>
+<div class="p-4 bg-white/50 rounded-lg border border-outline-variant/10 flex items-center justify-between grayscale opacity-60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="shield_with_heart">shield_with_heart</span>
+<div>
+<p class="text-sm font-bold">Effective</p>
+<p class="text-[10px] text-on-surface-variant">Ideal Posture Achieved</p>
+</div>
+</div>
+</div>
+<div class="p-4 bg-white/50 rounded-lg border border-outline-variant/10 flex items-center justify-between grayscale opacity-60">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="warning">warning</span>
+<div>
+<p class="text-sm font-bold">Degraded</p>
+<p class="text-[10px] text-on-surface-variant">Immediate Action Required</p>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2.5 text-xs font-bold text-primary border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">
+                            Request Peer Review
+                        </button>
+</div>
+<!-- Timeline & Activity -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+<h4 class="font-headline font-bold text-xs uppercase tracking-widest text-primary mb-8">Audit Trail &amp; Activity</h4>
+<div class="relative space-y-8 pl-4">
+<!-- Vertical Line -->
+<div class="absolute left-[7px] top-1 bottom-1 w-[2px] bg-outline-variant/20"></div>
+<!-- Timeline Item 1 -->
+<div class="relative pl-6">
+<div class="absolute left-[-13px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-primary ring-4 ring-white"></div>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Today, 14:22</p>
+<p class="text-sm font-semibold">Evidence Uploaded</p>
+<p class="text-xs text-on-surface-variant mt-1">Dr. Elena Ross uploaded <span class="text-primary font-medium">firewall_log_snip.png</span> to ACT-003.</p>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative pl-6">
+<div class="absolute left-[-13px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-outline ring-4 ring-white"></div>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">Yesterday, 09:15</p>
+<p class="text-sm font-semibold">Status Update</p>
+<p class="text-xs text-on-surface-variant mt-1">Marc J. Walters marked <span class="text-primary font-medium">ACT-002</span> as Completed.</p>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative pl-6">
+<div class="absolute left-[-13px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-outline ring-4 ring-white"></div>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">12 Oct 2024</p>
+<p class="text-sm font-semibold">Review Requested</p>
+<p class="text-xs text-on-surface-variant mt-1">System requested effectiveness review for Risk GOV-2024-089.</p>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative pl-6 opacity-50">
+<div class="absolute left-[-13px] top-0.5 w-4 h-4 rounded-full bg-white border-2 border-outline ring-4 ring-white"></div>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1">10 Oct 2024</p>
+<p class="text-sm font-semibold">Control Established</p>
+<p class="text-xs text-on-surface-variant mt-1">Initial mitigation framework defined by Security Council.</p>
+</div>
+</div>
+<button class="w-full mt-10 py-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hover:text-primary transition-colors">
+                            View Full History
+                        </button>
+</div>
+</div>
+</div>
+<!-- Bento Grid End -->
+</div>
+</main>
+</body></html>

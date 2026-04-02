@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Departmental Compliance Dashboard | SADCPFNexus</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;800&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-background": "#191c1e",
+              "primary-fixed": "#d5e3ff",
+              "primary": "#001e40",
+              "surface-container-highest": "#e0e3e5",
+              "secondary-fixed": "#d5e3fc",
+              "inverse-primary": "#a7c8ff",
+              "primary-fixed-dim": "#a7c8ff",
+              "outline-variant": "#c3c6d1",
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed-dim": "#ffb4ab",
+              "surface-tint": "#3a5f94",
+              "on-surface": "#191c1e",
+              "background": "#f7f9fb",
+              "surface-bright": "#f7f9fb",
+              "on-error": "#ffffff",
+              "inverse-on-surface": "#eff1f3",
+              "outline": "#737780",
+              "secondary": "#515f74",
+              "tertiary-container": "#6e0006",
+              "surface-container-low": "#f2f4f6",
+              "on-primary-fixed": "#001b3c",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-container": "#799dd6",
+              "on-error-container": "#93000a",
+              "surface-variant": "#e0e3e5",
+              "on-tertiary-container": "#ff6d60",
+              "surface-container": "#eceef0",
+              "surface": "#f7f9fb",
+              "on-secondary-container": "#57657a",
+              "secondary-container": "#d5e3fc",
+              "on-surface-variant": "#43474f",
+              "inverse-surface": "#2d3133",
+              "on-secondary-fixed-variant": "#3a485b",
+              "on-secondary": "#ffffff",
+              "on-tertiary-fixed-variant": "#93000b",
+              "surface-dim": "#d8dadc",
+              "primary-container": "#003366",
+              "tertiary": "#460002",
+              "tertiary-fixed": "#ffdad6",
+              "on-primary": "#ffffff",
+              "on-tertiary-fixed": "#410002",
+              "secondary-fixed-dim": "#b9c7df",
+              "on-secondary-fixed": "#0d1c2e",
+              "on-primary-fixed-variant": "#1f477b",
+              "surface-container-high": "#e6e8ea",
+              "error-container": "#ffdad6",
+              "error": "#ba1a1a"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      body { font-family: 'Inter', sans-serif; }
+      h1, h2, h3, .manrope { font-family: 'Manrope', sans-serif; }
+      .audit-line::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #c3c6d1;
+        opacity: 0.15;
+      }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- SideNavBar (Execution from JSON) -->
+<aside class="flex flex-col h-screen sticky top-0 left-0 pt-6 pb-4 bg-surface-container-low dark:bg-[#1f2326] text-primary dark:text-[#ffffff] border-r border-outline-variant/15 w-64 shrink-0 hidden md:flex">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded-lg shadow-lg">
+<span class="material-symbols-outlined text-white text-xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div>
+<h2 class="font-bold text-primary dark:text-[#ffffff] text-sm leading-tight">Compliance Dept.</h2>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold opacity-70">Sovereign Ledger v4.2</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-6 py-3 text-on-surface-variant dark:text-[#c3c6d1] hover:bg-[#e1e4e8] dark:hover:bg-[#2c3135] transition-all Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="account_balance">account_balance</span> Governance
+            </a>
+<a class="flex items-center px-6 py-3 text-primary dark:text-[#ffffff] bg-[#ffffff] dark:bg-[#001e40] font-bold border-l-4 border-primary dark:border-[#ffffff] Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="assignment_late">assignment_late</span> Risk Registry
+            </a>
+<a class="flex items-center px-6 py-3 text-on-surface-variant dark:text-[#c3c6d1] hover:bg-[#e1e4e8] dark:hover:bg-[#2c3135] transition-all Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="verified_user">verified_user</span> Compliance
+            </a>
+<a class="flex items-center px-6 py-3 text-on-surface-variant dark:text-[#c3c6d1] hover:bg-[#e1e4e8] dark:hover:bg-[#2c3135] transition-all Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="analytics">analytics</span> Internal Audit
+            </a>
+<a class="flex items-center px-6 py-3 text-on-surface-variant dark:text-[#c3c6d1] hover:bg-[#e1e4e8] dark:hover:bg-[#2c3135] transition-all Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="tactic">tactic</span> Strategy
+            </a>
+<a class="flex items-center px-6 py-3 text-on-surface-variant dark:text-[#c3c6d1] hover:bg-[#e1e4e8] dark:hover:bg-[#2c3135] transition-all Inter body text-sm font-medium" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="description">description</span> Policy Hub
+            </a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity">
+                New Audit Log
+            </button>
+<div class="mt-6 pt-4 border-t border-outline-variant/15">
+<a class="flex items-center px-2 py-2 text-on-surface-variant text-sm font-medium hover:text-error transition-colors" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="logout">logout</span> Logout
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopAppBar (Execution from JSON) -->
+<header class="flex justify-between items-center w-full px-8 h-16 border-b border-outline-variant/15 bg-[#f7f9fb] dark:bg-[#191c1e] shrink-0 sticky top-0 z-10">
+<div class="flex items-center gap-8">
+<span class="text-lg font-black text-primary dark:text-[#ffffff] tracking-tighter uppercase manrope">SADCPFNexus Risk Register</span>
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-on-surface-variant dark:text-[#c3c6d1] hover:text-[#003366] dark:hover:text-[#f7f9fb] transition-colors Manrope display text-sm font-semibold uppercase tracking-wider" href="#">Dashboard</a>
+<a class="text-primary dark:text-[#ffffff] border-b-2 border-primary dark:border-[#ffffff] pb-1 Manrope display text-sm font-semibold uppercase tracking-wider" href="#">Reports</a>
+<a class="text-on-surface-variant dark:text-[#c3c6d1] hover:text-[#003366] dark:hover:text-[#f7f9fb] transition-colors Manrope display text-sm font-semibold uppercase tracking-wider" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-surface-container-high px-3 py-1.5 rounded-full text-xs font-bold text-primary">
+<span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    System Status: Secure
+                </div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded-full">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<div class="ml-2 w-8 h-8 rounded-full bg-outline-variant overflow-hidden border border-outline-variant/20">
+<img alt="User avatar" data-alt="Close-up professional portrait of a senior governance official in a suit with a neutral institutional background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAey5GAECtJRO9wf0KYKuvyT_RiSHAWTa1JXx-J58cwFb1cvW9nNAUX9dVz_O9acjVBSTxAkxFzFqGWwelDTWNA-s4D1HW1bgX8YRsCIcLAi9s4UCD5lexuRmetfJ5YBKLf92YInFEMPO4UGyya0JyTMcbqHl3_VJbSyXVedABBl1aa_YHOSOnphfqWbUKlWmsHVqOOCgzIUII8pR_03qWL_7qk2wo8Gps1V8HBVke2I8Go8YhRV7EJZe0dnIzTGbhSKfR4386Hkmg"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 max-w-7xl mx-auto w-full">
+<!-- Hero Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+<div>
+<div class="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em] mb-2 opacity-60">
+<span class="material-symbols-outlined text-sm" data-icon="domain">domain</span> Departmental Oversight
+                    </div>
+<h1 class="text-4xl font-extrabold text-primary tracking-tight manrope">Departmental Compliance Overview - ICT</h1>
+<p class="text-on-surface-variant mt-2 max-w-2xl font-medium">Real-time risk monitoring and mitigation architecture for the Information &amp; Communications Technology sovereign assets.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded text-sm font-bold flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="download">download</span> Export Dept. Report
+                    </button>
+<button class="bg-primary text-white px-5 py-2.5 rounded text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg" data-icon="refresh">refresh</span> Update All Actions
+                    </button>
+</div>
+</div>
+<!-- KPI Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+<div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] flex flex-col justify-between border-b-4 border-primary/10">
+<div class="text-[0.7rem] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Total Dept. Risks</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black text-primary manrope">12</span>
+<span class="text-xs font-bold text-green-600 flex items-center"><span class="material-symbols-outlined text-xs">trending_down</span> 4%</span>
+</div>
+<div class="mt-4 text-[10px] text-on-surface-variant font-medium">Aggregated across 4 sub-divisions</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] flex flex-col justify-between border-b-4 border-tertiary-container/20">
+<div class="text-[0.7rem] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Critical Exposure</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black text-tertiary-container manrope">02</span>
+<span class="bg-tertiary-container/10 text-on-tertiary-container px-2 py-0.5 rounded text-[10px] font-bold">ACTION REQ</span>
+</div>
+<div class="mt-4 text-[10px] text-on-surface-variant font-medium">Immediate mitigation required for VPN protocols</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] flex flex-col justify-between border-b-4 border-primary/10">
+<div class="text-[0.7rem] font-bold text-on-surface-variant uppercase tracking-widest mb-4">Mitigation Progress</div>
+<div class="flex items-center gap-4">
+<span class="text-5xl font-black text-primary manrope">78%</span>
+<div class="flex-1 h-3 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[78%]"></div>
+</div>
+</div>
+<div class="mt-4 text-[10px] text-on-surface-variant font-medium">9 of 12 controls currently active</div>
+</div>
+<div class="bg-primary text-white p-6 rounded-lg shadow-lg flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-9xl" data-icon="verified">verified</span>
+</div>
+<div class="text-[0.7rem] font-bold text-primary-fixed uppercase tracking-widest mb-4">Compliance Grade</div>
+<div class="text-6xl font-black manrope tracking-tighter">B+</div>
+<div class="mt-4 text-[10px] text-primary-fixed font-medium uppercase tracking-widest">Audit Readiness: Stable</div>
+</div>
+</div>
+<!-- Data Density Layout (Asymmetrical) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Visual Analytics -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Scoring Comparison -->
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] border border-outline-variant/5">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-xl font-bold text-primary manrope">Inherent vs. Residual Score Matrix</h3>
+<div class="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-primary-container rounded-sm"></span> Inherent</div>
+<div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-primary rounded-sm"></span> Residual</div>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<!-- Chart Rows -->
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase">Data Breach Integrity</div>
+<div class="flex gap-1 h-6">
+<div class="bg-primary-container w-[90%] rounded-l-sm flex items-center px-3 text-[10px] text-white font-bold">9.0</div>
+<div class="bg-primary w-[35%] rounded-r-sm flex items-center px-3 text-[10px] text-white font-bold">3.5</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase">Hardware Obsolescence</div>
+<div class="flex gap-1 h-6">
+<div class="bg-primary-container w-[65%] rounded-l-sm flex items-center px-3 text-[10px] text-white font-bold">6.5</div>
+<div class="bg-primary w-[45%] rounded-r-sm flex items-center px-3 text-[10px] text-white font-bold">4.5</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] font-bold text-on-surface-variant uppercase">Cloud Connectivity Loss</div>
+<div class="flex gap-1 h-6">
+<div class="bg-primary-container w-[75%] rounded-l-sm flex items-center px-3 text-[10px] text-white font-bold">7.5</div>
+<div class="bg-primary w-[20%] rounded-r-sm flex items-center px-3 text-[10px] text-white font-bold">2.0</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Risk Watchlist Table -->
+<div class="bg-surface-container-lowest overflow-hidden rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] border border-outline-variant/5">
+<div class="px-8 py-6 border-b border-surface-container-low flex justify-between items-center">
+<h3 class="text-xl font-bold text-primary manrope">Departmental Risk Watchlist</h3>
+<button class="text-primary text-xs font-bold uppercase tracking-widest hover:underline">View Full Registry</button>
+</div>
+<table class="w-full text-left">
+<thead class="bg-surface-container-low text-[10px] font-black uppercase tracking-[0.15em] text-on-surface-variant">
+<tr>
+<th class="px-8 py-4">Risk Code</th>
+<th class="px-4 py-4">Description</th>
+<th class="px-4 py-4 text-center">Residual Score</th>
+<th class="px-8 py-4 text-right">Next Review</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-5 text-sm font-bold text-primary">ICT-092</td>
+<td class="px-4 py-5 text-sm font-medium text-on-surface">Unpatched Legacy Servers</td>
+<td class="px-4 py-5 text-center">
+<span class="bg-orange-100 text-orange-800 text-[10px] font-bold px-2.5 py-1 rounded">6.4 HIGH</span>
+</td>
+<td class="px-8 py-5 text-right text-sm text-on-surface-variant tabular-nums font-medium">12 OCT 2024</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-5 text-sm font-bold text-primary">ICT-115</td>
+<td class="px-4 py-5 text-sm font-medium text-on-surface">Phishing Vulnerability</td>
+<td class="px-4 py-5 text-center">
+<span class="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2.5 py-1 rounded">4.2 MOD</span>
+</td>
+<td class="px-8 py-5 text-right text-sm text-on-surface-variant tabular-nums font-medium">05 NOV 2024</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-5 text-sm font-bold text-primary">ICT-044</td>
+<td class="px-4 py-5 text-sm font-medium text-on-surface">Data Sovereignty Leak</td>
+<td class="px-4 py-5 text-center">
+<span class="bg-red-100 text-red-800 text-[10px] font-bold px-2.5 py-1 rounded">8.1 CRIT</span>
+</td>
+<td class="px-8 py-5 text-right text-sm text-on-surface-variant tabular-nums font-medium">28 SEP 2024</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="px-8 py-5 text-sm font-bold text-primary">ICT-001</td>
+<td class="px-4 py-5 text-sm font-medium text-on-surface">Physical Data Center Access</td>
+<td class="px-4 py-5 text-center">
+<span class="bg-green-100 text-green-800 text-[10px] font-bold px-2.5 py-1 rounded">1.5 LOW</span>
+</td>
+<td class="px-8 py-5 text-right text-sm text-on-surface-variant tabular-nums font-medium">15 DEC 2024</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Column: Contextual Panels -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Audit Readiness Status Panel -->
+<div class="bg-primary-container text-white p-8 rounded-lg relative overflow-hidden shadow-xl">
+<div class="relative z-10">
+<h3 class="text-xl font-bold mb-6 manrope">Compliance Status</h3>
+<div class="space-y-6">
+<div class="flex justify-between items-center pb-4 border-b border-white/10">
+<div class="text-xs uppercase tracking-widest font-bold opacity-70">Audit Readiness</div>
+<div class="flex items-center gap-2 font-black text-lg">
+<span class="w-3 h-3 bg-green-400 rounded-full"></span> 94%
+                                    </div>
+</div>
+<div class="flex justify-between items-center pb-4 border-b border-white/10">
+<div class="text-xs uppercase tracking-widest font-bold opacity-70">Last Sync</div>
+<div class="text-sm font-bold">14:02 UTC Today</div>
+</div>
+<div class="flex justify-between items-center">
+<div class="text-xs uppercase tracking-widest font-bold opacity-70">System Integrity</div>
+<div class="text-sm font-bold px-2 py-1 bg-white/10 rounded">VERIFIED</div>
+</div>
+</div>
+<!-- Sovereign Ledger Seal -->
+<div class="mt-8 pt-8 border-t border-white/10 flex items-center gap-4">
+<div class="w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center bg-white/5 backdrop-blur-sm">
+<span class="material-symbols-outlined text-3xl opacity-50" data-icon="lock">lock</span>
+</div>
+<div>
+<p class="text-[10px] font-black uppercase tracking-[0.2em]">Sovereign Ledger Seal</p>
+<p class="text-[9px] opacity-60 leading-relaxed font-mono">HASH: 4F2A_991Z_SECURE_ICT_2024</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Mitigation by Action Owner -->
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] border border-outline-variant/5">
+<h3 class="text-xl font-bold text-primary manrope mb-6">Action Owner Progress</h3>
+<div class="space-y-6">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary-fixed flex items-center justify-center font-bold text-primary text-xs">SG</div>
+<div class="flex-1">
+<div class="flex justify-between mb-1.5">
+<span class="text-xs font-bold text-on-surface">Strategic Governor (SG)</span>
+<span class="text-xs font-black text-primary">85%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full">
+<div class="h-full bg-primary w-[85%]"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-secondary-fixed flex items-center justify-center font-bold text-primary text-xs">ID</div>
+<div class="flex-1">
+<div class="flex justify-between mb-1.5">
+<span class="text-xs font-bold text-on-surface">ICT Director</span>
+<span class="text-xs font-black text-primary">62%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full">
+<div class="h-full bg-primary w-[62%]"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-surface-container-high flex items-center justify-center font-bold text-primary text-xs">CO</div>
+<div class="flex-1">
+<div class="flex justify-between mb-1.5">
+<span class="text-xs font-bold text-on-surface">Compliance Officer</span>
+<span class="text-xs font-black text-primary">98%</span>
+</div>
+<div class="h-1.5 bg-surface-container rounded-full">
+<div class="h-full bg-primary w-[98%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Audit Trail Component -->
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_4px_24px_rgba(25,28,30,0.04)] border border-outline-variant/5">
+<h3 class="text-xl font-bold text-primary manrope mb-6">Recent Validation</h3>
+<div class="relative pl-6 space-y-6 audit-line">
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-primary rounded-full ring-4 ring-white"></div>
+<p class="text-[10px] font-black uppercase text-on-surface-variant tracking-widest mb-1">Audit Completed</p>
+<p class="text-xs font-semibold text-on-surface">Infrastructure Penetration Test v2</p>
+<p class="text-[10px] text-on-surface-variant mt-1">2h ago by System Automator</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-outline-variant rounded-full ring-4 ring-white"></div>
+<p class="text-[10px] font-black uppercase text-on-surface-variant tracking-widest mb-1">Registry Update</p>
+<p class="text-xs font-semibold text-on-surface">Updated Residual Score ICT-092</p>
+<p class="text-[10px] text-on-surface-variant mt-1">5h ago by ICT Director</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-outline-variant rounded-full ring-4 ring-white"></div>
+<p class="text-[10px] font-black uppercase text-on-surface-variant tracking-widest mb-1">Policy Revoked</p>
+<p class="text-xs font-semibold text-on-surface">Remote Work Security Protocol 2023</p>
+<p class="text-[10px] text-on-surface-variant mt-1">1d ago by Compliance Dept.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Technical Disclaimer -->
+<footer class="p-8 mt-auto border-t border-outline-variant/10 text-[10px] text-on-surface-variant uppercase tracking-[0.2em] font-bold text-center">
+            Institutional Access Only • End-to-End Encrypted • Sovereign Ledger Framework v4.2.1
+        </footer>
+</main>
+<!-- Bottom Navigation for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-outline-variant/15 px-6 py-3 flex justify-between items-center z-20">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-bold">DASH</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" data-icon="assignment_late" data-weight="fill" style="font-variation-settings: 'FILL' 1;">assignment_late</span>
+<span class="text-[10px] font-bold">RISK</span>
+</button>
+<button class="bg-primary text-white p-3 rounded-full -mt-10 shadow-lg border-4 border-surface">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="text-[10px] font-bold">COMP</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-bold">SET</span>
+</button>
+</nav>
+</body></html>

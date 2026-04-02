@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -30,6 +31,11 @@ class GoodsReceiptNote extends Model
     public function purchaseOrder() { return $this->belongsTo(PurchaseOrder::class); }
     public function receivedBy()    { return $this->belongsTo(User::class, 'received_by'); }
     public function items()         { return $this->hasMany(GoodsReceiptItem::class); }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 
     public function isAccepted(): bool { return $this->status === 'accepted'; }
     public function isRejected(): bool { return $this->status === 'rejected'; }

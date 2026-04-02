@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Institutional User Permissions &amp; RBAC | Sovereign Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "surface-container-high": "#e6e8ea",
+                        "secondary-fixed": "#d5e3fc",
+                        "on-secondary-container": "#57657a",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-highest": "#e0e3e5",
+                        "outline-variant": "#c3c6d1",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#191c1e",
+                        "surface-tint": "#3a5f94",
+                        "primary-fixed-dim": "#a7c8ff",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "secondary": "#515f74",
+                        "background": "#f7f9fb",
+                        "primary-container": "#003366",
+                        "inverse-surface": "#2d3133",
+                        "surface-variant": "#e0e3e5",
+                        "primary": "#001e40",
+                        "on-tertiary-container": "#ff6d60",
+                        "inverse-on-surface": "#eff1f3",
+                        "tertiary-fixed-dim": "#ffb4ab",
+                        "tertiary": "#460002",
+                        "secondary-container": "#d5e3fc",
+                        "on-primary-container": "#799dd6",
+                        "on-surface-variant": "#43474f",
+                        "on-primary-fixed": "#001b3c",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#f2f4f6",
+                        "outline": "#737780",
+                        "on-primary-fixed-variant": "#1f477b",
+                        "on-tertiary-fixed-variant": "#93000b",
+                        "on-primary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdad6",
+                        "surface-container": "#eceef0",
+                        "inverse-primary": "#a7c8ff",
+                        "on-tertiary-fixed": "#410002",
+                        "surface-bright": "#f7f9fb",
+                        "on-error": "#ffffff",
+                        "surface": "#f7f9fb",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#191c1e",
+                        "tertiary-container": "#6e0006",
+                        "primary-fixed": "#d5e3ff"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Top Navigation Anchor -->
+<nav class="bg-[#f7f9fb] dark:bg-[#001e40] flex justify-between items-center w-full px-12 py-4 h-20 max-w-full fixed top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-extrabold tracking-tighter text-[#001e40] dark:text-white">Sovereign Ledger</span>
+<div class="hidden md:flex gap-8 items-center font-['Manrope'] font-bold tracking-tight text-lg uppercase">
+<a class="text-[#43474f] dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">Dashboard</a>
+<a class="text-[#001e40] dark:text-white border-b-2 border-[#001e40] dark:border-[#f7f9fb] pb-1" href="#">Security</a>
+<a class="text-[#43474f] dark:text-slate-400 hover:text-[#001e40] dark:hover:text-white transition-all" href="#">Governance</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-[#f2f4f6] dark:hover:bg-[#003366] transition-all">
+<span class="material-symbols-outlined text-[#001e40] dark:text-[#f7f9fb]">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-[#f2f4f6] dark:hover:bg-[#003366] transition-all">
+<span class="material-symbols-outlined text-[#001e40] dark:text-[#f7f9fb]">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional portrait of a male administrator in a dark blue suit, looking confident and institutional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLotEBv7ofpRkmpODw_BOXE4ZuY2FNsX3CyQQYW0VPQNUqnTjtTsYRsJiE0Kae2BxJu8BwN2mMFrAe_iyz8xYhSM6ZungVLowAm6NlCAblRboNDHJDeW7zW6jwqkhuAGyAud08_pjve5VjJ9SSlJfgai_uj2abUgc8PWjyFc_w2Bl-55byUOYLbiJnV2skJRJtH3jYqTcD8eq6XVuWvCimHTB0jbhH3cWx1R1EPvR7NC1X1k2K0m9MbtVuHAzuots1scNp2xbhNrI"/>
+</div>
+</div>
+</nav>
+<!-- Side Navigation Anchor -->
+<aside class="fixed left-0 top-20 bottom-0 z-40 h-[calc(100vh-5rem)] w-72 flex flex-col bg-[#f2f4f6] dark:bg-[#001e40] border-none font-['Inter'] font-medium text-sm antialiased">
+<div class="p-8 pb-4">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center rounded">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h3 class="font-['Manrope'] font-black text-xl text-[#001e40] dark:text-white leading-tight">RBAC Command</h3>
+<p class="text-[10px] text-on-surface-variant tracking-wider uppercase">Institutional Security Tier 1</p>
+</div>
+</div>
+</div>
+<div class="flex-grow">
+<a class="text-[#43474f] dark:text-slate-400 py-3 px-6 flex items-center gap-3 hover:bg-[#f7f9fb] dark:hover:bg-[#002b55] text-[#001e40] dark:text-white transition-all" href="#">
+<span class="material-symbols-outlined">badge</span> Identity Registry
+            </a>
+<a class="bg-white dark:bg-[#003366] text-[#001e40] dark:text-white font-bold rounded-l-md border-r-4 border-[#001e40] dark:border-white py-3 px-6 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">security_update_good</span> Permission Matrix
+            </a>
+<a class="text-[#43474f] dark:text-slate-400 py-3 px-6 flex items-center gap-3 hover:bg-[#f7f9fb] dark:hover:bg-[#002b55] text-[#001e40] dark:text-white transition-all" href="#">
+<span class="material-symbols-outlined">rule</span> Risk Thresholds
+            </a>
+<a class="text-[#43474f] dark:text-slate-400 py-3 px-6 flex items-center gap-3 hover:bg-[#f7f9fb] dark:hover:bg-[#002b55] text-[#001e40] dark:text-white transition-all" href="#">
+<span class="material-symbols-outlined">history_edu</span> Audit Archive
+            </a>
+<a class="text-[#43474f] dark:text-slate-400 py-3 px-6 flex items-center gap-3 hover:bg-[#f7f9fb] dark:hover:bg-[#002b55] text-[#001e40] dark:text-white transition-all" href="#">
+<span class="material-symbols-outlined">shield</span> System Integrity
+            </a>
+</div>
+<div class="p-6">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold flex items-center justify-center gap-2 scale-100 active:scale-[0.98] transition-transform">
+                Initiate Security Audit
+            </button>
+</div>
+<div class="p-6 border-t border-outline-variant/10">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">help_center</span> Support
+            </a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">description</span> Documentation
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 pt-20 p-12 min-h-screen">
+<!-- Header Section -->
+<header class="mb-12 flex justify-between items-end">
+<div>
+<nav class="flex text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-3 gap-2">
+<span>Governance</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span>Security</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-primary">Permissions</span>
+</nav>
+<h1 class="text-4xl font-extrabold tracking-tight text-primary">Institutional User Permissions &amp; RBAC</h1>
+</div>
+<button class="bg-primary text-on-primary px-8 py-4 rounded font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">person_add</span>
+                Add New User
+            </button>
+</header>
+<div class="grid grid-cols-12 gap-8 items-start">
+<!-- Centerpiece: RBAC Permission Matrix -->
+<section class="col-span-12 lg:col-span-9 space-y-8">
+<div class="bg-surface-container-low rounded-lg p-0.5 overflow-hidden">
+<div class="bg-white overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high border-b border-outline-variant/20">
+<th class="p-6 text-xs font-bold text-on-surface-variant uppercase tracking-widest min-w-[240px]">Module Permissions</th>
+<th class="p-6 text-xs font-bold text-primary uppercase tracking-widest text-center">Risk Owner</th>
+<th class="p-6 text-xs font-bold text-primary uppercase tracking-widest text-center">Action Owner</th>
+<th class="p-6 text-xs font-bold text-primary uppercase tracking-widest text-center">Director</th>
+<th class="p-6 text-xs font-bold text-primary uppercase tracking-widest text-center">SG</th>
+<th class="p-6 text-xs font-bold text-primary uppercase tracking-widest text-center">Internal Auditor</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Create Risk</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Approve Entry</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Modify Mitigation</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Full Visibility</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Audit Access</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="p-6 font-semibold text-primary">Manage Users</td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="p-6 text-center"><span class="material-symbols-outlined text-outline-variant">circle</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Institutional User Directory -->
+<div class="bg-surface-container-low rounded-lg p-0.5">
+<div class="bg-white overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+<h2 class="text-xl font-bold text-primary">Institutional User Directory</h2>
+<div class="flex gap-2">
+<span class="bg-surface-container px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">42 Active Records</span>
+</div>
+</div>
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/10">
+<th class="p-6">Name/ID</th>
+<th class="p-6">Assigned Role</th>
+<th class="p-6">Department</th>
+<th class="p-6">MFA Status</th>
+<th class="p-6">Last Active</th>
+<th class="p-6 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="p-6">
+<div class="flex flex-col">
+<span class="font-bold text-primary">Dr. Elias Vance</span>
+<span class="text-[10px] text-on-surface-variant font-medium">SL-00124-ADMIN</span>
+</div>
+</td>
+<td class="p-6"><span class="bg-primary/5 text-primary px-2 py-1 text-[10px] font-bold rounded">SG</span></td>
+<td class="p-6 text-on-surface-variant">Directorate General</td>
+<td class="p-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-xs font-semibold text-emerald-700">Enforced</span>
+</div>
+</td>
+<td class="p-6 text-xs text-on-surface-variant">14 mins ago</td>
+<td class="p-6 text-right">
+<button class="text-primary font-bold text-xs hover:underline decoration-2 underline-offset-4">Edit Permissions</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="p-6">
+<div class="flex flex-col">
+<span class="font-bold text-primary">Sarah K. Moss</span>
+<span class="text-[10px] text-on-surface-variant font-medium">SL-00156-AUDIT</span>
+</div>
+</td>
+<td class="p-6"><span class="bg-primary/5 text-primary px-2 py-1 text-[10px] font-bold rounded">Internal Auditor</span></td>
+<td class="p-6 text-on-surface-variant">Compliance</td>
+<td class="p-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-xs font-semibold text-emerald-700">Enforced</span>
+</div>
+</td>
+<td class="p-6 text-xs text-on-surface-variant">2 hours ago</td>
+<td class="p-6 text-right">
+<button class="text-primary font-bold text-xs hover:underline decoration-2 underline-offset-4">Edit Permissions</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors">
+<td class="p-6">
+<div class="flex flex-col">
+<span class="font-bold text-primary">Julian Thorne</span>
+<span class="text-[10px] text-on-surface-variant font-medium">SL-00201-TECH</span>
+</div>
+</td>
+<td class="p-6"><span class="bg-primary/5 text-primary px-2 py-1 text-[10px] font-bold rounded">Action Owner</span></td>
+<td class="p-6 text-on-surface-variant">IT Infrastructure</td>
+<td class="p-6">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<span class="text-xs font-semibold text-error">Pending</span>
+</div>
+</td>
+<td class="p-6 text-xs text-on-surface-variant">Yesterday, 16:40</td>
+<td class="p-6 text-right">
+<button class="text-primary font-bold text-xs hover:underline decoration-2 underline-offset-4">Edit Permissions</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Sidebar Controls & Logs -->
+<aside class="col-span-12 lg:col-span-3 space-y-8">
+<!-- Security Tier Controls -->
+<div class="bg-primary p-8 rounded-lg text-white">
+<h3 class="text-xs font-bold uppercase tracking-widest text-on-primary-container mb-6">Security Tier Controls</h3>
+<div class="space-y-6">
+<div class="flex justify-between items-center">
+<div>
+<p class="text-sm font-bold">Multi-Factor Auth</p>
+<p class="text-[10px] text-on-primary-container uppercase">Status: Enforced</p>
+</div>
+<span class="material-symbols-outlined text-emerald-400">verified_user</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<p class="text-sm font-bold">Field-Level Encryption</p>
+<p class="text-[10px] text-on-primary-container uppercase">Status: Active (AES-256)</p>
+</div>
+<span class="material-symbols-outlined text-emerald-400">encrypted</span>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<p class="text-sm font-bold">Session Timeout</p>
+<p class="text-[10px] text-on-primary-container uppercase">Configuration: 15 min</p>
+</div>
+<span class="material-symbols-outlined text-on-primary-container">timer</span>
+</div>
+</div>
+</div>
+<!-- Integrity Validation -->
+<div class="bg-surface-container-low border border-outline-variant/20 p-6 rounded-lg text-center relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-5">
+<span class="material-symbols-outlined text-8xl">verified</span>
+</div>
+<div class="mb-4 flex justify-center">
+<div class="w-16 h-16 rounded-full border-4 border-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">policy</span>
+</div>
+</div>
+<h4 class="font-bold text-primary mb-1">Sovereign Ledger Seal</h4>
+<p class="text-[10px] font-medium text-on-surface-variant uppercase tracking-tighter mb-4 leading-relaxed">Cryptographic Integrity Confirmed<br/>Block Hash: 7fb9...3a21</p>
+<div class="bg-primary/5 text-primary py-2 px-3 inline-block rounded text-[9px] font-bold tracking-widest uppercase">
+                        Verified Permissions State
+                    </div>
+</div>
+<!-- Permission Change History -->
+<div class="space-y-6">
+<h3 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Permission Change History</h3>
+<div class="relative pl-6 space-y-8 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-0 before:w-[2px] before:bg-outline-variant/30">
+<!-- Node 1 -->
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1 w-4 h-4 rounded-full bg-white border-2 border-primary z-10"></div>
+<p class="text-xs font-bold text-primary mb-1">SG modified permissions for ICT Director</p>
+<p class="text-[10px] text-on-surface-variant uppercase font-medium">Today • 09:12 AM</p>
+<p class="text-[11px] mt-2 text-on-surface italic bg-surface-container-low p-3 rounded">Action: "Full Visibility" enabled for risk reporting audit.</p>
+</div>
+<!-- Node 2 -->
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1 w-4 h-4 rounded-full bg-white border-2 border-primary z-10"></div>
+<p class="text-xs font-bold text-primary mb-1">Internal Auditor role updated with Audit Access</p>
+<p class="text-[10px] text-on-surface-variant uppercase font-medium">Yesterday • 14:45 PM</p>
+</div>
+<!-- Node 3 -->
+<div class="relative">
+<div class="absolute -left-[1.35rem] top-1 w-4 h-4 rounded-full bg-white border-2 border-outline z-10"></div>
+<p class="text-xs font-bold text-on-surface-variant mb-1">System-wide MFA Enforcement Triggered</p>
+<p class="text-[10px] text-on-surface-variant uppercase font-medium">Oct 24, 2023 • 08:00 AM</p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Footer Metric / Bottom Bar -->
+<footer class="mt-16 pt-8 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Active System Tier</span>
+<span class="text-sm font-bold text-primary">SADCPF Institutional Grid V4.0</span>
+</div>
+<div class="w-px h-8 bg-outline-variant/20"></div>
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Data Latency</span>
+<span class="text-sm font-bold text-primary">0.02s (Secured)</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="bg-surface-container-high px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-highest transition-colors">Export Permission Log</button>
+<button class="bg-surface-container-high px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-surface-container-highest transition-colors">Generate Compliance Report</button>
+</div>
+</footer>
+</main>
+</body></html>

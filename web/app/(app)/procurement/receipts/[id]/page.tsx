@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { goodsReceiptsApi, type GoodsReceiptNote, type GoodsReceiptItem } from "@/lib/api";
+import { goodsReceiptsApi, goodsReceiptAttachmentsApi, GOODS_RECEIPT_DOC_TYPES, type GoodsReceiptNote, type GoodsReceiptItem, type ProcurementAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -34,6 +35,13 @@ export default function GoodsReceiptDetailPage({ params }: { params: { id: strin
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
+  const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
+  const [attachments, setAttachments]         = useState<ProcurementAttachment[]>([]);
+  const [uploading, setUploading]             = useState(false);
+
+  useEffect(() => {
+    if (grnId) goodsReceiptAttachmentsApi.list(grnId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
+  }, [grnId]);
 
   const { data: grn, isLoading, isError } = useQuery({
     queryKey: ["grn", poId, grnId],
@@ -89,6 +97,36 @@ export default function GoodsReceiptDetailPage({ params }: { params: { id: strin
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+      {/* Tab Bar */}
+      <div className="flex gap-1 border-b border-neutral-200">
+        {(["details", "documents"] as const).map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "documents" && (
+        <div className="card p-6">
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Goods Receipt Documents</h2>
+          <GenericDocumentsPanel
+            documents={attachments}
+            documentTypes={GOODS_RECEIPT_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+            defaultType="delivery_note"
+            loading={false}
+            uploading={uploading}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try { const r = await goodsReceiptAttachmentsApi.upload(grnId, file, type); setAttachments((p) => [r.data.data, ...p]); }
+              finally { setUploading(false); }
+            }}
+            onDelete={async (id) => { await goodsReceiptAttachmentsApi.delete(grnId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            downloadUrl={(id) => goodsReceiptAttachmentsApi.downloadUrl(grnId, id)}
+          />
+        </div>
+      )}
+
+      {activeTab === "details" && <>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
@@ -255,6 +293,7 @@ export default function GoodsReceiptDetailPage({ params }: { params: { id: strin
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Receipts
       </Link>
+      </> /* end details tab */}
 
       {/* Reject Modal */}
       {showRejectModal && (

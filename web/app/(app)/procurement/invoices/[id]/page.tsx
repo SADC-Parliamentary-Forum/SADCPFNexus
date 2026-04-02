@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { invoicesApi, type Invoice } from "@/lib/api";
+import { invoicesApi, invoiceAttachmentsApi, INVOICE_DOC_TYPES, type Invoice, type ProcurementAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -32,6 +33,13 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
+  const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
+  const [attachments, setAttachments]         = useState<ProcurementAttachment[]>([]);
+  const [uploading, setUploading]             = useState(false);
+
+  useEffect(() => {
+    if (invId) invoiceAttachmentsApi.list(invId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
+  }, [invId]);
 
   const { data: inv, isLoading, isError } = useQuery({
     queryKey: ["invoice", invId],
@@ -85,6 +93,36 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+      {/* Tab Bar */}
+      <div className="flex gap-1 border-b border-neutral-200">
+        {(["details", "documents"] as const).map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "documents" && (
+        <div className="card p-6">
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Invoice Documents</h2>
+          <GenericDocumentsPanel
+            documents={attachments}
+            documentTypes={INVOICE_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+            defaultType="tax_invoice"
+            loading={false}
+            uploading={uploading}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try { const r = await invoiceAttachmentsApi.upload(invId, file, type); setAttachments((p) => [r.data.data, ...p]); }
+              finally { setUploading(false); }
+            }}
+            onDelete={async (id) => { await invoiceAttachmentsApi.delete(invId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            downloadUrl={(id) => invoiceAttachmentsApi.downloadUrl(invId, id)}
+          />
+        </div>
+      )}
+
+      {activeTab === "details" && <>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
@@ -224,6 +262,7 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Invoices
       </Link>
+      </> /* end details tab */}
 
       {/* Reject Modal */}
       {showRejectModal && (
