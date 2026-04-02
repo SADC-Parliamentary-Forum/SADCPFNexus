@@ -3653,3 +3653,104 @@ export const policyApi = {
   downloadAttachmentUrl: (policyId: number, attachmentId: number): string =>
     `${api.defaults.baseURL}/risk/policies/${policyId}/attachments/${attachmentId}/download`,
 };
+
+// ── Procurement Attachment Types ─────────────────────────────────────────────
+
+export const PROCUREMENT_REQUEST_DOC_TYPES = [
+  { value: "rfq_document",    label: "RFQ / Tender Document",  icon: "description"    },
+  { value: "quote_received",  label: "Quote Received",         icon: "request_quote"  },
+  { value: "bid_document",    label: "Bid Document",           icon: "gavel"          },
+  { value: "evaluation_report", label: "Evaluation Report",    icon: "analytics"      },
+  { value: "award_letter",    label: "Award Letter",           icon: "workspace_premium" },
+  { value: "other",           label: "Other",                  icon: "attach_file"    },
+] as const;
+export type ProcurementRequestDocType = typeof PROCUREMENT_REQUEST_DOC_TYPES[number]["value"];
+
+export const PURCHASE_ORDER_DOC_TYPES = [
+  { value: "signed_po",               label: "Signed Purchase Order",   icon: "order_approve"  },
+  { value: "vendor_acknowledgement",  label: "Vendor Acknowledgement",  icon: "handshake"      },
+  { value: "delivery_schedule",       label: "Delivery Schedule",       icon: "schedule"       },
+  { value: "po_amendment",            label: "PO Amendment",            icon: "edit_document"  },
+  { value: "other",                   label: "Other",                   icon: "attach_file"    },
+] as const;
+export type PurchaseOrderDocType = typeof PURCHASE_ORDER_DOC_TYPES[number]["value"];
+
+export const INVOICE_DOC_TYPES = [
+  { value: "tax_invoice",         label: "Tax Invoice",         icon: "receipt_long"   },
+  { value: "credit_note",         label: "Credit Note",         icon: "credit_score"   },
+  { value: "remittance_advice",   label: "Remittance Advice",   icon: "payments"       },
+  { value: "invoice_supporting",  label: "Supporting Document", icon: "folder_open"    },
+  { value: "other",               label: "Other",               icon: "attach_file"    },
+] as const;
+export type InvoiceDocType = typeof INVOICE_DOC_TYPES[number]["value"];
+
+export const CONTRACT_DOC_TYPES = [
+  { value: "signed_contract",      label: "Signed Contract",     icon: "contract"       },
+  { value: "contract_amendment",   label: "Contract Amendment",  icon: "edit_document"  },
+  { value: "contract_addendum",    label: "Contract Addendum",   icon: "post_add"       },
+  { value: "termination_notice",   label: "Termination Notice",  icon: "cancel"         },
+  { value: "other",                label: "Other",               icon: "attach_file"    },
+] as const;
+export type ContractDocType = typeof CONTRACT_DOC_TYPES[number]["value"];
+
+export const GOODS_RECEIPT_DOC_TYPES = [
+  { value: "delivery_note",     label: "Delivery Note",      icon: "local_shipping" },
+  { value: "inspection_report", label: "Inspection Report",  icon: "fact_check"     },
+  { value: "packing_list",      label: "Packing List",       icon: "inventory_2"    },
+  { value: "other",             label: "Other",              icon: "attach_file"    },
+] as const;
+export type GoodsReceiptDocType = typeof GOODS_RECEIPT_DOC_TYPES[number]["value"];
+
+export const VENDOR_DOC_TYPES = [
+  { value: "registration_certificate", label: "Registration Certificate", icon: "verified"       },
+  { value: "tax_clearance",            label: "Tax Clearance",            icon: "receipt"        },
+  { value: "company_profile",          label: "Company Profile",          icon: "business"       },
+  { value: "bank_details",             label: "Bank Details",             icon: "account_balance"},
+  { value: "other",                    label: "Other",                    icon: "attach_file"    },
+] as const;
+export type VendorDocType = typeof VENDOR_DOC_TYPES[number]["value"];
+
+export interface ProcurementAttachment {
+  id: number;
+  attachable_type: string;
+  attachable_id: number;
+  document_type: string;
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+  uploader?: { id: number; name: string };
+}
+
+// ── Procurement Attachment API helpers ───────────────────────────────────────
+
+function makeAttachmentApi(prefix: string, defaultType: string) {
+  return {
+    list: (parentId: number) =>
+      api.get<{ data: ProcurementAttachment[] }>(`/procurement/${prefix}/${parentId}/attachments`),
+
+    upload: (parentId: number, file: File, documentType?: string) => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("document_type", documentType ?? defaultType);
+      return api.post<{ data: ProcurementAttachment; message: string }>(
+        `/procurement/${prefix}/${parentId}/attachments`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+    },
+
+    delete: (parentId: number, attachmentId: number) =>
+      api.delete(`/procurement/${prefix}/${parentId}/attachments/${attachmentId}`),
+
+    downloadUrl: (parentId: number, attachmentId: number): string =>
+      `${api.defaults.baseURL}/procurement/${prefix}/${parentId}/attachments/${attachmentId}/download`,
+  };
+}
+
+export const procurementRequestAttachmentsApi = makeAttachmentApi("requests",       "rfq_document");
+export const purchaseOrderAttachmentsApi       = makeAttachmentApi("purchase-orders", "signed_po");
+export const invoiceAttachmentsApi             = makeAttachmentApi("invoices",       "tax_invoice");
+export const contractAttachmentsApi            = makeAttachmentApi("contracts",      "signed_contract");
+export const goodsReceiptAttachmentsApi        = makeAttachmentApi("receipts",       "delivery_note");
+export const vendorAttachmentsApi              = makeAttachmentApi("vendors",        "company_profile");

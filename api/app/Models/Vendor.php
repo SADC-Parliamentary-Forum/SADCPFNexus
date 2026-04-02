@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Vendor extends Model
 {
@@ -18,6 +19,11 @@ class Vendor extends Model
 
     public function quotes()     { return $this->hasMany(ProcurementQuote::class); }
     public function approvedBy() { return $this->belongsTo(User::class, 'approved_by'); }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 
     public function procurementRequests()
     {

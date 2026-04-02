@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -42,6 +43,11 @@ class Invoice extends Model
     public function reviewedBy()       { return $this->belongsTo(User::class, 'reviewed_by'); }
 
     // ── Methods ───────────────────────────────────────────────────────────────
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 
     public function isMatched(): bool  { return $this->match_status === 'matched'; }
     public function isApproved(): bool { return $this->status === 'approved'; }

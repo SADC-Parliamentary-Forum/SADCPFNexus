@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Risk Management &amp; Workflow | Sovereign Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary-fixed": "#d5e3ff",
+                "tertiary": "#460002",
+                "tertiary-container": "#6e0006",
+                "secondary-container": "#d5e3fc",
+                "primary-fixed-dim": "#a7c8ff",
+                "on-tertiary-fixed-variant": "#93000b",
+                "tertiary-fixed-dim": "#ffb4ab",
+                "on-tertiary-container": "#ff6d60",
+                "background": "#f7f9fb",
+                "surface-container-highest": "#e0e3e5",
+                "on-background": "#191c1e",
+                "tertiary-fixed": "#ffdad6",
+                "outline-variant": "#c3c6d1",
+                "on-surface-variant": "#43474f",
+                "surface-container-high": "#e6e8ea",
+                "surface-tint": "#3a5f94",
+                "on-surface": "#191c1e",
+                "on-error": "#ffffff",
+                "surface": "#f7f9fb",
+                "surface-variant": "#e0e3e5",
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#2d3133",
+                "outline": "#737780",
+                "on-primary-container": "#799dd6",
+                "on-secondary-fixed": "#0d1c2e",
+                "surface-container": "#eceef0",
+                "error-container": "#ffdad6",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary-fixed-variant": "#3a485b",
+                "on-secondary-container": "#57657a",
+                "surface-dim": "#d8dadc",
+                "secondary-fixed-dim": "#b9c7df",
+                "primary": "#001e40",
+                "on-primary-fixed-variant": "#1f477b",
+                "surface-bright": "#f7f9fb",
+                "secondary-fixed": "#d5e3fc",
+                "secondary": "#515f74",
+                "on-primary": "#ffffff",
+                "inverse-on-surface": "#eff1f3",
+                "surface-container-low": "#f2f4f6",
+                "inverse-primary": "#a7c8ff",
+                "on-secondary": "#ffffff",
+                "on-error-container": "#93000a",
+                "on-tertiary-fixed": "#410002",
+                "on-primary-fixed": "#001b3c",
+                "error": "#ba1a1a",
+                "primary-container": "#003366"
+              },
+              fontFamily: {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopNavBar -->
+<header class="bg-slate-50 dark:bg-slate-950 flex justify-between items-center w-full px-8 h-16 max-w-[1920px] mx-auto docked full-width top-0 z-50">
+<div class="text-2xl font-black tracking-tight text-[#001e40] dark:text-white">Sovereign Ledger</div>
+<nav class="hidden md:flex space-x-8">
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-blue-300 transition-colors" href="#">Dashboard</a>
+<a class="text-[#001e40] dark:text-blue-400 font-bold border-b-2 border-[#001e40] dark:border-blue-400 pb-1" href="#">Risk Registry</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-blue-300 transition-colors" href="#">Audit Trail</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#001e40] dark:hover:text-blue-300 transition-colors" href="#">Governance</a>
+</nav>
+<div class="flex items-center space-x-6">
+<span class="text-xs font-bold uppercase tracking-widest text-primary px-3 py-1 bg-primary-fixed rounded-full">System Status: Secure</span>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-slate-200/50 p-2 rounded-full transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:bg-slate-200/50 p-2 rounded-full transition-colors" data-icon="settings">settings</span>
+<img alt="Institutional user avatar" class="w-8 h-8 rounded-full border border-outline-variant/30" data-alt="Professional portrait of a male executive in a navy suit with institutional office background and soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6NeBcgOqfqHB39axktKRvglAvu9iWopKTZVmQhPDXyiPG9OUCgdrbvH6njLddVLQKKZ8mzRvoOukbOug6ktlfziZMA4q8XxUY5JUHpsAwJn4tIqGbraisjAtLEUuAznN49iQgSx_mGun3u1cjXldqQO1mevSkiYVWpEj-UQAYmcG-OzYKJDr-2VeDpkiAJo44mV3An0TFSa9Eyb6uZJrjHazPQQYFZ3sP3DKSyE2ZPLqRgyexgTYGvPSoOu0nqvLOhDg-L-7p86o"/>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-64px)] overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-slate-100 dark:bg-slate-900 border-r border-[#c3c6d1]/15 flex flex-col h-full w-64 py-6 px-4 space-y-2 shrink-0 overflow-y-auto">
+<div class="mb-8 px-2">
+<div class="flex items-center space-x-3 mb-2">
+<span class="material-symbols-outlined text-primary" data-icon="security" style="font-variation-settings: 'FILL' 1;">security</span>
+<h3 class="text-lg font-bold text-[#001e40] dark:text-white">Risk Management</h3>
+</div>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold">ID: GOV-2024-089</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center space-x-3 px-3 py-2 bg-white dark:bg-slate-800 text-[#001e40] dark:text-blue-400 font-semibold rounded-md transition-all scale-95 active:scale-100" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="security">security</span>
+<span class="text-sm font-medium">Risk Profile</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="analytics">analytics</span>
+<span class="text-sm font-medium">Scoring Logic</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="text-sm font-medium">Mitigation Plan</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+<span class="text-sm font-medium">Audit History</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="gavel">gavel</span>
+<span class="text-sm font-medium">Compliance</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-outline-variant/15 space-y-1">
+<button class="w-full text-left px-3 py-2 text-xs font-bold text-primary hover:bg-slate-200 rounded transition-all">Workflow History</button>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+<span class="text-xs uppercase tracking-widest font-bold">Support</span>
+</a>
+<a class="flex items-center space-x-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-all" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="inventory_2">inventory_2</span>
+<span class="text-xs uppercase tracking-widest font-bold">Archive</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto bg-surface">
+<!-- Workflow Header -->
+<div class="bg-surface-container-low px-8 pt-8 pb-6 sticky top-0 z-10">
+<div class="flex justify-between items-start mb-6">
+<div>
+<div class="flex items-center space-x-3 mb-1">
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded">RISK-042</span>
+<h1 class="text-3xl font-extrabold text-primary tracking-tight">Cyber Security &amp; Data Privacy</h1>
+</div>
+<p class="text-on-surface-variant text-sm font-medium">SADCPFNexus Infrastructure Governance Module</p>
+</div>
+<div class="flex items-center space-x-3">
+<button class="px-5 py-2.5 text-sm font-bold text-primary hover:bg-surface-container-high transition-colors rounded-lg">Request Changes</button>
+<button class="px-5 py-2.5 text-sm font-bold bg-tertiary-container text-white hover:opacity-90 transition-all rounded-lg">Reject</button>
+<button class="px-6 py-2.5 text-sm font-bold bg-primary text-white hover:opacity-90 transition-all rounded-lg shadow-sm">Approve Entry</button>
+</div>
+</div>
+<!-- Status Stepper -->
+<div class="relative flex items-center justify-between w-full max-w-4xl mx-auto py-4">
+<div class="absolute h-0.5 bg-outline-variant/30 w-full top-1/2 -translate-y-1/2 left-0 z-0"></div>
+<div class="relative z-1 flex flex-col items-center group">
+<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-sm" data-icon="check" style="font-variation-settings: 'wght' 700;">check</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-on-surface">Draft</span>
+</div>
+<div class="relative z-1 flex flex-col items-center">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2 ring-4 ring-primary/10">
+<span class="material-symbols-outlined text-lg" data-icon="send" style="font-variation-settings: 'FILL' 1;">send</span>
+</div>
+<span class="text-[11px] font-black uppercase tracking-widest text-primary">Submitted</span>
+</div>
+<div class="relative z-1 flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-outline flex items-center justify-center mb-2">
+<span class="text-xs font-bold">3</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-outline">Reviewed</span>
+</div>
+<div class="relative z-1 flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-outline flex items-center justify-center mb-2">
+<span class="text-xs font-bold">4</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-outline">Approved</span>
+</div>
+<div class="relative z-1 flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-outline flex items-center justify-center mb-2">
+<span class="text-xs font-bold">5</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-outline">Monitoring</span>
+</div>
+</div>
+</div>
+<!-- Bento Content Grid -->
+<div class="p-8 grid grid-cols-12 gap-6 items-start">
+<!-- Left Column: Risk Profile & Scoring -->
+<div class="col-span-8 space-y-6">
+<!-- Entity Context Block -->
+<div class="grid grid-cols-3 gap-1 bg-surface-container-low p-1 rounded-xl">
+<div class="bg-surface-container-lowest p-5 rounded-lg">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant block mb-1">Risk Owner</span>
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="person_filled">person</span>
+<p class="font-bold text-sm text-on-surface">ICT Director</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-lg">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant block mb-1">Department</span>
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="account_balance">account_balance</span>
+<p class="font-bold text-sm text-on-surface">ICT Division</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-lg flex justify-between items-center">
+<div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant block mb-1">Last Updated</span>
+<p class="font-bold text-sm text-on-surface">Oct 24, 2024</p>
+</div>
+<span class="bg-primary/5 text-primary text-[10px] font-black px-2 py-1 rounded border border-primary/10">AUDITED</span>
+</div>
+</div>
+<!-- Risk Profile Tabbed Content -->
+<div class="bg-surface-container-lowest p-8 rounded-xl space-y-8">
+<div class="flex items-center space-x-2 mb-2 border-b border-outline-variant/10 pb-4">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<h2 class="text-xl font-bold text-primary">Risk Profile Analysis</h2>
+</div>
+<div class="grid grid-cols-1 gap-8">
+<section>
+<label class="text-xs font-black uppercase text-on-surface-variant tracking-widest mb-3 block">Risk Description</label>
+<p class="text-on-surface leading-relaxed text-sm">Potential unauthorized access to the SADCPFNexus regional data repository resulting in data exfiltration, tampering, or service disruption across member state institutional nodes. This includes targeted ransomware attacks on governance-critical databases.</p>
+</section>
+<div class="grid grid-cols-2 gap-8">
+<section>
+<label class="text-xs font-black uppercase text-on-surface-variant tracking-widest mb-3 block">Root Causes</label>
+<ul class="space-y-2">
+<li class="flex items-start space-x-3 text-sm text-on-surface">
+<span class="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 shrink-0"></span>
+<span>Legacy encryption protocols in remote regional endpoints.</span>
+</li>
+<li class="flex items-start space-x-3 text-sm text-on-surface">
+<span class="w-1.5 h-1.5 bg-primary rounded-full mt-1.5 shrink-0"></span>
+<span>Inconsistent multi-factor authentication (MFA) enforcement.</span>
+</li>
+</ul>
+</section>
+<section>
+<label class="text-xs font-black uppercase text-on-surface-variant tracking-widest mb-3 block">Consequences</label>
+<ul class="space-y-2">
+<li class="flex items-start space-x-3 text-sm text-on-surface">
+<span class="w-1.5 h-1.5 bg-tertiary rounded-full mt-1.5 shrink-0"></span>
+<span>Total loss of trust in regional financial data integrity.</span>
+</li>
+<li class="flex items-start space-x-3 text-sm text-on-surface">
+<span class="w-1.5 h-1.5 bg-tertiary rounded-full mt-1.5 shrink-0"></span>
+<span>Severe operational paralysis of member state reporting.</span>
+</li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+<!-- Scoring Logic Section -->
+<div class="bg-surface-container-lowest p-8 rounded-xl">
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-xl font-bold text-primary">Scoring Logic &amp; Matrix</h2>
+<span class="text-[10px] font-bold text-on-surface-variant italic">Formula: Likelihood × Impact</span>
+</div>
+<div class="flex gap-12">
+<!-- 5x5 Matrix -->
+<div class="flex-1">
+<div class="flex h-[300px]">
+<!-- Y-Axis Label -->
+<div class="flex items-center [writing-mode:vertical-lr] rotate-180 pr-4">
+<span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Likelihood</span>
+</div>
+<!-- Grid -->
+<div class="flex-1 flex flex-col">
+<div class="flex-1 matrix-grid">
+<!-- Row 5 (Likely) -->
+<div class="bg-orange-200"></div><div class="bg-orange-300"></div><div class="bg-tertiary-fixed-dim"></div><div class="bg-tertiary-container/40"></div><div class="bg-tertiary-container text-white flex items-center justify-center"><span class="text-xs font-bold">25</span></div>
+<!-- Row 4 -->
+<div class="bg-orange-100"></div><div class="bg-orange-200"></div><div class="bg-orange-300"></div><div class="bg-tertiary-fixed-dim relative flex items-center justify-center">
+<div class="w-4 h-4 bg-primary ring-4 ring-white rounded-full"></div>
+<span class="absolute -top-6 bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow">Inherent: 16</span>
+</div><div class="bg-tertiary-container/40"></div>
+<!-- Row 3 -->
+<div class="bg-green-100"></div><div class="bg-orange-100 relative flex items-center justify-center">
+<div class="w-4 h-4 bg-on-secondary ring-4 ring-white rounded-full border-2 border-primary"></div>
+<span class="absolute -top-6 bg-white border border-outline-variant text-primary text-[10px] px-2 py-0.5 rounded shadow">Residual: 6</span>
+</div><div class="bg-orange-200"></div><div class="bg-orange-300"></div><div class="bg-tertiary-fixed-dim"></div>
+<!-- Row 2 -->
+<div class="bg-green-50"></div><div class="bg-green-100"></div><div class="bg-orange-100"></div><div class="bg-orange-200"></div><div class="bg-orange-300"></div>
+<!-- Row 1 -->
+<div class="bg-green-50"></div><div class="bg-green-50"></div><div class="bg-green-100"></div><div class="bg-orange-100"></div><div class="bg-orange-200"></div>
+</div>
+<!-- X-Axis Label -->
+<div class="text-center pt-4">
+<span class="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Impact</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Score Summaries -->
+<div class="w-64 space-y-4">
+<div class="bg-surface-container p-6 rounded-lg border-l-4 border-tertiary">
+<span class="text-[10px] font-black uppercase text-tertiary tracking-wider block mb-1">Inherent Score</span>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-black text-on-surface">16</span>
+<span class="text-sm font-bold text-tertiary">CRITICAL</span>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-2">Likelihood (4) × Impact (4)</p>
+</div>
+<div class="bg-surface-container p-6 rounded-lg border-l-4 border-primary">
+<span class="text-[10px] font-black uppercase text-primary tracking-wider block mb-1">Residual Score</span>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-black text-on-surface">6</span>
+<span class="text-sm font-bold text-primary">MEDIUM</span>
+</div>
+<p class="text-[10px] text-on-surface-variant mt-2">Post-Control Assessment</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Mitigation Plan Table -->
+<div class="bg-surface-container-lowest p-8 rounded-xl overflow-hidden">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-primary">Mitigation Actions</h2>
+<button class="text-xs font-bold text-primary flex items-center space-x-1 hover:underline">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+<span>Add New Action</span>
+</button>
+</div>
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Description</th>
+<th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Owner</th>
+<th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Due Date</th>
+<th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Status</th>
+<th class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Progress</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-4 text-sm font-semibold text-on-surface">MFA Rollout - Node 01</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">ICT Ops</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">Dec 12, 2024</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded">IN PROGRESS</span>
+</td>
+<td class="px-4 py-4">
+<div class="w-full bg-surface-container rounded-full h-1.5 max-w-[80px]">
+<div class="bg-primary h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-4 text-sm font-semibold text-on-surface">Quarterly Pen-Test</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">Sec Audit</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">Oct 30, 2024</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-tertiary-fixed text-tertiary text-[10px] font-bold rounded">OVERDUE</span>
+</td>
+<td class="px-4 py-4">
+<div class="w-full bg-surface-container rounded-full h-1.5 max-w-[80px]">
+<div class="bg-tertiary h-1.5 rounded-full" style="width: 15%"></div>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-4 py-4 text-sm font-semibold text-on-surface">API Gateway Patching</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">Systems Eng</td>
+<td class="px-4 py-4 text-sm text-on-surface-variant">Oct 15, 2024</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded">COMPLETED</span>
+</td>
+<td class="px-4 py-4">
+<div class="w-full bg-surface-container rounded-full h-1.5 max-w-[80px]">
+<div class="bg-primary h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right Column: Audit & Sidebar -->
+<div class="col-span-4 space-y-6">
+<!-- Institutional Integrity Info -->
+<div class="bg-primary p-8 rounded-xl text-white relative overflow-hidden">
+<div class="relative z-10">
+<h3 class="text-lg font-bold mb-2">Governance Seal</h3>
+<p class="text-primary-fixed text-xs leading-relaxed mb-6">This risk record is cryptographically signed and stored in the Sovereign Ledger. Any modification creates a new immutable audit block.</p>
+<div class="bg-white/10 backdrop-blur-md p-4 rounded-lg border border-white/20">
+<span class="text-[9px] font-black uppercase tracking-widest opacity-60 block mb-2">Current Entry Hash</span>
+<code class="text-[10px] break-all font-mono opacity-90">SHA-256: 8f92b7c1e3d4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0</code>
+</div>
+</div>
+<span class="material-symbols-outlined absolute -bottom-6 -right-6 text-[120px] opacity-10 pointer-events-none" data-icon="verified_user">verified_user</span>
+</div>
+<!-- Audit History Feed -->
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/15">
+<h3 class="text-sm font-bold text-primary mb-6 flex items-center justify-between">
+<span>Audit History</span>
+<span class="material-symbols-outlined text-sm" data-icon="history">history</span>
+</h3>
+<div class="space-y-8 relative">
+<!-- Timeline Line -->
+<div class="absolute left-[11px] top-2 bottom-2 w-0.5 bg-outline-variant/30"></div>
+<!-- Audit Item 1 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-6 h-6 bg-primary-fixed-dim rounded-full flex items-center justify-center ring-4 ring-surface-container-low">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="edit">edit</span>
+</div>
+<p class="text-xs font-bold text-on-surface">Mitigation Plan Updated</p>
+<p class="text-[10px] text-on-surface-variant mt-1">By ICT Director • 2 hours ago</p>
+<div class="mt-2 text-[10px] font-mono text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded truncate">
+                                    Change: +Action Item [MFA-Rollout]
+                                </div>
+</div>
+<!-- Audit Item 2 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-6 h-6 bg-surface-container-highest rounded-full flex items-center justify-center ring-4 ring-surface-container-low">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant" data-icon="rule">rule</span>
+</div>
+<p class="text-xs font-bold text-on-surface">Scoring Assessment Finalized</p>
+<p class="text-[10px] text-on-surface-variant mt-1">By Risk Committee • Oct 23, 2024</p>
+<div class="mt-2 text-[10px] font-mono text-on-surface-variant bg-surface-container-highest px-2 py-1 rounded truncate">
+                                    Score Adjustment: 20 → 16
+                                </div>
+</div>
+<!-- Audit Item 3 -->
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-6 h-6 bg-surface-container-highest rounded-full flex items-center justify-center ring-4 ring-surface-container-low">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant" data-icon="upload_file">upload_file</span>
+</div>
+<p class="text-xs font-bold text-on-surface">Record Initialized</p>
+<p class="text-[10px] text-on-surface-variant mt-1">System Auto-Gen • Oct 01, 2024</p>
+</div>
+</div>
+<button class="w-full mt-8 py-2 text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20 hover:bg-primary/5 transition-colors rounded">View Full Audit Trail</button>
+</div>
+<!-- Attachments / Controls -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
+<h3 class="text-sm font-bold text-primary mb-4">Evidence &amp; Documentation</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="text-xs font-medium text-on-surface">Cyber_Strategy_2024.pdf</span>
+</div>
+<span class="material-symbols-outlined text-xs text-outline opacity-0 group-hover:opacity-100" data-icon="download">download</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="description">description</span>
+<span class="text-xs font-medium text-on-surface">Audit_Response_V2.docx</span>
+</div>
+<span class="material-symbols-outlined text-xs text-outline opacity-0 group-hover:opacity-100" data-icon="download">download</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-slate-50 dark:bg-slate-950 border-t border-[#c3c6d1]/15 flex justify-between items-center px-8 py-3 w-full docked full-width bottom-0 z-50">
+<p class="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-600">© 2024 Institutional Governance Archive. All rights reserved.</p>
+<div class="flex space-x-6">
+<a class="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-600 hover:text-[#001e40] transition-opacity" href="#">Privacy Policy</a>
+<a class="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-600 hover:text-[#001e40] transition-opacity" href="#">Terms of Service</a>
+<a class="text-[10px] uppercase tracking-widest font-bold text-slate-400 dark:text-slate-600 hover:text-[#001e40] transition-opacity" href="#">Security Disclosure</a>
+</div>
+</footer>
+</body></html>

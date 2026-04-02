@@ -273,6 +273,42 @@ Route::prefix('v1')->group(function () {
             Route::get('purchase-orders/{purchaseOrder}/receipts/{receipt}',   [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'show']);
             Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/accept', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'accept']);
             Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/reject', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'reject']);
+
+            // Procurement Request Attachments
+            Route::get('requests/{procurementRequest}/attachments',                            [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'index']);
+            Route::post('requests/{procurementRequest}/attachments',                           [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'store']);
+            Route::delete('requests/{procurementRequest}/attachments/{attachment}',            [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'destroy']);
+            Route::get('requests/{procurementRequest}/attachments/{attachment}/download',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'download']);
+
+            // Purchase Order Attachments
+            Route::get('purchase-orders/{purchaseOrder}/attachments',                          [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'index']);
+            Route::post('purchase-orders/{purchaseOrder}/attachments',                         [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'store']);
+            Route::delete('purchase-orders/{purchaseOrder}/attachments/{attachment}',          [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'destroy']);
+            Route::get('purchase-orders/{purchaseOrder}/attachments/{attachment}/download',    [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'download']);
+
+            // Invoice Attachments
+            Route::get('invoices/{invoice}/attachments',                                       [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'index']);
+            Route::post('invoices/{invoice}/attachments',                                      [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'store']);
+            Route::delete('invoices/{invoice}/attachments/{attachment}',                       [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'destroy']);
+            Route::get('invoices/{invoice}/attachments/{attachment}/download',                 [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'download']);
+
+            // Contract Attachments
+            Route::get('contracts/{contract}/attachments',                                     [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'index']);
+            Route::post('contracts/{contract}/attachments',                                    [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'store']);
+            Route::delete('contracts/{contract}/attachments/{attachment}',                     [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'destroy']);
+            Route::get('contracts/{contract}/attachments/{attachment}/download',               [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'download']);
+
+            // Goods Receipt Attachments
+            Route::get('receipts/{goodsReceiptNote}/attachments',                              [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'index']);
+            Route::post('receipts/{goodsReceiptNote}/attachments',                             [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'store']);
+            Route::delete('receipts/{goodsReceiptNote}/attachments/{attachment}',              [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'destroy']);
+            Route::get('receipts/{goodsReceiptNote}/attachments/{attachment}/download',        [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'download']);
+
+            // Vendor Attachments
+            Route::get('vendors/{vendor}/attachments',                                         [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'index']);
+            Route::post('vendors/{vendor}/attachments',                                        [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'store']);
+            Route::delete('vendors/{vendor}/attachments/{attachment}',                         [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'destroy']);
+            Route::get('vendors/{vendor}/attachments/{attachment}/download',                   [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'download']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

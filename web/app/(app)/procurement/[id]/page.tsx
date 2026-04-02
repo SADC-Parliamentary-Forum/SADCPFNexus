@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { procurementApi, type ProcurementRequest } from "@/lib/api";
+import { procurementApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { useFormatDate } from "@/lib/useFormatDate";
 import axios from "axios";
 
@@ -61,6 +62,9 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{ roles?: string[] } | null>(null);
+  const [activeTab, setActiveTab] = useState<"details" | "documents">("details");
+  const [attachments, setAttachments] = useState<ProcurementAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   // Award modal state
   const [showAward, setShowAward]       = useState(false);
@@ -84,8 +88,10 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       setLoading(false);
       return;
     }
-    procurementApi.get(id)
-      .then((res) => setRequest(res.data))
+    Promise.all([
+      procurementApi.get(id).then((res) => setRequest(res.data)),
+      procurementRequestAttachmentsApi.list(id).then((r) => setAttachments(r.data.data ?? [])).catch(() => {}),
+    ])
       .catch(() => setError("Failed to load procurement request."))
       .finally(() => setLoading(false));
   }, [paramId]);
@@ -166,6 +172,48 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+
+      {/* Tab Bar */}
+      <div className="flex gap-1 border-b border-neutral-200">
+        {(["details", "documents"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${
+              activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
+            }`}
+          >
+            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "documents" && (
+        <div className="card p-6">
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Procurement Documents</h2>
+          <GenericDocumentsPanel
+            documents={attachments}
+            documentTypes={PROCUREMENT_REQUEST_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+            defaultType="rfq_document"
+            loading={false}
+            uploading={uploading}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try {
+                const r = await procurementRequestAttachmentsApi.upload(request!.id, file, type);
+                setAttachments((prev) => [r.data.data, ...prev]);
+              } finally { setUploading(false); }
+            }}
+            onDelete={async (id) => {
+              await procurementRequestAttachmentsApi.delete(request!.id, id);
+              setAttachments((prev) => prev.filter((a) => a.id !== id));
+            }}
+            downloadUrl={(id) => procurementRequestAttachmentsApi.downloadUrl(request!.id, id)}
+          />
+        </div>
+      )}
+
+      {activeTab === "details" && <>
 
       {/* Breadcrumb + title */}
       <div>
@@ -415,6 +463,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Procurement
       </Link>
+
+      </> /* end details tab */}
 
       {/* HOD Approve / Reject Modal */}
       {hodAction && (

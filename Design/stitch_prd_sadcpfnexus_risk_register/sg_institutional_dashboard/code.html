@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SADCPFNexus | Risk Register Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-lowest": "#ffffff",
+              "secondary-container": "#d5e3fc",
+              "on-surface": "#191c1e",
+              "on-primary-fixed-variant": "#1f477b",
+              "on-tertiary": "#ffffff",
+              "on-surface-variant": "#43474f",
+              "surface-bright": "#f7f9fb",
+              "surface-variant": "#e0e3e5",
+              "primary": "#001e40",
+              "surface-dim": "#d8dadc",
+              "on-tertiary-fixed": "#410002",
+              "primary-container": "#003366",
+              "on-primary-container": "#799dd6",
+              "on-background": "#191c1e",
+              "inverse-on-surface": "#eff1f3",
+              "secondary": "#515f74",
+              "on-secondary": "#ffffff",
+              "outline-variant": "#c3c6d1",
+              "secondary-fixed-dim": "#b9c7df",
+              "on-error-container": "#93000a",
+              "secondary-fixed": "#d5e3fc",
+              "tertiary-fixed-dim": "#ffb4ab",
+              "on-primary": "#ffffff",
+              "on-tertiary-container": "#ff6d60",
+              "on-secondary-fixed": "#0d1c2e",
+              "on-primary-fixed": "#001b3c",
+              "surface-container-highest": "#e0e3e5",
+              "primary-fixed-dim": "#a7c8ff",
+              "surface-container-high": "#e6e8ea",
+              "surface-container-low": "#f2f4f6",
+              "inverse-surface": "#2d3133",
+              "tertiary-fixed": "#ffdad6",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "error": "#ba1a1a",
+              "inverse-primary": "#a7c8ff",
+              "primary-fixed": "#d5e3ff",
+              "surface-tint": "#3a5f94",
+              "tertiary": "#460002",
+              "on-secondary-fixed-variant": "#3a485b",
+              "background": "#f7f9fb",
+              "surface-container": "#eceef0",
+              "on-secondary-container": "#57657a",
+              "on-tertiary-fixed-variant": "#93000b",
+              "tertiary-container": "#6e0006",
+              "surface": "#f7f9fb",
+              "outline": "#737780"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      body { font-family: 'Inter', sans-serif; }
+      h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .ghost-border { outline: 1px solid rgba(195, 198, 209, 0.15); }
+      .risk-grid-cell { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-slate-100 dark:bg-slate-950 flex flex-col py-6 px-4 gap-2 border-r border-slate-200/15 z-50">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+</div>
+<h2 class="font-['Manrope'] font-black uppercase tracking-widest text-blue-900 text-sm">Sovereign Ledger</h2>
+</div>
+<p class="text-[10px] uppercase tracking-tighter text-slate-500 font-bold ml-11">Institutional Records</p>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="text-[10px] font-bold text-slate-400 px-3 py-2 uppercase tracking-widest">Main Modules</div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+<span class="text-sm font-medium">Governance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white text-blue-900 font-semibold shadow-sm transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-sm font-semibold">Risk Registry</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+<span class="text-sm font-medium">Compliance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span class="text-sm font-medium">Internal Audit</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">insights</span>
+<span class="text-sm font-medium">Strategy</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="text-sm font-medium">Policy Hub</span>
+</a>
+</nav>
+<div class="mt-auto space-y-1">
+<button class="w-full mb-4 bg-primary text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:opacity-80">
+<span class="material-symbols-outlined text-sm">bolt</span>
+                Executive Action
+            </button>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-200/50 transition-transform duration-200 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+<span class="text-sm font-medium">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-slate-50 flex justify-between items-center w-full px-8 py-3 max-w-full sticky top-0 z-40">
+<div class="flex items-center gap-8">
+<h1 class="text-xl font-bold tracking-tight text-blue-900 font-['Manrope']">Dashboard</h1>
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-500 font-medium hover:text-blue-700 transition-colors text-sm" href="#">Dashboard</a>
+<a class="text-slate-500 font-medium hover:text-blue-700 transition-colors text-sm" href="#">Analytics</a>
+<a class="text-slate-500 font-medium hover:text-blue-700 transition-colors text-sm" href="#">Reports</a>
+<a class="text-blue-900 font-bold border-b-2 border-blue-900 transition-colors text-sm" href="#">Audit Trail</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<input class="bg-surface-container-high border-none rounded-full px-4 py-1.5 text-xs w-64 focus:ring-2 focus:ring-primary/20" placeholder="Search Risk Ledger..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-500 hover:text-primary transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 text-slate-500 hover:text-primary transition-colors"><span class="material-symbols-outlined">settings</span></button>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-xs font-bold text-blue-900">Dr. Elias Maluleke</p>
+<p class="text-[10px] text-slate-500">Secretary General</p>
+</div>
+<img alt="SG Profile" class="w-9 h-9 rounded-full object-cover ghost-border" data-alt="professional portrait of an executive male with a warm expression in a formal business suit against a neutral office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmB4e86jvH7FGWJbOoDV5nbVDW-tlo_fL1w5hRKhX2FdR4ti0EvZGtA3fUBrc0HjwK7W9g_yC-JMXwiwyxUQUv4ksnzaRS8vY9yr89tT2u7N1yA1HV1BXXHDuspSzwO2Ror5VLITvy6PlFgKk6CrVE6QTys_q-q5oXK49GKA8EB_PI_o_sPGsRmSlIU0JDCDEpALfY9tlcfi2u5AaYfetMCMuSb78lHbYf70aQ5AainYSGgAdYEDtt_uvc32tj01Ef-uShzXL2iyA"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-8 space-y-8 max-w-[1600px]">
+<!-- Row 1: KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+<!-- Open Risks -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Open Risks</span>
+<span class="material-symbols-outlined text-secondary text-lg">folder_open</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-primary">42</h3>
+<p class="text-[10px] text-slate-400 mt-1 font-medium italic">Active across all registries</p>
+</div>
+</div>
+<!-- Critical Risks -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border border-l-4 border-error flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Critical</span>
+<span class="material-symbols-outlined text-error text-lg" style="font-variation-settings: 'FILL' 1;">emergency_home</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-error">8</h3>
+<p class="text-[10px] text-error font-medium mt-1">Requires immediate SG action</p>
+</div>
+</div>
+<!-- High Risks -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border border-l-4 border-on-tertiary-container flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">High Risks</span>
+<span class="material-symbols-outlined text-on-tertiary-container text-lg">priority_high</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-on-tertiary-container">15</h3>
+<p class="text-[10px] text-slate-400 mt-1 font-medium italic">+2 from previous audit</p>
+</div>
+</div>
+<!-- Overdue Actions -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border border-l-4 border-amber-500 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Overdue</span>
+<span class="material-symbols-outlined text-amber-500 text-lg">event_busy</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-on-background">12</h3>
+<p class="text-[10px] text-amber-600 font-medium mt-1">SLA Breach Detected</p>
+</div>
+</div>
+<!-- Escalated Risks -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border border-l-4 border-purple-500 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Escalated</span>
+<span class="material-symbols-outlined text-purple-500 text-lg">arrow_upward</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-on-background">5</h3>
+<p class="text-[10px] text-slate-400 mt-1 font-medium italic">Sent to Steering Committee</p>
+</div>
+</div>
+<!-- Reviews Due -->
+<div class="bg-surface-container-lowest p-5 rounded-lg ghost-border border-l-4 border-blue-600 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Reviews Due</span>
+<span class="material-symbols-outlined text-blue-600 text-lg">rate_review</span>
+</div>
+<div class="mt-4">
+<h3 class="text-3xl font-black text-on-background">7</h3>
+<p class="text-[10px] text-slate-400 mt-1 font-medium italic">Pending within 7 days</p>
+</div>
+</div>
+</div>
+<!-- Row 2: Strategic Analytics -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+<!-- Heatmap (60%) -->
+<div class="lg:col-span-3 bg-surface-container-lowest p-6 rounded-lg ghost-border">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold text-blue-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-600 text-[20px]">grid_view</span>
+                            5x5 Risk Impact Heatmap
+                        </h3>
+<button class="text-[10px] font-bold text-slate-500 uppercase tracking-widest border border-slate-200 px-3 py-1 rounded hover:bg-slate-50 transition-colors">Export Map</button>
+</div>
+<div class="flex gap-4">
+<!-- Y-Axis Label -->
+<div class="flex flex-col justify-center">
+<span class="text-[10px] font-black text-slate-400 uppercase tracking-widest -rotate-90 whitespace-nowrap">Impact Level</span>
+</div>
+<div class="flex-1">
+<div class="grid grid-cols-5 gap-1.5 aspect-video md:aspect-auto">
+<!-- Grid row 5 (Top) -->
+<div class="risk-grid-cell bg-orange-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-200 rounded-sm"></div>
+<div class="risk-grid-cell bg-red-400 rounded-sm"></div>
+<div class="risk-grid-cell bg-red-600 rounded-sm"><span class="bg-white/90 text-red-700 font-black text-xs px-2 py-1 rounded-full shadow-sm">2</span></div>
+<div class="risk-grid-cell bg-red-800 rounded-sm"><span class="bg-white/90 text-red-900 font-black text-xs px-2 py-1 rounded-full shadow-sm">1</span></div>
+<!-- Grid row 4 -->
+<div class="risk-grid-cell bg-yellow-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-300 rounded-sm"><span class="bg-white/90 text-orange-800 font-black text-xs px-2 py-1 rounded-full shadow-sm">3</span></div>
+<div class="risk-grid-cell bg-red-400 rounded-sm"></div>
+<div class="risk-grid-cell bg-red-600 rounded-sm"><span class="bg-white/90 text-red-700 font-black text-xs px-2 py-1 rounded-full shadow-sm">4</span></div>
+<!-- Grid row 3 -->
+<div class="risk-grid-cell bg-green-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-yellow-100 rounded-sm"><span class="bg-white/90 text-yellow-800 font-black text-xs px-2 py-1 rounded-full shadow-sm">8</span></div>
+<div class="risk-grid-cell bg-orange-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-300 rounded-sm"></div>
+<div class="risk-grid-cell bg-red-400 rounded-sm"></div>
+<!-- Grid row 2 -->
+<div class="risk-grid-cell bg-green-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-green-200 rounded-sm"><span class="bg-white/90 text-green-800 font-black text-xs px-2 py-1 rounded-full shadow-sm">12</span></div>
+<div class="risk-grid-cell bg-yellow-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-300 rounded-sm"></div>
+<!-- Grid row 1 (Bottom) -->
+<div class="risk-grid-cell bg-green-50 rounded-sm"></div>
+<div class="risk-grid-cell bg-green-100 rounded-sm"></div>
+<div class="risk-grid-cell bg-green-200 rounded-sm"><span class="bg-white/90 text-green-800 font-black text-xs px-2 py-1 rounded-full shadow-sm">5</span></div>
+<div class="risk-grid-cell bg-yellow-50 rounded-sm"></div>
+<div class="risk-grid-cell bg-orange-50 rounded-sm"></div>
+</div>
+<!-- X-Axis Labels -->
+<div class="grid grid-cols-5 mt-4 text-center">
+<span class="text-[10px] font-bold text-slate-500 uppercase">Insignificant</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">Minor</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">Moderate</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">Major</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">Extreme</span>
+</div>
+<p class="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Likelihood (Probability)</p>
+</div>
+</div>
+</div>
+<!-- Exposure by Dept (40%) -->
+<div class="lg:col-span-2 bg-surface-container-lowest p-6 rounded-lg ghost-border">
+<h3 class="text-sm font-bold text-blue-900 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-600 text-[20px]">bar_chart</span>
+                        Exposure by Department
+                    </h3>
+<div class="space-y-5">
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">Procurement</span>
+<span class="text-xs font-black text-primary">82%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-red-600 rounded-full" style="width: 82%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">Finance</span>
+<span class="text-xs font-black text-primary">64%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-orange-500 rounded-full" style="width: 64%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">Human Resources</span>
+<span class="text-xs font-black text-primary">45%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-amber-400 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">Programmes</span>
+<span class="text-xs font-black text-primary">31%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 rounded-full" style="width: 31%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">ICT &amp; Cyber</span>
+<span class="text-xs font-black text-primary">58%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-orange-400 rounded-full" style="width: 58%"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center mb-1.5">
+<span class="text-xs font-bold text-slate-600">Legal</span>
+<span class="text-xs font-black text-primary">12%</span>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 rounded-full" style="width: 12%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 3: Critical Oversight -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Escalated Risks Widget -->
+<div class="bg-surface-container-lowest p-6 rounded-lg ghost-border">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold text-blue-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-600 text-[20px]">warning</span>
+                            Escalated Risks
+                        </h3>
+<a class="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline" href="#">View All</a>
+</div>
+<div class="space-y-4">
+<div class="flex items-center p-3 bg-surface-container-low rounded-lg gap-4">
+<div class="flex flex-col items-center justify-center min-w-[64px] bg-red-100 rounded px-2 py-1">
+<span class="text-[10px] font-black text-red-800">RISK-042</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-xs font-bold text-on-surface truncate">Election Monitoring Cyber Breach</h4>
+<p class="text-[10px] text-slate-500">Owner: ICT Director</p>
+</div>
+<span class="px-2 py-1 bg-red-600 text-white text-[8px] font-black rounded uppercase">Critical</span>
+</div>
+<div class="flex items-center p-3 bg-surface-container-low rounded-lg gap-4">
+<div class="flex flex-col items-center justify-center min-w-[64px] bg-orange-100 rounded px-2 py-1">
+<span class="text-[10px] font-black text-orange-800">RISK-109</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-xs font-bold text-on-surface truncate">Grant Disbursement Delay - SADC-P3</h4>
+<p class="text-[10px] text-slate-500">Owner: Finance Manager</p>
+</div>
+<span class="px-2 py-1 bg-orange-500 text-white text-[8px] font-black rounded uppercase">High</span>
+</div>
+<div class="flex items-center p-3 bg-surface-container-low rounded-lg gap-4">
+<div class="flex flex-col items-center justify-center min-w-[64px] bg-purple-100 rounded px-2 py-1">
+<span class="text-[10px] font-black text-purple-800">RISK-002</span>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-xs font-bold text-on-surface truncate">Legal Non-compliance in HR Contracts</h4>
+<p class="text-[10px] text-slate-500">Owner: Head of Legal</p>
+</div>
+<span class="px-2 py-1 bg-purple-500 text-white text-[8px] font-black rounded uppercase">Escalated</span>
+</div>
+</div>
+</div>
+<!-- Overdue Actions Tracker -->
+<div class="bg-surface-container-lowest p-6 rounded-lg ghost-border">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-sm font-bold text-blue-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-600 text-[20px]">history</span>
+                            Overdue Actions
+                        </h3>
+<a class="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline" href="#">Reminder All</a>
+</div>
+<div class="space-y-4">
+<div class="flex items-center p-3 border-l-4 border-error bg-surface-container-low rounded-r-lg gap-4">
+<div class="flex-1">
+<h4 class="text-xs font-bold text-on-surface">Update Firewall Protocols</h4>
+<p class="text-[10px] text-slate-500">Owner: Sarah Jenkins (ICT)</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-black text-error">14 DAYS OVERDUE</p>
+<p class="text-[8px] text-slate-400 uppercase tracking-tighter">Deadline: 12 Oct</p>
+</div>
+</div>
+<div class="flex items-center p-3 border-l-4 border-amber-500 bg-surface-container-low rounded-r-lg gap-4">
+<div class="flex-1">
+<h4 class="text-xs font-bold text-on-surface">Audit Vendor Compliance Log</h4>
+<p class="text-[10px] text-slate-500">Owner: Mark Mbeki (Procurement)</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-black text-amber-600">8 DAYS OVERDUE</p>
+<p class="text-[8px] text-slate-400 uppercase tracking-tighter">Deadline: 18 Oct</p>
+</div>
+</div>
+<div class="flex items-center p-3 border-l-4 border-amber-500 bg-surface-container-low rounded-r-lg gap-4">
+<div class="flex-1">
+<h4 class="text-xs font-bold text-on-surface">Publish New Anti-Graft Policy</h4>
+<p class="text-[10px] text-slate-500">Owner: Dr. Elias (SG Office)</p>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-black text-amber-600">3 DAYS OVERDUE</p>
+<p class="text-[8px] text-slate-400 uppercase tracking-tighter">Deadline: 23 Oct</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 4: Trend Analysis -->
+<div class="bg-primary-container p-8 rounded-lg relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex justify-between items-end mb-10">
+<div>
+<h3 class="text-white text-lg font-bold">Institutional Risk Trend</h3>
+<p class="text-blue-200/60 text-xs mt-1">Comparison of Inherent vs. Residual Risk Scores (Last 6 Months)</p>
+</div>
+<div class="flex gap-6">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-blue-200"></div>
+<span class="text-blue-100 text-[10px] font-bold uppercase tracking-wider">Inherent Risk</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-white"></div>
+<span class="text-blue-100 text-[10px] font-bold uppercase tracking-wider">Residual Risk</span>
+</div>
+</div>
+</div>
+<!-- Mock Line Chart using SVG -->
+<div class="w-full h-48 relative">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 200">
+<!-- Grid Lines -->
+<line stroke="rgba(255,255,255,0.05)" stroke-width="1" x1="0" x2="1000" y1="40" y2="40"></line>
+<line stroke="rgba(255,255,255,0.05)" stroke-width="1" x1="0" x2="1000" y1="80" y2="80"></line>
+<line stroke="rgba(255,255,255,0.05)" stroke-width="1" x1="0" x2="1000" y1="120" y2="120"></line>
+<line stroke="rgba(255,255,255,0.05)" stroke-width="1" x1="0" x2="1000" y1="160" y2="160"></line>
+<!-- Inherent Line -->
+<path d="M0,60 L200,55 L400,65 L600,45 L800,50 L1000,55" fill="none" stroke="rgba(191, 219, 254, 0.4)" stroke-dasharray="5,5" stroke-width="3"></path>
+<!-- Residual Line -->
+<path d="M0,140 L200,130 L400,110 L600,145 L800,120 L1000,105" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-width="4"></path>
+<!-- Data Nodes (Residual) -->
+<circle cx="200" cy="130" fill="#ffffff" r="4"></circle>
+<circle cx="400" cy="110" fill="#ffffff" r="4"></circle>
+<circle cx="600" cy="145" fill="#ffffff" r="4"></circle>
+<circle cx="800" cy="120" fill="#ffffff" r="4"></circle>
+<circle cx="1000" cy="105" fill="#ffffff" r="4"></circle>
+</svg>
+<div class="flex justify-between mt-4">
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">May</span>
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">Jun</span>
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">Jul</span>
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">Aug</span>
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">Sep</span>
+<span class="text-[10px] font-bold text-blue-300/50 uppercase">Oct</span>
+</div>
+</div>
+</div>
+<!-- Background Decoration -->
+<div class="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">
+<img alt="Cyber Grid Decor" class="w-full h-full object-cover" data-alt="abstract technological digital grid pattern with blue glowing lines and circuit board elements for corporate security aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYr_DDDdIcCwpY0OK8e6Kk9TZpH9X26RJU_e1Kx-N_ylOlwHxpbt0dDrg7F-PcqvG5Uh9qxkcbVw-8HK9K10YCmrLiCl47SxCG5rmGUhbv3nAcMi4pO2ADK2ZYBVuiumzqX4nNxMLPImptSUbk6T_M14wtEcL13j507N-Cwd4pCzIR_Feldv34Xk9sGZ3ILLoMXw0IXUBD4GlLxsackSzFG_wmxdVp-Zm9yoiw23q1X7N1fKiJm1TqOOrlN5FZatIv-AAyx_Sno48"/>
+</div>
+</div>
+<!-- Row 5: Risk Watchlist Table -->
+<div class="bg-surface-container-lowest rounded-lg ghost-border overflow-hidden">
+<div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
+<h3 class="text-sm font-bold text-blue-900 uppercase tracking-widest">Priority Risk Watchlist</h3>
+<div class="flex gap-2">
+<button class="bg-surface-container-high px-3 py-1.5 rounded text-[10px] font-bold text-slate-600 hover:bg-slate-200 transition-colors">Filters</button>
+<button class="bg-primary text-white px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-widest shadow-sm">Add New Risk</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50">
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Code</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Risk Category</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Department</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Impact</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">L'hood</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Score</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+<th class="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Review</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-xs font-bold text-primary">RISK-042</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-700">Cyber Security &amp; Data Privacy</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">ICT</td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-red-600">5</span></td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-red-600">4</span></td>
+<td class="px-6 py-4 text-center font-black text-primary">20</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-red-100 text-red-700 text-[8px] font-black rounded uppercase">Critical</span>
+</td>
+<td class="px-6 py-4 text-[10px] font-medium text-slate-500">05 Nov 2023</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-xs font-bold text-primary">RISK-109</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-700">Financial Liquidity</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">Finance</td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-orange-600">4</span></td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-orange-600">4</span></td>
+<td class="px-6 py-4 text-center font-black text-primary">16</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-orange-100 text-orange-700 text-[8px] font-black rounded uppercase">High</span>
+</td>
+<td class="px-6 py-4 text-[10px] font-medium text-slate-500">12 Nov 2023</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-xs font-bold text-primary">RISK-002</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-700">Contractual Compliance</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">Legal</td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-purple-600">3</span></td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-purple-600">5</span></td>
+<td class="px-6 py-4 text-center font-black text-primary">15</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-purple-100 text-purple-700 text-[8px] font-black rounded uppercase">Escalated</span>
+</td>
+<td class="px-6 py-4 text-[10px] font-medium text-slate-500">20 Nov 2023</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-xs font-bold text-primary">RISK-251</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-700">Talent Retention</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">Human Resources</td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-amber-600">3</span></td>
+<td class="px-6 py-4 text-center"><span class="text-xs font-black text-amber-600">3</span></td>
+<td class="px-6 py-4 text-center font-black text-primary">9</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 bg-amber-100 text-amber-700 text-[8px] font-black rounded uppercase">Medium</span>
+</td>
+<td class="px-6 py-4 text-[10px] font-medium text-slate-500">22 Nov 2023</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-slate-50 flex justify-center">
+<button class="text-[10px] font-black text-blue-900 uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
+                        Load Full Register 
+                        <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Audit Trail Snippet -->
+<footer class="mt-auto border-t border-slate-200/40 p-6 bg-slate-50 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+<div>Audit Status: <span class="text-green-600">Synchronized (Live)</span></div>
+<div>Institutional Records Division © 2023 SADC Parliamentary Forum</div>
+<div>Last Updated: Today, 08:42 AM</div>
+</footer>
+</main>
+</body></html>

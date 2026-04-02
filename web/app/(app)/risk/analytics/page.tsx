@@ -214,7 +214,7 @@ export default function RiskAnalyticsPage() {
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
           <h2 className="text-sm font-semibold text-neutral-800">Departmental Performance</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">Compliance grade: A (no critical, no overdue) · B (≤1 critical) · C (≤3 critical) · D ({'>'}3 critical)</p>
+          <p className="text-xs text-neutral-500 mt-0.5">Compliance grade: A (no critical, no overdue) · B (≤1 critical) · C (≤3 critical) · D (&gt; 3 critical)</p>
         </div>
         {!dashboard?.by_department?.length ? (
           <p className="px-5 py-6 text-sm text-neutral-400">No departmental data available.</p>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { contractsApi, type Contract } from "@/lib/api";
+import { contractsApi, contractAttachmentsApi, CONTRACT_DOC_TYPES, type Contract, type ProcurementAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -31,6 +32,13 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
   const [showTerminateModal, setShowTerminateModal] = useState(false);
   const [terminateReason, setTerminateReason]       = useState("");
   const [terminateError, setTerminateError]         = useState<string | null>(null);
+  const [activeTab, setActiveTab]                   = useState<"details" | "documents">("details");
+  const [attachments, setAttachments]               = useState<ProcurementAttachment[]>([]);
+  const [uploading, setUploading]                   = useState(false);
+
+  useEffect(() => {
+    if (contractId) contractAttachmentsApi.list(contractId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
+  }, [contractId]);
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -82,6 +90,36 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+      {/* Tab Bar */}
+      <div className="flex gap-1 border-b border-neutral-200">
+        {(["details", "documents"] as const).map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "documents" && (
+        <div className="card p-6">
+          <h2 className="text-sm font-semibold text-neutral-800 mb-5">Contract Documents</h2>
+          <GenericDocumentsPanel
+            documents={attachments}
+            documentTypes={CONTRACT_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+            defaultType="signed_contract"
+            loading={false}
+            uploading={uploading}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try { const r = await contractAttachmentsApi.upload(contractId, file, type); setAttachments((p) => [r.data.data, ...p]); }
+              finally { setUploading(false); }
+            }}
+            onDelete={async (id) => { await contractAttachmentsApi.delete(contractId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            downloadUrl={(id) => contractAttachmentsApi.downloadUrl(contractId, id)}
+          />
+        </div>
+      )}
+
+      {activeTab === "details" && <>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
@@ -195,6 +233,7 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Contracts
       </Link>
+      </> /* end details tab */}
 
       {/* Terminate Modal */}
       {showTerminateModal && (

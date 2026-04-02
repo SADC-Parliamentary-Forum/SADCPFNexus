@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -47,4 +48,9 @@ class PurchaseOrder extends Model
 
     public function canBeIssued(): bool   { return $this->isDraft(); }
     public function canReceiveGoods(): bool { return in_array($this->status, ['issued', 'partially_received']); }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 }

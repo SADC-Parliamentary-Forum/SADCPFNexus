@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -59,6 +60,11 @@ class Contract extends Model
     }
 
     // ── Methods ───────────────────────────────────────────────────────────────
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 
     public function isActive(): bool      { return $this->status === 'active'; }
     public function isExpired(): bool     { return $this->is_expired; }

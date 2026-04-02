@@ -1,12 +1,11 @@
 "use client";
 
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { vendorsApi, type Vendor } from "@/lib/api";
+import { vendorsApi, vendorAttachmentsApi, VENDOR_DOC_TYPES, type Vendor, type ProcurementAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
 
 function getStoredUser(): { roles?: string[] } | null {
@@ -289,6 +288,13 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
   const [showReject, setShowReject]           = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
+  const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
+  const [attachments, setAttachments]         = useState<ProcurementAttachment[]>([]);
+  const [uploading, setUploading]             = useState(false);
+
+  useEffect(() => {
+    if (vendorId) vendorAttachmentsApi.list(vendorId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
+  }, [vendorId]);
 
   const approveMutation = useMutation({
     mutationFn: () => vendorsApi.approve(vendorId),
@@ -346,6 +352,36 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
   return (
     <>
       <div className="mx-auto max-w-5xl space-y-6">
+        {/* Tab Bar */}
+        <div className="flex gap-1 border-b border-neutral-200">
+          {(["details", "documents"] as const).map((tab) => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
+              {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "documents" && (
+          <div className="card p-6">
+            <h2 className="text-sm font-semibold text-neutral-800 mb-5">Vendor Documents</h2>
+            <GenericDocumentsPanel
+              documents={attachments}
+              documentTypes={VENDOR_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+              defaultType="company_profile"
+              loading={false}
+              uploading={uploading}
+              onUpload={async (file, type) => {
+                setUploading(true);
+                try { const r = await vendorAttachmentsApi.upload(vendorId, file, type); setAttachments((p) => [r.data.data, ...p]); }
+                finally { setUploading(false); }
+              }}
+              onDelete={async (id) => { await vendorAttachmentsApi.delete(vendorId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+              downloadUrl={(id) => vendorAttachmentsApi.downloadUrl(vendorId, id)}
+            />
+          </div>
+        )}
+
+        {activeTab === "details" && <>
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
           <Link href="/procurement" className="hover:text-neutral-600 transition-colors">Procurement</Link>
@@ -649,6 +685,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
             </div>
           </div>
         )}
+      </> /* end details tab */}
       </div>
 
       {/* Modals */}
