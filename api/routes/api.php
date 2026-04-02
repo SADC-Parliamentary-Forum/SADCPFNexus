@@ -619,6 +619,26 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/{researcherReport}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Srhr\ResearcherReportAttachmentController::class, 'download']);
         });
 
+        // Risk Register Module
+        Route::prefix('risk')->group(function () {
+            Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
+            Route::apiResource('risks', \App\Http\Controllers\Api\V1\Risk\RiskController::class);
+            Route::post('risks/{risk}/submit',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
+            Route::post('risks/{risk}/start-review', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'startReview']);
+            Route::post('risks/{risk}/approve',      [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'approve']);
+            Route::post('risks/{risk}/escalate',     [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'escalate']);
+            Route::post('risks/{risk}/close',        [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'close']);
+            Route::post('risks/{risk}/archive',      [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'archive']);
+            Route::post('risks/{risk}/reopen',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'reopen']);
+            Route::get('risks/{risk}/logs',          [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'logs']);
+
+            Route::get('risks/{risk}/actions',                    [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'index']);
+            Route::post('risks/{risk}/actions',                   [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'store']);
+            Route::put('risks/{risk}/actions/{action}',           [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'update']);
+            Route::post('risks/{risk}/actions/{action}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'markComplete']);
+            Route::delete('risks/{risk}/actions/{action}',        [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'destroy']);
+        });
+
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
              Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
