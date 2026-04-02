@@ -77,7 +77,7 @@ export default function RiskRegisterPage() {
 
   const { data: matrix } = useQuery({
     queryKey: ["risk", "matrix"],
-    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data),
+    queryFn: () => riskApi.getMatrix({ exclude_closed: true }).then((r) => r.data ?? null),
     staleTime: 60_000,
   });
 
@@ -184,7 +184,7 @@ export default function RiskRegisterPage() {
               {/* Grid (5 rows = likelihood 5→1 top-to-bottom, 5 cols = impact 1→5 left-to-right) */}
               <div className="grid gap-1" style={{ gridTemplateColumns: "24px repeat(5, 1fr)" }}>
                 {/* Column headers (impact) */}
-                <div />
+                <div key="hdr-spacer" />
                 {[1, 2, 3, 4, 5].map((i) => (
                   <div key={i} className="text-center text-[10px] text-neutral-400 font-medium pb-0.5">{i}</div>
                 ))}

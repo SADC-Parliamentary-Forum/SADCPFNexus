@@ -3388,6 +3388,7 @@ export interface Risk {
   actionOwner?: User;
   actions?: RiskAction[];
   history?: RiskHistory[];
+  attachments?: RiskAttachment[];
 }
 
 export interface RiskAction {
@@ -3531,4 +3532,124 @@ export const riskApi = {
     api.get<{ data: RiskDashboardData }>("/risk/dashboard"),
   getAuditTrail: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<RiskHistory>>("/risk/audit-trail", { params }),
+};
+
+// ── Risk Document Types ──────────────────────────────────────────────────────
+
+export const RISK_DOCUMENT_TYPES = [
+  { value: "risk_policy",          label: "Policy Document",     icon: "policy"      },
+  { value: "risk_assessment",      label: "Risk Assessment",     icon: "assessment"  },
+  { value: "risk_evidence",        label: "Supporting Evidence", icon: "attach_file" },
+  { value: "risk_mitigation_plan", label: "Mitigation Plan",     icon: "task_alt"    },
+  { value: "closure_evidence",     label: "Closure Evidence",    icon: "lock"        },
+  { value: "other",                label: "Other",               icon: "description" },
+] as const;
+
+export type RiskDocumentType = typeof RISK_DOCUMENT_TYPES[number]["value"];
+
+export interface RiskAttachment {
+  id: number;
+  attachable_type: string;
+  attachable_id: number;
+  document_type: RiskDocumentType;
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+  uploader?: { id: number; name: string };
+}
+
+export interface Policy {
+  id: number;
+  tenant_id: number;
+  title: string;
+  description: string | null;
+  owner_name: string | null;
+  renewal_date: string | null;
+  status: "active" | "archived";
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  risks_count?: number;
+  creator?: User;
+  attachments?: RiskAttachment[];
+  risks?: Pick<Risk, "id" | "risk_code" | "title">[];
+}
+
+// ── Risk Attachments API ─────────────────────────────────────────────────────
+
+export const riskAttachmentsApi = {
+  list: (riskId: number) =>
+    api.get<{ data: RiskAttachment[] }>(`/risk/risks/${riskId}/attachments`),
+
+  upload: (riskId: number, file: File, documentType?: RiskDocumentType) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (documentType) form.append("document_type", documentType);
+    return api.post<{ data: RiskAttachment; message: string }>(
+      `/risk/risks/${riskId}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  delete: (riskId: number, attachmentId: number) =>
+    api.delete(`/risk/risks/${riskId}/attachments/${attachmentId}`),
+
+  downloadBlob: (riskId: number, attachmentId: number) =>
+    api.get<Blob>(
+      `/risk/risks/${riskId}/attachments/${attachmentId}/download`,
+      { responseType: "blob" }
+    ).then((r) => r.data),
+
+  downloadUrl: (riskId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/risk/risks/${riskId}/attachments/${attachmentId}/download`,
+};
+
+// ── Policy API ───────────────────────────────────────────────────────────────
+
+export const policyApi = {
+  list: (params?: { search?: string; status?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<Policy>>("/risk/policies", { params }),
+
+  get: (id: number) =>
+    api.get<{ data: Policy }>(`/risk/policies/${id}`),
+
+  create: (data: Partial<Policy>) =>
+    api.post<{ data: Policy; message: string }>("/risk/policies", data),
+
+  update: (id: number, data: Partial<Policy>) =>
+    api.put<{ data: Policy; message: string }>(`/risk/policies/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/risk/policies/${id}`),
+
+  listForRisk: (riskId: number) =>
+    api.get<{ data: Policy[] }>(`/risk/risks/${riskId}/policies`),
+
+  attachToRisk: (policyId: number, riskId: number, notes?: string) =>
+    api.post<{ message: string }>(`/risk/policies/${policyId}/attach-risk`, { risk_id: riskId, notes }),
+
+  detachFromRisk: (policyId: number, riskId: number) =>
+    api.delete(`/risk/policies/${policyId}/detach-risk/${riskId}`),
+
+  listAttachments: (policyId: number) =>
+    api.get<{ data: RiskAttachment[] }>(`/risk/policies/${policyId}/attachments`),
+
+  uploadAttachment: (policyId: number, file: File, documentType?: RiskDocumentType) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (documentType) form.append("document_type", documentType);
+    return api.post<{ data: RiskAttachment; message: string }>(
+      `/risk/policies/${policyId}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  deleteAttachment: (policyId: number, attachmentId: number) =>
+    api.delete(`/risk/policies/${policyId}/attachments/${attachmentId}`),
+
+  downloadAttachmentUrl: (policyId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/risk/policies/${policyId}/attachments/${attachmentId}/download`,
 };

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -77,6 +79,19 @@ class Risk extends Model
     public function department()  { return $this->belongsTo(Department::class); }
     public function actions()     { return $this->hasMany(RiskAction::class); }
     public function history()     { return $this->hasMany(RiskHistory::class); }
+
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function policies(): BelongsToMany
+    {
+        return $this->belongsToMany(Policy::class, 'risk_policy')
+                    ->withPivot('notes', 'linked_by')
+                    ->withTimestamps(false)
+                    ->orderBy('policies.title');
+    }
 
     // ── Status helpers ────────────────────────────────────────────────────────
 

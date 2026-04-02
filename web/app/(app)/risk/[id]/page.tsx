@@ -2,8 +2,9 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { riskApi, type Risk, type RiskAction, type RiskHistory } from "@/lib/api";
+import { riskApi, riskAttachmentsApi, policyApi, type Risk, type RiskAction, type RiskHistory, type RiskAttachment, type RiskDocumentType, type Policy } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
+import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import axios from "axios";
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -98,6 +99,21 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   const [working, setWorking]     = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  // Tabs
+  const [activeTab, setActiveTab] = useState<"details" | "documents" | "policies">("details");
+
+  // Attachments
+  const [attachments, setAttachments] = useState<RiskAttachment[]>([]);
+  const [uploading, setUploading]     = useState(false);
+
+  // Related policies
+  const [relatedPolicies, setRelatedPolicies] = useState<Policy[]>([]);
+  const [policySearch, setPolicySearch]       = useState("");
+  const [searchResults, setSearchResults]     = useState<Policy[]>([]);
+  const [searchLoading, setSearchLoading]     = useState(false);
+  const [linkingId, setLinkingId]             = useState<number | null>(null);
+  const [unlinkingId, setUnlinkingId]         = useState<number | null>(null);
+
   useEffect(() => { setCurrentUser(getStoredUser()); }, []);
 
   useEffect(() => {
@@ -107,10 +123,27 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       riskApi.get(id).then((r) => setRisk(r.data.data)),
       riskApi.listActions(id).then((r) => setActions(r.data.data ?? [])),
       riskApi.getLogs(id).then((r) => setHistory(r.data.data ?? [])),
+      riskAttachmentsApi.list(id).then((r) => setAttachments(r.data.data ?? [])),
+      policyApi.listForRisk(id).then((r) => setRelatedPolicies(r.data.data ?? [])),
     ])
       .catch(() => setError("Failed to load risk."))
       .finally(() => setLoading(false));
   }, [paramId]);
+
+  // Debounced policy search
+  useEffect(() => {
+    if (!policySearch.trim()) { setSearchResults([]); return; }
+    const t = setTimeout(() => {
+      setSearchLoading(true);
+      policyApi.list({ search: policySearch, per_page: 8 })
+        .then((r) => {
+          const linked = new Set(relatedPolicies.map((p) => p.id));
+          setSearchResults((r.data.data ?? []).filter((p: Policy) => !linked.has(p.id)));
+        })
+        .finally(() => setSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [policySearch, relatedPolicies]);
 
   async function doWorkflowAction() {
     if (!risk) return;
@@ -249,6 +282,29 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
           })}
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-1 border-b border-neutral-200">
+        {(["details", "documents", "policies"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? "border-primary text-primary"
+                : "border-transparent text-neutral-500 hover:text-neutral-700"
+            }`}
+          >
+            {tab === "documents"
+              ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}`
+              : tab === "policies"
+              ? `Related Policies${relatedPolicies.length > 0 ? ` (${relatedPolicies.length})` : ""}`
+              : "Details"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "details" && <>
 
       {/* Header card */}
       <div className="card p-6">
@@ -570,6 +626,126 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Risk Register
       </Link>
+
+      </> /* end details tab */}
+
+      {/* ── Documents Tab ── */}
+      {activeTab === "documents" && (
+        <div className="card p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <SectionIcon icon="attach_file" color="text-blue-600" bg="bg-blue-50" />
+            <h2 className="text-sm font-semibold text-neutral-800">Risk Documents</h2>
+          </div>
+          <RiskDocumentsPanel
+            documents={attachments}
+            loading={false}
+            uploading={uploading}
+            onUpload={async (file: File, type: RiskDocumentType) => {
+              setUploading(true);
+              try {
+                const r = await riskAttachmentsApi.upload(risk.id, file, type);
+                setAttachments((prev) => [r.data.data, ...prev]);
+              } finally { setUploading(false); }
+            }}
+            onDelete={async (id: number) => {
+              await riskAttachmentsApi.delete(risk.id, id);
+              setAttachments((prev) => prev.filter((a) => a.id !== id));
+            }}
+            downloadUrl={(id: number) => riskAttachmentsApi.downloadUrl(risk.id, id)}
+          />
+        </div>
+      )}
+
+      {/* ── Policies Tab ── */}
+      {activeTab === "policies" && (
+        <div className="space-y-5">
+          {/* Linked policies */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <SectionIcon icon="policy" color="text-indigo-600" bg="bg-indigo-50" />
+              <h2 className="text-sm font-semibold text-neutral-800">Related Policies</h2>
+            </div>
+            {relatedPolicies.length === 0 ? (
+              <p className="text-xs text-neutral-400 italic">No policies linked yet. Search below to link one.</p>
+            ) : (
+              <div className="space-y-2">
+                {relatedPolicies.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 bg-neutral-50/50 hover:bg-white transition-all">
+                    <span className="material-symbols-outlined text-indigo-500 text-[20px]">policy</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-neutral-900 truncate">{p.title}</p>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        {p.owner_name && <span>{p.owner_name}</span>}
+                        {p.renewal_date && <span className="ml-2">Renewal: {new Date(p.renewal_date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>}
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setUnlinkingId(p.id);
+                        try {
+                          await policyApi.detachFromRisk(p.id, risk.id);
+                          setRelatedPolicies((prev) => prev.filter((x) => x.id !== p.id));
+                        } finally { setUnlinkingId(null); }
+                      }}
+                      disabled={unlinkingId === p.id}
+                      className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-100 hover:border-red-300 disabled:opacity-50 flex-shrink-0"
+                    >
+                      {unlinkingId === p.id ? "…" : "Unlink"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Search & link panel */}
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <SectionIcon icon="search" color="text-neutral-600" bg="bg-neutral-100" />
+              <h2 className="text-sm font-semibold text-neutral-800">Link a Policy</h2>
+            </div>
+            <input
+              type="text"
+              value={policySearch}
+              onChange={(e) => setPolicySearch(e.target.value)}
+              placeholder="Search policies by title…"
+              className="form-input w-full mb-3"
+            />
+            {searchLoading && <p className="text-xs text-neutral-400 mb-2">Searching…</p>}
+            {searchResults.length > 0 && (
+              <div className="space-y-2">
+                {searchResults.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-neutral-100 bg-white hover:border-neutral-200 transition-all">
+                    <span className="material-symbols-outlined text-neutral-400 text-[18px]">policy</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-neutral-800 truncate">{p.title}</p>
+                      {p.owner_name && <p className="text-xs text-neutral-400">{p.owner_name}</p>}
+                    </div>
+                    <button
+                      onClick={async () => {
+                        setLinkingId(p.id);
+                        try {
+                          await policyApi.attachToRisk(p.id, risk.id);
+                          setRelatedPolicies((prev) => [...prev, p]);
+                          setPolicySearch("");
+                          setSearchResults([]);
+                        } finally { setLinkingId(null); }
+                      }}
+                      disabled={linkingId === p.id}
+                      className="btn-primary text-xs px-3 py-1.5 disabled:opacity-60 flex-shrink-0"
+                    >
+                      {linkingId === p.id ? "…" : "Link"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {policySearch && !searchLoading && searchResults.length === 0 && (
+              <p className="text-xs text-neutral-400 italic">No policies found. <Link href="/risk/policies" className="text-primary hover:underline">Manage Policy Library →</Link></p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Workflow Modal ── */}
       {modal && (

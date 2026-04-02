@@ -639,6 +639,24 @@ Route::prefix('v1')->group(function () {
             Route::put('risks/{risk}/actions/{action}',           [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'update']);
             Route::post('risks/{risk}/actions/{action}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'markComplete']);
             Route::delete('risks/{risk}/actions/{action}',        [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'destroy']);
+
+            // Risk Attachments
+            Route::get('risks/{risk}/attachments',                            [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'index']);
+            Route::post('risks/{risk}/attachments',                           [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'store']);
+            Route::delete('risks/{risk}/attachments/{attachment}',            [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'destroy']);
+            Route::get('risks/{risk}/attachments/{attachment}/download',      [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'download']);
+
+            // Policy Library
+            Route::apiResource('policies', \App\Http\Controllers\Api\V1\Risk\PolicyController::class);
+            Route::get('risks/{risk}/policies',                               [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'listForRisk']);
+            Route::post('policies/{policy}/attach-risk',                      [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'attachToRisk']);
+            Route::delete('policies/{policy}/detach-risk/{risk}',             [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'detachFromRisk']);
+
+            // Policy Attachments
+            Route::get('policies/{policy}/attachments',                       [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'index']);
+            Route::post('policies/{policy}/attachments',                      [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'store']);
+            Route::delete('policies/{policy}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'destroy']);
+            Route::get('policies/{policy}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'download']);
         });
 
         // Admin Workflows
