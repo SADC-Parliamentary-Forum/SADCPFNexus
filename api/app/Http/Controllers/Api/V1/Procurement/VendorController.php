@@ -3,11 +3,14 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vendor;
+use App\Modules\Procurement\Services\VendorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class VendorController extends Controller
 {
+    public function __construct(private readonly VendorService $vendorService) {}
+
     public function index(Request $request): JsonResponse
     {
         $tenantId = $request->user()->tenant_id;
@@ -147,5 +150,35 @@ class VendorController extends Controller
         $vendor->delete();
 
         return response()->json(['message' => 'Vendor deleted.']);
+    }
+
+    public function approve(Request $request, Vendor $vendor): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
+            abort(403);
+        }
+        if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $vendor = $this->vendorService->approveVendor($vendor, $request->user());
+        return response()->json(['message' => 'Vendor approved.', 'data' => $vendor]);
+    }
+
+    public function reject(Request $request, Vendor $vendor): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
+            abort(403);
+        }
+        if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $vendor = $this->vendorService->rejectVendor($vendor, $data['reason'], $request->user());
+        return response()->json(['message' => 'Vendor rejected.', 'data' => $vendor]);
     }
 }

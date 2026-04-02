@@ -21,9 +21,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
+            'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
+            'procurement.receive_goods', 'procurement.approve_invoice',
+            'procurement.hod_approve', 'procurement.manage_budget',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
-            'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin',
+            'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin', 'hr.supervisor',
             // HR Settings (master data governance — restricted to HR Manager & Finance Director)
             'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
             // Programmes / PIF
@@ -42,6 +45,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'calendar.view', 'calendar.create', 'calendar.admin',
             // Support Tickets
             'support.view', 'support.create', 'support.admin',
+            'saam.view', 'saam.delegate',
+            'correspondence.view', 'correspondence.create', 'correspondence.admin',
             'srhr.view', 'srhr.create', 'srhr.manage', 'srhr.admin',
             'parliaments.view', 'parliaments.manage',
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
@@ -79,7 +84,9 @@ class RolesAndPermissionsSeeder extends Seeder
             $financeController->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
-                    'travel.view', 'procurement.view', 'governance.view', 'audit.view',
+                    'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
+                    'procurement.manage_budget',
+                    'governance.view', 'audit.view',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
             );
@@ -87,7 +94,9 @@ class RolesAndPermissionsSeeder extends Seeder
             $procurementOfficer = Role::firstOrCreate(['name' => 'Procurement Officer', 'guard_name' => $guard]);
             $procurementOfficer->syncPermissions(
                 Permission::whereIn('name', [
-                    'procurement.view', 'procurement.create',
+                    'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
+                    'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
+                    'procurement.receive_goods',
                     'assets.view', 'assets.create', 'finance.view', 'governance.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -118,6 +127,19 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
                     'governance.view', 'reports.view', 'assets.view',
+                    'saam.view', 'saam.delegate',
+                    'correspondence.view', 'correspondence.create',
+                    'parliaments.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            // HOD: Head of Department — reviews procurement requests before Procurement Officer approval
+            $hod = Role::firstOrCreate(['name' => 'HOD', 'guard_name' => $guard]);
+            $hod->syncPermissions(
+                Permission::whereIn('name', [
+                    'procurement.view', 'procurement.hod_approve',
+                    'hr.view', 'travel.view', 'leave.view', 'finance.view',
+                    'reports.view',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -153,7 +175,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'travel.approve',
                     'leave.view', 'leave.approve',
                     'imprest.view', 'imprest.approve',
-                    'procurement.view', 'procurement.approve',
+                    'procurement.view', 'procurement.approve', 'procurement.award', 'procurement.manage_vendors',
                     'finance.view', 'finance.approve',
                     'governance.view', 'governance.approve',
                     'hr.view', 'hr.approve',

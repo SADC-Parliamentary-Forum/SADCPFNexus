@@ -22,16 +22,15 @@ class SrhrTest extends TestCase
         [$http] = $this->asAdmin();
 
         $response = $http->postJson('/api/v1/srhr/parliaments', [
-            'country'       => 'Zimbabwe',
-            'name'          => 'Parliament of Zimbabwe',
-            'short_code'    => 'ZW',
-            'parliament_type' => 'unicameral',
+            'name'         => 'Parliament of Zimbabwe',
+            'country_code' => 'ZW',
+            'country_name' => 'Zimbabwe',
         ]);
 
         $response->assertCreated();
         $this->assertDatabaseHas('parliaments', [
-            'country' => 'Zimbabwe',
-            'name'    => 'Parliament of Zimbabwe',
+            'country_code' => 'ZW',
+            'name'         => 'Parliament of Zimbabwe',
         ]);
     }
 
@@ -42,12 +41,12 @@ class SrhrTest extends TestCase
         $http->postJson('/api/v1/srhr/parliaments', [
             'name' => 'No country parliament',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['country']);
+          ->assertJsonValidationErrors(['country_code']);
     }
 
     public function test_anyone_can_list_parliaments(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asAdmin();
 
         $http->getJson('/api/v1/srhr/parliaments')->assertOk();
     }
@@ -58,25 +57,25 @@ class SrhrTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http, $admin] = $this->asAdmin($tenant);
-        $researcher = $this->makeUser('staff', $tenant);
+        $researcher = $this->makeUser('Field Researcher', $tenant);
 
         $parliament = Parliament::create([
-            'tenant_id'      => $tenant->id,
-            'country'        => 'Zambia',
-            'name'           => 'National Assembly of Zambia',
-            'short_code'     => 'ZM',
-            'parliament_type'=> 'unicameral',
+            'tenant_id'    => $tenant->id,
+            'country_code' => 'ZM',
+            'country_name' => 'Zambia',
+            'name'         => 'National Assembly of Zambia',
         ]);
 
         $http->postJson('/api/v1/srhr/deployments', [
-            'researcher_id' => $researcher->id,
-            'parliament_id' => $parliament->id,
-            'start_date'    => now()->toDateString(),
-            'mandate'       => 'Monitor SRHR legislation progress.',
+            'employee_id'     => $researcher->id,
+            'parliament_id'   => $parliament->id,
+            'deployment_type' => 'field_researcher',
+            'start_date'      => now()->toDateString(),
+            'status'          => 'active',
         ])->assertCreated();
 
         $this->assertDatabaseHas('staff_deployments', [
-            'researcher_id' => $researcher->id,
+            'employee_id'   => $researcher->id,
             'parliament_id' => $parliament->id,
         ]);
     }
@@ -85,41 +84,78 @@ class SrhrTest extends TestCase
 
     public function test_staff_can_create_researcher_report(): void
     {
-        $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        $tenant     = Tenant::factory()->create();
+        $researcher = $this->makeUser('Field Researcher', $tenant);
+        [$http]     = $this->asAdmin($tenant);
 
+        // Need a deployment first
         $parliament = Parliament::create([
-            'tenant_id'      => $tenant->id,
-            'country'        => 'Botswana',
-            'name'           => 'Parliament of Botswana',
-            'short_code'     => 'BW',
-            'parliament_type'=> 'unicameral',
+            'tenant_id'    => $tenant->id,
+            'country_code' => 'BW',
+            'country_name' => 'Botswana',
+            'name'         => 'Parliament of Botswana',
+        ]);
+
+        $deployment = StaffDeployment::create([
+            'tenant_id'             => $tenant->id,
+            'employee_id'           => $researcher->id,
+            'parliament_id'         => $parliament->id,
+            'reference_number'      => 'DPMT-TEST-' . uniqid(),
+            'deployment_type'       => 'field_researcher',
+            'start_date'            => now()->toDateString(),
+            'status'                => 'active',
+            'hr_managed_externally' => true,
+            'payroll_active'        => true,
+            'created_by'            => $researcher->id,
         ]);
 
         $http->postJson('/api/v1/srhr/reports', [
-            'parliament_id'   => $parliament->id,
-            'title'           => 'Q1 2026 Field Report',
-            'period_month'    => 1,
-            'period_year'     => 2026,
-            'content'         => 'Summary of activities in Q1.',
+            'deployment_id' => $deployment->id,
+            'report_type'   => 'monthly',
+            'period_start'  => now()->startOfMonth()->toDateString(),
+            'period_end'    => now()->endOfMonth()->toDateString(),
+            'title'         => 'Q1 2026 Field Report',
         ])->assertCreated();
     }
 
     public function test_staff_can_list_own_reports(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asAdmin();
 
         $http->getJson('/api/v1/srhr/reports')->assertOk();
     }
 
     public function test_researcher_report_requires_title(): void
     {
-        [$http] = $this->asStaff();
+        $tenant     = Tenant::factory()->create();
+        $researcher = $this->makeUser('Field Researcher', $tenant);
+        [$http]     = $this->asAdmin($tenant);
+
+        $parliament = Parliament::create([
+            'tenant_id'    => $tenant->id,
+            'country_code' => 'ZW',
+            'country_name' => 'Zimbabwe',
+            'name'         => 'Parliament of Zimbabwe',
+        ]);
+
+        $deployment = StaffDeployment::create([
+            'tenant_id'             => $tenant->id,
+            'employee_id'           => $researcher->id,
+            'parliament_id'         => $parliament->id,
+            'reference_number'      => 'DPMT-REQ-' . uniqid(),
+            'deployment_type'       => 'field_researcher',
+            'start_date'            => now()->toDateString(),
+            'status'                => 'active',
+            'hr_managed_externally' => true,
+            'payroll_active'        => true,
+            'created_by'            => $researcher->id,
+        ]);
 
         $http->postJson('/api/v1/srhr/reports', [
-            'period_month' => 1,
-            'period_year'  => 2026,
-            'content'      => 'Some content',
+            'deployment_id' => $deployment->id,
+            'report_type'   => 'monthly',
+            'period_start'  => now()->startOfMonth()->toDateString(),
+            'period_end'    => now()->endOfMonth()->toDateString(),
         ])->assertUnprocessable()
           ->assertJsonValidationErrors(['title']);
     }
@@ -128,29 +164,42 @@ class SrhrTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http] = $this->asAdmin($tenant);
-        $researcher = $this->makeUser('staff', $tenant);
+        $researcher = $this->makeUser('Field Researcher', $tenant);
 
         $parliament = Parliament::create([
-            'tenant_id'      => $tenant->id,
-            'country'        => 'Malawi',
-            'name'           => 'Parliament of Malawi',
-            'short_code'     => 'MW',
-            'parliament_type'=> 'unicameral',
+            'tenant_id'    => $tenant->id,
+            'country_code' => 'MW',
+            'country_name' => 'Malawi',
+            'name'         => 'Parliament of Malawi',
+        ]);
+
+        $deployment = StaffDeployment::create([
+            'tenant_id'             => $tenant->id,
+            'employee_id'           => $researcher->id,
+            'parliament_id'         => $parliament->id,
+            'reference_number'      => 'DPMT-DEL-' . uniqid(),
+            'deployment_type'       => 'field_researcher',
+            'start_date'            => now()->toDateString(),
+            'status'                => 'active',
+            'hr_managed_externally' => true,
+            'payroll_active'        => true,
+            'created_by'            => $researcher->id,
         ]);
 
         $report = ResearcherReport::create([
-            'tenant_id'    => $tenant->id,
-            'researcher_id'=> $researcher->id,
-            'parliament_id'=> $parliament->id,
+            'tenant_id'        => $tenant->id,
+            'employee_id'      => $researcher->id,
+            'deployment_id'    => $deployment->id,
+            'parliament_id'    => $parliament->id,
             'reference_number' => 'RPT-' . uniqid(),
-            'title'        => 'Test Report',
-            'period_month' => 3,
-            'period_year'  => 2026,
-            'content'      => 'Content.',
-            'status'       => 'draft',
+            'title'            => 'Test Report',
+            'report_type'      => 'monthly',
+            'period_start'     => now()->startOfMonth()->toDateString(),
+            'period_end'       => now()->endOfMonth()->toDateString(),
+            'status'           => 'draft',
         ]);
 
         $http->deleteJson("/api/v1/srhr/reports/{$report->id}")->assertOk();
-        $this->assertDatabaseMissing('researcher_reports', ['id' => $report->id]);
+        $this->assertSoftDeleted('researcher_reports', ['id' => $report->id]);
     }
 }

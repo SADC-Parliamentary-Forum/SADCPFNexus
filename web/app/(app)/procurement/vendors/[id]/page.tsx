@@ -1,11 +1,22 @@
 "use client";
 
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { vendorsApi, type Vendor } from "@/lib/api";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
+
+function getStoredUser(): { roles?: string[] } | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+}
+function canManageVendors(): boolean {
+  const u = getStoredUser();
+  return (u?.roles ?? []).some(r => ["Procurement Officer","System Admin","Secretary General","super-admin"].includes(r));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: string }) {
@@ -272,8 +283,29 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
 // ─── Main detail page ─────────────────────────────────────────────────────────
 export default function VendorDetailPage({ params }: { params: { id: string } }) {
   const vendorId = Number(params.id);
-  const [showEdit, setShowEdit]         = useState(false);
-  const [showDeactivate, setShowDeactivate] = useState(false);
+  const queryClient = useQueryClient();
+  const [showEdit, setShowEdit]               = useState(false);
+  const [showDeactivate, setShowDeactivate]   = useState(false);
+  const [showReject, setShowReject]           = useState(false);
+  const [rejectReason, setRejectReason]       = useState("");
+  const [rejectError, setRejectError]         = useState<string | null>(null);
+
+  const approveMutation = useMutation({
+    mutationFn: () => vendorsApi.approve(vendorId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] }),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: () => vendorsApi.reject(vendorId, rejectReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+      setShowReject(false);
+      setRejectReason("");
+    },
+    onError: (e: unknown) => {
+      setRejectError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reject vendor.");
+    },
+  });
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["vendor", vendorId],
@@ -357,7 +389,29 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+              {/* Approve / Reject — only for pending vendors with permission */}
+              {!vendor.is_approved && vendor.is_active && canManageVendors() && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => approveMutation.mutate()}
+                    disabled={approveMutation.isPending}
+                    className="btn-primary flex items-center gap-1.5 py-2 px-3 text-sm"
+                  >
+                    <span className="material-symbols-outlined text-[17px]">check_circle</span>
+                    {approveMutation.isPending ? "Approving…" : "Approve"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReject(true)}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[17px]">cancel</span>
+                    Reject
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setShowEdit(true)}
@@ -603,6 +657,49 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
       )}
       {showDeactivate && (
         <DeactivateDialog vendor={vendor} onClose={() => setShowDeactivate(false)} />
+      )}
+      {showReject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowReject(false)}>
+          <div className="card w-full max-w-md p-6 shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50">
+                <span className="material-symbols-outlined text-[20px] text-red-600">cancel</span>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-800">Reject Vendor</h2>
+                <p className="text-xs text-neutral-500">{vendor.name}</p>
+              </div>
+            </div>
+            {rejectError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{rejectError}</div>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                Reason for Rejection <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                className="form-input w-full h-24 resize-none"
+                placeholder="Explain why this vendor is being rejected…"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => { setShowReject(false); setRejectError(null); }}>Cancel</button>
+              <button
+                className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                disabled={rejectMutation.isPending || !rejectReason.trim()}
+                onClick={() => rejectMutation.mutate()}
+              >
+                {rejectMutation.isPending
+                  ? <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  : <span className="material-symbols-outlined text-[14px]">cancel</span>
+                }
+                {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -44,16 +44,11 @@ class WorkplanTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http] = $this->asStaff($tenant);
 
-        $eventType = WorkplanEventType::create([
-            'tenant_id' => $tenant->id,
-            'name'      => 'Conference',
-        ]);
-
         $http->postJson('/api/v1/workplan/events', [
-            'title'          => 'Annual Budget Planning',
-            'event_type_id'  => $eventType->id,
-            'start_date'     => now()->addDays(7)->toDateString(),
-            'end_date'       => now()->addDays(9)->toDateString(),
+            'title'    => 'Annual Budget Planning',
+            'type'     => 'conference',
+            'date'     => now()->addDays(7)->toDateString(),
+            'end_date' => now()->addDays(9)->toDateString(),
         ])->assertCreated();
     }
 
@@ -62,7 +57,7 @@ class WorkplanTest extends TestCase
         [$http] = $this->asStaff();
 
         $http->postJson('/api/v1/workplan/events', [
-            'start_date' => now()->addDays(7)->toDateString(),
+            'date' => now()->addDays(7)->toDateString(),
         ])->assertUnprocessable()
           ->assertJsonValidationErrors(['title']);
     }
@@ -77,17 +72,18 @@ class WorkplanTest extends TestCase
     public function test_admin_can_delete_event(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asAdmin($tenant);
+        [$http, $user] = $this->asAdmin($tenant);
 
         $event = WorkplanEvent::create([
             'tenant_id'  => $tenant->id,
+            'created_by' => $user->id,
             'title'      => 'Delete me',
-            'start_date' => now()->addDays(5)->toDateString(),
-            'status'     => 'scheduled',
+            'type'       => 'meeting',
+            'date'       => now()->addDays(5)->toDateString(),
         ]);
 
         $http->deleteJson("/api/v1/workplan/events/{$event->id}")->assertOk();
-        $this->assertDatabaseMissing('workplan_events', ['id' => $event->id]);
+        $this->assertSoftDeleted('workplan_events', ['id' => $event->id]);
     }
 
     public function test_external_endpoint_returns_events_unauthenticated(): void

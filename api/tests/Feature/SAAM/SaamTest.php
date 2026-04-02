@@ -34,10 +34,10 @@ class SaamTest extends TestCase
         $delegate = $this->makeUser('staff', null);
 
         $http->postJson('/api/v1/saam/delegations', [
-            'delegate_id' => $delegate->id,
-            'valid_from'  => now()->toDateString(),
-            'valid_until' => now()->addDays(7)->toDateString(),
-            'scope'       => 'travel',
+            'delegate_user_id' => $delegate->id,
+            'start_date'       => now()->toDateString(),
+            'end_date'         => now()->addDays(7)->toDateString(),
+            'role_scope'       => 'travel',
         ])->assertCreated();
     }
 
@@ -46,10 +46,10 @@ class SaamTest extends TestCase
         [$http] = $this->asStaff();
 
         $http->postJson('/api/v1/saam/delegations', [
-            'valid_from'  => now()->toDateString(),
-            'valid_until' => now()->addDays(3)->toDateString(),
+            'start_date' => now()->toDateString(),
+            'end_date'   => now()->addDays(3)->toDateString(),
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['delegate_id']);
+          ->assertJsonValidationErrors(['delegate_user_id']);
     }
 
     public function test_user_can_revoke_delegation(): void
@@ -58,14 +58,14 @@ class SaamTest extends TestCase
         $delegate = $this->makeUser('staff', null);
 
         $createResponse = $http->postJson('/api/v1/saam/delegations', [
-            'delegate_id' => $delegate->id,
-            'valid_from'  => now()->toDateString(),
-            'valid_until' => now()->addDays(7)->toDateString(),
-            'scope'       => 'all',
+            'delegate_user_id' => $delegate->id,
+            'start_date'       => now()->toDateString(),
+            'end_date'         => now()->addDays(7)->toDateString(),
+            'role_scope'       => 'all',
         ]);
 
         $createResponse->assertCreated();
-        $delegationId = $createResponse->json('id');
+        $delegationId = $createResponse->json('data.id');
 
         $http->deleteJson("/api/v1/saam/delegations/{$delegationId}")->assertOk();
     }

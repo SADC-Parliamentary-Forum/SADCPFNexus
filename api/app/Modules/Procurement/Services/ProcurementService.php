@@ -142,10 +142,74 @@ class ProcurementService
         return $request->fresh();
     }
 
+    public function hodApprove(ProcurementRequest $request, User $hod): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $hod->tenant_id) {
+            abort(404);
+        }
+
+        if (!$request->isSubmitted()) {
+            throw ValidationException::withMessages(['status' => 'Only submitted requests can be HOD-approved.']);
+        }
+
+        $request->update([
+            'status'          => 'hod_approved',
+            'hod_id'          => $hod->id,
+            'hod_reviewed_at' => now(),
+        ]);
+
+        AuditLog::record('procurement.hod_approved', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => ['hod_id' => $hod->id],
+            'tags'           => 'procurement',
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function hodReject(ProcurementRequest $request, string $reason, User $hod): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $hod->tenant_id) {
+            abort(404);
+        }
+
+        if (!$request->isSubmitted()) {
+            throw ValidationException::withMessages(['status' => 'Only submitted requests can be HOD-rejected.']);
+        }
+
+        $request->update([
+            'status'           => 'hod_rejected',
+            'hod_id'           => $hod->id,
+            'hod_reviewed_at'  => now(),
+            'rejection_reason' => $reason,
+        ]);
+
+        AuditLog::record('procurement.hod_rejected', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => ['reason' => $reason],
+            'tags'           => 'procurement',
+        ]);
+
+        $request->loadMissing('requester');
+        if ($request->requester) {
+            $this->notificationService->dispatch(
+                $request->requester,
+                'procurement.rejected',
+                ['name' => $request->requester->name, 'reference' => $request->reference_number, 'comment' => $reason],
+                ['module' => 'procurement', 'record_id' => $request->id, 'url' => '/procurement/' . $request->id]
+            );
+        }
+
+        return $request->fresh();
+    }
+
     public function approve(ProcurementRequest $request, User $approver): ProcurementRequest
     {
-        if (!$request->isSubmitted()) {
-            throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
+        // HOD must have reviewed before procurement officer can approve
+        if (!$request->isHodApproved() && !$request->isBudgetReserved()) {
+            throw ValidationException::withMessages(['status' => 'Request must be HOD-approved before procurement approval.']);
         }
 
         if ((int) $request->requester_id === (int) $approver->id) {
@@ -177,6 +241,63 @@ class ProcurementService
         }
 
         return $request->fresh();
+    }
+
+    public function award(ProcurementRequest $request, int $quoteId, ?string $notes, User $awarder): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $awarder->tenant_id) {
+            abort(404);
+        }
+
+        if (!$request->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved requests can be awarded.']);
+        }
+
+        // Quote must belong to this request
+        $quote = $request->quotes()->find($quoteId);
+        if (!$quote) {
+            throw ValidationException::withMessages(['quote_id' => 'The selected quote does not belong to this request.']);
+        }
+
+        $request->update([
+            'status'           => 'awarded',
+            'awarded_quote_id' => $quote->id,
+            'awarded_at'       => now(),
+            'award_notes'      => $notes,
+        ]);
+
+        // Mark the winning quote as recommended
+        $request->quotes()->where('id', '!=', $quote->id)->update(['is_recommended' => false]);
+        $quote->update(['is_recommended' => true]);
+
+        AuditLog::record('procurement.awarded', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => [
+                'awarded_quote_id' => $quote->id,
+                'vendor'           => $quote->vendor_name,
+                'amount'           => $quote->quoted_amount,
+            ],
+            'tags' => 'procurement',
+        ]);
+
+        // Notify requester
+        $request->loadMissing('requester');
+        if ($request->requester) {
+            $this->notificationService->dispatch(
+                $request->requester,
+                'procurement.awarded',
+                [
+                    'name'      => $request->requester->name,
+                    'reference' => $request->reference_number,
+                    'vendor'    => $quote->vendor_name,
+                    'amount'    => number_format($quote->quoted_amount, 2) . ' ' . $quote->currency,
+                ],
+                ['module' => 'procurement', 'record_id' => $request->id, 'url' => '/procurement/' . $request->id]
+            );
+        }
+
+        return $request->fresh(['requester', 'items', 'quotes', 'awardedQuote']);
     }
 
     public function reject(ProcurementRequest $request, string $reason, User $approver): ProcurementRequest

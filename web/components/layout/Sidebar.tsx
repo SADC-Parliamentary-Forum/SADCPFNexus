@@ -50,9 +50,14 @@ const NAV_ITEMS: NavItem[] = [
     href: "/procurement",
     icon: "shopping_cart",
     children: [
-      { label: "Requests",    href: "/procurement",         icon: "bar_chart_4_bars" },
-      { label: "Vendors",     href: "/procurement/vendors", icon: "store" },
-      { label: "New Request", href: "/procurement/create",  icon: "add_shopping_cart" },
+      { label: "Requests",        href: "/procurement",                  icon: "bar_chart_4_bars"    },
+      { label: "Vendors",         href: "/procurement/vendors",          icon: "store"               },
+      { label: "Purchase Orders", href: "/procurement/purchase-orders",  icon: "receipt_long"        },
+      { label: "Receipts",        href: "/procurement/receipts",         icon: "inventory_2"         },
+      { label: "Invoices",        href: "/procurement/invoices",         icon: "request_quote"       },
+      { label: "Contracts",       href: "/procurement/contracts",        icon: "description"         },
+      { label: "Analytics",       href: "/procurement/analytics",        icon: "analytics"           },
+      { label: "New Request",     href: "/procurement/create",           icon: "add_shopping_cart"   },
     ],
   },
   {

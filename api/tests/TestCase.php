@@ -130,6 +130,12 @@ abstract class TestCase extends BaseTestCase
         return [$this->asUser($user), $user];
     }
 
+    protected function asGovernanceOfficer(?Tenant $tenant = null): array
+    {
+        $user = $this->makeGovernanceOfficer($tenant);
+        return [$this->asUser($user), $user];
+    }
+
     // ── Department helpers ───────────────────────────────────────────────────
 
     protected function makeDepartment(Tenant $tenant, ?int $parentId = null): Department

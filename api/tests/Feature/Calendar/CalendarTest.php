@@ -25,16 +25,16 @@ class CalendarTest extends TestCase
         [$http, $user] = $this->asAdmin();
 
         $response = $http->postJson('/api/v1/calendar/entries', [
-            'title'      => 'World Health Day',
-            'entry_date' => now()->addDays(30)->toDateString(),
-            'entry_type' => 'public_holiday',
-            'is_public'  => true,
+            'title'    => 'World Health Day',
+            'date'     => now()->addDays(30)->toDateString(),
+            'type'     => 'un_day',
+            'is_alert' => true,
         ]);
 
         $response->assertCreated();
         $this->assertDatabaseHas('calendar_entries', [
-            'title'      => 'World Health Day',
-            'entry_type' => 'public_holiday',
+            'title' => 'World Health Day',
+            'type'  => 'un_day',
         ]);
     }
 
@@ -43,7 +43,8 @@ class CalendarTest extends TestCase
         [$http] = $this->asAdmin();
 
         $http->postJson('/api/v1/calendar/entries', [
-            'entry_date' => now()->addDays(5)->toDateString(),
+            'date' => now()->addDays(5)->toDateString(),
+            'type' => 'sadc_holiday',
         ])->assertUnprocessable()
           ->assertJsonValidationErrors(['title']);
     }
@@ -54,22 +55,22 @@ class CalendarTest extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $entry = CalendarEntry::create([
-            'tenant_id'  => $tenant->id,
-            'title'      => 'Old Title',
-            'entry_date' => now()->addDays(10)->toDateString(),
-            'entry_type' => 'observance',
-            'is_public'  => false,
+            'tenant_id' => $tenant->id,
+            'title'     => 'Old Title',
+            'date'      => now()->addDays(10)->toDateString(),
+            'type'      => 'sadc_calendar',
+            'is_alert'  => false,
         ]);
 
         $http->putJson("/api/v1/calendar/entries/{$entry->id}", [
-            'title'     => 'Updated Title',
-            'is_public' => true,
+            'title'    => 'Updated Title',
+            'is_alert' => true,
         ])->assertOk();
 
         $this->assertDatabaseHas('calendar_entries', [
-            'id'        => $entry->id,
-            'title'     => 'Updated Title',
-            'is_public' => true,
+            'id'       => $entry->id,
+            'title'    => 'Updated Title',
+            'is_alert' => true,
         ]);
     }
 
@@ -79,11 +80,11 @@ class CalendarTest extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $entry = CalendarEntry::create([
-            'tenant_id'  => $tenant->id,
-            'title'      => 'Delete this',
-            'entry_date' => now()->addDays(15)->toDateString(),
-            'entry_type' => 'observance',
-            'is_public'  => false,
+            'tenant_id' => $tenant->id,
+            'title'     => 'Delete this',
+            'date'      => now()->addDays(15)->toDateString(),
+            'type'      => 'sadc_calendar',
+            'is_alert'  => false,
         ]);
 
         $http->deleteJson("/api/v1/calendar/entries/{$entry->id}")->assertOk();

@@ -59,11 +59,13 @@ class AssignmentsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $assignment = Assignment::create([
-            'tenant_id'  => $tenant->id,
-            'created_by' => $user->id,
-            'title'      => 'My assignment',
-            'status'     => 'pending',
-            'priority'   => 'medium',
+            'tenant_id'   => $tenant->id,
+            'created_by'  => $user->id,
+            'title'       => 'My assignment',
+            'description' => 'My assignment details.',
+            'due_date'    => now()->addDays(14)->toDateString(),
+            'status'      => 'draft',
+            'priority'    => 'medium',
         ]);
 
         $http->getJson("/api/v1/assignments/{$assignment->id}")->assertOk();
@@ -84,11 +86,13 @@ class AssignmentsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $assignment = Assignment::create([
-            'tenant_id'  => $tenant->id,
-            'created_by' => $user->id,
-            'title'      => 'Original',
-            'status'     => 'pending',
-            'priority'   => 'low',
+            'tenant_id'   => $tenant->id,
+            'created_by'  => $user->id,
+            'title'       => 'Original',
+            'description' => 'Original description.',
+            'due_date'    => now()->addDays(14)->toDateString(),
+            'status'      => 'draft',
+            'priority'    => 'low',
         ]);
 
         $http->putJson("/api/v1/assignments/{$assignment->id}", [

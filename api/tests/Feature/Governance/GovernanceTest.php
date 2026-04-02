@@ -170,8 +170,6 @@ class GovernanceTest extends TestCase
         $tenantB = Tenant::factory()->create();
 
         [$httpA] = $this->asGovernanceOfficer($tenantA);
-        [$httpB] = $this->asGovernanceOfficer($tenantB);
-
         $resA = $httpA->postJson('/api/v1/governance/resolutions', [
             'reference_number' => 'RES-A-001',
             'title'            => 'Tenant A Resolution',
@@ -179,6 +177,8 @@ class GovernanceTest extends TestCase
             'description'      => 'Tenant A only.',
         ]);
         $idA = $resA->json('data.id');
+
+        [$httpB] = $this->asGovernanceOfficer($tenantB);
 
         // Tenant B should not see Tenant A's resolution
         $httpB->getJson("/api/v1/governance/resolutions/{$idA}")

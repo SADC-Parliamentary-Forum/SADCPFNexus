@@ -33,8 +33,8 @@ class ProgrammesTest extends TestCase
 
         $response->assertCreated();
         $this->assertDatabaseHas('programmes', [
-            'title'       => 'SRHR Advocacy Programme 2026',
-            'requester_id'=> $user->id,
+            'title'      => 'SRHR Advocacy Programme 2026',
+            'created_by' => $user->id,
         ]);
     }
 
@@ -61,10 +61,11 @@ class ProgrammesTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $programme = Programme::create([
-            'tenant_id'    => $tenant->id,
-            'requester_id' => $user->id,
-            'title'        => 'Test Programme',
-            'status'       => 'draft',
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $user->id,
+            'reference_number' => 'PIF-' . uniqid(),
+            'title'            => 'Test Programme',
+            'status'           => 'draft',
         ]);
 
         $http->getJson("/api/v1/programmes/{$programme->id}")->assertOk();
@@ -76,10 +77,11 @@ class ProgrammesTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $programme = Programme::create([
-            'tenant_id'    => $tenant->id,
-            'requester_id' => $user->id,
-            'title'        => 'Old Title',
-            'status'       => 'draft',
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $user->id,
+            'reference_number' => 'PIF-' . uniqid(),
+            'title'            => 'Old Title',
+            'status'           => 'draft',
         ]);
 
         $http->putJson("/api/v1/programmes/{$programme->id}", [
@@ -98,10 +100,11 @@ class ProgrammesTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $programme = Programme::create([
-            'tenant_id'    => $tenant->id,
-            'requester_id' => $user->id,
-            'title'        => 'Submit Me',
-            'status'       => 'draft',
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $user->id,
+            'reference_number' => 'PIF-' . uniqid(),
+            'title'            => 'Submit Me',
+            'status'           => 'draft',
         ]);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/submit")
@@ -120,10 +123,11 @@ class ProgrammesTest extends TestCase
         $staff = $this->makeUser('staff', $tenant);
 
         $programme = Programme::create([
-            'tenant_id'    => $tenant->id,
-            'requester_id' => $staff->id,
-            'title'        => 'Approve Me',
-            'status'       => 'submitted',
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $staff->id,
+            'reference_number' => 'PIF-' . uniqid(),
+            'title'            => 'Approve Me',
+            'status'           => 'submitted',
         ]);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/approve")

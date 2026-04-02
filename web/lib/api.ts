@@ -989,12 +989,18 @@ export interface ProcurementRequest {
   budget_line: string | null;
   justification: string | null;
   required_by_date: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled";
+  status: "draft" | "submitted" | "hod_approved" | "hod_rejected" | "budget_reserved" | "approved" | "rejected" | "cancelled" | "awarded";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
+  awarded_quote_id: number | null;
+  awarded_at: string | null;
+  award_notes: string | null;
+  hod_id: number | null;
+  hod_reviewed_at: string | null;
   requester?: User;
   approver?: User;
+  hod?: User;
   items?: ProcurementItem[];
   quotes?: ProcurementQuote[];
 }
@@ -1014,6 +1020,35 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/reject`, { reason }),
+  award: (id: number, quoteId: number, awardNotes?: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, { quote_id: quoteId, award_notes: awardNotes }),
+  hodApprove: (id: number) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-approve`),
+  hodReject: (id: number, reason: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-reject`, { reason }),
+};
+
+export interface BudgetReservation {
+  id: number;
+  procurement_request_id: number;
+  reserved_by: number;
+  budget_line: string;
+  reserved_amount: number;
+  currency: string;
+  notes: string | null;
+  released_at: string | null;
+  released_by: number | null;
+  created_at: string;
+  procurement_request?: ProcurementRequest;
+}
+
+export const budgetReservationsApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<BudgetReservation>>("/procurement/budget-reservations", { params }),
+  reserve: (requestId: number, data: { budget_line: string; reserved_amount: number; currency?: string; notes?: string }) =>
+    api.post<{ data: BudgetReservation; message: string }>(`/procurement/requests/${requestId}/reserve-budget`, data),
+  release: (reservationId: number) =>
+    api.delete<{ data: BudgetReservation; message: string }>(`/procurement/budget-reservations/${reservationId}`),
 };
 
 export interface Vendor {
@@ -1061,6 +1096,211 @@ export const vendorsApi = {
     api.put<{ data: Vendor; message: string }>(`/procurement/vendors/${id}`, data),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/procurement/vendors/${id}`),
+  approve: (id: number) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
+};
+
+// ─── Purchase Orders ─────────────────────────────────────────────────────────
+
+export interface PurchaseOrderItem {
+  id: number;
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface PurchaseOrder {
+  id: number;
+  reference_number: string;
+  title: string;
+  description: string | null;
+  delivery_address: string | null;
+  payment_terms: string;
+  total_amount: number;
+  currency: string;
+  status: "draft" | "issued" | "partially_received" | "received" | "invoiced" | "closed" | "cancelled";
+  issued_at: string | null;
+  expected_delivery_date: string | null;
+  cancellation_reason: string | null;
+  vendor?: Vendor;
+  items?: PurchaseOrderItem[];
+  procurement_request?: ProcurementRequest;
+  created_at?: string;
+}
+
+export interface GoodsReceiptItem {
+  id: number;
+  purchase_order_item_id: number;
+  quantity_ordered: number;
+  quantity_received: number;
+  quantity_accepted: number;
+  condition_notes: string | null;
+  purchase_order_item?: PurchaseOrderItem;
+}
+
+export interface GoodsReceiptNote {
+  id: number;
+  reference_number: string;
+  purchase_order_id: number;
+  received_date: string;
+  delivery_note_number: string | null;
+  notes: string | null;
+  status: "pending" | "inspected" | "accepted" | "rejected";
+  items?: GoodsReceiptItem[];
+  purchase_order?: PurchaseOrder;
+  received_by?: { id: number; name: string };
+  created_at?: string;
+}
+
+export const purchaseOrdersApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<PurchaseOrder>>("/procurement/purchase-orders", { params }),
+  get: (id: number) =>
+    api.get<{ data: PurchaseOrder }>(`/procurement/purchase-orders/${id}`),
+  create: (data: Partial<PurchaseOrder> & { procurement_request_id: number; vendor_id: number; items?: Partial<PurchaseOrderItem>[] }) =>
+    api.post<{ data: PurchaseOrder; message: string }>("/procurement/purchase-orders", data),
+  update: (id: number, data: Partial<PurchaseOrder>) =>
+    api.put<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}`, data),
+  issue: (id: number) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/issue`),
+  cancel: (id: number, reason: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
+};
+
+export const goodsReceiptsApi = {
+  listAll: (params?: { status?: string; po_id?: number }) =>
+    api.get<{ data: GoodsReceiptNote[] }>("/procurement/receipts", { params }),
+  list: (poId: number) =>
+    api.get<{ data: GoodsReceiptNote[] }>(`/procurement/purchase-orders/${poId}/receipts`),
+  get: (poId: number, grnId: number) =>
+    api.get<{ data: GoodsReceiptNote }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}`),
+  create: (poId: number, data: { received_date: string; notes?: string; items: { purchase_order_item_id: number; quantity_received: number; quantity_accepted?: number }[] }) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts`, data),
+  accept: (poId: number, grnId: number) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/accept`),
+  reject: (poId: number, grnId: number, reason: string) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/reject`, { reason }),
+};
+
+// ─── Procurement — Invoices ───────────────────────────────────────────────────
+
+export interface Invoice {
+  id: number;
+  tenant_id: number;
+  purchase_order_id: number;
+  goods_receipt_note_id: number | null;
+  vendor_id: number;
+  reference_number: string;
+  vendor_invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  amount: number;
+  currency: string;
+  status: "received" | "matched" | "approved" | "rejected" | "paid";
+  match_status: "pending" | "matched" | "variance";
+  match_notes: string | null;
+  rejection_reason: string | null;
+  reviewed_by?: { id: number; name: string } | null;
+  reviewed_at: string | null;
+  vendor?: Vendor;
+  purchase_order?: PurchaseOrder;
+  goods_receipt_note?: GoodsReceiptNote;
+  created_at?: string;
+}
+
+export const invoicesApi = {
+  list: (params?: { status?: string }) =>
+    api.get<{ data: Invoice[] }>("/procurement/invoices", { params }),
+  get: (id: number) =>
+    api.get<{ data: Invoice }>(`/procurement/invoices/${id}`),
+  create: (data: {
+    purchase_order_id: number;
+    vendor_id: number;
+    goods_receipt_note_id?: number;
+    vendor_invoice_number: string;
+    invoice_date: string;
+    due_date: string;
+    amount: number;
+    currency?: string;
+  }) =>
+    api.post<{ data: Invoice; message: string }>("/procurement/invoices", data),
+  approve: (id: number) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/approve`),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/reject`, { reason }),
+};
+
+// ─── Procurement — Contracts ─────────────────────────────────────────────────
+
+export interface Contract {
+  id: number;
+  tenant_id: number;
+  procurement_request_id: number | null;
+  vendor_id: number;
+  purchase_order_id: number | null;
+  reference_number: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  value: number;
+  currency: string;
+  status: "draft" | "active" | "completed" | "terminated";
+  signed_at: string | null;
+  terminated_at: string | null;
+  termination_reason: string | null;
+  is_expired: boolean;
+  is_expiring_soon: boolean;
+  vendor?: Vendor;
+  procurement_request?: { id: number; reference_number: string; title: string };
+  created_at?: string;
+}
+
+export const contractsApi = {
+  list: (params?: { status?: string }) =>
+    api.get<{ data: Contract[] }>("/procurement/contracts", { params }),
+  get: (id: number) =>
+    api.get<{ data: Contract }>(`/procurement/contracts/${id}`),
+  create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
+    api.post<{ data: Contract; message: string }>("/procurement/contracts", data),
+  activate: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/activate`),
+  terminate: (id: number, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/terminate`, { reason }),
+  destroy: (id: number) =>
+    api.delete<{ message: string }>(`/procurement/contracts/${id}`),
+};
+
+// ─── Procurement — Analytics ──────────────────────────────────────────────────
+
+export interface ProcurementSummary {
+  total_requests: number;
+  total_spend: number;
+  avg_cycle_time_days: number;
+  active_contracts: number;
+}
+
+export interface ProcurementFlag {
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  message: string;
+  vendor_id?: number;
+  request_id?: number;
+}
+
+export const procurementAnalyticsApi = {
+  summary: () =>
+    api.get<{ data: ProcurementSummary }>("/procurement/analytics/summary"),
+  spendByCategory: () =>
+    api.get<{ data: { category: string; total: number }[] }>("/procurement/analytics/spend-by-category"),
+  vendorPerformance: () =>
+    api.get<{ data: { vendor_id: number; vendor_name: string; po_count: number; total_value: number }[] }>("/procurement/analytics/vendor-performance"),
+  flags: () =>
+    api.get<{ data: ProcurementFlag[] }>("/procurement/analytics/flags"),
 };
 
 // ─── Finance (Salary Advances) ───────────────────────────────────────────────

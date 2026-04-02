@@ -38,7 +38,7 @@ class CorrespondenceContactController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->checkPerm($request, 'correspondence.admin');
+        $this->checkPerm($request, 'correspondence.create');
         $data = $request->validate([
             'full_name'        => ['required', 'string', 'max:255'],
             'organization'     => ['nullable', 'string', 'max:255'],

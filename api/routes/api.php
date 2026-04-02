@@ -28,13 +28,13 @@ Route::prefix('v1')->group(function () {
         [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'preview']
     )->middleware('throttle:20,1');
 
+    // Public external integration endpoints (no auth required)
+    Route::prefix('external')->group(function () {
+        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
+    });
+
     // Authenticated routes
     Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
-
-        // External Integrations APIs (authenticated — requires valid Bearer token)
-        Route::prefix('external')->group(function () {
-            Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
-        });
 
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -219,13 +219,60 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Procurement\ProcurementController::class)
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');
-            Route::post('requests/{procurementRequest}/submit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
-            Route::post('requests/{procurementRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
-            Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/submit',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
+            Route::post('requests/{procurementRequest}/hod-approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodApprove']);
+            Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
+            Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
+            Route::post('requests/{procurementRequest}/reject',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
+            Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
+
+            // Budget Reservations
+            Route::get('budget-reservations', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'index']);
+            Route::delete('budget-reservations/{budgetReservation}', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'destroy']);
 
             // Vendors
             Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)
                 ->names('procurement.vendors');
+            Route::post('vendors/{vendor}/approve', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
+            Route::post('vendors/{vendor}/reject',  [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+
+            // Purchase Orders
+            Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
+                ->parameters(['purchase-orders' => 'purchaseOrder'])
+                ->names('procurement.purchase-orders');
+            Route::post('purchase-orders/{purchaseOrder}/issue',  [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
+            Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'cancel']);
+
+            // Invoices
+            Route::apiResource('invoices', \App\Http\Controllers\Api\V1\Procurement\InvoiceController::class)
+                ->only(['index', 'show', 'store']);
+            Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'approve']);
+            Route::post('invoices/{invoice}/reject',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
+
+            // Contracts
+            Route::apiResource('contracts', \App\Http\Controllers\Api\V1\Procurement\ContractController::class)
+                ->only(['index', 'show', 'store', 'destroy']);
+            Route::post('contracts/{contract}/activate',  [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'activate']);
+            Route::post('contracts/{contract}/terminate', [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'terminate']);
+
+            // Analytics
+            Route::prefix('analytics')->group(function () {
+                Route::get('summary',            [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'summary']);
+                Route::get('spend-by-category',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'spendByCategory']);
+                Route::get('vendor-performance', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'vendorPerformance']);
+                Route::get('flags',              [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'flags']);
+            });
+
+            // Goods Receipts — top-level listing
+            Route::get('receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'indexAll']);
+
+            // Goods Receipts (nested under POs)
+            Route::get('purchase-orders/{purchaseOrder}/receipts',             [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'index']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts',            [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'store']);
+            Route::get('purchase-orders/{purchaseOrder}/receipts/{receipt}',   [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'show']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/accept', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'accept']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/reject', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'reject']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

@@ -229,7 +229,7 @@ class SrhrModuleTest extends TestCase
         $tenant     = Tenant::factory()->create();
         $parliament = Parliament::factory()->create(['tenant_id' => $tenant->id]);
         $researcher = $this->makeUser('Field Researcher', $tenant);
-        [$adminHttp] = $this->asAdmin($tenant);
+        [$adminHttp, $admin] = $this->asAdmin($tenant);
 
         $deployment = StaffDeployment::create([
             'tenant_id'             => $tenant->id,
@@ -256,6 +256,9 @@ class SrhrModuleTest extends TestCase
         $create->assertCreated();
         $reportId = $create->json('data.id');
         $researcherHttp->postJson("/api/v1/srhr/reports/{$reportId}/submit")->assertOk();
+
+        // Re-authenticate as admin (asUser($researcher) overrides global Sanctum auth)
+        $this->asUser($admin);
 
         // Admin acknowledges
         $adminHttp->postJson("/api/v1/srhr/reports/{$reportId}/acknowledge")
