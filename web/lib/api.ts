@@ -3422,6 +3422,7 @@ export interface RiskHistory {
   hash: string | null;
   created_at: string;
   actor?: User;
+  risk?: { id: number; risk_code: string; title: string };
 }
 
 export interface RiskMatrixCell {
@@ -3439,6 +3440,44 @@ export interface RiskMatrixData {
   by_risk_level: Record<RiskLevel, number>;
   by_category: Record<RiskCategory, number>;
   totals: { total: number; open: number; overdue_actions: number };
+}
+
+export interface RiskDashboardKpis {
+  open: number;
+  critical: number;
+  high: number;
+  overdue_actions: number;
+  escalated: number;
+  reviews_due: number;
+}
+
+export interface RiskDepartmentExposure {
+  department_id: number | null;
+  department_name: string;
+  total: number;
+  critical: number;
+  high: number;
+  overdue_actions: number;
+}
+
+export interface RiskDashboardData {
+  kpis: RiskDashboardKpis;
+  by_department: RiskDepartmentExposure[];
+  recent_activity: Array<{
+    id: number;
+    risk_id: number;
+    risk_code: string;
+    change_type: string;
+    actor_name: string;
+    created_at: string;
+  }>;
+  escalated_risks: Array<{
+    id: number;
+    risk_code: string;
+    title: string;
+    risk_level: string;
+    escalation_level: string;
+  }>;
 }
 
 export const riskApi = {
@@ -3486,4 +3525,10 @@ export const riskApi = {
   // Matrix
   getMatrix: (params?: { exclude_closed?: boolean }) =>
     api.get<{ data: RiskMatrixData }>("/risk/matrix", { params }),
+
+  // Dashboard & Audit Trail
+  getDashboard: () =>
+    api.get<{ data: RiskDashboardData }>("/risk/dashboard"),
+  getAuditTrail: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<RiskHistory>>("/risk/audit-trail", { params }),
 };

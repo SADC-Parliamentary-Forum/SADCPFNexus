@@ -234,4 +234,22 @@ class RiskController extends Controller
 
         return response()->json(['data' => $history]);
     }
+
+    public function auditTrail(Request $request): JsonResponse
+    {
+        $perPage = min((int) ($request->per_page ?? 25), 100);
+
+        $results = \App\Models\RiskHistory::with([
+                'risk:id,risk_code,title',
+                'actor:id,name',
+            ])
+            ->whereHas('risk', fn($q) => $q->where('tenant_id', $request->user()->tenant_id))
+            ->when($request->filled('change_type'), fn($q) => $q->where('change_type', $request->change_type))
+            ->when($request->filled('date_from'),   fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->filled('date_to'),     fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json($results);
+    }
 }

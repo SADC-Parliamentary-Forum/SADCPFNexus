@@ -621,7 +621,9 @@ Route::prefix('v1')->group(function () {
 
         // Risk Register Module
         Route::prefix('risk')->group(function () {
-            Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
+            Route::get('dashboard',   [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
+            Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
+            Route::get('matrix',      [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
             Route::apiResource('risks', \App\Http\Controllers\Api\V1\Risk\RiskController::class);
             Route::post('risks/{risk}/submit',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
             Route::post('risks/{risk}/start-review', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'startReview']);

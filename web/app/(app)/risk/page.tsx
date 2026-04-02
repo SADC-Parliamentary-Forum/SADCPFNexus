@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,13 @@ const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
   security:      { icon: "security",         color: "text-red-600"     },
   other:         { icon: "more_horiz",       color: "text-neutral-500" },
 };
+
+function residualLevel(s: number): string {
+  if (s >= 16) return "critical";
+  if (s >= 11) return "high";
+  if (s >= 6)  return "medium";
+  return "low";
+}
 
 // Heat-map cell colour by zone
 function cellBg(score: number): string {
@@ -93,10 +101,30 @@ export default function RiskRegisterPage() {
           <h1 className="page-title">Risk Register</h1>
           <p className="page-subtitle">Institutional risk management — identify, assess, and mitigate risks across all departments.</p>
         </div>
-        <Link href="/risk/create" className="btn-primary flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Log Risk
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportToCsv("risk-register", displayRisks.map((r) => ({
+              code:            r.risk_code,
+              title:           r.title,
+              category:        r.category,
+              inherent_score:  r.inherent_score,
+              risk_level:      r.risk_level,
+              residual_score:  r.residual_likelihood != null && r.residual_impact != null ? r.residual_likelihood * r.residual_impact : "",
+              status:          r.status,
+              owner:           r.riskOwner?.name ?? "",
+              next_review:     r.next_review_date ?? "",
+            })))}
+            disabled={displayRisks.length === 0}
+            className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export
+          </button>
+          <Link href="/risk/create" className="btn-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Log Risk
+          </Link>
+        </div>
       </div>
 
       {isError && (
@@ -294,9 +322,11 @@ export default function RiskRegisterPage() {
                 <th>Code</th>
                 <th>Title</th>
                 <th>Category</th>
-                <th>Score</th>
+                <th>Inherent Score</th>
+                <th>Residual Score</th>
                 <th>Level</th>
                 <th>Status</th>
+                <th>Next Review</th>
                 <th>Owner</th>
                 <th>Updated</th>
               </tr>
@@ -330,6 +360,17 @@ export default function RiskRegisterPage() {
                       </span>
                     </td>
                     <td>
+                      {risk.residual_likelihood != null && risk.residual_impact != null ? (() => {
+                        const rs = risk.residual_likelihood * risk.residual_impact;
+                        const rl = LEVEL_CONFIG[residualLevel(rs)];
+                        return (
+                          <span className={`inline-flex items-center justify-center h-6 w-8 rounded text-xs font-bold border ${rl.bg} ${rl.cls}`}>
+                            {rs}
+                          </span>
+                        );
+                      })() : <span className="text-xs text-neutral-300">—</span>}
+                    </td>
+                    <td>
                       <span className={`text-xs font-semibold ${level.cls}`}>{level.label}</span>
                     </td>
                     <td>
@@ -337,6 +378,9 @@ export default function RiskRegisterPage() {
                         <span className="material-symbols-outlined text-[11px]">{status.icon}</span>
                         {status.label}
                       </span>
+                    </td>
+                    <td>
+                      <span className="text-xs text-neutral-400">{risk.next_review_date ? formatDateShort(risk.next_review_date) : "—"}</span>
                     </td>
                     <td>
                       <span className="text-xs text-neutral-500">{risk.riskOwner?.name ?? "—"}</span>

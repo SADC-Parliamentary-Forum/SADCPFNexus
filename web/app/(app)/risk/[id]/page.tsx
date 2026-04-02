@@ -185,6 +185,25 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   const statusCfg = STATUS_CONFIG[risk.status] ?? STATUS_CONFIG.draft;
   const levelCfg  = LEVEL_CONFIG[risk.risk_level] ?? LEVEL_CONFIG.low;
 
+  const WORKFLOW_STEPS = [
+    { key: "draft",      label: "Draft"      },
+    { key: "submitted",  label: "Submitted"  },
+    { key: "reviewed",   label: "Reviewed"   },
+    { key: "approved",   label: "Approved"   },
+    { key: "monitoring", label: "Monitoring" },
+    { key: "escalated",  label: "Escalated"  },
+    { key: "closed",     label: "Closed"     },
+    { key: "archived",   label: "Archived"   },
+  ];
+  const currentStepIdx = WORKFLOW_STEPS.findIndex((s) => s.key === risk.status);
+
+  const EFFECTIVENESS_TILES = [
+    { key: "none",     label: "None",     active: "bg-red-100 border-red-400 text-red-700"     },
+    { key: "partial",  label: "Partial",  active: "bg-yellow-100 border-yellow-400 text-yellow-700" },
+    { key: "adequate", label: "Adequate", active: "bg-blue-100 border-blue-400 text-blue-700"  },
+    { key: "strong",   label: "Strong",   active: "bg-green-100 border-green-400 text-green-700" },
+  ];
+
   // Role-based action availability
   const canReview    = hasRole(currentUser, "HOD", "Director", "Governance Officer", "Internal Auditor", "System Admin", "super-admin");
   const canApprove   = hasRole(currentUser, "Director", "Secretary General", "System Admin", "super-admin");
@@ -201,6 +220,34 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
         <Link href="/risk" className="hover:text-primary">Risk Register</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="font-mono text-xs text-neutral-600">{risk.risk_code}</span>
+      </div>
+
+      {/* Status stepper */}
+      <div className="card px-5 py-4 overflow-x-auto">
+        <div className="flex items-center min-w-max gap-0">
+          {WORKFLOW_STEPS.map((step, idx) => {
+            const isPast    = idx < currentStepIdx;
+            const isCurrent = idx === currentStepIdx;
+            const isFuture  = idx > currentStepIdx;
+            return (
+              <div key={step.key} className="flex items-center">
+                <div className="flex flex-col items-center gap-1">
+                  <div className={`h-7 w-7 rounded-full flex items-center justify-center border-2 transition-all ${isCurrent ? "bg-primary border-primary text-white" : isPast ? "bg-primary/20 border-primary/40 text-primary" : "bg-neutral-100 border-neutral-200 text-neutral-400"}`}>
+                    {isPast
+                      ? <span className="material-symbols-outlined text-[13px]">check</span>
+                      : <span className="text-[10px] font-bold">{idx + 1}</span>}
+                  </div>
+                  <span className={`text-[10px] font-medium whitespace-nowrap ${isCurrent ? "text-primary" : isFuture ? "text-neutral-300" : "text-neutral-500"}`}>
+                    {step.label}
+                  </span>
+                </div>
+                {idx < WORKFLOW_STEPS.length - 1 && (
+                  <div className={`h-0.5 w-8 mx-1 mb-4 rounded ${isPast ? "bg-primary/40" : "bg-neutral-200"}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Header card */}
@@ -458,6 +505,23 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className={`mt-3 rounded-lg border px-3 py-2.5 text-center text-sm font-bold ${levelCfg.cls}`}>
               {levelCfg.label} Risk
+            </div>
+            {/* Control effectiveness read-only tiles */}
+            <div className="mt-4 pt-4 border-t border-neutral-100">
+              <p className="text-xs text-neutral-400 font-medium mb-2">Control Effectiveness</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {EFFECTIVENESS_TILES.map((tile) => {
+                  const isActive = risk.control_effectiveness === tile.key;
+                  return (
+                    <div
+                      key={tile.key}
+                      className={`rounded-lg border px-2 py-1.5 text-center text-xs font-semibold transition-all ${isActive ? tile.active : "bg-neutral-50 border-neutral-200 text-neutral-300"}`}
+                    >
+                      {tile.label}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
