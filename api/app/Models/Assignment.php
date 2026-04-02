@@ -8,10 +8,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Assignment extends Model
 {
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->reference_number)) {
+                $model->reference_number = 'ASN-' . strtoupper(Str::random(8));
+            }
+        });
+    }
 
     protected $fillable = [
         'tenant_id',

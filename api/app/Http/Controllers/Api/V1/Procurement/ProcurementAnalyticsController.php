@@ -110,7 +110,7 @@ class ProcurementAnalyticsController extends Controller
             ->join('procurement_quotes', 'procurement_quotes.id', '=', 'procurement_requests.awarded_quote_id')
             ->select('procurement_quotes.vendor_id', DB::raw('COUNT(*) as award_count'))
             ->groupBy('procurement_quotes.vendor_id')
-            ->having('award_count', '>', 3)
+            ->havingRaw('COUNT(*) > 3')
             ->get();
 
         foreach ($repeatedVendors as $rv) {

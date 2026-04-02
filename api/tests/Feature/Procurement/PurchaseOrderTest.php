@@ -69,7 +69,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'IT Equipment', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'IT Equipment', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
@@ -93,7 +93,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
@@ -112,7 +112,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'approved',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'approved',
         ]);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'Vendor', 'is_approved' => true, 'is_active' => true]);
 
@@ -139,7 +139,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
@@ -159,7 +159,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
@@ -183,7 +183,7 @@ class PurchaseOrderTest extends TestCase
         $staff  = $this->makeUser('staff', $tenant);
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
@@ -208,7 +208,7 @@ class PurchaseOrderTest extends TestCase
         $staff = $this->makeUser('staff', $tenantA);
         $req   = ProcurementRequest::create([
             'tenant_id' => $tenantA->id, 'requester_id' => $staff->id,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         [$vendor, $quote] = $this->makeVendorAndQuote($tenantA, $req);
         $req->update(['awarded_quote_id' => $quote->id]);

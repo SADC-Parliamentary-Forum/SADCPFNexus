@@ -64,25 +64,33 @@ class AnalyticsTest extends TestCase
 
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'Dominant Supplier', 'is_approved' => true, 'is_active' => true]);
 
-        // Create 4 awarded requests for the same vendor in the past 12 months
+        // Create 4 awarded requests for the same vendor (each with a linked quote)
         foreach (range(1, 4) as $i) {
-            ProcurementRequest::create([
-                'tenant_id'        => $tenant->id,
-                'requester_id'     => $user->id,
-                'title'            => "Request $i",
-                'description'      => 'Test',
-                'category'         => 'goods',
-                'estimated_value'  => 10000,
-                'currency'         => 'NAD',
-                'status'           => 'awarded',
-                'awarded_at'       => now()->subMonths($i),
-                'awarded_quote_id' => null,
+            $req = ProcurementRequest::create([
+                'tenant_id'       => $tenant->id,
+                'requester_id'    => $user->id,
+                'title'           => "Request $i",
+                'description'     => 'Test',
+                'category'        => 'goods',
+                'estimated_value' => 10000,
+                'currency'        => 'NAD',
+                'status'          => 'awarded',
+                'awarded_at'      => now()->subMonths($i),
             ]);
+            $quote = $req->quotes()->create([
+                'vendor_id'     => $vendor->id,
+                'vendor_name'   => $vendor->name,
+                'quoted_amount' => 10000,
+                'currency'      => 'NAD',
+            ]);
+            $req->update(['awarded_quote_id' => $quote->id]);
         }
 
         $response = $http->getJson('/api/v1/procurement/analytics/flags')->assertOk();
         $flags = $response->json('data');
-        // At least one flag should exist
+        // repeated_award flag should fire for vendor awarded 4 times
         $this->assertNotEmpty($flags);
+        $types = array_column($flags, 'type');
+        $this->assertContains('repeated_award', $types);
     }
 }

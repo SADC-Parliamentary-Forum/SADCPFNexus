@@ -83,12 +83,14 @@ class ProcurementAwardTest extends TestCase
         $vendor = $this->makeApprovedVendor($tenant);
 
         $req = ProcurementRequest::create([
-            'tenant_id'    => $tenant->id,
-            'requester_id' => $staff->id,
-            'title'        => 'Test Request',
-            'description'  => 'Test',
-            'category'     => 'goods',
-            'status'       => 'submitted',
+            'tenant_id'       => $tenant->id,
+            'requester_id'    => $staff->id,
+            'title'           => 'Test Request',
+            'description'     => 'Test',
+            'category'        => 'goods',
+            'estimated_value' => 10000,
+            'currency'        => 'NAD',
+            'status'          => 'submitted',
         ]);
         $quote = $this->makeQuote($req, $vendor);
 

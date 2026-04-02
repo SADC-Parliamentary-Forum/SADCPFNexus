@@ -60,7 +60,7 @@ class AnalyticsController extends Controller
             ->pluck('count', 'status');
 
         // Top 5 requesters — resolve user names via a separate lookup to avoid aliased-column eager-load issues
-        $requesterCol = $modelClass === LeaveRequest::class ? 'user_id' : 'requester_id';
+        $requesterCol = 'requester_id';
         $topRaw = (clone $baseQuery)
             ->select($requesterCol, DB::raw('COUNT(*) as count'))
             ->groupBy($requesterCol)

@@ -19,7 +19,7 @@ class GoodsReceiptTest extends TestCase
         ]);
         $req = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $requesterId,
-            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'status' => 'awarded',
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
         ]);
         $po = PurchaseOrder::create([
             'tenant_id'              => $tenant->id,
@@ -155,6 +155,7 @@ class GoodsReceiptTest extends TestCase
         $req    = ProcurementRequest::create([
             'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
             'title' => 'T', 'description' => 'D', 'category' => 'goods', 'status' => 'awarded',
+            'estimated_value' => 1000, 'currency' => 'NAD',
         ]);
         $po = PurchaseOrder::create([
             'tenant_id' => $tenant->id, 'procurement_request_id' => $req->id,

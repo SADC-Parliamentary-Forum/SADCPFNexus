@@ -10,6 +10,9 @@ class AuditLogController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        if (!$user->isSystemAdmin() && !$user->hasAnyRole(['System Admin', 'Secretary General', 'External Auditor'])) {
+            abort(403);
+        }
         $query = AuditLog::where('tenant_id', $user->tenant_id)
             ->with('user:id,name,email')
             ->orderByDesc('created_at');

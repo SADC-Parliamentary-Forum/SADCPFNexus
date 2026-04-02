@@ -18,6 +18,11 @@ class WorkplanEventTypeController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        if (!$user->isSystemAdmin() && !$user->hasAnyRole(['System Admin', 'Governance Officer', 'HR Administrator'])) {
+            abort(403);
+        }
+
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:64'],
             'icon'       => ['nullable', 'string', 'max:64'],

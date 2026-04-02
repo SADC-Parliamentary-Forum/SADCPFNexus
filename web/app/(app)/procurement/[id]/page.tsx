@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
+import axios from "axios";
 
 function getStoredUser(): { roles?: string[] } | null {
   try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
@@ -14,12 +15,19 @@ function canAward(user: { roles?: string[] } | null): boolean {
   return (user?.roles ?? []).some((r) => allowed.includes(r));
 }
 
+function isHOD(user: { roles?: string[] } | null): boolean {
+  return (user?.roles ?? []).some((r) => ["HOD", "System Admin", "super-admin"].includes(r));
+}
+
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:  { label: "Approved",  cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"  },
-  submitted: { label: "Pending",   cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"       },
-  rejected:  { label: "Rejected",  cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"        },
-  draft:     { label: "Draft",     cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"     },
-  awarded:   { label: "Awarded",   cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"  },
+  approved:       { label: "Approved",        cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"    },
+  submitted:      { label: "Pending Review",  cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"         },
+  hod_approved:   { label: "HOD Approved",    cls: "text-teal-700 bg-teal-50 border-teal-200",           icon: "supervisor_account" },
+  hod_rejected:   { label: "HOD Rejected",    cls: "text-red-700 bg-red-50 border-red-200",              icon: "person_off"      },
+  budget_reserved:{ label: "Budget Reserved", cls: "text-indigo-700 bg-indigo-50 border-indigo-200",     icon: "savings"         },
+  rejected:       { label: "Rejected",        cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"          },
+  draft:          { label: "Draft",           cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"       },
+  awarded:        { label: "Awarded",         cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"    },
 };
 
 const categoryConfig: Record<string, { icon: string; color: string; bg: string }> = {
@@ -46,7 +54,8 @@ function SkeletonCard() {
   );
 }
 
-export default function ProcurementDetailPage({ params }: { params: { id: string } }) {
+export default function ProcurementDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: paramId } = use(params);
   const { fmt } = useFormatDate();
   const [request, setRequest]     = useState<ProcurementRequest | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -60,10 +69,16 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
   const [awarding, setAwarding]         = useState(false);
   const [awardError, setAwardError]     = useState<string | null>(null);
 
+  // HOD action state
+  const [hodAction, setHodAction]         = useState<"approve" | "reject" | null>(null);
+  const [hodRejReason, setHodRejReason]   = useState("");
+  const [hodWorking, setHodWorking]       = useState(false);
+  const [hodError, setHodError]           = useState<string | null>(null);
+
   useEffect(() => { setCurrentUser(getStoredUser()); }, []);
 
   useEffect(() => {
-    const id = Number(params.id);
+    const id = Number(paramId);
     if (!Number.isFinite(id)) {
       setError("Invalid request ID");
       setLoading(false);
@@ -73,7 +88,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
       .then((res) => setRequest(res.data))
       .catch(() => setError("Failed to load procurement request."))
       .finally(() => setLoading(false));
-  }, [params.id]);
+  }, [paramId]);
 
   async function handleAward() {
     if (!request || !awardQuoteId) return;
@@ -90,6 +105,25 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
       setAwardError(msg);
     } finally {
       setAwarding(false);
+    }
+  }
+
+  async function handleHodAction() {
+    if (!request) return;
+    setHodWorking(true);
+    setHodError(null);
+    try {
+      const res = hodAction === "approve"
+        ? await procurementApi.hodApprove(request.id)
+        : await procurementApi.hodReject(request.id, hodRejReason);
+      setRequest(res.data);
+      setHodAction(null);
+      setHodRejReason("");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Action failed." : "Action failed.";
+      setHodError(msg);
+    } finally {
+      setHodWorking(false);
     }
   }
 
@@ -145,7 +179,7 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${catInfo.color} bg-${catInfo.bg} border-neutral-200`}>
                 <span className={`material-symbols-outlined text-[12px] ${catInfo.color}`}>{catInfo.icon}</span>
-                {request.category}
+                {request.category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
                 <span className="material-symbols-outlined text-[12px]">gavel</span>
@@ -159,6 +193,25 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
+            {/* HOD action buttons — visible when submitted and current user is HOD */}
+            {request.status === "submitted" && isHOD(currentUser) && (
+              <>
+                <button
+                  onClick={() => { setHodAction("approve"); setHodError(null); }}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700 font-semibold transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">supervisor_account</span>
+                  HOD Approve
+                </button>
+                <button
+                  onClick={() => { setHodAction("reject"); setHodError(null); }}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 font-semibold transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">person_off</span>
+                  HOD Reject
+                </button>
+              </>
+            )}
             {request.status === "approved" && canAward(currentUser) && quotes.length > 0 && (
               <button
                 onClick={() => setShowAward(true)}
@@ -362,6 +415,73 @@ export default function ProcurementDetailPage({ params }: { params: { id: string
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Procurement
       </Link>
+
+      {/* HOD Approve / Reject Modal */}
+      {hodAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setHodAction(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-1">
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${hodAction === "approve" ? "bg-teal-50" : "bg-red-50"}`}>
+                <span className={`material-symbols-outlined text-[20px] ${hodAction === "approve" ? "text-teal-600" : "text-red-600"}`}>
+                  {hodAction === "approve" ? "supervisor_account" : "person_off"}
+                </span>
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-neutral-900">
+                  {hodAction === "approve" ? "HOD Approve Request" : "HOD Reject Request"}
+                </h2>
+                <p className="text-xs text-neutral-500">{request.reference_number}</p>
+              </div>
+            </div>
+
+            {hodError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">{hodError}</div>
+            )}
+
+            {hodAction === "reject" && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Rejection Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="form-input w-full h-24 resize-none"
+                  placeholder="Explain why this request is being rejected…"
+                  value={hodRejReason}
+                  onChange={(e) => setHodRejReason(e.target.value)}
+                />
+              </div>
+            )}
+
+            {hodAction === "approve" && (
+              <p className="text-sm text-neutral-600">
+                You are confirming HOD approval of <strong>{request.title}</strong>. This will forward the request for procurement review.
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <button
+                className="btn-secondary flex-1"
+                onClick={() => { setHodAction(null); setHodError(null); setHodRejReason(""); }}
+                disabled={hodWorking}
+              >
+                Cancel
+              </button>
+              <button
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors ${hodAction === "approve" ? "bg-teal-600 hover:bg-teal-700" : "bg-red-600 hover:bg-red-700"}`}
+                onClick={handleHodAction}
+                disabled={hodWorking || (hodAction === "reject" && !hodRejReason.trim())}
+              >
+                {hodWorking ? (
+                  <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-[14px]">{hodAction === "approve" ? "check" : "close"}</span>
+                )}
+                {hodWorking ? "Processing…" : hodAction === "approve" ? "Confirm Approval" : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Award Contract Modal */}
       {showAward && (

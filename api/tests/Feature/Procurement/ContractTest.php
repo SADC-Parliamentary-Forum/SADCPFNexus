@@ -15,11 +15,13 @@ class ContractTest extends TestCase
         return ProcurementRequest::create([
             'tenant_id'    => $tenant->id,
             'requester_id' => $userId,
-            'title'        => 'Security Services',
-            'description'  => 'Annual contract',
-            'category'     => 'services',
-            'status'       => 'awarded',
-            'awarded_at'   => now(),
+            'title'           => 'Security Services',
+            'description'     => 'Annual contract',
+            'category'        => 'services',
+            'estimated_value' => 120000,
+            'currency'        => 'NAD',
+            'status'          => 'awarded',
+            'awarded_at'      => now(),
         ]);
     }
 

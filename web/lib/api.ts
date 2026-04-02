@@ -989,15 +989,18 @@ export interface ProcurementRequest {
   budget_line: string | null;
   justification: string | null;
   required_by_date: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "awarded";
+  status: "draft" | "submitted" | "hod_approved" | "hod_rejected" | "budget_reserved" | "approved" | "rejected" | "cancelled" | "awarded";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
   awarded_quote_id: number | null;
   awarded_at: string | null;
   award_notes: string | null;
+  hod_id: number | null;
+  hod_reviewed_at: string | null;
   requester?: User;
   approver?: User;
+  hod?: User;
   items?: ProcurementItem[];
   quotes?: ProcurementQuote[];
 }
@@ -1019,6 +1022,33 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/reject`, { reason }),
   award: (id: number, quoteId: number, awardNotes?: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, { quote_id: quoteId, award_notes: awardNotes }),
+  hodApprove: (id: number) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-approve`),
+  hodReject: (id: number, reason: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-reject`, { reason }),
+};
+
+export interface BudgetReservation {
+  id: number;
+  procurement_request_id: number;
+  reserved_by: number;
+  budget_line: string;
+  reserved_amount: number;
+  currency: string;
+  notes: string | null;
+  released_at: string | null;
+  released_by: number | null;
+  created_at: string;
+  procurement_request?: ProcurementRequest;
+}
+
+export const budgetReservationsApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<BudgetReservation>>("/procurement/budget-reservations", { params }),
+  reserve: (requestId: number, data: { budget_line: string; reserved_amount: number; currency?: string; notes?: string }) =>
+    api.post<{ data: BudgetReservation; message: string }>(`/procurement/requests/${requestId}/reserve-budget`, data),
+  release: (reservationId: number) =>
+    api.delete<{ data: BudgetReservation; message: string }>(`/procurement/budget-reservations/${reservationId}`),
 };
 
 export interface Vendor {

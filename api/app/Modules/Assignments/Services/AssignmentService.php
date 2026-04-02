@@ -77,14 +77,16 @@ class AssignmentService
             });
         }
 
-        $total     = (clone $base)->count();
-        $active    = (clone $base)->whereIn('status', ['active', 'at_risk', 'blocked', 'delayed', 'accepted'])->count();
-        $overdue   = (clone $base)->whereNotIn('status', ['closed', 'cancelled'])->whereDate('due_date', '<', now())->count();
-        $due_soon  = (clone $base)->whereNotIn('status', ['closed', 'cancelled', 'completed'])->whereBetween('due_date', [now(), now()->addDays(7)])->count();
-        $awaiting  = (clone $base)->where('status', 'awaiting_acceptance')->count();
-        $blocked   = (clone $base)->where('status', 'blocked')->count();
-        $completed = (clone $base)->where('status', 'closed')->count();
-        $my_pending = Assignment::where('assigned_to', $user->id)
+        $total       = (clone $base)->count();
+        $pending     = (clone $base)->whereIn('status', ['draft', 'awaiting_acceptance'])->count();
+        $in_progress = (clone $base)->whereIn('status', ['active', 'at_risk', 'blocked', 'delayed', 'accepted'])->count();
+        $active      = $in_progress;
+        $overdue     = (clone $base)->whereNotIn('status', ['closed', 'cancelled'])->whereDate('due_date', '<', now())->count();
+        $due_soon    = (clone $base)->whereNotIn('status', ['closed', 'cancelled', 'completed'])->whereBetween('due_date', [now(), now()->addDays(7)])->count();
+        $awaiting    = (clone $base)->where('status', 'awaiting_acceptance')->count();
+        $blocked     = (clone $base)->where('status', 'blocked')->count();
+        $completed   = (clone $base)->where('status', 'closed')->count();
+        $my_pending  = Assignment::where('assigned_to', $user->id)
             ->whereIn('status', ['issued', 'awaiting_acceptance'])->count();
 
         // By priority
@@ -102,7 +104,7 @@ class AssignmentService
             ->pluck('count', 'status')
             ->toArray();
 
-        return compact('total', 'active', 'overdue', 'due_soon', 'awaiting', 'blocked', 'completed', 'my_pending', 'by_priority', 'by_status');
+        return compact('total', 'pending', 'in_progress', 'active', 'overdue', 'due_soon', 'awaiting', 'blocked', 'completed', 'my_pending', 'by_priority', 'by_status');
     }
 
     // ── CRUD ───────────────────────────────────────────────────────────────────

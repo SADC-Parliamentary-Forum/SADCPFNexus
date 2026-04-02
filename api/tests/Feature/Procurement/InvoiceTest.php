@@ -124,7 +124,7 @@ class InvoiceTest extends TestCase
         $po = PurchaseOrder::create([
             'tenant_id' => $tenant->id, 'vendor_id' => $vendor->id,
             'title' => 'PO', 'total_amount' => 1000, 'currency' => 'NAD',
-            'status' => 'received', 'created_by' => 1,
+            'status' => 'received', 'created_by' => null,
         ]);
 
         $http->postJson('/api/v1/procurement/invoices', [
@@ -225,7 +225,7 @@ class InvoiceTest extends TestCase
         $po = PurchaseOrder::create([
             'tenant_id' => $tenant->id, 'vendor_id' => $vendor->id,
             'title' => 'PO', 'total_amount' => 1000, 'currency' => 'NAD',
-            'status' => 'received', 'created_by' => 1,
+            'status' => 'received', 'created_by' => null,
         ]);
         $invoice = Invoice::create([
             'tenant_id' => $tenant->id, 'purchase_order_id' => $po->id, 'vendor_id' => $vendor->id,
@@ -250,7 +250,7 @@ class InvoiceTest extends TestCase
         $po2 = PurchaseOrder::create([
             'tenant_id' => $t2->id, 'vendor_id' => $vendor2->id,
             'title' => 'PO', 'total_amount' => 1000, 'currency' => 'NAD',
-            'status' => 'received', 'created_by' => 1,
+            'status' => 'received', 'created_by' => null,
         ]);
         $invoice2 = Invoice::create([
             'tenant_id' => $t2->id, 'purchase_order_id' => $po2->id, 'vendor_id' => $vendor2->id,

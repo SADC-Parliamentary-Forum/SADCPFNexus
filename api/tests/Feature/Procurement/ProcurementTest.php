@@ -179,6 +179,10 @@ class ProcurementTest extends TestCase
         $id = $create->json('data.id');
         $staffHttp->postJson("/api/v1/procurement/requests/{$id}/submit");
 
+        // HOD must approve first before procurement officer can approve
+        $hod = $this->makeUser('HOD', $tenant);
+        $this->asUser($hod)->postJson("/api/v1/procurement/requests/{$id}/hod-approve")->assertOk();
+
         [$procHttp] = $this->asProcurementOfficer($tenant);
 
         $procHttp->postJson("/api/v1/procurement/requests/{$id}/approve", [
