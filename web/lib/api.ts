@@ -3338,3 +3338,318 @@ export const researcherReportsApi = {
         URL.revokeObjectURL(url);
       }),
 };
+
+// ── Risk Register ──────────────────────────────────────────────────────────
+
+export type RiskStatus = "draft" | "submitted" | "reviewed" | "approved" | "monitoring" | "escalated" | "closed" | "archived";
+export type RiskLevel  = "low" | "medium" | "high" | "critical";
+export type RiskCategory = "strategic" | "operational" | "financial" | "compliance" | "reputational" | "security" | "other";
+export type RiskActionStatus = "planned" | "in_progress" | "completed" | "overdue";
+export type TreatmentType = "mitigate" | "accept" | "transfer" | "avoid";
+export type ControlEffectiveness = "none" | "partial" | "adequate" | "strong";
+export type EscalationLevel = "none" | "departmental" | "directorate" | "sg" | "committee";
+
+export interface Risk {
+  id: number;
+  risk_code: string;
+  title: string;
+  description: string;
+  category: RiskCategory;
+  likelihood: number;
+  impact: number;
+  inherent_score: number;
+  risk_level: RiskLevel;
+  residual_likelihood: number | null;
+  residual_impact: number | null;
+  residual_score: number | null;
+  control_effectiveness: ControlEffectiveness;
+  status: RiskStatus;
+  escalation_level: EscalationLevel;
+  review_frequency: "monthly" | "quarterly" | "bi_annual" | "annual" | null;
+  next_review_date: string | null;
+  review_notes: string | null;
+  closure_evidence: string | null;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  closed_at: string | null;
+  department_id: number | null;
+  risk_owner_id: number | null;
+  action_owner_id: number | null;
+  submitted_by: number;
+  reviewed_by: number | null;
+  approved_by: number | null;
+  closed_by: number | null;
+  created_at: string;
+  updated_at: string;
+  // relations
+  submitter?: User;
+  riskOwner?: User;
+  actionOwner?: User;
+  actions?: RiskAction[];
+  history?: RiskHistory[];
+  attachments?: RiskAttachment[];
+}
+
+export interface RiskAction {
+  id: number;
+  risk_id: number;
+  tenant_id: number;
+  created_by: number;
+  owner_id: number | null;
+  description: string;
+  action_plan: string | null;
+  treatment_type: TreatmentType;
+  due_date: string | null;
+  status: RiskActionStatus;
+  progress: number;
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+  creator?: User;
+  owner?: User;
+}
+
+export interface RiskHistory {
+  id: number;
+  risk_id: number;
+  actor_id: number;
+  change_type: string;
+  from_status: string | null;
+  to_status: string | null;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  notes: string | null;
+  hash: string | null;
+  created_at: string;
+  actor?: User;
+  risk?: { id: number; risk_code: string; title: string };
+}
+
+export interface RiskMatrixCell {
+  likelihood: number;
+  impact: number;
+  score: number;
+  zone: RiskLevel;
+  count: number;
+  risk_ids: number[];
+}
+
+export interface RiskMatrixData {
+  cells: RiskMatrixCell[];
+  by_status: Record<RiskStatus, number>;
+  by_risk_level: Record<RiskLevel, number>;
+  by_category: Record<RiskCategory, number>;
+  totals: { total: number; open: number; overdue_actions: number };
+}
+
+export interface RiskDashboardKpis {
+  open: number;
+  critical: number;
+  high: number;
+  overdue_actions: number;
+  escalated: number;
+  reviews_due: number;
+}
+
+export interface RiskDepartmentExposure {
+  department_id: number | null;
+  department_name: string;
+  total: number;
+  critical: number;
+  high: number;
+  overdue_actions: number;
+}
+
+export interface RiskDashboardData {
+  kpis: RiskDashboardKpis;
+  by_department: RiskDepartmentExposure[];
+  recent_activity: Array<{
+    id: number;
+    risk_id: number;
+    risk_code: string;
+    change_type: string;
+    actor_name: string;
+    created_at: string;
+  }>;
+  escalated_risks: Array<{
+    id: number;
+    risk_code: string;
+    title: string;
+    risk_level: string;
+    escalation_level: string;
+  }>;
+}
+
+export const riskApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
+  get: (id: number) =>
+    api.get<{ data: Risk }>(`/risk/risks/${id}`),
+  create: (data: Partial<Risk>) =>
+    api.post<{ data: Risk; message: string }>("/risk/risks", data),
+  update: (id: number, data: Partial<Risk>) =>
+    api.put<{ data: Risk; message: string }>(`/risk/risks/${id}`, data),
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/risk/risks/${id}`),
+
+  // Workflow
+  submit: (id: number) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/submit`),
+  startReview: (id: number) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/start-review`),
+  approve: (id: number, data?: { review_notes?: string }) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/approve`, data),
+  escalate: (id: number, data: { escalation_level: string; notes?: string }) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/escalate`, data),
+  close: (id: number, data: { closure_evidence: string }) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/close`, data),
+  archive: (id: number) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/archive`),
+  reopen: (id: number) =>
+    api.post<{ data: Risk; message: string }>(`/risk/risks/${id}/reopen`),
+  getLogs: (id: number) =>
+    api.get<{ data: RiskHistory[] }>(`/risk/risks/${id}/logs`),
+
+  // Actions
+  listActions: (riskId: number) =>
+    api.get<{ data: RiskAction[] }>(`/risk/risks/${riskId}/actions`),
+  addAction: (riskId: number, data: Partial<RiskAction>) =>
+    api.post<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions`, data),
+  updateAction: (riskId: number, actionId: number, data: Partial<RiskAction>) =>
+    api.put<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions/${actionId}`, data),
+  completeAction: (riskId: number, actionId: number) =>
+    api.post<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions/${actionId}/complete`),
+  deleteAction: (riskId: number, actionId: number) =>
+    api.delete<{ message: string }>(`/risk/risks/${riskId}/actions/${actionId}`),
+
+  // Matrix
+  getMatrix: (params?: { exclude_closed?: boolean }) =>
+    api.get<RiskMatrixData>("/risk/matrix", { params }),
+
+  // Dashboard & Audit Trail
+  getDashboard: () =>
+    api.get<{ data: RiskDashboardData }>("/risk/dashboard"),
+  getAuditTrail: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<RiskHistory>>("/risk/audit-trail", { params }),
+};
+
+// ── Risk Document Types ──────────────────────────────────────────────────────
+
+export const RISK_DOCUMENT_TYPES = [
+  { value: "risk_policy",          label: "Policy Document",     icon: "policy"      },
+  { value: "risk_assessment",      label: "Risk Assessment",     icon: "assessment"  },
+  { value: "risk_evidence",        label: "Supporting Evidence", icon: "attach_file" },
+  { value: "risk_mitigation_plan", label: "Mitigation Plan",     icon: "task_alt"    },
+  { value: "closure_evidence",     label: "Closure Evidence",    icon: "lock"        },
+  { value: "other",                label: "Other",               icon: "description" },
+] as const;
+
+export type RiskDocumentType = typeof RISK_DOCUMENT_TYPES[number]["value"];
+
+export interface RiskAttachment {
+  id: number;
+  attachable_type: string;
+  attachable_id: number;
+  document_type: RiskDocumentType;
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+  uploader?: { id: number; name: string };
+}
+
+export interface Policy {
+  id: number;
+  tenant_id: number;
+  title: string;
+  description: string | null;
+  owner_name: string | null;
+  renewal_date: string | null;
+  status: "active" | "archived";
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  risks_count?: number;
+  creator?: User;
+  attachments?: RiskAttachment[];
+  risks?: Pick<Risk, "id" | "risk_code" | "title">[];
+}
+
+// ── Risk Attachments API ─────────────────────────────────────────────────────
+
+export const riskAttachmentsApi = {
+  list: (riskId: number) =>
+    api.get<{ data: RiskAttachment[] }>(`/risk/risks/${riskId}/attachments`),
+
+  upload: (riskId: number, file: File, documentType?: RiskDocumentType) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (documentType) form.append("document_type", documentType);
+    return api.post<{ data: RiskAttachment; message: string }>(
+      `/risk/risks/${riskId}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  delete: (riskId: number, attachmentId: number) =>
+    api.delete(`/risk/risks/${riskId}/attachments/${attachmentId}`),
+
+  downloadBlob: (riskId: number, attachmentId: number) =>
+    api.get<Blob>(
+      `/risk/risks/${riskId}/attachments/${attachmentId}/download`,
+      { responseType: "blob" }
+    ).then((r) => r.data),
+
+  downloadUrl: (riskId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/risk/risks/${riskId}/attachments/${attachmentId}/download`,
+};
+
+// ── Policy API ───────────────────────────────────────────────────────────────
+
+export const policyApi = {
+  list: (params?: { search?: string; status?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<Policy>>("/risk/policies", { params }),
+
+  get: (id: number) =>
+    api.get<{ data: Policy }>(`/risk/policies/${id}`),
+
+  create: (data: Partial<Policy>) =>
+    api.post<{ data: Policy; message: string }>("/risk/policies", data),
+
+  update: (id: number, data: Partial<Policy>) =>
+    api.put<{ data: Policy; message: string }>(`/risk/policies/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete<{ message: string }>(`/risk/policies/${id}`),
+
+  listForRisk: (riskId: number) =>
+    api.get<{ data: Policy[] }>(`/risk/risks/${riskId}/policies`),
+
+  attachToRisk: (policyId: number, riskId: number, notes?: string) =>
+    api.post<{ message: string }>(`/risk/policies/${policyId}/attach-risk`, { risk_id: riskId, notes }),
+
+  detachFromRisk: (policyId: number, riskId: number) =>
+    api.delete(`/risk/policies/${policyId}/detach-risk/${riskId}`),
+
+  listAttachments: (policyId: number) =>
+    api.get<{ data: RiskAttachment[] }>(`/risk/policies/${policyId}/attachments`),
+
+  uploadAttachment: (policyId: number, file: File, documentType?: RiskDocumentType) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (documentType) form.append("document_type", documentType);
+    return api.post<{ data: RiskAttachment; message: string }>(
+      `/risk/policies/${policyId}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  deleteAttachment: (policyId: number, attachmentId: number) =>
+    api.delete(`/risk/policies/${policyId}/attachments/${attachmentId}`),
+
+  downloadAttachmentUrl: (policyId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/risk/policies/${policyId}/attachments/${attachmentId}/download`,
+};

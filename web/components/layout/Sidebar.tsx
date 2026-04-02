@@ -116,6 +116,20 @@ const NAV_ITEMS: NavItem[] = [
       { label: "HR Settings", href: "/settings/hr", icon: "tune" },
     ],
   },
+  {
+    label: "Risk Register",
+    href: "/risk",
+    icon: "shield",
+    section: "Governance",
+    children: [
+      { label: "All Risks",      href: "/risk",              icon: "bar_chart_4_bars" },
+      { label: "Dashboard",     href: "/risk/dashboard",   icon: "dashboard"        },
+      { label: "Analytics",     href: "/risk/analytics",   icon: "analytics"        },
+      { label: "Audit Trail",   href: "/risk/audit-trail", icon: "history"          },
+      { label: "Policy Library",href: "/risk/policies",    icon: "policy"           },
+      { label: "Log Risk",      href: "/risk/create",      icon: "add_circle"       },
+    ],
+  },
   { label: "Reports", href: "/reports", icon: "assessment" },
   {
     label: "Assets",

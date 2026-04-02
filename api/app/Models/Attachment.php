@@ -27,6 +27,13 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_RECOMMENDATION = 'recommendation';
     public const DOCUMENT_TYPE_PHOTO = 'photo';
 
+    // Risk document types
+    public const DOCUMENT_TYPE_RISK_POLICY          = 'risk_policy';
+    public const DOCUMENT_TYPE_RISK_ASSESSMENT      = 'risk_assessment';
+    public const DOCUMENT_TYPE_RISK_EVIDENCE        = 'risk_evidence';
+    public const DOCUMENT_TYPE_RISK_MITIGATION_PLAN = 'risk_mitigation_plan';
+    public const DOCUMENT_TYPE_CLOSURE_EVIDENCE     = 'closure_evidence';
+
     public const DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_CONCEPT_NOTE,
         self::DOCUMENT_TYPE_MEMO,
@@ -43,6 +50,11 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_PERFORMANCE_REVIEW,
         self::DOCUMENT_TYPE_RECOMMENDATION,
         self::DOCUMENT_TYPE_PHOTO,
+        self::DOCUMENT_TYPE_RISK_POLICY,
+        self::DOCUMENT_TYPE_RISK_ASSESSMENT,
+        self::DOCUMENT_TYPE_RISK_EVIDENCE,
+        self::DOCUMENT_TYPE_RISK_MITIGATION_PLAN,
+        self::DOCUMENT_TYPE_CLOSURE_EVIDENCE,
     ];
 
     /** Document types for user profile documents */
@@ -74,6 +86,16 @@ class Attachment extends Model
     public const QUOTE_DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_HOTEL_QUOTE,
         self::DOCUMENT_TYPE_TRANSPORT_QUOTE,
+        self::DOCUMENT_TYPE_OTHER,
+    ];
+
+    /** Document types valid for risk attachments */
+    public const RISK_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_RISK_POLICY,
+        self::DOCUMENT_TYPE_RISK_ASSESSMENT,
+        self::DOCUMENT_TYPE_RISK_EVIDENCE,
+        self::DOCUMENT_TYPE_RISK_MITIGATION_PLAN,
+        self::DOCUMENT_TYPE_CLOSURE_EVIDENCE,
         self::DOCUMENT_TYPE_OTHER,
     ];
 

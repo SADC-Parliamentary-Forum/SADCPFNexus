@@ -53,6 +53,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'reports.view', 'reports.export', 'reports.audit',
             'audit.view', 'audit.export',
             'system.admin',
+            // Risk Register
+            'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -181,6 +183,71 @@ class RolesAndPermissionsSeeder extends Seeder
                     'hr.view', 'hr.approve',
                     'reports.view', 'reports.export',
                     'audit.view',
+                    'risk.view', 'risk.review', 'risk.approve',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            // ── Risk Register: update existing roles ──────────────────────────────
+
+            // Staff: risk view, create, submit
+            $staff->givePermissionTo(
+                Permission::whereIn('name', ['risk.view', 'risk.create', 'risk.submit'])
+                    ->where('guard_name', $guard)->get()
+            );
+
+            // HOD: + risk.review
+            $hod->givePermissionTo(
+                Permission::whereIn('name', ['risk.view', 'risk.create', 'risk.submit', 'risk.review'])
+                    ->where('guard_name', $guard)->get()
+            );
+
+            // Governance Officer: + risk.review, risk.manage
+            $governanceOfficer->givePermissionTo(
+                Permission::whereIn('name', ['risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.manage'])
+                    ->where('guard_name', $guard)->get()
+            );
+
+            // External Auditor: + risk.view
+            $externalAuditor->givePermissionTo(
+                Permission::where('name', 'risk.view')->where('guard_name', $guard)->get()
+            );
+
+            // Finance Controller: + risk.view
+            $financeController->givePermissionTo(
+                Permission::where('name', 'risk.view')->where('guard_name', $guard)->get()
+            );
+
+            // Procurement Officer: + risk.view
+            $procurementOfficer->givePermissionTo(
+                Permission::where('name', 'risk.view')->where('guard_name', $guard)->get()
+            );
+
+            // ── New roles ─────────────────────────────────────────────────────────
+
+            $director = Role::firstOrCreate(['name' => 'Director', 'guard_name' => $guard]);
+            $director->syncPermissions(
+                Permission::whereIn('name', [
+                    'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
+                    'travel.view', 'leave.view', 'imprest.view', 'finance.view',
+                    'procurement.view', 'hr.view', 'governance.view', 'reports.view',
+                    'workplan.view', 'assignments.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $internalAuditor = Role::firstOrCreate(['name' => 'Internal Auditor', 'guard_name' => $guard]);
+            $internalAuditor->syncPermissions(
+                Permission::whereIn('name', [
+                    'risk.view', 'risk.review',
+                    'travel.view', 'leave.view', 'imprest.view', 'finance.view',
+                    'procurement.view', 'hr.view', 'governance.view', 'reports.view',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $committeeMember = Role::firstOrCreate(['name' => 'Committee Member', 'guard_name' => $guard]);
+            $committeeMember->syncPermissions(
+                Permission::whereIn('name', [
+                    'risk.view',
+                    'governance.view', 'finance.view', 'reports.view',
                 ])->where('guard_name', $guard)->get()
             );
         }
