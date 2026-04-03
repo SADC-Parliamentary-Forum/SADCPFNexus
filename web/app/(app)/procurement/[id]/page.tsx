@@ -102,7 +102,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     setAwardError(null);
     try {
       const res = await procurementApi.award(request.id, Number(awardQuoteId), awardNotes);
-      setRequest(res.data);
+      setRequest(res.data.data);
       setShowAward(false);
       setAwardQuoteId("");
       setAwardNotes("");
@@ -122,7 +122,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       const res = hodAction === "approve"
         ? await procurementApi.hodApprove(request.id)
         : await procurementApi.hodReject(request.id, hodRejReason);
-      setRequest(res.data);
+      setRequest(res.data.data);
       setHodAction(null);
       setHodRejReason("");
     } catch (e: unknown) {
@@ -446,14 +446,32 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
       {/* Awarded banner */}
       {request.status === "awarded" && request.awarded_quote_id && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 flex items-start gap-3">
-          <span className="material-symbols-outlined text-blue-500 text-[22px] flex-shrink-0 mt-0.5">emoji_events</span>
-          <div>
-            <p className="text-sm font-semibold text-blue-800">Contract Awarded</p>
-            <p className="text-xs text-blue-600 mt-0.5">
-              Awarded to <strong>{quotes.find(q => q.id === request.awarded_quote_id)?.vendor_name ?? "vendor"}</strong>
-              {request.award_notes && ` — ${request.award_notes}`}
-            </p>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-blue-500 text-[22px] flex-shrink-0 mt-0.5">emoji_events</span>
+            <div>
+              <p className="text-sm font-semibold text-blue-800">Contract Awarded</p>
+              <p className="text-xs text-blue-600 mt-0.5">
+                Awarded to <strong>{quotes.find(q => q.id === request.awarded_quote_id)?.vendor_name ?? "vendor"}</strong>
+                {request.award_notes && ` — ${request.award_notes}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Link
+              href={`/procurement/purchase-orders?request=${request.id}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+              Create Purchase Order
+            </Link>
+            <Link
+              href={`/procurement/contracts?request=${request.id}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">description</span>
+              Create Contract
+            </Link>
           </div>
         </div>
       )}

@@ -78,9 +78,7 @@ function KpiCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RiskDashboardPage() {
-  const [currentUser, setCurrentUser] = typeof window !== "undefined"
-    ? [getStoredUser()]
-    : [null];
+  const currentUser = typeof window !== "undefined" ? getStoredUser() : null;
 
   const { data: dashboard, isLoading: dashLoading } = useQuery({
     queryKey: ["risk", "dashboard"],

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
-import { exportToCsv } from "@/lib/csvExport";
+import { exportToXls } from "@/lib/csvExport";
+import { loadPdfLibs } from "@/lib/pdf-libs";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,68 @@ export default function RiskRegisterPage() {
   const high     = risks.filter((r) => r.risk_level === "high").length;
   const escalated = risks.filter((r) => r.status === "escalated").length;
 
+  const EXPORT_COLUMNS = [
+    { key: "risk_code",       header: "Risk Code"         },
+    { key: "title",           header: "Title"             },
+    { key: "category",        header: "Category"          },
+    { key: "inherent_score",  header: "Inherent Score"    },
+    { key: "risk_level",      header: "Risk Level"        },
+    { key: "residual_score",  header: "Residual Score"    },
+    { key: "status",          header: "Status"            },
+    { key: "owner",           header: "Risk Owner"        },
+    { key: "department",      header: "Department"        },
+    { key: "next_review",     header: "Next Review Date"  },
+    { key: "review_notes",    header: "Notes / Controls"  },
+  ];
+
+  function buildExportRows() {
+    return displayRisks.map((r) => ({
+      risk_code:      r.risk_code,
+      title:          r.title,
+      category:       r.category,
+      inherent_score: r.inherent_score ?? "",
+      risk_level:     r.risk_level ?? "",
+      residual_score: r.residual_likelihood != null && r.residual_impact != null
+        ? r.residual_likelihood * r.residual_impact
+        : "",
+      status:         r.status,
+      owner:          r.riskOwner?.name ?? "",
+      department:     (r as any).department ?? "",
+      next_review:    r.next_review_date ?? "",
+      review_notes:   r.review_notes ?? "",
+    }));
+  }
+
+  async function handleExportPdf() {
+    const { jsPDF, autoTable } = await loadPdfLibs();
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    doc.setFontSize(14);
+    doc.text("Risk Register", 14, 14);
+    doc.setFontSize(9);
+    doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} · ${displayRisks.length} risk(s)`, 14, 20);
+    autoTable(doc, {
+      head: [EXPORT_COLUMNS.map((c) => c.header)],
+      body: buildExportRows().map((r) => EXPORT_COLUMNS.map((c) => String(r[c.key as keyof typeof r] ?? ""))),
+      startY: 25,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [29, 133, 237], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 55 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 18 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 28 },
+        8: { cellWidth: 22 },
+        9: { cellWidth: 22 },
+      },
+    });
+    doc.save(`risk-register-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
@@ -103,22 +166,22 @@ export default function RiskRegisterPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportToCsv("risk-register", displayRisks.map((r) => ({
-              code:            r.risk_code,
-              title:           r.title,
-              category:        r.category,
-              inherent_score:  r.inherent_score,
-              risk_level:      r.risk_level,
-              residual_score:  r.residual_likelihood != null && r.residual_impact != null ? r.residual_likelihood * r.residual_impact : "",
-              status:          r.status,
-              owner:           r.riskOwner?.name ?? "",
-              next_review:     r.next_review_date ?? "",
-            })))}
+            onClick={() => exportToXls("risk-register", buildExportRows(), EXPORT_COLUMNS)}
             disabled={displayRisks.length === 0}
             className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"
+            title="Export to Excel"
           >
-            <span className="material-symbols-outlined text-[16px]">download</span>
-            Export
+            <span className="material-symbols-outlined text-[16px]">table_view</span>
+            Excel
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={displayRisks.length === 0}
+            className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"
+            title="Export to PDF"
+          >
+            <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+            PDF
           </button>
           <Link href="/risk/create" className="btn-primary flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -296,7 +359,7 @@ export default function RiskRegisterPage() {
       </div>
 
       {/* Risk list */}
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <div className="divide-y divide-neutral-100">
             {Array.from({ length: 5 }).map((_, i) => (

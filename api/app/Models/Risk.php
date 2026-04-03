@@ -88,8 +88,7 @@ class Risk extends Model
     public function policies(): BelongsToMany
     {
         return $this->belongsToMany(Policy::class, 'risk_policy')
-                    ->withPivot('notes', 'linked_by')
-                    ->withTimestamps(false)
+                    ->withPivot('notes', 'linked_by', 'created_at')
                     ->orderBy('policies.title');
     }
 

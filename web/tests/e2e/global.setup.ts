@@ -2,7 +2,7 @@
  * Global setup — logs in as admin and staff, saves auth state for reuse.
  * Runs once before the entire test suite.
  */
-import { test as setup, expect } from "@playwright/test";
+import { test as setup, expect, type Page, type APIRequestContext } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 
@@ -11,8 +11,8 @@ const API_URL =
 const AUTH_DIR = path.join(process.cwd(), "playwright/.auth");
 
 async function loginAndSave(
-  page: Parameters<Parameters<typeof setup>[1]>[0],
-  request: Parameters<Parameters<typeof setup>[1]>[1]["request"],
+  page: Page,
+  request: APIRequestContext,
   email: string,
   password: string,
   fileName: string

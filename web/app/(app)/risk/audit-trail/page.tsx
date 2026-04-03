@@ -225,9 +225,9 @@ export default function RiskAuditTrailPage() {
                     <td className="text-xs text-neutral-700">{event.actor?.name ?? "—"}</td>
                     <td className="text-xs text-neutral-500">
                       {event.old_values?.status && event.new_values?.status
-                        ? <span><span className="capitalize">{event.old_values.status}</span>{" → "}<span className="capitalize font-medium text-neutral-800">{event.new_values.status}</span></span>
+                        ? <span><span className="capitalize">{String(event.old_values.status)}</span>{" → "}<span className="capitalize font-medium text-neutral-800">{String(event.new_values.status)}</span></span>
                         : event.new_values?.status
-                        ? <span className="capitalize font-medium text-neutral-800">{event.new_values.status}</span>
+                        ? <span className="capitalize font-medium text-neutral-800">{String(event.new_values.status)}</span>
                         : <span className="text-neutral-300">—</span>}
                     </td>
                     <td className="font-mono text-[11px] text-neutral-400">

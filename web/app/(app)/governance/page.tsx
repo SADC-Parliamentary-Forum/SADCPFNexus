@@ -32,7 +32,7 @@ export default function MeetingsMinutesPage() {
     setLoading(true);
     try {
       const [mRes, minRes] = await Promise.all([
-        governanceApi.getMeetings(),
+        governanceApi.meetings(),
         minutesApi.list(),
       ]);
       setMeetings(mRes.data?.data ?? mRes.data ?? []);
@@ -46,11 +46,11 @@ export default function MeetingsMinutesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const minutesFor = (meetingId: number) =>
-    minutes.filter((m) => m.meeting_id === meetingId);
+  const minutesFor = (meetingTitle: string) =>
+    minutes.filter((m) => m.title === meetingTitle);
 
   const filtered = meetings.filter((m) => {
-    const matchType   = typeFilter === "All" || m.meeting_type === typeFilter;
+    const matchType   = typeFilter === "All" || m.type === typeFilter;
     const matchSearch = !search || m.title.toLowerCase().includes(search.toLowerCase());
     return matchType && matchSearch;
   });
@@ -116,24 +116,21 @@ export default function MeetingsMinutesPage() {
             </thead>
             <tbody>
               {filtered.map((m) => {
-                const mins = minutesFor(m.id);
+                const mins = minutesFor(m.title);
                 return (
                   <tr key={m.id}>
                     <td>
                       <div className="font-medium text-neutral-900">{m.title}</div>
-                      {m.agenda_items_count != null && (
-                        <div className="text-xs text-neutral-500">{m.agenda_items_count} agenda items</div>
-                      )}
                     </td>
                     <td>
-                      <span className={`badge border text-xs ${TYPE_STYLE[m.meeting_type] ?? TYPE_STYLE["Other"]}`}>
-                        {m.meeting_type}
+                      <span className={`badge border text-xs ${TYPE_STYLE[m.type] ?? TYPE_STYLE["Other"]}`}>
+                        {m.type}
                       </span>
                     </td>
                     <td className="text-sm text-neutral-600">
-                      {m.meeting_date ? new Date(m.meeting_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                      {m.date ? new Date(m.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </td>
-                    <td className="text-sm text-neutral-600">{m.venue ?? "—"}</td>
+                    <td className="text-sm text-neutral-600">{m.responsible ?? "—"}</td>
                     <td>
                       {mins.length > 0 ? (
                         <span className="badge badge-success text-xs">{mins.length} attached</span>

@@ -66,3 +66,76 @@ export function exportToCsv(
   // Release the object URL after a short delay to allow the download to start
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/**
+ * Exports an array of row objects to an Excel-compatible XML Spreadsheet (.xls).
+ * No external dependency required — Excel, LibreOffice and Google Sheets all open this format.
+ */
+export function exportToXls(
+  filename: string,
+  rows: Record<string, unknown>[],
+  columns?: { key: string; header: string }[]
+): void {
+  if (rows.length === 0 && !columns) return;
+
+  const resolvedColumns: { key: string; header: string }[] =
+    columns && columns.length > 0
+      ? columns
+      : Object.keys(rows[0] ?? {}).map((key) => ({ key, header: key }));
+
+  if (resolvedColumns.length === 0) return;
+
+  const xmlEsc = (v: unknown): string =>
+    String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const headerRow = resolvedColumns
+    .map((c) => `<Cell ss:StyleID="h"><Data ss:Type="String">${xmlEsc(c.header)}</Data></Cell>`)
+    .join("");
+
+  const dataRows = rows
+    .map((row) => {
+      const cells = resolvedColumns
+        .map((c) => {
+          const v = row[c.key];
+          const type = typeof v === "number" ? "Number" : "String";
+          return `<Cell><Data ss:Type="${type}">${xmlEsc(v)}</Data></Cell>`;
+        })
+        .join("");
+      return `<Row>${cells}</Row>`;
+    })
+    .join("");
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="h">
+      <Font ss:Bold="1"/>
+      <Interior ss:Color="#1d85ed" ss:Pattern="Solid"/>
+      <Font ss:Color="#FFFFFF" ss:Bold="1"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="Risk Register">
+    <Table>
+      <Row>${headerRow}</Row>
+      ${dataRows}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename.endsWith(".xls") ? filename : `${filename}.xls`;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

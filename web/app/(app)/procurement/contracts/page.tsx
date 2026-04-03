@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { contractsApi, type Contract } from "@/lib/api";
+import { useSearchParams } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { contractsApi, vendorsApi, procurementApi, type Contract, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -15,8 +16,31 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
 
 const FILTERS = ["all", "draft", "active", "completed", "terminated"];
 
+const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
+
 export default function ContractsPage() {
+  const queryClient  = useQueryClient();
+  const searchParams = useSearchParams();
+  const requestParam = searchParams.get("request");
+
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showModal, setShowModal]       = useState(false);
+  const [submitError, setSubmitError]   = useState<string | null>(null);
+
+  // Form state
+  const [title, setTitle]               = useState("");
+  const [selectedVendorId, setSelectedVendorId] = useState<number | "">("");
+  const [selectedRequestId, setSelectedRequestId] = useState<number | "">(requestParam ? Number(requestParam) : "");
+  const [startDate, setStartDate]       = useState("");
+  const [endDate, setEndDate]           = useState("");
+  const [value, setValue]               = useState("");
+  const [currency, setCurrency]         = useState(DEFAULT_CURRENCY);
+  const [description, setDescription]   = useState("");
+
+  // Auto-open modal when navigated from awarded request
+  useEffect(() => {
+    if (requestParam) setShowModal(true);
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["contracts", statusFilter],
@@ -25,11 +49,70 @@ export default function ContractsPage() {
         .then((r) => r.data),
   });
 
+  // Load vendors for selector
+  const { data: vendorData } = useQuery({
+    queryKey: ["vendors-approved"],
+    queryFn: () => vendorsApi.list({ status: "approved" }).then((r) => r.data),
+    enabled: showModal,
+  });
+
+  const availableVendors: Vendor[] = (vendorData as { data?: Vendor[] })?.data ?? [];
+
+  // Load awarded procurement requests for optional linkage
+  const { data: requestData } = useQuery({
+    queryKey: ["procurement-awarded"],
+    queryFn: () => procurementApi.list({ status: "awarded", per_page: 100 }).then((r) => r.data),
+    enabled: showModal,
+  });
+
+  type RequestOption = { id: number; reference_number: string; title: string };
+  const awardedRequests: RequestOption[] = ((requestData as { data?: RequestOption[] })?.data ?? []);
+
+  const openModal = () => {
+    setTitle("");
+    setSelectedVendorId("");
+    setSelectedRequestId("");
+    setStartDate("");
+    setEndDate("");
+    setValue("");
+    setCurrency(DEFAULT_CURRENCY);
+    setDescription("");
+    setSubmitError(null);
+    setShowModal(true);
+  };
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      contractsApi.create({
+        vendor_id: Number(selectedVendorId),
+        title: title.trim(),
+        start_date: startDate,
+        end_date: endDate,
+        value: Number(value),
+        currency,
+        ...(description.trim() ? { description: description.trim() } : {}),
+        ...(selectedRequestId ? { procurement_request_id: Number(selectedRequestId) } : {}),
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      setShowModal(false);
+      window.location.href = `/procurement/contracts/${res.data.data.id}`;
+    },
+    onError: (e: unknown) => {
+      setSubmitError(
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Failed to create contract."
+      );
+    },
+  });
+
+  const canSubmit = !!title.trim() && !!selectedVendorId && !!startDate && !!endDate && !!value && Number(value) > 0;
+
   const items: Contract[] = (data as { data?: Contract[] })?.data ?? [];
-  const total      = items.length;
-  const active     = items.filter((c) => c.status === "active" && !c.is_expired).length;
+  const total        = items.length;
+  const active       = items.filter((c) => c.status === "active" && !c.is_expired).length;
   const expiringSoon = items.filter((c) => c.is_expiring_soon).length;
-  const expired    = items.filter((c) => c.is_expired).length;
+  const expired      = items.filter((c) => c.is_expired).length;
 
   return (
     <div className="space-y-6">
@@ -39,10 +122,19 @@ export default function ContractsPage() {
           <h1 className="page-title">Contracts</h1>
           <p className="page-subtitle">Manage vendor contracts and agreements</p>
         </div>
-        <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Procurement
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openModal}
+            className="btn-primary inline-flex items-center gap-1.5 text-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            New Contract
+          </button>
+          <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            Procurement
+          </Link>
+        </div>
       </div>
 
       {/* KPI strip */}
@@ -98,6 +190,7 @@ export default function ContractsPage() {
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
           <p className="text-sm text-neutral-500">No contracts found.</p>
+          <p className="text-xs text-neutral-400">Click "New Contract" above to create a vendor contract.</p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -151,6 +244,138 @@ export default function ContractsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* New Contract Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50">
+                <span className="material-symbols-outlined text-[20px] text-blue-600">description</span>
+              </div>
+              <h2 className="text-base font-bold text-neutral-900">New Contract</h2>
+            </div>
+
+            {submitError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{submitError}</div>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">Contract Title <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Software Licence Agreement 2026"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">Vendor <span className="text-red-500">*</span></label>
+                <select
+                  className="form-input"
+                  value={selectedVendorId}
+                  onChange={(e) => setSelectedVendorId(e.target.value ? Number(e.target.value) : "")}
+                >
+                  <option value="">Select vendor…</option>
+                  {availableVendors.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+                {availableVendors.length === 0 && (
+                  <p className="text-xs text-amber-600">No approved vendors found. <Link href="/procurement/vendors" className="underline">Add a vendor</Link> first.</p>
+                )}
+              </div>
+
+              {awardedRequests.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">Linked Procurement Request (optional)</label>
+                  <select
+                    className="form-input"
+                    value={selectedRequestId}
+                    onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
+                  >
+                    <option value="">None</option>
+                    {awardedRequests.map((r) => (
+                      <option key={r.id} value={r.id}>{r.reference_number} — {r.title}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">Start Date <span className="text-red-500">*</span></label>
+                  <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">End Date <span className="text-red-500">*</span></label>
+                  <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">Contract Value <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="form-input"
+                    placeholder="0.00"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                    maxLength={3}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">Description (optional)</label>
+                <textarea
+                  className="form-input resize-none h-20"
+                  placeholder="Brief description of the contract scope…"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button className="btn-secondary flex-1" onClick={() => setShowModal(false)}>Cancel</button>
+              <button
+                className="btn-primary flex-1 disabled:opacity-60"
+                disabled={!canSubmit || createMutation.isPending}
+                onClick={() => createMutation.mutate()}
+              >
+                {createMutation.isPending ? (
+                  <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">description</span>
+                )}
+                {createMutation.isPending ? "Creating…" : "Create Contract"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
