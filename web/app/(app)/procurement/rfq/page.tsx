@@ -149,7 +149,7 @@ export default function RfqListPage() {
                 const filter  = isAwarded ? ("awarded" as const) : rfqFilter(req);
                 const badge   = isAwarded
                   ? { label: "Awarded", cls: "badge-success", icon: "emoji_events" }
-                  : rfqBadge(filter);
+                  : rfqBadge(filter as RfqFilter);
                 const lowest  = quotes.length > 0 ? Math.min(...quotes.map((q) => q.quoted_amount)) : null;
                 return (
                   <tr key={req.id}>
