@@ -74,13 +74,21 @@ class CreateAdminUser extends Command
         // Create user
         $osgDept = Department::where('tenant_id', $tenant->id)->where('code', 'OSG')->first();
 
+        // Generate a unique employee number
+        $empNumber = 'SADCPF-001';
+        $suffix = 1;
+        while (User::where('employee_number', $empNumber)->exists()) {
+            $suffix++;
+            $empNumber = 'SADCPF-' . str_pad($suffix, 3, '0', STR_PAD_LEFT);
+        }
+
         $admin = User::create([
             'tenant_id'       => $tenant->id,
             'department_id'   => $osgDept?->id,
             'name'            => $name,
             'email'           => $email,
             'password'        => Hash::make($password),
-            'employee_number' => 'SADCPF-001',
+            'employee_number' => $empNumber,
             'job_title'       => 'System Administrator',
             'classification'  => 'SECRET',
             'mfa_enabled'     => true,
