@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { leaveApi, tenantUsersApi, type LeaveRequest, type TenantUserOption } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { leaveApi, tenantUsersApi, hrSettingsApi, type LeaveRequest, type TenantUserOption } from "@/lib/api";
 import { cn } from "@/lib/utils";
-
-// ─── Standard entitlements (days) ─────────────────────────────────────────────
-// TODO: source these from a tenant HR config endpoint (GET /hr/config/entitlements)
-const ANNUAL_LEAVE_ENTITLEMENT = 21;
-const SICK_LEAVE_ENTITLEMENT   = 30;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,6 +109,17 @@ export default function LeaveBalancesPage() {
   const [search, setSearch] = useState("");
   const [filterOnLeave, setFilterOnLeave] = useState(false);
 
+  const { data: profilesData } = useQuery({
+    queryKey: ["hr-settings", "leave-profiles"],
+    queryFn: () => hrSettingsApi.listLeaveProfiles().then((r) => r.data.data),
+  });
+
+  const activeProfile = (profilesData ?? []).find((p) => p.is_active) ?? null;
+  const annualEntitlement   = activeProfile?.annual_leave_days  ?? 21;
+  const sickEntitlement     = activeProfile?.sick_leave_days    ?? 30;
+  const maternityEntitlement = activeProfile?.maternity_days    ?? 90;
+  const paternityEntitlement = activeProfile?.paternity_days    ?? 10;
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -171,9 +178,9 @@ export default function LeaveBalancesPage() {
       return {
         user,
         annualUsed,
-        annualTotal: ANNUAL_LEAVE_ENTITLEMENT,
+        annualTotal: annualEntitlement,
         sickUsed,
-        sickTotal: SICK_LEAVE_ENTITLEMENT,
+        sickTotal: sickEntitlement,
         lilHours,
         maternityDays,
         paternityDays,
@@ -181,7 +188,7 @@ export default function LeaveBalancesPage() {
         upcomingLeave,
       };
     });
-  }, [users, requests]);
+  }, [users, requests, annualEntitlement, sickEntitlement]);
 
   const filtered = useMemo(() => {
     let r = rows;
@@ -459,7 +466,10 @@ export default function LeaveBalancesPage() {
             </div>
             <div className="flex items-center gap-2 ml-auto text-neutral-400">
               <span className="material-symbols-outlined text-[14px]">info</span>
-              <span>Standard entitlements: Annual {ANNUAL_LEAVE_ENTITLEMENT}d · Sick {SICK_LEAVE_ENTITLEMENT}d</span>
+              <span>
+                {activeProfile ? `${activeProfile.profile_name} — ` : ""}
+                Annual {annualEntitlement}d · Sick {sickEntitlement}d · Mat {maternityEntitlement}d · Pat {paternityEntitlement}d
+              </span>
             </div>
           </div>
         </div>

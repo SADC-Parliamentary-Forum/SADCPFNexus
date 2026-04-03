@@ -99,6 +99,27 @@ class SignatureEventController extends Controller
         ], 201);
     }
 
+    public function myEvents(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $events = SignatureEvent::where('signer_user_id', $user->id)
+            ->where('tenant_id', $user->tenant_id)
+            ->with(['signatureVersion', 'delegatedAuthority.principal:id,name'])
+            ->latest('signed_at')
+            ->take(20)
+            ->get()
+            ->map(function (SignatureEvent $e) {
+                $arr = $e->toArray();
+                if ($e->signatureVersion) {
+                    $arr['signature_version']['image_url'] = route('saam.signature-image', $e->signatureVersion->id);
+                }
+                return $arr;
+            });
+
+        return response()->json(['data' => $events]);
+    }
+
     public function index(Request $request, string $signableType, int $signableId): JsonResponse
     {
         $user = $request->user();

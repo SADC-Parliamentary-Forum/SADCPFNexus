@@ -18,6 +18,7 @@ class ProcurementRequest extends Model
         'rejection_reason', 'required_by_date', 'submitted_at', 'approved_at',
         'awarded_quote_id', 'awarded_at', 'award_notes',
         'hod_id', 'hod_reviewed_at',
+        'rfq_issued_at', 'rfq_deadline', 'rfq_notes',
     ];
 
     protected $casts = [
@@ -26,6 +27,8 @@ class ProcurementRequest extends Model
         'approved_at'      => 'datetime',
         'awarded_at'       => 'datetime',
         'hod_reviewed_at'  => 'datetime',
+        'rfq_issued_at'    => 'datetime',
+        'rfq_deadline'     => 'date',
         'estimated_value'  => 'float',
     ];
 

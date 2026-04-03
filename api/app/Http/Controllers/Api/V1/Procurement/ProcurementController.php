@@ -159,6 +159,29 @@ class ProcurementController extends Controller
         return response()->json(['message' => 'Contract awarded successfully.', 'data' => $procurement]);
     }
 
+    public function issueRfq(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'super-admin', 'Secretary General'])) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'rfq_deadline' => ['nullable', 'date'],
+            'rfq_notes'    => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $procurementRequest->update([
+            'rfq_issued_at' => $procurementRequest->rfq_issued_at ?? now(),
+            'rfq_deadline'  => $data['rfq_deadline'] ?? null,
+            'rfq_notes'     => $data['rfq_notes'] ?? null,
+        ]);
+
+        return response()->json(['message' => 'RFQ issued.', 'data' => $procurementRequest->fresh(['requester', 'items', 'quotes'])]);
+    }
+
     public function reject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
         if ($request->user()->hasRole('staff')) {

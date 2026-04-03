@@ -225,7 +225,14 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
             Route::post('requests/{procurementRequest}/reject',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
             Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
+            Route::post('requests/{procurementRequest}/issue-rfq',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'issueRfq']);
             Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
+
+            // Quotes (per request)
+            Route::get('requests/{procurementRequest}/quotes',            [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'index']);
+            Route::post('requests/{procurementRequest}/quotes',           [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'store']);
+            Route::put('requests/{procurementRequest}/quotes/{quote}',    [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'update']);
+            Route::delete('requests/{procurementRequest}/quotes/{quote}', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'destroy']);
 
             // Budget Reservations
             Route::get('budget-reservations', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'index']);
@@ -610,6 +617,7 @@ Route::prefix('v1')->group(function () {
 
             Route::post('sign/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignatureEventController::class, 'store']);
             Route::get('events/{signable_type}/{signable_id}', [\App\Http\Controllers\Api\V1\Saam\SignatureEventController::class, 'index']);
+            Route::get('my-events', [\App\Http\Controllers\Api\V1\Saam\SignatureEventController::class, 'myEvents']);
 
             Route::get('delegations', [\App\Http\Controllers\Api\V1\Saam\DelegationController::class, 'index']);
             Route::post('delegations', [\App\Http\Controllers\Api\V1\Saam\DelegationController::class, 'store']);

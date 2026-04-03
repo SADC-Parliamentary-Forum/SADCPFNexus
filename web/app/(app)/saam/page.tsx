@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   saamApi,
   type SignatureProfile,
+  type SignatureEvent,
   type DelegatedAuthority,
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -354,10 +355,31 @@ function SignatureProfileCard({ profiles, loading, onRevoke }: {
 
 // ─── Recent Events ────────────────────────────────────────────────────────────
 
-function RecentEventsCard({ profiles, loading }: { profiles: SignatureProfile[]; loading: boolean }) {
-  // We don't have a list-all-events endpoint; derive a "my signing history" note
-  // The actual events feed would come from individual signable entities.
-  // For now show an informative placeholder while keeping the architecture correct.
+const ACTION_CONFIG: Record<string, { icon: string; color: string; bg: string; label: string }> = {
+  approve:     { icon: "check_circle", color: "text-green-600",  bg: "bg-green-50",   label: "Approved"     },
+  reject:      { icon: "cancel",       color: "text-red-600",    bg: "bg-red-50",     label: "Rejected"     },
+  review:      { icon: "search",       color: "text-blue-600",   bg: "bg-blue-50",    label: "Reviewed"     },
+  return:      { icon: "undo",         color: "text-amber-600",  bg: "bg-amber-50",   label: "Returned"     },
+  acknowledge: { icon: "done_all",     color: "text-teal-600",   bg: "bg-teal-50",    label: "Acknowledged" },
+};
+
+const MORPH_SHORT: Record<string, string> = {
+  "App\\Models\\TravelRequest":      "travel",
+  "App\\Models\\LeaveRequest":       "leave",
+  "App\\Models\\ImprestRequest":     "imprest",
+  "App\\Models\\ProcurementRequest": "procurement",
+  "App\\Models\\Correspondence":     "correspondence",
+};
+
+function RecentEventsCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["saam", "my-events"],
+    queryFn: () => saamApi.getMyEvents().then((r) => r.data.data),
+    staleTime: 30_000,
+  });
+
+  const events: SignatureEvent[] = data ?? [];
+
   return (
     <div className="card overflow-hidden">
       <div className="card-header">
@@ -371,15 +393,15 @@ function RecentEventsCard({ profiles, loading }: { profiles: SignatureProfile[];
           <h2 className="text-sm font-semibold text-neutral-900">Recent Signature Activity</h2>
         </div>
         <Link
-          href="/saam/delegations"
+          href="/saam/verify"
           className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
         >
-          Delegations
+          Verify document
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
         </Link>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="px-5 py-4 space-y-3 animate-pulse">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center gap-3">
@@ -392,7 +414,7 @@ function RecentEventsCard({ profiles, loading }: { profiles: SignatureProfile[];
             </div>
           ))}
         </div>
-      ) : profiles.length === 0 ? (
+      ) : events.length === 0 ? (
         <div className="px-5 py-10 text-center">
           <span
             className="material-symbols-outlined text-neutral-300 text-[36px] mb-2 block"
@@ -406,56 +428,44 @@ function RecentEventsCard({ profiles, loading }: { profiles: SignatureProfile[];
           </p>
         </div>
       ) : (
-        <div className="px-5 py-4">
-          <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 flex items-start gap-3">
-            <span
-              className="material-symbols-outlined text-primary text-[18px] mt-0.5 flex-shrink-0"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              info
-            </span>
-            <p className="text-xs text-neutral-600 leading-relaxed">
-              Signature events are contextual to each document. Open any signed travel request,
-              correspondence, procurement, or HR document to see the full audit trail of signatures
-              applied to that record.
-            </p>
-          </div>
-
-          {/* Signature versions as activity markers */}
-          <div className="mt-4 space-y-2">
-            {profiles.map((p) =>
-              p.active_version ? (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-xl border border-neutral-100 px-4 py-3"
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    p.status === "active" ? "bg-primary/10" : "bg-neutral-100"
-                  }`}>
-                    <span
-                      className={`material-symbols-outlined text-[16px] ${
-                        p.status === "active" ? "text-primary" : "text-neutral-400"
-                      }`}
-                      style={{ fontVariationSettings: "'FILL' 1" }}
-                    >
-                      {sigTypeIcon(p.type)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-neutral-800">
-                      {sigTypeLabel(p.type)} registered
-                    </p>
-                    <p className="text-[11px] text-neutral-400">
-                      Version {p.active_version.version_no} · {formatDate(p.active_version.effective_from)}
-                    </p>
-                  </div>
-                  <span className={p.status === "active" ? "badge-success" : "badge-muted"}>
-                    {p.status === "active" ? "Active" : "Revoked"}
+        <div className="divide-y divide-neutral-50">
+          {events.map((evt) => {
+            const cfg       = ACTION_CONFIG[evt.action] ?? ACTION_CONFIG.acknowledge;
+            const shortType = MORPH_SHORT[evt.signable_type] ?? "document";
+            const modLabel  = moduleLabel(evt.signable_type);
+            return (
+              <div key={evt.id} className="px-5 py-3 flex items-center gap-3 hover:bg-neutral-50/50 transition-colors">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
+                  <span
+                    className={`material-symbols-outlined text-[16px] ${cfg.color}`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    {cfg.icon}
                   </span>
                 </div>
-              ) : null
-            )}
-          </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-neutral-800 truncate">
+                    {cfg.label} · <span className="text-neutral-500">{modLabel} #{evt.signable_id}</span>
+                    {evt.is_delegated && (
+                      <span className="ml-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                        Delegated
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-neutral-400 mt-0.5">
+                    {evt.step_key ? `Step: ${evt.step_key} · ` : ""}
+                    {new Date(evt.signed_at).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <Link
+                  href={`/saam/verify/${shortType}/${evt.signable_id}`}
+                  className="flex-shrink-0 text-[11px] text-primary font-semibold hover:underline"
+                >
+                  Verify
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -788,7 +798,7 @@ export default function SaamPage() {
             loading={profileLoading}
             onRevoke={(type) => revokeMutation.mutate(type)}
           />
-          <RecentEventsCard profiles={profiles} loading={profileLoading} />
+          <RecentEventsCard />
         </div>
 
         {/* Right: Delegation Summary */}

@@ -970,11 +970,15 @@ export interface ProcurementItem {
 
 export interface ProcurementQuote {
   id: number;
+  procurement_request_id: number;
+  vendor_id?: number | null;
   vendor_name: string;
   quoted_amount: number;
   currency?: string;
   is_recommended: boolean;
   notes: string | null;
+  quote_date?: string | null;
+  vendor?: Vendor;
 }
 
 export interface ProcurementRequest {
@@ -998,6 +1002,9 @@ export interface ProcurementRequest {
   award_notes: string | null;
   hod_id: number | null;
   hod_reviewed_at: string | null;
+  rfq_issued_at?: string | null;
+  rfq_deadline?: string | null;
+  rfq_notes?: string | null;
   requester?: User;
   approver?: User;
   hod?: User;
@@ -1026,6 +1033,29 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-approve`),
   hodReject: (id: number, reason: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-reject`, { reason }),
+  issueRfq: (id: number, data: { rfq_deadline?: string; rfq_notes?: string }) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/issue-rfq`, data),
+};
+
+export interface CreateQuotePayload {
+  vendor_name: string;
+  vendor_id?: number | null;
+  quoted_amount: number;
+  currency?: string;
+  is_recommended?: boolean;
+  notes?: string;
+  quote_date?: string;
+}
+
+export const quotesApi = {
+  list: (requestId: number) =>
+    api.get<{ data: ProcurementQuote[] }>(`/procurement/requests/${requestId}/quotes`),
+  create: (requestId: number, data: CreateQuotePayload) =>
+    api.post<{ data: ProcurementQuote; message: string }>(`/procurement/requests/${requestId}/quotes`, data),
+  update: (requestId: number, quoteId: number, data: Partial<CreateQuotePayload>) =>
+    api.put<{ data: ProcurementQuote; message: string }>(`/procurement/requests/${requestId}/quotes/${quoteId}`, data),
+  delete: (requestId: number, quoteId: number) =>
+    api.delete(`/procurement/requests/${requestId}/quotes/${quoteId}`),
 };
 
 export interface BudgetReservation {
@@ -3085,6 +3115,9 @@ export const saamApi = {
 
   downloadDocument: (documentId: number) =>
     api.get(`/saam/documents/download/${documentId}`, { responseType: "blob" }),
+
+  getMyEvents: () =>
+    api.get<{ data: SignatureEvent[] }>("/saam/my-events"),
 
   /** Build the image URL for a signature version (served via the secure image endpoint) */
   signatureImageUrl: (versionId: number): string =>

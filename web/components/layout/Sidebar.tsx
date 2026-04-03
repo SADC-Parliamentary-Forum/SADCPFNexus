@@ -51,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: "shopping_cart",
     children: [
       { label: "Requests",        href: "/procurement",                  icon: "bar_chart_4_bars"    },
+      { label: "Quotations (RFQ)",href: "/procurement/rfq",              icon: "request_quote"       },
       { label: "Vendors",         href: "/procurement/vendors",          icon: "store"               },
       { label: "Purchase Orders", href: "/procurement/purchase-orders",  icon: "receipt_long"        },
       { label: "Receipts",        href: "/procurement/receipts",         icon: "inventory_2"         },
@@ -182,7 +183,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "My Signature",  href: "/saam",              icon: "signature" },
       { label: "Delegations",   href: "/saam/delegations",  icon: "supervised_user_circle" },
-      { label: "Verify",        href: "/saam/verify/document", icon: "verified" },
+      { label: "Verify",        href: "/saam/verify",          icon: "verified" },
     ],
   },
   { label: "Help & Support", href: "/profile/support", icon: "help" },
@@ -461,20 +462,6 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
           </div>
         ))}
       </nav>
-
-      {/* ── System status (hidden when collapsed) ──────────────────────── */}
-      {!isCollapsed && (
-        <div className="px-3 pb-2">
-          <div className="rounded-xl bg-white/5 border border-neutral-700/50 px-3.5 py-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">System Status</span>
-              <span className="flex h-2 w-2 rounded-full bg-green-500 ring-2 ring-green-500/30 flex-shrink-0" />
-            </div>
-            <p className="text-xs font-semibold text-neutral-200">All Systems Operational</p>
-            <p className="text-[10px] text-neutral-500 mt-0.5">SADC-PF Nexus v4.2.0</p>
-          </div>
-        </div>
-      )}
 
       {/* ── User footer ───────────────────────────────────────────────── */}
       <div className={cn("border-t border-neutral-700/50 flex-shrink-0", isCollapsed ? "p-2" : "p-3")}>
