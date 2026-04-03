@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ function canManageGRN() {
   );
 }
 
-export default function GoodsReceiptDetailPage({ params }: { params: { id: string } }) {
+function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   const grnId       = Number(params.id);
   const searchParams = useSearchParams();
   const poId        = Number(searchParams.get("po") ?? 0);
@@ -321,5 +321,13 @@ export default function GoodsReceiptDetailPage({ params }: { params: { id: strin
         </div>
       )}
     </div>
+  );
+}
+
+export default function GoodsReceiptDetailPage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={null}>
+      <GoodsReceiptDetailPageInner params={params} />
+    </Suspense>
   );
 }

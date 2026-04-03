@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +26,7 @@ interface ItemRow {
   condition_notes: string;
 }
 
-export default function ReceiptsPage() {
+function ReceiptsPageInner() {
   const router        = useRouter();
   const searchParams  = useSearchParams();
   const poIdParam     = searchParams.get("po");
@@ -412,5 +412,13 @@ export default function ReceiptsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ReceiptsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ReceiptsPageInner />
+    </Suspense>
   );
 }

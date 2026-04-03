@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ interface PoItemRow {
   unit_price: string;
 }
 
-export default function PurchaseOrdersPage() {
+function PurchaseOrdersPageInner() {
   const queryClient  = useQueryClient();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
@@ -505,5 +505,13 @@ export default function PurchaseOrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PurchaseOrdersPage() {
+  return (
+    <Suspense fallback={null}>
+      <PurchaseOrdersPageInner />
+    </Suspense>
   );
 }

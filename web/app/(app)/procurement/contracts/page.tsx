@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ const FILTERS = ["all", "draft", "active", "completed", "terminated"];
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
-export default function ContractsPage() {
+function ContractsPageInner() {
   const queryClient  = useQueryClient();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
@@ -379,5 +379,13 @@ export default function ContractsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ContractsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContractsPageInner />
+    </Suspense>
   );
 }
