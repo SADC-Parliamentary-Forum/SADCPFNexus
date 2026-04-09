@@ -181,15 +181,21 @@ export default function AdminLedgerPage() {
             Cryptographic audit trail verification — tamper-evident record of all admin operations.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => exportCsv(logs)}
-          disabled={loading || logs.length === 0}
-          className="btn-secondary flex items-center gap-2 shrink-0 disabled:opacity-50"
-        >
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          Export Ledger (CSV)
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/ledger/verify" className="btn-primary flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            Verify Integrity
+          </Link>
+          <button
+            type="button"
+            onClick={() => exportCsv(logs)}
+            disabled={loading || logs.length === 0}
+            className="btn-secondary flex items-center gap-2 shrink-0 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+        </div>
       </div>
 
       {/* Status Banner */}

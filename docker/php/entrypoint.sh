@@ -1,5 +1,24 @@
 #!/bin/sh
 set -e
+
+# ── Shared: export env vars so Laravel can read them in all container roles ──
+_export_env() {
+  APP_KEY=$(grep '^APP_KEY=' .env 2>/dev/null | cut -d= -f2-)
+  export APP_KEY
+  REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' .env 2>/dev/null | cut -d= -f2-)
+  if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then REDIS_PASSWORD=secret; fi
+  export REDIS_PASSWORD
+}
+
+# ── CONTAINER_ROLE=worker → queue worker (php service already handles setup) ──
+if [ "${CONTAINER_ROLE:-app}" = "worker" ]; then
+  _export_env
+  echo "[queue] Starting queue worker..."
+  exec php artisan queue:work --sleep=3 --tries=3 --timeout=90 --max-time=3600
+fi
+
+# ── Default role: app (php-fpm + full setup) ─────────────────────────────────
+
 # Ensure .env exists
 if [ ! -f .env ]; then
   cp -n .env.docker.example .env 2>/dev/null || cp .env.example .env 2>/dev/null || true
@@ -36,10 +55,5 @@ chmod -R 755 storage bootstrap/cache 2>/dev/null || true
 # Clear config cache so Laravel reads fresh .env (and env) on next request
 php artisan config:clear 2>/dev/null || true
 # Export APP_KEY so PHP-FPM inherits it; Laravel env() will then see it even if .env/cache is wrong
-APP_KEY=$(grep '^APP_KEY=' .env | cut -d= -f2-)
-export APP_KEY
-# Export REDIS_PASSWORD so Laravel can authenticate to Redis (session/cache/queue)
-REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' .env | cut -d= -f2-)
-if [ -z "$REDIS_PASSWORD" ] || [ "$REDIS_PASSWORD" = "null" ]; then REDIS_PASSWORD=secret; fi
-export REDIS_PASSWORD
+_export_env
 exec docker-php-entrypoint php-fpm

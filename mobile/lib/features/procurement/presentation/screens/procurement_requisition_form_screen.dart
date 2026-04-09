@@ -41,18 +41,38 @@ class _ProcurementRequisitionFormScreenState
   ];
   final _justificationCtrl = TextEditingController();
 
-  final List<String> _vendors = [
-    'TechSolutions Ltd',
-    'Global Systems Inc',
-    'Apex Networks',
-    'Prime IT Supplies',
-    'DataCore Africa',
-  ];
+  List<Map<String, dynamic>> _vendorsList = [];
+  bool _vendorsLoading = true;
 
   double get _estimatedTotal =>
       _items.fold(0, (sum, item) => sum + item.total);
 
   static const double _budgetRemaining = 55000;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVendors();
+  }
+
+  Future<void> _loadVendors() async {
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>(
+        '/procurement/vendors',
+        queryParameters: {'status': 'approved'},
+      );
+      final data = res.data?['data'] as List<dynamic>?;
+      if (!mounted) return;
+      setState(() {
+        _vendorsList = (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _vendorsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _vendorsLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -191,13 +211,18 @@ class _ProcurementRequisitionFormScreenState
                   ),
                 ),
                 const SizedBox(height: 8),
-                _AppDropdown<String>(
-                  hint: 'Search approved vendors...',
-                  value: _selectedVendor,
-                  items: _vendors,
-                  onChanged: (v) => setState(() => _selectedVendor = v),
-                  itemLabel: (v) => v,
-                ),
+                _vendorsLoading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))),
+                      )
+                    : _AppDropdown<String>(
+                        hint: _vendorsList.isEmpty ? 'No approved vendors found' : 'Select approved vendor…',
+                        value: _selectedVendor,
+                        items: _vendorsList.map((v) => v['name'] as String? ?? '').where((n) => n.isNotEmpty).toList(),
+                        onChanged: (v) => setState(() => _selectedVendor = v),
+                        itemLabel: (v) => v,
+                      ),
                 const SizedBox(height: 12),
                 // Warning banner
                 Container(

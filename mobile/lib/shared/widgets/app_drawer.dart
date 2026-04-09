@@ -41,6 +41,7 @@ const _moduleEntries = [
   _DrawerEntry(path: '/finance/command-center', label: 'Finance', icon: Icons.account_balance_outlined),
   _DrawerEntry(path: '/procurement/form', label: 'Procurement', icon: Icons.inventory_2_outlined),
   _DrawerEntry(path: '/imprest/form', label: 'Imprest', icon: Icons.account_balance_wallet_outlined),
+  _DrawerEntry(path: '/timesheets', label: 'Timesheets', icon: Icons.schedule_outlined),
   _DrawerEntry(path: '/hr/dashboard', label: 'HR', icon: Icons.people_outline),
   _DrawerEntry(path: '/hr/performance', label: 'Performance Tracker', icon: Icons.trending_up_outlined),
   _DrawerEntry(path: '/hr/files', label: 'Employee Files', icon: Icons.folder_shared_outlined),
@@ -77,7 +78,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final location = GoRouterState.of(context).uri.toString();
+    final location = GoRouter.of(context).routeInformationProvider.value.uri.toString();
 
     bool isSelected(String path) {
       if (path == '/dashboard') return location.startsWith('/dashboard');

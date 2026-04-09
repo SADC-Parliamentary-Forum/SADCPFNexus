@@ -5,7 +5,7 @@ part 'draft_database.g.dart';
 
 class DraftEntries extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get type => text()(); // travel, leave, imprest, procurement
+  TextColumn get type => text()(); // travel, leave, imprest, procurement, pif, salary_advance
   TextColumn get title => text()();
   TextColumn get payload => text()(); // JSON map
   DateTimeColumn get createdAt => dateTime()();

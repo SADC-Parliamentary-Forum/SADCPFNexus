@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth_repository.dart';
+import 'auth_session_controller.dart';
 import 'auth_storage.dart';
 import 'unauthorized_callback.dart';
 import '../network/api_client.dart';
@@ -20,4 +21,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
     apiClient: ref.watch(apiClientProvider),
     storage: ref.watch(authStorageProvider),
   );
+});
+
+final authSessionControllerProvider = Provider<AuthSessionController>((ref) {
+  final controller = AuthSessionController(
+    repository: ref.watch(authRepositoryProvider),
+  );
+  ref.onDispose(controller.dispose);
+  onUnauthorizedCallback = () {
+    controller.handleUnauthorized();
+  };
+  return controller;
 });

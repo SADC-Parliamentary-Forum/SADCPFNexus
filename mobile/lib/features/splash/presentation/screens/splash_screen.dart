@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Splash screen: branding, loading progress, then navigate to login.
@@ -29,11 +28,6 @@ class _SplashScreenState extends State<SplashScreen>
       curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
     );
     _ctrl.forward();
-    _ctrl.addStatusListener((status) {
-      if (status == AnimationStatus.completed && mounted) {
-        context.go('/login');
-      }
-    });
   }
 
   @override

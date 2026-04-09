@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -59,7 +60,16 @@ class AuthController extends Controller
 
         $user->update(['last_login_at' => now()]);
 
-        $token = $user->createToken($request->device_name ?? 'web')->plainTextToken;
+        $newToken = $user->createToken($request->device_name ?? 'web');
+        $token    = $newToken->plainTextToken;
+
+        UserSession::create([
+            'user_id'        => $user->id,
+            'token_id'       => $newToken->accessToken->id,
+            'ip_address'     => $request->ip(),
+            'user_agent'     => $request->userAgent(),
+            'last_active_at' => now(),
+        ]);
 
         AuditLog::record('auth.login.success', [
             'auditable_type' => User::class,
@@ -92,6 +102,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
+        $tokenId = $request->user()->currentAccessToken()->id;
+        UserSession::where('token_id', $tokenId)->delete();
         $request->user()->currentAccessToken()->delete();
 
         AuditLog::record('auth.logout', [

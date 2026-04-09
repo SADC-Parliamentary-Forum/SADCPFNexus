@@ -6,26 +6,63 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vendorsApi, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const VENDOR_CATEGORIES = [
+  "IT & Technology", "Catering & Hospitality", "Transport & Logistics",
+  "Office Supplies", "Printing & Publishing", "Professional Services",
+  "Maintenance & Repairs", "Security Services", "Audio Visual",
+  "Cleaning Services", "Healthcare & Pharmaceuticals", "Construction & Works", "Other",
+] as const;
+
+const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
+
+const COUNTRIES = [
+  "Botswana", "Comoros", "Democratic Republic of Congo", "Eswatini", "Lesotho",
+  "Madagascar", "Malawi", "Mauritius", "Mozambique", "Namibia", "Seychelles",
+  "South Africa", "Tanzania", "Zambia", "Zimbabwe", "Other",
+] as const;
+
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_FILTERS = [
-  { key: "all",      label: "All",      icon: "format_list_bulleted" },
-  { key: "approved", label: "Approved", icon: "verified"             },
-  { key: "pending",  label: "Pending",  icon: "pending"              },
-  { key: "inactive", label: "Inactive", icon: "block"                },
+  { key: "all",         label: "All",         icon: "format_list_bulleted" },
+  { key: "approved",    label: "Approved",    icon: "verified"             },
+  { key: "pending",     label: "Pending",     icon: "pending"              },
+  { key: "inactive",    label: "Inactive",    icon: "block"                },
+  { key: "blacklisted", label: "Blacklisted", icon: "gpp_bad"              },
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number]["key"];
 
 function statusBadge(vendor: Vendor) {
-  if (!vendor.is_active)  return <span className="badge badge-muted">Inactive</span>;
-  if (vendor.is_approved) return <span className="badge badge-success">Approved</span>;
-  return                         <span className="badge badge-warning">Pending</span>;
+  if (vendor.is_blacklisted) return <span className="badge badge-danger">Blacklisted</span>;
+  if (!vendor.is_active)     return <span className="badge badge-muted">Inactive</span>;
+  if (vendor.is_approved)    return <span className="badge badge-success">Approved</span>;
+  return                            <span className="badge badge-warning">Pending</span>;
+}
+
+// ─── Star display ─────────────────────────────────────────────────────────────
+function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
+  if (!avg) return <span className="text-xs text-neutral-300">—</span>;
+  const full  = Math.floor(avg);
+  const half  = avg - full >= 0.5;
+  return (
+    <span className="flex items-center gap-0.5" title={`${avg.toFixed(1)} / 5 (${count ?? 0} ratings)`}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} className={`material-symbols-outlined text-[14px] leading-none ${
+          i < full ? "text-amber-400" : i === full && half ? "text-amber-300" : "text-neutral-200"
+        }`} style={{ fontVariationSettings: "'FILL' 1" }}>
+          {i < full ? "star" : i === full && half ? "star_half" : "star"}
+        </span>
+      ))}
+      <span className="text-[10px] text-neutral-400 ml-1">{avg.toFixed(1)}</span>
+    </span>
+  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <tr>
-      <td colSpan={6} className="py-16 text-center">
+      <td colSpan={7} className="py-16 text-center">
         <div className="flex flex-col items-center gap-3 text-neutral-400">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
             <span className="material-symbols-outlined text-3xl">storefront</span>
@@ -49,9 +86,9 @@ function SkeletonRows() {
     <>
       {Array.from({ length: 5 }).map((_, i) => (
         <tr key={i} className="animate-pulse">
-          {Array.from({ length: 6 }).map((_, j) => (
+          {Array.from({ length: 7 }).map((_, j) => (
             <td key={j}>
-              <div className="h-3.5 rounded bg-neutral-100" style={{ width: j === 0 ? "60%" : j === 5 ? "40%" : "70%" }} />
+              <div className="h-3.5 rounded bg-neutral-100" style={{ width: j === 0 ? "60%" : j === 6 ? "40%" : "70%" }} />
             </td>
           ))}
         </tr>
@@ -61,35 +98,76 @@ function SkeletonRows() {
 }
 
 // ─── Vendor Form Modal ────────────────────────────────────────────────────────
-interface VendorFormModalProps {
-  vendor?: Vendor | null;
-  onClose: () => void;
-  onSaved: () => void;
+type FormTab = "basic" | "contact" | "banking" | "admin";
+
+interface VendorFormValues {
+  name: string;
+  contact_name: string;
+  registration_number: string;
+  tax_number: string;
+  category: string;
+  country: string;
+  website: string;
+  contact_email: string;
+  contact_phone: string;
+  address: string;
+  payment_terms: string;
+  bank_name: string;
+  bank_account: string;
+  bank_branch: string;
+  is_sme: boolean;
+  notes: string;
+  is_approved: boolean;
+  is_active: boolean;
 }
 
-function VendorFormModal({ vendor, onClose, onSaved }: VendorFormModalProps) {
-  const isEdit = !!vendor;
-  const queryClient = useQueryClient();
-  const firstInputRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState({
+function defaultForm(vendor?: Vendor | null): VendorFormValues {
+  return {
     name:                vendor?.name                ?? "",
+    contact_name:        vendor?.contact_name        ?? "",
     registration_number: vendor?.registration_number ?? "",
+    tax_number:          vendor?.tax_number          ?? "",
+    category:            vendor?.category            ?? "",
+    country:             vendor?.country             ?? "",
+    website:             vendor?.website             ?? "",
     contact_email:       vendor?.contact_email       ?? "",
     contact_phone:       vendor?.contact_phone       ?? "",
     address:             vendor?.address             ?? "",
+    payment_terms:       vendor?.payment_terms       ?? "",
+    bank_name:           vendor?.bank_name           ?? "",
+    bank_account:        vendor?.bank_account        ?? "",
+    bank_branch:         vendor?.bank_branch         ?? "",
+    is_sme:              vendor?.is_sme              ?? false,
+    notes:               vendor?.notes               ?? "",
     is_approved:         vendor?.is_approved         ?? false,
     is_active:           vendor?.is_active           ?? true,
-  });
+  };
+}
+
+const TAB_LABELS: { key: FormTab; label: string; icon: string }[] = [
+  { key: "basic",   label: "Business",  icon: "business"         },
+  { key: "contact", label: "Contact",   icon: "contacts"         },
+  { key: "banking", label: "Banking",   icon: "account_balance"  },
+  { key: "admin",   label: "Admin",     icon: "settings"         },
+];
+
+function VendorFormModal({ vendor, onClose, onSaved }: {
+  vendor?: Vendor | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const isEdit = !!vendor;
+  const queryClient = useQueryClient();
+  const firstInputRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab] = useState<FormTab>("basic");
+  const [form, setForm] = useState<VendorFormValues>(defaultForm(vendor));
   const [formError, setFormError] = useState("");
 
   useEffect(() => { firstInputRef.current?.focus(); }, []);
 
   const mutation = useMutation({
-    mutationFn: (data: typeof form) =>
-      isEdit
-        ? vendorsApi.update(vendor!.id, data)
-        : vendorsApi.create(data),
+    mutationFn: (data: VendorFormValues) =>
+      isEdit ? vendorsApi.update(vendor!.id, data) : vendorsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       onSaved();
@@ -104,39 +182,52 @@ function VendorFormModal({ vendor, onClose, onSaved }: VendorFormModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { setFormError("Vendor name is required."); return; }
+    if (!form.name.trim()) { setFormError("Vendor name is required."); setTab("basic"); return; }
     setFormError("");
     mutation.mutate(form);
   };
 
-  const field = (
-    id: keyof typeof form,
+  const tf = (
+    key: keyof VendorFormValues,
     label: string,
-    opts?: { type?: string; placeholder?: string; span2?: boolean }
+    opts?: { type?: string; placeholder?: string; required?: boolean; span2?: boolean }
   ) => (
     <div className={opts?.span2 ? "sm:col-span-2" : ""}>
       <label className="block text-xs font-semibold text-neutral-600 mb-1">
-        {label}
-        {id === "name" && <span className="text-red-500 ml-0.5">*</span>}
+        {label}{opts?.required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input
         type={opts?.type ?? "text"}
         className="form-input"
-        value={form[id] as string}
-        onChange={(e) => setForm((f) => ({ ...f, [id]: e.target.value }))}
+        value={form[key] as string}
+        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
         placeholder={opts?.placeholder}
       />
+    </div>
+  );
+
+  const sf = (key: keyof VendorFormValues, label: string, options: readonly string[]) => (
+    <div>
+      <label className="block text-xs font-semibold text-neutral-600 mb-1">{label}</label>
+      <select
+        className="form-input"
+        value={form[key] as string}
+        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+      >
+        <option value="">— Select —</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
     </div>
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="card w-full max-w-lg p-6 shadow-xl"
+        className="card w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between px-6 pt-5 pb-0 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
               <span className="material-symbols-outlined text-[20px] text-primary">
@@ -157,73 +248,151 @@ function VendorFormModal({ vendor, onClose, onSaved }: VendorFormModalProps) {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-0 border-b border-neutral-200 px-6 mt-4 flex-shrink-0">
+          {TAB_LABELS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-colors ${
+                tab === t.key ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Error */}
         {formError && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+          <div className="mx-6 mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700 flex-shrink-0">
             <span className="material-symbols-outlined text-[15px]">error</span>
             {formError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">
-              Vendor Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              ref={firstInputRef}
-              type="text"
-              className="form-input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Acme Supplies Ltd"
-            />
-          </div>
-          {field("registration_number", "Registration Number", { placeholder: "e.g. CC/2021/12345" })}
-          {field("contact_email", "Contact Email", { type: "email", placeholder: "vendor@example.com" })}
-          {field("contact_phone", "Contact Phone", { placeholder: "+264 61 000 0000" })}
-          {field("address", "Address", { placeholder: "Street, City, Country" })}
+        {/* Scrollable body */}
+        <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 px-6 py-4">
 
-          {/* Toggles */}
-          <div className="sm:col-span-2 flex gap-6">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-                checked={form.is_approved}
-                onChange={(e) => setForm((f) => ({ ...f, is_approved: e.target.checked }))}
-              />
-              <span className="text-xs font-medium text-neutral-700">Mark as Approved</span>
-            </label>
-            {isEdit && (
-              <label className="flex cursor-pointer items-center gap-2">
+          {/* ── Business ─────────────────────────────────────────────────────── */}
+          {tab === "basic" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                  Vendor / Company Name <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-                  checked={form.is_active}
-                  onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                  ref={firstInputRef}
+                  type="text"
+                  className="form-input"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Acme Supplies Ltd"
                 />
-                <span className="text-xs font-medium text-neutral-700">Active</span>
-              </label>
-            )}
-          </div>
+              </div>
+              {tf("registration_number", "Company Registration Number", { placeholder: "CC/2021/12345" })}
+              {tf("tax_number", "VAT / Tax Number", { placeholder: "e.g. 2012345678" })}
+              {sf("category", "Business Category", VENDOR_CATEGORIES)}
+              {sf("country", "Country of Registration", COUNTRIES)}
+              {tf("website", "Website", { type: "url", placeholder: "https://", span2: true })}
 
-          {/* Actions */}
-          <div className="sm:col-span-2 flex justify-end gap-2 pt-2 border-t border-neutral-100">
-            <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn-primary py-2 px-4 text-sm flex items-center gap-1.5 disabled:opacity-60"
-            >
-              {mutation.isPending && (
-                <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
-              )}
-              {mutation.isPending ? "Saving…" : isEdit ? "Save Changes" : "Add Vendor"}
-            </button>
-          </div>
+              <div className="sm:col-span-2">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+                    checked={form.is_sme}
+                    onChange={(e) => setForm((f) => ({ ...f, is_sme: e.target.checked }))}
+                  />
+                  <span className="text-xs font-medium text-neutral-700">
+                    Small or Medium Enterprise (SME)
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* ── Contact ───────────────────────────────────────────────────────── */}
+          {tab === "contact" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {tf("contact_name", "Primary Contact Person", { placeholder: "Full name", span2: true })}
+              {tf("contact_email", "Contact Email", { type: "email", placeholder: "vendor@example.com" })}
+              {tf("contact_phone", "Contact Phone", { placeholder: "+264 61 000 0000" })}
+              {tf("address", "Physical Address", { placeholder: "Street, City, Country", span2: true })}
+            </div>
+          )}
+
+          {/* ── Banking ───────────────────────────────────────────────────────── */}
+          {tab === "banking" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <p className="sm:col-span-2 text-xs text-neutral-400 -mb-1">
+                Banking details are stored securely for payment processing.
+              </p>
+              {tf("bank_name", "Bank Name", { placeholder: "e.g. First National Bank" })}
+              {sf("payment_terms", "Payment Terms", PAYMENT_TERMS)}
+              {tf("bank_account", "Account Number", { placeholder: "e.g. 62012345678" })}
+              {tf("bank_branch", "Branch / SWIFT Code", { placeholder: "e.g. 250655 or FIRNNAMW" })}
+            </div>
+          )}
+
+          {/* ── Admin ─────────────────────────────────────────────────────────── */}
+          {tab === "admin" && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
+                <textarea
+                  className="form-input h-28 resize-none"
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="Notes visible only to procurement staff…"
+                />
+              </div>
+              <div className="sm:col-span-2 flex gap-6">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+                    checked={form.is_approved}
+                    onChange={(e) => setForm((f) => ({ ...f, is_approved: e.target.checked }))}
+                  />
+                  <span className="text-xs font-medium text-neutral-700">Mark as Approved</span>
+                </label>
+                {isEdit && (
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+                      checked={form.is_active}
+                      onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+                    />
+                    <span className="text-xs font-medium text-neutral-700">Active</span>
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
         </form>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-6 py-4 border-t border-neutral-100 flex-shrink-0">
+          <button type="button" onClick={onClose} className="btn-secondary py-2 px-4 text-sm">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={mutation.isPending}
+            className="btn-primary py-2 px-4 text-sm flex items-center gap-1.5 disabled:opacity-60"
+          >
+            {mutation.isPending && (
+              <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
+            )}
+            {mutation.isPending ? "Saving…" : isEdit ? "Save Changes" : "Add Vendor"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -316,8 +485,10 @@ export default function VendorsPage() {
 
   const vendors = data ?? [];
 
-  const approvedCount = vendors.filter((v) => v.is_approved && v.is_active).length;
-  const pendingCount  = vendors.filter((v) => !v.is_approved && v.is_active).length;
+  const approvedCount    = vendors.filter((v) => v.is_approved && v.is_active && !v.is_blacklisted).length;
+  const pendingCount     = vendors.filter((v) => !v.is_approved && v.is_active && !v.is_blacklisted).length;
+  const blacklistedCount = vendors.filter((v) => v.is_blacklisted).length;
+  const avgRated         = vendors.filter((v) => v.ratings_avg_rating).length;
 
   return (
     <>
@@ -342,14 +513,14 @@ export default function VendorsPage() {
         {!isLoading && !isError && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: "Total Vendors",    value: vendors.length,                                     icon: "storefront",  color: "text-primary",   bg: "bg-primary/10"  },
-              { label: "Approved",         value: approvedCount,                                      icon: "verified",    color: "text-green-600", bg: "bg-green-50"    },
-              { label: "Pending Approval", value: pendingCount,                                       icon: "pending",     color: "text-amber-600", bg: "bg-amber-50"    },
-              { label: "Total Quotes",     value: vendors.reduce((s, v) => s + (v.quotes_count ?? 0), 0), icon: "request_quote", color: "text-purple-600", bg: "bg-purple-50" },
+              { label: "Total Vendors",    value: vendors.length,    icon: "storefront", color: "text-primary",   bg: "bg-primary/10" },
+              { label: "Approved",         value: approvedCount,     icon: "verified",   color: "text-green-600", bg: "bg-green-50"   },
+              { label: "Pending Approval", value: pendingCount,      icon: "pending",    color: "text-amber-600", bg: "bg-amber-50"   },
+              { label: "Blacklisted",      value: blacklistedCount,  icon: "gpp_bad",    color: "text-red-600",   bg: "bg-red-50"     },
             ].map((kpi) => (
               <div key={kpi.label} className="card p-4 flex items-center gap-3">
                 <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${kpi.bg}`}>
-                  <span className={`material-symbols-outlined text-[20px] ${kpi.color}`}>{kpi.icon}</span>
+                  <span className={`material-symbols-outlined text-[20px] ${kpi.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{kpi.icon}</span>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-neutral-900">{kpi.value}</p>
@@ -425,10 +596,10 @@ export default function VendorsPage() {
               <thead>
                 <tr>
                   <th className="text-left">Vendor</th>
-                  <th className="text-left">Reg. Number</th>
+                  <th className="text-left">Category</th>
                   <th className="text-left">Contact</th>
-                  <th className="text-left">Address</th>
                   <th className="text-left">Quotes</th>
+                  <th className="text-left">Rating</th>
                   <th className="text-left">Status</th>
                   <th className="text-right">Actions</th>
                 </tr>
@@ -441,37 +612,45 @@ export default function VendorsPage() {
                 ) : (
                   vendors.map((v) => (
                     <tr key={v.id} className="group hover:bg-neutral-50/60">
-                      {/* Vendor name + email */}
+                      {/* Vendor name + reg + country */}
                       <td>
                         <Link href={`/procurement/vendors/${v.id}`} className="group/link block">
                           <span className="font-medium text-neutral-900 group-hover/link:text-primary transition-colors">
                             {v.name}
                           </span>
-                          {v.contact_email && (
-                            <span className="block text-xs text-neutral-400 mt-0.5">{v.contact_email}</span>
-                          )}
+                          <span className="flex items-center gap-2 mt-0.5">
+                            {v.registration_number && (
+                              <span className="text-[10px] font-mono text-neutral-400">{v.registration_number}</span>
+                            )}
+                            {v.is_sme && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 uppercase tracking-wide">SME</span>
+                            )}
+                          </span>
                         </Link>
                       </td>
-                      {/* Reg number */}
-                      <td>
-                        <span className="font-mono text-xs text-neutral-500">
-                          {v.registration_number ?? "—"}
-                        </span>
+                      {/* Category */}
+                      <td className="text-xs text-neutral-600">
+                        {v.category ? (
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px] text-neutral-400">category</span>
+                            {v.category}
+                          </span>
+                        ) : (
+                          <span className="text-neutral-300">—</span>
+                        )}
                       </td>
-                      {/* Phone */}
+                      {/* Contact */}
                       <td className="text-sm text-neutral-600">
                         {v.contact_phone ? (
                           <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px] text-neutral-400">phone</span>
                             {v.contact_phone}
                           </span>
+                        ) : v.contact_email ? (
+                          <span className="text-xs text-neutral-500">{v.contact_email}</span>
                         ) : (
                           <span className="text-neutral-300">—</span>
                         )}
-                      </td>
-                      {/* Address */}
-                      <td className="text-sm text-neutral-600 max-w-[180px] truncate">
-                        {v.address ?? <span className="text-neutral-300">—</span>}
                       </td>
                       {/* Quotes count */}
                       <td>
@@ -480,6 +659,10 @@ export default function VendorsPage() {
                         ) : (
                           <span className="text-xs text-neutral-300">0</span>
                         )}
+                      </td>
+                      {/* Rating */}
+                      <td>
+                        <StarDisplay avg={v.ratings_avg_rating} count={v.ratings_count} />
                       </td>
                       {/* Status */}
                       <td>{statusBadge(v)}</td>

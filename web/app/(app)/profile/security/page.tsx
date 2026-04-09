@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { profileApi } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { profileApi, profileSessionsApi, type UserSession } from "@/lib/api";
+import { formatDateRelative } from "@/lib/utils";
 
 const NAV = [
   { label: "Profile",     href: "/profile",           icon: "person" },
@@ -18,10 +19,29 @@ export default function ProfileSecurityPage() {
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
 
+  // Sessions state
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
+  const [revokingOthers, setRevokingOthers] = useState(false);
+
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
+
+  const loadSessions = async () => {
+    try {
+      const res = await profileSessionsApi.list();
+      setSessions(res.data.data);
+    } catch {
+      // silently ignore — sessions section shows empty
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => { loadSessions(); }, []);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +53,6 @@ export default function ProfileSecurityPage() {
       setPwForm({ current: "", next: "", confirm: "" });
       showToast("Password changed successfully.");
     } catch (err: unknown) {
-      console.error("[ChangePassword]", err);
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg =
         ax.response?.data?.errors?.current_password?.[0] ??
@@ -43,6 +62,32 @@ export default function ProfileSecurityPage() {
       showToast(msg, "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRevoke = async (id: number) => {
+    setRevokingId(id);
+    try {
+      await profileSessionsApi.revoke(id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      showToast("Session revoked.");
+    } catch {
+      showToast("Failed to revoke session.", "error");
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
+  const handleRevokeOthers = async () => {
+    setRevokingOthers(true);
+    try {
+      await profileSessionsApi.revokeOthers();
+      setSessions((prev) => prev.filter((s) => s.is_current));
+      showToast("All other sessions signed out.");
+    } catch {
+      showToast("Failed to sign out other sessions.", "error");
+    } finally {
+      setRevokingOthers(false);
     }
   };
 
@@ -57,12 +102,10 @@ export default function ProfileSecurityPage() {
 
   const strength = pwForm.next ? passwordStrength(pwForm.next) : null;
 
-  // Active sessions stub
-  const sessions = [
-    { id: 1, device: "Chrome on Windows 11",  ip: "192.168.1.45", location: "Windhoek, Namibia", last: "Just now",           current: true  },
-    { id: 2, device: "Safari on iPhone 15",   ip: "197.220.12.8", location: "Windhoek, Namibia", last: "2 hours ago",       current: false },
-    { id: 3, device: "Firefox on macOS",      ip: "102.176.8.31", location: "Cape Town, SA",     last: "Yesterday, 14:22",  current: false },
-  ];
+  const deviceIcon = (device: string) =>
+    device.toLowerCase().includes("iphone") || device.toLowerCase().includes("android") || device.toLowerCase().includes("mobile")
+      ? "smartphone"
+      : "computer";
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -178,34 +221,51 @@ export default function ProfileSecurityPage() {
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Active Sessions</h3>
             <p className="text-xs text-neutral-400">Devices currently signed in to your account</p>
           </div>
-          <button type="button" onClick={() => showToast("All other sessions signed out.")}
-            className="text-xs font-semibold text-red-500 hover:underline">
-            Sign out all others
-          </button>
+          {sessions.filter((s) => !s.is_current).length > 0 && (
+            <button type="button" onClick={handleRevokeOthers} disabled={revokingOthers}
+              className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-40">
+              {revokingOthers ? "Signing out…" : "Sign out all others"}
+            </button>
+          )}
         </div>
-        <div className="space-y-3">
-          {sessions.map((s) => (
-            <div key={s.id} className={`flex items-start gap-3 rounded-xl p-3 ${s.current ? "bg-primary/5 border border-primary/20" : "bg-neutral-50 border border-neutral-100"}`}>
-              <span className="material-symbols-outlined text-neutral-400 text-[22px] mt-0.5">
-                {s.device.includes("iPhone") || s.device.includes("Android") ? "smartphone" : "computer"}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.device}</p>
-                  {s.current && <span className="badge badge-success text-[10px]">Current</span>}
+
+        {sessionsLoading ? (
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />
+            ))}
+          </div>
+        ) : sessions.length === 0 ? (
+          <p className="text-sm text-neutral-400 text-center py-4">No active sessions found.</p>
+        ) : (
+          <div className="space-y-3">
+            {sessions.map((s) => (
+              <div key={s.id} className={`flex items-start gap-3 rounded-xl p-3 ${s.is_current ? "bg-primary/5 border border-primary/20" : "bg-neutral-50 border border-neutral-100"}`}>
+                <span className="material-symbols-outlined text-neutral-400 text-[22px] mt-0.5">
+                  {deviceIcon(s.device)}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.device}</p>
+                    {s.is_current && <span className="badge badge-success text-[10px]">Current</span>}
+                  </div>
+                  {s.ip_address && (
+                    <p className="text-xs text-neutral-400 mt-0.5">{s.ip_address}</p>
+                  )}
+                  <p className="text-xs text-neutral-300 mt-0.5">
+                    Last active: {s.last_active_at ? formatDateRelative(s.last_active_at) : "Unknown"}
+                  </p>
                 </div>
-                <p className="text-xs text-neutral-400 mt-0.5">{s.ip} · {s.location}</p>
-                <p className="text-xs text-neutral-300 mt-0.5">Last active: {s.last}</p>
+                {!s.is_current && (
+                  <button type="button" onClick={() => handleRevoke(s.id)} disabled={revokingId === s.id}
+                    className="text-xs font-medium text-red-500 hover:underline flex-shrink-0 disabled:opacity-40">
+                    {revokingId === s.id ? "Revoking…" : "Revoke"}
+                  </button>
+                )}
               </div>
-              {!s.current && (
-                <button type="button" onClick={() => showToast("Session revoked.")}
-                  className="text-xs font-medium text-red-500 hover:underline flex-shrink-0">
-                  Revoke
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Session timeout */}

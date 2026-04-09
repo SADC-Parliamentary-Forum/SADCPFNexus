@@ -363,6 +363,22 @@ export const adminApi = {
     api.put<{ data: TimesheetProject; message: string }>(`/admin/timesheet-projects/${id}`, data),
   deleteTimesheetProject: (id: number) =>
     api.delete(`/admin/timesheet-projects/${id}`),
+
+  // Holiday Calendars
+  listHolidayCalendars: () =>
+    api.get<{ data: HolidayCalendar[] }>("/admin/holiday-calendars"),
+  createHolidayCalendar: (data: { name: string; country_code?: string; is_default?: boolean }) =>
+    api.post<{ data: HolidayCalendar; message: string }>("/admin/holiday-calendars", data),
+  updateHolidayCalendar: (id: number, data: { name?: string; country_code?: string; is_default?: boolean }) =>
+    api.put<{ data: HolidayCalendar; message: string }>(`/admin/holiday-calendars/${id}`, data),
+  deleteHolidayCalendar: (id: number) =>
+    api.delete(`/admin/holiday-calendars/${id}`),
+  listHolidayDates: (calendarId: number, params?: { year?: number }) =>
+    api.get<{ data: HolidayDate[] }>(`/admin/holiday-calendars/${calendarId}/dates`, { params }),
+  bulkUpsertHolidayDates: (calendarId: number, dates: HolidayDateInput[]) =>
+    api.post<{ data: HolidayDate[]; message: string }>(`/admin/holiday-calendars/${calendarId}/dates`, { dates }),
+  deleteHolidayDate: (calendarId: number, dateId: number) =>
+    api.delete(`/admin/holiday-calendars/${calendarId}/dates/${dateId}`),
 };
 
 // ─── Positions (Establishment Register) ──────────────────────────────────────
@@ -417,6 +433,23 @@ export const profileApi = {
       password: newPassword,
       password_confirmation: confirmPassword,
     }),
+};
+
+// ─── Profile Sessions ──────────────────────────────────────────────────────────
+
+export interface UserSession {
+  id: number;
+  device: string;
+  ip_address: string | null;
+  last_active_at: string | null;
+  created_at: string;
+  is_current: boolean;
+}
+
+export const profileSessionsApi = {
+  list: () => api.get<{ data: UserSession[] }>("/profile/sessions"),
+  revoke: (id: number) => api.delete<{ message: string }>(`/profile/sessions/${id}`),
+  revokeOthers: () => api.delete<{ message: string }>("/profile/sessions/others"),
 };
 
 // ─── Profile Change Requests ───────────────────────────────────────────────────
@@ -897,12 +930,82 @@ export const assetRequestsApi = {
     api.post<AssetRequest>("/asset-requests", data),
 };
 
+// ─── Asset Movements ──────────────────────────────────────────────────────────
+
+export interface AssetMovement {
+  id: number;
+  tenant_id: number;
+  asset_id: number;
+  from_user_id: number | null;
+  to_user_id: number | null;
+  recorded_by: number;
+  movement_type: "transfer" | "maintenance" | "disposal" | "storage" | "return";
+  reason: string | null;
+  notes: string | null;
+  movement_date: string;
+  created_at: string;
+  asset?: Pick<Asset, "id" | "asset_code" | "name" | "category">;
+  from_user?: Pick<User, "id" | "name" | "email"> | null;
+  to_user?: Pick<User, "id" | "name" | "email"> | null;
+  recorder?: Pick<User, "id" | "name" | "email">;
+}
+
+export const assetMovementsApi = {
+  list: (params?: { asset_id?: number; movement_type?: string; per_page?: number; page?: number }) =>
+    api.get<PaginatedResponse<AssetMovement>>("/assets/movements/list", { params }),
+  create: (data: {
+    asset_id: number;
+    from_user_id?: number;
+    to_user_id?: number;
+    movement_type: AssetMovement["movement_type"];
+    reason?: string;
+    notes?: string;
+    movement_date: string;
+  }) => api.post<{ data: AssetMovement; message: string }>("/assets/movements", data),
+  get: (id: number) => api.get<AssetMovement>(`/assets/movements/${id}`),
+};
+
 // ─── Reports (hub endpoints for report types) ───────────────────────────────────
+
+export interface ReportFilter {
+  period_from?: string;
+  period_to?: string;
+  user_id?: number | string;
+  department_id?: number | string;
+  status?: string;
+  per_page?: number;
+  format?: "csv";
+  committee?: string;
+  category?: string;
+}
+
+export interface ReportUser {
+  id: number;
+  name: string;
+  email: string;
+  department_id: number | null;
+}
+
+export interface ReportDepartment {
+  id: number;
+  name: string;
+  code: string;
+}
 
 export const reportsApi = {
   summary: () => api.get<{ report_types: { id: string; label: string; count: number }[] }>("/reports/summary"),
-  assets: (params?: { category?: string; period_from?: string; period_to?: string; per_page?: number }) =>
-    api.get<PaginatedResponse<Asset>>("/reports/assets", { params }),
+  users: () => api.get<{ data: ReportUser[] }>("/reports/users"),
+  departments: () => api.get<{ data: ReportDepartment[] }>("/reports/departments"),
+  travel: (params?: ReportFilter) => api.get("/reports/travel", { params }),
+  leave: (params?: ReportFilter) => api.get("/reports/leave", { params }),
+  dsa: (params?: ReportFilter) => api.get("/reports/dsa", { params }),
+  assets: (params?: ReportFilter) => api.get<PaginatedResponse<Asset>>("/reports/assets", { params }),
+  imprest: (params?: ReportFilter) => api.get("/reports/imprest", { params }),
+  procurement: (params?: ReportFilter) => api.get("/reports/procurement", { params }),
+  salaryAdvances: (params?: ReportFilter) => api.get("/reports/salary-advances", { params }),
+  hrTimesheets: (params?: ReportFilter) => api.get("/reports/hr-timesheets", { params }),
+  risk: (params?: ReportFilter) => api.get("/reports/risk", { params }),
+  governance: (params?: ReportFilter) => api.get("/reports/governance", { params }),
 };
 
 // ─── Leave ───────────────────────────────────────────────────────────────────
@@ -1084,15 +1187,75 @@ export const budgetReservationsApi = {
 export interface Vendor {
   id: number;
   name: string;
+  contact_name: string | null;
   registration_number: string | null;
+  tax_number: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  website: string | null;
   address: string | null;
+  country: string | null;
+  category: string | null;
+  payment_terms: string | null;
+  bank_name: string | null;
+  bank_account: string | null;
+  bank_branch: string | null;
+  is_sme: boolean;
+  notes: string | null;
   is_approved: boolean;
   is_active: boolean;
+  is_blacklisted: boolean;
+  blacklisted_at: string | null;
+  blacklist_reason: string | null;
+  blacklist_reference: string | null;
   quotes_count?: number;
+  ratings_avg_rating?: number | null;
+  ratings_count?: number;
   created_at?: string;
   recent_quotes?: VendorQuote[];
+  ratings?: VendorRating[];
+  my_rating?: VendorRating | null;
+}
+
+export interface VendorContract {
+  id: number;
+  reference_number: string;
+  title: string;
+  value: number;
+  currency: string;
+  start_date: string;
+  end_date: string;
+  status: "draft" | "active" | "completed" | "terminated";
+  signed_at: string | null;
+  terminated_at: string | null;
+  procurement_request_id: number | null;
+  procurement_request?: { id: number; reference_number: string; title: string };
+}
+
+export interface VendorPerformanceEvaluation {
+  id: number;
+  vendor_id: number;
+  contract_id: number | null;
+  evaluated_by: number;
+  delivery_score: number;
+  quality_score: number;
+  compliance_score: number;
+  communication_score: number;
+  overall_score: number;
+  notes: string | null;
+  created_at: string;
+  evaluator?: { id: number; name: string };
+  contract?: { id: number; reference_number: string; title: string; status: string };
+}
+
+export interface VendorRating {
+  id: number;
+  vendor_id: number;
+  rated_by: number;
+  rating: number;
+  review: string | null;
+  updated_at: string;
+  rater?: { id: number; name: string };
 }
 
 export interface VendorQuote {
@@ -1130,6 +1293,37 @@ export const vendorsApi = {
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
+  listRatings: (id: number) =>
+    api.get<{ data: VendorRating[]; avg: number | null; count: number; my_rating: VendorRating | null }>(
+      `/procurement/vendors/${id}/ratings`
+    ),
+  rate: (id: number, rating: number, review?: string) =>
+    api.post<{ data: VendorRating; avg: number | null; message: string }>(
+      `/procurement/vendors/${id}/ratings`,
+      { rating, review }
+    ),
+  listContracts: (id: number) =>
+    api.get<{ data: VendorContract[] }>(`/procurement/vendors/${id}/contracts`),
+  blacklist: (id: number, reason: string, reference?: string) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/blacklist`, { reason, reference }),
+  unblacklist: (id: number) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/unblacklist`),
+  listEvaluations: (id: number) =>
+    api.get<{ data: VendorPerformanceEvaluation[]; avg: Record<string, number>; count: number }>(
+      `/procurement/vendors/${id}/evaluations`
+    ),
+  submitEvaluation: (id: number, data: {
+    delivery_score: number;
+    quality_score: number;
+    compliance_score: number;
+    communication_score: number;
+    contract_id?: number | null;
+    notes?: string;
+  }) =>
+    api.post<{ data: VendorPerformanceEvaluation; message: string }>(
+      `/procurement/vendors/${id}/evaluations`,
+      data
+    ),
 };
 
 // ─── Purchase Orders ─────────────────────────────────────────────────────────
@@ -1496,7 +1690,42 @@ export const hrApi = {
       "/hr/timesheets/leave-days",
       { params: { week_start: weekStart, week_end: weekEnd } }
     ),
+  getTimesheetTravelDays: (weekStart: string, weekEnd: string) =>
+    api.get<{ data: Record<string, { purpose: string; destination: string; reference: string }> }>(
+      "/hr/timesheets/travel-days",
+      { params: { week_start: weekStart, week_end: weekEnd } }
+    ),
+  getTimesheetHolidayDates: (start: string, end: string) =>
+    api.get<{ data: Record<string, { name: string; is_paid: boolean }> }>(
+      "/hr/timesheets/holiday-dates",
+      { params: { start, end } }
+    ),
 };
+
+// ─── Holiday Calendars ───────────────────────────────────────────────────────
+
+export interface HolidayCalendar {
+  id: number;
+  tenant_id: number;
+  name: string;
+  country_code: string | null;
+  is_default: boolean;
+  dates_count?: number;
+}
+
+export interface HolidayDate {
+  id: number;
+  holiday_calendar_id: number;
+  holiday_name: string;
+  date: string;
+  is_paid_holiday: boolean;
+}
+
+export interface HolidayDateInput {
+  date: string;
+  holiday_name: string;
+  is_paid_holiday?: boolean;
+}
 
 // ─── Programmes (PIF) ────────────────────────────────────────────────────────
 
@@ -2284,6 +2513,30 @@ export interface AuditLogEntry {
 export const auditApi = {
   list: (params?: { user?: string; module?: string; action?: string; date_from?: string; date_to?: string; per_page?: number; page?: number }) =>
     api.get<{ data: AuditLogEntry[]; current_page: number; last_page: number; total: number }>("/admin/audit-logs", { params }),
+};
+
+// ─── Ledger Verifications ─────────────────────────────────────────────────────
+export interface LedgerVerification {
+  id: number;
+  tenant_id: number;
+  initiated_by: number | null;
+  type: "manual" | "scheduled";
+  status: "pass" | "fail";
+  manifest_hash: string | null;
+  entries_checked: number;
+  notes: string | null;
+  verified_at: string;
+  created_at: string;
+  initiator?: { id: number; name: string; email: string } | null;
+}
+
+export const ledgerVerificationsApi = {
+  list: (params?: { per_page?: number; page?: number }) =>
+    api.get<{ data: LedgerVerification[]; current_page: number; last_page: number; total: number }>("/admin/audit/ledger/verifications", { params }),
+  verify: (notes?: string) =>
+    api.post<{ data: LedgerVerification; message: string }>("/admin/audit/ledger/verify", { notes }),
+  get: (id: number) =>
+    api.get<LedgerVerification>(`/admin/audit/ledger/verifications/${id}`),
 };
 
 // ─── System Settings ──────────────────────────────────────────────────────────

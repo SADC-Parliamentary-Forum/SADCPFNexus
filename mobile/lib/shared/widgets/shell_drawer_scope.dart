@@ -17,8 +17,10 @@ class ShellDrawerScope extends InheritedWidget {
 
   static VoidCallback openDrawerOf(BuildContext context) {
     final scope = maybeOf(context);
-    assert(scope != null, 'ShellDrawerScope not found. Is this widget under AppShell?');
-    return scope!.openDrawer;
+    if (scope == null) {
+      return () {};
+    }
+    return scope.openDrawer;
   }
 
   @override

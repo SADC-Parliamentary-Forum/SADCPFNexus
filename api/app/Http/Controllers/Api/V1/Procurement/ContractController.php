@@ -28,6 +28,10 @@ class ContractController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->filled('vendor_id')) {
+            $query->where('vendor_id', (int) $request->vendor_id);
+        }
+
         return response()->json(['data' => $query->get()]);
     }
 

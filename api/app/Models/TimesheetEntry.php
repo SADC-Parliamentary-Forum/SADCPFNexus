@@ -22,10 +22,14 @@ class TimesheetEntry extends Model
         'hours',
         'overtime_hours',
         'description',
+        'source_type',
+        'source_record_id',
+        'is_locked',
     ];
 
     protected $casts = [
-        'work_date' => 'date',
+        'work_date'  => 'date',
+        'is_locked'  => 'bool',
     ];
 
     public function timesheet(): BelongsTo

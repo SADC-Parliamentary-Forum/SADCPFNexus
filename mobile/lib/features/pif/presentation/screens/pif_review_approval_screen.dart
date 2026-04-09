@@ -5,422 +5,308 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
 
-// ─────────────────────────────────────────────────────────────
-//  FALLBACK MOCK DATA (when no programmeId or API fails)
-// ─────────────────────────────────────────────────────────────
-const _mockPif = {
-  'id': 'PROJ-0025',
-  'status': 'fully_approved',
-  'title': 'SRHR Governance Workshop',
-  'subtitle': 'Implementation Approved. Financial actions enabled.',
-  'budget_code': 'SADC-SRHR-2024-001',
-  'approved_date': 'Oct 10, 2024',
-  'location': 'Johannesburg, ZA',
-};
-
-final _linkedDocs = [
-  {
-    'label': 'Travel Requisition',
-    'ref': 'TK-2024-034',
-    'status': 'approved',
-    'icon': Icons.flight_takeoff,
-    'color': AppColors.primary,
-  },
-  {
-    'label': 'Imprest Request',
-    'ref': 'Funding Generated',
-    'status': 'create',
-    'icon': Icons.account_balance_wallet_outlined,
-    'color': AppColors.warning,
-  },
-  {
-    'label': 'Arrival Matrix & Participants',
-    'ref': '14 MPs, 3 Staff Members',
-    'status': 'info',
-    'icon': Icons.people_alt_outlined,
-    'color': AppColors.info,
-  },
-];
-
-final _approvalHistory = [
-  {
-    'role': 'Programme Officer',
-    'action': 'Drafted & Reviewed',
-    'time': null,
-    'done': true,
-  },
-  {
-    'role': 'Director of Programs',
-    'action': 'Approved',
-    'time': 'Oct 12, 14:30',
-    'done': true,
-  },
-  {
-    'role': 'Finance Department',
-    'action': 'Budget Confirmed',
-    'time': null,
-    'done': true,
-  },
-  {
-    'role': 'Secretary General',
-    'action': 'Final Approval',
-    'time': 'Oct 12, 09:15',
-    'done': true,
-  },
-];
-
-const _pifQuoteDocTypes = ['hotel_quote', 'transport_quote', 'other'];
-const _pifDocTypeLabels = {
-  'concept_note': 'Concept Note',
-  'memo': 'Memo',
-  'hotel_quote': 'Hotel Quote',
-  'transport_quote': 'Transport Quote',
-  'other': 'Other',
-};
-
-// ─────────────────────────────────────────────────────────────
-//  SCREEN
-// ─────────────────────────────────────────────────────────────
 class PifReviewApprovalScreen extends ConsumerStatefulWidget {
   const PifReviewApprovalScreen({super.key, this.programmeId});
 
   final String? programmeId;
 
   @override
-  ConsumerState<PifReviewApprovalScreen> createState() => _PifReviewApprovalScreenState();
+  ConsumerState<PifReviewApprovalScreen> createState() =>
+      _PifReviewApprovalScreenState();
 }
 
-class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScreen> {
-  bool _participantsExpanded = false;
-  bool _generatingImprest = false;
-  Map<String, dynamic>? _programme;
+class _PifReviewApprovalScreenState
+    extends ConsumerState<PifReviewApprovalScreen> {
   bool _loading = true;
-  String? _error;
-  List<Map<String, dynamic>> _attachments = [];
   bool _attachmentsLoading = false;
-  String? _attachmentsError;
   bool _uploadingAttachment = false;
+  bool _generatingImprest = false;
+  String? _error;
+  Map<String, dynamic>? _programme;
+  List<Map<String, dynamic>> _attachments = [];
 
   @override
   void initState() {
     super.initState();
-    if (widget.programmeId != null) {
-      _loadProgramme();
-    } else {
-      setState(() => _loading = false);
-    }
+    _load();
   }
 
-  Future<void> _loadProgramme() async {
-    if (widget.programmeId == null) return;
-    setState(() { _loading = true; _error = null; });
+  Future<void> _load() async {
+    final programmeId = widget.programmeId;
+    if (programmeId == null || programmeId.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'Missing programme ID.';
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final res = await dio.get<Map<String, dynamic>>('/programmes/${widget.programmeId}');
-      final data = res.data;
+      final programmeRes =
+          await dio.get<Map<String, dynamic>>('/programmes/$programmeId');
+      final attachmentsRes = await dio
+          .get<Map<String, dynamic>>('/programmes/$programmeId/attachments');
+
       if (!mounted) return;
-      if (data != null) {
-        final approvedAt = data['approved_at'] ?? data['submitted_at'];
-        String approvedStr = '—';
-        if (approvedAt != null) {
-          if (approvedAt is String) {
-            approvedStr = AppDateFormatter.short(approvedAt);
-          } else if (approvedAt is Map && approvedAt['date'] != null) {
-            approvedStr = AppDateFormatter.short(approvedAt['date'].toString());
-          }
-        }
-        setState(() {
-          _programme = {
-            'id': data['id']?.toString() ?? data['reference_number'],
-            'status': data['status'] ?? 'draft',
-            'title': data['title'] ?? 'Programme',
-            'subtitle': _statusSubtitle(data['status']),
-            'budget_code': data['reference_number'] ?? '—',
-            'approved_date': approvedStr,
-            'location': data['member_states']?.toString() ?? '—',
-          };
-          _loading = false;
-        });
-        _loadAttachments();
-      } else {
-        setState(() { _loading = false; });
-      }
+      setState(() {
+        _programme = programmeRes.data == null
+            ? <String, dynamic>{}
+            : Map<String, dynamic>.from(programmeRes.data as Map);
+        _attachments = ((attachmentsRes.data?['data'] as List<dynamic>?) ?? const [])
+            .map(
+              (item) => item is Map
+                  ? Map<String, dynamic>.from(item)
+                  : <String, dynamic>{},
+            )
+            .toList();
+        _loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _error = 'Failed to load programme.'; _loading = false; });
+      setState(() {
+        _error = 'Failed to load programme.';
+        _loading = false;
+      });
     }
   }
-
-  String _statusSubtitle(dynamic status) {
-    if (status == null) return 'Draft.';
-    final s = status.toString().toLowerCase();
-    if (s == 'approved') return 'Implementation Approved. Financial actions enabled.';
-    if (s == 'submitted') return 'Pending approval.';
-    return 'Status: $status';
-  }
-
-  Future<void> _generateImprest() async {
-    setState(() => _generatingImprest = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _generatingImprest = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Imprest request created successfully'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
-
-  Map<String, dynamic> get _pif => _programme ?? _mockPif;
 
   Future<void> _loadAttachments() async {
-    if (widget.programmeId == null) return;
-    setState(() { _attachmentsLoading = true; _attachmentsError = null; });
+    final programmeId = widget.programmeId;
+    if (programmeId == null || programmeId.isEmpty) return;
+    setState(() => _attachmentsLoading = true);
     try {
-      final dio = ref.read(apiClientProvider).dio;
-      final res = await dio.get<Map<String, dynamic>>('/programmes/${widget.programmeId}/attachments');
+      final res = await ref
+          .read(apiClientProvider)
+          .dio
+          .get<Map<String, dynamic>>('/programmes/$programmeId/attachments');
       if (!mounted) return;
-      final list = res.data?['data'];
-      final items = list is List ? list.map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{}).toList() : <Map<String, dynamic>>[];
-      setState(() { _attachments = items; _attachmentsLoading = false; });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() { _attachmentsError = 'Failed to load attachments.'; _attachmentsLoading = false; });
-    }
-  }
-
-  Future<void> _downloadAttachment(Map<String, dynamic> att) async {
-    final id = att['id'];
-    final name = att['original_filename']?.toString() ?? 'download';
-    if (id == null) return;
-    try {
-      final dio = ref.read(apiClientProvider).dio;
-      final res = await dio.get<List<int>>(
-        '/programmes/${widget.programmeId}/attachments/$id/download',
-        options: Options(responseType: ResponseType.bytes),
-      );
-      if (res.data == null || res.data!.isEmpty) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File not available.')));
-        return;
-      }
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/$name');
-      await file.writeAsBytes(res.data!);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved: ${file.path}')));
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Download failed.')));
+      setState(() {
+        _attachments = ((res.data?['data'] as List<dynamic>?) ?? const [])
+            .map(
+              (item) => item is Map
+                  ? Map<String, dynamic>.from(item)
+                  : <String, dynamic>{},
+            )
+            .toList();
+      });
+    } finally {
+      if (mounted) setState(() => _attachmentsLoading = false);
     }
   }
 
   Future<void> _pickAndUploadAttachment() async {
-    if (widget.programmeId == null) return;
-    final result = await FilePicker.platform.pickFiles(allowMultiple: false, type: FileType.any);
-    final path = result?.files.single.path;
-    if (path == null || !mounted) return;
-    final filename = result!.files.single.name;
-    final docType = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Document type'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(title: const Text('Concept Note'), onTap: () => Navigator.pop(ctx, 'concept_note')),
-              ListTile(title: const Text('Memo'), onTap: () => Navigator.pop(ctx, 'memo')),
-              ListTile(title: const Text('Hotel Quote'), onTap: () => Navigator.pop(ctx, 'hotel_quote')),
-              ListTile(title: const Text('Transport Quote'), onTap: () => Navigator.pop(ctx, 'transport_quote')),
-              ListTile(title: const Text('Other'), onTap: () => Navigator.pop(ctx, 'other')),
-            ],
-          ),
-        ),
-      ),
+    final programmeId = widget.programmeId;
+    if (programmeId == null || programmeId.isEmpty) return;
+    final file = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.any,
     );
-    if (docType == null || !mounted) return;
+    final path = file?.files.single.path;
+    if (path == null || !mounted) return;
+
     setState(() => _uploadingAttachment = true);
     try {
-      final dio = ref.read(apiClientProvider).dio;
       final form = FormData.fromMap({
-        'file': await MultipartFile.fromFile(path, filename: filename),
-        'document_type': docType,
+        'file': await MultipartFile.fromFile(path, filename: file!.files.single.name),
+        'document_type': 'other',
       });
-      await dio.post<Map<String, dynamic>>('/programmes/${widget.programmeId}/attachments', data: form);
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .post('/programmes/$programmeId/attachments', data: form);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attachment uploaded.'), backgroundColor: AppColors.success));
-      _loadAttachments();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Attachment uploaded.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      await _loadAttachments();
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upload failed.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Upload failed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _uploadingAttachment = false);
     }
   }
 
-  Widget _buildAttachmentCard(Map<String, dynamic> a) {
-    final type = a['document_type']?.toString() ?? '';
-    final typeLabel = _pifDocTypeLabels[type] ?? type;
-    final name = a['original_filename']?.toString() ?? '—';
-    final isQuote = _pifQuoteDocTypes.contains(type);
-    final isChosen = a['is_chosen_quote'] == true;
-    final reason = a['selection_reason']?.toString();
-    final sizeBytes = a['size_bytes'];
-    final sizeStr = sizeBytes != null
-        ? (sizeBytes is int && sizeBytes < 1024)
-            ? '$sizeBytes B'
-            : '${((sizeBytes is int ? sizeBytes.toDouble() : (sizeBytes is num ? sizeBytes.toDouble() : 0)) / 1024).toStringAsFixed(1)} KB'
-        : null;
-    final createdAt = a['created_at']?.toString();
-    final dateStr = createdAt != null ? AppDateFormatter.short(createdAt) : null;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(typeLabel, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 2),
-                    Text(name, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-                    if (sizeStr != null || dateStr != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        [if (sizeStr != null) sizeStr, if (dateStr != null) dateStr].join(' · '),
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                      ),
-                    ],
-                    if (isChosen) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: AppColors.success.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
-                        child: const Text('Chosen quote', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.w600)),
-                      ),
-                      if (reason != null && reason.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(reason, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.download_outlined, size: 20, color: AppColors.primary),
-                    onPressed: () => _downloadAttachment(a),
-                    tooltip: 'Download',
-                  ),
-                  if (isQuote)
-                    if (isChosen)
-                      TextButton(
-                        onPressed: () => _setChosenQuote(a, clear: true),
-                        child: const Text('Clear chosen', style: TextStyle(fontSize: 12)),
-                      )
-                    else
-                      TextButton(
-                        onPressed: () => _setChosenQuote(a),
-                        child: const Text('Mark chosen', style: TextStyle(fontSize: 12)),
-                      ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.danger),
-                    onPressed: () => _deleteAttachment(a),
-                    tooltip: 'Delete',
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteAttachment(Map<String, dynamic> att) async {
-    if (widget.programmeId == null) return;
-    final id = att['id'];
-    final name = att['original_filename']?.toString() ?? 'this attachment';
-    if (id == null) return;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete attachment'),
-        content: Text('Remove "$name"? This cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.danger)),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
+  Future<void> _downloadAttachment(Map<String, dynamic> attachment) async {
+    final programmeId = widget.programmeId;
+    final attachmentId = attachment['id'];
+    if (programmeId == null || attachmentId == null) return;
     try {
-      final dio = ref.read(apiClientProvider).dio;
-      await dio.delete('/programmes/${widget.programmeId}/attachments/$id');
+      final res = await ref.read(apiClientProvider).dio.get<List<int>>(
+            '/programmes/$programmeId/attachments/$attachmentId/download',
+            options: Options(responseType: ResponseType.bytes),
+          );
+      final dir = await getTemporaryDirectory();
+      final filename =
+          attachment['original_filename']?.toString() ?? 'attachment';
+      final file = File('${dir.path}/$filename');
+      await file.writeAsBytes(res.data ?? const []);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Attachment removed.'), backgroundColor: AppColors.success));
-      _loadAttachments();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved: ${file.path}')),
+      );
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Download failed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
     }
   }
 
-  Future<void> _setChosenQuote(Map<String, dynamic> att, {bool clear = false}) async {
-    if (widget.programmeId == null) return;
-    final id = att['id'];
-    if (id == null) return;
-    String? reason;
-    if (!clear) {
-      reason = await showDialog<String>(
-        context: context,
-        builder: (ctx) {
-          final c = TextEditingController(text: att['selection_reason']?.toString() ?? '');
-          return AlertDialog(
-            title: const Text('Reason for chosen quote'),
-            content: TextField(
-              controller: c,
-              decoration: const InputDecoration(hintText: 'Why was this quote selected?'),
-              maxLines: 3,
-              onSubmitted: (_) => Navigator.pop(ctx, c.text),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Save')),
-            ],
-          );
+  Future<void> _deleteAttachment(Map<String, dynamic> attachment) async {
+    final programmeId = widget.programmeId;
+    final attachmentId = attachment['id'];
+    if (programmeId == null || attachmentId == null) return;
+    try {
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .delete('/programmes/$programmeId/attachments/$attachmentId');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Attachment deleted.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      await _loadAttachments();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Delete failed.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _generateImprest() async {
+    final programme = _programme;
+    final programmeId = widget.programmeId;
+    if (programme == null || programmeId == null) return;
+
+    final amount = _asDouble(programme['total_budget']);
+    if (amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Programme has no budget to generate an imprest request.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _generatingImprest = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final liquidationDate = _liquidationDate(programme);
+      final createRes = await dio.post<Map<String, dynamic>>(
+        '/imprest/requests',
+        data: {
+          'budget_line': programme['reference_number']?.toString() ??
+              programme['title']?.toString() ??
+              'Programme',
+          'amount_requested': amount,
+          'currency': programme['primary_currency']?.toString() ?? 'NAD',
+          'expected_liquidation_date': liquidationDate,
+          'purpose': programme['title']?.toString() ?? 'Programme activity',
+          'justification': programme['background']?.toString() ??
+              'Generated from programme $programmeId',
         },
       );
-      if (reason == null) return;
-    }
-    try {
-      final dio = ref.read(apiClientProvider).dio;
-      await dio.put<Map<String, dynamic>>(
-        '/programmes/${widget.programmeId}/attachments/$id',
-        data: clear ? {'is_chosen_quote': false, 'selection_reason': null} : {'is_chosen_quote': true, 'selection_reason': reason},
-      );
+      final imprestId = createRes.data?['data']?['id'];
+      if (imprestId != null) {
+        await dio.post('/imprest/requests/$imprestId/submit');
+      }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(clear ? 'Chosen quote cleared.' : 'Chosen quote updated.'), backgroundColor: AppColors.success));
-      _loadAttachments();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Imprest request generated and submitted.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Update failed.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate imprest request.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _generatingImprest = false);
+    }
+  }
+
+  String _liquidationDate(Map<String, dynamic> programme) {
+    final endDate = programme['end_date']?.toString();
+    final now = DateTime.now();
+    if (endDate != null && endDate.isNotEmpty) {
+      final parsed = DateTime.tryParse(endDate);
+      if (parsed != null) {
+        return parsed.add(const Duration(days: 14)).toIso8601String().split('T').first;
+      }
+    }
+    return now.add(const Duration(days: 14)).toIso8601String().split('T').first;
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse('$value') ?? 0;
+  }
+
+  String _statusLabel(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'approved':
+        return 'Approved';
+      case 'submitted':
+        return 'Submitted';
+      case 'rejected':
+        return 'Rejected';
+      case 'draft':
+        return 'Draft';
+      default:
+        return status == null || status.isEmpty ? 'Unknown' : status;
+    }
+  }
+
+  Color _statusColor(String? status) {
+    switch ((status ?? '').toLowerCase()) {
+      case 'approved':
+        return AppColors.success;
+      case 'rejected':
+        return AppColors.danger;
+      case 'draft':
+        return AppColors.textMuted;
+      default:
+        return AppColors.warning;
     }
   }
 
@@ -428,200 +314,259 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          if (_loading)
-            const Expanded(
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      appBar: AppBar(
+        backgroundColor: AppColors.bgDark,
+        elevation: 0,
+        title: const Text(
+          'Programme Review',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            onPressed: _loading ? null : _load,
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
             )
-          else if (_error != null)
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: _loadProgramme,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.danger),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _load, child: const Text('Retry')),
+                      ],
+                    ),
+                  ),
+                )
+              : _buildBody(_programme ?? const {}),
+      bottomNavigationBar: _programme == null
+          ? null
+          : Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).padding.bottom + 16,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.bgDark,
+                border: Border(top: BorderSide(color: AppColors.border)),
+              ),
+              child: ElevatedButton.icon(
+                onPressed: _generatingImprest ? null : _generateImprest,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.bgDark,
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: _generatingImprest
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.bgDark,
+                        ),
+                      )
+                    : const Icon(Icons.account_balance_wallet_outlined),
+                label: Text(
+                  _generatingImprest ? 'Generating...' : 'Generate Imprest',
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildBody(Map<String, dynamic> programme) {
+    final status = programme['status']?.toString();
+    final statusColor = _statusColor(status);
+    final budgetLines = (programme['budget_lines'] as List<dynamic>? ?? const []);
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: AppColors.primary,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _statusLabel(status),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-            )
-          else ...[
-            Expanded(child: _buildBody()),
-            _buildBottomBar(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.bgDark,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
-      title: const Text(
-        'PIF Details',
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-          onPressed: () => _showOptionsMenu(context),
-        ),
-      ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: AppColors.border),
-      ),
-    );
-  }
-
-  void _showOptionsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _OptionTile(icon: Icons.share_outlined, label: 'Share PIF', onTap: () {}),
-            _OptionTile(icon: Icons.download_outlined, label: 'Download PDF', onTap: () {}),
-            _OptionTile(icon: Icons.print_outlined, label: 'Print', onTap: () {}),
-            _OptionTile(
-              icon: Icons.archive_outlined,
-              label: 'Archive',
-              onTap: () {},
-              color: AppColors.warning,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      children: [
-        // Status + ID row
-        Row(
-          children: [
-            const _StatusBadge(
-              label: 'FULLY APPROVED',
-              color: AppColors.success,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'ID: ${_pif['id']}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        // Title
-        Text(
-          _pif['title'] as String,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _pif['subtitle'] as String,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 14),
-        // Meta row
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              _MetaRow(
-                icon: Icons.tag,
-                label: 'Budget Code',
-                value: _pif['budget_code'] as String,
-                valueColor: AppColors.gold,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MetaRow(
-                      icon: Icons.calendar_today,
-                      label: 'Approved',
-                      value: _pif['approved_date'] as String,
-                      valueColor: AppColors.success,
-                    ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'ID: ${programme['reference_number'] ?? programme['id'] ?? '-'}',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
                   ),
-                  Expanded(
-                    child: _MetaRow(
-                      icon: Icons.location_on_outlined,
-                      label: 'Location',
-                      value: _pif['location'] as String,
-                      valueColor: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 22),
-        // Linked Financial Documents
-        const _SectionTitle(
-          icon: Icons.link,
-          iconColor: AppColors.primary,
-          label: 'LINKED FINANCIAL DOCUMENTS',
-        ),
-        const SizedBox(height: 12),
-        ..._linkedDocs.map((doc) => _LinkedDocCard(
-              doc: doc,
-              onParticipantsToggle: doc['label'] == 'Arrival Matrix & Participants'
-                  ? () => setState(() => _participantsExpanded = !_participantsExpanded)
-                  : null,
-              participantsExpanded: _participantsExpanded,
-            )),
-        if (widget.programmeId != null) ...[
+          const SizedBox(height: 14),
+          Text(
+            programme['title']?.toString() ?? 'Programme',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            programme['overall_objective']?.toString() ??
+                programme['background']?.toString() ??
+                '-',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.bgSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                _metaRow(
+                  icon: Icons.tag,
+                  label: 'Reference',
+                  value: programme['reference_number']?.toString() ?? '-',
+                  valueColor: AppColors.gold,
+                ),
+                const SizedBox(height: 10),
+                _metaRow(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Total Budget',
+                  value:
+                      '${programme['primary_currency'] ?? 'NAD'} ${_asDouble(programme['total_budget']).toStringAsFixed(2)}',
+                  valueColor: AppColors.success,
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _metaRow(
+                        icon: Icons.calendar_today,
+                        label: 'Start',
+                        value: programme['start_date']?.toString() == null
+                            ? '-'
+                            : AppDateFormatter.short(
+                                programme['start_date'].toString(),
+                              ),
+                        valueColor: AppColors.textPrimary,
+                      ),
+                    ),
+                    Expanded(
+                      child: _metaRow(
+                        icon: Icons.location_on_outlined,
+                        label: 'Location',
+                        value: _memberStates(programme),
+                        valueColor: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          const _SectionTitle(
+            icon: Icons.account_balance_wallet_outlined,
+            iconColor: AppColors.primary,
+            label: 'BUDGET LINES',
+          ),
+          const SizedBox(height: 12),
+          if (budgetLines.isEmpty)
+            const Text(
+              'No budget lines attached yet.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            )
+          else
+            ...budgetLines.map(
+              (rawLine) {
+                final line = rawLine is Map
+                    ? Map<String, dynamic>.from(rawLine)
+                    : <String, dynamic>{};
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        line['category']?.toString() ?? 'Budget Line',
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        line['description']?.toString() ?? '-',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${programme['primary_currency'] ?? 'NAD'} ${_asDouble(line['amount']).toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           const SizedBox(height: 22),
           const _SectionTitle(
             icon: Icons.attach_file,
@@ -630,415 +575,140 @@ class _PifReviewApprovalScreenState extends ConsumerState<PifReviewApprovalScree
           ),
           const SizedBox(height: 12),
           if (_attachmentsLoading && _attachments.isEmpty)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: AppColors.primary)))
-          else if (_attachmentsError != null && _attachments.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Text(_attachmentsError!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  TextButton(onPressed: _loadAttachments, child: const Text('Retry')),
-                ],
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
-          else ...[
-            if (_attachments.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: Text(
-                    'No attachments yet.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                  ),
-                ),
-              )
-            else
-              ..._attachments.map((a) => _buildAttachmentCard(a)),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _uploadingAttachment ? null : _pickAndUploadAttachment,
-              icon: _uploadingAttachment ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)) : const Icon(Icons.add, size: 18),
-              label: Text(_uploadingAttachment ? 'Uploading…' : 'Add attachment'),
-              style: OutlinedButton.styleFrom(foregroundColor: AppColors.primary),
-            ),
-          ],
+          else if (_attachments.isEmpty)
+            const Text(
+              'No attachments yet.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            )
+          else
+            ..._attachments.map(_attachmentCard),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _uploadingAttachment ? null : _pickAndUploadAttachment,
+            icon: _uploadingAttachment
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  )
+                : const Icon(Icons.add),
+            label: Text(_uploadingAttachment ? 'Uploading...' : 'Add attachment'),
+          ),
         ],
-        const SizedBox(height: 22),
-        // Approval History
-        const _SectionTitle(
-          icon: Icons.history,
-          iconColor: AppColors.gold,
-          label: 'APPROVAL HISTORY',
+      ),
+    );
+  }
+
+  String _memberStates(Map<String, dynamic> programme) {
+    final raw = programme['member_states'];
+    if (raw is List && raw.isNotEmpty) {
+      return raw.join(', ');
+    }
+    return '-';
+  }
+
+  Widget _metaRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
         ),
-        const SizedBox(height: 12),
-        _ApprovalTimeline(steps: _approvalHistory),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildBottomBar() {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.of(context).padding.bottom + 16,
-      ),
-      decoration: const BoxDecoration(
-        color: AppColors.bgDark,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: ElevatedButton(
-        onPressed: _generatingImprest ? null : _generateImprest,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.bgDark,
-          minimumSize: const Size(double.infinity, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        ),
-        child: _generatingImprest
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: AppColors.bgDark,
-                  strokeWidth: 2.5,
-                ),
-              )
-            : const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    'Generate Imprest',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  LINKED DOC CARD
-// ─────────────────────────────────────────────────────────────
-class _LinkedDocCard extends StatelessWidget {
-  final Map<String, dynamic> doc;
-  final VoidCallback? onParticipantsToggle;
-  final bool participantsExpanded;
-
-  const _LinkedDocCard({
-    required this.doc,
-    this.onParticipantsToggle,
-    required this.participantsExpanded,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final status = doc['status'] as String;
-    final icon = doc['icon'] as IconData;
-    final color = doc['color'] as Color;
-
+  Widget _attachmentCard(Map<String, dynamic> attachment) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
+          const Icon(Icons.insert_drive_file_outlined, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: color, size: 18),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        doc['label'] as String,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        doc['ref'] as String,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ],
+                Text(
+                  attachment['original_filename']?.toString() ?? 'Attachment',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (status == 'approved')
-                  const _StatusBadge(label: 'Approved', color: AppColors.success)
-                else if (status == 'create')
-                  const _CreateButton(label: 'Create')
-                else if (status == 'info' && onParticipantsToggle != null)
-                  GestureDetector(
-                    onTap: onParticipantsToggle,
-                    child: Icon(
-                      participantsExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  attachment['created_at']?.toString() == null
+                      ? '-'
+                      : AppDateFormatter.short(attachment['created_at'].toString()),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
                   ),
+                ),
               ],
             ),
           ),
-          if (status == 'info' && participantsExpanded)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 12),
-                  Text(
-                    '14 Member of Parliament delegates and 3 staff members confirmed for attendance.',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                  SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      _ParticipantChip(label: 'MPs (14)', color: AppColors.primary),
-                      _ParticipantChip(label: 'Staff (3)', color: AppColors.info),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          IconButton(
+            onPressed: () => _downloadAttachment(attachment),
+            icon: const Icon(Icons.download_outlined),
+          ),
+          IconButton(
+            onPressed: () => _deleteAttachment(attachment),
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-class _ParticipantChip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _ParticipantChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class _CreateButton extends StatelessWidget {
-  final String label;
-
-  const _CreateButton({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  APPROVAL TIMELINE
-// ─────────────────────────────────────────────────────────────
-class _ApprovalTimeline extends StatelessWidget {
-  final List<Map<String, dynamic>> steps;
-
-  const _ApprovalTimeline({required this.steps});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: steps.asMap().entries.map((entry) {
-          final i = entry.key;
-          final step = entry.value;
-          final isLast = i == steps.length - 1;
-          final done = step['done'] as bool;
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: done
-                          ? AppColors.success.withValues(alpha: 0.15)
-                          : AppColors.bgCard,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: done ? AppColors.success : AppColors.border,
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      done ? Icons.check : Icons.radio_button_unchecked,
-                      color: done ? AppColors.success : AppColors.textMuted,
-                      size: 14,
-                    ),
-                  ),
-                  if (!isLast)
-                    Container(
-                      width: 1.5,
-                      height: 40,
-                      color: done ? AppColors.success.withValues(alpha: 0.4) : AppColors.border,
-                    ),
-                ],
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        step['role'] as String,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Text(
-                            step['action'] as String,
-                            style: TextStyle(
-                              color: done ? AppColors.success : AppColors.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                          if (step['time'] != null) ...[
-                            const Text(
-                              '  ·  ',
-                              style: TextStyle(color: AppColors.border, fontSize: 11),
-                            ),
-                            Text(
-                              step['time'] as String,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-//  SHARED WIDGETS
-// ─────────────────────────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _StatusBadge({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
-        ),
       ),
     );
   }
 }
 
 class _SectionTitle extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
   const _SectionTitle({
     required this.icon,
     required this.iconColor,
     required this.label,
   });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -1049,84 +719,13 @@ class _SectionTitle extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
+            color: AppColors.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _MetaRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color valueColor;
-
-  const _MetaRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.textMuted, size: 13),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                color: valueColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _OptionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _OptionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? AppColors.textPrimary;
-    return ListTile(
-      leading: Icon(icon, color: c, size: 20),
-      title: Text(label, style: TextStyle(color: c, fontSize: 14)),
-      onTap: () {
-        Navigator.of(context).pop();
-        onTap();
-      },
-      contentPadding: EdgeInsets.zero,
     );
   }
 }

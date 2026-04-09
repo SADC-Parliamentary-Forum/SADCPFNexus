@@ -152,9 +152,11 @@ class LeaveService
         // Initiate workflow
         $this->workflowService->initiate($leave, 'leave', $user);
 
-        // Notify HR approvers
+        // Notify HR approvers (exclude the requester themselves to avoid self-notification)
         $approvers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
-            ->where('tenant_id', $user->tenant_id)->get();
+            ->where('tenant_id', $user->tenant_id)
+            ->where('id', '!=', $user->id)
+            ->get();
         $this->notificationService->dispatchToMany($approvers, 'leave.submitted', [
             'reference'  => $leave->reference_number,
             'requester'  => $user->name,

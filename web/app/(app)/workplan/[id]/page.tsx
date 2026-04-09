@@ -15,17 +15,28 @@ import {
   type TenantUserOption,
   type WorkplanAttachment,
 } from "@/lib/api";
-import { useFormatDate } from "@/lib/useFormatDate";
+import { cn, formatDate } from "@/lib/utils";
 
-// ─── Reusable inline manage-types modal ──────────────────────────────────────
+// ─── Type badge colours ────────────────────────────────────────────────────────
+const TYPE_COLORS: Record<string, string> = {
+  meeting:   "bg-blue-100 text-blue-700 border-blue-200",
+  travel:    "bg-amber-100 text-amber-700 border-amber-200",
+  leave:     "bg-green-100 text-green-700 border-green-200",
+  milestone: "bg-purple-100 text-purple-700 border-purple-200",
+  deadline:  "bg-red-100 text-red-700 border-red-200",
+};
 
+const TYPE_ICONS: Record<string, string> = {
+  meeting:   "groups",
+  travel:    "flight",
+  leave:     "beach_access",
+  milestone: "flag",
+  deadline:  "schedule",
+};
+
+// ─── Manage types modal ────────────────────────────────────────────────────────
 function ManageTypesModal({
-  title,
-  items,
-  onCreate,
-  onUpdate,
-  onDelete,
-  onClose,
+  title, items, onCreate, onUpdate, onDelete, onClose,
 }: {
   title: string;
   items: { id: number; name: string; locked: boolean }[];
@@ -70,7 +81,7 @@ function ManageTypesModal({
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
           {err && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</p>}
           <div className="space-y-1.5">
             {items.map((item) => (
@@ -81,7 +92,7 @@ function ManageTypesModal({
                       onChange={(e) => setEditName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") doUpdate(); if (e.key === "Escape") setEditId(null); }} />
                     <button type="button" disabled={busy} onClick={doUpdate} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">Save</button>
-                    <button type="button" onClick={() => setEditId(null)} className="text-xs text-neutral-400 hover:text-neutral-600">Cancel</button>
+                    <button type="button" onClick={() => setEditId(null)} className="text-xs text-neutral-400">Cancel</button>
                   </>
                 ) : (
                   <>
@@ -89,10 +100,8 @@ function ManageTypesModal({
                     {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">system</span>}
                     {!item.locked && (
                       <>
-                        <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }}
-                          className="text-xs text-primary hover:underline">Edit</button>
-                        <button type="button" disabled={busy} onClick={() => doDelete(item.id)}
-                          className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
+                        <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="text-xs text-primary hover:underline">Edit</button>
+                        <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
                       </>
                     )}
                   </>
@@ -114,45 +123,43 @@ function ManageTypesModal({
   );
 }
 
+// ─── Main page ─────────────────────────────────────────────────────────────────
 export default function WorkplanEventDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { fmt: formatDate } = useFormatDate();
   const id = params?.id != null ? Number(params.id) : NaN;
+
   const [event, setEvent] = useState<WorkplanEvent | null>(null);
   const [meetingTypes, setMeetingTypes] = useState<MeetingType[]>([]);
-  const [eventTypes, setEventTypes] = useState<WorkplanEventType[]>([]);
-  const [userOptions, setUserOptions] = useState<TenantUserOption[]>([]);
-  const [userSearch, setUserSearch] = useState("");
-  const [attachments, setAttachments] = useState<WorkplanAttachment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [manageEventTypes, setManageEventTypes] = useState(false);
+  const [eventTypes, setEventTypes]     = useState<WorkplanEventType[]>([]);
+  const [userOptions, setUserOptions]   = useState<TenantUserOption[]>([]);
+  const [userSearch, setUserSearch]     = useState("");
+  const [attachments, setAttachments]   = useState<WorkplanAttachment[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [saving, setSaving]             = useState(false);
+  const [uploading, setUploading]       = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [editMode, setEditMode]         = useState(false);
+  const [manageEventTypes, setManageEventTypes]     = useState(false);
   const [manageMeetingTypes, setManageMeetingTypes] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<WorkplanEvent["type"]>("meeting");
+  const [title, setTitle]             = useState("");
+  const [type, setType]               = useState<WorkplanEvent["type"]>("meeting");
   const [meetingTypeId, setMeetingTypeId] = useState<number | "">("");
-  const [date, setDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [date, setDate]               = useState("");
+  const [endDate, setEndDate]         = useState("");
   const [description, setDescription] = useState("");
-  const [responsibleUserIds, setResponsibleUserIds] = useState<number[]>([]);
+  const [responsibleUserIds, setResponsibleUserIds]             = useState<number[]>([]);
   const [selectedResponsibleUsers, setSelectedResponsibleUsers] = useState<TenantUserOption[]>([]);
-  const [responsibleSearchOpen, setResponsibleSearchOpen] = useState(false);
+  const [responsibleSearchOpen, setResponsibleSearchOpen]       = useState(false);
 
   const loadEvent = useCallback(async () => {
-    if (!Number.isFinite(id)) {
-      router.replace("/workplan");
-      return;
-    }
+    if (!Number.isFinite(id)) { router.replace("/workplan"); return; }
     setLoading(true);
     setError(null);
     try {
       const res = await workplanApi.get(id);
-      const ev = res.data;
+      const ev  = res.data;
       setEvent(ev);
       setTitle(ev.title);
       setType(ev.type);
@@ -162,9 +169,7 @@ export default function WorkplanEventDetailPage() {
       setDescription(ev.description ?? "");
       const ids = ev.responsible_users?.map((u) => u.id) ?? [];
       setResponsibleUserIds(ids);
-      setSelectedResponsibleUsers(
-        (ev.responsible_users ?? []).map((u) => ({ id: u.id, name: u.name, email: u.email }))
-      );
+      setSelectedResponsibleUsers((ev.responsible_users ?? []).map((u) => ({ id: u.id, name: u.name, email: u.email })));
       setAttachments(ev.attachments ?? []);
     } catch {
       setError("Failed to load event.");
@@ -174,18 +179,12 @@ export default function WorkplanEventDetailPage() {
     }
   }, [id, router]);
 
-  useEffect(() => {
-    loadEvent();
-  }, [loadEvent]);
+  useEffect(() => { loadEvent(); }, [loadEvent]);
 
   const reloadEventTypes   = () => workplanEventTypesApi.list().then((r) => setEventTypes(r.data?.data ?? [])).catch(() => {});
   const reloadMeetingTypes = () => workplanMeetingTypesApi.list().then((r) => setMeetingTypes(r.data?.data ?? [])).catch(() => {});
 
-  useEffect(() => {
-    reloadMeetingTypes();
-    reloadEventTypes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { reloadMeetingTypes(); reloadEventTypes(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadUsers = useCallback(() => {
     tenantUsersApi.list(userSearch ? { search: userSearch } : undefined)
@@ -193,32 +192,26 @@ export default function WorkplanEventDetailPage() {
       .catch(() => setUserOptions([]));
   }, [userSearch]);
 
-  useEffect(() => {
-    if (responsibleSearchOpen) loadUsers();
-  }, [responsibleSearchOpen, loadUsers]);
+  useEffect(() => { if (responsibleSearchOpen) loadUsers(); }, [responsibleSearchOpen, loadUsers]);
 
   const addResponsible = (u: TenantUserOption) => {
     if (responsibleUserIds.includes(u.id)) return;
-    setResponsibleUserIds((prev) => [...prev, u.id]);
-    setSelectedResponsibleUsers((prev) => [...prev, u]);
-    setUserSearch("");
-    setResponsibleSearchOpen(false);
+    setResponsibleUserIds((p) => [...p, u.id]);
+    setSelectedResponsibleUsers((p) => [...p, u]);
+    setUserSearch(""); setResponsibleSearchOpen(false);
   };
-  const removeResponsible = (id: number) => {
-    setResponsibleUserIds((prev) => prev.filter((x) => x !== id));
-    setSelectedResponsibleUsers((prev) => prev.filter((u) => u.id !== id));
+  const removeResponsible = (uid: number) => {
+    setResponsibleUserIds((p) => p.filter((x) => x !== uid));
+    setSelectedResponsibleUsers((p) => p.filter((u) => u.id !== uid));
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
-    setError(null);
-    setSaving(true);
+    setError(null); setSaving(true);
     try {
       await workplanApi.update(event.id, {
-        title: title.trim(),
-        type,
-        date,
+        title: title.trim(), type, date,
         end_date: endDate || undefined,
         description: description.trim() || undefined,
         meeting_type_id: type === "meeting" && meetingTypeId !== "" ? Number(meetingTypeId) : null,
@@ -226,8 +219,8 @@ export default function WorkplanEventDetailPage() {
       });
       setEditMode(false);
       loadEvent();
-    } catch (err: unknown) {
-      setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to update.");
+    } catch {
+      setError("Failed to update.");
     } finally {
       setSaving(false);
     }
@@ -235,62 +228,52 @@ export default function WorkplanEventDetailPage() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!event || !e.target.files?.length) return;
-    setUploading(true);
-    setError(null);
+    setUploading(true); setError(null);
     try {
-      for (const file of Array.from(e.target.files)) {
-        await workplanAttachmentsApi.upload(event.id, file);
-      }
+      for (const file of Array.from(e.target.files)) await workplanAttachmentsApi.upload(event.id, file);
       const listRes = await workplanAttachmentsApi.list(event.id);
       setAttachments(listRes.data?.data ?? []);
       loadEvent();
-    } catch {
-      setError("Failed to upload file(s).");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    } catch { setError("Failed to upload file(s)."); }
+    finally { setUploading(false); e.target.value = ""; }
   };
 
   const handleDeleteAttachment = async (attachmentId: number) => {
     if (!event) return;
     try {
       await workplanAttachmentsApi.delete(event.id, attachmentId);
-      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
-    } catch {
-      setError("Failed to delete attachment.");
-    }
+      setAttachments((p) => p.filter((a) => a.id !== attachmentId));
+    } catch { setError("Failed to delete attachment."); }
   };
 
   const handleDownloadAttachment = async (a: WorkplanAttachment) => {
     if (!event) return;
     try {
       const blob = await workplanAttachmentsApi.downloadBlob(event.id, a.id);
-      const url = URL.createObjectURL(blob);
+      const url  = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
-      link.download = a.original_filename;
-      link.click();
+      link.href = url; link.download = a.original_filename; link.click();
       URL.revokeObjectURL(url);
-    } catch {
-      setError("Failed to download file.");
-    }
+    } catch { setError("Failed to download file."); }
   };
 
+  // ─── Loading / error states ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="space-y-6 max-w-2xl">
-        <div className="flex items-center justify-center py-20 text-neutral-500">
-          <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-          <span className="ml-2">Loading…</span>
+      <div className="space-y-4 max-w-4xl">
+        <div className="h-6 w-48 bg-neutral-100 rounded animate-pulse" />
+        <div className="h-10 w-80 bg-neutral-100 rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-4">
+          {[1,2,3].map((i) => <div key={i} className="card h-24 animate-pulse bg-neutral-50" />)}
         </div>
+        <div className="card h-40 animate-pulse bg-neutral-50" />
       </div>
     );
   }
 
   if (error && !event) {
     return (
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
         <Link href="/workplan" className="text-sm font-semibold text-primary hover:underline">Back to Workplan</Link>
       </div>
@@ -299,29 +282,73 @@ export default function WorkplanEventDetailPage() {
 
   if (!event) return null;
 
+  const typeColor  = TYPE_COLORS[event.type] ?? "bg-neutral-100 text-neutral-700 border-neutral-200";
+  const typeIcon   = TYPE_ICONS[event.type] ?? "event";
+  const durationMs = event.end_date ? new Date(event.end_date).getTime() - new Date(event.date).getTime() : 0;
+  const durationDays = Math.max(0, Math.ceil(durationMs / 86400000));
+  const nowMs     = Date.now();
+  const startMs   = new Date(event.date).getTime();
+  const endMs     = event.end_date ? new Date(event.end_date).getTime() : startMs;
+  const timelinePercent = durationDays > 0
+    ? Math.max(0, Math.min(100, ((nowMs - startMs) / (endMs - startMs)) * 100))
+    : (nowMs > startMs ? 100 : 0);
+  const isUpcoming = startMs > nowMs;
+  const isPast     = endMs < nowMs;
+  const statusLabel = isUpcoming ? "Upcoming" : isPast ? "Completed" : "In Progress";
+  const statusColor = isUpcoming ? "bg-blue-100 text-blue-700 border-blue-200" : isPast ? "bg-green-100 text-green-700 border-green-200" : "bg-amber-100 text-amber-700 border-amber-200";
+
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/workplan" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            Workplan
-          </Link>
+    <div className="max-w-4xl space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1 text-sm text-neutral-500">
+        <Link href="/workplan" className="hover:text-primary transition-colors">Workplan</Link>
+        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+        <span className="text-neutral-900 font-medium truncate max-w-[300px]">{event.title}</span>
+      </div>
+
+      {/* Page header */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <span className={cn("inline-flex items-center gap-1 text-xs font-semibold rounded border px-2.5 py-0.5 uppercase tracking-wide", typeColor)}>
+              <span className="material-symbols-outlined text-[14px]">{typeIcon}</span>
+              {event.type}
+            </span>
+            {event.meeting_type && (
+              <span className="text-xs font-medium text-neutral-500 bg-neutral-100 rounded px-2 py-0.5 border border-neutral-200">
+                {event.meeting_type.name}
+              </span>
+            )}
+            <span className={cn("inline-flex text-xs font-semibold rounded border px-2.5 py-0.5 uppercase tracking-wide", statusColor)}>
+              {statusLabel}
+            </span>
+          </div>
           <h1 className="page-title">{event.title}</h1>
           <p className="page-subtitle">
             {formatDate(event.date)}
             {event.end_date ? ` – ${formatDate(event.end_date)}` : ""}
-            {event.meeting_type && ` · ${event.meeting_type.name}`}
+            {durationDays > 0 && ` · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
           </p>
         </div>
-        {!editMode ? (
-          <button type="button" onClick={() => setEditMode(true)} className="btn-secondary py-2 px-3 text-sm">
-            Edit
-          </button>
-        ) : (
-          <button type="button" onClick={() => setEditMode(false)} className="btn-secondary py-2 px-3 text-sm">
-            Cancel edit
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {!editMode ? (
+            <>
+              <button type="button" onClick={() => setEditMode(true)} className="btn-secondary flex items-center gap-1.5 text-sm">
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+                Edit
+              </button>
+              <label className="btn-primary flex items-center gap-1.5 text-sm cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                {uploading ? "Uploading…" : "Attach File"}
+                <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+              </label>
+            </>
+          ) : (
+            <button type="button" onClick={() => setEditMode(false)} className="btn-secondary text-sm">
+              Cancel Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -331,50 +358,97 @@ export default function WorkplanEventDetailPage() {
         </div>
       )}
 
+      {/* KPI summary cards */}
+      {!editMode && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-neutral-500 font-medium">Timeline Progress</p>
+              <span className="material-symbols-outlined text-neutral-300 text-[18px]">timeline</span>
+            </div>
+            <p className="text-xl font-bold text-neutral-900">{Math.round(timelinePercent)}%</p>
+            <div className="mt-2 w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
+              <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${timelinePercent}%` }} />
+            </div>
+            <div className="flex justify-between mt-1.5 text-[11px] text-neutral-400">
+              <span>{formatDate(event.date)}</span>
+              <span>{event.end_date ? formatDate(event.end_date) : "—"}</span>
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-neutral-500 font-medium">Responsible Staff</p>
+              <span className="material-symbols-outlined text-neutral-300 text-[18px]">groups</span>
+            </div>
+            <p className="text-xl font-bold text-neutral-900">{event.responsible_users?.length ?? 0}</p>
+            <div className="mt-2 flex -space-x-2">
+              {(event.responsible_users ?? []).slice(0, 5).map((u) => (
+                <div key={u.id} title={u.name}
+                  className="h-7 w-7 rounded-full bg-primary/10 text-primary border-2 border-white flex items-center justify-center text-[11px] font-bold">
+                  {u.name[0]}
+                </div>
+              ))}
+              {(event.responsible_users?.length ?? 0) > 5 && (
+                <div className="h-7 w-7 rounded-full bg-neutral-100 text-neutral-500 border-2 border-white flex items-center justify-center text-[10px] font-bold">
+                  +{(event.responsible_users?.length ?? 0) - 5}
+                </div>
+              )}
+              {(event.responsible_users?.length ?? 0) === 0 && (
+                <p className="text-xs text-neutral-400">Not assigned</p>
+              )}
+            </div>
+          </div>
+
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-neutral-500 font-medium">Documents</p>
+              <span className="material-symbols-outlined text-neutral-300 text-[18px]">attach_file</span>
+            </div>
+            <p className="text-xl font-bold text-neutral-900">{attachments.length}</p>
+            <p className="text-xs text-neutral-400 mt-1">
+              {attachments.length === 0 ? "No attachments yet" : `${attachments.length} file${attachments.length !== 1 ? "s" : ""} attached`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Edit form or view detail */}
       {editMode ? (
         <form onSubmit={handleSave} className="card p-5 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Title *</label>
+            <label className="block text-sm font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
             <input type="text" className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-neutral-700">Event type *</label>
-              <button type="button" onClick={() => setManageEventTypes(true)}
-                className="text-xs text-primary hover:underline flex items-center gap-0.5">
+              <label className="block text-sm font-semibold text-neutral-700">Event type <span className="text-red-500">*</span></label>
+              <button type="button" onClick={() => setManageEventTypes(true)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
                 <span className="material-symbols-outlined text-[13px]">settings</span>Manage
               </button>
             </div>
             <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
-              {eventTypes.map((et) => (
-                <option key={et.slug} value={et.slug}>{et.name}</option>
-              ))}
+              {eventTypes.map((et) => <option key={et.slug} value={et.slug}>{et.name}</option>)}
             </select>
           </div>
           {type === "meeting" && (
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
-                <button type="button" onClick={() => setManageMeetingTypes(true)}
-                  className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                <button type="button" onClick={() => setManageMeetingTypes(true)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
                   <span className="material-symbols-outlined text-[13px]">settings</span>Manage
                 </button>
               </div>
-              <select
-                className="form-input w-full"
-                value={meetingTypeId}
-                onChange={(e) => setMeetingTypeId(e.target.value === "" ? "" : Number(e.target.value))}
-              >
+              <select className="form-input w-full" value={meetingTypeId}
+                onChange={(e) => setMeetingTypeId(e.target.value === "" ? "" : Number(e.target.value))}>
                 <option value="">— Select —</option>
-                {meetingTypes.map((mt) => (
-                  <option key={mt.id} value={mt.id}>{mt.name}</option>
-                ))}
+                {meetingTypes.map((mt) => <option key={mt.id} value={mt.id}>{mt.name}</option>)}
               </select>
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Date *</label>
+              <label className="block text-sm font-semibold text-neutral-700 mb-1">Date <span className="text-red-500">*</span></label>
               <input type="date" className="form-input w-full" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
@@ -392,21 +466,17 @@ export default function WorkplanEventDetailPage() {
               {selectedResponsibleUsers.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-sm">
                   {u.name}
-                  <button type="button" onClick={() => removeResponsible(u.id)} className="hover:opacity-80">
+                  <button type="button" onClick={() => removeResponsible(u.id)}>
                     <span className="material-symbols-outlined text-[16px]">close</span>
                   </button>
                 </span>
               ))}
             </div>
             <div className="relative">
-              <input
-                type="text"
-                className="form-input w-full"
-                placeholder="Search by name or email..."
+              <input type="text" className="form-input w-full" placeholder="Search by name or email…"
                 value={userSearch}
                 onChange={(e) => { setUserSearch(e.target.value); setResponsibleSearchOpen(true); }}
-                onFocus={() => setResponsibleSearchOpen(true)}
-              />
+                onFocus={() => setResponsibleSearchOpen(true)} />
               {responsibleSearchOpen && (
                 <div className="absolute z-10 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg max-h-48 overflow-y-auto">
                   {userOptions.filter((u) => !responsibleUserIds.includes(u.id)).slice(0, 10).map((u) => (
@@ -427,74 +497,145 @@ export default function WorkplanEventDetailPage() {
           </div>
         </form>
       ) : (
-        <div className="card p-5 space-y-3">
-          <p className="text-sm text-neutral-700 whitespace-pre-wrap">{event.description || "—"}</p>
-          {event.responsible_users?.length ? (
-            <p className="text-sm"><span className="font-semibold text-neutral-700">Responsible:</span> {event.responsible_users.map((u) => u.name).join(", ")}</p>
-          ) : event.responsible && <p className="text-sm"><span className="font-semibold text-neutral-700">Responsible:</span> {event.responsible}</p>}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: description + team */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* Description */}
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-primary text-[18px]">description</span>
+                <h3 className="text-sm font-semibold text-neutral-800">Description</h3>
+              </div>
+              {event.description ? (
+                <p className="text-sm text-neutral-700 leading-relaxed whitespace-pre-wrap">{event.description}</p>
+              ) : (
+                <p className="text-sm text-neutral-400 italic">No description provided.</p>
+              )}
+            </div>
+
+            {/* Team / Responsible */}
+            {(event.responsible_users?.length ?? 0) > 0 && (
+              <div className="card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="material-symbols-outlined text-primary text-[18px]">groups</span>
+                  <h3 className="text-sm font-semibold text-neutral-800">Responsible Staff</h3>
+                  <span className="text-xs bg-neutral-100 text-neutral-500 rounded-full px-2 py-0.5">{event.responsible_users?.length}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {event.responsible_users?.map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 rounded-xl bg-neutral-50 border border-neutral-100 px-4 py-2.5">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center flex-shrink-0">
+                        {u.name[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-neutral-800 truncate">{u.name}</p>
+                        <p className="text-[11px] text-neutral-400 truncate">{u.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: metadata */}
+          <div className="space-y-4">
+            <div className="card p-5 space-y-3">
+              <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Event Details</h3>
+              <div className="space-y-2.5">
+                {[
+                  { icon: "calendar_today",   label: "Start Date",   val: formatDate(event.date) },
+                  { icon: "event",             label: "End Date",     val: event.end_date ? formatDate(event.end_date) : "—" },
+                  { icon: "category",          label: "Type",         val: event.type },
+                  { icon: "label",             label: "Category",     val: event.meeting_type?.name ?? "—" },
+                  { icon: "person",            label: "Created by",   val: event.creator?.name ?? "—" },
+                  { icon: "attach_file",       label: "Attachments",  val: `${attachments.length} file${attachments.length !== 1 ? "s" : ""}` },
+                ].map(({ icon, label, val }) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-neutral-300 text-[16px] flex-shrink-0">{icon}</span>
+                    <div className="flex-1 flex items-center justify-between">
+                      <span className="text-xs text-neutral-400">{label}</span>
+                      <span className="text-xs font-medium text-neutral-700 capitalize">{val}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="card p-5">
-        <h2 className="text-sm font-semibold text-neutral-900 mb-3">Attachments</h2>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <label className="btn-secondary py-2 px-3 text-sm cursor-pointer flex items-center gap-1 disabled:opacity-50">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            {uploading ? "Uploading…" : "Upload file(s)"}
-            <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
-          </label>
+      {/* Attachments */}
+      {!editMode && (
+        <div className="card overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px] text-neutral-400">attach_file</span>
+              <span className="text-sm font-semibold text-neutral-700">Attachments</span>
+              {attachments.length > 0 && (
+                <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{attachments.length}</span>
+              )}
+            </div>
+            <label className={cn("btn-secondary text-xs flex items-center gap-1.5 cursor-pointer", uploading ? "opacity-50 pointer-events-none" : "")}>
+              <span className="material-symbols-outlined text-[16px]">upload_file</span>
+              {uploading ? "Uploading…" : "Upload"}
+              <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          </div>
+          {attachments.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 text-neutral-300">
+              <span className="material-symbols-outlined text-[32px]">attach_file</span>
+              <p className="text-sm text-neutral-400">No documents attached yet.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-neutral-50">
+              {attachments.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-5 py-3 hover:bg-neutral-50 transition-colors">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[16px]">description</span>
+                  </div>
+                  <span className="text-sm font-medium text-neutral-800 flex-1 truncate">{a.original_filename}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button type="button" onClick={() => handleDownloadAttachment(a)}
+                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">download</span>
+                      Download
+                    </button>
+                    <button type="button" onClick={() => handleDeleteAttachment(a.id)}
+                      className="text-xs text-red-500 hover:underline">
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {attachments.length === 0 ? (
-          <p className="text-sm text-neutral-500">No documents attached.</p>
-        ) : (
-          <ul className="space-y-2">
-            {attachments.map((a) => (
-              <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-sm">
-                <span className="font-medium text-neutral-800 truncate">{a.original_filename}</span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleDownloadAttachment(a)}
-                    className="text-primary font-medium hover:underline"
-                  >
-                    Download
-                  </button>
-                  <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="text-red-600 hover:underline">
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+      )}
+
+      {/* Back link */}
+      <div>
+        <Link href="/workplan" className="text-sm text-neutral-500 hover:text-primary transition-colors flex items-center gap-1">
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to Workplan
+        </Link>
       </div>
 
-      <div className="flex gap-3">
-        <Link href="/workplan" className="text-sm font-semibold text-primary hover:underline">Back to Workplan</Link>
-      </div>
-
-      {/* Manage Event Types modal */}
       {manageEventTypes && (
-        <ManageTypesModal
-          title="Event Types"
+        <ManageTypesModal title="Event Types"
           items={eventTypes.map((et) => ({ id: et.id, name: et.name, locked: et.is_system }))}
           onCreate={(name) => workplanEventTypesApi.create({ name }).then(() => reloadEventTypes())}
           onUpdate={(id, name) => workplanEventTypesApi.update(id, { name }).then(() => reloadEventTypes())}
           onDelete={(id) => workplanEventTypesApi.delete(id).then(() => reloadEventTypes())}
-          onClose={() => setManageEventTypes(false)}
-        />
+          onClose={() => setManageEventTypes(false)} />
       )}
-
-      {/* Manage Meeting Categories modal */}
       {manageMeetingTypes && (
-        <ManageTypesModal
-          title="Meeting Categories"
+        <ManageTypesModal title="Meeting Categories"
           items={meetingTypes.map((mt) => ({ id: mt.id, name: mt.name, locked: false }))}
           onCreate={(name) => workplanMeetingTypesApi.create({ name }).then(() => reloadMeetingTypes())}
           onUpdate={(id, name) => workplanMeetingTypesApi.update(id, { name }).then(() => reloadMeetingTypes())}
           onDelete={(id) => workplanMeetingTypesApi.delete(id).then(() => reloadMeetingTypes())}
-          onClose={() => setManageMeetingTypes(false)}
-        />
+          onClose={() => setManageMeetingTypes(false)} />
       )}
     </div>
   );

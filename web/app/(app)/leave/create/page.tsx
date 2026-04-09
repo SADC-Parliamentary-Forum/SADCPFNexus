@@ -16,6 +16,13 @@ const LEAVE_TYPE_COLORS: Record<string, string> = {
   paternity: "text-blue-600 bg-blue-50 border-blue-200",
 };
 
+interface LeaveBalances {
+  annual_balance_days: number;
+  lil_hours_available: number;
+  sick_leave_used_days: number;
+  period_year: number;
+}
+
 interface FormData {
   leave_type: string;
   start_date: string;
@@ -30,6 +37,7 @@ export default function LeaveCreatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState<{ value: string; label: string; icon?: string }[]>([]);
   const [lilAccruals, setLilAccruals] = useState<LilAccrual[]>([]);
+  const [balances, setBalances] = useState<LeaveBalances | null>(null);
   const [form, setForm] = useState<FormData>({
     leave_type: "",
     start_date: "",
@@ -45,9 +53,31 @@ export default function LeaveCreatePage() {
     leaveApi.listLilAccruals().then((res) => {
       setLilAccruals((res.data as any).data ?? []);
     }).catch(() => {});
+    leaveApi.getBalances().then((res) => {
+      setBalances(res.data);
+    }).catch(() => {});
   }, []);
 
   const isLil = form.leave_type === "lil";
+
+  const getAvailableLabel = (type: string): { text: string; className: string } | null => {
+    if (!balances) return null;
+    if (type === "annual") {
+      const days = balances.annual_balance_days;
+      return {
+        text: `${days} day${days !== 1 ? "s" : ""} available`,
+        className: days > 0 ? "text-green-600 bg-green-50" : "text-red-500 bg-red-50",
+      };
+    }
+    if (type === "lil") {
+      const hrs = balances.lil_hours_available;
+      return {
+        text: `${hrs.toFixed(1)} hrs available`,
+        className: hrs > 0 ? "text-purple-600 bg-purple-50" : "text-red-500 bg-red-50",
+      };
+    }
+    return null;
+  };
 
   const calcDays = () => {
     if (!form.start_date || !form.end_date) return 0;
@@ -173,11 +203,19 @@ export default function LeaveCreatePage() {
                 <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${(LEAVE_TYPE_COLORS[lt.value] ?? "").split(" ").slice(1).join(" ") || "bg-neutral-50"}`}>
                   <span className={`material-symbols-outlined text-[20px] ${(LEAVE_TYPE_COLORS[lt.value] ?? "").split(" ")[0] || "text-neutral-600"}`}>{lt.icon ?? "event"}</span>
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900">{lt.label}</p>
+                  {(() => {
+                    const avail = getAvailableLabel(lt.value);
+                    return avail ? (
+                      <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${avail.className}`}>
+                        {avail.text}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
                 {form.leave_type === lt.value && (
-                  <span className="ml-auto material-symbols-outlined text-primary text-[20px]">check_circle</span>
+                  <span className="ml-auto flex-shrink-0 material-symbols-outlined text-primary text-[20px]">check_circle</span>
                 )}
               </button>
             ))}

@@ -125,9 +125,11 @@ class TravelService
 
         $this->workflowService->initiate($travel, 'travel', $user);
 
-        // Notify approvers (HR Manager / Secretary General)
+        // Notify approvers (HR Manager / Secretary General), excluding the requester
         $approvers = User::role(['HR Manager', 'Secretary General'])
-            ->where('tenant_id', $user->tenant_id)->get();
+            ->where('tenant_id', $user->tenant_id)
+            ->where('id', '!=', $user->id)
+            ->get();
         $this->notificationService->dispatchToMany($approvers, 'travel.submitted', [
             'reference'   => $travel->reference_number,
             'requester'   => $user->name,

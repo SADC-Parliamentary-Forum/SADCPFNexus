@@ -7,6 +7,8 @@ use App\Models\LeaveRequest;
 use App\Models\PerformanceTracker;
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
+use App\Modules\Timesheets\Services\TimesheetService;
+use App\Services\WorkflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +16,11 @@ use Illuminate\Validation\ValidationException;
 
 class TimesheetController extends Controller
 {
+    public function __construct(
+        private readonly TimesheetService $timesheetService,
+        private readonly WorkflowService  $workflowService,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'per_page', 'week_start', 'month', 'year']);
@@ -70,6 +77,8 @@ class TimesheetController extends Controller
             'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
             'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
+            'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
+            'entries.*.source_record_id'   => ['nullable', 'integer'],
         ]);
 
         $user = $request->user();
@@ -80,11 +89,14 @@ class TimesheetController extends Controller
             $overtime += (float) ($e['overtime_hours'] ?? 0);
         }
 
+        $weekNumber = Carbon::parse($data['week_start'])->isoWeek();
+
         $timesheet = Timesheet::create([
             'tenant_id'      => $user->tenant_id,
             'user_id'        => $user->id,
             'week_start'     => $data['week_start'],
             'week_end'       => $data['week_end'],
+            'week_number'    => $weekNumber,
             'total_hours'    => $total,
             'overtime_hours' => $overtime,
             'status'         => 'draft',
@@ -101,6 +113,9 @@ class TimesheetController extends Controller
                 'work_bucket'        => $e['work_bucket'] ?? null,
                 'activity_type'      => $e['activity_type'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
+                'source_type'        => $e['source_type'] ?? 'manual',
+                'source_record_id'   => $e['source_record_id'] ?? null,
+                'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
@@ -126,6 +141,8 @@ class TimesheetController extends Controller
             'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
             'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
+            'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
+            'entries.*.source_record_id'   => ['nullable', 'integer'],
         ]);
 
         $total = 0;
@@ -148,6 +165,9 @@ class TimesheetController extends Controller
                 'work_bucket'        => $e['work_bucket'] ?? null,
                 'activity_type'      => $e['activity_type'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
+                'source_type'        => $e['source_type'] ?? 'manual',
+                'source_record_id'   => $e['source_record_id'] ?? null,
+                'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
@@ -159,10 +179,9 @@ class TimesheetController extends Controller
         if ($timesheet->user_id !== $request->user()->id) {
             abort(403);
         }
-        if ($timesheet->status !== 'draft') {
-            throw ValidationException::withMessages(['status' => 'Only draft timesheets can be submitted.']);
-        }
-        $timesheet->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+        $timesheet = $this->timesheetService->submit($timesheet, $request->user());
+
         return response()->json(['message' => 'Submitted.', 'data' => $timesheet->fresh('user')]);
     }
 
@@ -172,15 +191,22 @@ class TimesheetController extends Controller
             throw ValidationException::withMessages(['status' => 'Only submitted timesheets can be approved.']);
         }
         if ((int) $timesheet->user_id === (int) $request->user()->id) {
-            throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request.',
-            ]);
+            throw ValidationException::withMessages(['approval' => 'You cannot approve your own request.']);
         }
-        $timesheet->update([
-            'status'      => 'approved',
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-        ]);
+
+        // Use workflow service if a workflow request exists, otherwise direct approve
+        if ($timesheet->approvalRequest) {
+            $this->workflowService->approve($timesheet->approvalRequest, $request->user(), $request->input('comment'));
+            $timesheet->refresh();
+        } else {
+            $timesheet->update([
+                'status'      => 'approved',
+                'approved_at' => now(),
+                'approved_by' => $request->user()->id,
+            ]);
+            $this->timesheetService->onWorkflowApproved($timesheet, $request->user());
+        }
+
         return response()->json(['message' => 'Approved.', 'data' => $timesheet->fresh(['user', 'approver'])]);
     }
 
@@ -190,7 +216,16 @@ class TimesheetController extends Controller
         if ($timesheet->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted timesheets can be rejected.']);
         }
-        $timesheet->update(['status' => 'rejected', 'rejection_reason' => $data['reason']]);
+
+        // Use workflow service if a workflow request exists, otherwise direct reject
+        if ($timesheet->approvalRequest) {
+            $this->workflowService->reject($timesheet->approvalRequest, $request->user(), $data['reason']);
+            $timesheet->refresh();
+        } else {
+            $timesheet->update(['status' => 'rejected', 'rejection_reason' => $data['reason']]);
+            $this->timesheetService->onWorkflowRejected($timesheet, $request->user(), $data['reason']);
+        }
+
         return response()->json(['message' => 'Rejected.', 'data' => $timesheet->fresh('user')]);
     }
 
@@ -225,6 +260,38 @@ class TimesheetController extends Controller
                 $current->addDay();
             }
         }
+
+        return response()->json(['data' => $map]);
+    }
+
+    public function travelDays(Request $request): JsonResponse
+    {
+        $request->validate([
+            'week_start' => ['required', 'date'],
+            'week_end'   => ['required', 'date', 'after_or_equal:week_start'],
+        ]);
+
+        $map = $this->timesheetService->getTravelDays(
+            $request->user(),
+            $request->week_start,
+            $request->week_end
+        );
+
+        return response()->json(['data' => $map]);
+    }
+
+    public function holidayDates(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start' => ['required', 'date'],
+            'end'   => ['required', 'date', 'after_or_equal:start'],
+        ]);
+
+        $map = $this->timesheetService->getHolidayDates(
+            $request->user(),
+            $request->start,
+            $request->end
+        );
 
         return response()->json(['data' => $map]);
     }
@@ -363,6 +430,7 @@ class TimesheetController extends Controller
                     'user_id'        => $user->id,
                     'week_start'     => $weekStart,
                     'week_end'       => $weekEnd,
+                    'week_number'    => Carbon::parse($weekStart)->isoWeek(),
                     'total_hours'    => 0,
                     'overtime_hours' => 0,
                     'status'         => 'draft',
@@ -379,6 +447,7 @@ class TimesheetController extends Controller
                 'hours'          => $hours,
                 'overtime_hours' => max(0, $hours - 8),
                 'description'    => $description,
+                'source_type'    => 'manual',
             ]);
             $imported++;
             if (!in_array($timesheet->id, $timesheetIds)) {
@@ -407,11 +476,5 @@ class TimesheetController extends Controller
         return $user->hasPermissionTo('hr.admin')
             || $user->hasPermissionTo('hr.approve')
             || $user->hasPermissionTo('hr.edit');
-    }
-
-    private function isSystemAdmin($user): bool
-    {
-        return $user->hasPermissionTo('system.admin')
-            || $user->hasPermissionTo('hr.admin');
     }
 }

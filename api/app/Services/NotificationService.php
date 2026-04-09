@@ -170,8 +170,34 @@ class NotificationService
 
             // Assignments
             'assignment.issued' => [
-                'subject' => 'New task assigned to you',
-                'body'    => "Dear {{name}},\n\nYou have been assigned a new task: {{task_title}}\nDue date: {{due_date}}\n\n{{description}}\n\nRegards,\nSADC-PF Nexus",
+                'subject' => 'New assignment: {{task_title}}',
+                'body'    => "Dear {{name}},\n\nYou have been assigned a new task by {{issuer}}.\n\nReference: {{reference}}\nTask: {{task_title}}\nDue date: {{due_date}}\n\n{{description}}\n\nPlease log in to accept or query this assignment.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'assignment.accepted' => [
+                'subject' => 'Assignment response received — {{task_title}}',
+                'body'    => "Dear {{name}},\n\n{{assignee}} has responded to assignment {{reference}} ({{task_title}}) with decision: {{decision}}.\n\n{{notes}}\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'assignment.completed' => [
+                'subject' => 'Assignment completed — {{task_title}}',
+                'body'    => "Dear {{name}},\n\n{{assignee}} has submitted assignment {{reference}} ({{task_title}}) for closure.\n\n{{notes}}\n\nPlease review and close or return the assignment.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'assignment.returned' => [
+                'subject' => 'Assignment returned for further work — {{task_title}}',
+                'body'    => "Dear {{name}},\n\nAssignment {{reference}} ({{task_title}}) has been returned by {{issuer}} for further work.\n\nReason: {{reason}}\n\nPlease address the feedback and resubmit.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
+            // Risk Register
+            'risk.submitted' => [
+                'subject' => 'Risk submitted for review — {{risk_code}}',
+                'body'    => "Dear {{name}},\n\nA risk has been submitted for review by {{submitter}}.\n\nRisk Code: {{risk_code}}\nTitle: {{title}}\nCategory: {{category}}\nLevel: {{level}}\n\nPlease log in to review this risk.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'risk.approved' => [
+                'subject' => 'Your risk has been approved — {{risk_code}}',
+                'body'    => "Dear {{name}},\n\nYour risk ({{risk_code}}: {{title}}) has been approved by {{approved_by}}.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'risk.escalated' => [
+                'subject' => 'Risk escalated — {{risk_code}} requires attention',
+                'body'    => "Dear {{name}},\n\nA risk has been escalated to level {{level}} by {{actor}}.\n\nRisk Code: {{risk_code}}\nTitle: {{title}}\n\n{{notes}}\n\nPlease log in to review.\n\nRegards,\nSADC-PF Nexus",
             ],
 
             // SRHR / Field Researchers
@@ -200,6 +226,12 @@ class NotificationService
             'workflow.approval_required' => [
                 'subject' => 'Action required: {{module_label}} request {{reference}} pending your approval',
                 'body'    => "Dear {{name}},\n\nA {{module_label}} request ({{reference}}) submitted by {{requester}} is awaiting your approval.\n\n{{summary}}\n\nPlease use the buttons below to approve or return this request, or log in to the portal to review the full details.\n\nThis action link expires in 72 hours.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
+            // Workflow — final outcome notification (sent to HR/Directors after full approval)
+            'workflow.completed' => [
+                'subject' => '{{module_label}} request {{reference}} has been {{status}}',
+                'body'    => "Dear {{name}},\n\nThe {{module_label}} request ({{reference}}) submitted by {{requester}} has been {{status}} by {{approved_by}}.\n\nThis notification is for your records.\n\nRegards,\nSADC-PF Nexus",
             ],
 
             // Salary advance

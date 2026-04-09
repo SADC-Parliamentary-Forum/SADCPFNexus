@@ -73,7 +73,7 @@ const WORK_TYPES: WorkType[] = [
   },
 ];
 
-const QUICK_HOURS = [0.5, 1, 2, 4];
+const QUICK_HOURS = [0.5, 1, 2, 4, 8];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -142,21 +142,48 @@ function todayInWeek(weekStart: string): string {
   return startStr;
 }
 
+function getWorkingDaysInRange(from: string, to: string): string[] {
+  const start = parseYMDDate(from);
+  const end = parseYMDDate(to);
+  if (!start || !end || start > end) return [];
+  const days: string[] = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    const dow = cur.getDay();
+    if (dow >= 1 && dow <= 5) days.push(localYMD(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function getFriday(weekStart: string): string {
+  const start = parseYMDDate(weekStart);
+  if (!start) return weekStart;
+  const fri = new Date(start);
+  fri.setDate(start.getDate() + 4);
+  return localYMD(fri);
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────
+
+type SpanMode = "single" | "week" | "range";
 
 interface Props {
   open: boolean;
   weekStart: string;
   projects: TimesheetProject[];
   onClose: () => void;
-  onAdd: (entry: TimesheetEntry) => void;
+  onAdd: (entries: TimesheetEntry[]) => void;
   editEntry?: TimesheetEntry | null;
 }
 
 export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd, editEntry }: Props) {
   const [step, setStep] = useState<1 | 2>(editEntry ? 2 : 1);
   const [selectedType, setSelectedType] = useState<WorkType | null>(null);
+  const [spanMode, setSpanMode] = useState<SpanMode>("single");
   const [workDate, setWorkDate] = useState(todayInWeek(weekStart));
+  const [rangeFrom, setRangeFrom] = useState(weekStart);
+  const [rangeTo, setRangeTo] = useState(getFriday(weekStart));
   const [hours, setHours] = useState(1);
   const [activityType, setActivityType] = useState("");
   const [customActivity, setCustomActivity] = useState("");
@@ -189,7 +216,10 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
       setTimeout(() => {
         setStep(editEntry ? 2 : 1);
         setSelectedType(editEntry ? WORK_TYPES.find((t) => t.bucket === editEntry.work_bucket) ?? null : null);
+        setSpanMode("single");
         setWorkDate(todayInWeek(weekStart));
+        setRangeFrom(weekStart);
+        setRangeTo(getFriday(weekStart));
         setHours(1);
         setActivityType("");
         setCustomActivity("");
@@ -225,9 +255,20 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
   const handleSubmit = () => {
     const finalActivity = activityType === "__custom__" ? customActivity.trim() : activityType;
-    const entry: TimesheetEntry = {
-      ...(editEntry?.id ? { id: editEntry.id } : {}),
-      work_date: workDate,
+
+    let dates: string[];
+    if (spanMode === "week") {
+      dates = getWorkingDaysInRange(weekStart, getFriday(weekStart));
+    } else if (spanMode === "range") {
+      dates = getWorkingDaysInRange(rangeFrom, rangeTo);
+    } else {
+      dates = [workDate];
+    }
+
+    const entries: TimesheetEntry[] = dates.map((date, idx) => ({
+      // Only carry over the existing id when editing a single entry
+      ...(editEntry?.id && spanMode === "single" ? { id: editEntry.id } : {}),
+      work_date: date,
       hours,
       overtime_hours: Math.max(0, hours - 8),
       description: description.trim() || null,
@@ -235,12 +276,26 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
       activity_type: finalActivity || null,
       project_id: projectId,
       work_assignment_id: workAssignmentId,
-    };
-    onAdd(entry);
+    }));
+
+    onAdd(entries);
     onClose();
   };
 
-  const canSubmit = hours > 0 && workDate;
+  const spannedDates =
+    spanMode === "week"
+      ? getWorkingDaysInRange(weekStart, getFriday(weekStart))
+      : spanMode === "range"
+      ? getWorkingDaysInRange(rangeFrom, rangeTo)
+      : null;
+
+  const canSubmit =
+    hours > 0 &&
+    (spanMode === "single"
+      ? !!workDate
+      : spanMode === "week"
+      ? true
+      : !!rangeFrom && !!rangeTo && rangeFrom <= rangeTo && getWorkingDaysInRange(rangeFrom, rangeTo).length > 0);
 
   if (!open) return null;
 
@@ -317,18 +372,69 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 <span className="text-sm font-medium text-neutral-700">{selectedType.label}</span>
               </div>
 
-              {/* Work date */}
+              {/* Date Span */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">Date</label>
-                <select
-                  className="form-input"
-                  value={workDate}
-                  onChange={(e) => setWorkDate(e.target.value)}
-                >
-                  {weekDays.map((d) => (
-                    <option key={d.value} value={d.value}>{d.label}</option>
+                <label className="mb-1.5 block text-xs font-medium text-neutral-700">Date Span</label>
+                {/* Mode tabs */}
+                <div className="mb-2.5 flex overflow-hidden rounded-lg border border-neutral-200">
+                  {(["single", "week", "range"] as SpanMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setSpanMode(mode)}
+                      className={cn(
+                        "flex-1 py-1.5 text-xs font-medium transition-colors",
+                        spanMode === mode
+                          ? "bg-primary text-white"
+                          : "text-neutral-600 hover:bg-neutral-50"
+                      )}
+                    >
+                      {mode === "single" ? "Single Day" : mode === "week" ? "Whole Week" : "Date Range"}
+                    </button>
                   ))}
-                </select>
+                </div>
+
+                {spanMode === "single" && (
+                  <select
+                    className="form-input"
+                    value={workDate}
+                    onChange={(e) => setWorkDate(e.target.value)}
+                  >
+                    {weekDays.map((d) => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
+                )}
+
+                {spanMode === "week" && (
+                  <p className="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-600">
+                    5 entries will be created — one per working day (Mon–Fri) for this week.
+                  </p>
+                )}
+
+                {spanMode === "range" && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      className="form-input flex-1"
+                      value={rangeFrom}
+                      onChange={(e) => setRangeFrom(e.target.value)}
+                    />
+                    <span className="text-xs text-neutral-400">to</span>
+                    <input
+                      type="date"
+                      className="form-input flex-1"
+                      value={rangeTo}
+                      onChange={(e) => setRangeTo(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {spanMode === "range" && spannedDates !== null && spannedDates.length > 0 && (
+                  <p className="mt-1.5 text-xs text-neutral-500">
+                    {spannedDates.length} working {spannedDates.length === 1 ? "day" : "days"} selected
+                  </p>
+                )}
               </div>
 
               {/* Hours */}
@@ -459,7 +565,13 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 disabled={!canSubmit}
                 className="btn-primary flex-1 disabled:opacity-50"
               >
-                {editEntry ? "Update Entry" : "Add Entry"}
+                {editEntry
+                  ? "Update Entry"
+                  : spanMode === "week"
+                  ? "Add 5 Entries"
+                  : spanMode === "range" && spannedDates && spannedDates.length > 1
+                  ? `Add ${spannedDates.length} Entries`
+                  : "Add Entry"}
               </button>
             </div>
           </div>

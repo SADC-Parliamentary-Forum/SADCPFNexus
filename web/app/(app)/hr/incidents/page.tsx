@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
@@ -37,14 +36,8 @@ const SEVERITY_LABEL: Record<HrIncident["severity"], string> = {
 
 export default function HrIncidentsPage() {
   const queryClient = useQueryClient();
-  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
-  const [showForm, setShowForm] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState<"low" | "medium" | "high">("medium");
-  const [formError, setFormError] = useState<string | null>(null);
 
   const queryParams = () => {
     const p: { mine?: "1"; status?: string; per_page: number } = { per_page: 25 };
@@ -61,26 +54,6 @@ export default function HrIncidentsPage() {
 
   const incidents: HrIncident[] =
     (data?.data as unknown as { data?: HrIncident[] })?.data ?? [];
-
-  const mutation = useMutation({
-    mutationFn: (payload: { subject: string; description?: string; severity: string }) =>
-      hrIncidentsApi.create(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["hr-incidents"] });
-      setShowForm(false);
-      setSubject("");
-      setDescription("");
-      setSeverity("medium");
-      setFormError(null);
-    },
-    onError: (err: unknown) => {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message: string }).message)
-          : "Failed to submit incident report.";
-      setFormError(msg);
-    },
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,86 +84,13 @@ export default function HrIncidentsPage() {
           <h1 className="page-title">HR Incidents</h1>
           <p className="page-subtitle">Report workplace incidents and track their status.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => { setShowForm((v) => !v); setFormError(null); }}
-          className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {showForm ? "expand_less" : "add"}
-          </span>
-          {showForm ? "Cancel" : "Report Incident"}
-        </button>
-      </div>
-
-      {/* Inline create form */}
-      {showForm && (
-        <div className="card p-5 border-primary/30 bg-blue-50/30">
-          <h2 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-primary">report</span>
-            New Incident Report
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {formError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[14px]">error_outline</span>
-                {formError}
-              </div>
-            )}
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Subject <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                className="form-input w-full"
-                placeholder="Brief title describing the incident"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea
-                rows={3}
-                className="form-input resize-none w-full"
-                placeholder="Provide full details of the incident…"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="max-w-[200px]">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Severity</label>
-              <select
-                className="form-input w-full"
-                value={severity}
-                onChange={(e) => setSeverity(e.target.value as "low" | "medium" | "high")}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormError(null); }}
-                className="btn-secondary px-4 py-2 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={mutation.isPending || !subject.trim()}
-                className="btn-primary px-5 py-2 text-sm disabled:opacity-50"
-              >
-                {mutation.isPending ? "Submitting…" : "Submit Report"}
-              </button>
-            </div>
-          </form>
+        <div className="flex items-center gap-2">
+          <Link href="/hr/incidents/new" className="btn-primary py-2 px-3 text-sm flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Report Incident
+          </Link>
         </div>
-      )}
+      </div>
 
       {/* Filter tabs */}
       <div className="flex items-center gap-1 flex-wrap">

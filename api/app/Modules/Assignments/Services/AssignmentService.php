@@ -6,12 +6,16 @@ use App\Models\Assignment;
 use App\Models\AssignmentUpdate;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AssignmentService
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {}
     // ── Listing ────────────────────────────────────────────────────────────────
 
     public function list(array $filters, User $user): LengthAwarePaginator
@@ -191,6 +195,19 @@ class AssignmentService
 
         $this->logUpdate($assignment, $user, 'system', 'Assignment issued and sent to assignee for acceptance.');
 
+        // Notify the assignee
+        $assignment->loadMissing('assignee');
+        if ($assignment->assignee) {
+            $this->notificationService->dispatch($assignment->assignee, 'assignment.issued', [
+                'name'        => $assignment->assignee->name,
+                'task_title'  => $assignment->title,
+                'due_date'    => $assignment->due_date,
+                'description' => $assignment->description ?? '',
+                'issuer'      => $user->name,
+                'reference'   => $assignment->reference_number,
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+        }
+
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
     }
 
@@ -219,6 +236,19 @@ class AssignmentService
         };
 
         $this->logUpdate($assignment, $user, 'update', $noteText);
+
+        // Notify the creator of the acceptance decision
+        $assignment->loadMissing('creator');
+        if ($assignment->creator && (int) $assignment->creator->id !== (int) $user->id) {
+            $this->notificationService->dispatch($assignment->creator, 'assignment.accepted', [
+                'name'       => $assignment->creator->name,
+                'task_title' => $assignment->title,
+                'reference'  => $assignment->reference_number,
+                'assignee'   => $user->name,
+                'decision'   => $decision,
+                'notes'      => $data['notes'] ?? '',
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+        }
 
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
     }
@@ -290,6 +320,18 @@ class AssignmentService
 
         $this->logUpdate($assignment, $user, 'closure_request', 'Assignment submitted for closure. ' . ($data['notes'] ?? ''));
 
+        // Notify the creator that the assignee has completed the assignment
+        $assignment->loadMissing('creator');
+        if ($assignment->creator && (int) $assignment->creator->id !== (int) $user->id) {
+            $this->notificationService->dispatch($assignment->creator, 'assignment.completed', [
+                'name'       => $assignment->creator->name,
+                'task_title' => $assignment->title,
+                'reference'  => $assignment->reference_number,
+                'assignee'   => $user->name,
+                'notes'      => $data['notes'] ?? '',
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+        }
+
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
     }
 
@@ -325,6 +367,18 @@ class AssignmentService
 
         $reason = $data['reason'] ?? 'Returned by supervisor for further work.';
         $this->logUpdate($assignment, $user, 'feedback', 'Assignment returned: ' . $reason);
+
+        // Notify the assignee that the assignment was returned
+        $assignment->loadMissing('assignee');
+        if ($assignment->assignee) {
+            $this->notificationService->dispatch($assignment->assignee, 'assignment.returned', [
+                'name'       => $assignment->assignee->name,
+                'task_title' => $assignment->title,
+                'reference'  => $assignment->reference_number,
+                'reason'     => $reason,
+                'issuer'     => $user->name,
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+        }
 
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
     }

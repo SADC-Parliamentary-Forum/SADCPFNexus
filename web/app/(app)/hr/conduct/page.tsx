@@ -191,14 +191,20 @@ export default function ConductPage() {
             Commendations, warnings, and corrective actions. These records support performance review and HR decisions.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowNew(true)}
-          className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New record
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/hr/conduct/new" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+            Full Form
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowNew(true)}
+            className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Quick Add
+          </button>
+        </div>
       </div>
 
       {error && (

@@ -32,6 +32,9 @@ interface Balances {
   annual_balance_days: number;
   lil_hours_available: number;
   sick_leave_used_days: number;
+  special_leave_days_used: number;
+  maternity_leave_days_used: number;
+  paternity_leave_days_used: number;
 }
 
 export default function LeavePage() {
@@ -74,19 +77,23 @@ export default function LeavePage() {
       )}
 
       {/* Balance cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {[
-          { label: "Annual Leave Balance", value: balances ? `${balances.annual_balance_days} days` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50" },
-          { label: "LIL Hours Available",  value: balances ? `${balances.lil_hours_available} hrs`  : "—", icon: "schedule",       color: "text-purple-600",bg: "bg-purple-50"},
-          { label: "Sick Leave Used",      value: balances ? `${balances.sick_leave_used_days} days`: "—", icon: "sick",           color: "text-red-600",   bg: "bg-red-50"   },
+          { label: "Annual Leave",   sub: "days remaining",   value: balances ? `${balances.annual_balance_days}` : "—",           icon: "event_available",  color: "text-green-600",  bg: "bg-green-50"  },
+          { label: "Leave in Lieu",  sub: "hours available",  value: balances ? `${balances.lil_hours_available}` : "—",           icon: "schedule",         color: "text-purple-600", bg: "bg-purple-50" },
+          { label: "Sick Leave",     sub: "days used",        value: balances ? `${balances.sick_leave_used_days}` : "—",          icon: "sick",             color: "text-red-600",    bg: "bg-red-50"    },
+          { label: "Special Leave",  sub: "days used",        value: balances ? `${balances.special_leave_days_used}` : "—",       icon: "star",             color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Maternity Leave",sub: "days used",        value: balances ? `${balances.maternity_leave_days_used}` : "—",     icon: "pregnant_woman",   color: "text-pink-600",   bg: "bg-pink-50"   },
+          { label: "Paternity Leave",sub: "days used",        value: balances ? `${balances.paternity_leave_days_used}` : "—",     icon: "man",              color: "text-teal-600",   bg: "bg-teal-50"   },
         ].map((stat) => (
           <div key={stat.label} className="card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-neutral-500">{stat.label}</p>
-                <p className="text-xl font-bold text-neutral-900 mt-1">{stat.value}</p>
+                <p className="text-xs font-medium text-neutral-700">{stat.label}</p>
+                <p className="text-2xl font-bold text-neutral-900 mt-1">{stat.value}</p>
+                <p className="text-[11px] text-neutral-400 mt-0.5">{stat.sub}</p>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center flex-shrink-0`}>
                 <span className={`material-symbols-outlined ${stat.color} text-[20px]`}>{stat.icon}</span>
               </div>
             </div>

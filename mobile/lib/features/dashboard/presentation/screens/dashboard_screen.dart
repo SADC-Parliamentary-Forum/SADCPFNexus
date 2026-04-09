@@ -75,6 +75,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -128,10 +135,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     }
 
-    final pending      = (_stats?['pending_approvals']   as num?)?.toInt() ?? 0;
-    final travels      = (_stats?['active_travels']      as num?)?.toInt() ?? 0;
-    final leaveReqs    = (_stats?['leave_requests']      as num?)?.toInt() ?? 0;
-    final requisitions = (_stats?['open_requisitions']   as num?)?.toInt() ?? 0;
+    final pending = _asInt(_stats?['pending_approvals']);
+    final travels = _asInt(_stats?['active_travels']);
+    final leaveReqs = _asInt(_stats?['leave_requests']);
+    final requisitions = _asInt(_stats?['open_requisitions']);
 
     final firstName = (_userName ?? 'User').split(' ').first;
 

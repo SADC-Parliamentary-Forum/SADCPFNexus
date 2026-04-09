@@ -1,69 +1,143 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DATA MODELS
-// ─────────────────────────────────────────────────────────────────────────────
-class _AgingBucket {
-  final String label;
-  final double amount;
-  final Color barColor;
-  final double fraction;
-  const _AgingBucket({
-    required this.label,
-    required this.amount,
-    required this.barColor,
-    required this.fraction,
-  });
-}
-
-class _BudgetAlert {
-  final String name;
-  final double pct;
-  final Color barColor;
-  const _BudgetAlert({
-    required this.name,
-    required this.pct,
-    required this.barColor,
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class FinanceCommandCenterScreen extends StatelessWidget {
+class FinanceCommandCenterScreen extends ConsumerStatefulWidget {
   const FinanceCommandCenterScreen({super.key});
 
-  static const List<_AgingBucket> _aging = [
-    _AgingBucket(
-        label: '< 30 Days',
-        amount: 12400,
-        barColor: Color(0xFF10B981),
-        fraction: 0.27),
-    _AgingBucket(
-        label: '30-60 Days',
-        amount: 8200,
-        barColor: Color(0xFFF59E0B),
-        fraction: 0.18),
-    _AgingBucket(
-        label: '60-90 Days',
-        amount: 18500,
-        barColor: Color(0xFFEF4444),
-        fraction: 0.41),
-    _AgingBucket(
-        label: '> 90 Days',
-        amount: 6150,
-        barColor: Color(0xFF991B1B),
-        fraction: 0.14),
-  ];
+  @override
+  ConsumerState<FinanceCommandCenterScreen> createState() =>
+      _FinanceCommandCenterScreenState();
+}
 
-  static const List<_BudgetAlert> _alerts = [
-    _BudgetAlert(
-        name: 'IT Infrastructure', pct: 0.92, barColor: Color(0xFFEF4444)),
-    _BudgetAlert(
-        name: 'Consultancy Fees', pct: 0.88, barColor: Color(0xFFF59E0B)),
-  ];
+class _FinanceCommandCenterScreenState
+    extends ConsumerState<FinanceCommandCenterScreen> {
+  bool _loading = true;
+  String? _error;
+  Map<String, dynamic> _summary = const {};
+  List<Map<String, dynamic>> _advances = const [];
+  List<Map<String, dynamic>> _budgets = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final dio = ref.read(apiClientProvider).dio;
+
+    try {
+      final summaryRes = await dio.get<Map<String, dynamic>>('/finance/summary');
+      final advancesRes = await dio.get<Map<String, dynamic>>(
+        '/finance/advances',
+        queryParameters: {'per_page': 20},
+      );
+      final budgetsRes = await dio.get<Map<String, dynamic>>(
+        '/finance/budgets',
+        queryParameters: {'per_page': 20},
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _summary = summaryRes.data ?? const {};
+        _advances = ((advancesRes.data?['data'] as List<dynamic>?) ?? const [])
+            .map(
+              (item) => item is Map
+                  ? Map<String, dynamic>.from(item)
+                  : <String, dynamic>{},
+            )
+            .toList();
+        _budgets = ((budgetsRes.data?['data'] as List<dynamic>?) ?? const [])
+            .map(
+              (item) => item is Map
+                  ? Map<String, dynamic>.from(item)
+                  : <String, dynamic>{},
+            )
+            .toList();
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load finance data.';
+        _loading = false;
+      });
+    }
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse('$value') ?? 0;
+  }
+
+  String _money(double value, [String? currency]) {
+    final ccy = currency == null || currency.isEmpty ? 'NAD' : currency;
+    return '$ccy ${value.toStringAsFixed(2)}';
+  }
+
+  double get _currentNetSalary => _asDouble(_summary['current_net_salary']);
+
+  double get _currentGrossSalary => _asDouble(_summary['current_gross_salary']);
+
+  double get _ytdGross => _asDouble(_summary['ytd_gross']);
+
+  String get _currency => _summary['currency']?.toString() ?? 'NAD';
+
+  double get _activeAdvanceAmount {
+    return _advances
+        .where((item) => item['status']?.toString() != 'rejected')
+        .fold<double>(0, (sum, item) => sum + _asDouble(item['amount']));
+  }
+
+  double get _advanceCap => _currentNetSalary * 0.5;
+
+  double get _advanceCapUtilization {
+    if (_advanceCap <= 0) return 0;
+    return (_activeAdvanceAmount / _advanceCap).clamp(0, 1);
+  }
+
+  List<_BudgetPressure> get _budgetPressure {
+    final pressures = <_BudgetPressure>[];
+    for (final budget in _budgets) {
+      final budgetName = budget['name']?.toString() ?? 'Budget';
+      final lines = (budget['lines'] as List<dynamic>? ?? const []);
+      for (final rawLine in lines) {
+        if (rawLine is! Map) continue;
+        final line = Map<String, dynamic>.from(rawLine);
+        final allocated = _asDouble(line['amount_allocated']);
+        if (allocated <= 0) continue;
+        final spent = _asDouble(line['amount_spent']);
+        pressures.add(
+          _BudgetPressure(
+            budgetName: budgetName,
+            lineName: line['category']?.toString() ?? 'Line Item',
+            allocated: allocated,
+            spent: spent,
+          ),
+        );
+      }
+    }
+    pressures.sort((a, b) => b.ratio.compareTo(a.ratio));
+    return pressures.take(5).toList();
+  }
+
+  double get _budgetAllocated {
+    return _budgetPressure.fold<double>(0, (sum, item) => sum + item.allocated);
+  }
+
+  double get _budgetSpent {
+    return _budgetPressure.fold<double>(0, (sum, item) => sum + item.spent);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,60 +156,158 @@ class FinanceCommandCenterScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
-            ),
-            child: const Text(
-              'Audit Ready',
-              style: TextStyle(
-                color: AppColors.success,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            onPressed: _loading ? null : _load,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      body: _loading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.danger),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _load, child: const Text('Retry')),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  color: AppColors.primary,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _metricCard(
+                              title: 'Net Salary',
+                              value: _money(_currentNetSalary, _currency),
+                              subtitle: 'Latest payslip',
+                              icon: Icons.account_balance_wallet_outlined,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _metricCard(
+                              title: 'YTD Gross',
+                              value: _money(_ytdGross, _currency),
+                              subtitle: 'Current year',
+                              icon: Icons.trending_up,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _metricCard(
+                              title: 'Gross Salary',
+                              value: _money(_currentGrossSalary, _currency),
+                              subtitle: 'Latest payslip',
+                              icon: Icons.payments_outlined,
+                              color: AppColors.info,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _advanceCapCard(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const _SectionHeader(title: 'Budget Snapshot'),
+                      const SizedBox(height: 12),
+                      _budgetPortfolioCard(),
+                      const SizedBox(height: 20),
+                      const _SectionHeader(title: 'Budget Pressure'),
+                      const SizedBox(height: 12),
+                      _budgetPressureCard(),
+                      const SizedBox(height: 20),
+                      const _SectionHeader(title: 'Recent Salary Advances'),
+                      const SizedBox(height: 12),
+                      _advanceListCard(),
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _metricCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Row 1: Cycle Time + Advance Cap ──────────────────────────
-          Row(
-            children: [
-              Expanded(child: _CycleTimeCard()),
-              const SizedBox(width: 12),
-              Expanded(child: _AdvanceCapCard()),
-            ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 20),
-
-          // ── Imprest Aging ─────────────────────────────────────────────
-          const _SectionHeader(title: 'Imprest Aging'),
-          const SizedBox(height: 12),
-          _buildAgingCard(),
-          const SizedBox(height: 20),
-
-          // ── Travel Cost Analysis ──────────────────────────────────────
-          const _SectionHeader(title: 'Travel Cost Analysis'),
-          const SizedBox(height: 12),
-          _TravelCostChart(),
-          const SizedBox(height: 20),
-
-          // ── Budget Variance Alerts ────────────────────────────────────
-          const _SectionHeader(title: 'Budget Variance Alerts'),
-          const SizedBox(height: 12),
-          _buildAlertsCard(),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAgingCard() {
+  Widget _advanceCapCard() {
+    final pct = (_advanceCapUtilization * 100).round();
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -147,34 +319,111 @@ class FinanceCommandCenterScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '\$45,200',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-            ),
-          ),
-          const Text(
-            'OUTSTANDING',
+            'ADVANCE CAP',
             style: TextStyle(
               color: AppColors.textMuted,
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(height: 18),
-          ..._aging.map((b) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _AgingRow(bucket: b),
-              )),
+          const SizedBox(height: 16),
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: CircularProgressIndicator(
+                    value: _advanceCapUtilization,
+                    strokeWidth: 10,
+                    backgroundColor: AppColors.border,
+                    valueColor: const AlwaysStoppedAnimation(AppColors.warning),
+                  ),
+                ),
+                Text(
+                  '$pct%',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              '${_money(_activeAdvanceAmount, _currency)} active against ${_money(_advanceCap, _currency)} cap',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAlertsCard() {
+  Widget _budgetPortfolioCard() {
+    final ratio = _budgetAllocated <= 0
+        ? 0.0
+        : (_budgetSpent / _budgetAllocated).clamp(0.0, 1.0).toDouble();
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${_budgets.length} budgets loaded',
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Allocated ${_money(_budgetAllocated, _currency)} · Spent ${_money(_budgetSpent, _currency)}',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 8,
+              backgroundColor: AppColors.border,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${(ratio * 100).round()}% utilization across the highest-pressure budget lines',
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _budgetPressureCard() {
+    final pressure = _budgetPressure;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -182,24 +431,196 @@ class FinanceCommandCenterScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        children: _alerts
-            .map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _AlertRow(alert: a),
-                ))
-            .toList(),
+      child: pressure.isEmpty
+          ? const Text(
+              'No budget utilization lines are available yet.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            )
+          : Column(
+              children: pressure
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.lineName,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${(item.ratio * 100).round()}%',
+                                style: const TextStyle(
+                                  color: AppColors.warning,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.budgetName,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: item.ratio.clamp(0, 1),
+                              minHeight: 7,
+                              backgroundColor: AppColors.border,
+                              valueColor: AlwaysStoppedAnimation(
+                                item.ratio >= 0.9
+                                    ? AppColors.danger
+                                    : item.ratio >= 0.75
+                                        ? AppColors.warning
+                                        : AppColors.success,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Spent ${_money(item.spent, _currency)} of ${_money(item.allocated, _currency)}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _advanceListCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
       ),
+      child: _advances.isEmpty
+          ? const Text(
+              'No salary advances found.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            )
+          : Column(
+              children: _advances.take(5).map((advance) {
+                final createdAt = advance['created_at']?.toString();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              advance['reference_number']?.toString() ?? 'Advance',
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              advance['purpose']?.toString() ?? '-',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (createdAt != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                AppDateFormatter.short(createdAt),
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _money(_asDouble(advance['amount']), _currency),
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.info.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              advance['status']?.toString() ?? 'draft',
+                              style: const TextStyle(
+                                color: AppColors.info,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SUB-WIDGETS
-// ─────────────────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
-  final String title;
   const _SectionHeader({required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -214,436 +635,18 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _CycleTimeCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.speed_rounded,
-                color: AppColors.primary, size: 20),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            '4.2',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-            ),
-          ),
-          const Text(
-            'Days',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'CYCLE TIME',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AdvanceCapCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ADVANCE CAP',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
-            ),
-          ),
-          SizedBox(height: 16),
-          Center(
-            child: SizedBox(
-              width: 90,
-              height: 90,
-              child: CustomPaint(
-                painter: _DonutPainter(
-                  value: 0.42,
-                  foregroundColor: Color(0xFFF59E0B),
-                  backgroundColor: AppColors.border,
-                ),
-                child: Center(
-                  child: Text(
-                    '42%',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 10),
-          Center(
-            child: Text(
-              'of cap utilized',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DonutPainter extends CustomPainter {
-  final double value;
-  final Color foregroundColor;
-  final Color backgroundColor;
-
-  const _DonutPainter({
-    required this.value,
-    required this.foregroundColor,
-    required this.backgroundColor,
+class _BudgetPressure {
+  const _BudgetPressure({
+    required this.budgetName,
+    required this.lineName,
+    required this.allocated,
+    required this.spent,
   });
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final radius = math.min(cx, cy) - 8;
-    const strokeW = 10.0;
+  final String budgetName;
+  final String lineName;
+  final double allocated;
+  final double spent;
 
-    final bgPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeW
-      ..strokeCap = StrokeCap.round;
-
-    final fgPaint = Paint()
-      ..color = foregroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeW
-      ..strokeCap = StrokeCap.round;
-
-    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: radius);
-    canvas.drawArc(rect, -math.pi / 2, 2 * math.pi, false, bgPaint);
-    canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * value, false, fgPaint);
-  }
-
-  @override
-  bool shouldRepaint(_DonutPainter old) =>
-      old.value != value ||
-      old.foregroundColor != foregroundColor ||
-      old.backgroundColor != backgroundColor;
-}
-
-class _AgingRow extends StatelessWidget {
-  final _AgingBucket bucket;
-  const _AgingRow({required this.bucket});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              bucket.label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              '\$${bucket.amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}',
-              style: TextStyle(
-                color: bucket.barColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 5),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: bucket.fraction,
-            minHeight: 6,
-            backgroundColor: AppColors.border,
-            valueColor: AlwaysStoppedAnimation<Color>(bucket.barColor),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TravelCostChart extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Weekly data points (Q1 vs Q2) — 6 weeks
-    final q1 = [28.0, 35.0, 22.0, 42.0, 30.0, 18.0];
-    final q2 = [18.0, 25.0, 15.0, 32.0, 20.0, 12.0];
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Weekly Trend',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  Text(
-                    'Peak \$42k',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: AppColors.success.withValues(alpha: 0.35)),
-                ),
-                child: const Text(
-                  'Variance -\$21k (Savings)',
-                  style: TextStyle(
-                    color: AppColors.success,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 100,
-            child: CustomPaint(
-              size: const Size(double.infinity, 100),
-              painter: _LineChartPainter(q1: q1, q2: q2),
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              _LegendDot(color: AppColors.primary, label: 'Q1'),
-              SizedBox(width: 16),
-              _LegendDot(color: AppColors.warning, label: 'Q2'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 11)),
-      ],
-    );
-  }
-}
-
-class _LineChartPainter extends CustomPainter {
-  final List<double> q1;
-  final List<double> q2;
-  const _LineChartPainter({required this.q1, required this.q2});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final maxVal = [...q1, ...q2].reduce(math.max);
-    final w = size.width;
-    final h = size.height;
-    final stepX = w / (q1.length - 1);
-
-    Path buildPath(List<double> data) {
-      final path = Path();
-      for (int i = 0; i < data.length; i++) {
-        final x = i * stepX;
-        final y = h - (data[i] / maxVal) * h;
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          final prevX = (i - 1) * stepX;
-          final prevY = h - (data[i - 1] / maxVal) * h;
-          final cpX = (prevX + x) / 2;
-          path.cubicTo(cpX, prevY, cpX, y, x, y);
-        }
-      }
-      return path;
-    }
-
-    final q1Paint = Paint()
-      ..color = AppColors.primary
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final q2Paint = Paint()
-      ..color = AppColors.warning
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    // Draw grid lines
-    final gridPaint = Paint()
-      ..color = AppColors.border
-      ..strokeWidth = 1;
-    for (int i = 0; i < 4; i++) {
-      final y = h * i / 3;
-      canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
-    }
-
-    canvas.drawPath(buildPath(q1), q1Paint);
-    canvas.drawPath(buildPath(q2), q2Paint);
-
-    // Draw dots
-    for (int i = 0; i < q1.length; i++) {
-      final x = i * stepX;
-      final dotPaint = Paint()..color = AppColors.primary;
-      canvas.drawCircle(
-          Offset(x, h - (q1[i] / maxVal) * h), 3.5, dotPaint);
-      dotPaint.color = AppColors.warning;
-      canvas.drawCircle(
-          Offset(x, h - (q2[i] / maxVal) * h), 3.5, dotPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_LineChartPainter old) => false;
-}
-
-class _AlertRow extends StatelessWidget {
-  final _BudgetAlert alert;
-  const _AlertRow({required this.alert});
-
-  @override
-  Widget build(BuildContext context) {
-    final pctText = '${(alert.pct * 100).toInt()}%';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              alert.name,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              pctText,
-              style: TextStyle(
-                color: alert.barColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: alert.pct,
-            minHeight: 7,
-            backgroundColor: AppColors.border,
-            valueColor: AlwaysStoppedAnimation<Color>(alert.barColor),
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Budget utilization exceeds threshold',
-          style: TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
-  }
+  double get ratio => allocated <= 0 ? 0 : spent / allocated;
 }

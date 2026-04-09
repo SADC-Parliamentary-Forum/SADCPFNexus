@@ -47,7 +47,8 @@ The following are now wired to the API:
 | Item | Status |
 |------|--------|
 | **Reports** | Done. `GET /api/v1/reports/travel`, `reports/leave`, `reports/dsa` with query `period_from`, `period_to`, `per_page`; summary unchanged. |
-| **Payslip files** | Payslips table and list/download endpoint exist; attach real PDF files via `file_path` and storage when payroll integration is ready. **Storage:** Files are stored under `storage/app/payslips/{tenant_id}/{user_id}/` (created on first upload). **Upload:** Admin can POST a payslip via `POST /api/v1/admin/payslips` with multipart `file`, `user_id`, `period_month`, `period_year` (optional: `gross_amount`, `net_amount`, `currency`). Download: `GET /api/v1/admin/payslips/{id}/download` or staff `GET /api/v1/finance/payslips/{id}/download`. |
+| **Payslip files** | Done. Admin drag-and-drop upload at `/admin/payslips/`. Staff view + PDF inline viewer at `/finance/payslips/[id]/`. Mobile download via `GET /finance/payslips/{id}/download`. Storage: `storage/app/payslips/{tenant_id}/{user_id}/`. |
+| **Vendor Register enhancements** | Done (2026-04-07). Expanded vendor profile (contact person, VAT, country, category, website, banking details, SME flag, notes). 5-star staff rating system (`vendor_ratings` table, one per user per vendor, aggregate avg shown in list). New migrations: `2026_04_07_100000`, `2026_04_07_100001`. Run `php artisan migrate`. |
 
 ---
 

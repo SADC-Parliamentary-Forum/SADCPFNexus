@@ -343,9 +343,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                     final statusColor = _statusColors(c)[status] ?? c.onSurface.withValues(alpha: 0.6);
                                     final statusLabel = _statusLabels[status] ?? status;
                                     final detailRoute = i == 0
-                                        ? '/requests/travel/detail'
+                                        ? '/requests/travel/detail?id=${item['id']}'
                                         : i == 1
-                                            ? '/requests/leave/detail'
+                                            ? '/requests/leave/detail?id=${item['id']}'
                                             : '/requests/imprest/detail';
                                     final isTravelDraft = i == 0 && status == 'draft';
                                     final travelId = item['id'] as int?;

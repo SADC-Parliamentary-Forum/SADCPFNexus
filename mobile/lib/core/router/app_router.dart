@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/auth/unauthorized_callback.dart';
 
 // Auth & Shell
 import '../../features/splash/presentation/screens/splash_screen.dart';
@@ -44,6 +43,11 @@ import '../../features/salary_advance/presentation/screens/salary_advance_previe
 // HR
 import '../../features/hr/presentation/screens/hr_governance_dashboard_screen.dart';
 import '../../features/hr/presentation/screens/timesheets_incidents_screen.dart';
+
+// Timesheets (dedicated module)
+import '../../features/timesheets/presentation/screens/timesheet_list_screen.dart';
+import '../../features/timesheets/presentation/screens/timesheet_weekly_screen.dart';
+import '../../features/timesheets/presentation/screens/timesheet_day_screen.dart';
 import '../../features/hr/presentation/screens/disciplinary_case_screen.dart';
 import '../../features/hr/presentation/screens/report_new_incident_screen.dart';
 import '../../features/hr/presentation/screens/payslip_screen.dart';
@@ -64,8 +68,10 @@ import '../../features/assets/presentation/screens/my_assigned_assets_screen.dar
 import '../../features/assets/presentation/screens/asset_condition_report_screen.dart';
 import '../../features/assets/presentation/screens/fleet_transport_screen.dart';
 
-// Procurement detail
+// Procurement detail + vendor screens
 import '../../features/procurement/presentation/screens/procurement_detail_screen.dart';
+import '../../features/procurement/presentation/screens/vendor_directory_screen.dart';
+import '../../features/procurement/presentation/screens/vendor_detail_screen.dart';
 
 // Calendar (SADC holidays, UN days)
 import '../../features/calendar/presentation/screens/calendar_holidays_screen.dart';
@@ -99,21 +105,39 @@ import '../../features/analytics/presentation/screens/global_executive_summary_s
 import '../../features/support/presentation/screens/user_support_health_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_security_screen.dart';
 import '../../core/auth/auth_providers.dart';
+import '../../core/auth/auth_session_controller.dart';
 import '../../core/auth/feature_access.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final sessionController = ref.watch(authSessionControllerProvider);
   final router = GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,
-    redirect: (context, state) async {
+    refreshListenable: sessionController,
+    redirect: (context, state) {
       final loc = state.uri.toString();
-      if (loc.startsWith('/splash') || loc.startsWith('/login') || loc.startsWith('/biometric-entry')) return null;
-      try {
-        final repo = ref.read(authRepositoryProvider);
-        final perms = await repo.getStoredPermissions();
-        final roles = await repo.getStoredRoles();
-        if (!canAccessFeature(perms, roles, loc)) return '/dashboard';
-      } catch (_) {}
+      final session = sessionController.state;
+      final isSplash = loc.startsWith('/splash');
+      final isLogin = loc.startsWith('/login');
+      final isBiometricEntry = loc.startsWith('/biometric-entry');
+      final isPublicRoute = isSplash || isLogin || isBiometricEntry;
+
+      if (session.status == AuthSessionStatus.unknown) {
+        return isSplash ? null : '/splash';
+      }
+
+      if (!session.isAuthenticated) {
+        return isPublicRoute ? null : '/login';
+      }
+
+      if (isPublicRoute) {
+        return '/dashboard';
+      }
+
+      if (!canAccessFeature(session.permissions, session.roles, loc)) {
+        return '/dashboard';
+      }
+
       return null;
     },
     routes: [
@@ -169,7 +193,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'travel/detail',
                 name: 'travel-detail',
-                builder: (context, state) => const TravelRequestDetailScreen(),
+                builder: (context, state) => TravelRequestDetailScreen(
+                  requestId: state.uri.queryParameters['id'],
+                ),
               ),
               GoRoute(
                 path: 'leave/new',
@@ -193,7 +219,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'leave/detail',
                 name: 'leave-detail',
-                builder: (context, state) => const LeaveRequestDetailScreen(),
+                builder: (context, state) => LeaveRequestDetailScreen(
+                  requestId: state.uri.queryParameters['id'],
+                ),
               ),
               GoRoute(
                 path: 'imprest/detail',
@@ -247,6 +275,18 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ─── Procurement ───────────────────────────────────────────────────────
       GoRoute(
+        path: '/procurement/vendors',
+        name: 'vendor-directory',
+        builder: (context, state) => const VendorDirectoryScreen(),
+      ),
+      GoRoute(
+        path: '/procurement/vendors/:id',
+        name: 'vendor-detail',
+        builder: (context, state) => VendorDetailScreen(
+          vendorId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
         path: '/procurement/form',
         name: 'procurement-form',
         builder: (context, state) => const ProcurementRequisitionFormScreen(),
@@ -294,7 +334,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/salary/advance/new',
         name: 'salary-advance-new',
-        builder: (context, state) => const SalaryAdvanceRequestScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return SalaryAdvanceRequestScreen(
+            initialDraft: extra?['payload'] as Map<String, dynamic>?,
+            draftId: extra?['draftId'] as int?,
+          );
+        },
       ),
       GoRoute(
         path: '/salary/advance/preview',
@@ -312,6 +358,40 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/hr/timesheets',
         name: 'hr-timesheets',
         builder: (context, state) => const TimesheetsIncidentsScreen(),
+      ),
+      // Dedicated timesheet module routes
+      GoRoute(
+        path: '/timesheets',
+        name: 'timesheets',
+        builder: (context, state) => const TimesheetListScreen(),
+      ),
+      GoRoute(
+        path: '/timesheets/weekly',
+        name: 'timesheets-weekly',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return TimesheetWeeklyScreen(
+            timesheetId: extra?['timesheetId'] as int?,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/timesheets/day',
+        name: 'timesheets-day',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return TimesheetDayScreen(
+            date:           extra?['date'] as String? ?? '',
+            timesheetId:    extra?['timesheetId'] as int?,
+            initialEntries: (extra?['entries'] as List<dynamic>? ?? [])
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList(),
+            projects:       (extra?['projects'] as List<dynamic>? ?? [])
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList(),
+            overlayLabel:   extra?['overlayLabel'] as String?,
+          );
+        },
       ),
       GoRoute(
         path: '/hr/assignments',
@@ -387,7 +467,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pif/form',
         name: 'pif-form',
-        builder: (context, state) => const PifFormScreen(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return PifFormScreen(
+            initialDraft: extra?['payload'] as Map<String, dynamic>?,
+            draftId: extra?['draftId'] as int?,
+          );
+        },
       ),
       GoRoute(
         path: '/pif/review',
@@ -409,7 +495,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pif/budget',
         name: 'pif-budget',
-        builder: (context, state) => const PifBudgetScreen(),
+        builder: (context, state) => PifBudgetScreen(
+          programmeId: state.uri.queryParameters['id'],
+        ),
       ),
 
       // ─── Governance ────────────────────────────────────────────────────────
@@ -549,6 +637,5 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-  onUnauthorizedCallback = () => router.go('/login');
   return router;
 });

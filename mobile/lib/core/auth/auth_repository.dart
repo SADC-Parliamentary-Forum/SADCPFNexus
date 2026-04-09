@@ -12,7 +12,11 @@ class AuthRepository {
   final Dio _dio;
   final AuthStorage _storage;
 
-  Future<AuthResult> login(String email, String password) async {
+  Future<AuthResult> login(
+    String email,
+    String password, {
+    bool rememberMe = true,
+  }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/login',
@@ -27,11 +31,17 @@ class AuthRepository {
       final token = data['token'] as String?;
       final user = data['user'];
       if (token == null || token.isEmpty) throw Exception('No token received');
-      await _storage.setToken(token);
+      String? jsonStr;
       if (user != null) {
-        final jsonStr = user is Map ? jsonEncode(Map<String, dynamic>.from(user)) : user.toString();
-        await _storage.setUserJson(jsonStr);
+        jsonStr = user is Map
+            ? jsonEncode(Map<String, dynamic>.from(user))
+            : user.toString();
       }
+      await _storage.saveSession(
+        token: token,
+        userJson: jsonStr,
+        rememberMe: rememberMe,
+      );
       return AuthResult.success(user: user);
     } on DioException catch (e) {
       if (e.response?.statusCode == 422 || e.response?.statusCode == 401) {
@@ -56,6 +66,40 @@ class AuthRepository {
       await _dio.post('/auth/logout');
     } catch (_) {}
     await _storage.clear();
+  }
+
+  Future<void> clearSession() => _storage.clear();
+
+  Future<Map<String, dynamic>?> getStoredUserMap() => _storage.getUserMap();
+
+  Future<AuthBootstrapResult> restoreSession() async {
+    final token = await _storage.getToken();
+    if (token == null || token.isEmpty) {
+      return const AuthBootstrapResult.unauthenticated();
+    }
+
+    final cachedUser = await _storage.getUserMap();
+
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/auth/me');
+      final user = response.data;
+      if (user == null) {
+        return AuthBootstrapResult.authenticated(user: cachedUser);
+      }
+      await _storage.setUserJson(
+        jsonEncode(user),
+        rememberMe: !(await _storage.isSessionOnlyActive()),
+      );
+      return AuthBootstrapResult.authenticated(user: user);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await _storage.clear();
+        return const AuthBootstrapResult.unauthenticated();
+      }
+      return AuthBootstrapResult.authenticated(user: cachedUser, isStale: true);
+    } catch (_) {
+      return AuthBootstrapResult.authenticated(user: cachedUser, isStale: true);
+    }
   }
 
   Future<String?> getStoredUserEmail() async {
@@ -144,4 +188,30 @@ class AuthResult {
   factory AuthResult.failure(String message) => AuthResult._(error: message);
 
   bool get isSuccess => error == null;
+}
+
+class AuthBootstrapResult {
+  const AuthBootstrapResult._({
+    required this.isAuthenticated,
+    this.user,
+    this.isStale = false,
+  });
+
+  final bool isAuthenticated;
+  final Map<String, dynamic>? user;
+  final bool isStale;
+
+  const AuthBootstrapResult.unauthenticated()
+      : this._(isAuthenticated: false);
+
+  factory AuthBootstrapResult.authenticated({
+    Map<String, dynamic>? user,
+    bool isStale = false,
+  }) {
+    return AuthBootstrapResult._(
+      isAuthenticated: true,
+      user: user,
+      isStale: isStale,
+    );
+  }
 }

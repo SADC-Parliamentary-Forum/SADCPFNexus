@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,15 +8,13 @@ class AppShell extends StatefulWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
 
-  static final GlobalKey<ScaffoldState> scaffoldKey =
-      GlobalKey<ScaffoldState>();
-
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animController;
   late Animation<Offset> _slideAnimation;
   final _navVisible = ValueNotifier<bool>(true);
@@ -53,8 +49,9 @@ class _AppShellState extends State<AppShell>
 
   @override
   void didChangeMetrics() {
-    final bottomInset =
-        WidgetsBinding.instance.platformDispatcher.views.first.viewInsets.bottom;
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return;
+    final bottomInset = views.first.viewInsets.bottom;
     final keyboardVisible = bottomInset > 100;
     if (keyboardVisible && _navVisible.value) {
       _navVisible.value = false;
@@ -91,7 +88,7 @@ class _AppShellState extends State<AppShell>
   }
 
   int _getSelectedIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
+    final location = GoRouter.of(context).routeInformationProvider.value.uri.toString();
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/requests')) return 1;
     if (location.startsWith('/approvals')) return 2;
@@ -124,12 +121,12 @@ class _AppShellState extends State<AppShell>
   @override
   Widget build(BuildContext context) {
     final selectedIndex = _getSelectedIndex(context);
-    void openDrawer() => AppShell.scaffoldKey.currentState?.openDrawer();
+    void openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
     return ShellDrawerScope(
       openDrawer: openDrawer,
       child: Scaffold(
-        key: AppShell.scaffoldKey,
+        key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: true,
         body: Stack(
@@ -209,64 +206,61 @@ class _GlassNavBar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: glassColor,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: c.outline.withValues(alpha: 0.3),
-                width: 1,
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: glassColor,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: c.outline.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                _GlassNavItem(
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: 'Home',
-                  isActive: selectedIndex == 0,
-                  onTap: () => onTap(0),
-                ),
-                _GlassNavItem(
-                  icon: Icons.description_outlined,
-                  activeIcon: Icons.description_rounded,
-                  label: 'Requests',
-                  isActive: selectedIndex == 1,
-                  onTap: () => onTap(1),
-                ),
-                _GlassNavItem(
-                  icon: Icons.task_alt_outlined,
-                  activeIcon: Icons.task_alt_rounded,
-                  label: 'Approvals',
-                  isActive: selectedIndex == 2,
-                  onTap: () => onTap(2),
-                ),
-                _GlassNavItem(
-                  icon: Icons.bar_chart_outlined,
-                  activeIcon: Icons.bar_chart_rounded,
-                  label: 'Reports',
-                  isActive: selectedIndex == 3,
-                  onTap: () => onTap(3),
-                ),
-                _GlassNavItem(
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  label: 'Profile',
-                  isActive: selectedIndex == 4,
-                  onTap: () => onTap(4),
-                ),
-              ],
-            ),
+            ],
+          ),
+          child: Row(
+            children: [
+              _GlassNavItem(
+                icon: Icons.dashboard_outlined,
+                activeIcon: Icons.dashboard_rounded,
+                label: 'Home',
+                isActive: selectedIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _GlassNavItem(
+                icon: Icons.description_outlined,
+                activeIcon: Icons.description_rounded,
+                label: 'Requests',
+                isActive: selectedIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _GlassNavItem(
+                icon: Icons.task_alt_outlined,
+                activeIcon: Icons.task_alt_rounded,
+                label: 'Approvals',
+                isActive: selectedIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _GlassNavItem(
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart_rounded,
+                label: 'Reports',
+                isActive: selectedIndex == 3,
+                onTap: () => onTap(3),
+              ),
+              _GlassNavItem(
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+                label: 'Profile',
+                isActive: selectedIndex == 4,
+                onTap: () => onTap(4),
+              ),
+            ],
           ),
         ),
       ),

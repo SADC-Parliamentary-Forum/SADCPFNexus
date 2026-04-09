@@ -129,6 +129,33 @@ services:
       retries: 5
       start_period: 10s
 
+  queue:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: sadcpf_queue
+    restart: unless-stopped
+    working_dir: /var/www/api
+    environment:
+      - CONTAINER_ROLE=worker
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=10.20.30.2
+      - REDIS_HOST=10.20.30.3
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - SESSION_DRIVER=redis
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      sadcpf:
+        ipv4_address: 10.20.30.10
+    depends_on:
+      php:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   nginx:
     image: nginx:alpine
     container_name: sadcpf_nginx

@@ -40,9 +40,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _logout() async {
     setState(() => _loggingOut = true);
-    final auth = ref.read(authRepositoryProvider);
-    await auth.logout();
-    if (mounted) context.go('/login');
+    await ref.read(authSessionControllerProvider).logout();
+    if (!mounted) return;
+    context.go('/login');
   }
 
   String get _initials {

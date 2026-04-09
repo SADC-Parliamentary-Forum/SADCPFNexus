@@ -96,13 +96,23 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "Timesheets",
+    href: "/hr/timesheets",
+    icon: "schedule",
+    section: "Management",
+    children: [
+      { label: "My Timesheet",  href: "/hr/timesheets",         icon: "edit_note" },
+      { label: "Monthly View",  href: "/hr/timesheets/monthly", icon: "calendar_month" },
+      { label: "Team View",     href: "/hr/timesheets/team",    icon: "groups" },
+      { label: "History",       href: "/hr/timesheets/history", icon: "history" },
+    ],
+  },
+  {
     label: "HR",
     href: "/hr",
     icon: "people",
     children: [
       { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
-      { label: "Timesheets", href: "/hr/timesheets", icon: "schedule" },
-      { label: "Team View", href: "/hr/timesheets/team", icon: "groups" },
       { label: "Leave", href: "/hr/leave", icon: "event_available" },
       { label: "Leave Balances", href: "/hr/leave/balances", icon: "balance" },
       { label: "Appraisals", href: "/hr/appraisals", icon: "rate_review" },
@@ -112,6 +122,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Employee Files", href: "/hr/files", icon: "folder_shared" },
       { label: "Documents", href: "/hr/documents", icon: "description" },
       { label: "Profile Requests", href: "/hr/profile-requests", icon: "manage_accounts" },
+      { label: "Payslips", href: "/hr/payslips", icon: "receipt_long" },
       { label: "Departments", href: "/hr/departments", icon: "corporate_fare" },
       { label: "Positions", href: "/hr/positions", icon: "work" },
       { label: "HR Settings", href: "/settings/hr", icon: "tune" },
@@ -201,6 +212,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Notifications",        href: "/admin/notifications", icon: "notifications" },
       { label: "Audit Logs",           href: "/admin/audit",         icon: "manage_search" },
       { label: "Ledger Verification",  href: "/admin/ledger",        icon: "verified_user" },
+      { label: "Data Scope & RLS",     href: "/admin/data-scope",    icon: "database" },
+      { label: "Holiday Calendar",     href: "/admin/holidays",      icon: "event_busy" },
     ],
   },
 ];

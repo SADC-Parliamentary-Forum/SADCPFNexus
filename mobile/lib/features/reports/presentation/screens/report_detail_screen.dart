@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
 
-/// Report detail screen: loads data from the appropriate API by type
-/// (travel, leave, imprest, procurement, finance, hr) and displays a list.
 class ReportDetailScreen extends ConsumerStatefulWidget {
   const ReportDetailScreen({
     super.key,
@@ -35,9 +34,13 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   String get _endpoint {
     switch (widget.reportType) {
       case 'travel':
-        return '/travel/requests';
+        return '/reports/travel';
       case 'leave':
-        return '/leave/requests';
+        return '/reports/leave';
+      case 'dsa':
+        return '/reports/dsa';
+      case 'assets':
+        return '/reports/assets';
       case 'imprest':
         return '/imprest/requests';
       case 'procurement':
@@ -47,12 +50,15 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       case 'hr':
         return '/hr/timesheets';
       default:
-        return '/travel/requests';
+        return '/reports/travel';
     }
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final dio = ref.read(apiClientProvider).dio;
       final res = await dio.get<Map<String, dynamic>>(
@@ -61,12 +67,20 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       );
       final data = res.data;
       if (!mounted) return;
-      List<dynamic> list = (data != null && data['data'] is List) ? data['data'] as List<dynamic> : [];
+      final list = (data != null && data['data'] is List)
+          ? data['data'] as List<dynamic>
+          : <dynamic>[];
       setState(() {
-        _items = list.map((e) => e is Map<String, dynamic> ? e : <String, dynamic>{}).toList();
+        _items = list
+            .map(
+              (e) => e is Map
+                  ? Map<String, dynamic>.from(e)
+                  : <String, dynamic>{},
+            )
+            .toList();
         _loading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load report data.';
@@ -77,18 +91,27 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
 
   String _itemTitle(Map<String, dynamic> item) {
     return item['reference_number']?.toString() ??
+        item['reference']?.toString() ??
+        item['asset_tag']?.toString() ??
         item['title']?.toString() ??
+        item['name']?.toString() ??
         item['purpose']?.toString() ??
         item['reason']?.toString() ??
-        '—';
+        '-';
   }
 
   String _itemSubtitle(Map<String, dynamic> item) {
     final parts = <String>[];
     if (item['purpose'] != null) {
       parts.add(item['purpose'].toString());
-    } else if (item['title'] != null) parts.add(item['title'].toString());
-    final start = item['start_date'] ?? item['departure_date'] ?? item['created_at'];
+    } else if (item['title'] != null) {
+      parts.add(item['title'].toString());
+    } else if (item['category'] != null) {
+      parts.add(item['category'].toString());
+    }
+
+    final start =
+        item['start_date'] ?? item['departure_date'] ?? item['created_at'];
     final end = item['end_date'] ?? item['return_date'];
     if (start != null) {
       final dateStr = (end != null && end != start)
@@ -96,7 +119,15 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
           : AppDateFormatter.short(start.toString());
       parts.add(dateStr);
     }
-    if (item['status'] != null) parts.add('Status: ${item['status']}');
+
+    if (item['currency'] != null && item['amount'] != null) {
+      parts.add('${item['currency']} ${item['amount']}');
+    }
+
+    if (item['status'] != null) {
+      parts.add('Status: ${item['status']}');
+    }
+
     return parts.join(' · ');
   }
 
@@ -109,16 +140,26 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         backgroundColor: AppColors.bgDark,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 18,
+          ),
           onPressed: () => context.pop(),
         ),
         title: Text(
           title,
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : _error != null
               ? Center(
                   child: Padding(
@@ -126,7 +167,11 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.danger),
+                        ),
                         const SizedBox(height: 12),
                         TextButton(onPressed: _load, child: const Text('Retry')),
                       ],
@@ -138,11 +183,18 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.inbox_outlined, size: 48, color: AppColors.textMuted),
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 48,
+                            color: AppColors.textMuted,
+                          ),
                           SizedBox(height: 12),
                           Text(
                             'No data for this report.',
-                            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -178,23 +230,12 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _itemSubtitle(item),
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                                    maxLines: 2,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 3,
                                     overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                                if (item['status'] != null) ...[
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      item['status'].toString(),
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.primary),
-                                    ),
                                   ),
                                 ],
                               ],

@@ -6,11 +6,15 @@ use App\Models\AuditLog;
 use App\Models\Risk;
 use App\Models\RiskHistory;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class RiskService
 {
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {}
     // ── List ──────────────────────────────────────────────────────────────────
 
     public function list(array $filters, User $user): LengthAwarePaginator
@@ -182,6 +186,22 @@ class RiskService
             'tags'           => 'risk',
         ]);
 
+        // Notify Governance Officers, Internal Auditors, and Directors
+        $reviewers = User::role(['Governance Officer', 'Internal Auditor', 'Director'])
+            ->where('tenant_id', $user->tenant_id)
+            ->where('id', '!=', $user->id)
+            ->get();
+        foreach ($reviewers as $reviewer) {
+            $this->notificationService->dispatch($reviewer, 'risk.submitted', [
+                'name'      => $reviewer->name,
+                'risk_code' => $risk->risk_code ?? "#{$risk->id}",
+                'title'     => $risk->title,
+                'category'  => ucfirst($risk->category ?? ''),
+                'level'     => strtoupper($risk->risk_level ?? ''),
+                'submitter' => $user->name,
+            ], ['module' => 'risk', 'record_id' => $risk->id, 'url' => '/risk/' . $risk->id], false);
+        }
+
         return $risk->fresh();
     }
 
@@ -240,6 +260,22 @@ class RiskService
             'tags'           => 'risk',
         ]);
 
+        // Notify the submitter and risk owner
+        $risk->loadMissing(['submitter', 'riskOwner']);
+        $notified = [];
+        foreach (array_filter([$risk->submitter, $risk->riskOwner]) as $recipient) {
+            if (in_array($recipient->id, $notified) || (int) $recipient->id === (int) $approver->id) {
+                continue;
+            }
+            $notified[] = $recipient->id;
+            $this->notificationService->dispatch($recipient, 'risk.approved', [
+                'name'        => $recipient->name,
+                'risk_code'   => $risk->risk_code ?? "#{$risk->id}",
+                'title'       => $risk->title,
+                'approved_by' => $approver->name,
+            ], ['module' => 'risk', 'record_id' => $risk->id, 'url' => '/risk/' . $risk->id], false);
+        }
+
         return $risk->fresh();
     }
 
@@ -269,6 +305,22 @@ class RiskService
             'new_values'     => ['escalation_level' => $data['escalation_level']],
             'tags'           => 'risk',
         ]);
+
+        // Notify Secretary General and Directors of escalated risk
+        $seniors = User::role(['Secretary General', 'Director'])
+            ->where('tenant_id', $risk->tenant_id)
+            ->where('id', '!=', $actor->id)
+            ->get();
+        foreach ($seniors as $senior) {
+            $this->notificationService->dispatch($senior, 'risk.escalated', [
+                'name'      => $senior->name,
+                'risk_code' => $risk->risk_code ?? "#{$risk->id}",
+                'title'     => $risk->title,
+                'level'     => strtoupper($data['escalation_level']),
+                'actor'     => $actor->name,
+                'notes'     => $data['notes'] ?? '',
+            ], ['module' => 'risk', 'record_id' => $risk->id, 'url' => '/risk/' . $risk->id], false);
+        }
 
         return $risk->fresh();
     }

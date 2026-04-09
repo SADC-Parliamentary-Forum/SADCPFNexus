@@ -57,6 +57,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('profile/documents/{attachment}', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'destroy']);
         Route::get('profile/documents/{attachment}/download', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'download']);
 
+        // Active Sessions (Self-Service)
+        Route::get('profile/sessions', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'index']);
+        Route::delete('profile/sessions/others', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'destroyOthers']);
+        Route::delete('profile/sessions/{userSession}', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'destroy']);
+
         // Email action processing — authenticated (token + user must match)
         Route::post('email-action/process',
             [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'process']
@@ -119,8 +124,23 @@ Route::prefix('v1')->group(function () {
             Route::put('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'update']);
             Route::delete('timesheet-projects/{timesheet_project}', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'destroy']);
 
+            // Holiday Calendars (admin CRUD)
+            Route::get('holiday-calendars', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'index']);
+            Route::post('holiday-calendars', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'store']);
+            Route::get('holiday-calendars/{holidayCalendar}', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'show']);
+            Route::put('holiday-calendars/{holidayCalendar}', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'update']);
+            Route::delete('holiday-calendars/{holidayCalendar}', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'destroy']);
+            Route::get('holiday-calendars/{holidayCalendar}/dates', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'listDates']);
+            Route::post('holiday-calendars/{holidayCalendar}/dates', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'bulkUpsertDates']);
+            Route::delete('holiday-calendars/{holidayCalendar}/dates/{holidayDate}', [\App\Http\Controllers\Api\V1\Admin\HolidayCalendarController::class, 'destroyDate']);
+
             // Audit Logs
             Route::get('audit-logs', [\App\Http\Controllers\Api\V1\Admin\AuditLogController::class, 'index']);
+
+            // Ledger Verifications
+            Route::get('audit/ledger/verifications', [\App\Http\Controllers\Api\V1\Audit\LedgerVerificationController::class, 'index']);
+            Route::post('audit/ledger/verify', [\App\Http\Controllers\Api\V1\Audit\LedgerVerificationController::class, 'store']);
+            Route::get('audit/ledger/verifications/{ledgerVerification}', [\App\Http\Controllers\Api\V1\Audit\LedgerVerificationController::class, 'show']);
 
             // System Settings
             Route::get('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'index']);
@@ -241,8 +261,15 @@ Route::prefix('v1')->group(function () {
             // Vendors
             Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)
                 ->names('procurement.vendors');
-            Route::post('vendors/{vendor}/approve', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
-            Route::post('vendors/{vendor}/reject',  [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+            Route::post('vendors/{vendor}/approve',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
+            Route::post('vendors/{vendor}/reject',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+            Route::get('vendors/{vendor}/ratings',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listRatings']);
+            Route::post('vendors/{vendor}/ratings',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'storeRating']);
+            Route::get('vendors/{vendor}/contracts',    [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
+            Route::post('vendors/{vendor}/blacklist',   [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'blacklist']);
+            Route::post('vendors/{vendor}/unblacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'unblacklist']);
+            Route::get('vendors/{vendor}/evaluations',  [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
+            Route::post('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'store']);
 
             // Purchase Orders
             Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
@@ -348,6 +375,8 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/import', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'import']);
             Route::get('timesheets/team', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'team']);
             Route::get('timesheets/leave-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'leaveDays']);
+            Route::get('timesheets/travel-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'travelDays']);
+            Route::get('timesheets/holiday-dates', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'holidayDates']);
             Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);
             Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update']);
@@ -479,12 +508,22 @@ Route::prefix('v1')->group(function () {
         Route::get('analytics/summary', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'summary']);
         Route::get('analytics/module/{module}', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'byModule']);
 
-        // Reports (summary + list endpoints for hub)
-        Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
-        Route::get('reports/travel', [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
-        Route::get('reports/leave', [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
-        Route::get('reports/dsa', [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
-        Route::get('reports/assets', [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
+        // Reports — gated on reports.view permission
+        Route::middleware('can:reports.view')->group(function () {
+            Route::get('reports/summary',         [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
+            Route::get('reports/users',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportUsers']);
+            Route::get('reports/departments',     [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportDepartments']);
+            Route::get('reports/travel',          [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
+            Route::get('reports/leave',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
+            Route::get('reports/dsa',             [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
+            Route::get('reports/assets',          [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
+            Route::get('reports/imprest',         [\App\Http\Controllers\Api\V1\ReportsController::class, 'imprest']);
+            Route::get('reports/procurement',     [\App\Http\Controllers\Api\V1\ReportsController::class, 'procurement']);
+            Route::get('reports/salary-advances', [\App\Http\Controllers\Api\V1\ReportsController::class, 'salaryAdvances']);
+            Route::get('reports/hr-timesheets',   [\App\Http\Controllers\Api\V1\ReportsController::class, 'hrTimesheets']);
+            Route::get('reports/risk',            [\App\Http\Controllers\Api\V1\ReportsController::class, 'risk']);
+            Route::get('reports/governance',      [\App\Http\Controllers\Api\V1\ReportsController::class, 'governance']);
+        });
 
         // Asset categories (CRUD; same auth as asset create)
         Route::get('asset-categories', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'index']);
@@ -500,6 +539,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);
         Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
         Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);
+
+        // Asset Movements
+        Route::get('assets/movements/list', [\App\Http\Controllers\Api\V1\Assets\AssetMovementController::class, 'index']);
+        Route::post('assets/movements', [\App\Http\Controllers\Api\V1\Assets\AssetMovementController::class, 'store']);
+        Route::get('assets/movements/{assetMovement}', [\App\Http\Controllers\Api\V1\Assets\AssetMovementController::class, 'show']);
 
         // Asset requests (any auth user can request; managers see all)
         Route::get('asset-requests', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'index']);

@@ -12,12 +12,23 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayslipController extends Controller
 {
+    /** Check that the authenticated user has payslip management access. */
+    private function authorizePayslipAccess(Request $request): void
+    {
+        $user = $request->user();
+        $allowed = $user->isSystemAdmin()
+            || $user->hasPermissionTo('hr.admin')
+            || $user->hasAnyRole(['HR Manager', 'HR Administrator']);
+        abort_if(!$allowed, 403, 'Insufficient permissions to manage payslips.');
+    }
+
     /**
      * List all payslips in the authenticated user's tenant (for admin view).
      * Optional filters: user_id, employee_number, search (name/email).
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorizePayslipAccess($request);
         $tenantId = $request->user()->tenant_id;
         $perPage = (int) $request->get('per_page', 50);
 
@@ -57,6 +68,7 @@ class PayslipController extends Controller
      */
     public function show(Request $request, Payslip $payslip): JsonResponse
     {
+        $this->authorizePayslipAccess($request);
         if ((int) $payslip->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -69,6 +81,7 @@ class PayslipController extends Controller
      */
     public function download(Request $request, Payslip $payslip): JsonResponse|StreamedResponse
     {
+        $this->authorizePayslipAccess($request);
         if ((int) $payslip->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -96,6 +109,7 @@ class PayslipController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $this->authorizePayslipAccess($request);
         $request->validate([
             'file'          => ['required', 'file', 'mimes:pdf,xlsx,xls', 'max:25600'],
             'user_id'       => ['required', 'integer', 'exists:users,id'],
@@ -140,6 +154,7 @@ class PayslipController extends Controller
      */
     public function destroy(Request $request, Payslip $payslip): JsonResponse
     {
+        $this->authorizePayslipAccess($request);
         if ((int) $payslip->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }

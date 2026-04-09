@@ -10,7 +10,7 @@ class Timesheet extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tenant_id', 'user_id', 'week_start', 'week_end',
+        'tenant_id', 'user_id', 'week_start', 'week_end', 'week_number',
         'total_hours', 'overtime_hours', 'status', 'rejection_reason',
         'submitted_at', 'approved_at', 'approved_by',
     ];
@@ -35,6 +35,36 @@ class Timesheet extends Model
     public function entries()
     {
         return $this->hasMany(TimesheetEntry::class);
+    }
+
+    public function approvalRequest()
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        $this->update([
+            'status'      => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $approver->id,
+        ]);
+
+        /** @var \App\Modules\Timesheets\Services\TimesheetService $svc */
+        $svc = app(\App\Modules\Timesheets\Services\TimesheetService::class);
+        $svc->onWorkflowApproved($this, $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        $this->update([
+            'status'           => 'rejected',
+            'rejection_reason' => $reason,
+        ]);
+
+        /** @var \App\Modules\Timesheets\Services\TimesheetService $svc */
+        $svc = app(\App\Modules\Timesheets\Services\TimesheetService::class);
+        $svc->onWorkflowRejected($this, $approver, $reason);
     }
 
     public function isDraft(): bool

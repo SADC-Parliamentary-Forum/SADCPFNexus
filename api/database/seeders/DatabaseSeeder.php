@@ -78,6 +78,9 @@ class DatabaseSeeder extends Seeder
 
             // ── Risk Register — import from Excel source files ──────────────
             RiskRegisterSeeder::class,
+
+            // ── Comprehensive module data (vendors, contracts, lifecycle, travel, leave, imprest, assets) ──
+            ComprehensiveDataSeeder::class,
         ]);
     }
 }

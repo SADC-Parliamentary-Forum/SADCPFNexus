@@ -84,9 +84,11 @@ class ImprestService
 
         $imprest->update(['status' => 'submitted', 'submitted_at' => now()]);
 
-        // Notify Finance approvers
+        // Notify Finance approvers, excluding the requester
         $approvers = User::role(['Finance Controller', 'Secretary General'])
-            ->where('tenant_id', $user->tenant_id)->get();
+            ->where('tenant_id', $user->tenant_id)
+            ->where('id', '!=', $user->id)
+            ->get();
         $this->notificationService->dispatchToMany($approvers, 'imprest.submitted', [
             'reference' => $imprest->reference_number,
             'requester' => $user->name,

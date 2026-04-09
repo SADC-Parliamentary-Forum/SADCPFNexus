@@ -22,6 +22,7 @@ class WorkflowService
         'imprest'        => 'Imprest',
         'procurement'    => 'Procurement',
         'salary_advance' => 'Salary Advance',
+        'timesheet'      => 'Timesheet',
     ];
 
     public function __construct(
@@ -214,6 +215,62 @@ class WorkflowService
             } else {
                 $entity->update(['status' => 'rejected', 'rejection_reason' => $reason]);
             }
+        }
+
+        // Notify HR staff and Directors about the final outcome
+        $this->notifyHrOnCompletion($request, $status, $actor);
+    }
+
+    /**
+     * Notify HR Managers, HR Administrators, and Directors when a workflow reaches its final state.
+     * This runs for all modules so that HR/Directors always know the outcome of any request.
+     */
+    private function notifyHrOnCompletion(ApprovalRequest $request, string $status, User $actor): void
+    {
+        try {
+            $entity    = $request->approvable;
+            $requester = $this->getRequesterFromApprovable($request);
+            $module    = $this->resolveModuleType($request);
+            $label     = self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
+
+            if (!$requester || !$entity) {
+                return;
+            }
+
+            $hrRecipients = User::role(['HR Manager', 'HR Administrator', 'Director'])
+                ->where('tenant_id', $requester->tenant_id)
+                ->get();
+
+            foreach ($hrRecipients as $hr) {
+                if ((int) $hr->id === (int) $requester->id) {
+                    continue; // Don't send duplicate to the requester if they hold an HR role
+                }
+
+                try {
+                    $this->notificationService->dispatch(
+                        $hr,
+                        'workflow.completed',
+                        [
+                            'name'         => $hr->name,
+                            'module_label' => $label,
+                            'reference'    => $entity->reference_number ?? "#{$entity->id}",
+                            'requester'    => $requester->name,
+                            'status'       => $status,
+                            'approved_by'  => $actor->name,
+                        ],
+                        [
+                            'module'    => $module,
+                            'record_id' => $entity->id,
+                            'url'       => "/{$module}/" . $entity->id,
+                        ],
+                        false // in-app only; no email for completion notices to HR
+                    );
+                } catch (Throwable) {
+                    // Never block the approval flow due to notification failures
+                }
+            }
+        } catch (Throwable) {
+            // Silently swallow
         }
     }
 

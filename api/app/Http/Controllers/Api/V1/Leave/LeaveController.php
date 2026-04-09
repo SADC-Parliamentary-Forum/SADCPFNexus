@@ -16,7 +16,7 @@ class LeaveController extends Controller
         private readonly \App\Services\WorkflowService $workflowService
     ) {}
 
-    /** Leave balances for the current user (annual days, LIL hours, sick used). */
+    /** Leave balances for the current user (annual days, LIL hours, and used days per leave type). */
     public function balances(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -25,11 +25,22 @@ class LeaveController extends Controller
             ->where('period_year', $year)
             ->first();
 
+        // Compute used days per leave type from approved/submitted leave requests this year
+        $usedByType = LeaveRequest::where('requester_id', $user->id)
+            ->whereYear('start_date', $year)
+            ->whereIn('status', ['approved', 'submitted'])
+            ->selectRaw('leave_type, COALESCE(SUM(days_requested), 0)::int AS days_used')
+            ->groupBy('leave_type')
+            ->pluck('days_used', 'leave_type');
+
         return response()->json([
-            'annual_balance_days'   => $balance ? (int) $balance->annual_balance_days : 0,
-            'lil_hours_available'   => $balance ? (float) $balance->lil_hours_available : 0,
-            'sick_leave_used_days'  => $balance ? (int) $balance->sick_leave_used_days : 0,
-            'period_year'           => $year,
+            'annual_balance_days'      => $balance ? (int) $balance->annual_balance_days : 0,
+            'lil_hours_available'      => $balance ? (float) $balance->lil_hours_available : 0,
+            'sick_leave_used_days'     => (int) ($usedByType['sick'] ?? ($balance?->sick_leave_used_days ?? 0)),
+            'special_leave_days_used'  => (int) ($usedByType['special'] ?? 0),
+            'maternity_leave_days_used'=> (int) ($usedByType['maternity'] ?? 0),
+            'paternity_leave_days_used'=> (int) ($usedByType['paternity'] ?? 0),
+            'period_year'              => $year,
         ]);
     }
 

@@ -65,6 +65,7 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
           continue;
         }
         String endpoint;
+        Map<String, dynamic> requestBody = payload;
         switch (draft.type.toLowerCase()) {
           case 'travel':
             endpoint = '/travel/requests';
@@ -78,11 +79,43 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
           case 'procurement':
             endpoint = '/procurement/requests';
             break;
+          case 'salary_advance':
+            endpoint = '/finance/advances';
+            requestBody = {
+              'advance_type': _purposeToAdvanceType(payload['purpose']?.toString() ?? 'Other'),
+              'amount': payload['amount'],
+              'currency': 'NAD',
+              'repayment_months': payload['repayment_months'] ?? 3,
+              'purpose': payload['purpose'] ?? 'Other',
+              'justification': 'Offline salary advance draft submission.',
+            };
+            break;
+          case 'pif':
+            endpoint = '/programmes';
+            requestBody = {
+              'title': payload['title'],
+              'background': payload['background'],
+              'overall_objective': payload['overall_objective'],
+              'primary_currency': 'NAD',
+              'total_budget': _sumBudgetLines(payload['budget_lines']),
+              'funding_source': 'SADC PF',
+              'member_states': payload['location'] == null || payload['location'].toString().isEmpty
+                  ? []
+                  : [payload['location'].toString()],
+              'budget_lines': payload['budget_lines'] ?? [],
+            };
+            break;
           default:
             failed++;
             continue;
         }
-        await dio.post(endpoint, data: payload);
+        final response = await dio.post<Map<String, dynamic>>(endpoint, data: requestBody);
+        final createdId = response.data?['data']?['id'];
+        if (draft.type.toLowerCase() == 'salary_advance' && createdId != null) {
+          await dio.post('/finance/advances/$createdId/submit');
+        } else if (draft.type.toLowerCase() == 'pif' && createdId != null) {
+          await dio.post('/programmes/$createdId/submit');
+        }
         await (db.delete(db.draftEntries)..where((t) => t.id.equals(draft.id))).go();
         synced++;
         if (mounted) _drafts.removeWhere((d) => d.id == draft.id);
@@ -136,6 +169,12 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
       case 'procurement':
         context.push('/procurement/form', extra: extra);
         break;
+      case 'salary_advance':
+        context.push('/salary/advance/new', extra: extra);
+        break;
+      case 'pif':
+        context.push('/pif/form', extra: extra);
+        break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Unknown draft type.'), backgroundColor: AppColors.warning),
@@ -167,6 +206,10 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return 'Imprest';
       case 'procurement':
         return 'Procurement';
+      case 'salary_advance':
+        return 'Salary Advance';
+      case 'pif':
+        return 'PIF';
       default:
         return type;
     }
@@ -182,6 +225,10 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return Icons.account_balance_wallet_outlined;
       case 'procurement':
         return Icons.inventory_2_outlined;
+      case 'salary_advance':
+        return Icons.account_balance_wallet_outlined;
+      case 'pif':
+        return Icons.assignment_outlined;
       default:
         return Icons.edit_note;
     }
@@ -197,6 +244,10 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return const Color(0xFFD4AF37);
       case 'procurement':
         return const Color(0xFFEF4444);
+      case 'salary_advance':
+        return const Color(0xFF13EC80);
+      case 'pif':
+        return const Color(0xFF3B82F6);
       default:
         return AppColors.primary;
     }
@@ -362,4 +413,24 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
       ),
     );
   }
+}
+
+String _purposeToAdvanceType(String purpose) {
+  const map = {
+    'Personal Emergency': 'other',
+    'Medical Expenses': 'medical',
+    'Education': 'school',
+    'Home Repair': 'other',
+    'Other': 'other',
+  };
+  return map[purpose] ?? 'other';
+}
+
+double _sumBudgetLines(dynamic rawLines) {
+  if (rawLines is! List) return 0;
+  return rawLines.fold<double>(0, (sum, item) {
+    if (item is! Map) return sum;
+    final amount = double.tryParse('${item['amount']}') ?? 0;
+    return sum + amount;
+  });
 }

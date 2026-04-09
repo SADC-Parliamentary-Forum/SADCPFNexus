@@ -29,7 +29,14 @@ const MODULE_GROUPS = [
   { label: "Users",        icon: "manage_accounts",      color: "indigo", perms: ["users.view","users.create","users.edit","users.deactivate","users.delete"] },
   { label: "Roles",        icon: "admin_panel_settings", color: "slate",  perms: ["roles.view","roles.manage","system.admin"] },
   { label: "Reports",      icon: "bar_chart",            color: "cyan",   perms: ["reports.view","reports.export","reports.audit","audit.view","audit.export"] },
-  { label: "HR Settings",  icon: "tune",                 color: "green",  perms: ["hr_settings.view","hr_settings.edit","hr_settings.approve","hr_settings.publish"] },
+  { label: "HR Settings",      icon: "tune",                 color: "green",   perms: ["hr_settings.view","hr_settings.edit","hr_settings.approve","hr_settings.publish"] },
+  { label: "SAAM",              icon: "draw",                color: "indigo",  perms: ["saam.view","saam.delegate"] },
+  { label: "Correspondence",    icon: "mail",                color: "sky",     perms: ["correspondence.view","correspondence.create","correspondence.admin"] },
+  { label: "SRHR",              icon: "health_and_safety",   color: "rose",    perms: ["srhr.view","srhr.create","srhr.manage","srhr.admin"] },
+  { label: "Parliaments",       icon: "account_balance",     color: "amber",   perms: ["parliaments.view","parliaments.manage"] },
+  { label: "Research Reports",  icon: "summarize",           color: "teal",    perms: ["researcher_reports.view","researcher_reports.submit","researcher_reports.acknowledge","researcher_reports.admin"] },
+  { label: "Risk Register",     icon: "shield",              color: "red",     perms: ["risk.view","risk.create","risk.submit","risk.review","risk.approve","risk.manage","risk.admin"] },
+  { label: "Audit",             icon: "manage_search",       color: "slate",   perms: ["audit.view","audit.export"] },
 ];
 
 const GROUP_COLORS: Record<string, { header: string; pill: string }> = {
@@ -56,9 +63,10 @@ const GROUP_COLORS: Record<string, { header: string; pill: string }> = {
 };
 
 const CATEGORY_TABS = [
-  { id: "operations", label: "Operations",   icon: "hub",      groups: ["Travel","Leave","Imprest","Finance","Procurement","Assets","Governance","Timesheets","Calendar","Support"] },
-  { id: "management", label: "Management",   icon: "layers",   groups: ["HR","Appraisals","Conduct","PIF","Workplan","Assignments","Reports"] },
-  { id: "system",     label: "System Config", icon: "settings", groups: ["HR Settings","Users","Roles"] },
+  { id: "operations", label: "Operations",   icon: "hub",       groups: ["Travel","Leave","Imprest","Finance","Procurement","Assets","Governance","Timesheets","Calendar","Support"] },
+  { id: "management", label: "Management",   icon: "layers",    groups: ["HR","Appraisals","Conduct","PIF","Workplan","Assignments","Reports"] },
+  { id: "system",     label: "System Config",icon: "settings",  groups: ["HR Settings","Users","Roles"] },
+  { id: "extended",   label: "Extended",     icon: "extension", groups: ["SAAM","Correspondence","SRHR","Parliaments","Research Reports","Risk Register","Audit"] },
 ];
 
 function permLabel(perm: string): string {

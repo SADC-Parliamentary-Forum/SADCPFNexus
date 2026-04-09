@@ -8,6 +8,61 @@ import 'core/theme/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFFF4F8F6),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFC8E0D4)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 40,
+                      color: Color(0xFFDC2626),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'This screen failed to render.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0E2318),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      kDebugMode
+                          ? details.exceptionAsString()
+                          : 'Restart the app or sign in again. If the problem persists, contact support.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.5,
+                        color: Color(0xFF3A5D4F),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  };
 
   if (!kIsWeb) {
     await SystemChrome.setPreferredOrientations([

@@ -1,10 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/offline/draft_database.dart';
+import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 
-/// Maps UI purpose labels to API advance_type.
 String _purposeToAdvanceType(String purpose) {
   const map = {
     'Personal Emergency': 'other',
@@ -17,7 +22,14 @@ String _purposeToAdvanceType(String purpose) {
 }
 
 class SalaryAdvanceRequestScreen extends ConsumerStatefulWidget {
-  const SalaryAdvanceRequestScreen({super.key});
+  const SalaryAdvanceRequestScreen({
+    super.key,
+    this.initialDraft,
+    this.draftId,
+  });
+
+  final Map<String, dynamic>? initialDraft;
+  final int? draftId;
 
   @override
   ConsumerState<SalaryAdvanceRequestScreen> createState() =>
@@ -26,17 +38,17 @@ class SalaryAdvanceRequestScreen extends ConsumerStatefulWidget {
 
 class _SalaryAdvanceRequestScreenState
     extends ConsumerState<SalaryAdvanceRequestScreen> {
-  final _amountController = TextEditingController(text: '2500');
+  final _amountController = TextEditingController();
+  bool _loadingContext = true;
+  bool _submitting = false;
+  bool _savingDraft = false;
+  String? _error;
   String _purpose = 'Personal Emergency';
   int _recoveryMonths = 3;
-  bool _hasError = false;
-  bool _submitting = false;
+  double _netSalary = 0;
+  double _activeAdvances = 0;
 
-  static const double _netSalary = 4500.0;
-  static const double _activeAdvances = 0.0;
-  static const double _capPercent = 0.5;
-
-  final List<String> _purposes = [
+  final List<String> _purposes = const [
     'Personal Emergency',
     'Medical Expenses',
     'Education',
@@ -44,44 +56,141 @@ class _SalaryAdvanceRequestScreenState
     'Other',
   ];
 
-  double get _cap => _netSalary * _capPercent;
+  double get _requestedAmount =>
+      double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
 
-  double get _requestedAmount {
-    return double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
-  }
+  double get _cap => _netSalary * 0.5;
+
+  bool get _hasError => _cap > 0 && _requestedAmount > _cap;
+
+  bool get _valid => _requestedAmount > 0 && !_hasError;
 
   @override
   void initState() {
     super.initState();
-    _amountController.addListener(_validate);
-    _validate();
+    _applyInitialDraft();
+    _loadContext();
   }
 
-  void _validate() {
+  void _applyInitialDraft() {
+    final draft = widget.initialDraft;
+    if (draft == null) return;
+    _amountController.text = '${draft['amount'] ?? ''}';
+    _purpose = draft['purpose']?.toString() ?? _purpose;
+    _recoveryMonths = (draft['repayment_months'] as num?)?.toInt() ?? _recoveryMonths;
+  }
+
+  Future<void> _loadContext() async {
     setState(() {
-      _hasError = _requestedAmount > _cap;
+      _loadingContext = true;
+      _error = null;
     });
+
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final summaryRes = await dio.get<Map<String, dynamic>>('/finance/summary');
+      final advancesRes = await dio.get<Map<String, dynamic>>(
+        '/finance/advances',
+        queryParameters: {'per_page': 20},
+      );
+
+      final summary = summaryRes.data ?? const <String, dynamic>{};
+      final advances = (advancesRes.data?['data'] as List<dynamic>? ?? const []);
+      if (!mounted) return;
+
+      setState(() {
+        _netSalary = _asDouble(summary['current_net_salary']);
+        _activeAdvances = advances
+            .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
+            .where((item) => item['status']?.toString() != 'rejected')
+            .fold<double>(0, (sum, item) => sum + _asDouble(item['amount']));
+        _loadingContext = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load salary context.';
+        _loadingContext = false;
+      });
+    }
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse('$value') ?? 0;
+  }
+
+  String _fmt(double value, [String currency = 'NAD']) {
+    return '$currency ${value.toStringAsFixed(2)}';
+  }
+
+  Future<void> _saveDraft() async {
+    setState(() => _savingDraft = true);
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = {
+        'amount': _requestedAmount,
+        'purpose': _purpose,
+        'repayment_months': _recoveryMonths,
+      };
+      await db.into(db.draftEntries).insert(
+            DraftEntriesCompanion.insert(
+              type: 'salary_advance',
+              title: _purpose,
+              payload: jsonEncode(payload),
+              createdAt: DateTime.now(),
+            ),
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Draft saved. Sync or continue from Offline Drafts.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      context.push('/offline/drafts');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to save draft.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingDraft = false);
+    }
   }
 
   Future<void> _submit() async {
-    if (_hasError || _requestedAmount < 1) return;
+    if (!_valid) return;
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final createRes = await dio.post<Map<String, dynamic>>('/finance/advances', data: {
-        'advance_type': _purposeToAdvanceType(_purpose),
-        'amount': _requestedAmount,
-        'currency': 'NAD',
-        'repayment_months': _recoveryMonths,
-        'purpose': _purpose,
-        'justification': 'Salary advance request: $_purpose. Amount: $_requestedAmount. Recovery: $_recoveryMonths months.',
-      });
+      final createRes = await dio.post<Map<String, dynamic>>(
+        '/finance/advances',
+        data: {
+          'advance_type': _purposeToAdvanceType(_purpose),
+          'amount': _requestedAmount,
+          'currency': 'NAD',
+          'repayment_months': _recoveryMonths,
+          'purpose': _purpose,
+          'justification':
+              'Salary advance request for $_purpose. Requested amount: $_requestedAmount. Recovery period: $_recoveryMonths months.',
+        },
+      );
       final id = createRes.data?['data']?['id'];
       if (id != null) {
         await dio.post('/finance/advances/$id/submit');
       }
+      if (widget.draftId != null) {
+        final db = ref.read(draftDatabaseProvider);
+        await (db.delete(db.draftEntries)
+              ..where((t) => t.id.equals(widget.draftId!)))
+            .go();
+      }
       if (!mounted) return;
-      setState(() => _submitting = false);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -90,14 +199,16 @@ class _SalaryAdvanceRequestScreenState
         ),
       );
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit salary advance. Please try again.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to submit salary advance. Please try again.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -106,9 +217,6 @@ class _SalaryAdvanceRequestScreenState
     _amountController.dispose();
     super.dispose();
   }
-
-  String _fmt(double v) =>
-      '\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}';
 
   @override
   Widget build(BuildContext context) {
@@ -123,379 +231,195 @@ class _SalaryAdvanceRequestScreenState
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Column(
-          children: [
-            Text(
-              'Request Advance',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-          ],
+        title: const Text(
+          'Request Advance',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
-        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline, size: 20, color: Color(0xFF666666)),
-            onPressed: () {},
+          TextButton(
+            onPressed: _savingDraft ? null : _saveDraft,
+            child: Text(
+              _savingDraft ? 'Saving...' : 'Save Draft',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(28),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF13EC80),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'STEP 1 OF 3 · Eligibility & Amount',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF13EC80),
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-        children: [
-          // ── Heading ──────────────────────────────────────────────────
-          const Text(
-            'Check Eligibility',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Review your salary context and specify the advance details. Max allowed is 50% of net salary.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF666666), height: 1.5),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Salary Context Card ───────────────────────────────────────
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FFF6),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF13EC80).withValues(alpha: 0.4)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF13EC80).withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
+      body: _loadingContext
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.danger),
                         ),
-                        child: const Text(
-                          'SALARY CONTEXT',
+                        const SizedBox(height: 12),
+                        TextButton(onPressed: _loadContext, child: const Text('Retry')),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                  children: [
+                    const Text(
+                      'Check Eligibility',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'This request uses your live salary context and current active advance exposure.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF666666),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FFF6),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFF13EC80).withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          _contextRow('Monthly Net Salary', _fmt(_netSalary)),
+                          const Divider(height: 1),
+                          _contextRow('Active Advances', _fmt(_activeAdvances)),
+                          const Divider(height: 1),
+                          _contextRow('Maximum Allowed', _fmt(_cap)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Requested Amount',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      decoration: InputDecoration(
+                        prefixText: 'NAD ',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        errorText: _hasError
+                            ? 'Amount exceeds 50% cap (${_fmt(_cap)}).'
+                            : null,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Purpose of Advance',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _purpose,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: _purposes
+                          .map(
+                            (purpose) => DropdownMenuItem(
+                              value: purpose,
+                              child: Text(purpose),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _purpose = value);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recovery Period',
                           style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF0BAE5E),
-                            letterSpacing: 0.8,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF333333),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1, color: Color(0xFFD0F5E4)),
-                IntrinsicHeight(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Monthly Net Salary',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _fmt(_netSalary),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1A1A1A),
-                                ),
-                              ),
-                            ],
+                        Text(
+                          '$_recoveryMonths months',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF13EC80),
                           ),
                         ),
+                      ],
+                    ),
+                    Slider(
+                      value: _recoveryMonths.toDouble(),
+                      min: 1,
+                      max: 12,
+                      divisions: 11,
+                      onChanged: (value) {
+                        setState(() => _recoveryMonths = value.round());
+                      },
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                      VerticalDivider(
-                        width: 1,
-                        color: const Color(0xFF13EC80).withValues(alpha: 0.3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Active Advances',
-                                style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _fmt(_activeAdvances),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1A1A1A),
-                                ),
-                              ),
-                            ],
-                          ),
+                      child: const Text(
+                        'Payments will be deducted automatically from future salaries after approval.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF888888),
+                          height: 1.4,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Requested Amount ──────────────────────────────────────────
-          const Text(
-            'Requested Amount',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: _hasError
-                    ? const Color(0xFFEF4444)
-                    : const Color(0xFFDDDDDD),
-                width: _hasError ? 1.5 : 1,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(11),
-                      bottomLeft: Radius.circular(11),
                     ),
-                  ),
-                  child: const Text(
-                    '\$',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF666666),
-                    ),
-                  ),
+                  ],
                 ),
-                Expanded(
-                  child: TextField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Error Banner ──────────────────────────────────────────────
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState:
-                _hasError ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-            firstChild: Container(
-              margin: const EdgeInsets.only(top: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Amount exceeds 50% cap (${_fmt(_cap)}). Please reduce the amount.',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFFEF4444),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            secondChild: const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 20),
-
-          // ── Purpose Dropdown ──────────────────────────────────────────
-          const Text(
-            'Purpose of Advance',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFDDDDDD)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _purpose,
-                isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF888888)),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF1A1A1A),
-                ),
-                items: _purposes.map((p) {
-                  return DropdownMenuItem(value: p, child: Text(p));
-                }).toList(),
-                onChanged: (v) => setState(() => _purpose = v!),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // ── Recovery Period Slider ────────────────────────────────────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Recovery Period',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF333333),
-                ),
-              ),
-              Text(
-                '$_recoveryMonths Months',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF13EC80),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: const Color(0xFF13EC80),
-              inactiveTrackColor: const Color(0xFFE0E0E0),
-              thumbColor: const Color(0xFF13EC80),
-              overlayColor: const Color(0xFF13EC80).withValues(alpha: 0.1),
-              trackHeight: 4,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-            ),
-            child: Slider(
-              value: _recoveryMonths.toDouble(),
-              min: 1,
-              max: 6,
-              divisions: 5,
-              onChanged: (v) => setState(() => _recoveryMonths = v.round()),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(6, (i) {
-              final m = i + 1;
-              final isSelected = m == _recoveryMonths;
-              return Text(
-                '${m}Mo',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                  color: isSelected
-                      ? const Color(0xFF13EC80)
-                      : const Color(0xFF999999),
-                ),
-              );
-            }),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, size: 14, color: Color(0xFF888888)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Payments will be deducted automatically starting from next month\'s salary.',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF888888), height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-        ],
-      ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
         decoration: const BoxDecoration(
@@ -503,29 +427,48 @@ class _SalaryAdvanceRequestScreenState
           border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
         ),
         child: ElevatedButton.icon(
-          onPressed: (_hasError || _submitting) ? null : _submit,
+          onPressed: (!_valid || _submitting || _loadingContext) ? null : _submit,
           icon: _submitting
               ? const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Icons.arrow_forward, size: 18),
-          label: Text(_submitting ? 'Submitting…' : 'Next Step'),
+              : const Icon(Icons.send_outlined, size: 18),
+          label: Text(_submitting ? 'Submitting...' : 'Submit Request'),
           style: ElevatedButton.styleFrom(
             backgroundColor:
-                _hasError ? const Color(0xFFCCCCCC) : const Color(0xFF13EC80),
+                _valid ? const Color(0xFF13EC80) : const Color(0xFFCCCCCC),
             foregroundColor:
-                _hasError ? const Color(0xFF888888) : const Color(0xFF102219),
+                _valid ? const Color(0xFF102219) : const Color(0xFF888888),
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            elevation: 0,
-            textStyle: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _contextRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+        ],
       ),
     );
   }

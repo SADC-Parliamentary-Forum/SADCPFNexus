@@ -245,6 +245,8 @@ export default function TimesheetsPage() {
   const [timesheet, setTimesheet] = useState<Timesheet | null>(null);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [leaveDays, setLeaveDays] = useState<Record<string, { leave_type: string; status: string }>>({});
+  const [travelDays, setTravelDays] = useState<Record<string, { purpose: string; destination: string; reference: string }>>({});
+  const [holidayDates, setHolidayDates] = useState<Record<string, { name: string; is_paid: boolean }>>({});
   const [projects, setProjects] = useState<TimesheetProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -281,9 +283,11 @@ export default function TimesheetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tsRes, ldRes, projRes] = await Promise.all([
+      const [tsRes, ldRes, tdRes, hdRes, projRes] = await Promise.all([
         hrApi.listTimesheets({ week_start: weekStart }),
         hrApi.getTimesheetLeaveDays(weekStart, weekEnd),
+        hrApi.getTimesheetTravelDays(weekStart, weekEnd),
+        hrApi.getTimesheetHolidayDates(weekStart, weekEnd),
         projects.length === 0
           ? adminApi.listTimesheetProjects().then((r) => r.data)
           : Promise.resolve({ data: projects }),
@@ -294,6 +298,8 @@ export default function TimesheetsPage() {
       setTimesheet(found ?? null);
       setEntries(found?.entries ?? []);
       setLeaveDays((ldRes.data as any).data ?? {});
+      setTravelDays((tdRes.data as any).data ?? {});
+      setHolidayDates((hdRes.data as any).data ?? {});
       if (projects.length === 0) {
         setProjects((projRes as any).data ?? []);
       }
@@ -311,12 +317,18 @@ export default function TimesheetsPage() {
   const handlePrevWeek = () => setWeekStartDate((d) => addDays(d ?? new Date(), -7));
   const handleNextWeek = () => setWeekStartDate((d) => addDays(d ?? new Date(), 7));
 
-  const handleAddEntry = (entry: TimesheetEntry) => {
-    if (entry.id) {
-      setEntries((prev) => prev.map((e) => (e.id === entry.id ? entry : e)));
-    } else {
-      setEntries((prev) => [...prev, { ...entry, id: Date.now() }]);
-    }
+  const handleAddEntry = (incoming: TimesheetEntry[]) => {
+    setEntries((prev) => {
+      let next = [...prev];
+      incoming.forEach((entry, idx) => {
+        if (entry.id) {
+          next = next.map((e) => (e.id === entry.id ? entry : e));
+        } else {
+          next.push({ ...entry, id: Date.now() + idx });
+        }
+      });
+      return next;
+    });
   };
 
   const handleDeleteEntry = (id: number | undefined, idx: number) => {
@@ -474,18 +486,32 @@ export default function TimesheetsPage() {
                 <div className="px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Work / Project</div>
                 {weekDates.map((d) => {
                   const ymd = toYMD(d);
-                  const hasLeave = !!leaveDays[ymd];
+                  const hasLeave   = !!leaveDays[ymd];
+                  const hasTravel  = !!travelDays[ymd];
+                  const hasHoliday = !!holidayDates[ymd];
+                  const headerBg   = hasHoliday ? "bg-neutral-100 text-neutral-500"
+                                   : hasTravel  ? "bg-teal-50 text-teal-700"
+                                   : hasLeave   ? "bg-amber-50 text-amber-700"
+                                   : "text-neutral-500";
                   return (
-                    <div
-                      key={ymd}
-                      className={cn(
-                        "py-3 text-center text-xs font-semibold",
-                        hasLeave ? "bg-amber-50 text-amber-700" : "text-neutral-500"
-                      )}
-                    >
+                    <div key={ymd} className={cn("py-3 text-center text-xs font-semibold", headerBg)}>
                       <div>{d.toLocaleDateString("en-GB", { weekday: "short" })}</div>
                       <div className="text-[11px] font-normal opacity-75">{d.getDate()} {d.toLocaleDateString("en-GB", { month: "short" })}</div>
-                      {hasLeave && (
+                      {hasHoliday && (
+                        <div className="mt-1">
+                          <span className="inline-block rounded-full bg-neutral-300 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-700 uppercase tracking-wide">
+                            holiday
+                          </span>
+                        </div>
+                      )}
+                      {!hasHoliday && hasTravel && (
+                        <div className="mt-1">
+                          <span className="inline-block rounded-full bg-teal-200 px-1.5 py-0.5 text-[9px] font-semibold text-teal-800 uppercase tracking-wide">
+                            mission
+                          </span>
+                        </div>
+                      )}
+                      {!hasHoliday && !hasTravel && hasLeave && (
                         <div className="mt-1">
                           <span className="inline-block rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800 uppercase tracking-wide">
                             {leaveDays[ymd].leave_type.replace(/_/g, " ")}
@@ -521,7 +547,10 @@ export default function TimesheetsPage() {
                       key={entry.id ?? idx}
                       className={cn(
                         "grid items-center border-b border-neutral-50 hover:bg-neutral-50/50 group",
-                        leaveDays[entry.work_date] ? "bg-amber-50/30" : ""
+                        holidayDates[entry.work_date] ? "bg-neutral-50/60"
+                          : travelDays[entry.work_date] ? "bg-teal-50/30"
+                          : leaveDays[entry.work_date] ? "bg-amber-50/30"
+                          : ""
                       )}
                       style={{ gridTemplateColumns: "1fr repeat(5, 80px) 80px" }}
                     >
@@ -562,8 +591,12 @@ export default function TimesheetsPage() {
                       {weekDates.map((d) => {
                         const ymd = toYMD(d);
                         const isEntryDay = entry.work_date === ymd;
+                        const dayCellBg  = holidayDates[ymd] ? "bg-neutral-100/40"
+                                         : travelDays[ymd]  ? "bg-teal-50/40"
+                                         : leaveDays[ymd]   ? "bg-amber-50/40"
+                                         : "";
                         return (
-                          <div key={ymd} className={cn("text-center py-3 text-sm", leaveDays[ymd] ? "bg-amber-50/40" : "")}>
+                          <div key={ymd} className={cn("text-center py-3 text-sm", dayCellBg)}>
                             {isEntryDay ? (
                               <span className={cn("font-semibold", entry.hours > 8 ? "text-amber-600" : "text-neutral-800")}>
                                 {entry.hours}h
@@ -623,8 +656,11 @@ export default function TimesheetsPage() {
               )}
             </div>
 
-            {/* History link */}
-            <div className="mt-4 flex justify-end">
+            {/* Navigation links */}
+            <div className="mt-4 flex justify-between">
+              <Link href="/hr/timesheets/monthly" className="text-xs text-primary hover:underline">
+                ← Monthly view
+              </Link>
               <Link href="/hr/timesheets/history" className="text-xs text-primary hover:underline">
                 View all timesheets →
               </Link>

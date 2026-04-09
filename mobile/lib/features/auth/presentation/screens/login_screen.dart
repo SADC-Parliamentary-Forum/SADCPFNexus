@@ -19,6 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = true;
   bool _isLoading = false;
   String? _errorMessage;
   bool _biometricLoading = false;
@@ -61,7 +62,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         options: const AuthenticationOptions(stickyAuth: true),
       );
       if (authenticated && mounted) {
-        context.go('/dashboard');
+        final session = ref.read(authSessionControllerProvider);
+        await session.bootstrap();
+        if (!mounted) return;
+        if (session.state.isAuthenticated) {
+          context.go('/dashboard');
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Stored session is no longer valid. Please sign in again.',
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -93,10 +109,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
-    final auth = ref.read(authRepositoryProvider);
-    final result = await auth.login(
+    final session = ref.read(authSessionControllerProvider);
+    final result = await session.login(
       _emailController.text.trim(),
       _passwordController.text,
+      rememberMe: _rememberMe,
     );
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -330,6 +347,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
+                      CheckboxListTile(
+                        value: _rememberMe,
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                setState(() => _rememberMe = value ?? true);
+                              },
+                        dense: true,
+                        visualDensity: const VisualDensity(
+                          horizontal: -4,
+                          vertical: -4,
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: c.primary,
+                        title: Text(
+                          'Remember me',
+                          style: GoogleFonts.publicSans(
+                            color: c.onSurface,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Keep me signed in on this device/browser.',
+                          style: GoogleFonts.publicSans(
+                            color: c.onSurface.withValues(alpha: 0.65),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
                         height: 52,

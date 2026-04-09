@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { workflowApi, type ApprovalRequest } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
@@ -21,6 +22,7 @@ const DEFAULT_MODULE = { icon: "description", color: "text-neutral-600", bg: "bg
 
 export default function ApprovalsPage() {
   const queryClient = useQueryClient();
+  const currentUser = getStoredUser();
   const [filter, setFilter] = useState("all");
   const [rejectTarget, setRejectTarget] = useState<ApprovalRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -130,6 +132,10 @@ export default function ApprovalsPage() {
             const mc = MODULE_CONFIG[moduleType] ?? DEFAULT_MODULE;
             const approvable = req.approvable;
             const isActing = actionLoading === req.id;
+            const isOwnRequest =
+              currentUser?.id != null &&
+              (approvable?.requester?.id === currentUser.id ||
+               (approvable as any)?.requester_id === currentUser.id);
             return (
               <div key={req.id} className="card p-5 hover:border-primary/30 hover:shadow-elevated transition-all">
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -164,28 +170,37 @@ export default function ApprovalsPage() {
                       <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                       View
                     </Link>
-                    <button
-                      type="button"
-                      disabled={isActing}
-                      onClick={() => { setRejectTarget(req); setRejectReason(""); }}
-                      className="flex items-center gap-1 py-2 px-3 text-xs font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">cancel</span>
-                      Reject
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isActing}
-                      onClick={() => handleApprove(req)}
-                      className="flex items-center gap-1 py-2 px-3 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-colors disabled:opacity-50"
-                    >
-                      {isActing ? (
-                        <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-                      ) : (
-                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                      )}
-                      Approve
-                    </button>
+                    {isOwnRequest ? (
+                      <span className="inline-flex items-center gap-1 py-2 px-3 text-xs font-medium rounded-lg bg-neutral-100 text-neutral-500 border border-neutral-200">
+                        <span className="material-symbols-outlined text-[13px]">person</span>
+                        Your request
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isActing}
+                          onClick={() => { setRejectTarget(req); setRejectReason(""); }}
+                          className="flex items-center gap-1 py-2 px-3 text-xs font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">cancel</span>
+                          Reject
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isActing}
+                          onClick={() => handleApprove(req)}
+                          className="flex items-center gap-1 py-2 px-3 text-xs font-semibold rounded-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-colors disabled:opacity-50"
+                        >
+                          {isActing ? (
+                            <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                          ) : (
+                            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                          )}
+                          Approve
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/auth/auth_repository.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 class ExecutiveCockpitScreen extends ConsumerStatefulWidget {
