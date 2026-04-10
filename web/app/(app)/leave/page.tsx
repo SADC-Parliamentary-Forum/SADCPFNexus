@@ -32,9 +32,9 @@ interface Balances {
   annual_balance_days: number;
   lil_hours_available: number;
   sick_leave_used_days: number;
-  special_leave_days_used: number;
-  maternity_leave_days_used: number;
-  paternity_leave_days_used: number;
+  special_leave_days_used?: number;
+  maternity_leave_days_used?: number;
+  paternity_leave_days_used?: number;
 }
 
 export default function LeavePage() {
