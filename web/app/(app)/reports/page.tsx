@@ -94,7 +94,7 @@ function buildApiParams(filters: Filters, extra?: Record<string, string>) {
   if (filters.status)       p.status       = filters.status;
   if (filters.committee)    p.committee    = filters.committee;
   if (filters.category)     p.category     = filters.category;
-  return { ...p, ...extra, per_page: "50" };
+  return { ...p, ...extra, per_page: 50 };
 }
 
 // ─── Row renderers (preview tables) ──────────────────────────────────────────
