@@ -64,7 +64,7 @@ const SETTINGS_SECTIONS: SettingsCard[] = [
     title: "Holiday Calendars",
     description: "Configure public holidays and leave-impact dates used in timesheet conflict detection.",
     icon: "event_available",
-    href: "/admin/holidays",
+    href: "/admin/calendar",
     color: "bg-teal-50 text-teal-600",
     items: ["Holiday Dates", "Calendar Groups"],
   },
