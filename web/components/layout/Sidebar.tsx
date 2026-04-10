@@ -214,8 +214,10 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Ledger Verification",  href: "/admin/ledger",        icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",    icon: "database" },
       { label: "Holiday Calendar",     href: "/admin/calendar",      icon: "event_busy" },
+      { label: "Payslip Upload",       href: "/admin/payslips",      icon: "upload_file"  },
     ],
   },
+  { label: "Settings", href: "/settings", icon: "settings", section: "Configuration" },
 ];
 
 interface SidebarProps {
