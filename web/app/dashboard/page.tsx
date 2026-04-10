@@ -309,7 +309,7 @@ export default function DashboardPage() {
             </div>
           </Link>
         ))}
-      </div>
+      </div>}
 
       {/* Two-column: Recent Activity + Upcoming Events */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
