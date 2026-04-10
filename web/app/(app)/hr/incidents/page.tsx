@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
@@ -35,7 +36,7 @@ const SEVERITY_LABEL: Record<HrIncident["severity"], string> = {
 };
 
 export default function HrIncidentsPage() {
-  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
 
@@ -54,16 +55,6 @@ export default function HrIncidentsPage() {
 
   const incidents: HrIncident[] =
     (data?.data as unknown as { data?: HrIncident[] })?.data ?? [];
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subject.trim()) {
-      setFormError("Subject is required.");
-      return;
-    }
-    setFormError(null);
-    mutation.mutate({ subject: subject.trim(), description: description.trim() || undefined, severity });
-  };
 
   const TABS: { key: FilterTab; label: string }[] = [
     { key: "all", label: "All" },
