@@ -17,6 +17,71 @@ import {
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 
+// ─── iCal export helper ────────────────────────────────────────────────────────
+function toICalDate(dateStr: string, allDay = true): string {
+  const d = new Date(dateStr + "T00:00:00");
+  if (allDay) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}${m}${day}`;
+  }
+  return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+}
+
+function generateICS(event: WorkplanEvent): string {
+  const dtStart = toICalDate(event.date);
+  const dtEnd = event.end_date
+    ? toICalDate(new Date(new Date(event.end_date + "T00:00:00").getTime() + 86400000).toISOString().slice(0, 10))
+    : toICalDate(new Date(new Date(event.date + "T00:00:00").getTime() + 86400000).toISOString().slice(0, 10));
+  const desc = (event.description ?? "").replace(/\n/g, "\\n");
+  const uid = `sadcpf-event-${event.id}-${Date.now()}@sadcpf.org`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//SADCPFNexus//WorkplanEvent//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `SUMMARY:${event.title}`,
+    `DTSTART;VALUE=DATE:${dtStart}`,
+    `DTEND;VALUE=DATE:${dtEnd}`,
+    desc ? `DESCRIPTION:${desc}` : null,
+    `STATUS:CONFIRMED`,
+    `TRANSP:TRANSPARENT`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+  return lines;
+}
+
+function downloadICS(event: WorkplanEvent) {
+  const ics = generateICS(event);
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${event.title.replace(/[^a-z0-9]/gi, "-")}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function googleCalendarUrl(event: WorkplanEvent): string {
+  const start = event.date.replace(/-/g, "");
+  const endRaw = event.end_date ?? event.date;
+  const endDate = new Date(endRaw + "T00:00:00");
+  endDate.setDate(endDate.getDate() + 1);
+  const end = endDate.toISOString().slice(0, 10).replace(/-/g, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: `${start}/${end}`,
+    details: event.description ?? "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 // ─── Type badge colours ────────────────────────────────────────────────────────
 const TYPE_COLORS: Record<string, string> = {
   meeting:   "bg-blue-100 text-blue-700 border-blue-200",
@@ -330,7 +395,27 @@ export default function WorkplanEventDetailPage() {
             {durationDays > 0 && ` · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* iCal / Google Calendar export */}
+          <button
+            type="button"
+            onClick={() => downloadICS(event)}
+            title="Download .ics (Apple Calendar / Outlook)"
+            className="btn-secondary flex items-center gap-1.5 text-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">event</span>
+            Add to Calendar
+          </button>
+          <a
+            href={googleCalendarUrl(event)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Add to Google Calendar"
+            className="btn-secondary flex items-center gap-1.5 text-sm"
+          >
+            <span className="material-symbols-outlined text-[16px]">calendar_month</span>
+            Google
+          </a>
           {!editMode ? (
             <>
               <button type="button" onClick={() => setEditMode(true)} className="btn-secondary flex items-center gap-1.5 text-sm">

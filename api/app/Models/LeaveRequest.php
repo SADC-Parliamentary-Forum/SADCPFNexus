@@ -54,6 +54,11 @@ class LeaveRequest extends Model
         app(\App\Modules\Leave\Services\LeaveService::class)->onWorkflowRejected($this, $approver, $reason);
     }
 
+    public function attachments(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
+
     public function isDraft(): bool { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }

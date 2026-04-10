@@ -27,6 +27,32 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_RECOMMENDATION = 'recommendation';
     public const DOCUMENT_TYPE_PHOTO = 'photo';
 
+    // Travel document types
+    public const DOCUMENT_TYPE_TRAVEL_ITINERARY     = 'travel_itinerary';
+    public const DOCUMENT_TYPE_VISA_COPY            = 'visa_copy';
+    public const DOCUMENT_TYPE_FLIGHT_TICKET        = 'flight_ticket';
+    public const DOCUMENT_TYPE_HOTEL_BOOKING        = 'hotel_booking';
+    public const DOCUMENT_TYPE_TRAVEL_INSURANCE     = 'travel_insurance';
+
+    public const TRAVEL_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_TRAVEL_ITINERARY,
+        self::DOCUMENT_TYPE_VISA_COPY,
+        self::DOCUMENT_TYPE_FLIGHT_TICKET,
+        self::DOCUMENT_TYPE_HOTEL_BOOKING,
+        self::DOCUMENT_TYPE_TRAVEL_INSURANCE,
+        self::DOCUMENT_TYPE_OTHER,
+    ];
+
+    // Leave document types
+    public const DOCUMENT_TYPE_MEDICAL_CERTIFICATE  = 'medical_certificate';
+    public const DOCUMENT_TYPE_LEAVE_SUPPORTING     = 'leave_supporting';
+
+    public const LEAVE_DOCUMENT_TYPES = [
+        self::DOCUMENT_TYPE_MEDICAL_CERTIFICATE,
+        self::DOCUMENT_TYPE_LEAVE_SUPPORTING,
+        self::DOCUMENT_TYPE_OTHER,
+    ];
+
     // Risk document types
     public const DOCUMENT_TYPE_RISK_POLICY          = 'risk_policy';
     public const DOCUMENT_TYPE_RISK_ASSESSMENT      = 'risk_assessment';
@@ -55,6 +81,15 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_RISK_EVIDENCE,
         self::DOCUMENT_TYPE_RISK_MITIGATION_PLAN,
         self::DOCUMENT_TYPE_CLOSURE_EVIDENCE,
+        // Travel
+        self::DOCUMENT_TYPE_TRAVEL_ITINERARY,
+        self::DOCUMENT_TYPE_VISA_COPY,
+        self::DOCUMENT_TYPE_FLIGHT_TICKET,
+        self::DOCUMENT_TYPE_HOTEL_BOOKING,
+        self::DOCUMENT_TYPE_TRAVEL_INSURANCE,
+        // Leave
+        self::DOCUMENT_TYPE_MEDICAL_CERTIFICATE,
+        self::DOCUMENT_TYPE_LEAVE_SUPPORTING,
         // Procurement
         self::DOCUMENT_TYPE_RFQ_DOCUMENT,
         self::DOCUMENT_TYPE_QUOTE_RECEIVED,

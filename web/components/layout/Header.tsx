@@ -35,12 +35,14 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     }
   }, []);
 
-  // Unread count for bell badge — polls every 60 s
+  // Unread count for bell badge — polls every 15s when tab is active, pauses when hidden
   const { data: countData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => userNotificationsApi.unreadCount().then((r) => r.data.count),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   // Recent notifications for dropdown — fetched when panel opens

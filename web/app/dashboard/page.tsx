@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   authApi, dashboardApi, travelApi, leaveApi, imprestApi, workplanApi, assignmentsApi,
@@ -53,6 +53,30 @@ const STATUS_BADGE: Record<string, string> = {
   rejected: "badge-danger", draft: "badge-muted", cancelled: "badge-muted", liquidated: "badge-primary",
 };
 
+// ─── Widget config ─────────────────────────────────────────────────────────────
+type WidgetId = "kpi_cards" | "quick_actions" | "recent_activity" | "upcoming_events" | "modules" | "assignments";
+const ALL_WIDGETS: { id: WidgetId; label: string; icon: string }[] = [
+  { id: "kpi_cards",        label: "KPI Summary Cards",   icon: "bar_chart"          },
+  { id: "quick_actions",    label: "Quick Actions",        icon: "bolt"               },
+  { id: "recent_activity",  label: "Recent Activity",      icon: "history"            },
+  { id: "upcoming_events",  label: "Upcoming Events",      icon: "event"              },
+  { id: "modules",          label: "Modules Grid",         icon: "grid_view"          },
+  { id: "assignments",      label: "My Assignments",       icon: "assignment"         },
+];
+const WIDGET_PREFS_KEY = "sadcpf_dashboard_widgets";
+function loadWidgetPrefs(): Record<WidgetId, boolean> {
+  const defaults: Record<WidgetId, boolean> = {
+    kpi_cards: true, quick_actions: true, recent_activity: true,
+    upcoming_events: true, modules: true, assignments: true,
+  };
+  if (typeof window === "undefined") return defaults;
+  try {
+    const raw = localStorage.getItem(WIDGET_PREFS_KEY);
+    if (!raw) return defaults;
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch { return defaults; }
+}
+
 function StatPill({ label, value, color = "text-neutral-900", href }: {
   label: string; value: number; color?: string; href?: string;
 }) {
@@ -76,6 +100,22 @@ function getDayOfMonth(dateStr: string): number | string {
 const _now = new Date();
 
 export default function DashboardPage() {
+  // ─── Widget customization ──────────────────────────────────────────────────
+  const [widgetPrefs, setWidgetPrefs] = useState<Record<WidgetId, boolean>>({
+    kpi_cards: true, quick_actions: true, recent_activity: true,
+    upcoming_events: true, modules: true, assignments: true,
+  });
+  const [showCustomize, setShowCustomize] = useState(false);
+  useEffect(() => { setWidgetPrefs(loadWidgetPrefs()); }, []);
+  const toggleWidget = useCallback((id: WidgetId) => {
+    setWidgetPrefs((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      localStorage.setItem(WIDGET_PREFS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+  const w = (id: WidgetId) => widgetPrefs[id] !== false;
+
   // ─── Greeting + date (client-only to avoid SSR hydration mismatch) ────────
   const [greeting, setGreeting] = useState("");
   const [dateLabel, setDateLabel] = useState("");
@@ -194,16 +234,63 @@ export default function DashboardPage() {
             {dateLabel} · Here&apos;s your workspace overview.
           </p>
         </div>
-        {isAdmin && (
-          <Link href="/admin" className="btn-secondary flex items-center gap-2 py-2 px-3 text-xs">
-            <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-            Admin Panel
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCustomize(true)}
+            className="btn-secondary flex items-center gap-1.5 py-2 px-3 text-xs"
+          >
+            <span className="material-symbols-outlined text-[15px]">tune</span>
+            Customize
+          </button>
+          {isAdmin && (
+            <Link href="/admin" className="btn-secondary flex items-center gap-2 py-2 px-3 text-xs">
+              <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+              Admin Panel
+            </Link>
+          )}
+        </div>
       </div>
 
+      {/* Customization Modal */}
+      {showCustomize && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <span className="material-symbols-outlined text-primary text-[20px]">dashboard_customize</span>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900">Customize Dashboard</h3>
+                <p className="text-xs text-neutral-400">Show or hide sections</p>
+              </div>
+              <button type="button" onClick={() => setShowCustomize(false)} className="ml-auto text-neutral-400 hover:text-neutral-600">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <div className="space-y-2">
+              {ALL_WIDGETS.map((w_) => (
+                <label key={w_.id} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2.5 cursor-pointer hover:bg-neutral-100 transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-outlined text-[18px] text-neutral-400">{w_.icon}</span>
+                    <span className="text-sm font-medium text-neutral-800">{w_.label}</span>
+                  </div>
+                  <div
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${widgetPrefs[w_.id] ? "bg-primary" : "bg-neutral-200"}`}
+                    onClick={() => toggleWidget(w_.id)}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${widgetPrefs[w_.id] ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-neutral-400 mt-4 text-center">Preferences are saved in your browser.</p>
+          </div>
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {w("kpi_cards") && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statConfig.map(({ key, label, icon, color, bg, border, href }) => (
           <Link key={key} href={href} className={`card p-5 border ${border} hover:shadow-elevated transition-all hover:border-primary/30 group`}>
             <div className="flex items-start justify-between">

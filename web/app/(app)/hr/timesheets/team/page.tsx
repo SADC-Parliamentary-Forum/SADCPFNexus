@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -112,6 +112,21 @@ function exportWeekCSV(sheets: Timesheet[], weekLabel: string) {
 
 // ─── Page ──────────────────────────────────────────────────────────────────
 
+type ViewMode = "cards" | "grid";
+
+// Derive the 5 weekday dates (Mon–Fri) for a given week start (Monday)
+function getWeekDays(weekStart: string): Date[] {
+  const base = new Date(weekStart + "T00:00:00");
+  return [0, 1, 2, 3, 4].map((i) => addDays(base, i));
+}
+
+// Sum hours for a specific date from the entries array
+function hoursOnDate(ts: Timesheet, date: Date): number {
+  if (!ts.entries) return 0;
+  const ymd = toYMD(date);
+  return ts.entries.filter((e) => e.work_date === ymd).reduce((s, e) => s + Number(e.hours ?? 0), 0);
+}
+
 export default function TeamTimesheetsPage() {
   const [weekStartDate, setWeekStartDate] = useState<Date | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
@@ -123,6 +138,7 @@ export default function TeamTimesheetsPage() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
   // Initialise on client only to prevent SSR/client hydration mismatch
   useEffect(() => {
@@ -141,7 +157,7 @@ export default function TeamTimesheetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string | number> = { week_start: weekStart, per_page: 50 };
+      const params: Record<string, string | number> = { week_start: weekStart, per_page: 50, with_entries: 1 };
       if (statusFilter) params.status = statusFilter;
       const res = await hrApi.listTeamTimesheets(params);
       const data = res.data as { data?: Timesheet[]; total?: number };
@@ -216,6 +232,7 @@ export default function TeamTimesheetsPage() {
   const weekLabel    = weekStart ? formatWeekLabel(weekStart) : "";
   const totalHours   = timesheets.reduce((s, t) => s + Number(t.total_hours ?? 0), 0);
   const overtimeHrs  = timesheets.reduce((s, t) => s + Number(t.overtime_hours ?? 0), 0);
+  const weekDays     = weekStart ? getWeekDays(weekStart) : [];
 
   return (
     <div className="space-y-6">
@@ -235,6 +252,31 @@ export default function TeamTimesheetsPage() {
           <p className="page-subtitle mt-1">Review and approve your team's weekly submissions</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* View mode toggle */}
+          <div className="flex items-center rounded-lg border border-neutral-200 bg-white overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              title="Card view"
+              className={cn(
+                "flex h-8 w-8 items-center justify-center transition-colors",
+                viewMode === "cards" ? "bg-primary text-white" : "text-neutral-500 hover:bg-neutral-100"
+              )}
+            >
+              <span className="material-symbols-outlined text-[18px]">view_module</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              title="Grid view"
+              className={cn(
+                "flex h-8 w-8 items-center justify-center transition-colors",
+                viewMode === "grid" ? "bg-primary text-white" : "text-neutral-500 hover:bg-neutral-100"
+              )}
+            >
+              <span className="material-symbols-outlined text-[18px]">table_chart</span>
+            </button>
+          </div>
           {pendingCount > 0 && (
             <button
               type="button"
@@ -309,7 +351,7 @@ export default function TeamTimesheetsPage() {
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {/* Cards */}
+      {/* Cards / Grid */}
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -342,90 +384,264 @@ export default function TeamTimesheetsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {timesheets.map((ts) => {
-              const name     = ts.user?.name ?? "Team Member";
-              const sc       = STATUS_CONFIG[ts.status] ?? STATUS_CONFIG.draft;
-              const totalH   = Number(ts.total_hours ?? 0);
-              const isLoading = actionLoading[ts.id];
+          {viewMode === "cards" ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {timesheets.map((ts) => {
+                const name     = ts.user?.name ?? "Team Member";
+                const sc       = STATUS_CONFIG[ts.status] ?? STATUS_CONFIG.draft;
+                const totalH   = Number(ts.total_hours ?? 0);
+                const isLoading = actionLoading[ts.id];
 
-              return (
-                <div key={ts.id} className="card flex flex-col gap-4 p-5">
-                  {/* Avatar + name */}
-                  <div className="flex items-center gap-3">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-bold flex-shrink-0", avatarColor(name))}>
-                      {initials(name)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-neutral-800 truncate">{name}</p>
-                      <p className="text-xs text-neutral-500 truncate">{ts.user?.email ?? ""}</p>
-                    </div>
-                    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", sc.cls)}>
-                      <span className="material-symbols-outlined text-[11px]">{sc.icon}</span>
-                      {sc.label}
-                    </span>
-                  </div>
-
-                  {/* Week label */}
-                  <p className="text-xs text-neutral-400">
-                    Week of {formatWeekLabel(ts.week_start)}
-                  </p>
-
-                  {/* Hours bar */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-neutral-500">Hours logged</span>
-                      <span className={cn("text-xs font-semibold", totalH >= 40 ? "text-green-600" : totalH > 0 ? "text-amber-600" : "text-neutral-400")}>
-                        {totalH.toFixed(1)}h / 40h
+                return (
+                  <div key={ts.id} className="card flex flex-col gap-4 p-5">
+                    {/* Avatar + name */}
+                    <div className="flex items-center gap-3">
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-full text-white text-sm font-bold flex-shrink-0", avatarColor(name))}>
+                        {initials(name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-neutral-800 truncate">{name}</p>
+                        <p className="text-xs text-neutral-500 truncate">{ts.user?.email ?? ""}</p>
+                      </div>
+                      <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", sc.cls)}>
+                        <span className="material-symbols-outlined text-[11px]">{sc.icon}</span>
+                        {sc.label}
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-                      <div
-                        className={cn("h-full rounded-full transition-all", totalH >= 40 ? "bg-green-500" : "bg-amber-400")}
-                        style={{ width: `${Math.min(100, (totalH / 40) * 100)}%` }}
-                      />
+
+                    {/* Week label */}
+                    <p className="text-xs text-neutral-400">
+                      Week of {formatWeekLabel(ts.week_start)}
+                    </p>
+
+                    {/* Hours bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-neutral-500">Hours logged</span>
+                        <span className={cn("text-xs font-semibold", totalH >= 40 ? "text-green-600" : totalH > 0 ? "text-amber-600" : "text-neutral-400")}>
+                          {totalH.toFixed(1)}h / 40h
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                        <div
+                          className={cn("h-full rounded-full transition-all", totalH >= 40 ? "bg-green-500" : "bg-amber-400")}
+                          style={{ width: `${Math.min(100, (totalH / 40) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <Link
+                        href={`/hr/timesheets/${ts.id}`}
+                        className="btn-secondary flex-1 text-center text-xs"
+                      >
+                        View Details →
+                      </Link>
+                      {ts.status === "submitted" && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleApprove(ts)}
+                            disabled={isLoading}
+                            className="btn-primary text-xs disabled:opacity-50 flex items-center gap-1"
+                          >
+                            {isLoading ? (
+                              <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                            ) : (
+                              <span className="material-symbols-outlined text-[14px]">check</span>
+                            )}
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReject(ts)}
+                            disabled={isLoading}
+                            title="Return for revision"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">undo</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* ─── GRID VIEW ──────────────────────────────────────────────────── */
+            <div className="card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-neutral-100 bg-neutral-50">
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500 w-52">
+                        Employee
+                      </th>
+                      {weekDays.map((day) => (
+                        <th
+                          key={day.toISOString()}
+                          className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-20"
+                        >
+                          <div>{day.toLocaleDateString("en-GB", { weekday: "short" })}</div>
+                          <div className="text-[10px] font-normal text-neutral-400 normal-case tracking-normal">
+                            {formatDateShort(day.toISOString())}
+                          </div>
+                        </th>
+                      ))}
+                      <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-20">
+                        Total
+                      </th>
+                      <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-neutral-500 w-28">
+                        Status
+                      </th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500 w-32">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {timesheets.map((ts) => {
+                      const name      = ts.user?.name ?? "Team Member";
+                      const sc        = STATUS_CONFIG[ts.status] ?? STATUS_CONFIG.draft;
+                      const totalH    = Number(ts.total_hours ?? 0);
+                      const isLoading = actionLoading[ts.id];
+                      const hasEntries = (ts.entries?.length ?? 0) > 0;
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <Link
-                      href={`/hr/timesheets/${ts.id}`}
-                      className="btn-secondary flex-1 text-center text-xs"
-                    >
-                      View Details →
-                    </Link>
-                    {ts.status === "submitted" && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleApprove(ts)}
-                          disabled={isLoading}
-                          className="btn-primary text-xs disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {isLoading ? (
-                            <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-                          ) : (
-                            <span className="material-symbols-outlined text-[14px]">check</span>
-                          )}
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReject(ts)}
-                          disabled={isLoading}
-                          title="Return for revision"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-40 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">undo</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      return (
+                        <tr key={ts.id} className="hover:bg-neutral-50 transition-colors group">
+                          {/* Employee */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className={cn("flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white text-xs font-bold", avatarColor(name))}>
+                                {initials(name)}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-neutral-800 truncate leading-tight">{name}</p>
+                                <p className="text-[11px] text-neutral-400 truncate">{ts.user?.email ?? ""}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Day cells */}
+                          {weekDays.map((day) => {
+                            const h = hasEntries ? hoursOnDate(ts, day) : null;
+                            return (
+                              <td key={day.toISOString()} className="px-3 py-3 text-center">
+                                {h === null ? (
+                                  <span className="text-xs text-neutral-300">—</span>
+                                ) : h === 0 ? (
+                                  <span className="text-xs text-neutral-300">–</span>
+                                ) : (
+                                  <span className={cn(
+                                    "text-sm font-semibold tabular-nums",
+                                    h >= 8 ? "text-green-600" : h >= 4 ? "text-amber-600" : "text-red-500"
+                                  )}>
+                                    {h.toFixed(1)}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+
+                          {/* Total */}
+                          <td className="px-3 py-3 text-center">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className={cn(
+                                "text-sm font-bold tabular-nums",
+                                totalH >= 40 ? "text-green-600" : totalH > 0 ? "text-amber-600" : "text-neutral-400"
+                              )}>
+                                {totalH.toFixed(1)}h
+                              </span>
+                              <div className="h-1 w-14 overflow-hidden rounded-full bg-neutral-100">
+                                <div
+                                  className={cn("h-full rounded-full", totalH >= 40 ? "bg-green-500" : "bg-amber-400")}
+                                  style={{ width: `${Math.min(100, (totalH / 40) * 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-3 py-3 text-center">
+                            <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold", sc.cls)}>
+                              <span className="material-symbols-outlined text-[11px]">{sc.icon}</span>
+                              {sc.label}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-3 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link
+                                href={`/hr/timesheets/${ts.id}`}
+                                className="flex h-7 items-center rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-600 hover:border-primary hover:text-primary transition-colors"
+                              >
+                                View
+                              </Link>
+                              {ts.status === "submitted" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleApprove(ts)}
+                                    disabled={isLoading}
+                                    title="Approve"
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 disabled:opacity-40 border border-green-200 transition-colors"
+                                  >
+                                    {isLoading ? (
+                                      <span className="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>
+                                    ) : (
+                                      <span className="material-symbols-outlined text-[13px]">check</span>
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReject(ts)}
+                                    disabled={isLoading}
+                                    title="Return for revision"
+                                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-40 border border-red-200 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[13px]">undo</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  {/* Footer totals */}
+                  <tfoot className="border-t-2 border-neutral-200 bg-neutral-50">
+                    <tr>
+                      <td className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-neutral-500">
+                        Team Total
+                      </td>
+                      {weekDays.map((day) => {
+                        const dayTotal = timesheets.reduce((s, ts) => s + hoursOnDate(ts, day), 0);
+                        return (
+                          <td key={day.toISOString()} className="px-3 py-3 text-center">
+                            {dayTotal > 0 ? (
+                              <span className="text-xs font-bold text-primary tabular-nums">{dayTotal.toFixed(1)}</span>
+                            ) : (
+                              <span className="text-xs text-neutral-300">–</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-sm font-bold text-primary tabular-nums">{totalHours.toFixed(1)}h</span>
+                      </td>
+                      <td colSpan={2} className="px-3 py-3 text-right text-xs text-neutral-400">
+                        {timesheets.length} member{timesheets.length !== 1 ? "s" : ""} · {overtimeHrs.toFixed(1)}h overtime
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Summary row */}
           <div className="card p-5">

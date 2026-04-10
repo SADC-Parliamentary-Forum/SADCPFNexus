@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { profileApi, profileSessionsApi, type UserSession } from "@/lib/api";
+import { profileApi, profileSessionsApi, twoFactorApi, type UserSession } from "@/lib/api";
 import { formatDateRelative } from "@/lib/utils";
 
 const NAV = [
@@ -14,8 +14,17 @@ const NAV = [
 export default function ProfileSecurityPage() {
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [mfaEnabled, setMfaEnabled] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("60");
+
+  // 2FA state
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaLoading, setMfaLoading] = useState(true);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [mfaSetup, setMfaSetup] = useState<{ secret: string; qr_code_url: string } | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [disablePassword, setDisablePassword] = useState("");
+  const [mfaActionLoading, setMfaActionLoading] = useState(false);
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
 
@@ -42,6 +51,63 @@ export default function ProfileSecurityPage() {
   };
 
   useEffect(() => { loadSessions(); }, []);
+
+  // Load 2FA status
+  useEffect(() => {
+    twoFactorApi.status()
+      .then((res) => setMfaEnabled(res.data.enabled))
+      .catch(() => {})
+      .finally(() => setMfaLoading(false));
+  }, []);
+
+  const handleStartEnable2FA = async () => {
+    setMfaActionLoading(true);
+    try {
+      const res = await twoFactorApi.enable();
+      setMfaSetup(res.data);
+      setTotpCode("");
+      setShowSetupModal(true);
+    } catch {
+      showToast("Failed to start 2FA setup.", "error");
+    } finally {
+      setMfaActionLoading(false);
+    }
+  };
+
+  const handleConfirm2FA = async () => {
+    if (totpCode.length !== 6) return;
+    setMfaActionLoading(true);
+    try {
+      await twoFactorApi.confirm(totpCode);
+      setMfaEnabled(true);
+      setShowSetupModal(false);
+      setMfaSetup(null);
+      setTotpCode("");
+      showToast("2FA enabled successfully. Your account is now more secure.");
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { errors?: { code?: string[] }; message?: string } } };
+      showToast(ax.response?.data?.errors?.code?.[0] ?? ax.response?.data?.message ?? "Invalid code. Try again.", "error");
+    } finally {
+      setMfaActionLoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disablePassword) return;
+    setMfaActionLoading(true);
+    try {
+      await twoFactorApi.disable(disablePassword);
+      setMfaEnabled(false);
+      setShowDisableModal(false);
+      setDisablePassword("");
+      showToast("2FA has been disabled.");
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { errors?: { password?: string[] }; message?: string } } };
+      showToast(ax.response?.data?.errors?.password?.[0] ?? ax.response?.data?.message ?? "Incorrect password.", "error");
+    } finally {
+      setMfaActionLoading(false);
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,27 +255,205 @@ export default function ProfileSecurityPage() {
         </form>
       </div>
 
-      {/* MFA */}
+      {/* MFA / 2FA */}
       <div className="card p-6 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50">
             <span className="material-symbols-outlined text-green-600 text-[18px]">verified_user</span>
           </div>
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Multi-Factor Authentication</h3>
+          <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Two-Factor Authentication (2FA)</h3>
         </div>
-        <div className="flex items-center justify-between rounded-xl bg-neutral-50 border border-neutral-200 p-4">
-          <div>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Authenticator App (TOTP)</p>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              {mfaEnabled ? "MFA is active — your account is protected." : "Enable MFA to add an extra layer of security."}
-            </p>
+
+        {mfaLoading ? (
+          <div className="h-16 animate-pulse rounded-xl bg-neutral-100" />
+        ) : (
+          <div className={`rounded-xl border p-4 flex items-start justify-between gap-4 ${mfaEnabled ? "bg-green-50 border-green-200" : "bg-neutral-50 border-neutral-200"}`}>
+            <div className="flex items-start gap-3">
+              <span className={`material-symbols-outlined text-[22px] mt-0.5 ${mfaEnabled ? "text-green-600" : "text-neutral-400"}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                {mfaEnabled ? "verified_user" : "lock_open"}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">Authenticator App (TOTP)</p>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {mfaEnabled
+                    ? "2FA is active — your account requires a code on every login."
+                    : "Enable 2FA with Google Authenticator, Authy, or any TOTP app."}
+                </p>
+              </div>
+            </div>
+            {mfaEnabled ? (
+              <button
+                type="button"
+                onClick={() => { setDisablePassword(""); setShowDisableModal(true); }}
+                className="flex-shrink-0 text-xs font-semibold text-red-500 hover:underline"
+              >
+                Disable
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStartEnable2FA}
+                disabled={mfaActionLoading}
+                className="flex-shrink-0 btn-primary py-2 px-4 text-xs flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {mfaActionLoading ? (
+                  <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                )}
+                Set Up 2FA
+              </button>
+            )}
           </div>
-          <button type="button" onClick={() => { setMfaEnabled(!mfaEnabled); showToast(mfaEnabled ? "MFA disabled." : "MFA enabled."); }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${mfaEnabled ? "bg-primary" : "bg-neutral-200"}`}>
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${mfaEnabled ? "translate-x-6" : "translate-x-1"}`} />
-          </button>
-        </div>
+        )}
+
+        {mfaEnabled && (
+          <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+            <span className="material-symbols-outlined text-[15px]">check_circle</span>
+            Your account is protected with two-factor authentication.
+          </div>
+        )}
       </div>
+
+      {/* 2FA Setup Modal */}
+      {showSetupModal && mfaSetup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl bg-white p-6 max-w-md w-full shadow-2xl border border-neutral-100 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50">
+                <span className="material-symbols-outlined text-green-600 text-[22px]">qr_code</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">Set Up Two-Factor Authentication</h3>
+                <p className="text-xs text-neutral-400">Scan the QR code with your authenticator app</p>
+              </div>
+            </div>
+
+            <ol className="space-y-3 text-sm text-neutral-600">
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">1</span>
+                Install <strong className="text-neutral-900">Google Authenticator</strong>, <strong className="text-neutral-900">Authy</strong>, or any TOTP app.
+              </li>
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">2</span>
+                Scan the QR code below, or enter the key manually.
+              </li>
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold flex-shrink-0 mt-0.5">3</span>
+                Enter the 6-digit code from your app to confirm.
+              </li>
+            </ol>
+
+            {/* QR Code using Google Charts API */}
+            <div className="flex flex-col items-center gap-3 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(mfaSetup.qr_code_url)}`}
+                alt="2FA QR Code"
+                width={180}
+                height={180}
+                className="rounded-lg"
+              />
+              <div className="text-center">
+                <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Manual Entry Key</p>
+                <code className="text-xs font-mono text-neutral-700 bg-white border border-neutral-200 px-2 py-1 rounded select-all">
+                  {mfaSetup.secret}
+                </code>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Verification Code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                className="form-input text-center text-xl font-mono tracking-[0.5em] max-w-[160px]"
+                placeholder="000000"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                autoComplete="one-time-code"
+              />
+              <p className="text-xs text-neutral-400 mt-1">Enter the 6-digit code shown in your app.</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowSetupModal(false); setMfaSetup(null); setTotpCode(""); }}
+                className="btn-secondary flex-1 py-2.5 text-sm justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirm2FA}
+                disabled={totpCode.length !== 6 || mfaActionLoading}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-40 transition-colors shadow-sm"
+              >
+                {mfaActionLoading ? (
+                  <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[16px]">check</span>
+                )}
+                Activate 2FA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA Disable Modal */}
+      {showDisableModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50">
+                <span className="material-symbols-outlined text-red-600 text-[22px]">no_encryption</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">Disable Two-Factor Authentication</h3>
+                <p className="text-xs text-neutral-400">This will reduce your account security</p>
+              </div>
+            </div>
+            <p className="text-sm text-neutral-600">
+              Confirm your password to disable 2FA. You will no longer be required to enter a code on login.
+            </p>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={disablePassword}
+                onChange={(e) => setDisablePassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowDisableModal(false); setDisablePassword(""); }}
+                disabled={mfaActionLoading}
+                className="btn-secondary flex-1 py-2.5 text-sm justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDisable2FA}
+                disabled={!disablePassword || mfaActionLoading}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 transition-colors shadow-sm"
+              >
+                {mfaActionLoading ? (
+                  <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                ) : null}
+                Disable 2FA
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Session management */}
       <div className="card p-6 space-y-4">

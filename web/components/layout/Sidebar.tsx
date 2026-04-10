@@ -213,7 +213,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Audit Logs",           href: "/admin/audit",         icon: "manage_search" },
       { label: "Ledger Verification",  href: "/admin/ledger",        icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",    icon: "database" },
-      { label: "Holiday Calendar",     href: "/admin/holidays",      icon: "event_busy" },
+      { label: "Holiday Calendar",     href: "/admin/calendar",      icon: "event_busy" },
     ],
   },
 ];

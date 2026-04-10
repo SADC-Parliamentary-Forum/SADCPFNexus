@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { travelApi, type TravelRequest } from "@/lib/api";
+import { travelApi, type TravelRequest, type ModuleAttachment, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
 import { formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
@@ -47,6 +47,13 @@ export default function TravelDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const { confirm } = useConfirm();
 
+  // Attachments
+  const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false);
+  const [uploadDocType, setUploadDocType] = useState("other");
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [attachToast, setAttachToast] = useState<string | null>(null);
+
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
@@ -54,7 +61,11 @@ export default function TravelDetailPage() {
       return;
     }
     travelApi.get(id)
-      .then((res) => setRequest((res.data as any).data ?? res.data))
+      .then((res) => {
+        setRequest((res.data as any).data ?? res.data);
+        return travelApi.listAttachments(id);
+      })
+      .then((res) => setAttachments(res.data.data))
       .catch(() => setError("Failed to load travel request."))
       .finally(() => setLoading(false));
   }, [id]);
@@ -343,6 +354,101 @@ export default function TravelDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Attachments */}
+      <div className="card p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="attach_file" color="text-indigo-600" bg="bg-indigo-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Supporting Documents</h3>
+          <span className="ml-auto text-xs text-neutral-400">{attachments.length} file{attachments.length !== 1 ? "s" : ""}</span>
+        </div>
+
+        {attachToast && (
+          <div className="mb-3 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">{attachToast}</div>
+        )}
+
+        {/* Upload row */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <select
+            className="form-input text-xs py-1.5 w-44"
+            value={uploadDocType}
+            onChange={(e) => setUploadDocType(e.target.value)}
+          >
+            {TRAVEL_DOCUMENT_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <label className={`btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer ${uploadLoading ? "opacity-50 pointer-events-none" : ""}`}>
+            <span className="material-symbols-outlined text-[15px]">upload_file</span>
+            {uploadLoading ? "Uploading…" : "Upload File"}
+            <input
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx"
+              disabled={uploadLoading}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file || !request) return;
+                setUploadLoading(true);
+                try {
+                  const res = await travelApi.uploadAttachment(request.id, file, uploadDocType);
+                  setAttachments((prev) => [res.data.data, ...prev]);
+                  setAttachToast("File uploaded successfully.");
+                  setTimeout(() => setAttachToast(null), 3000);
+                } catch {
+                  setAttachToast("Upload failed. Please try again.");
+                  setTimeout(() => setAttachToast(null), 3000);
+                } finally {
+                  setUploadLoading(false);
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {attachments.length === 0 ? (
+          <p className="text-xs text-neutral-400 text-center py-4">No documents attached yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {attachments.map((a) => (
+              <div key={a.id} className="flex items-center gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+                <span className="material-symbols-outlined text-[20px] text-indigo-400">
+                  {a.mime_type?.includes("pdf") ? "picture_as_pdf" : a.mime_type?.includes("image") ? "image" : "description"}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-neutral-900 truncate">{a.original_filename}</p>
+                  <p className="text-[10px] text-neutral-400">
+                    {a.document_type?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {a.size_bytes ? ` · ${(a.size_bytes / 1024).toFixed(0)} KB` : ""}
+                  </p>
+                </div>
+                <a
+                  href={travelApi.downloadAttachmentUrl(request!.id, a.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-primary hover:bg-primary/5 transition-colors"
+                  title="Download"
+                >
+                  <span className="material-symbols-outlined text-[17px]">download</span>
+                </a>
+                <button
+                  type="button"
+                  title="Delete"
+                  onClick={async () => {
+                    if (!request) return;
+                    await travelApi.deleteAttachment(request.id, a.id);
+                    setAttachments((prev) => prev.filter((x) => x.id !== a.id));
+                  }}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[17px]">delete</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Back link */}
       <Link href="/travel" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">

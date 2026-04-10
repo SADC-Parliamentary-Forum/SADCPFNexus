@@ -62,6 +62,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('profile/sessions/others', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'destroyOthers']);
         Route::delete('profile/sessions/{userSession}', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'destroy']);
 
+        // Two-Factor Authentication (TOTP)
+        Route::get('profile/2fa/status',   [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'status']);
+        Route::post('profile/2fa/enable',  [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'enable']);
+        Route::post('profile/2fa/confirm', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'confirm']);
+        Route::post('profile/2fa/disable', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'disable']);
+        Route::post('profile/2fa/verify',  [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'verify']);
+
         // Email action processing — authenticated (token + user must match)
         Route::post('email-action/process',
             [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'process']
@@ -209,6 +216,11 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/submit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
             Route::post('requests/{travelRequest}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
             Route::post('requests/{travelRequest}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
+            // Travel attachments
+            Route::get('requests/{travelRequest}/attachments',                        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'index']);
+            Route::post('requests/{travelRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'store']);
+            Route::delete('requests/{travelRequest}/attachments/{attachment}',        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'destroy']);
+            Route::get('requests/{travelRequest}/attachments/{attachment}/download',  [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'download']);
         });
 
         // Imprest Module
@@ -232,6 +244,11 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{leaveRequest}/submit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
             Route::post('requests/{leaveRequest}/approve', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
             Route::post('requests/{leaveRequest}/reject', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
+            // Leave attachments
+            Route::get('requests/{leaveRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'index']);
+            Route::post('requests/{leaveRequest}/attachments',                      [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'store']);
+            Route::delete('requests/{leaveRequest}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'destroy']);
+            Route::get('requests/{leaveRequest}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'download']);
         });
 
         // Procurement Module

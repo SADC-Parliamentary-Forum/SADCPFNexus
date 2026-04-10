@@ -182,6 +182,10 @@ export default function AdminLedgerPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/admin/ledger/generate" className="btn-secondary flex items-center gap-2 shrink-0">
+            <span className="material-symbols-outlined text-[18px]">summarize</span>
+            Generate Report
+          </Link>
           <Link href="/admin/ledger/verify" className="btn-primary flex items-center gap-2 shrink-0">
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
             Verify Integrity

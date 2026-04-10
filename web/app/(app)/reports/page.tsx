@@ -364,6 +364,32 @@ export default function ReportsPage() {
     }
   }, [activeModule, filters, canExport]);
 
+  const exportPdf = useCallback(() => {
+    if (!rows || rows.length === 0 || !module) return;
+    const date = new Date().toLocaleDateString("en-GB");
+    const headers = module.columns;
+    const buildCells = (row: Record<string, unknown>) => {
+      // Re-use the same data the preview table shows
+      switch (activeModule) {
+        case "travel":          return [row.reference_number, (row.requester as Record<string,unknown>)?.name, row.destination_country, row.destination_city, row.departure_date, row.return_date, row.currency, row.estimated_dsa, row.status];
+        case "leave":           return [row.reference_number, (row.requester as Record<string,unknown>)?.name, row.leave_type, row.start_date, row.end_date, row.days_requested, row.status];
+        case "dsa":             return [row.reference_number, (row.requester as Record<string,unknown>)?.name, row.destination_country, row.departure_date, row.return_date, "--", row.estimated_dsa, row.currency, row.status];
+        case "imprest":         return [row.reference_number, (row.requester as Record<string,unknown>)?.name, row.purpose, row.budget_line, row.currency, row.amount_requested, row.status, row.expected_liquidation_date];
+        case "procurement":     return [row.reference_number, row.title, (row.requester as Record<string,unknown>)?.name, row.category, row.currency, row.estimated_value, row.status];
+        case "salary-advances": return [row.reference_number, (row.requester as Record<string,unknown>)?.name, row.advance_type, row.currency, row.amount_requested, row.repayment_months, row.status];
+        case "hr-timesheets":   return [(row.user as Record<string,unknown>)?.name, row.week_start, row.total_hours, row.overtime_hours, row.status];
+        case "risk":            return [row.reference_number, row.title, (row.owner as Record<string,unknown>)?.name, row.likelihood, row.impact, row.risk_score, row.status];
+        case "governance":      return [row.meeting_title, row.meeting_type, row.meeting_date, row.status];
+        case "assets":          return [row.asset_number, row.name, row.category, row.location, row.assigned_to, row.condition, row.acquisition_date];
+        default: return [];
+      }
+    };
+    const bodyRows = rows.map((r) => buildCells(r as Record<string, unknown>).map((v) => String(v ?? "")).map((v) => `<td>${v}</td>`).join("")).map((r) => `<tr>${r}</tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${module.label} Report</title><style>body{font-family:Arial,sans-serif;font-size:10pt;margin:20px}h2{font-size:13pt;margin-bottom:4px}p{font-size:9pt;color:#666;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:9pt}th{background:#f5f5f5;font-weight:600}tr:nth-child(even){background:#fafafa}@media print{body{margin:0}}</style></head><body><h2>SADC Parliamentary Forum — ${module.label} Report</h2><p>Generated: ${date} · ${total} records</p><table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => { win.print(); }, 400); }
+  }, [rows, module, activeModule, total]);
+
   const previewRows = rows?.slice(0, 10) ?? [];
 
   return (
@@ -566,9 +592,20 @@ export default function ReportsPage() {
                     {exporting ? (
                       <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
                     ) : (
-                      <span className="material-symbols-outlined text-[15px]">download</span>
+                      <span className="material-symbols-outlined text-[15px]">table_view</span>
                     )}
                     {exporting ? "Exporting…" : "Export CSV"}
+                  </button>
+                )}
+
+                {rows !== null && rows.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={exportPdf}
+                    className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-red-500">picture_as_pdf</span>
+                    Print / PDF
                   </button>
                 )}
 

@@ -42,6 +42,11 @@ class AuthRepository {
         userJson: jsonStr,
         rememberMe: rememberMe,
       );
+      // Check if user has 2FA enabled
+      final mfaEnabled = user is Map && user['mfa_enabled'] == true;
+      if (mfaEnabled) {
+        return AuthResult.mfaPending(user: user);
+      }
       return AuthResult.success(user: user);
     } on DioException catch (e) {
       if (e.response?.statusCode == 422 || e.response?.statusCode == 401) {
@@ -58,6 +63,29 @@ class AuthRepository {
       return AuthResult.failure(
         isNetwork ? 'Cannot reach server. Check that the API is running and the app is using the correct API URL.' : 'Login failed. Please try again.',
       );
+    }
+  }
+
+  /// Verifies a TOTP code for a user who just logged in with 2FA enabled.
+  Future<AuthResult> verifyMfa(String code) async {
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        '/profile/2fa/verify',
+        data: {'code': code},
+      );
+      return AuthResult.success();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        final errors = e.response?.data?['errors'] as Map?;
+        final codeErr = errors?['code'];
+        if (codeErr is List && codeErr.isNotEmpty) {
+          return AuthResult.failure(codeErr.first.toString());
+        }
+        return AuthResult.failure('Invalid or expired code. Please try again.');
+      }
+      return AuthResult.failure(_networkErrorMessage(e));
+    } catch (_) {
+      return AuthResult.failure('Verification failed. Please try again.');
     }
   }
 
@@ -180,14 +208,16 @@ String _networkErrorMessage(DioException e) {
 }
 
 class AuthResult {
-  const AuthResult._({this.user, this.error});
+  const AuthResult._({this.user, this.error, this.mfaRequired = false});
   final dynamic user;
   final String? error;
+  final bool mfaRequired;
 
   factory AuthResult.success({dynamic user}) => AuthResult._(user: user);
+  factory AuthResult.mfaPending({dynamic user}) => AuthResult._(user: user, mfaRequired: true);
   factory AuthResult.failure(String message) => AuthResult._(error: message);
 
-  bool get isSuccess => error == null;
+  bool get isSuccess => error == null && !mfaRequired;
 }
 
 class AuthBootstrapResult {

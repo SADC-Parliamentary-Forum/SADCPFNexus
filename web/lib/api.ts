@@ -452,6 +452,21 @@ export const profileSessionsApi = {
   revokeOthers: () => api.delete<{ message: string }>("/profile/sessions/others"),
 };
 
+// ─── Two-Factor Authentication ──────────────────────────────────────────────
+
+export interface TwoFactorSetup {
+  secret: string;
+  qr_code_url: string;
+}
+
+export const twoFactorApi = {
+  status: () => api.get<{ enabled: boolean }>("/profile/2fa/status"),
+  enable: () => api.post<TwoFactorSetup>("/profile/2fa/enable"),
+  confirm: (code: string) => api.post<{ message: string; enabled: boolean }>("/profile/2fa/confirm", { code }),
+  disable: (password: string) => api.post<{ message: string; enabled: boolean }>("/profile/2fa/disable", { password }),
+  verify: (code: string) => api.post<{ message: string; valid: boolean }>("/profile/2fa/verify", { code }),
+};
+
 // ─── Profile Change Requests ───────────────────────────────────────────────────
 
 export interface ProfileChangeDiff {
@@ -762,6 +777,36 @@ export interface TravelItinerary {
   calculated_dsa: number;
 }
 
+// ─── Generic Attachment ────────────────────────────────────────────────────
+
+export interface ModuleAttachment {
+  id: number;
+  document_type: string | null;
+  original_filename: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: number;
+  uploader?: { id: number; name: string };
+  created_at: string;
+  updated_at: string;
+}
+
+export const TRAVEL_DOCUMENT_TYPES = [
+  { value: "travel_itinerary", label: "Travel Itinerary" },
+  { value: "visa_copy",        label: "Visa Copy" },
+  { value: "flight_ticket",    label: "Flight Ticket" },
+  { value: "hotel_booking",    label: "Hotel Booking" },
+  { value: "travel_insurance", label: "Travel Insurance" },
+  { value: "other",            label: "Other" },
+] as const;
+
+export const LEAVE_DOCUMENT_TYPES = [
+  { value: "medical_certificate", label: "Medical Certificate" },
+  { value: "leave_supporting",    label: "Supporting Document" },
+  { value: "other",               label: "Other" },
+] as const;
+
 export const travelApi = {
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<TravelRequest>>("/travel/requests", { params }),
@@ -777,6 +822,19 @@ export const travelApi = {
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/reject`, { reason }),
+  // Attachments
+  listAttachments: (id: number) =>
+    api.get<{ data: ModuleAttachment[] }>(`/travel/requests/${id}/attachments`),
+  uploadAttachment: (id: number, file: File, documentType: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("document_type", documentType);
+    return api.post<{ data: ModuleAttachment; message: string }>(`/travel/requests/${id}/attachments`, fd);
+  },
+  deleteAttachment: (id: number, attachmentId: number) =>
+    api.delete(`/travel/requests/${id}/attachments/${attachmentId}`),
+  downloadAttachmentUrl: (id: number, attachmentId: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/requests/${id}/attachments/${attachmentId}/download`,
 };
 
 // ─── Imprest ─────────────────────────────────────────────────────────────────
@@ -1048,6 +1106,19 @@ export const leaveApi = {
   listLilAccruals: () => api.get<{ data: LilAccrual[] }>("/leave/lil-accruals"),
   getBalances: () =>
     api.get<{ annual_balance_days: number; lil_hours_available: number; sick_leave_used_days: number; period_year: number }>("/leave/balances"),
+  // Attachments
+  listAttachments: (id: number) =>
+    api.get<{ data: ModuleAttachment[] }>(`/leave/requests/${id}/attachments`),
+  uploadAttachment: (id: number, file: File, documentType: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("document_type", documentType);
+    return api.post<{ data: ModuleAttachment; message: string }>(`/leave/requests/${id}/attachments`, fd);
+  },
+  deleteAttachment: (id: number, attachmentId: number) =>
+    api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),
+  downloadAttachmentUrl: (id: number, attachmentId: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/attachments/${attachmentId}/download`,
 };
 
 export interface LilAccrual {
