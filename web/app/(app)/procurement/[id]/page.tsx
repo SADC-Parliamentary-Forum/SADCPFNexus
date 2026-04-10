@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { procurementApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment } from "@/lib/api";
+import { procurementApi, quotesApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment, type ProcurementQuote } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { useFormatDate } from "@/lib/useFormatDate";
 import axios from "axios";
@@ -73,6 +73,16 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [awarding, setAwarding]         = useState(false);
   const [awardError, setAwardError]     = useState<string | null>(null);
 
+  // Add Quote form state
+  const [showAddQuote, setShowAddQuote]   = useState(false);
+  const [quoteVendorName, setQuoteVendorName] = useState("");
+  const [quoteAmount, setQuoteAmount]     = useState("");
+  const [quoteCurrency, setQuoteCurrency] = useState("NAD");
+  const [quoteNotes, setQuoteNotes]       = useState("");
+  const [quoteDate, setQuoteDate]         = useState("");
+  const [addingQuote, setAddingQuote]     = useState(false);
+  const [quoteError, setQuoteError]       = useState<string | null>(null);
+
   // HOD action state
   const [hodAction, setHodAction]         = useState<"approve" | "reject" | null>(null);
   const [hodRejReason, setHodRejReason]   = useState("");
@@ -95,6 +105,33 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       .catch(() => setError("Failed to load procurement request."))
       .finally(() => setLoading(false));
   }, [paramId]);
+
+  async function handleAddQuote() {
+    if (!request || !quoteVendorName || !quoteAmount) return;
+    setAddingQuote(true);
+    setQuoteError(null);
+    try {
+      const res = await quotesApi.create(request.id, {
+        vendor_name: quoteVendorName,
+        quoted_amount: parseFloat(quoteAmount),
+        currency: quoteCurrency,
+        notes: quoteNotes || undefined,
+        quote_date: quoteDate || undefined,
+      });
+      // Append new quote to request.quotes
+      setRequest((prev) => prev ? { ...prev, quotes: [...(prev.quotes ?? []), res.data.data] } : prev);
+      setShowAddQuote(false);
+      setQuoteVendorName("");
+      setQuoteAmount("");
+      setQuoteNotes("");
+      setQuoteDate("");
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to add quote.";
+      setQuoteError(msg);
+    } finally {
+      setAddingQuote(false);
+    }
+  }
 
   async function handleAward() {
     if (!request || !awardQuoteId) return;
@@ -399,13 +436,108 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Vendor Quotes */}
-      {quotes.length > 0 && (
+      {(quotes.length > 0 || request.rfq_issued_at) && (
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="storefront" color="text-teal-600" bg="bg-teal-50" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Vendor Quotes</h3>
             <span className="ml-auto text-xs text-neutral-400">{quotes.length} quote{quotes.length !== 1 ? "s" : ""}</span>
+            {request.rfq_issued_at && request.status !== "awarded" && canAward(currentUser) && (
+              <button
+                type="button"
+                onClick={() => setShowAddQuote((v) => !v)}
+                className="btn-secondary text-xs flex items-center gap-1 py-1 px-2.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+                Add Quote
+              </button>
+            )}
           </div>
+
+          {/* Add Quote Form */}
+          {showAddQuote && (
+            <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50/50 p-4 space-y-3">
+              <p className="text-xs font-semibold text-teal-700">New Vendor Quote</p>
+              {quoteError && (
+                <p className="text-xs text-red-600 bg-red-50 rounded px-3 py-2">{quoteError}</p>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-600">Vendor Name *</label>
+                  <input
+                    type="text"
+                    className="form-input text-sm"
+                    placeholder="e.g. ABC Supplies Ltd"
+                    value={quoteVendorName}
+                    onChange={(e) => setQuoteVendorName(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-24 flex-shrink-0">
+                    <label className="mb-1 block text-xs font-medium text-neutral-600">Currency</label>
+                    <select className="form-input text-sm" value={quoteCurrency} onChange={(e) => setQuoteCurrency(e.target.value)}>
+                      {["NAD", "USD", "ZAR", "BWP", "ZMW", "MWK", "TZS", "EUR"].map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-neutral-600">Amount *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="form-input text-sm"
+                      placeholder="0.00"
+                      value={quoteAmount}
+                      onChange={(e) => setQuoteAmount(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-600">Quote Date</label>
+                  <input
+                    type="date"
+                    className="form-input text-sm"
+                    value={quoteDate}
+                    onChange={(e) => setQuoteDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-neutral-600">Notes</label>
+                  <input
+                    type="text"
+                    className="form-input text-sm"
+                    placeholder="Optional notes"
+                    value={quoteNotes}
+                    onChange={(e) => setQuoteNotes(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleAddQuote}
+                  disabled={addingQuote || !quoteVendorName || !quoteAmount}
+                  className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1 disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    {addingQuote ? "hourglass_top" : "save"}
+                  </span>
+                  {addingQuote ? "Saving…" : "Save Quote"}
+                </button>
+                <button type="button" onClick={() => { setShowAddQuote(false); setQuoteError(null); }} className="btn-secondary text-xs py-1.5 px-3">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {quotes.length === 0 && !showAddQuote && (
+            <p className="text-xs text-neutral-400 text-center py-3">
+              No quotes added yet. Click &ldquo;Add Quote&rdquo; to record vendor quotes.
+            </p>
+          )}
           <div className="space-y-2.5">
             {[...quotes].sort((a, b) => (a.quoted_amount ?? 0) - (b.quoted_amount ?? 0)).map((q, i) => (
               <div key={q.id} className={`rounded-xl border p-4 ${q.is_recommended ? "border-primary/30 bg-primary/5" : "border-neutral-100 bg-neutral-50"}`}>
