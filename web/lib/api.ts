@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const AUTH_COOKIE = "sadcpf_authenticated";
+const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
 
 export function setAuthCookie(): void {
@@ -11,6 +12,16 @@ export function setAuthCookie(): void {
 export function clearAuthCookie(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
+}
+
+export function setMustResetCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${MUST_RESET_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
+}
+
+export function clearMustResetCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${MUST_RESET_COOKIE}=; path=/; max-age=0`;
 }
 
 const api = axios.create({
@@ -71,6 +82,11 @@ export const authApi = {
     }),
   logout: () => api.post("/auth/logout"),
   me: () => api.get<AuthUser>("/auth/me"),
+  forceResetPassword: (password: string, passwordConfirmation: string) =>
+    api.post<{ message: string }>("/auth/force-reset-password", {
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
 };
 
 export interface DashboardStats {
@@ -161,6 +177,7 @@ export interface AuthUser {
   email: string;
   tenant_id: number;
   classification: string;
+  must_reset_password?: boolean;
   roles: string[];
   permissions: string[];
 }
@@ -4111,3 +4128,59 @@ export const invoiceAttachmentsApi             = makeAttachmentApi("invoices",  
 export const contractAttachmentsApi            = makeAttachmentApi("contracts",      "signed_contract");
 export const goodsReceiptAttachmentsApi        = makeAttachmentApi("receipts",       "delivery_note");
 export const vendorAttachmentsApi              = makeAttachmentApi("vendors",        "company_profile");
+
+// ─── Weekly Summary ───────────────────────────────────────────────────────────
+
+export interface WeeklySummaryRun {
+  id: number;
+  tenant_id: number;
+  period_start: string;
+  period_end: string;
+  scheduled_for: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  status: "pending" | "running" | "completed" | "partial" | "failed";
+  total_users: number;
+  total_generated: number;
+  total_sent: number;
+  total_failed: number;
+}
+
+export interface WeeklySummaryReport {
+  id: number;
+  run_id: number;
+  tenant_id: number;
+  user_id: number;
+  scope_type: "institution" | "department" | "personal";
+  period_start: string;
+  period_end: string;
+  payload: Record<string, unknown> | null;
+  payload_hash: string;
+  template_version: string;
+  status: "generated" | "queued" | "sent" | "failed" | "skipped";
+  sent_at: string | null;
+  failure_reason: string | null;
+  created_at: string;
+}
+
+export interface WeeklySummaryPreference {
+  user_id: number;
+  enabled: boolean;
+  detail_mode: "compact" | "standard" | "detailed";
+}
+
+export const weeklySummaryApi = {
+  getPreferences: () =>
+    api.get<{ data: WeeklySummaryPreference }>("/weekly-summary/preferences/me"),
+  updatePreferences: (data: { enabled?: boolean; detail_mode?: string }) =>
+    api.put<{ data: WeeklySummaryPreference; message: string }>("/weekly-summary/preferences/me", data),
+  listReports: (params?: { page?: number }) =>
+    api.get("/weekly-summary/reports", { params }),
+  getReport: (id: number) =>
+    api.get(`/weekly-summary/reports/${id}`),
+  // Admin
+  listRuns: (params?: { page?: number }) =>
+    api.get("/admin/weekly-summary/runs", { params }),
+  triggerRun: () =>
+    api.post<{ message: string }>("/admin/weekly-summary/run"),
+};

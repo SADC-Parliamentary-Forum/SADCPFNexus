@@ -257,6 +257,18 @@ class NotificationService
                 'subject' => 'New task assigned to you',
                 'body'    => "Dear {{name}},\n\nYou have been assigned a new task: {{task_title}}.\nDue date: {{due_date}}\n\nRegards,\nSADC-PF Nexus",
             ],
+
+            // User management
+            'user.welcome' => [
+                'subject' => 'Welcome to SADC-PF Nexus — Your account is ready',
+                'body'    => "Dear {{name}},\n\nYour SADC-PF Nexus account has been created.\n\nEmail: {{email}}\nTemporary password: {{password}}\nRole: {{role}}\n\nPlease log in at {{portal_url}} and change your password immediately.\n\nRegards,\nSADC-PF Nexus Administrator",
+            ],
+
+            // Daily alert digest (sent to managers/admins)
+            'alerts.daily_digest' => [
+                'subject' => 'SADC-PF Nexus — Daily Alerts Digest ({{date}})',
+                'body'    => "Dear {{name}},\n\nYour daily alert digest for {{date}}:\n\n{{digest}}\n\nLog in at {{portal_url}} for full details.\n\nRegards,\nSADC-PF Nexus",
+            ],
         ];
 
         return $defaults[$triggerKey] ?? [

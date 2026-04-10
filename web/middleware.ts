@@ -2,12 +2,28 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const AUTH_COOKIE = "sadcpf_authenticated";
+const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const LOGIN_PATH = "/login";
+const RESET_PATH = "/reset-password";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_COOKIE)?.value;
+  const mustReset = Boolean(request.cookies.get(MUST_RESET_COOKIE)?.value);
   const isAuth = Boolean(token);
   const path = request.nextUrl.pathname;
+
+  // If authenticated but must reset password, force to reset-password page
+  if (isAuth && mustReset && path !== RESET_PATH) {
+    return NextResponse.redirect(new URL(RESET_PATH, request.url));
+  }
+
+  // Prevent access to reset-password if not authenticated
+  if (path === RESET_PATH) {
+    if (!isAuth) {
+      return NextResponse.redirect(new URL(LOGIN_PATH, request.url));
+    }
+    return NextResponse.next();
+  }
 
   // Protect app routes: require auth (all routes under app shell)
   const protectedPrefixes = [
@@ -29,14 +45,14 @@ export function middleware(request: NextRequest) {
   // Redirect logged-in users away from login
   if (path === LOGIN_PATH || path === "/login") {
     if (isAuth) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL(mustReset ? RESET_PATH : "/dashboard", request.url));
     }
     return NextResponse.next();
   }
 
   // Root redirect: send to dashboard if auth, else login
   if (path === "/") {
-    return NextResponse.redirect(new URL(isAuth ? "/dashboard" : LOGIN_PATH, request.url));
+    return NextResponse.redirect(new URL(isAuth ? (mustReset ? RESET_PATH : "/dashboard") : LOGIN_PATH, request.url));
   }
 
   return NextResponse.next();
@@ -46,6 +62,7 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/reset-password",
     "/dashboard/:path*",
     "/admin/:path*",
     "/travel/:path*",

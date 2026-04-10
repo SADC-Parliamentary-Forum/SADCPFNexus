@@ -4,12 +4,17 @@ namespace App\Modules\UserManagement\Services;
 
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class UserService
 {
+    public function __construct(private readonly NotificationService $notifications)
+    {
+    }
+
     /**
      * List users within the authenticated user's tenant.
      * RLS handles cross-tenant isolation automatically.
@@ -51,17 +56,20 @@ class UserService
      */
     public function create(array $data, User $createdBy): User
     {
+        $plainPassword = $data['password'] ?? str()->random(16);
+
         $user = User::create([
             'tenant_id'       => $createdBy->tenant_id,
             'department_id'   => $data['department_id'] ?? null,
             'name'            => $data['name'],
             'email'           => $data['email'],
-            'password'        => Hash::make($data['password'] ?? str()->random(16)),
+            'password'        => Hash::make($plainPassword),
             'employee_number' => $data['employee_number'] ?? null,
             'job_title'       => $data['job_title'] ?? null,
             'classification'  => $data['classification'] ?? 'UNCLASSIFIED',
-            'mfa_enabled'     => $data['mfa_enabled'] ?? true,
-            'is_active'       => true,
+            'mfa_enabled'          => $data['mfa_enabled'] ?? true,
+            'must_reset_password'  => true,
+            'is_active'            => true,
             'bio'             => $data['bio'] ?? null,
             'date_of_birth'   => $data['date_of_birth'] ?? null,
             'join_date'       => $data['join_date'] ?? null,
@@ -99,6 +107,16 @@ class UserService
             ],
             'tags' => 'user_management',
         ]);
+
+        if ($data['send_welcome_email'] ?? true) {
+            $this->notifications->dispatch($user, 'user.welcome', [
+                'name'       => $user->name,
+                'email'      => $user->email,
+                'password'   => $plainPassword,
+                'role'       => $data['role'] ?? 'Staff',
+                'portal_url' => env('APP_FRONTEND_URL', config('app.url')),
+            ]);
+        }
 
         return $user->load(['department', 'roles']);
     }

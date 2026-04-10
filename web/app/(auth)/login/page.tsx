@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { authApi, setAuthCookie } from "@/lib/api";
+import { authApi, setAuthCookie, setMustResetCookie } from "@/lib/api";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -39,6 +39,11 @@ export default function LoginPage() {
       localStorage.setItem("sadcpf_token", token);
       localStorage.setItem("sadcpf_user", JSON.stringify(user));
       setAuthCookie();
+      if (user.must_reset_password) {
+        setMustResetCookie();
+        window.location.href = "/reset-password";
+        return;
+      }
       const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
       window.location.href = from && from.startsWith("/") ? from : "/dashboard";
     } catch (err: unknown) {

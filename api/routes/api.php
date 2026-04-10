@@ -39,6 +39,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
+            Route::post('force-reset-password', [AuthController::class, 'forceResetPassword']);
         });
 
         // User Profile (Self-Service)
@@ -762,6 +763,19 @@ Route::prefix('v1')->group(function () {
             Route::post('policies/{policy}/attachments',                      [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'store']);
             Route::delete('policies/{policy}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'destroy']);
             Route::get('policies/{policy}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'download']);
+        });
+
+        // Weekly Summary
+        Route::prefix('weekly-summary')->group(function () {
+            Route::get('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'getPreferences']);
+            Route::put('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'updatePreferences']);
+            Route::get('reports',         [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listReports']);
+            Route::get('reports/{report}',[\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'showReport']);
+        });
+
+        Route::prefix('admin/weekly-summary')->middleware('role:System Admin')->group(function () {
+            Route::get('runs',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listRuns']);
+            Route::post('run',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'triggerRun']);
         });
 
         // Admin Workflows

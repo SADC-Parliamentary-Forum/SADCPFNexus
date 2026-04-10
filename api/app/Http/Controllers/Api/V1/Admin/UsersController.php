@@ -92,10 +92,12 @@ class UsersController extends Controller
             'address_line2'   => ['nullable', 'string', 'max:255'],
             'city'            => ['nullable', 'string', 'max:100'],
             'country'         => ['nullable', 'string', 'max:100'],
-            'skills'          => ['nullable', 'array'],
-            'qualifications'  => ['nullable', 'array'],
-            'portfolio_ids'   => ['nullable', 'array'],
-            'portfolio_ids.*' => ['exists:portfolios,id'],
+            'skills'              => ['nullable', 'array'],
+            'qualifications'      => ['nullable', 'array'],
+            'portfolio_ids'       => ['nullable', 'array'],
+            'portfolio_ids.*'     => ['exists:portfolios,id'],
+            'password'            => ['nullable', 'string', 'min:8'],
+            'send_welcome_email'  => ['boolean'],
         ]);
 
         $user = $this->userService->create($data, $request->user());

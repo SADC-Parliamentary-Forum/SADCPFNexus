@@ -80,15 +80,48 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user'  => [
-                'id'             => $user->id,
-                'name'           => $user->name,
-                'email'          => $user->email,
-                'tenant_id'      => $user->tenant_id,
-                'classification' => $user->classification,
-                'roles'          => $user->getRoleNames(),
-                'permissions'    => $user->getAllPermissions()->pluck('name'),
+                'id'                   => $user->id,
+                'name'                 => $user->name,
+                'email'                => $user->email,
+                'tenant_id'            => $user->tenant_id,
+                'classification'       => $user->classification,
+                'must_reset_password'  => (bool) $user->must_reset_password,
+                'roles'                => $user->getRoleNames(),
+                'permissions'          => $user->getAllPermissions()->pluck('name'),
             ],
         ]);
+    }
+
+    /**
+     * Force-reset the authenticated user's password on first login.
+     * Only permitted when must_reset_password = true.
+     * Does not require the old password.
+     */
+    public function forceResetPassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user->must_reset_password) {
+            return response()->json(['message' => 'Password reset not required.'], 403);
+        }
+
+        $data = $request->validate([
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
+        ]);
+
+        $user->update([
+            'password'             => \Illuminate\Support\Facades\Hash::make($data['password']),
+            'must_reset_password'  => false,
+        ]);
+
+        AuditLog::record('auth.password_force_reset', [
+            'auditable_type' => User::class,
+            'auditable_id'   => $user->id,
+            'tags'           => 'auth',
+        ]);
+
+        return response()->json(['message' => 'Password updated successfully.']);
     }
 
     /**

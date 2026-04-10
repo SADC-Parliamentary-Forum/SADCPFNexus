@@ -142,7 +142,15 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Log Risk",      href: "/risk/create",      icon: "add_circle"       },
     ],
   },
-  { label: "Reports", href: "/reports", icon: "assessment" },
+  {
+    label: "Reports",
+    href: "/reports",
+    icon: "assessment",
+    children: [
+      { label: "Overview",        href: "/reports",         icon: "bar_chart_4_bars" },
+      { label: "Weekly Summary",  href: "/reports/weekly",  icon: "calendar_month" },
+    ],
+  },
   {
     label: "Assets",
     href: "/assets",
@@ -214,7 +222,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Ledger Verification",  href: "/admin/ledger",        icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",    icon: "database" },
       { label: "Holiday Calendar",     href: "/admin/calendar",      icon: "event_busy" },
-      { label: "Payslip Upload",       href: "/admin/payslips",      icon: "upload_file"  },
+      { label: "Payslip Upload",       href: "/admin/payslips",         icon: "upload_file"  },
+      { label: "Weekly Summary",       href: "/admin/weekly-summary",   icon: "calendar_month" },
     ],
   },
   { label: "Settings", href: "/settings", icon: "settings", section: "Configuration" },

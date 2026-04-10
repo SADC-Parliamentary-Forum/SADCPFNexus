@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { profileApi, profileSessionsApi, twoFactorApi, type UserSession } from "@/lib/api";
+import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
 import { formatDateRelative } from "@/lib/utils";
 
 const NAV = [
@@ -34,6 +34,10 @@ export default function ProfileSecurityPage() {
   const [revokingId, setRevokingId] = useState<number | null>(null);
   const [revokingOthers, setRevokingOthers] = useState(false);
 
+  // Weekly summary preference state
+  const [weeklyPref, setWeeklyPref] = useState<WeeklySummaryPreference | null>(null);
+  const [savingWeekly, setSavingWeekly] = useState(false);
+
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -51,6 +55,30 @@ export default function ProfileSecurityPage() {
   };
 
   useEffect(() => { loadSessions(); }, []);
+
+  // Load weekly summary preference
+  useEffect(() => {
+    weeklySummaryApi.getPreferences()
+      .then((res) => setWeeklyPref(res.data.data))
+      .catch(() => {});
+  }, []);
+
+  const handleSaveWeeklyPref = async () => {
+    if (!weeklyPref) return;
+    setSavingWeekly(true);
+    try {
+      const res = await weeklySummaryApi.updatePreferences({
+        enabled: weeklyPref.enabled,
+        detail_mode: weeklyPref.detail_mode,
+      });
+      setWeeklyPref(res.data.data);
+      showToast("Weekly summary preferences saved.");
+    } catch {
+      showToast("Failed to save preferences.", "error");
+    } finally {
+      setSavingWeekly(false);
+    }
+  };
 
   // Load 2FA status
   useEffect(() => {
@@ -509,6 +537,53 @@ export default function ProfileSecurityPage() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Weekly Summary Email Preference */}
+      <div className="card p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+            <span className="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
+          </div>
+          <h3 className="text-sm font-semibold text-neutral-900">Weekly Summary Emails</h3>
+        </div>
+        {weeklyPref ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-800">Receive weekly summary email</p>
+                <p className="text-xs text-neutral-400 mt-0.5">Sent every Friday at 16:00 with your institutional summary</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWeeklyPref({ ...weeklyPref, enabled: !weeklyPref.enabled })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${weeklyPref.enabled ? "bg-primary" : "bg-neutral-300"}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${weeklyPref.enabled ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Detail level</label>
+              <select
+                className="form-input max-w-xs"
+                value={weeklyPref.detail_mode}
+                onChange={(e) => setWeeklyPref({ ...weeklyPref, detail_mode: e.target.value as WeeklySummaryPreference["detail_mode"] })}
+              >
+                <option value="compact">Compact — key numbers only</option>
+                <option value="standard">Standard — sections with stats</option>
+                <option value="detailed">Detailed — full tables and lists</option>
+              </select>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" onClick={handleSaveWeeklyPref} disabled={savingWeekly} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60">
+                <span className="material-symbols-outlined text-[18px]">save</span>
+                {savingWeekly ? "Saving…" : "Save Preference"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="h-20 rounded-xl bg-neutral-100 animate-pulse" />
         )}
       </div>
 

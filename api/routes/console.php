@@ -18,3 +18,16 @@ Schedule::command('budget:check-variance')->weekdays()->at('07:00');
 Schedule::call(function () {
     \App\Models\SignedActionToken::where('expires_at', '<', now()->subDays(30))->delete();
 })->daily()->name('prune-expired-action-tokens');
+
+// Send daily alert digest (away today, active missions, deadlines, events) to key managers.
+Schedule::command('app:send-alert-digest')->weekdays()->at('07:00');
+
+// Send imprest retirement reminders to staff whose imprests are due within 7 days.
+Schedule::command('app:send-imprest-reminders')->dailyAt('08:00');
+
+// Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
+Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
+    ->fridays()
+    ->at('16:00')
+    ->withoutOverlapping()
+    ->onOneServer();
