@@ -234,8 +234,8 @@ function AssetRow({ row }: { row: Record<string, unknown> }) {
       <td className="max-w-[120px] truncate">{String(row.name ?? "")}</td>
       <td className="capitalize">{String(row.category ?? "")}</td>
       <td><span className="badge badge-muted capitalize">{String(row.status ?? "")}</span></td>
-      <td className="text-neutral-500">{String((row as Asset).age_display ?? "—")}</td>
-      <td className="tabular-nums">{(row as Asset).current_value != null ? Number((row as Asset).current_value).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "—"}</td>
+      <td className="text-neutral-500">{String((row as unknown as Asset).age_display ?? "—")}</td>
+      <td className="tabular-nums">{(row as unknown as Asset).current_value != null ? Number((row as unknown as Asset).current_value).toLocaleString("en-US", { minimumFractionDigits: 2 }) : "—"}</td>
     </tr>
   );
 }
