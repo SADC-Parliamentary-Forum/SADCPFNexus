@@ -56,7 +56,6 @@ api/app/Models/HolidayDate.php
 api/app/Models/LedgerVerification.php
 api/app/Models/Timesheet.php
 api/app/Models/TimesheetEntry.php
-api/app/Models/UserSession.php
 api/app/Models/Vendor.php
 api/app/Models/VendorPerformanceEvaluation.php
 api/app/Models/VendorRating.php
