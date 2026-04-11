@@ -1,0 +1,195 @@
+name: Web — Build & E2E Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'api/**'
+      - '.github/workflows/web.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'api/**'
+      - '.github/workflows/web.yml'
+
+jobs:
+  # ── Type-check + build (fast, no services needed) ──────────────────────────
+  build:
+    name: TypeScript + Next.js build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type-check
+        run: npx tsc --noEmit
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
+      - name: npm security audit
+        run: npm audit --audit-level=high
+
+  # ── Full E2E tests (Playwright + live API + seeded DB) ─────────────────────
+  e2e:
+    name: Playwright E2E (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [auth, staff, admin]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sadcpfnexus
+          POSTGRES_USER: sadcpf
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── API setup ────────────────────────────────────────────────────────────
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: api/vendor
+          key: composer-e2e-${{ hashFiles('api/composer.lock') }}
+          restore-keys: composer-e2e-
+
+      - name: Install API dependencies
+        working-directory: api
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Generate app key + migrate + seed
+        working-directory: api
+        env:
+          APP_ENV: local
+          APP_KEY: base64:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=
+          APP_URL: http://localhost:8000
+          FRONTEND_URL: http://localhost:3000
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: database
+          MAIL_MAILER: array
+          BCRYPT_ROUNDS: '4'
+        run: |
+          php artisan key:generate --force
+          php artisan migrate:fresh --seed --force
+
+      - name: Start API server
+        working-directory: api
+        env:
+          APP_ENV: local
+          APP_KEY: base64:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=
+          APP_URL: http://localhost:8000
+          FRONTEND_URL: http://localhost:3000
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: database
+          MAIL_MAILER: array
+          BCRYPT_ROUNDS: '4'
+        run: php artisan serve --port=8000 &
+
+      # ── Web setup ────────────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: web
+        run: npx playwright install chromium --with-deps
+
+      - name: Build Next.js app
+        working-directory: web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
+      - name: Start Next.js app
+        working-directory: web
+        run: npm start &
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+          PORT: 3000
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for API…"
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8000/up && break || sleep 1
+          done
+          echo "Waiting for Next.js…"
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000 && break || sleep 1
+          done
+
+      - name: Run Playwright tests (${{ matrix.project }})
+        working-directory: web
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          CI: true
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: web/playwright-report/
+          retention-days: 7

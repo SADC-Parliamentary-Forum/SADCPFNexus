@@ -1,130 +1,33 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  DATA MODELS
+//  SCREEN  (Audit Log — wired to /admin/audit-logs)
 // ─────────────────────────────────────────────────────────────────────────────
-enum _SecurityLevel { secret, confidential, public }
-
-class _AuditEntry {
-  final _SecurityLevel level;
-  final String time;
-  final String action;
-  final String actor;
-  final String role;
-  final String description;
-  final String ipfsHash;
-
-  const _AuditEntry({
-    required this.level,
-    required this.time,
-    required this.action,
-    required this.actor,
-    required this.role,
-    required this.description,
-    required this.ipfsHash,
-  });
-}
-
-class _AuditGroup {
-  final String dateLabel;
-  final List<_AuditEntry> entries;
-  const _AuditGroup({required this.dateLabel, required this.entries});
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-class BudgetVarianceScreen extends StatefulWidget {
+class BudgetVarianceScreen extends ConsumerStatefulWidget {
   const BudgetVarianceScreen({super.key});
 
   @override
-  State<BudgetVarianceScreen> createState() => _BudgetVarianceScreenState();
+  ConsumerState<BudgetVarianceScreen> createState() =>
+      _BudgetVarianceScreenState();
 }
 
-class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
+class _BudgetVarianceScreenState extends ConsumerState<BudgetVarianceScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
 
-  static final List<_AuditGroup> _allGroups = [
-    const _AuditGroup(
-      dateLabel: 'TODAY  24 OCT 2023',
-      entries: [
-        _AuditEntry(
-          level: _SecurityLevel.secret,
-          time: '14:32',
-          action: 'Budget Cap Override Executed',
-          actor: 'Director K. Moyo',
-          role: 'Finance Director',
-          description:
-              'Elevated budget cap for IT-CAPEX-2024 from \$50,000 to \$75,000 pending board approval.',
-          ipfsHash: 'Qm4x9BcT...f22a',
-        ),
-        _AuditEntry(
-          level: _SecurityLevel.confidential,
-          time: '11:15',
-          action: 'Access Grant: External Vendor',
-          actor: 'Sys-Admin R. Banda',
-          role: 'System Administrator',
-          description:
-              'Temporary read-only access granted to vendor TechSolutions Ltd for audit period.',
-          ipfsHash: 'QmR3kJ7L...b88f',
-        ),
-        _AuditEntry(
-          level: _SecurityLevel.public,
-          time: '09:04',
-          action: 'Payroll Run Initiated',
-          actor: 'HR Automation',
-          role: 'Scheduled Process',
-          description:
-              'Monthly payroll processing for 204 staff members. October cycle commenced.',
-          ipfsHash: 'Qm5hFW2P...c01d',
-        ),
-      ],
-    ),
-    const _AuditGroup(
-      dateLabel: 'YESTERDAY  23 OCT 2023',
-      entries: [
-        _AuditEntry(
-          level: _SecurityLevel.confidential,
-          time: '16:50',
-          action: 'Policy Exception #44 Approved',
-          actor: 'Secretary General',
-          role: 'Executive',
-          description:
-              'Procurement policy exception granted for single-source acquisition of satellite bandwidth.',
-          ipfsHash: 'Qm7aGD9M...a14c',
-        ),
-        _AuditEntry(
-          level: _SecurityLevel.public,
-          time: '10:22',
-          action: 'Leave Record Updated',
-          actor: 'E. Dlamini',
-          role: 'Staff Member',
-          description:
-              'Annual leave balance recalculated after approved carry-over request.',
-          ipfsHash: 'QmBz1KN5...e73a',
-        ),
-      ],
-    ),
-  ];
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _entries = [];
 
-  List<_AuditGroup> get _filtered {
-    if (_query.isEmpty) return _allGroups;
-    final q = _query.toLowerCase();
-    return _allGroups
-        .map((g) => _AuditGroup(
-              dateLabel: g.dateLabel,
-              entries: g.entries
-                  .where((e) =>
-                      e.action.toLowerCase().contains(q) ||
-                      e.actor.toLowerCase().contains(q) ||
-                      e.ipfsHash.toLowerCase().contains(q) ||
-                      e.time.contains(q))
-                  .toList(),
-            ))
-        .where((g) => g.entries.isNotEmpty)
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    _load();
   }
 
   @override
@@ -133,9 +36,90 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
     super.dispose();
   }
 
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>(
+        '/admin/audit-logs',
+        queryParameters: {'per_page': 50},
+      );
+      final data = res.data?['data'] as List<dynamic>? ?? [];
+      setState(() {
+        _entries = data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'Failed to load audit log.';
+        _loading = false;
+      });
+    }
+  }
+
+  // Group entries by date string (e.g. "TODAY  11 APR 2026")
+  List<_AuditGroup> get _grouped {
+    final q = _query.toLowerCase();
+    final filtered = _entries.where((e) {
+      if (q.isEmpty) return true;
+      final action = (e['action'] as String? ?? '').toLowerCase();
+      final module = (e['module'] as String? ?? '').toLowerCase();
+      final actor  = ((e['user'] as Map?)?.containsKey('name') == true
+          ? (e['user']['name'] as String? ?? '')
+          : '').toLowerCase();
+      return action.contains(q) || module.contains(q) || actor.contains(q);
+    }).toList();
+
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final e in filtered) {
+      final label = _dateLabel(e['created_at'] as String? ?? '');
+      groups.putIfAbsent(label, () => []).add(e);
+    }
+    return groups.entries
+        .map((kv) => _AuditGroup(dateLabel: kv.key, entries: kv.value))
+        .toList();
+  }
+
+  String _dateLabel(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final d     = DateTime(dt.year, dt.month, dt.day);
+      if (d == today) return 'TODAY  ${formatDateShort(iso)}';
+      if (d == today.subtract(const Duration(days: 1))) {
+        return 'YESTERDAY  ${formatDateShort(iso)}';
+      }
+      return formatDateShort(iso).toUpperCase();
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  Color _moduleColor(String module) {
+    switch (module.toLowerCase()) {
+      case 'travelrequest':
+      case 'travel':
+        return AppColors.primary;
+      case 'imprest':
+      case 'imprestrequest':
+        return AppColors.warning;
+      case 'leave':
+      case 'leaverequest':
+        return AppColors.success;
+      case 'procurement':
+      case 'procurementrequest':
+        return AppColors.danger;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final groups = _filtered;
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
@@ -150,25 +134,25 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
         title: const Text(
           'Audit Log',
           style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded,
+            icon: const Icon(Icons.refresh_rounded,
                 color: AppColors.textSecondary),
-            onPressed: () {},
+            onPressed: _load,
           ),
         ],
       ),
       body: Column(
         children: [
-          // ── Immutable Ledger Banner ────────────────────────────────────
+          // ── Immutable Ledger Banner ──────────────────────────────────
           Container(
             margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: AppColors.success.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(10),
@@ -184,27 +168,27 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
                   child: Text(
                     'IMMUTABLE LEDGER ACTIVE',
                     style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
+                        color: AppColors.success,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5),
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Hash Chain 100% Verified',
-                    style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Text(
+                    _loading
+                        ? 'Loading…'
+                        : '${_entries.length} Records',
+                    style: const TextStyle(
+                        color: AppColors.success,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -212,23 +196,24 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Search Bar ────────────────────────────────────────────────
+          // ── Search Bar ───────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _query = v),
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+              style: const TextStyle(
+                  color: AppColors.textPrimary, fontSize: 13),
               decoration: InputDecoration(
-                hintText: 'Search Hash, Module, or Date...',
+                hintText: 'Search by module, action, or user…',
                 hintStyle: const TextStyle(
                     color: AppColors.textMuted, fontSize: 13),
                 prefixIcon: const Icon(Icons.search_rounded,
                     color: AppColors.textMuted, size: 18),
                 filled: true,
                 fillColor: AppColors.bgSurface,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: AppColors.border),
@@ -247,115 +232,107 @@ class _BudgetVarianceScreenState extends State<BudgetVarianceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Timeline List ─────────────────────────────────────────────
+          // ── Timeline List ────────────────────────────────────────────
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              itemCount: groups.length,
-              itemBuilder: (context, gi) {
-                final group = groups[gi];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 10, top: 4),
-                      child: Text(
-                        group.dateLabel,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary))
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.error_outline_rounded,
+                                color: AppColors.danger, size: 40),
+                            const SizedBox(height: 12),
+                            Text(_error!,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary)),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: _load,
+                              child: const Text('Retry',
+                                  style:
+                                      TextStyle(color: AppColors.primary)),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                    ...group.entries.map((e) => _AuditEntryCard(entry: e)),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              },
-            ),
+                      )
+                    : _grouped.isEmpty
+                        ? const Center(
+                            child: Text('No audit entries found.',
+                                style: TextStyle(
+                                    color: AppColors.textMuted)))
+                        : ListView.builder(
+                            padding:
+                                const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                            itemCount: _grouped.length,
+                            itemBuilder: (context, gi) {
+                              final group = _grouped[gi];
+                              return Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        bottom: 10, top: 4),
+                                    child: Text(
+                                      group.dateLabel,
+                                      style: const TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.2),
+                                    ),
+                                  ),
+                                  ...group.entries.map((e) =>
+                                      _AuditEntryCard(
+                                          entry: e,
+                                          moduleColor: _moduleColor(
+                                              e['module'] as String? ??
+                                                  ''))),
+                                  const SizedBox(height: 8),
+                                ],
+                              );
+                            },
+                          ),
           ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A4D30),
-                    foregroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                  label: const Text(
-                    'Export Verified PDF Ledger',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Document includes digital signature & blockchain hash proof.',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+class _AuditGroup {
+  final String dateLabel;
+  final List<Map<String, dynamic>> entries;
+  const _AuditGroup({required this.dateLabel, required this.entries});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  ENTRY CARD
 // ─────────────────────────────────────────────────────────────────────────────
 class _AuditEntryCard extends StatelessWidget {
-  final _AuditEntry entry;
-  const _AuditEntryCard({required this.entry});
-
-  Color get _levelColor {
-    switch (entry.level) {
-      case _SecurityLevel.secret:
-        return AppColors.danger;
-      case _SecurityLevel.confidential:
-        return AppColors.warning;
-      case _SecurityLevel.public:
-        return AppColors.success;
-    }
-  }
-
-  String get _levelLabel {
-    switch (entry.level) {
-      case _SecurityLevel.secret:
-        return 'LEVEL 9-SECRET';
-      case _SecurityLevel.confidential:
-        return 'LEVEL 5-CONFIDENTIAL';
-      case _SecurityLevel.public:
-        return 'LEVEL 1-PUBLIC';
-    }
-  }
+  final Map<String, dynamic> entry;
+  final Color moduleColor;
+  const _AuditEntryCard({required this.entry, required this.moduleColor});
 
   @override
   Widget build(BuildContext context) {
-    final color = _levelColor;
+    final action  = entry['action']  as String? ?? '—';
+    final module  = entry['module']  as String? ?? '—';
+    final desc    = entry['description'] as String?;
+    final actor   = (entry['user'] as Map?)?.containsKey('name') == true
+        ? entry['user']['name'] as String? ?? 'System'
+        : 'System';
+    final ip      = entry['ip_address'] as String? ?? '';
+    final created = entry['created_at'] as String? ?? '';
+    final timeStr = _timeOnly(created);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -367,88 +344,81 @@ class _AuditEntryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Level badge + time
+          // Module badge + time
           Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: moduleColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: color.withValues(alpha: 0.4)),
+                  border: Border.all(
+                      color: moduleColor.withValues(alpha: 0.4)),
                 ),
                 child: Text(
-                  _levelLabel,
+                  module.toUpperCase(),
                   style: TextStyle(
-                    color: color,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
+                      color: moduleColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5),
                 ),
               ),
               const Spacer(),
-              Text(
-                entry.time,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                ),
-              ),
+              Text(timeStr,
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 11)),
             ],
           ),
           const SizedBox(height: 8),
 
-          // Action title
+          // Action
           Text(
-            entry.action,
+            action,
             style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
+                color: AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 3),
 
-          // Actor + role
+          // Actor + IP
           Row(
             children: [
               const Icon(Icons.person_rounded,
                   color: AppColors.textMuted, size: 12),
               const SizedBox(width: 4),
-              Text(
-                entry.actor,
-                style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '· ${entry.role}',
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 11),
+              Expanded(
+                child: Text(
+                  ip.isNotEmpty ? '$actor · $ip' : actor,
+                  style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
 
           // Description
-          Text(
-            entry.description,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-              height: 1.5,
+          if (desc != null && desc.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              desc,
+              style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  height: 1.5),
             ),
-          ),
-          const SizedBox(height: 8),
+          ],
 
-          // IPFS hash tag
+          // Entry ID tag
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: AppColors.bgDark,
               borderRadius: BorderRadius.circular(6),
@@ -461,12 +431,11 @@ class _AuditEntryCard extends StatelessWidget {
                     color: AppColors.textMuted, size: 11),
                 const SizedBox(width: 4),
                 Text(
-                  'IPFS: ${entry.ipfsHash}',
+                  'ID: ${entry['id']}',
                   style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
-                    fontFamily: 'monospace',
-                  ),
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      fontFamily: 'monospace'),
                 ),
               ],
             ),
@@ -474,5 +443,16 @@ class _AuditEntryCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _timeOnly(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final h  = dt.hour.toString().padLeft(2, '0');
+      final m  = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    } catch (_) {
+      return iso;
+    }
   }
 }
