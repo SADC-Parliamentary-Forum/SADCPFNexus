@@ -126,11 +126,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isSplash ? null : '/splash';
       }
 
-      if (!session.isAuthenticated) {
-        return isPublicRoute ? null : '/login';
+      // Bootstrap complete — always move off the splash screen.
+      if (isSplash) {
+        return session.isAuthenticated ? '/dashboard' : '/login';
       }
 
-      if (isPublicRoute) {
+      if (!session.isAuthenticated) {
+        return isLogin || isBiometricEntry ? null : '/login';
+      }
+
+      if (isLogin || isBiometricEntry) {
         return '/dashboard';
       }
 
