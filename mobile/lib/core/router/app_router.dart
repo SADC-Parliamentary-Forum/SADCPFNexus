@@ -109,7 +109,11 @@ import '../../core/auth/auth_session_controller.dart';
 import '../../core/auth/feature_access.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final sessionController = ref.watch(authSessionControllerProvider);
+  // ref.READ (not watch) — the router is created once.
+  // refreshListenable handles all subsequent session changes reactively.
+  // Using ref.watch here would recreate the entire GoRouter on every
+  // auth state change, resetting navigation and breaking the dashboard.
+  final sessionController = ref.read(authSessionControllerProvider);
   final router = GoRouter(
     initialLocation: '/splash',
     debugLogDiagnostics: true,

@@ -1,18 +1,21 @@
+import 'package:dio/dio.dart' as dio_options;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/auth/auth_providers.dart';
 
 /// Splash screen: branding, loading progress, then navigate to login.
 /// Uses app theme (light/dark) and Stitch design tokens.
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
-  static const Duration _kDuration = Duration(milliseconds: 2400);
+  static const Duration _kDuration = Duration(milliseconds: 600);
 
   late final AnimationController _ctrl;
   late final Animation<double> _progress;
@@ -28,6 +31,23 @@ class _SplashScreenState extends State<SplashScreen>
       curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
     );
     _ctrl.forward();
+    _prewarm();
+  }
+
+  // Fire a lightweight request during the splash animation so the TCP/TLS
+  // connection to the API is already established when the user hits Sign In.
+  Future<void> _prewarm() async {
+    try {
+      await ref.read(apiClientProvider).dio.get<void>(
+        '/auth/ping',
+        options: dio_options.Options(
+          receiveTimeout: const Duration(seconds: 3),
+          sendTimeout: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      // Ignore — pre-warm is best-effort only.
+    }
   }
 
   @override
