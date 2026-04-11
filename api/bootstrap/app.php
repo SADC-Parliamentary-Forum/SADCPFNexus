@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // This is an API-only app — never redirect guests to a login route.
+        // Override the framework default of `fn () => route('login')` with null
+        // so the Authenticate middleware throws a clean 401 instead of a
+        // RouteNotFoundException when a request lacks credentials.
+        $middleware->redirectGuestsTo(fn () => null);
+
         // Use custom AddCorsHeaders (with CorsHelper + config/cors.php) as the single CORS implementation.
         $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);
         // Prepend CORS to api group so it runs before auth/throttle on every API request.
