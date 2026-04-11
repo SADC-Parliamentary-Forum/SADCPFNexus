@@ -89,11 +89,11 @@ class _BudgetVarianceScreenState extends ConsumerState<BudgetVarianceScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final d     = DateTime(dt.year, dt.month, dt.day);
-      if (d == today) return 'TODAY  ${formatDateShort(iso)}';
+      if (d == today) return 'TODAY  ${AppDateFormatter.short(iso)}';
       if (d == today.subtract(const Duration(days: 1))) {
-        return 'YESTERDAY  ${formatDateShort(iso)}';
+        return 'YESTERDAY  ${AppDateFormatter.short(iso)}';
       }
-      return formatDateShort(iso).toUpperCase();
+      return AppDateFormatter.short(iso).toUpperCase();
     } catch (_) {
       return iso;
     }
