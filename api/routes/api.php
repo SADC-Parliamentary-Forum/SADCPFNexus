@@ -21,6 +21,8 @@ Route::prefix('v1')->group(function () {
     // Public auth routes
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+        // Lightweight connection pre-warm used by the mobile splash screen.
+        Route::get('ping', fn () => response()->json(['ok' => true]))->middleware('throttle:60,1');
     });
 
     // Email action preview — unauthenticated (token is the access control)
