@@ -131,7 +131,8 @@ class AnalyticsTest extends TestCase
 
     public function test_reports_travel_supports_csv_export(): void
     {
-        [$http] = $this->asStaff();
+        // CSV export requires the reports.export permission (Finance Controller has it).
+        [$http] = $this->asFinanceController();
 
         $response = $http->get('/api/v1/reports/travel?format=csv');
 
@@ -141,7 +142,7 @@ class AnalyticsTest extends TestCase
 
     public function test_reports_leave_supports_csv_export(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asFinanceController();
 
         $http->get('/api/v1/reports/leave?format=csv')
              ->assertOk()
@@ -150,10 +151,18 @@ class AnalyticsTest extends TestCase
 
     public function test_reports_assets_supports_csv_export(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asFinanceController();
 
         $http->get('/api/v1/reports/assets?format=csv')
              ->assertOk()
              ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_staff_cannot_export_csv(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->get('/api/v1/reports/travel?format=csv')
+             ->assertForbidden();
     }
 }

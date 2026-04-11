@@ -89,6 +89,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',
+                    'reports.view', 'reports.export',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
             );
