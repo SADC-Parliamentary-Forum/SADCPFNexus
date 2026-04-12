@@ -194,7 +194,8 @@ String _networkErrorMessage(DioException e) {
       msg.contains('timeout') ||
       msg.contains('aborted');
   if (isTimeout) {
-    return 'The request timed out. Check that the API is running and try again.';
+    return 'Request timed out — the server did not respond in time. '
+        'Ensure the backend is running (docker compose up) and try again.';
   }
   if (e.type == DioExceptionType.connectionError ||
       e.type == DioExceptionType.unknown ||
@@ -202,7 +203,8 @@ String _networkErrorMessage(DioException e) {
       msg.contains('connection') ||
       msg.contains('network') ||
       msg.contains('onerror')) {
-    return 'Cannot reach server. Check that the API is running and the app is using the correct API URL.';
+    return 'Cannot reach the server. '
+        'Ensure the backend is running on port 8000 and try again.';
   }
   return e.message ?? 'Login failed. Please try again.';
 }

@@ -663,11 +663,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     size: 14,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    'Secured by SADC PF Security Framework',
-                    style: GoogleFonts.publicSans(
-                      color: c.onSurface.withValues(alpha: 0.5),
-                      fontSize: 11,
+                  Flexible(
+                    child: Text(
+                      'Secured by SADC PF Security Framework',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.publicSans(
+                        color: c.onSurface.withValues(alpha: 0.5),
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
