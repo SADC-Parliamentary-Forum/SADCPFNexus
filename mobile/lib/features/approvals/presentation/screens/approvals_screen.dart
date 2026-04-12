@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/cache/cache_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
@@ -37,10 +38,34 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+  static const _cacheKey = 'approvals_pending_combined';
+
+  Future<void> _load({bool backgroundRefresh = false}) async {
+    if (!mounted) return;
+    final cache = ref.read(cacheServiceProvider);
+    final dio   = ref.read(apiClientProvider).dio;
+
+    // ── 1. Serve cache immediately ────────────────────────────────────────────
+    if (!backgroundRefresh) {
+      final cached = await cache.get<List<dynamic>>(_cacheKey);
+      if (cached != null) {
+        if (!mounted) return;
+        setState(() {
+          _submitted = cached.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _loading   = false;
+          _error     = null;
+        });
+        _load(backgroundRefresh: true);
+        return;
+      }
+    }
+
+    if (!backgroundRefresh) {
+      setState(() { _loading = true; _error = null; });
+    }
+
+    // ── 2. Fetch from API ─────────────────────────────────────────────────────
     try {
-      final dio = ref.read(apiClientProvider).dio;
       final results = await Future.wait([
         dio.get<Map<String, dynamic>>('/travel/requests',  queryParameters: {'status': 'submitted'}),
         dio.get<Map<String, dynamic>>('/leave/requests',   queryParameters: {'status': 'submitted'}),
@@ -49,17 +74,21 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       final t = (results[0].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final l = (results[1].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final i = (results[2].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final combined = [
+        ...t.map((e) => {...e, 'type': 'Travel'}),
+        ...l.map((e) => {...e, 'type': 'Leave'}),
+        ...i.map((e) => {...e, 'type': 'Imprest'}),
+      ];
+      await cache.set(_cacheKey, combined, ttl: const Duration(minutes: 3));
       if (!mounted) return;
+      if (backgroundRefresh) return;
       setState(() {
-        _submitted = [
-          ...t.map((e) => {...e, 'type': 'Travel'}),
-          ...l.map((e) => {...e, 'type': 'Leave'}),
-          ...i.map((e) => {...e, 'type': 'Imprest'}),
-        ];
-        _loading = false;
+        _submitted = combined;
+        _loading   = false;
       });
     } catch (e) {
       if (!mounted) return;
+      if (backgroundRefresh) return;
       setState(() {
         _error = e.toString().contains('SocketException') || e.toString().contains('Connection')
             ? 'Cannot reach server. Check your connection.'

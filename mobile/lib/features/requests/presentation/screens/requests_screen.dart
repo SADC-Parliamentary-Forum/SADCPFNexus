@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/cache/cache_provider.dart';
+import '../../../../core/cache/cache_service.dart';
 import '../../../../core/utils/date_format.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
@@ -77,9 +79,40 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
-    final dio = ref.read(apiClientProvider).dio;
+  Future<void> _load({bool backgroundRefresh = false}) async {
+    if (!mounted) return;
+    final cache = ref.read(cacheServiceProvider);
+    final dio   = ref.read(apiClientProvider).dio;
+
+    // ── 1. Serve cache immediately ────────────────────────────────────────────
+    if (!backgroundRefresh) {
+      final cachedTravel  = await cache.get<List<dynamic>>(CacheKeys.travelRequests);
+      final cachedLeave   = await cache.get<List<dynamic>>(CacheKeys.leaveRequests);
+      final cachedImprest = await cache.get<List<dynamic>>(CacheKeys.imprestRequests);
+      if (cachedTravel != null && cachedLeave != null && cachedImprest != null) {
+        if (!mounted) return;
+        setState(() {
+          _data[0] = cachedTravel.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _data[1] = cachedLeave.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _data[2] = cachedImprest.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+          _loading = false;
+          _error   = null;
+        });
+        _load(backgroundRefresh: true);
+        return;
+      }
+    }
+
+    if (!backgroundRefresh) {
+      setState(() { _loading = true; _error = null; });
+    }
+
+    // ── 2. Fetch from API ─────────────────────────────────────────────────────
+    final cacheKeyMap = [
+      CacheKeys.travelRequests,
+      CacheKeys.leaveRequests,
+      CacheKeys.imprestRequests,
+    ];
     final results = <List<Map<String, dynamic>>>[];
     String? firstError;
     for (var i = 0; i < _tabConfigs.length; i++) {
@@ -87,19 +120,23 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
         final r = await dio.get<Map<String, dynamic>>(_tabConfigs[i].endpoint);
         final list = (r.data?['data'] as List?)?.map((e) => Map<String, dynamic>.from(e as Map)).toList() ?? <Map<String, dynamic>>[];
         results.add(list);
+        await cache.set(cacheKeyMap[i], list, ttl: const Duration(minutes: 5));
       } catch (e) {
         results.add([]);
-        firstError ??= e.toString().contains('SocketException') || e.toString().contains('Connection')
+        if (!backgroundRefresh) {
+          firstError ??= e.toString().contains('SocketException') || e.toString().contains('Connection')
               ? 'Cannot reach server. Check your connection.'
               : 'Failed to load ${_tabConfigs[i].label.toLowerCase()} requests.';
+        }
       }
     }
     if (!mounted) return;
+    if (backgroundRefresh) return; // data already shown; don't flash UI
     setState(() {
       for (var i = 0; i < results.length && i < _data.length; i++) {
         _data[i] = results[i];
       }
-      _error = firstError;
+      _error   = firstError;
       _loading = false;
     });
   }
