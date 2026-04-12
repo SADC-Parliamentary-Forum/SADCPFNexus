@@ -534,16 +534,10 @@ class _KpiCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(kStitchSpace12),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(kStitchCardRoundness),
-        border: Border(
-          left: BorderSide(color: color, width: 3),
-          top: BorderSide(color: c.outline),
-          right: BorderSide(color: c.outline),
-          bottom: BorderSide(color: c.outline),
-        ),
+        border: Border.all(color: c.outline),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.06),
@@ -552,65 +546,78 @@ class _KpiCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -4, right: -4,
-            child: Opacity(
-              opacity: 0.10,
-              child: Icon(icon, color: color, size: 60),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(kStitchCardRoundness - 1),
+        child: Stack(
+          children: [
+            // Left accent bar
+            Positioned(
+              top: 0, left: 0, bottom: 0,
+              child: Container(width: 3, color: color),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(kStitchRoundness),
-                ),
-                child: Icon(icon, color: color, size: 16),
+            // Background icon watermark
+            Positioned(
+              top: -4, right: -4,
+              child: Opacity(
+                opacity: 0.10,
+                child: Icon(icon, color: color, size: 60),
               ),
-              Column(
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kStitchSpace12 + 3, kStitchSpace12, kStitchSpace12, kStitchSpace12),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(kStitchRoundness),
+                    ),
+                    child: Icon(icon, color: color, size: 16),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(value,
-                        style: textTheme.headlineMedium?.copyWith(
-                          fontSize: 26, fontWeight: FontWeight.w800, height: 1)),
-                      if (badge != null) ...[
-                        const SizedBox(width: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: badgeHighlight
-                              ? color.withValues(alpha: 0.15)
-                              : c.outline.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(kStitchRoundness),
-                          ),
-                          child: Text(badge!,
-                            style: TextStyle(
-                              fontSize: 9, fontWeight: FontWeight.w700,
-                              color: badgeHighlight ? color : c.onSurface.withValues(alpha: 0.7))),
-                        ),
-                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(value,
+                            style: textTheme.headlineMedium?.copyWith(
+                              fontSize: 26, fontWeight: FontWeight.w800, height: 1)),
+                          if (badge != null) ...[
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: badgeHighlight
+                                  ? color.withValues(alpha: 0.15)
+                                  : c.outline.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(kStitchRoundness),
+                              ),
+                              child: Text(badge!,
+                                style: TextStyle(
+                                  fontSize: 9, fontWeight: FontWeight.w700,
+                                  color: badgeHighlight ? color : c.onSurface.withValues(alpha: 0.7))),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(label,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: c.onSurface.withValues(alpha: 0.7), fontSize: 10),
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(label,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: c.onSurface.withValues(alpha: 0.7), fontSize: 10),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
                 ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
