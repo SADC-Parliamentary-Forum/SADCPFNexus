@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/auth/feature_access.dart';
+import '../../../../core/notifications/notification_poller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
@@ -203,28 +204,50 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ],
                       ),
                     ),
-                    Stack(
-                      children: [
-                        Container(
-                          width: 40, height: 40,
-                          decoration: BoxDecoration(
-                            color: c.surface,
-                            borderRadius: BorderRadius.circular(kStitchCardRoundness),
-                            border: Border.all(color: c.outline),
-                          ),
-                          child: Icon(Icons.notifications_outlined,
-                            color: c.onSurface.withValues(alpha: 0.7), size: 20),
+                    // Live notification bell
+                    Consumer(builder: (ctx, r, _) {
+                      final countAsync = r.watch(notificationCountProvider);
+                      final count = countAsync.valueOrNull ?? 0;
+                      return GestureDetector(
+                        onTap: () => context.push('/notifications'),
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 40, height: 40,
+                              decoration: BoxDecoration(
+                                color: c.surface,
+                                borderRadius: BorderRadius.circular(kStitchCardRoundness),
+                                border: Border.all(color: c.outline),
+                              ),
+                              child: Icon(
+                                count > 0
+                                    ? Icons.notifications_rounded
+                                    : Icons.notifications_outlined,
+                                color: count > 0
+                                    ? const Color(0xFF13ec80)
+                                    : c.onSurface.withValues(alpha: 0.7),
+                                size: 20),
+                            ),
+                            if (count > 0)
+                              Positioned(
+                                top: 6, right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
+                                  decoration: BoxDecoration(
+                                    color: c.error, shape: BoxShape.circle),
+                                  child: Text(
+                                    count > 99 ? '99+' : '$count',
+                                    style: const TextStyle(
+                                      fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                        Positioned(
-                          top: 8, right: 8,
-                          child: Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(
-                              color: c.error, shape: BoxShape.circle),
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    }),
                   ],
                 ),
               ),

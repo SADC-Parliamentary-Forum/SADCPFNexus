@@ -104,6 +104,7 @@ import '../../features/dashboard/presentation/screens/executive_cockpit_screen.d
 import '../../features/analytics/presentation/screens/global_executive_summary_screen.dart';
 import '../../features/support/presentation/screens/user_support_health_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_security_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/auth_session_controller.dart';
 import '../../core/auth/feature_access.dart';
@@ -643,6 +644,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/security',
         name: 'profile-security',
         builder: (context, state) => const UserProfileSecurityScreen(),
+      ),
+
+      // ─── Notifications ─────────────────────────────────────────────────────
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

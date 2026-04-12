@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    // Firebase Cloud Messaging (push notifications)
+    // Run `flutterfire configure` in /mobile then set these from the generated service account JSON.
+    'fcm' => [
+        'project_id'           => env('FCM_PROJECT_ID'),
+        'service_account_json' => env('FCM_SERVICE_ACCOUNT_JSON'),   // path to JSON file (optional)
+        'client_email'         => env('FCM_CLIENT_EMAIL'),
+        'private_key'          => env('FCM_PRIVATE_KEY'),
+    ],
+
 ];

@@ -42,6 +42,8 @@ Route::prefix('v1')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
             Route::get('me', [AuthController::class, 'me']);
             Route::post('force-reset-password', [AuthController::class, 'forceResetPassword']);
+            Route::post('device-token', [AuthController::class, 'registerDeviceToken']);
+            Route::delete('device-token', [AuthController::class, 'unregisterDeviceToken']);
         });
 
         // User Profile (Self-Service)

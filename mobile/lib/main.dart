@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/notifications/fcm_service.dart';
+import 'core/notifications/notification_poller.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -81,9 +83,39 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: SADCPFNexusApp(),
+      // Eagerly initialise providers that should run from startup.
+      observers: [],
+      child: _AppBootstrap(
+        child: SADCPFNexusApp(),
+      ),
     ),
   );
+}
+
+/// Bootstraps background services (FCM, notification polling) after the first
+/// frame so they don't delay the initial render.
+class _AppBootstrap extends ConsumerStatefulWidget {
+  final Widget child;
+  const _AppBootstrap({super.key, required this.child});
+
+  @override
+  ConsumerState<_AppBootstrap> createState() => _AppBootstrapState();
+}
+
+class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Initialise FCM (gracefully skips if Firebase not yet configured).
+      ref.read(fcmServiceProvider).init();
+      // Warm up notification count provider (triggers first poll).
+      ref.read(notificationCountProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class SADCPFNexusApp extends ConsumerWidget {

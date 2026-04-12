@@ -52,6 +52,12 @@ dependencies:
   shared_preferences: ^2.2.2
   google_fonts: ^6.1.0
 
+  # Push Notifications (Firebase Cloud Messaging)
+  # Requires: run `flutterfire configure` to generate lib/firebase_options.dart
+  # and add google-services.json (Android) / GoogleService-Info.plist (iOS).
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.4
+
   # Icons (Material)
   cupertino_icons: ^1.0.6
 

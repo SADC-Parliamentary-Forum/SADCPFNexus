@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/notifications/fcm_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
@@ -40,6 +41,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _logout() async {
     setState(() => _loggingOut = true);
+    // Unregister FCM token before logout so no more pushes come to this device.
+    await ref.read(fcmServiceProvider).unregister();
     await ref.read(authSessionControllerProvider).logout();
     if (!mounted) return;
     context.go('/login');

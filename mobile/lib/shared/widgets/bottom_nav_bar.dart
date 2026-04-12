@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_drawer.dart';
+import 'notification_banner.dart';
 import 'shell_drawer_scope.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   final Widget child;
   const AppShell({super.key, required this.child});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell>
+class _AppShellState extends ConsumerState<AppShell>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animController;
@@ -129,7 +131,8 @@ class _AppShellState extends State<AppShell>
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: true,
-        body: Stack(
+        body: NotificationBannerOverlay(
+          child: Stack(
           children: [
             // Content area — full screen, NotificationListener catches scroll from any child
             Positioned.fill(
@@ -171,6 +174,7 @@ class _AppShellState extends State<AppShell>
               ),
             ),
           ],
+        ),
         ),
       ),
     );

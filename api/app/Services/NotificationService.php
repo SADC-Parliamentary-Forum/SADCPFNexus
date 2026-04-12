@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Mail\ModuleNotificationMail;
+use App\Models\DeviceToken;
+use App\Services\FcmService;
 use App\Models\Notification;
 use App\Models\NotificationTemplate;
 use App\Models\User;
@@ -24,7 +26,8 @@ class NotificationService
         string $triggerKey,
         array $vars = [],
         array $meta = [],
-        bool $sendEmail = true
+        bool $sendEmail = true,
+        bool $sendPush = true
     ): void {
         $template = $this->resolveTemplate($recipient->tenant_id, $triggerKey);
         $subject  = $this->replacePlaceholders($template['subject'], $vars);
@@ -49,6 +52,35 @@ class NotificationService
             Mail::to($recipient->email)
                 ->queue(new ModuleNotificationMail($subject, $body, $recipient->name, $approveUrl, $rejectUrl));
         }
+
+        // FCM push notification
+        if ($sendPush) {
+            $this->sendPush($recipient, $subject, $body, $meta);
+        }
+    }
+
+    /**
+     * Send FCM push to all registered device tokens for this user.
+     */
+    private function sendPush(User $recipient, string $title, string $body, array $meta = []): void
+    {
+        $tokens = DeviceToken::where('user_id', $recipient->id)->pluck('token')->all();
+        if (empty($tokens)) {
+            return;
+        }
+
+        $fcm = app(FcmService::class);
+        if (! $fcm->isConfigured()) {
+            return;
+        }
+
+        $data = array_filter([
+            'trigger' => $meta['trigger'] ?? '',
+            'module'  => $meta['module']  ?? '',
+            'url'     => $meta['url']     ?? '',
+        ]);
+
+        $fcm->sendToTokens($tokens, $title, $body, $data);
     }
 
     /**

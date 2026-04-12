@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\DeviceToken;
 use App\Models\User;
 use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
@@ -175,5 +176,46 @@ class AuthController extends Controller
             'roles'          => $user->getRoleNames(),
             'permissions'    => $user->getAllPermissions()->pluck('name'),
         ]);
+    }
+
+    /**
+     * Register (or refresh) an FCM device token for push notifications.
+     * Called by the mobile app after login and on token refresh.
+     */
+    public function registerDeviceToken(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token'       => ['required', 'string', 'max:512'],
+            'platform'    => ['nullable', 'string', 'in:android,ios,web'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        DeviceToken::register(
+            userId:     $user->id,
+            tenantId:   $user->tenant_id,
+            token:      $data['token'],
+            platform:   $data['platform']    ?? 'android',
+            deviceName: $data['device_name'] ?? null,
+        );
+
+        return response()->json(['message' => 'Device token registered.']);
+    }
+
+    /**
+     * Remove a specific FCM device token (called on logout from mobile).
+     */
+    public function unregisterDeviceToken(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'token' => ['required', 'string'],
+        ]);
+
+        DeviceToken::where('user_id', $request->user()->id)
+            ->where('token', $data['token'])
+            ->delete();
+
+        return response()->json(['message' => 'Device token removed.']);
     }
 }
