@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/cache/cache_provider.dart';
 import 'core/notifications/fcm_service.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -105,9 +106,10 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Initialise cache (SharedPreferences warm-up).
+      await ref.read(cacheServiceProvider).init();
       // Initialise FCM (gracefully skips if Firebase not yet configured).
-      // Notification polling providers self-activate when the dashboard mounts.
       ref.read(fcmServiceProvider).init();
     });
   }

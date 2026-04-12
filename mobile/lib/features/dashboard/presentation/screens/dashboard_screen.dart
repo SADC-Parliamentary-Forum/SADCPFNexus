@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/auth/feature_access.dart';
+import '../../../../core/cache/cache_provider.dart';
+import '../../../../core/cache/cache_service.dart';
 import '../../../../core/notifications/notification_poller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
@@ -32,30 +35,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool backgroundRefresh = false}) async {
     if (!mounted) return;
-    setState(() { _loading = true; _error = null; });
-    try {
-      final repo = ref.read(authRepositoryProvider);
-      final api = ref.read(apiClientProvider);
-      final name = await repo.getStoredUserName();
+
+    final cache  = ref.read(cacheServiceProvider);
+    final repo   = ref.read(authRepositoryProvider);
+    final api    = ref.read(apiClientProvider);
+
+    // ── 1. Serve cache immediately ──────────────────────────────────────────
+    final cached = await cache.get<Map<String, dynamic>>(CacheKeys.dashboardStats);
+    if (cached != null && !backgroundRefresh) {
+      final name  = await repo.getStoredUserName();
       final perms = await repo.getStoredPermissions();
       final roles = await repo.getStoredRoles();
-      final response = await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
       if (!mounted) return;
       setState(() {
-        _userName = name ?? 'User';
-        _stats = response.data;
+        _userName    = name ?? 'User';
+        _stats       = cached;
         _permissions = perms;
-        _roles = roles;
-        _loading = false;
+        _roles       = roles;
+        _loading     = false;
+        _error       = null;
+      });
+      // Refresh in background — do not await.
+      _load(backgroundRefresh: true);
+      return;
+    }
+
+    if (!backgroundRefresh) {
+      setState(() { _loading = true; _error = null; });
+    }
+
+    // ── 2. Fetch from API ───────────────────────────────────────────────────
+    try {
+      final name    = await repo.getStoredUserName();
+      final perms   = await repo.getStoredPermissions();
+      final roles   = await repo.getStoredRoles();
+      final response = await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
+      final data    = response.data ?? {};
+
+      // Cache the fresh result.
+      await cache.set(CacheKeys.dashboardStats, data,
+          ttl: const Duration(minutes: 10));
+
+      if (!mounted) return;
+      setState(() {
+        _userName    = name ?? 'User';
+        _stats       = data;
+        _permissions = perms;
+        _roles       = roles;
+        _loading     = false;
+        _error       = null;
       });
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString();
+      // If a background refresh fails, keep showing cached data silently.
+      if (backgroundRefresh) return;
+
+      if (kDebugMode) debugPrint('[Dashboard] load error: $e');
+      final msg = e.toString().toLowerCase();
       setState(() {
         _loading = false;
-        _error = (msg.contains('SocketException') || msg.contains('Connection'))
+        _error   = (msg.contains('socket') || msg.contains('connection') ||
+                    msg.contains('network') || msg.contains('xmlhttprequest'))
             ? 'Cannot reach server. Check your connection.'
             : 'Failed to load dashboard data.';
       });

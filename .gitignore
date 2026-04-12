@@ -216,3 +216,6 @@ web/components/layout/Sidebar.tsx
 web/components/timesheets/QuickEntrySlideOver.tsx
 web/lib/api.ts
 web/lib/auth.ts
+
+# Firebase service account credentials
+*-firebase-adminsdk-*.json
