@@ -47,12 +47,14 @@ class _FleetTransportScreenState extends ConsumerState<FleetTransportScreen>
         },
       );
       final data = res.data?['data'] as List<dynamic>? ?? [];
+      if (!mounted) return;
       setState(() {
         _assets =
             data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _loading = false;
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load fleet data.';
         _loading = false;
