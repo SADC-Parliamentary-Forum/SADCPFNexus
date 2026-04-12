@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "655712918606",
+    "project_id": "sadcpfnexus",
+    "storage_bucket": "sadcpfnexus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655712918606:android:b1aec16cf20c8c9418371f",
+        "android_client_info": {
+          "package_name": "org.sadcpf.sadcpf_nexus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJFyiydsQWz-EI4qj2tVb15tIE8JBJWok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../firebase_options.dart';
 import '../auth/auth_providers.dart';
 
 /// Background message handler — must be a top-level function.
@@ -41,8 +42,9 @@ class FcmService {
       // `flutterfire configure`. If that file doesn't exist yet, this throws
       // and we fall through to the catch block — the app continues without FCM.
       if (Firebase.apps.isEmpty) {
-        // Attempt dynamic options load — will be replaced by generated options.
-        await Firebase.initializeApp();
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
       }
 
       final messaging = FirebaseMessaging.instance;
