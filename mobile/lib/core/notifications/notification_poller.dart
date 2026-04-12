@@ -20,7 +20,10 @@ class NotificationCountNotifier extends AsyncNotifier<int> {
       _timer?.cancel();
     });
 
-    // Start polling after first fetch.
+    // Only poll when authenticated.
+    final session = ref.watch(authSessionControllerProvider).state;
+    if (!session.isAuthenticated) return 0;
+
     final count = await _fetch();
     _startPolling();
     return count;
@@ -105,6 +108,11 @@ class NewNotificationNotifier extends Notifier<AppNotification?> {
   @override
   AppNotification? build() {
     ref.onDispose(() => _timer?.cancel());
+
+    // Only poll when authenticated.
+    final session = ref.watch(authSessionControllerProvider).state;
+    if (!session.isAuthenticated) return null;
+
     _startPolling();
     return null;
   }

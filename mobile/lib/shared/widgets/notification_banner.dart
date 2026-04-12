@@ -77,7 +77,7 @@ class _NotificationBannerOverlayState
 
     return Stack(
       children: [
-        widget.child,
+        Positioned.fill(child: widget.child),
         if (_currentNotification != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 8,
