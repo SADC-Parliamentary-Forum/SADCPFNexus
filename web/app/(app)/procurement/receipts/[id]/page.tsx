@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, use } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -324,10 +324,11 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   );
 }
 
-export default function GoodsReceiptDetailPage({ params }: { params: { id: string } }) {
+export default function GoodsReceiptDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   return (
     <Suspense fallback={null}>
-      <GoodsReceiptDetailPageInner params={params} />
+      <GoodsReceiptDetailPageInner params={resolvedParams} />
     </Suspense>
   );
 }

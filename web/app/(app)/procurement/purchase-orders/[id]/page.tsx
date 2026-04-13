@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchaseOrdersApi, goodsReceiptsApi, purchaseOrderAttachmentsApi, PURCHASE_ORDER_DOC_TYPES, type PurchaseOrder, type ProcurementAttachment } from "@/lib/api";
@@ -25,8 +25,9 @@ function canManagePO() {
   return (u?.roles ?? []).some((r: string) => ["Procurement Officer","Finance Controller","System Admin","Secretary General","super-admin"].includes(r));
 }
 
-export default function PurchaseOrderDetailPage({ params }: { params: { id: string } }) {
-  const poId = Number(params.id);
+export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const poId = Number(id);
   const queryClient = useQueryClient();
 
   const [showCancelModal, setShowCancelModal] = useState(false);

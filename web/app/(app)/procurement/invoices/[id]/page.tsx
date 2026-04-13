@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoicesApi, invoiceAttachmentsApi, INVOICE_DOC_TYPES, type Invoice, type ProcurementAttachment } from "@/lib/api";
@@ -26,8 +26,9 @@ function canApproveInvoice() {
   );
 }
 
-export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
-  const invId       = Number(params.id);
+export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id }      = use(params);
+  const invId       = Number(id);
   const queryClient = useQueryClient();
 
   const [showRejectModal, setShowRejectModal] = useState(false);

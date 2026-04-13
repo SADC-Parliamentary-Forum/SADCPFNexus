@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, contractAttachmentsApi, CONTRACT_DOC_TYPES, type Contract, type ProcurementAttachment } from "@/lib/api";
@@ -25,8 +25,9 @@ function canManageContracts() {
   );
 }
 
-export default function ContractDetailPage({ params }: { params: { id: string } }) {
-  const contractId  = Number(params.id);
+export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id }      = use(params);
+  const contractId  = Number(id);
   const queryClient = useQueryClient();
 
   const [showTerminateModal, setShowTerminateModal] = useState(false);
