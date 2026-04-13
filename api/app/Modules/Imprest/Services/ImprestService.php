@@ -178,6 +178,13 @@ class ImprestService
             throw ValidationException::withMessages(['status' => 'Only approved requests can be retired.']);
         }
 
+        abort_if(
+            (int) $imprest->requester_id !== (int) $user->id
+            && !($user->isSystemAdmin() || $user->hasAnyRole(['Finance Controller', 'Secretary General'])),
+            403,
+            'You are not allowed to liquidate this imprest request.'
+        );
+
         $imprest->update([
             'status'            => 'liquidated',
             'amount_liquidated' => $data['amount_liquidated'],

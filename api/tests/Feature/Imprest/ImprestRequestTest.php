@@ -107,6 +107,71 @@ class ImprestRequestTest extends TestCase
                  ->assertJsonPath('data.status', 'approved');
     }
 
+    public function test_requester_can_retire_their_approved_imprest(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $requester = $this->makeUser('staff', $tenant);
+
+        $imprest = ImprestRequest::factory()->approved()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $requester->id,
+            'amount_approved' => 1500.00,
+        ]);
+
+        $response = $this->asUser($requester)->postJson("/api/v1/imprest/requests/{$imprest->id}/retire", [
+            'amount_liquidated' => 1325.50,
+            'notes' => 'Workshop stationery and transport costs settled.',
+            'receipts_attached' => true,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'liquidated')
+            ->assertJsonPath('data.amount_liquidated', 1325.5);
+
+        $this->assertDatabaseHas('imprest_requests', [
+            'id' => $imprest->id,
+            'status' => 'liquidated',
+            'amount_liquidated' => 1325.50,
+        ]);
+    }
+
+    public function test_cannot_retire_imprest_that_is_not_approved(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $requester = $this->makeUser('staff', $tenant);
+
+        $imprest = ImprestRequest::factory()->submitted()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $requester->id,
+        ]);
+
+        $this->asUser($requester)
+            ->postJson("/api/v1/imprest/requests/{$imprest->id}/retire", [
+                'amount_liquidated' => 500,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+    }
+
+    public function test_other_staff_member_cannot_retire_someone_elses_imprest(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->makeUser('staff', $tenant);
+        $other = $this->makeUser('staff', $tenant);
+
+        $imprest = ImprestRequest::factory()->approved()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $owner->id,
+            'amount_approved' => 900.00,
+        ]);
+
+        $this->asUser($other)
+            ->postJson("/api/v1/imprest/requests/{$imprest->id}/retire", [
+                'amount_liquidated' => 900.00,
+            ])
+            ->assertForbidden();
+    }
+
     public function test_draft_request_can_be_deleted(): void
     {
         $tenant = Tenant::factory()->create();

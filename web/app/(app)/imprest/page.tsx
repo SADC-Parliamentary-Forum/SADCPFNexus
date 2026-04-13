@@ -196,7 +196,7 @@ export default function ImprestPage() {
                     <Link href={`/imprest/create?edit=${req.id}`} className="text-xs font-semibold text-primary hover:underline">Edit</Link>
                   )}
                   {req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0) && (
-                    <Link href={`/imprest/${req.id}`} className="text-xs font-semibold text-amber-600 hover:underline">Retire →</Link>
+                    <Link href={`/imprest/${req.id}/liquidate`} className="text-xs font-semibold text-amber-600 hover:underline">Retire →</Link>
                   )}
                   <Link href={`/imprest/${req.id}`} className="text-xs font-medium text-neutral-500 hover:text-neutral-700">View Details →</Link>
                 </div>

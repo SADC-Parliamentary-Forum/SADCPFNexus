@@ -1,194 +1,330 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { imprestApi, type ImprestRequest } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
-interface ReceiptLine {
-  id: number;
-  description: string;
-  amount: string;
-  receipt_date: string;
-  vendor: string;
+function getStoredUser(): { id: number | null; roles: string[] } {
+  if (typeof window === "undefined") return { id: null, roles: [] };
+  try {
+    const raw = localStorage.getItem("sadcpf_user");
+    if (!raw) return { id: null, roles: [] };
+    const parsed = JSON.parse(raw) as { id?: number; roles?: string[] };
+    return {
+      id: typeof parsed.id === "number" ? parsed.id : null,
+      roles: Array.isArray(parsed.roles) ? parsed.roles : [],
+    };
+  } catch {
+    return { id: null, roles: [] };
+  }
 }
 
-export default function ImprestLiquidatePage({ params }: { params: { id: string } }) {
+function unwrapImprest(payload: unknown): ImprestRequest | null {
+  const response = payload as { data?: ImprestRequest | { data?: ImprestRequest } } | undefined;
+  if (!response?.data) return null;
+  return "data" in response.data ? response.data.data ?? null : response.data;
+}
+
+export default function ImprestLiquidatePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const requestId = Number(id);
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [lines, setLines] = useState<ReceiptLine[]>([
-    { id: 1, description: "", amount: "", receipt_date: "", vendor: "" },
-  ]);
+  const queryClient = useQueryClient();
+
+  const [amountSpent, setAmountSpent] = useState("");
   const [notes, setNotes] = useState("");
+  const [receiptsAttached, setReceiptsAttached] = useState(true);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const approved = { amount: 850, currency: "USD", reference: "IMP-X4KD9F2A" };
-  const totalSpent = lines.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
-  const balance = approved.amount - totalSpent;
+  const { data: request, isLoading, isError } = useQuery({
+    queryKey: ["imprest", requestId],
+    queryFn: () => imprestApi.get(requestId).then((res) => unwrapImprest(res.data)),
+    enabled: Number.isFinite(requestId) && requestId > 0,
+  });
 
-  const addLine = () =>
-    setLines((prev) => [...prev, { id: Date.now(), description: "", amount: "", receipt_date: "", vendor: "" }]);
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      imprestApi.retire(requestId, {
+        amount_liquidated: Number(amountSpent),
+        notes: notes.trim() || undefined,
+        receipts_attached: receiptsAttached,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["imprest", requestId] }),
+        queryClient.invalidateQueries({ queryKey: ["imprest", "list"] }),
+      ]);
+      router.push(`/imprest/${requestId}`);
+    },
+    onError: (error: unknown) => {
+      setSubmitError(
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Failed to submit liquidation.",
+      );
+    },
+  });
 
-  const removeLine = (id: number) =>
-    setLines((prev) => prev.filter((l) => l.id !== id));
+  if (!Number.isFinite(requestId) || requestId <= 0) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
+          Invalid imprest request ID.
+        </div>
+        <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to Imprest Requests
+        </Link>
+      </div>
+    );
+  }
 
-  const updateLine = (id: number, field: keyof ReceiptLine, value: string) =>
-    setLines((prev) => prev.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-5 animate-pulse">
+        <div className="h-4 w-48 rounded bg-neutral-100" />
+        <div className="card p-6 space-y-3">
+          <div className="h-6 w-56 rounded bg-neutral-100" />
+          <div className="h-4 w-40 rounded bg-neutral-100" />
+        </div>
+        <div className="card p-6 space-y-3">
+          <div className="h-4 w-24 rounded bg-neutral-100" />
+          <div className="h-10 w-full rounded bg-neutral-100" />
+          <div className="h-20 w-full rounded bg-neutral-100" />
+        </div>
+      </div>
+    );
+  }
 
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 900));
-      router.push(`/imprest/${params.id}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  if (isError || !request) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
+          Failed to load this imprest request.
+        </div>
+        <Link href="/imprest" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to Imprest Requests
+        </Link>
+      </div>
+    );
+  }
+
+  const approvedAmount = request.amount_approved ?? request.amount_requested;
+  const enteredAmount = Number(amountSpent) || 0;
+  const balance = approvedAmount - enteredAmount;
+  const currentUser = getStoredUser();
+  const hasElevatedAccess = currentUser.roles.some((role) =>
+    ["Finance Controller", "Secretary General", "System Admin", "super-admin"].includes(role),
+  );
+  const canLiquidate =
+    request.status === "approved" &&
+    (
+      hasElevatedAccess
+      || currentUser.id == null
+      || request.requester?.id == null
+      || currentUser.id === request.requester.id
+    );
+
+  if (request.status === "liquidated") {
+    return (
+      <div className="max-w-3xl mx-auto space-y-5">
+        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
+          <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-neutral-600">Liquidated</span>
+        </nav>
+
+        <div className="card p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50">
+              <span className="material-symbols-outlined text-[24px] text-green-600">check_circle</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-neutral-900">Liquidation Submitted</h1>
+              <p className="text-sm text-neutral-500">{request.reference_number}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Approved Amount</p>
+              <p className="font-semibold text-neutral-900">{request.currency} {approvedAmount.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Liquidated Amount</p>
+              <p className="font-semibold text-neutral-900">{request.currency} {(request.amount_liquidated ?? 0).toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Link href={`/imprest/${request.id}`} className="btn-primary inline-flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">visibility</span>
+              View Request
+            </Link>
+            <Link href="/imprest" className="btn-secondary inline-flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+              Back to List
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (request.status !== "approved") {
+    return (
+      <div className="max-w-3xl mx-auto space-y-5">
+        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
+          <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-neutral-600">Liquidate</span>
+        </nav>
+
+        <div className="card p-6 space-y-3">
+          <h1 className="text-xl font-bold text-neutral-900">Liquidation Not Available</h1>
+          <p className="text-sm text-neutral-600">
+            This request is currently <strong>{request.status}</strong>. Only approved imprest requests can be liquidated.
+          </p>
+          <Link href={`/imprest/${request.id}`} className="btn-secondary inline-flex items-center gap-1.5 w-fit">
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            Back to Request
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
-          <span>/</span>
-          <Link href={`/imprest/${params.id}`} className="hover:text-primary transition-colors font-mono">{approved.reference}</Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">Liquidate</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">Submit Liquidation</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">Record all expenditures and attach supporting receipts.</p>
-      </div>
+    <div className="max-w-3xl mx-auto space-y-5">
+      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
+        <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
+        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+        <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
+        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span className="text-neutral-600">Liquidate</span>
+      </nav>
 
-      {/* Approved amount banner */}
-      <div className="rounded-xl bg-blue-50 border border-blue-100 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-blue-500">account_balance_wallet</span>
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs text-blue-600 font-medium">Approved Imprest Amount</p>
-            <p className="text-lg font-bold text-blue-800">{approved.currency} {approved.amount.toLocaleString()}</p>
+            <h1 className="text-xl font-bold text-neutral-900">Liquidate Imprest</h1>
+            <p className="text-sm text-neutral-500 mt-0.5">{request.purpose}</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <span className="material-symbols-outlined text-[14px]">account_balance_wallet</span>
+            {request.reference_number}
+          </span>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-4 text-sm">
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Approved Amount</p>
+            <p className="mt-1 text-lg font-bold text-neutral-900">{request.currency} {approvedAmount.toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Liquidation Deadline</p>
+            <p className="mt-1 text-lg font-bold text-neutral-900">{formatDateShort(request.expected_liquidation_date)}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-blue-600">Balance Remaining</p>
-          <p className={`text-lg font-bold ${balance >= 0 ? "text-blue-800" : "text-red-600"}`}>
-            {approved.currency} {balance.toFixed(2)}
-          </p>
-        </div>
+
+        {request.justification && (
+          <div className="mt-4 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Original Justification</p>
+            <p className="mt-1 text-sm text-neutral-700">{request.justification}</p>
+          </div>
+        )}
       </div>
 
-      {/* Receipt lines */}
-      <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-neutral-900">Expenditure Lines</h3>
-          <button onClick={addLine} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">add_circle</span>
-            Add Line
+      {!canLiquidate && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          You can view this liquidation page, but only the requester or an authorised administrator can submit it.
+        </div>
+      )}
+
+      <div className="card p-5 space-y-5">
+        <div>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Liquidation Details</h2>
+          <p className="text-sm text-neutral-500 mt-1">Submit the final amount spent and any supporting notes for Finance.</p>
+        </div>
+
+        {submitError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{submitError}</div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-neutral-600">
+              Amount Spent ({request.currency}) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              className="form-input"
+              placeholder="0.00"
+              value={amountSpent}
+              onChange={(event) => setAmountSpent(event.target.value)}
+            />
+          </div>
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 text-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Balance</p>
+            <p className={`mt-1 text-lg font-bold ${balance < 0 ? "text-red-600" : balance > 0 ? "text-blue-600" : "text-green-600"}`}>
+              {request.currency} {Math.abs(balance).toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              {balance < 0 ? "Amount exceeds the approved imprest." : balance > 0 ? "Surplus to be returned." : "Fully liquidated."}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-neutral-600">Notes / Explanation</label>
+          <textarea
+            rows={4}
+            className="form-input resize-none"
+            placeholder="Summarise how the imprest was used and note any surplus or overrun."
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </div>
+
+        <label className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-neutral-300 accent-primary"
+            checked={receiptsAttached}
+            onChange={(event) => setReceiptsAttached(event.target.checked)}
+          />
+          <span className="text-sm text-neutral-700">
+            I confirm that receipts and supporting documents are attached or will be submitted to Finance.
+          </span>
+        </label>
+
+        <div className="flex items-center justify-between gap-3 pt-2">
+          <Link href={`/imprest/${request.id}`} className="btn-secondary inline-flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            Back to Request
+          </Link>
+          <button
+            type="button"
+            disabled={!canLiquidate || submitMutation.isPending || amountSpent.trim() === ""}
+            onClick={() => {
+              setSubmitError(null);
+              submitMutation.mutate();
+            }}
+            className="btn-primary inline-flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-[16px] ${submitMutation.isPending ? "animate-spin" : ""}`}>
+              {submitMutation.isPending ? "progress_activity" : "check_circle"}
+            </span>
+            {submitMutation.isPending ? "Submitting..." : "Submit Liquidation"}
           </button>
         </div>
-
-        <div className="space-y-3">
-          {lines.map((line, i) => (
-            <div key={line.id} className="rounded-lg border border-neutral-100 bg-neutral-50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Line {i + 1}</span>
-                {lines.length > 1 && (
-                  <button onClick={() => removeLine(line.id)} className="text-red-400 hover:text-red-600 transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2 space-y-1">
-                  <label className="block text-[11px] font-medium text-neutral-600">Description <span className="text-red-500">*</span></label>
-                  <input
-                    className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    placeholder="e.g. Printer toner cartridge (black)"
-                    value={line.description}
-                    onChange={(e) => updateLine(line.id, "description", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-neutral-600">Vendor / Supplier</label>
-                  <input
-                    className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    placeholder="e.g. Office World"
-                    value={line.vendor}
-                    onChange={(e) => updateLine(line.id, "vendor", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-neutral-600">Receipt Date</label>
-                  <input
-                    type="date"
-                    className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    value={line.receipt_date}
-                    onChange={(e) => updateLine(line.id, "receipt_date", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-medium text-neutral-600">Amount ({approved.currency}) <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      className="w-full rounded-md border border-neutral-200 bg-white pl-6 pr-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                      placeholder="0.00"
-                      value={line.amount}
-                      onChange={(e) => updateLine(line.id, "amount", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Totals */}
-        <div className="rounded-lg bg-neutral-50 border border-neutral-100 p-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-neutral-500">Total Expenditure</span>
-            <span className="font-bold text-neutral-900">{approved.currency} {totalSpent.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm border-t border-neutral-200 pt-2 mt-1">
-            <span className="text-neutral-500">Balance {balance >= 0 ? "to Return" : "Overspent"}</span>
-            <span className={`font-bold ${balance >= 0 ? "text-blue-600" : "text-red-600"}`}>
-              {approved.currency} {Math.abs(balance).toFixed(2)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Notes */}
-      <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-900">Additional Notes</h3>
-        <textarea
-          rows={3}
-          className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
-          placeholder="Any additional remarks about this liquidation..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-        />
-        <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2">
-          <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">warning</span>
-          <p className="text-xs text-amber-700">Original receipts must be submitted to Finance within 2 business days of this digital submission.</p>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between">
-        <Link href={`/imprest/${params.id}`} className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back
-        </Link>
-        <button
-          onClick={handleSubmit}
-          disabled={submitting || lines.some((l) => !l.description || !l.amount)}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          {submitting ? "Submitting…" : "Submit Liquidation"}
-          <span className="material-symbols-outlined text-[18px]">send</span>
-        </button>
       </div>
     </div>
   );

@@ -5,6 +5,18 @@ import { test, expect } from "@playwright/test";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
+async function openFirstDetail(page: import("@playwright/test").Page, listPath: string, hrefFragment: string) {
+  await page.goto(listPath);
+  await page.waitForURL(`**${listPath}`, { timeout: 15_000 });
+  await page.waitForLoadState("networkidle");
+
+  const firstLink = page.locator(`a[href*='${hrefFragment}']`).first();
+  const visible = await firstLink.isVisible({ timeout: 5_000 }).catch(() => false);
+  test.skip(!visible, `No detail links found for ${listPath}`);
+
+  await firstLink.click();
+}
+
 test.describe("Procurement — list page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/procurement");
@@ -103,5 +115,44 @@ test.describe("Vendors", () => {
     } else {
       test.skip(true, "No vendor records visible");
     }
+  });
+});
+
+test.describe("Procurement — detail pages", () => {
+  test.use({ storageState: "playwright/.auth/admin.json" });
+
+  test("rfq detail page loads", async ({ page }) => {
+    await openFirstDetail(page, "/procurement/rfq", "/procurement/rfq/");
+    await page.waitForURL("**/procurement/rfq/**", { timeout: 15_000 });
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator("text=Vendor Quotes")).toBeVisible({ timeout: 8_000 });
+  });
+
+  test("purchase order detail page loads", async ({ page }) => {
+    await openFirstDetail(page, "/procurement/purchase-orders", "/procurement/purchase-orders/");
+    await page.waitForURL("**/procurement/purchase-orders/**", { timeout: 15_000 });
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator("text=Line Items")).toBeVisible({ timeout: 8_000 });
+  });
+
+  test("goods receipt detail page loads", async ({ page }) => {
+    await openFirstDetail(page, "/procurement/receipts", "/procurement/receipts/");
+    await page.waitForURL("**/procurement/receipts/**", { timeout: 15_000 });
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator("text=Items Received")).toBeVisible({ timeout: 8_000 });
+  });
+
+  test("invoice detail page loads", async ({ page }) => {
+    await openFirstDetail(page, "/procurement/invoices", "/procurement/invoices/");
+    await page.waitForURL("**/procurement/invoices/**", { timeout: 15_000 });
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator("text=Linked Documents")).toBeVisible({ timeout: 8_000 });
+  });
+
+  test("contract detail page loads", async ({ page }) => {
+    await openFirstDetail(page, "/procurement/contracts", "/procurement/contracts/");
+    await page.waitForURL("**/procurement/contracts/**", { timeout: 15_000 });
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator("text=Linked Procurement Request")).toBeVisible({ timeout: 8_000 });
   });
 });

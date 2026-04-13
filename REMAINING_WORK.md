@@ -6,7 +6,7 @@
 
 ## Completed (reference)
 
-- **Web:** Auth middleware, login + cookie, dashboard (user + stats from API), travel/leave/imprest/procurement list–detail–create wired to API, admin users/departments/roles wired, finance advances list + create, finance payslips (list + download), finance summary, HR home + timesheets wired, HR summary, leave balances, LIL accruals from API, imprest summary stats. Table dates use human-readable formatting; sidebar is collapsible (icon-only when minimised).
+- **Web:** Auth proxy, login + cookie, dashboard (user + stats from API), travel/leave/imprest/procurement list–detail–create wired to API, admin users/departments/roles wired, finance advances list + create, finance payslips (list + download), finance summary, HR home + timesheets wired, HR summary, leave balances, LIL accruals from API, imprest summary stats, and the dedicated imprest liquidation page is API-driven. Table dates use human-readable formatting; sidebar is collapsible (icon-only when minimised).
 - **Mobile:** Login (API + token), biometric, ApiClient + 401 handling, profile, Requests and Approvals, dashboard, Reports hub + report detail from API. Leave, Imprest, Procurement, Salary Advance forms and PIF form/review submit to API. Leave balance screen and **HR timesheets and payslip screens** load from API. Friendly date formatting; no unused placeholder screens. **Runs on Android, iOS, web (Chrome), and Windows** when no device is connected (use `flutter run -d chrome` or `flutter run -d windows`).
 - **API:** Auth, admin, travel, leave (balances, LIL), imprest, procurement, finance (advances, payslips, summary), HR (timesheets, summary), programmes (PIF), dashboard stats, CORS, seeders.
 
@@ -54,7 +54,7 @@ The following are now wired to the API:
 
 ## 4. Documentation and quality
 
-- **REMAINING_WORK.md:** Kept as single source of truth; update as items are completed or new work is added.
+- **REMAINING_WORK.md:** Kept as single source of truth; update as items are completed or new work is added. Next.js dynamic route params are aligned with the async pattern used by Next 16.
 - **Android release:** Release signing is configured in `mobile/android/app/build.gradle.kts` with a placeholder; add your keystore and set `SADC_KEYSTORE_*` (or configure `signingConfigs.release` manually) when publishing to production. See [mobile/RELEASE.md](mobile/RELEASE.md) for keystore creation and build steps.
 
 ---
