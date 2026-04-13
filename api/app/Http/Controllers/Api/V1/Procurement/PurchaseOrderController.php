@@ -27,6 +27,9 @@ class PurchaseOrderController extends Controller
         if ((int) $purchaseOrder->tenant_id !== (int) request()->user()->tenant_id) {
             abort(404);
         }
+        if (request()->user()->isSupplier() && (int) request()->user()->vendor_id !== (int) $purchaseOrder->vendor_id) {
+            abort(404);
+        }
         return response()->json([
             'data' => $purchaseOrder->load(['vendor', 'items', 'procurementRequest', 'goodsReceiptNotes', 'createdBy']),
         ]);

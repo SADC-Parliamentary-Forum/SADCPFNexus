@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { authApi, setAuthCookie, setMustResetCookie } from "@/lib/api";
 
@@ -45,7 +46,8 @@ export default function LoginPage() {
         return;
       }
       const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
-      window.location.href = from && from.startsWith("/") ? from : "/dashboard";
+      const isSupplier = (user.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));
+      window.location.href = from && from.startsWith("/") ? from : (isSupplier ? "/supplier" : "/dashboard");
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }; status?: number };
       const data = ax.response?.data;
@@ -232,6 +234,13 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-xs text-neutral-400">
             Forgot your password? Contact IT Support.
+          </p>
+          <p className="mt-3 text-center text-xs text-neutral-500">
+            Supplier onboarding:
+            {" "}
+            <Link href="/supplier/register" className="font-medium text-primary hover:underline">
+              Register your supplier account
+            </Link>
           </p>
         </div>
       </div>

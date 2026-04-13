@@ -35,6 +35,13 @@ Route::prefix('v1')->group(function () {
         Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
     });
 
+    Route::prefix('procurement')->group(function () {
+        Route::get('supplier-categories/public', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'publicIndex']);
+        Route::post('suppliers/register', [\App\Http\Controllers\Api\V1\Procurement\SupplierRegistrationController::class, 'register'])->middleware('throttle:10,1');
+        Route::get('external-rfq/{token}', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'show'])->middleware('throttle:20,1');
+        Route::post('external-rfq/{token}/quote', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'submit'])->middleware('throttle:20,1');
+    });
+
     // Authenticated routes
     Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
 
@@ -283,8 +290,15 @@ Route::prefix('v1')->group(function () {
             // Vendors
             Route::apiResource('vendors', \App\Http\Controllers\Api\V1\Procurement\VendorController::class)
                 ->names('procurement.vendors');
+            Route::get('supplier-categories', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'index']);
+            Route::post('supplier-categories', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'store']);
+            Route::put('supplier-categories/{supplierCategory}', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'update']);
+            Route::delete('supplier-categories/{supplierCategory}', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'destroy']);
             Route::post('vendors/{vendor}/approve',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
             Route::post('vendors/{vendor}/reject',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+            Route::post('vendors/{vendor}/request-info', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'requestInfo']);
+            Route::post('vendors/{vendor}/suspend', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'suspend']);
+            Route::get('vendors/{vendor}/approval-logs', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approvalLogs']);
             Route::get('vendors/{vendor}/ratings',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listRatings']);
             Route::post('vendors/{vendor}/ratings',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'storeRating']);
             Route::get('vendors/{vendor}/contracts',    [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
@@ -292,6 +306,17 @@ Route::prefix('v1')->group(function () {
             Route::post('vendors/{vendor}/unblacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'unblacklist']);
             Route::get('vendors/{vendor}/evaluations',  [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
             Route::post('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'store']);
+
+            Route::prefix('supplier')->group(function () {
+                Route::get('me', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'me']);
+                Route::put('profile', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'updateProfile']);
+                Route::get('dashboard', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'dashboard']);
+                Route::get('rfqs', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'rfqs']);
+                Route::get('rfqs/{procurementRequest}', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'showRfq']);
+                Route::post('rfqs/{procurementRequest}/quote', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitQuote']);
+                Route::get('purchase-orders', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'purchaseOrders']);
+                Route::get('invoices', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'invoices']);
+            });
 
             // Purchase Orders
             Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)

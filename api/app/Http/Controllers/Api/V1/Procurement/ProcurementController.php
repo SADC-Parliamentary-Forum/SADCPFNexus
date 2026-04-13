@@ -25,7 +25,16 @@ class ProcurementController extends Controller
         if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
             abort(404);
         }
-        return response()->json($procurementRequest->load(['requester', 'approver', 'items', 'quotes.vendor']));
+        return response()->json($procurementRequest->load([
+            'requester',
+            'approver',
+            'items',
+            'quotes.vendor',
+            'quotes.assessor',
+            'supplierCategories',
+            'rfqInvitations.vendor',
+            'rfqInvitations.quote',
+        ]));
     }
 
     public function store(Request $request): JsonResponse
@@ -171,15 +180,15 @@ class ProcurementController extends Controller
         $data = $request->validate([
             'rfq_deadline' => ['nullable', 'date'],
             'rfq_notes'    => ['nullable', 'string', 'max:2000'],
+            'category_ids' => ['required', 'array', 'min:1', 'max:3'],
+            'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
+            'external_invites' => ['nullable', 'array'],
+            'external_invites.*.name' => ['nullable', 'string', 'max:255'],
+            'external_invites.*.email' => ['required_with:external_invites', 'email', 'max:255'],
         ]);
 
-        $procurementRequest->update([
-            'rfq_issued_at' => $procurementRequest->rfq_issued_at ?? now(),
-            'rfq_deadline'  => $data['rfq_deadline'] ?? null,
-            'rfq_notes'     => $data['rfq_notes'] ?? null,
-        ]);
-
-        return response()->json(['message' => 'RFQ issued.', 'data' => $procurementRequest->fresh(['requester', 'items', 'quotes'])]);
+        $rfq = $this->procurementService->issueRfq($procurementRequest, $data, $request->user());
+        return response()->json(['message' => 'RFQ issued.', 'data' => $rfq]);
     }
 
     public function reject(Request $request, ProcurementRequest $procurementRequest): JsonResponse

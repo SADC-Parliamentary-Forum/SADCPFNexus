@@ -3,17 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vendorsApi, type Vendor } from "@/lib/api";
+import { supplierCategoriesApi, vendorsApi, type SupplierCategory, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const VENDOR_CATEGORIES = [
-  "IT & Technology", "Catering & Hospitality", "Transport & Logistics",
-  "Office Supplies", "Printing & Publishing", "Professional Services",
-  "Maintenance & Repairs", "Security Services", "Audio Visual",
-  "Cleaning Services", "Healthcare & Pharmaceuticals", "Construction & Works", "Other",
-] as const;
-
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
 
 const COUNTRIES = [
@@ -106,6 +99,7 @@ interface VendorFormValues {
   registration_number: string;
   tax_number: string;
   category: string;
+  category_ids: number[];
   country: string;
   website: string;
   contact_email: string;
@@ -128,6 +122,7 @@ function defaultForm(vendor?: Vendor | null): VendorFormValues {
     registration_number: vendor?.registration_number ?? "",
     tax_number:          vendor?.tax_number          ?? "",
     category:            vendor?.category            ?? "",
+    category_ids:        vendor?.categories?.map((item) => item.id) ?? [],
     country:             vendor?.country             ?? "",
     website:             vendor?.website             ?? "",
     contact_email:       vendor?.contact_email       ?? "",
@@ -151,8 +146,9 @@ const TAB_LABELS: { key: FormTab; label: string; icon: string }[] = [
   { key: "admin",   label: "Admin",     icon: "settings"         },
 ];
 
-function VendorFormModal({ vendor, onClose, onSaved }: {
+function VendorFormModal({ vendor, categories, onClose, onSaved }: {
   vendor?: Vendor | null;
+  categories: SupplierCategory[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -166,8 +162,16 @@ function VendorFormModal({ vendor, onClose, onSaved }: {
   useEffect(() => { firstInputRef.current?.focus(); }, []);
 
   const mutation = useMutation({
-    mutationFn: (data: VendorFormValues) =>
-      isEdit ? vendorsApi.update(vendor!.id, data) : vendorsApi.create(data),
+    mutationFn: (data: VendorFormValues) => {
+      const selectedNames = categories
+        .filter((category) => data.category_ids.includes(category.id))
+        .map((category) => category.name);
+      const payload = {
+        ...data,
+        category: selectedNames.join(", "),
+      };
+      return isEdit ? vendorsApi.update(vendor!.id, payload) : vendorsApi.create(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
       onSaved();
@@ -183,6 +187,11 @@ function VendorFormModal({ vendor, onClose, onSaved }: {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { setFormError("Vendor name is required."); setTab("basic"); return; }
+    if (form.category_ids.length < 1 || form.category_ids.length > 3) {
+      setFormError("Select between 1 and 3 supplier categories.");
+      setTab("basic");
+      return;
+    }
     setFormError("");
     mutation.mutate(form);
   };
@@ -294,7 +303,37 @@ function VendorFormModal({ vendor, onClose, onSaved }: {
               </div>
               {tf("registration_number", "Company Registration Number", { placeholder: "CC/2021/12345" })}
               {tf("tax_number", "VAT / Tax Number", { placeholder: "e.g. 2012345678" })}
-              {sf("category", "Business Category", VENDOR_CATEGORIES)}
+              <div className="sm:col-span-2 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="block text-xs font-semibold text-neutral-600">Supplier Categories</label>
+                  <span className="text-[11px] text-neutral-400">Select 1 to 3</span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {categories.map((category) => (
+                    <label
+                      key={category.id}
+                      className={`rounded-xl border p-3 text-sm ${
+                        form.category_ids.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={form.category_ids.includes(category.id)}
+                        onChange={() =>
+                          setForm((current) => ({
+                            ...current,
+                            category_ids: current.category_ids.includes(category.id)
+                              ? current.category_ids.filter((id) => id !== category.id)
+                              : current.category_ids.length >= 3 ? current.category_ids : [...current.category_ids, category.id],
+                          }))
+                        }
+                      />
+                      {category.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
               {sf("country", "Country of Registration", COUNTRIES)}
               {tf("website", "Website", { type: "url", placeholder: "https://", span2: true })}
 
@@ -482,6 +521,10 @@ export default function VendorsPage() {
     queryFn: () =>
       vendorsApi.list({ search: search || undefined, status: statusFilter }).then((r) => r.data.data),
   });
+  const { data: supplierCategories = [] } = useQuery({
+    queryKey: ["supplier-categories"],
+    queryFn: () => supplierCategoriesApi.list().then((r) => r.data.data),
+  });
 
   const vendors = data ?? [];
 
@@ -630,11 +673,16 @@ export default function VendorsPage() {
                       </td>
                       {/* Category */}
                       <td className="text-xs text-neutral-600">
-                        {v.category ? (
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[13px] text-neutral-400">category</span>
-                            {v.category}
-                          </span>
+                        {(v.categories ?? []).length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {(v.categories ?? []).map((category) => (
+                              <span key={category.id} className="badge badge-primary">
+                                {category.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : v.category ? (
+                          <span>{v.category}</span>
                         ) : (
                           <span className="text-neutral-300">—</span>
                         )}
@@ -707,6 +755,7 @@ export default function VendorsPage() {
       {showForm && (
         <VendorFormModal
           vendor={editVendor}
+          categories={supplierCategories}
           onClose={() => { setShowForm(false); setEditVendor(null); }}
           onSaved={() => { setShowForm(false); setEditVendor(null); }}
         />

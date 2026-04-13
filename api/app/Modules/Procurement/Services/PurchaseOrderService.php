@@ -20,6 +20,10 @@ class PurchaseOrderService
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
+        if ($user->isSupplier() && $user->vendor_id) {
+            $query->where('vendor_id', $user->vendor_id);
+        }
+
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

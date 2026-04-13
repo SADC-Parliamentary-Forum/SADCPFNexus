@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'tenant_id',
         'department_id',
+        'vendor_id',
         'position_id',
         'name',
         'email',
@@ -81,6 +82,11 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
     public function position(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Position::class);
@@ -112,5 +118,10 @@ class User extends Authenticatable
     public function isSecretaryGeneral(): bool
     {
         return $this->hasRole('Secretary General');
+    }
+
+    public function isSupplier(): bool
+    {
+        return $this->hasAnyRole(['Supplier', 'Supplier Finance User']);
     }
 }

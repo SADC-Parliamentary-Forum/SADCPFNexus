@@ -78,6 +78,7 @@ const ROUTE_ACCESS: { path: string; permission?: string | string[] }[] = [
   { path: "/assets", permission: "assets.view" },
   { path: "/governance", permission: "governance.view" },
   { path: "/procurement", permission: "procurement.view" },
+  { path: "/supplier", permission: "supplier.portal" },
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
   { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },

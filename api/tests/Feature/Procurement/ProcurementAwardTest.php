@@ -25,6 +25,7 @@ class ProcurementAwardTest extends TestCase
             'status'          => 'approved',
             'submitted_at'    => now()->subDay(),
             'approved_at'     => now(),
+            'rfq_issued_at'   => now()->subHours(12),
         ]);
     }
 
@@ -48,6 +49,10 @@ class ProcurementAwardTest extends TestCase
             'currency'       => 'NAD',
             'is_recommended' => true,
             'quote_date'     => now(),
+            'compliance_passed' => true,
+            'compliance_notes'  => 'Meets technical and commercial requirements.',
+            'assessed_by'       => $req->requester_id,
+            'assessed_at'       => now(),
         ]);
     }
 

@@ -24,6 +24,10 @@ class InvoiceService
             $query->where('status', $filters['status']);
         }
 
+        if ($user->isSupplier() && $user->vendor_id) {
+            $query->where('vendor_id', $user->vendor_id);
+        }
+
         return $query->get();
     }
 

@@ -10,13 +10,18 @@ class VendorsTest extends TestCase
 {
     private function vendorPayload(array $overrides = []): array
     {
+        $tenant = $overrides['tenant'] ?? Tenant::factory()->create();
+        unset($overrides['tenant']);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment']);
+
         return array_merge([
             'name'         => 'Acme Supplies (Pty) Ltd',
             'contact_name' => 'John Smith',
             'email'        => 'john@acme.co.na',
             'phone'        => '+264 61 123456',
             'address'      => '12 Independence Ave, Windhoek',
-            'category'     => 'goods',
+            'category'     => 'ICT Equipment',
+            'category_ids' => [$category->id],
         ], $overrides);
     }
 
@@ -42,9 +47,10 @@ class VendorsTest extends TestCase
 
     public function test_procurement_officer_can_create_vendor(): void
     {
-        [$http] = $this->asProcurementOfficer();
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
 
-        $response = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload());
+        $response = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
 
         $response->assertCreated()
                  ->assertJsonPath('data.name', 'Acme Supplies (Pty) Ltd')
@@ -55,7 +61,8 @@ class VendorsTest extends TestCase
 
     public function test_create_vendor_requires_name(): void
     {
-        [$http] = $this->asProcurementOfficer();
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
 
         $http->postJson('/api/v1/procurement/vendors', [])
              ->assertUnprocessable()
@@ -64,9 +71,10 @@ class VendorsTest extends TestCase
 
     public function test_staff_cannot_create_vendor(): void
     {
-        [$http] = $this->asStaff();
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
 
-        $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload())
+        $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]))
              ->assertForbidden();
     }
 
@@ -77,7 +85,7 @@ class VendorsTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http] = $this->asProcurementOfficer($tenant);
 
-        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload());
+        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
         $id = $create->json('data.id');
 
         $http->getJson("/api/v1/procurement/vendors/{$id}")
@@ -89,12 +97,14 @@ class VendorsTest extends TestCase
 
     public function test_procurement_officer_can_update_vendor(): void
     {
-        [$http] = $this->asProcurementOfficer();
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
 
-        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload());
+        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
         $id = $create->json('data.id');
 
         $http->putJson("/api/v1/procurement/vendors/{$id}", $this->vendorPayload([
+            'tenant'       => $tenant,
             'name'         => 'Updated Vendor Name',
             'contact_name' => 'Jane Doe',
         ]))->assertOk()
@@ -107,9 +117,10 @@ class VendorsTest extends TestCase
 
     public function test_procurement_officer_can_delete_vendor(): void
     {
-        [$http] = $this->asProcurementOfficer();
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
 
-        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload());
+        $create = $http->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
         $id = $create->json('data.id');
 
         $http->deleteJson("/api/v1/procurement/vendors/{$id}")
@@ -136,7 +147,7 @@ class VendorsTest extends TestCase
         $tenantB = Tenant::factory()->create();
 
         [$httpA] = $this->asProcurementOfficer($tenantA);
-        $createA = $httpA->postJson('/api/v1/procurement/vendors', $this->vendorPayload());
+        $createA = $httpA->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenantA]));
         $idA = $createA->json('data.id');
 
         [$httpB] = $this->asProcurementOfficer($tenantB);

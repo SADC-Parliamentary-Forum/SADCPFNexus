@@ -5,6 +5,7 @@ namespace Tests;
 use App\Http\Middleware\SetRlsContext;
 use App\Models\ApprovalRequest;
 use App\Models\Department;
+use App\Models\SupplierCategory;
 use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -146,5 +147,18 @@ abstract class TestCase extends BaseTestCase
             'code'      => strtoupper(substr(uniqid(), -5)),
             'parent_id' => $parentId,
         ]);
+    }
+
+    protected function makeSupplierCategory(Tenant $tenant, array $overrides = []): SupplierCategory
+    {
+        $suffix = strtolower(substr(uniqid(), -6));
+
+        return SupplierCategory::create(array_merge([
+            'tenant_id'    => $tenant->id,
+            'name'         => 'Category ' . strtoupper($suffix),
+            'code'         => 'cat_' . $suffix,
+            'description'  => 'Test supplier category',
+            'is_active'    => true,
+        ], $overrides));
     }
 }

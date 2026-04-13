@@ -28,6 +28,7 @@ export function proxy(request: NextRequest) {
     "/finance", "/hr", "/pif", "/workplan", "/approvals", "/alerts", "/governance",
     "/reports", "/profile", "/assets", "/organogram", "/analytics", "/assignments",
     "/srhr", "/notifications", "/saam", "/settings",
+    "/supplier",
   ];
   const isProtected = protectedPrefixes.some((prefix) => path.startsWith(prefix));
   if (isProtected) {
@@ -81,5 +82,6 @@ export const config = {
     "/notifications/:path*",
     "/saam/:path*",
     "/settings/:path*",
+    "/supplier/:path*",
   ],
 };

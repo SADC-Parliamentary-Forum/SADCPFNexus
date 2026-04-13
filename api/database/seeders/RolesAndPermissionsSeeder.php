@@ -24,6 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
             'procurement.receive_goods', 'procurement.approve_invoice',
             'procurement.hod_approve', 'procurement.manage_budget',
+            'supplier.portal',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin', 'hr.supervisor',
@@ -250,6 +251,16 @@ class RolesAndPermissionsSeeder extends Seeder
                     'risk.view',
                     'governance.view', 'finance.view', 'reports.view',
                 ])->where('guard_name', $guard)->get()
+            );
+
+            $supplier = Role::firstOrCreate(['name' => 'Supplier', 'guard_name' => $guard]);
+            $supplier->syncPermissions(
+                Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
+            );
+
+            $supplierFinance = Role::firstOrCreate(['name' => 'Supplier Finance User', 'guard_name' => $guard]);
+            $supplierFinance->syncPermissions(
+                Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
             );
         }
     }

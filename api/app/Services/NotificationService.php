@@ -185,6 +185,32 @@ class NotificationService
                 'subject' => 'Your procurement request has been returned',
                 'body'    => "Dear {{name}},\n\nYour procurement request ({{reference}}) has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Procurement",
             ],
+            'procurement.rfq_invited' => [
+                'subject' => 'RFQ invitation — {{reference}}',
+                'body'    => "Dear {{name}},\n\nAn RFQ matching your supplier profile is now open.\n\nReference: {{reference}}\nTitle: {{title}}\nDeadline: {{deadline}}\n\nPlease log in to the supplier portal to review the RFQ and submit your quotation.\n\nRegards,\nSADC-PF Procurement",
+            ],
+
+            // Supplier portal
+            'supplier.application_submitted' => [
+                'subject' => 'New supplier application awaiting review',
+                'body'    => "Dear {{name}},\n\nA new supplier application has been submitted.\n\nSupplier: {{supplier}}\nPrimary contact: {{contact}}\n\nPlease log in to procurement and review the application.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.approved' => [
+                'subject' => 'Your supplier account has been approved',
+                'body'    => "Dear {{name}},\n\nYour supplier registration for {{supplier}} has been approved.\n\nYou can now log in to the supplier portal and participate in RFQs.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.rejected' => [
+                'subject' => 'Your supplier application was not approved',
+                'body'    => "Dear {{name}},\n\nYour supplier application for {{supplier}} was not approved.\n\nReason:\n{{comment}}\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.info_requested' => [
+                'subject' => 'Additional supplier information required',
+                'body'    => "Dear {{name}},\n\nProcurement has requested additional information for {{supplier}}.\n\nRequest:\n{{comment}}\n\nPlease log in to the supplier portal and update your profile.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.suspended' => [
+                'subject' => 'Your supplier account has been suspended',
+                'body'    => "Dear {{name}},\n\nYour supplier account for {{supplier}} has been suspended.\n\nReason:\n{{comment}}\n\nPlease contact Procurement for clarification.\n\nRegards,\nSADC-PF Procurement",
+            ],
 
             // Finance
             'finance.advance_due' => [

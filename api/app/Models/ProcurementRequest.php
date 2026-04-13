@@ -18,7 +18,7 @@ class ProcurementRequest extends Model
         'rejection_reason', 'required_by_date', 'submitted_at', 'approved_at',
         'awarded_quote_id', 'awarded_at', 'award_notes',
         'hod_id', 'hod_reviewed_at',
-        'rfq_issued_at', 'rfq_deadline', 'rfq_notes',
+        'rfq_issued_at', 'rfq_issued_by', 'rfq_deadline', 'rfq_notes',
     ];
 
     protected $casts = [
@@ -48,6 +48,9 @@ class ProcurementRequest extends Model
     public function quotes()            { return $this->hasMany(ProcurementQuote::class); }
     public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
     public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
+    public function rfqIssuer()         { return $this->belongsTo(User::class, 'rfq_issued_by'); }
+    public function supplierCategories(){ return $this->belongsToMany(SupplierCategory::class, 'procurement_request_supplier_category')->withTimestamps(); }
+    public function rfqInvitations()    { return $this->hasMany(RfqInvitation::class); }
 
     public function attachments(): MorphMany
     {

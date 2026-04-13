@@ -2,10 +2,16 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\AuditLog;
+use App\Models\RfqInvitation;
 use App\Models\ProcurementRequest;
+use App\Models\SupplierCategory;
+use App\Models\Vendor;
 use App\Models\User;
+use App\Mail\ModuleNotificationMail;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +24,7 @@ class ProcurementService
     ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = ProcurementRequest::with(['requester', 'items', 'quotes'])
+        $query = ProcurementRequest::with(['requester', 'items', 'quotes', 'supplierCategories'])
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
@@ -253,10 +259,20 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only approved requests can be awarded.']);
         }
 
+        if (!$request->rfq_issued_at) {
+            throw ValidationException::withMessages(['status' => 'Issue the RFQ before awarding this request.']);
+        }
+
         // Quote must belong to this request
         $quote = $request->quotes()->find($quoteId);
         if (!$quote) {
             throw ValidationException::withMessages(['quote_id' => 'The selected quote does not belong to this request.']);
+        }
+
+        if (!$quote->assessed_at || $quote->compliance_passed !== true) {
+            throw ValidationException::withMessages([
+                'quote_id' => 'Only assessed and compliant quotes can be awarded.',
+            ]);
         }
 
         $request->update([
@@ -297,7 +313,7 @@ class ProcurementService
             );
         }
 
-        return $request->fresh(['requester', 'items', 'quotes', 'awardedQuote']);
+        return $request->fresh(['requester', 'items', 'quotes', 'awardedQuote', 'supplierCategories']);
     }
 
     public function reject(ProcurementRequest $request, string $reason, User $approver): ProcurementRequest
@@ -330,5 +346,143 @@ class ProcurementService
         }
 
         return $request->fresh();
+    }
+
+    public function issueRfq(ProcurementRequest $request, array $data, User $actor): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        if (!$request->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved procurement requests can be issued as RFQs.']);
+        }
+
+        $categoryIds = SupplierCategory::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereIn('id', $data['category_ids'] ?? [])
+            ->pluck('id')
+            ->all();
+
+        if (count($categoryIds) < 1 || count($categoryIds) > 3) {
+            throw ValidationException::withMessages(['category_ids' => 'Select between 1 and 3 supplier categories for the RFQ.']);
+        }
+
+        $request->supplierCategories()->sync($categoryIds);
+        $request->update([
+            'rfq_issued_at' => $request->rfq_issued_at ?? now(),
+            'rfq_issued_by' => $actor->id,
+            'rfq_deadline'  => $data['rfq_deadline'] ?? null,
+            'rfq_notes'     => $data['rfq_notes'] ?? null,
+        ]);
+
+        $vendors = Vendor::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('status', 'approved')
+            ->whereHas('categories', fn ($q) => $q->whereIn('supplier_categories.id', $categoryIds))
+            ->with('portalUsers')
+            ->get();
+
+        foreach ($vendors as $vendor) {
+            $invitation = RfqInvitation::updateOrCreate(
+                [
+                    'procurement_request_id' => $request->id,
+                    'vendor_id'              => $vendor->id,
+                ],
+                [
+                    'tenant_id'            => $actor->tenant_id,
+                    'invitation_type'      => 'system',
+                    'status'               => 'sent',
+                    'invited_name'         => $vendor->contact_name ?: $vendor->name,
+                    'invited_email'        => $vendor->contact_email,
+                    'response_token'       => Str::random(48),
+                    'response_expires_at'  => $data['rfq_deadline'] ? Carbon::parse($data['rfq_deadline'])->endOfDay() : null,
+                    'invited_at'           => now(),
+                    'last_notified_at'     => now(),
+                    'notes'                => $data['rfq_notes'] ?? null,
+                    'created_by'           => $actor->id,
+                ]
+            );
+            $this->notifySupplierInvitation($request, $vendor, $invitation);
+        }
+
+        foreach (($data['external_invites'] ?? []) as $invite) {
+            if (empty($invite['email'])) {
+                continue;
+            }
+
+            $invitation = RfqInvitation::updateOrCreate(
+                [
+                    'procurement_request_id' => $request->id,
+                    'invited_email'          => $invite['email'],
+                ],
+                [
+                    'tenant_id'            => $actor->tenant_id,
+                    'vendor_id'            => null,
+                    'invitation_type'      => 'email',
+                    'status'               => 'sent',
+                    'invited_name'         => $invite['name'] ?? $invite['email'],
+                    'response_token'       => Str::random(48),
+                    'response_expires_at'  => $data['rfq_deadline'] ? Carbon::parse($data['rfq_deadline'])->endOfDay() : null,
+                    'invited_at'           => now(),
+                    'last_notified_at'     => now(),
+                    'notes'                => $data['rfq_notes'] ?? null,
+                    'created_by'           => $actor->id,
+                ]
+            );
+
+            $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
+            $quoteUrl = $frontendBase . '/external-rfq/' . $invitation->response_token;
+            Mail::to($invite['email'])->queue(new ModuleNotificationMail(
+                "RFQ Invitation — {$request->reference_number}",
+                "You have been invited to submit a quotation for {$request->title}.\n\nPlease use the secure link below to view the RFQ and submit your quote before the deadline.",
+                $invite['name'] ?? 'Supplier',
+                $quoteUrl,
+                null,
+            ));
+        }
+
+        AuditLog::record('procurement.rfq_issued', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => ['rfq_deadline' => $request->rfq_deadline?->toDateString(), 'categories' => $categoryIds],
+            'tags'           => 'procurement',
+        ]);
+
+        return $request->fresh(['requester', 'items', 'quotes.vendor', 'supplierCategories', 'rfqInvitations']);
+    }
+
+    private function notifySupplierInvitation(ProcurementRequest $request, Vendor $vendor, RfqInvitation $invitation): void
+    {
+        $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
+        $portalUrl = $frontendBase . '/supplier/rfqs/' . $request->id;
+
+        foreach ($vendor->portalUsers as $portalUser) {
+            if (!$portalUser->is_active) {
+                continue;
+            }
+
+            $this->notificationService->dispatch(
+                $portalUser,
+                'procurement.rfq_invited',
+                [
+                    'name'      => $portalUser->name,
+                    'reference' => $request->reference_number,
+                    'title'     => $request->title,
+                    'deadline'  => $request->rfq_deadline?->toDateString() ?? 'No deadline specified',
+                ],
+                ['module' => 'procurement', 'record_id' => $request->id, 'url' => '/supplier/rfqs/' . $request->id]
+            );
+        }
+
+        if ($vendor->contact_email) {
+            Mail::to($vendor->contact_email)->queue(new ModuleNotificationMail(
+                "RFQ Invitation — {$request->reference_number}",
+                "An RFQ matching your supplier categories is available in the SADC-PF supplier portal.\n\nTitle: {$request->title}\nDeadline: " . ($request->rfq_deadline?->toDateString() ?? 'No deadline specified'),
+                $vendor->contact_name ?: $vendor->name,
+                $portalUrl,
+                null,
+            ));
+        }
     }
 }

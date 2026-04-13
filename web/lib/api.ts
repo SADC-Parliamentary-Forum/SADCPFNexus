@@ -176,6 +176,7 @@ export interface AuthUser {
   name: string;
   email: string;
   tenant_id: number;
+  vendor_id?: number | null;
   classification: string;
   must_reset_password?: boolean;
   roles: string[];
@@ -1162,14 +1163,58 @@ export interface ProcurementItem {
 export interface ProcurementQuote {
   id: number;
   procurement_request_id: number;
+  rfq_invitation_id?: number | null;
   vendor_id?: number | null;
+  submitted_by_user_id?: number | null;
   vendor_name: string;
   quoted_amount: number;
   currency?: string;
+  submission_channel?: string | null;
   is_recommended: boolean;
+  compliance_passed?: boolean | null;
+  compliance_notes?: string | null;
+  assessed_by?: number | null;
+  assessed_at?: string | null;
   notes: string | null;
   quote_date?: string | null;
   vendor?: Vendor;
+  assessor?: User;
+}
+
+export interface SupplierCategory {
+  id: number;
+  tenant_id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface SupplierApprovalLog {
+  id: number;
+  action: string;
+  reason: string | null;
+  performed_at: string | null;
+  performer?: { id: number; name: string; email?: string | null } | null;
+}
+
+export interface RfqInvitation {
+  id: number;
+  procurement_request_id: number;
+  vendor_id?: number | null;
+  invitation_type: "system" | "email";
+  status: string;
+  invited_name?: string | null;
+  invited_email?: string | null;
+  response_token?: string | null;
+  invited_at?: string | null;
+  viewed_at?: string | null;
+  responded_at?: string | null;
+  last_notified_at?: string | null;
+  notes?: string | null;
+  procurement_request?: ProcurementRequest;
+  vendor?: Vendor | null;
+  quote?: ProcurementQuote | null;
 }
 
 export interface ProcurementRequest {
@@ -1194,6 +1239,7 @@ export interface ProcurementRequest {
   hod_id: number | null;
   hod_reviewed_at: string | null;
   rfq_issued_at?: string | null;
+  rfq_issued_by?: number | null;
   rfq_deadline?: string | null;
   rfq_notes?: string | null;
   requester?: User;
@@ -1201,6 +1247,8 @@ export interface ProcurementRequest {
   hod?: User;
   items?: ProcurementItem[];
   quotes?: ProcurementQuote[];
+  supplierCategories?: SupplierCategory[];
+  rfqInvitations?: RfqInvitation[];
 }
 
 export const procurementApi = {
@@ -1224,7 +1272,7 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-approve`),
   hodReject: (id: number, reason: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-reject`, { reason }),
-  issueRfq: (id: number, data: { rfq_deadline?: string; rfq_notes?: string }) =>
+  issueRfq: (id: number, data: { rfq_deadline?: string; rfq_notes?: string; category_ids: number[]; external_invites?: { name?: string; email: string }[] }) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/issue-rfq`, data),
 };
 
@@ -1234,6 +1282,8 @@ export interface CreateQuotePayload {
   quoted_amount: number;
   currency?: string;
   is_recommended?: boolean;
+  compliance_passed?: boolean | null;
+  compliance_notes?: string;
   notes?: string;
   quote_date?: string;
 }
@@ -1292,10 +1342,18 @@ export interface Vendor {
   notes: string | null;
   is_approved: boolean;
   is_active: boolean;
+  status?: string;
+  risk_level?: string | null;
+  submitted_at?: string | null;
+  rejection_reason?: string | null;
+  last_info_request_reason?: string | null;
   is_blacklisted: boolean;
   blacklisted_at: string | null;
   blacklist_reason: string | null;
   blacklist_reference: string | null;
+  categories?: SupplierCategory[];
+  approval_logs?: SupplierApprovalLog[];
+  portal_users?: Pick<User, "id" | "name" | "email" | "is_active">[];
   quotes_count?: number;
   ratings_avg_rating?: number | null;
   ratings_count?: number;
@@ -1327,6 +1385,7 @@ export interface VendorPerformanceEvaluation {
   evaluated_by: number;
   delivery_score: number;
   quality_score: number;
+  price_score: number;
   compliance_score: number;
   communication_score: number;
   overall_score: number;
@@ -1381,6 +1440,12 @@ export const vendorsApi = {
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
+  requestInfo: (id: number, reason: string) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/request-info`, { reason }),
+  suspend: (id: number, reason: string) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/suspend`, { reason }),
+  approvalLogs: (id: number) =>
+    api.get<{ data: SupplierApprovalLog[] }>(`/procurement/vendors/${id}/approval-logs`),
   listRatings: (id: number) =>
     api.get<{ data: VendorRating[]; avg: number | null; count: number; my_rating: VendorRating | null }>(
       `/procurement/vendors/${id}/ratings`
@@ -1403,6 +1468,7 @@ export const vendorsApi = {
   submitEvaluation: (id: number, data: {
     delivery_score: number;
     quality_score: number;
+    price_score: number;
     compliance_score: number;
     communication_score: number;
     contract_id?: number | null;
@@ -1412,6 +1478,60 @@ export const vendorsApi = {
       `/procurement/vendors/${id}/evaluations`,
       data
     ),
+};
+
+export const supplierCategoriesApi = {
+  publicList: (tenantId?: number) =>
+    api.get<{ data: SupplierCategory[] }>("/procurement/supplier-categories/public", { params: tenantId ? { tenant_id: tenantId } : undefined }),
+  list: () =>
+    api.get<{ data: SupplierCategory[] }>("/procurement/supplier-categories"),
+  create: (data: Partial<SupplierCategory>) =>
+    api.post<{ data: SupplierCategory; message: string }>("/procurement/supplier-categories", data),
+  update: (id: number, data: Partial<SupplierCategory>) =>
+    api.put<{ data: SupplierCategory; message: string }>(`/procurement/supplier-categories/${id}`, data),
+  destroy: (id: number) =>
+    api.delete<{ message: string }>(`/procurement/supplier-categories/${id}`),
+};
+
+export const supplierRegistrationApi = {
+  register: (formData: FormData) =>
+    api.post<{ data: { vendor_id: number; user_id: number; status: string }; message: string }>(
+      "/procurement/suppliers/register",
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    ),
+};
+
+export interface SupplierDashboard {
+  vendor: Vendor;
+  open_rfq_count: number;
+  quote_count: number;
+  purchase_order_count: number;
+  invoice_count: number;
+  pending_compliance: number;
+}
+
+export const supplierPortalApi = {
+  me: () => api.get<{ data: Vendor }>("/procurement/supplier/me"),
+  updateProfile: (formData: FormData) =>
+    api.put<{ data: Vendor; message: string }>("/procurement/supplier/profile", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  dashboard: () => api.get<{ data: SupplierDashboard }>("/procurement/supplier/dashboard"),
+  rfqs: () => api.get<{ data: RfqInvitation[] }>("/procurement/supplier/rfqs"),
+  rfq: (requestId: number) =>
+    api.get<{ data: { invitation: RfqInvitation; request: ProcurementRequest } }>(`/procurement/supplier/rfqs/${requestId}`),
+  submitQuote: (requestId: number, data: { quoted_amount: number; currency?: string; quote_date?: string; notes?: string }) =>
+    api.post<{ data: ProcurementQuote; message: string }>(`/procurement/supplier/rfqs/${requestId}/quote`, data),
+  purchaseOrders: () => api.get<{ data: PurchaseOrder[] }>("/procurement/supplier/purchase-orders"),
+  invoices: () => api.get<{ data: Invoice[] }>("/procurement/supplier/invoices"),
+};
+
+export const externalRfqApi = {
+  preview: (token: string) =>
+    api.get<{ data: { invitation: RfqInvitation; request: ProcurementRequest; can_submit: boolean } }>(`/procurement/external-rfq/${token}`),
+  submitQuote: (token: string, data: { vendor_name: string; quoted_amount: number; currency?: string; quote_date?: string; notes?: string }) =>
+    api.post<{ data: ProcurementQuote; message: string }>(`/procurement/external-rfq/${token}/quote`, data),
 };
 
 // ─── Purchase Orders ─────────────────────────────────────────────────────────

@@ -78,5 +78,8 @@ class VendorAttachmentController extends Controller
         if ($vendor->tenant_id !== $request->user()->tenant_id) {
             abort(404);
         }
+        if ($request->user()->isSupplier() && (int) $request->user()->vendor_id !== (int) $vendor->id) {
+            abort(404);
+        }
     }
 }

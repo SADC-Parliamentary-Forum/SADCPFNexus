@@ -1,188 +1,176 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  procurementApi, quotesApi,
-  type ProcurementRequest, type ProcurementQuote, type CreateQuotePayload,
+  procurementApi,
+  quotesApi,
+  supplierCategoriesApi,
+  type CreateQuotePayload,
+  type ProcurementQuote,
+  type ProcurementRequest,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
-function getStoredUser() {
-  if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
-}
 function canManage() {
-  const u = getStoredUser();
-  return (u?.roles ?? []).some((r: string) =>
-    ["Procurement Officer", "Finance Controller", "System Admin", "super-admin", "Secretary General"].includes(r)
-  );
+  if (typeof window === "undefined") return false;
+  try {
+    const user = JSON.parse(localStorage.getItem("sadcpf_user") ?? "null");
+    return (user?.roles ?? []).some((role: string) =>
+      ["Procurement Officer", "Finance Controller", "System Admin", "super-admin", "Secretary General"].includes(role)
+    );
+  } catch {
+    return false;
+  }
 }
 
-interface QuoteFormState {
+type Assessment = "pending" | "pass" | "fail";
+
+type QuoteForm = {
   vendor_name: string;
   quoted_amount: string;
   currency: string;
   quote_date: string;
   notes: string;
+  compliance_passed: Assessment;
+  compliance_notes: string;
   is_recommended: boolean;
-}
+};
 
-const emptyForm = (currency: string): QuoteFormState => ({
-  vendor_name: "", quoted_amount: "", currency, quote_date: "", notes: "", is_recommended: false,
+const emptyQuoteForm = (currency: string): QuoteForm => ({
+  vendor_name: "",
+  quoted_amount: "",
+  currency,
+  quote_date: "",
+  notes: "",
+  compliance_passed: "pending",
+  compliance_notes: "",
+  is_recommended: false,
 });
 
-export default function RfqDetailPage({ params }: { params: { id: string } }) {
-  const reqId       = Number(params.id);
+export default function RfqDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const reqId = Number(id);
   const queryClient = useQueryClient();
+  const manager = canManage();
+  const [showIssue, setShowIssue] = useState(false);
+  const [rfqDeadline, setRfqDeadline] = useState("");
+  const [rfqNotes, setRfqNotes] = useState("");
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [externalInvites, setExternalInvites] = useState([{ name: "", email: "" }]);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<ProcurementQuote | null>(null);
+  const [quoteForm, setQuoteForm] = useState<QuoteForm>(emptyQuoteForm(DEFAULT_CURRENCY));
+  const [showAward, setShowAward] = useState(false);
+  const [awardQuoteId, setAwardQuoteId] = useState<number | "">("");
+  const [awardNotes, setAwardNotes] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const [showAddQuote, setShowAddQuote]   = useState(false);
-  const [editingQuote, setEditingQuote]   = useState<ProcurementQuote | null>(null);
-  const [quoteForm, setQuoteForm]         = useState<QuoteFormState>(emptyForm(DEFAULT_CURRENCY));
-  const [quoteError, setQuoteError]       = useState<string | null>(null);
-
-  const [showRfqPanel, setShowRfqPanel]   = useState(false);
-  const [rfqDeadline, setRfqDeadline]     = useState("");
-  const [rfqNotes, setRfqNotes]           = useState("");
-  const [rfqError, setRfqError]           = useState<string | null>(null);
-
-  const [showAward, setShowAward]         = useState(false);
-  const [awardQuoteId, setAwardQuoteId]   = useState<number | "">("");
-  const [awardNotes, setAwardNotes]       = useState("");
-  const [awardError, setAwardError]       = useState<string | null>(null);
-
-  const [deletingId, setDeletingId]       = useState<number | null>(null);
-
-  const { data: req, isLoading, isError } = useQuery({
+  const requestQuery = useQuery({
     queryKey: ["rfq-request", reqId],
-    queryFn:  () => procurementApi.get(reqId).then((r) => r.data as unknown as ProcurementRequest),
-    enabled:  !!reqId,
+    queryFn: () => procurementApi.get(reqId).then((r) => r.data as unknown as ProcurementRequest),
+    enabled: Number.isFinite(reqId),
   });
-
-  const { data: quotesData, refetch: refetchQuotes } = useQuery({
+  const quotesQuery = useQuery({
     queryKey: ["rfq-quotes", reqId],
-    queryFn:  () => quotesApi.list(reqId).then((r) => r.data.data),
-    enabled:  !!reqId,
+    queryFn: () => quotesApi.list(reqId).then((r) => r.data.data),
+    enabled: Number.isFinite(reqId),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["supplier-categories"],
+    queryFn: () => supplierCategoriesApi.list().then((r) => r.data.data),
+    enabled: manager,
   });
 
-  const quotes: ProcurementQuote[] = (quotesData ?? []) as ProcurementQuote[];
+  const req = requestQuery.data ?? null;
+  const quotes = (quotesQuery.data ?? []) as ProcurementQuote[];
+  const categories = categoriesQuery.data ?? [];
+  const currency = req?.currency ?? DEFAULT_CURRENCY;
 
-  // Pre-fill rfq panel when request loads
   useEffect(() => {
-    if (req) {
-      setRfqDeadline(req.rfq_deadline ? req.rfq_deadline.split("T")[0] : "");
-      setRfqNotes(req.rfq_notes ?? "");
-      setQuoteForm(emptyForm(req.currency ?? DEFAULT_CURRENCY));
-    }
+    if (!req) return;
+    setRfqDeadline(req.rfq_deadline ? req.rfq_deadline.split("T")[0] : "");
+    setRfqNotes(req.rfq_notes ?? "");
+    setCategoryIds((req.supplierCategories ?? []).map((item) => item.id));
+    setQuoteForm(emptyQuoteForm(req.currency ?? DEFAULT_CURRENCY));
   }, [req]);
 
-  // ─── Issue RFQ ───────────────────────────────────────────────────────────────
+  const eligibleQuotes = useMemo(
+    () => quotes.filter((quote) => quote.assessed_at && quote.compliance_passed === true),
+    [quotes]
+  );
+  const sortedQuotes = useMemo(
+    () => [...quotes].sort((a, b) => (a.quoted_amount ?? 0) - (b.quoted_amount ?? 0)),
+    [quotes]
+  );
+
   const issueMutation = useMutation({
-    mutationFn: () => procurementApi.issueRfq(reqId, {
-      rfq_deadline: rfqDeadline || undefined,
-      rfq_notes:    rfqNotes || undefined,
-    }),
+    mutationFn: () =>
+      procurementApi.issueRfq(reqId, {
+        rfq_deadline: rfqDeadline || undefined,
+        rfq_notes: rfqNotes || undefined,
+        category_ids: categoryIds,
+        external_invites: externalInvites.filter((invite) => invite.email.trim()).map((invite) => ({
+          name: invite.name.trim() || undefined,
+          email: invite.email.trim(),
+        })),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
-      setShowRfqPanel(false);
-      setRfqError(null);
+      setShowIssue(false);
+      setError(null);
     },
-    onError: (e: unknown) => {
-      setRfqError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to issue RFQ.");
-    },
+    onError: (err: unknown) =>
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to issue RFQ."),
   });
 
-  // ─── Add / Edit Quote ────────────────────────────────────────────────────────
-  const saveMutation = useMutation({
+  const saveQuoteMutation = useMutation({
     mutationFn: () => {
       const payload: CreateQuotePayload = {
-        vendor_name:    quoteForm.vendor_name.trim(),
-        quoted_amount:  Number(quoteForm.quoted_amount),
-        currency:       quoteForm.currency || (req?.currency ?? DEFAULT_CURRENCY),
+        vendor_name: quoteForm.vendor_name.trim(),
+        quoted_amount: Number(quoteForm.quoted_amount),
+        currency: quoteForm.currency || currency,
+        quote_date: quoteForm.quote_date || undefined,
+        notes: quoteForm.notes.trim() || undefined,
+        compliance_passed: quoteForm.compliance_passed === "pending" ? null : quoteForm.compliance_passed === "pass",
+        compliance_notes: quoteForm.compliance_notes.trim() || undefined,
         is_recommended: quoteForm.is_recommended,
-        notes:          quoteForm.notes.trim() || undefined,
-        quote_date:     quoteForm.quote_date || undefined,
       };
-      return editingQuote
-        ? quotesApi.update(reqId, editingQuote.id, payload)
-        : quotesApi.create(reqId, payload);
+      return editingQuote ? quotesApi.update(reqId, editingQuote.id, payload) : quotesApi.create(reqId, payload);
     },
     onSuccess: () => {
-      refetchQuotes();
-      setShowAddQuote(false);
+      quotesQuery.refetch();
+      queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
+      setShowQuoteModal(false);
       setEditingQuote(null);
-      setQuoteForm(emptyForm(req?.currency ?? DEFAULT_CURRENCY));
-      setQuoteError(null);
+      setQuoteForm(emptyQuoteForm(currency));
+      setError(null);
     },
-    onError: (e: unknown) => {
-      setQuoteError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save quote.");
-    },
+    onError: (err: unknown) =>
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save quote."),
   });
 
-  async function handleDeleteQuote(quoteId: number) {
-    setDeletingId(quoteId);
-    try { await quotesApi.delete(reqId, quoteId); refetchQuotes(); }
-    finally { setDeletingId(null); }
-  }
-
-  function openEdit(q: ProcurementQuote) {
-    setEditingQuote(q);
-    setQuoteForm({
-      vendor_name:    q.vendor_name,
-      quoted_amount:  String(q.quoted_amount),
-      currency:       q.currency ?? (req?.currency ?? DEFAULT_CURRENCY),
-      quote_date:     q.quote_date ? q.quote_date.split("T")[0] : "",
-      notes:          q.notes ?? "",
-      is_recommended: q.is_recommended,
-    });
-    setQuoteError(null);
-    setShowAddQuote(true);
-  }
-
-  // ─── Award ───────────────────────────────────────────────────────────────────
   const awardMutation = useMutation({
-    mutationFn: () => procurementApi.award(reqId, Number(awardQuoteId), awardNotes),
+    mutationFn: () => procurementApi.award(reqId, Number(awardQuoteId), awardNotes || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
       setShowAward(false);
-      setAwardError(null);
+      setAwardQuoteId("");
+      setAwardNotes("");
+      setError(null);
     },
-    onError: (e: unknown) => {
-      setAwardError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award.");
-    },
+    onError: (err: unknown) =>
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award quote."),
   });
 
-  // ─── Derived ─────────────────────────────────────────────────────────────────
-  const currency      = req?.currency ?? DEFAULT_CURRENCY;
-  const isAwarded     = req?.status === "awarded";
-  const canEdit       = canManage();
-  const sortedQuotes  = [...quotes].sort((a, b) => (a.quoted_amount ?? 0) - (b.quoted_amount ?? 0));
-  const lowestQuote   = sortedQuotes[0] ?? null;
-
-  if (isLoading) return (
-    <div className="max-w-3xl mx-auto space-y-5 animate-pulse">
-      <div className="h-4 w-48 bg-neutral-100 rounded" />
-      <div className="card p-6 space-y-3">
-        <div className="h-6 w-64 bg-neutral-100 rounded" />
-        <div className="h-4 w-40 bg-neutral-100 rounded" />
-      </div>
-    </div>
-  );
-
-  if (isError || !req) return (
-    <div className="max-w-3xl mx-auto card p-8 text-center space-y-3">
-      <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
-      <p className="text-sm text-neutral-500">Request not found.</p>
-      <Link href="/procurement/rfq" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">Back</Link>
-    </div>
-  );
+  if (requestQuery.isLoading) return <div className="max-w-4xl mx-auto card p-6">Loading RFQ...</div>;
+  if (requestQuery.isError || !req) return <div className="max-w-4xl mx-auto card p-6">RFQ not found.</div>;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      {/* Breadcrumb */}
+    <div className="max-w-4xl mx-auto space-y-5">
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/procurement" className="hover:text-primary">Procurement</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -191,531 +179,214 @@ export default function RfqDetailPage({ params }: { params: { id: string } }) {
         <span className="font-mono text-neutral-600">{req.reference_number}</span>
       </nav>
 
-      {/* Hero */}
-      <div className="card p-5">
-        <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="card p-5 space-y-4">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-neutral-900">{req.title}</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{req.reference_number}</p>
+            <p className="font-mono text-xs text-neutral-400">{req.reference_number}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-            {isAwarded ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                <span className="material-symbols-outlined text-[14px]">emoji_events</span>
-                Awarded
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                Approved
-              </span>
-            )}
-            {!isAwarded && canEdit && quotes.length > 0 && (
-              <button
-                onClick={() => { setAwardQuoteId(""); setAwardNotes(""); setAwardError(null); setShowAward(true); }}
-                className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">emoji_events</span>
-                Award Contract
-              </button>
+          <div className="flex items-center gap-2">
+            <span className="badge badge-primary">{req.status}</span>
+            {manager && req.status !== "awarded" && eligibleQuotes.length > 0 && (
+              <button className="btn-primary text-xs px-3 py-1.5" onClick={() => setShowAward(true)}>Award Contract</button>
             )}
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          {[
-            { label: "Category",       icon: "category",       value: <span className="capitalize">{req.category}</span>                     },
-            { label: "Method",         icon: "gavel",          value: <span className="capitalize">{req.procurement_method ?? "—"}</span>    },
-            { label: "Estimated Value",icon: "payments",       value: `${currency} ${(req.estimated_value ?? 0).toLocaleString()}`           },
-            { label: "Required By",    icon: "calendar_today", value: req.required_by_date ? formatDateShort(req.required_by_date) : "—"     },
-          ].map((row) => (
-            <div key={row.label}>
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="material-symbols-outlined text-[13px] text-neutral-300">{row.icon}</span>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{row.label}</p>
-              </div>
-              <p className="font-medium text-neutral-900">{row.value}</p>
-            </div>
-          ))}
+        <div className="grid gap-4 md:grid-cols-4 text-sm">
+          <div><p className="text-xs text-neutral-400">Category</p><p>{req.category}</p></div>
+          <div><p className="text-xs text-neutral-400">Method</p><p>{req.procurement_method ?? "quotation"}</p></div>
+          <div><p className="text-xs text-neutral-400">Estimated</p><p>{currency} {(req.estimated_value ?? 0).toLocaleString()}</p></div>
+          <div><p className="text-xs text-neutral-400">Required By</p><p>{req.required_by_date ? formatDateShort(req.required_by_date) : "-"}</p></div>
         </div>
-
-        {req.description && (
-          <p className="mt-4 pt-4 border-t border-neutral-50 text-sm text-neutral-600 leading-relaxed">{req.description}</p>
-        )}
+        {req.description && <p className="text-sm text-neutral-600">{req.description}</p>}
       </div>
 
-      {/* RFQ Control */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 flex-shrink-0">
-              <span className="material-symbols-outlined text-[18px] text-indigo-600">send</span>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-neutral-800">RFQ Issuance</h3>
-              {req.rfq_issued_at ? (
-                <p className="text-xs text-neutral-400">
-                  Issued {formatDateShort(req.rfq_issued_at)}
-                  {req.rfq_deadline ? ` · Deadline ${formatDateShort(req.rfq_deadline)}` : ""}
-                </p>
-              ) : (
-                <p className="text-xs text-neutral-400">Not yet issued</p>
-              )}
-            </div>
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-800">RFQ Initiation</h2>
+            <p className="text-xs text-neutral-400">
+              {req.rfq_issued_at ? `Issued ${formatDateShort(req.rfq_issued_at)}` : "Target approved suppliers by category and email invitees."}
+            </p>
           </div>
-          {!isAwarded && canEdit && (
-            <button
-              onClick={() => setShowRfqPanel((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-primary border border-primary/30 rounded-lg px-2.5 py-1.5 hover:bg-primary/5 transition-colors font-medium"
-            >
-              <span className="material-symbols-outlined text-[14px]">{req.rfq_issued_at ? "edit" : "send"}</span>
+          {manager && req.status !== "awarded" && (
+            <button className="btn-secondary text-xs px-3 py-1.5" onClick={() => setShowIssue((v) => !v)}>
               {req.rfq_issued_at ? "Update RFQ" : "Issue RFQ"}
             </button>
           )}
         </div>
 
-        {showRfqPanel && (
-          <div className="border-t border-neutral-100 pt-4 space-y-4">
-            {rfqError && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{rfqError}</div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Quote Deadline</label>
-                <input type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
-              </div>
+        <div className="flex flex-wrap gap-2">
+          {(req.supplierCategories ?? []).map((category) => (
+            <span key={category.id} className="badge badge-primary">{category.name}</span>
+          ))}
+          {(req.supplierCategories ?? []).length === 0 && <span className="text-xs text-neutral-400">No supplier categories selected.</span>}
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+            <p className="text-xs text-neutral-400">Portal suppliers</p>
+            <p className="text-2xl font-bold">{(req.rfqInvitations ?? []).filter((i) => i.invitation_type === "system").length}</p>
+          </div>
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+            <p className="text-xs text-neutral-400">Email invitees</p>
+            <p className="text-2xl font-bold">{(req.rfqInvitations ?? []).filter((i) => i.invitation_type === "email").length}</p>
+          </div>
+          <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+            <p className="text-xs text-neutral-400">Deadline</p>
+            <p className="text-sm font-semibold">{req.rfq_deadline ? formatDateShort(req.rfq_deadline) : "Not set"}</p>
+          </div>
+        </div>
+
+        {showIssue && (
+          <div className="space-y-4 border-t border-neutral-100 pt-4">
+            {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+            <div className="grid gap-2 md:grid-cols-2">
+              {categories.map((category) => (
+                <label key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={categoryIds.includes(category.id)}
+                    onChange={() =>
+                      setCategoryIds((current) =>
+                        current.includes(category.id)
+                          ? current.filter((id) => id !== category.id)
+                          : current.length >= 3 ? current : [...current, category.id]
+                      )
+                    }
+                  />
+                  {category.name}
+                </label>
+              ))}
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">RFQ Notes / Instructions</label>
-              <textarea
-                className="form-input w-full h-20 resize-none"
-                placeholder="Scope of work, evaluation criteria, submission requirements…"
-                value={rfqNotes}
-                onChange={(e) => setRfqNotes(e.target.value)}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <input type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
+              <textarea className="form-input h-[42px] resize-none" placeholder="RFQ notes" value={rfqNotes} onChange={(e) => setRfqNotes(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              {externalInvites.map((invite, index) => (
+                <div key={index} className="grid gap-3 md:grid-cols-[1fr,1fr,auto]">
+                  <input className="form-input" placeholder="Supplier name" value={invite.name} onChange={(e) => setExternalInvites((current) => current.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} />
+                  <input className="form-input" placeholder="supplier@example.com" value={invite.email} onChange={(e) => setExternalInvites((current) => current.map((item, i) => i === index ? { ...item, email: e.target.value } : item))} />
+                  <button className="btn-secondary" onClick={() => setExternalInvites((current) => current.length === 1 ? [{ name: "", email: "" }] : current.filter((_, i) => i !== index))}>Remove</button>
+                </div>
+              ))}
+              <button className="text-xs text-primary" onClick={() => setExternalInvites((current) => [...current, { name: "", email: "" }])}>Add email invite</button>
             </div>
             <div className="flex gap-2">
-              <button className="btn-secondary text-sm px-4" onClick={() => setShowRfqPanel(false)}>Cancel</button>
-              <button
-                className="btn-primary text-sm px-4 disabled:opacity-60 inline-flex items-center gap-1.5"
-                disabled={issueMutation.isPending}
-                onClick={() => issueMutation.mutate()}
-              >
-                {issueMutation.isPending
-                  ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
-                  : <span className="material-symbols-outlined text-[16px]">send</span>}
-                {issueMutation.isPending ? "Saving…" : req.rfq_issued_at ? "Update RFQ" : "Issue RFQ"}
+              <button className="btn-secondary" onClick={() => setShowIssue(false)}>Cancel</button>
+              <button className="btn-primary disabled:opacity-60" disabled={issueMutation.isPending || categoryIds.length === 0} onClick={() => issueMutation.mutate()}>
+                {issueMutation.isPending ? "Saving..." : req.rfq_issued_at ? "Update RFQ" : "Issue RFQ"}
               </button>
             </div>
-          </div>
-        )}
-
-        {req.rfq_notes && !showRfqPanel && (
-          <div className="mt-3 rounded-lg bg-indigo-50/50 border border-indigo-100 px-3 py-2.5 text-xs text-indigo-700 leading-relaxed">
-            {req.rfq_notes}
           </div>
         )}
       </div>
 
-      {/* Line Items */}
-      {(req.items ?? []).length > 0 && (
-        <div className="card overflow-hidden">
-          <div className="card-header">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px] text-neutral-400">list_alt</span>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Items to Quote</h3>
-            </div>
-            <span className="text-sm font-bold text-primary">
-              {currency} {(req.items ?? []).reduce((s, i) => s + (i.total_price ?? 0), 0).toLocaleString()}
-            </span>
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-800">Quote Assessment</h2>
+            <p className="text-xs text-neutral-400">Only assessed, compliant quotes can be awarded.</p>
           </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th className="text-center">Qty</th>
-                <th>Unit</th>
-                <th className="text-right">Est. Unit Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(req.items ?? []).map((item) => (
-                <tr key={item.id}>
-                  <td className="font-medium text-neutral-900">{item.description}</td>
-                  <td className="text-center text-neutral-700">{item.quantity}</td>
-                  <td className="text-xs text-neutral-400">{item.unit}</td>
-                  <td className="text-right text-neutral-600">{currency} {(item.estimated_unit_price ?? 0).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {manager && req.status !== "awarded" && <button className="btn-primary text-xs px-3 py-1.5" onClick={() => { setEditingQuote(null); setQuoteForm(emptyQuoteForm(currency)); setShowQuoteModal(true); }}>Record Quote</button>}
         </div>
-      )}
-
-      {/* Vendor Quotes */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 flex-shrink-0">
-              <span className="material-symbols-outlined text-[18px] text-teal-600">storefront</span>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-neutral-800">Vendor Quotes</h3>
-              <p className="text-xs text-neutral-400">{quotes.length} quote{quotes.length !== 1 ? "s" : ""} received</p>
-            </div>
-          </div>
-          {!isAwarded && canEdit && (
-            <button
-              onClick={() => { setEditingQuote(null); setQuoteForm(emptyForm(currency)); setQuoteError(null); setShowAddQuote(true); }}
-              className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
-            >
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              Record Quote
-            </button>
-          )}
-        </div>
-
-        {quotes.length === 0 ? (
-          <div className="rounded-xl border-2 border-dashed border-neutral-200 py-10 text-center space-y-2">
-            <span className="material-symbols-outlined text-3xl text-neutral-300">storefront</span>
-            <p className="text-sm text-neutral-500">No quotes recorded yet.</p>
-            {!isAwarded && canEdit && (
-              <button
-                onClick={() => { setEditingQuote(null); setQuoteForm(emptyForm(currency)); setQuoteError(null); setShowAddQuote(true); }}
-                className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[13px]">add</span>
-                Add the first quote
-              </button>
-            )}
-          </div>
-        ) : (
+        {sortedQuotes.length === 0 ? <p className="text-sm text-neutral-500">No quotes recorded yet.</p> : (
           <div className="space-y-3">
-            {sortedQuotes.map((q, idx) => {
-              const isLowest  = idx === 0;
-              const isWinner  = isAwarded && q.id === req.awarded_quote_id;
-              return (
-                <div
-                  key={q.id}
-                  className={`rounded-xl border p-4 transition-colors ${
-                    isWinner  ? "border-blue-300 bg-blue-50" :
-                    q.is_recommended ? "border-primary/30 bg-primary/5" :
-                    "border-neutral-100 bg-neutral-50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0 ${
-                        isWinner ? "bg-blue-100" : q.is_recommended ? "bg-primary/10" : "bg-white border border-neutral-200"
-                      }`}>
-                        <span className={`material-symbols-outlined text-[18px] ${
-                          isWinner ? "text-blue-600" : q.is_recommended ? "text-primary" : "text-neutral-400"
-                        }`}>{isWinner ? "emoji_events" : "storefront"}</span>
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <p className="text-sm font-semibold text-neutral-900">{q.vendor_name}</p>
-                          {isWinner && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full">
-                              <span className="material-symbols-outlined text-[11px]">emoji_events</span>
-                              Awarded
-                            </span>
-                          )}
-                          {!isAwarded && q.is_recommended && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                              <span className="material-symbols-outlined text-[11px]">star</span>
-                              Recommended
-                            </span>
-                          )}
-                          {!isAwarded && isLowest && !q.is_recommended && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full">
-                              <span className="material-symbols-outlined text-[11px]">trending_down</span>
-                              Lowest
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {q.quote_date && (
-                            <span className="text-xs text-neutral-400 inline-flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[11px]">calendar_today</span>
-                              {formatDateShort(q.quote_date)}
-                            </span>
-                          )}
-                          {q.notes && <p className="text-xs text-neutral-500">{q.notes}</p>}
-                        </div>
-                      </div>
+            {sortedQuotes.map((quote, index) => (
+              <div key={quote.id} className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <p className="font-semibold text-neutral-900">{quote.vendor_name}</p>
+                      {index === 0 && <span className="badge badge-success">Lowest</span>}
+                      {quote.is_recommended && <span className="badge badge-primary">Recommended</span>}
+                      {quote.compliance_passed === true && <span className="badge badge-success">Compliant</span>}
+                      {quote.compliance_passed === false && <span className="badge badge-danger">Non-compliant</span>}
                     </div>
-
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Quote</p>
-                        <p className="text-base font-bold text-neutral-900">
-                          {q.currency ?? currency} {(q.quoted_amount ?? 0).toLocaleString()}
-                        </p>
-                      </div>
-                      {!isAwarded && canEdit && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => openEdit(q)}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg border border-neutral-200 text-neutral-400 hover:text-primary hover:border-primary/50 transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">edit</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteQuote(q.id)}
-                            disabled={deletingId === q.id}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              {deletingId === q.id ? "progress_activity" : "delete"}
-                            </span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <p className="text-sm text-neutral-700">{quote.currency ?? currency} {(quote.quoted_amount ?? 0).toLocaleString()}</p>
+                    <p className="text-xs text-neutral-500">
+                      {quote.quote_date ? `Quoted ${formatDateShort(quote.quote_date)}` : "No quote date"}
+                      {quote.assessed_at ? ` | Assessed ${formatDateShort(quote.assessed_at)}` : ""}
+                    </p>
+                    {quote.notes && <p className="text-xs text-neutral-600">{quote.notes}</p>}
+                    {quote.compliance_notes && <p className="text-xs text-neutral-600">{quote.compliance_notes}</p>}
                   </div>
-                </div>
-              );
-            })}
-
-            {/* Comparison summary */}
-            {quotes.length > 1 && (
-              <div className="mt-2 rounded-xl bg-neutral-50 border border-neutral-100 p-3 grid grid-cols-3 gap-3 text-center text-xs">
-                <div>
-                  <p className="text-neutral-400 mb-0.5">Lowest</p>
-                  <p className="font-bold text-green-700">
-                    {sortedQuotes[0].currency ?? currency} {(sortedQuotes[0].quoted_amount ?? 0).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-neutral-400 mb-0.5">Highest</p>
-                  <p className="font-bold text-red-600">
-                    {sortedQuotes[sortedQuotes.length - 1].currency ?? currency}{" "}
-                    {(sortedQuotes[sortedQuotes.length - 1].quoted_amount ?? 0).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-neutral-400 mb-0.5">Savings vs Highest</p>
-                  <p className="font-bold text-neutral-900">
-                    {currency}{" "}
-                    {((sortedQuotes[sortedQuotes.length - 1].quoted_amount ?? 0) - (sortedQuotes[0].quoted_amount ?? 0)).toLocaleString()}
-                  </p>
+                  {manager && req.status !== "awarded" && (
+                    <button className="btn-secondary text-xs px-3 py-1.5" onClick={() => {
+                      setEditingQuote(quote);
+                      setQuoteForm({
+                        vendor_name: quote.vendor_name,
+                        quoted_amount: String(quote.quoted_amount),
+                        currency: quote.currency ?? currency,
+                        quote_date: quote.quote_date ? quote.quote_date.split("T")[0] : "",
+                        notes: quote.notes ?? "",
+                        compliance_passed: quote.compliance_passed === true ? "pass" : quote.compliance_passed === false ? "fail" : "pending",
+                        compliance_notes: quote.compliance_notes ?? "",
+                        is_recommended: quote.is_recommended,
+                      });
+                      setShowQuoteModal(true);
+                    }}>Assess</button>
+                  )}
                 </div>
               </div>
-            )}
+            ))}
           </div>
         )}
       </div>
 
-      {/* Awarded banner */}
-      {isAwarded && req.awarded_quote_id && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-4">
-          <div className="flex items-start gap-3 mb-3">
-            <span className="material-symbols-outlined text-blue-500 text-[22px] flex-shrink-0 mt-0.5">emoji_events</span>
-            <div>
-              <p className="text-sm font-semibold text-blue-800">Contract Awarded</p>
-              <p className="text-xs text-blue-600 mt-0.5">
-                Awarded to <strong>{quotes.find((q) => q.id === req.awarded_quote_id)?.vendor_name ?? "vendor"}</strong>
-                {req.award_notes ? ` — ${req.award_notes}` : ""}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link
-              href={`/procurement/purchase-orders?request=${req.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">receipt_long</span>
-              Create Purchase Order
-            </Link>
-            <Link
-              href={`/procurement/${req.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-              View Request
-            </Link>
-          </div>
-        </div>
-      )}
-
-      <Link href="/procurement/rfq" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
+      <Link href="/procurement/rfq" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to RFQs
       </Link>
 
-      {/* ─── Add / Edit Quote Modal ─── */}
-      {showAddQuote && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => { setShowAddQuote(false); setEditingQuote(null); }}
-        >
-          <div
-            className="card w-full max-w-md p-6 space-y-4 scrollbar-hide overflow-y-auto max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50">
-                <span className="material-symbols-outlined text-[20px] text-teal-600">storefront</span>
-              </div>
-              <h2 className="text-base font-bold text-neutral-900">
-                {editingQuote ? "Edit Quote" : "Record Quote"}
-              </h2>
+      {showQuoteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowQuoteModal(false)}>
+          <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-base font-bold">{editingQuote ? "Assess Quote" : "Record Quote"}</h2>
+            {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+            <input className="form-input" placeholder="Supplier name" value={quoteForm.vendor_name} onChange={(e) => setQuoteForm((current) => ({ ...current, vendor_name: e.target.value }))} />
+            <div className="grid gap-3 md:grid-cols-3">
+              <input type="number" className="form-input" placeholder="Amount" value={quoteForm.quoted_amount} onChange={(e) => setQuoteForm((current) => ({ ...current, quoted_amount: e.target.value }))} />
+              <input className="form-input" placeholder="Currency" value={quoteForm.currency} onChange={(e) => setQuoteForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} />
+              <input type="date" className="form-input" value={quoteForm.quote_date} onChange={(e) => setQuoteForm((current) => ({ ...current, quote_date: e.target.value }))} />
             </div>
-
-            {quoteError && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{quoteError}</div>
-            )}
-
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Vendor / Supplier Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. ABC Supplies Ltd"
-                  value={quoteForm.vendor_name}
-                  onChange={(e) => setQuoteForm((p) => ({ ...p, vendor_name: e.target.value }))}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Quoted Amount <span className="text-red-500">*</span></label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="0.00"
-                    value={quoteForm.quoted_amount}
-                    onChange={(e) => setQuoteForm((p) => ({ ...p, quoted_amount: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
-                  <input
-                    type="text"
-                    maxLength={3}
-                    className="form-input"
-                    value={quoteForm.currency}
-                    onChange={(e) => setQuoteForm((p) => ({ ...p, currency: e.target.value.toUpperCase() }))}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Quote Date</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={quoteForm.quote_date}
-                  onChange={(e) => setQuoteForm((p) => ({ ...p, quote_date: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Notes</label>
-                <textarea
-                  className="form-input w-full h-16 resize-none"
-                  placeholder="Lead time, conditions, exclusions…"
-                  value={quoteForm.notes}
-                  onChange={(e) => setQuoteForm((p) => ({ ...p, notes: e.target.value }))}
-                />
-              </div>
-
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-300 text-primary"
-                  checked={quoteForm.is_recommended}
-                  onChange={(e) => setQuoteForm((p) => ({ ...p, is_recommended: e.target.checked }))}
-                />
-                <span className="text-sm text-neutral-700">Mark as recommended / preferred</span>
-              </label>
-            </div>
-
-            <div className="flex gap-3 pt-1">
-              <button
-                className="btn-secondary flex-1"
-                onClick={() => { setShowAddQuote(false); setEditingQuote(null); }}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-primary flex-1 disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
-                disabled={!quoteForm.vendor_name.trim() || !quoteForm.quoted_amount || saveMutation.isPending}
-                onClick={() => saveMutation.mutate()}
-              >
-                {saveMutation.isPending
-                  ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
-                  : <span className="material-symbols-outlined text-[16px]">check_circle</span>}
-                {saveMutation.isPending ? "Saving…" : editingQuote ? "Update Quote" : "Save Quote"}
+            <textarea className="form-input h-20 resize-none" placeholder="Commercial notes" value={quoteForm.notes} onChange={(e) => setQuoteForm((current) => ({ ...current, notes: e.target.value }))} />
+            <select className="form-input" value={quoteForm.compliance_passed} onChange={(e) => setQuoteForm((current) => ({ ...current, compliance_passed: e.target.value as Assessment }))}>
+              <option value="pending">Pending assessment</option>
+              <option value="pass">Compliant</option>
+              <option value="fail">Non-compliant</option>
+            </select>
+            <textarea className="form-input h-24 resize-none" placeholder="Assessment notes" value={quoteForm.compliance_notes} onChange={(e) => setQuoteForm((current) => ({ ...current, compliance_notes: e.target.value }))} />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
+              Recommend this quote for award
+            </label>
+            <div className="flex gap-2">
+              <button className="btn-secondary flex-1" onClick={() => setShowQuoteModal(false)}>Cancel</button>
+              <button className="btn-primary flex-1" disabled={saveQuoteMutation.isPending || !quoteForm.vendor_name.trim() || !quoteForm.quoted_amount} onClick={() => saveQuoteMutation.mutate()}>
+                {saveQuoteMutation.isPending ? "Saving..." : "Save"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── Award Modal ─── */}
       {showAward && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={() => setShowAward(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowAward(false)}>
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                <span className="material-symbols-outlined text-[20px] text-primary">emoji_events</span>
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-neutral-900">Award Contract</h2>
-                <p className="text-xs text-neutral-500">{req.reference_number}</p>
-              </div>
-            </div>
-
-            {awardError && (
-              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{awardError}</div>
-            )}
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Select Winning Quote <span className="text-red-500">*</span></label>
-              <select
-                className="form-input"
-                value={awardQuoteId}
-                onChange={(e) => setAwardQuoteId(e.target.value ? Number(e.target.value) : "")}
-              >
-                <option value="">— Choose a vendor —</option>
-                {sortedQuotes.map((q) => (
-                  <option key={q.id} value={q.id}>
-                    {q.vendor_name} — {q.currency ?? currency} {(q.quoted_amount ?? 0).toLocaleString()}
-                    {q.is_recommended ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Award Notes</label>
-              <textarea
-                className="form-input w-full h-20 resize-none"
-                placeholder="Evaluation summary, reason for selection…"
-                value={awardNotes}
-                onChange={(e) => setAwardNotes(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-1">
+            <h2 className="text-base font-bold">Award Contract</h2>
+            {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+            <select className="form-input" value={awardQuoteId} onChange={(e) => setAwardQuoteId(e.target.value ? Number(e.target.value) : "")}>
+              <option value="">Select compliant quote</option>
+              {eligibleQuotes.map((quote) => <option key={quote.id} value={quote.id}>{quote.vendor_name} - {quote.currency ?? currency} {(quote.quoted_amount ?? 0).toLocaleString()}</option>)}
+            </select>
+            <textarea className="form-input h-24 resize-none" placeholder="Award notes" value={awardNotes} onChange={(e) => setAwardNotes(e.target.value)} />
+            <div className="flex gap-2">
               <button className="btn-secondary flex-1" onClick={() => setShowAward(false)}>Cancel</button>
-              <button
-                className="btn-primary flex-1 disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
-                disabled={!awardQuoteId || awardMutation.isPending}
-                onClick={() => awardMutation.mutate()}
-              >
-                {awardMutation.isPending
-                  ? <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
-                  : <span className="material-symbols-outlined text-[16px]">emoji_events</span>}
-                {awardMutation.isPending ? "Awarding…" : "Confirm Award"}
+              <button className="btn-primary flex-1" disabled={awardMutation.isPending || !awardQuoteId} onClick={() => awardMutation.mutate()}>
+                {awardMutation.isPending ? "Awarding..." : "Confirm Award"}
               </button>
             </div>
           </div>

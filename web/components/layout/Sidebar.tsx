@@ -62,6 +62,18 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "Supplier Portal",
+    href: "/supplier",
+    icon: "storefront",
+    children: [
+      { label: "Overview", href: "/supplier", icon: "dashboard" },
+      { label: "RFQs", href: "/supplier/rfqs", icon: "request_quote" },
+      { label: "Purchase Orders", href: "/supplier/purchase-orders", icon: "receipt_long" },
+      { label: "Invoices", href: "/supplier/invoices", icon: "description" },
+      { label: "Profile", href: "/supplier/profile", icon: "badge" },
+    ],
+  },
+  {
     label: "Finance",
     href: "/finance",
     icon: "payments",

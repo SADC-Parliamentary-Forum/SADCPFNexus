@@ -26,6 +26,9 @@ class InvoiceController extends Controller
         if ((int) $invoice->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
+        if ($request->user()->isSupplier() && (int) $request->user()->vendor_id !== (int) $invoice->vendor_id) {
+            abort(404);
+        }
         return response()->json([
             'data' => $invoice->load(['vendor', 'purchaseOrder.vendor', 'goodsReceiptNote', 'reviewedBy']),
         ]);
