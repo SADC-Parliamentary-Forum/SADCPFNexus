@@ -1,4 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import { PrefsProvider } from "@/components/providers/PrefsProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
+import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,6 +23,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeBootstrap = `(function(){try{var t=localStorage.getItem('sadcpf_theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -31,12 +40,21 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('sadcpf_theme');if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`,
-          }}
-        />
-        {children}
+        <Script id="theme-bootstrap" strategy="beforeInteractive">
+          {themeBootstrap}
+        </Script>
+        <ThemeProvider>
+          <PrefsProvider>
+            <QueryProvider>
+              <ToastProvider>
+                <ConfirmProvider>
+                  <RouteProgressBar />
+                  {children}
+                </ConfirmProvider>
+              </ToastProvider>
+            </QueryProvider>
+          </PrefsProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
