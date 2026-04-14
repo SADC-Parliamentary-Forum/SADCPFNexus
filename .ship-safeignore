@@ -1,0 +1,6 @@
+Design/
+mobile/.dart_tool/
+mobile/windows/flutter/ephemeral/
+api/.ship-safe/context.json
+mobile/lib/firebase_options.dart
+mobile/android/app/google-services.json

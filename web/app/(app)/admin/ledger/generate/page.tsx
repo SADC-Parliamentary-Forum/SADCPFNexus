@@ -104,12 +104,21 @@ tfoot td{font-size:11px;color:#9ca3af;padding:8px}@media print{body{margin:8px}}
 </table>
 </body></html>`;
 
-  const win = window.open("", "_blank");
-  if (!win) return;
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); }, 400);
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+  if (!win) {
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const cleanup = () => URL.revokeObjectURL(url);
+  win.addEventListener("load", () => {
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  }, { once: true });
+  win.addEventListener("afterprint", cleanup, { once: true });
+  setTimeout(cleanup, 60_000);
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────────────

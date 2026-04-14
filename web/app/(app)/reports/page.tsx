@@ -85,6 +85,24 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+function openPrintPreview(html: string, target = "_blank", features?: string) {
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, target, features);
+  if (!win) {
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const cleanup = () => URL.revokeObjectURL(url);
+  win.addEventListener("load", () => {
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  }, { once: true });
+  win.addEventListener("afterprint", cleanup, { once: true });
+  setTimeout(cleanup, 60_000);
+}
+
 function buildApiParams(filters: Filters, extra?: Record<string, string>) {
   const p: Record<string, string> = {};
   if (filters.period_from)  p.period_from  = filters.period_from;
@@ -386,8 +404,7 @@ export default function ReportsPage() {
     };
     const bodyRows = rows.map((r) => buildCells(r as Record<string, unknown>).map((v) => String(v ?? "")).map((v) => `<td>${v}</td>`).join("")).map((r) => `<tr>${r}</tr>`).join("");
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${module.label} Report</title><style>body{font-family:Arial,sans-serif;font-size:10pt;margin:20px}h2{font-size:13pt;margin-bottom:4px}p{font-size:9pt;color:#666;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:9pt}th{background:#f5f5f5;font-weight:600}tr:nth-child(even){background:#fafafa}@media print{body{margin:0}}</style></head><body><h2>SADC Parliamentary Forum — ${module.label} Report</h2><p>Generated: ${date} · ${total} records</p><table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
-    const win = window.open("", "_blank", "width=900,height=700");
-    if (win) { win.document.write(html); win.document.close(); setTimeout(() => { win.print(); }, 400); }
+    openPrintPreview(html, "_blank", "width=900,height=700");
   }, [rows, module, activeModule, total]);
 
   const previewRows = rows?.slice(0, 10) ?? [];

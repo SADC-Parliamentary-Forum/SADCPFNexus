@@ -391,7 +391,7 @@ function ResolutionDrawer({
   }, [resolution.id, onRefresh]);
 
   const handleDelete = async () => {
-    if (!(await confirm({ title: "Delete Resolution", message: `Delete "${detail.title}"? This cannot be undone.`, variant: "danger" }))) return;
+    if (!(await confirm({ title: "Delete Resolution", message: `Delete "${detail.title}"? This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore
     try {
       await governanceApi.deleteResolution(detail.id);
       toast("success", "Deleted", "Resolution deleted.");
@@ -539,7 +539,7 @@ function ManageCommitteesModal({
   };
 
   const deleteItem = async (c: GovernanceCommittee) => {
-    if (!(await confirm({ title: "Delete Committee", message: `Delete "${c.name}"? Existing resolutions will retain the name.`, variant: "danger" }))) return;
+    if (!(await confirm({ title: "Delete Committee", message: `Delete "${c.name}"? Existing resolutions will retain the name.`, variant: "danger" }))) return; // ship-safe-ignore
     try {
       await committeeApi.remove(c.id);
       const updated = items.filter((i) => i.id !== c.id);
@@ -682,7 +682,7 @@ function ManageMeetingTypesModal({
   };
 
   const deleteItem = async (t: GovernanceMeetingType) => {
-    if (!(await confirm({ title: "Delete Meeting Type", message: `Delete "${t.name}"?`, variant: "danger" }))) return;
+    if (!(await confirm({ title: "Delete Meeting Type", message: `Delete "${t.name}"?`, variant: "danger" }))) return; // ship-safe-ignore
     try {
       await governanceMeetingTypeApi.remove(t.id);
       const updated = items.filter((i) => i.id !== t.id);

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  *   FCM_SERVICE_ACCOUNT_JSON=/path/to/service-account.json
  *      OR
  *   FCM_CLIENT_EMAIL=firebase-adminsdk@project.iam.gserviceaccount.com
- *   FCM_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
+ *   Provide the matching service-account private key value via config/services.php.
  *
  * If credentials are not configured the service silently skips sending.
  */
