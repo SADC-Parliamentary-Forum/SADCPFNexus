@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { authApi, clearMustResetCookie } from "@/lib/api";
+import { authApi, clearMustResetCookie, clearSetupCompleteCookie, setSetupCompleteCookie } from "@/lib/api";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -31,7 +31,19 @@ export default function ResetPasswordPage() {
     try {
       await authApi.forceResetPassword(password, confirm);
       clearMustResetCookie();
-      window.location.href = "/dashboard";
+      // Check setup completion from the stored user object
+      const raw = localStorage.getItem("sadcpf_user");
+      const storedUser = raw ? JSON.parse(raw) : null;
+      if (storedUser) {
+        localStorage.setItem("sadcpf_user", JSON.stringify({ ...storedUser, must_reset_password: false }));
+      }
+      if (storedUser?.setup_completed) {
+        setSetupCompleteCookie();
+        window.location.href = "/dashboard";
+      } else {
+        clearSetupCompleteCookie();
+        window.location.href = "/setup";
+      }
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       const msg =

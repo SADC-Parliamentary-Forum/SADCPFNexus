@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { authApi, clearAuthCookie } from "@/lib/api";
-import { canAccessRoute, getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { USER_KEY } from "@/lib/constants";
 import type { AuthUser } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";

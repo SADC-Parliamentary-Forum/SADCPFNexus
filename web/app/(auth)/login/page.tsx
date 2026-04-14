@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { authApi, setAuthCookie, setMustResetCookie } from "@/lib/api";
+import {
+  authApi,
+  clearMustResetCookie,
+  clearSetupCompleteCookie,
+  setAuthCookie,
+  setMustResetCookie,
+  setSetupCompleteCookie,
+  setToken,
+} from "@/lib/api";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -37,17 +45,27 @@ export default function LoginPage() {
     try {
       const response = await authApi.login(email, password);
       const { token, user } = response.data;
-      localStorage.setItem("sadcpf_token", token);
+      setToken(token);
       localStorage.setItem("sadcpf_user", JSON.stringify(user));
       setAuthCookie();
       if (user.must_reset_password) {
         setMustResetCookie();
+        clearSetupCompleteCookie();
+        // Don't set setup cookie yet — setup runs after password reset
         window.location.href = "/reset-password";
         return;
       }
-      const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
-      const isSupplier = (user.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));
-      window.location.href = from && from.startsWith("/") ? from : (isSupplier ? "/supplier" : "/dashboard");
+      clearMustResetCookie();
+      if (user.setup_completed) {
+        setSetupCompleteCookie();
+        const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
+        const isSupplier = (user.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));
+        window.location.href = from && from.startsWith("/") ? from : (isSupplier ? "/supplier" : "/dashboard");
+      } else {
+        // setup_completed = false → go to wizard (sadcpf_setup_complete cookie NOT set)
+        clearSetupCompleteCookie();
+        window.location.href = "/setup";
+      }
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }; status?: number };
       const data = ax.response?.data;
@@ -157,6 +175,7 @@ export default function LoginPage() {
                 className="form-input"
                 placeholder="you@sadcpf.org"
                 autoComplete="email"
+                data-lpignore="true"
               />
             </div>
 
@@ -173,6 +192,7 @@ export default function LoginPage() {
                   className="form-input pr-10"
                   placeholder="••••••••"
                   autoComplete="current-password"
+                  data-lpignore="true"
                 />
                 <button
                   type="button"

@@ -7,6 +7,7 @@ import {
   profileDocumentsApi,
   saamApi,
   setSetupCompleteCookie,
+  setToken,
   type SetupOptions,
 } from "@/lib/api";
 import { Stepper } from "@/components/ui/Stepper";
@@ -449,8 +450,14 @@ function SignatureSlot({
 // ─── Steps ────────────────────────────────────────────────────────────────────
 
 function Step1Identity({
-  state, update, options, onNext,
-}: { state: WizardState; update: (p: Partial<WizardState>) => void; options: SetupOptions | null; onNext: () => void }) {
+  state, update, options, loadError, onNext,
+}: {
+  state: WizardState;
+  update: (p: Partial<WizardState>) => void;
+  options: SetupOptions | null;
+  loadError: string | null;
+  onNext: () => void;
+}) {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [emailErr, setEmailErr] = useState<string | null>(null);
@@ -486,6 +493,7 @@ function Step1Identity({
 
   return (
     <StepCard title="Identity & Employment Details" description='Please review your details below. Changes are audit-logged. "Please ensure your details are correct. Changes may be subject to administrative review."' step={1}>
+      {loadError && <ErrorBanner message={loadError} />}
       {err && <ErrorBanner message={err} />}
       <div className="space-y-4">
         <div>
@@ -517,6 +525,11 @@ function Step1Identity({
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+            {!loadError && options && options.departments.length === 0 && (
+              <p className="mt-1 text-xs text-neutral-500">
+                No departments are configured for your account yet.
+              </p>
+            )}
           </div>
           <div>
             <FieldLabel label="Position" />
@@ -531,6 +544,11 @@ function Step1Identity({
                 <option key={p.id} value={p.id}>{p.title}{p.grade ? ` (${p.grade})` : ""}</option>
               ))}
             </select>
+            {!loadError && state.departmentId && filteredPositions.length === 0 && (
+              <p className="mt-1 text-xs text-neutral-500">
+                No positions are available for the selected department.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
@@ -540,7 +558,7 @@ function Step1Identity({
           </p>
         </div>
       </div>
-      <StepFooter onNext={handleNext} saving={saving} nextLabel="Save & Continue" />
+      <StepFooter onNext={handleNext} saving={saving} nextLabel="Save & Continue" nextDisabled={Boolean(loadError)} />
     </StepCard>
   );
 }
@@ -972,10 +990,29 @@ export default function SetupWizardPage() {
   const [state, setState] = useState<WizardState>(getInitialState());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
 
   // Load options and restore session state + pre-fill from stored user
   useEffect(() => {
-    setupApi.getOptions().then((r) => setOptions(r.data)).catch(() => {/* non-fatal */});
+    const savedToken = localStorage.getItem("sadcpf_token");
+    if (savedToken) {
+      setToken(savedToken);
+    }
+
+    setupApi.getOptions()
+      .then((r) => {
+        setOptions(r.data);
+        setOptionsError(null);
+      })
+      .catch((e: unknown) => {
+        const status = (e as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
+        const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setOptionsError(
+          status === 401
+            ? "Your session expired before setup data could load. Sign in again to continue."
+            : (message ?? "Failed to load departments and positions for setup.")
+        );
+      });
 
     const saved = sessionStorage.getItem(SESSION_KEY);
     if (saved) {
@@ -1042,7 +1079,7 @@ export default function SetupWizardPage() {
           {error && <ErrorBanner message={error} />}
 
           {step === 1 && (
-            <Step1Identity state={state} update={update} options={options} onNext={next} />
+            <Step1Identity state={state} update={update} options={options} loadError={optionsError} onNext={next} />
           )}
           {step === 2 && (
             <Step2Personal state={state} update={update} onNext={next} onBack={back} />

@@ -52,6 +52,30 @@ export function canManageAssets(user: AuthUser | null | undefined): boolean {
   return hasPermission(user, ASSETS_MANAGE_PERMISSIONS);
 }
 
+export function canViewProcurementVendors(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["procurement.view", "procurement.manage_vendors", "procurement.admin"]);
+}
+
+export function canManageProcurementVendors(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["procurement.manage_vendors", "procurement.admin"]);
+}
+
+export function canViewProcurementRfq(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["procurement.view", "procurement.approve", "procurement.admin"]);
+}
+
+export function canIssueProcurementRfq(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["procurement.create", "procurement.approve", "procurement.admin"]);
+}
+
 /** Routes that require system admin (no permission string; admin-only). */
 const ADMIN_ONLY_PATHS: string[] = [
   "/admin",
@@ -60,8 +84,14 @@ const ADMIN_ONLY_PATHS: string[] = [
   "/finance/budget",
 ];
 
+interface RouteAccessRule {
+  path: string;
+  permission?: string | string[];
+  allowSystemAdmin?: boolean;
+}
+
 /** Path prefix or exact path -> required permission(s). Empty = allow any authenticated. */
-const ROUTE_ACCESS: { path: string; permission?: string | string[] }[] = [
+const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/dashboard" },
   { path: "/approvals", permission: ["travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
   { path: "/alerts" },
@@ -77,30 +107,38 @@ const ROUTE_ACCESS: { path: string; permission?: string | string[] }[] = [
   { path: "/reports", permission: "reports.view" },
   { path: "/assets", permission: "assets.view" },
   { path: "/governance", permission: "governance.view" },
+  { path: "/procurement/create", permission: ["procurement.create", "procurement.admin"] },
+  { path: "/procurement/rfq", permission: ["procurement.view", "procurement.approve", "procurement.admin"] },
+  { path: "/procurement/vendors", permission: ["procurement.view", "procurement.manage_vendors", "procurement.admin"] },
+  { path: "/procurement/purchase-orders", permission: ["procurement.manage_po", "procurement.admin"] },
+  { path: "/procurement/receipts", permission: ["procurement.receive_goods", "procurement.admin"] },
+  { path: "/procurement/invoices", permission: ["procurement.approve_invoice", "procurement.admin"] },
+  { path: "/procurement/contracts", permission: ["procurement.manage_po", "procurement.admin"] },
+  { path: "/procurement/analytics", permission: ["procurement.view", "procurement.admin"] },
   { path: "/procurement", permission: "procurement.view" },
-  { path: "/supplier", permission: "supplier.portal" },
+  { path: "/supplier", permission: "supplier.portal", allowSystemAdmin: false },
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
   { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
 ];
 
 /**
- * True if the user can access the given path. Uses admin-only list and permission map.
- * System admins can access everything.
+ * True if the user can access the given path. Uses admin-only list and permission map,
+ * while allowing route-level exceptions for areas that should stay hidden from admins.
  */
 export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: string): boolean {
   if (!user) return false;
-  // System admins can access everything without further checks.
-  if (isSystemAdmin(user)) return true;
-
   const path = pathOrId.split("?")[0];
+  const systemAdmin = isSystemAdmin(user);
 
   if (ADMIN_ONLY_PATHS.some((p) => path === p || path.startsWith(p + "/"))) {
-    return false;
+    return systemAdmin;
   }
 
   const entry = ROUTE_ACCESS.find((e) => path === e.path || path.startsWith(e.path + "/"));
   if (!entry) return true; // unknown route: allow (or tighten later)
+  if (systemAdmin && entry.allowSystemAdmin !== false) return true;
+  if (systemAdmin && entry.allowSystemAdmin === false) return false;
   if (!entry.permission) return true;
   return hasPermission(user, entry.permission);
 }

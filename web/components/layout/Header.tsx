@@ -5,7 +5,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { authApi, userNotificationsApi, clearAuthCookie, type UserNotification } from "@/lib/api";
+import {
+  authApi,
+  clearAuthCookie,
+  clearMustResetCookie,
+  clearSetupCompleteCookie,
+  setToken,
+  userNotificationsApi,
+  type UserNotification,
+} from "@/lib/api";
 import { GlobalSearch } from "./GlobalSearch";
 
 interface StoredUser {
@@ -92,9 +100,11 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
-    localStorage.removeItem("sadcpf_token");
+    setToken(null);
     localStorage.removeItem("sadcpf_user");
     clearAuthCookie();
+    clearMustResetCookie();
+    clearSetupCompleteCookie();
     router.push("/login");
   };
 

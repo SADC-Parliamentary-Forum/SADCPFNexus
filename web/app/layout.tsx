@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { PrefsProvider } from "@/components/providers/PrefsProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -28,6 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: themeBootstrap }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -40,9 +42,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
-        <Script id="theme-bootstrap" strategy="beforeInteractive">
-          {themeBootstrap}
-        </Script>
         <ThemeProvider>
           <PrefsProvider>
             <QueryProvider>

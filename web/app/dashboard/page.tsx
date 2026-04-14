@@ -210,6 +210,7 @@ export default function DashboardPage() {
   });
 
   // ─── Derived ───────────────────────────────────────────────────────────────
+  const statCardsToShow = statConfig.filter((card) => canAccessRoute(user ?? null, card.href));
   const modulesToShow = modules.filter((m) => canAccessRoute(user ?? null, m.href));
   const quickActionsToShow = quickActions.filter((q) => canAccessRoute(user ?? null, q.href));
   const isAdmin = isSystemAdmin(user ?? null);
@@ -290,8 +291,8 @@ export default function DashboardPage() {
       )}
 
       {/* KPI Cards */}
-      {w("kpi_cards") && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statConfig.map(({ key, label, icon, color, bg, border, href }) => (
+      {w("kpi_cards") && statCardsToShow.length > 0 && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCardsToShow.map(({ key, label, icon, color, bg, border, href }) => (
           <Link key={key} href={href} className={`card p-5 border ${border} hover:shadow-elevated transition-all hover:border-primary/30 group`}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -498,7 +499,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="card">
+      {quickActionsToShow.length > 0 && <div className="card">
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">bolt</span>
@@ -515,10 +516,10 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Modules grid */}
-      <div>
+      {modulesToShow.length > 0 && <div>
         <h3 className="text-sm font-semibold text-neutral-700 mb-3">All Modules</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {modulesToShow.map((m) => (
@@ -533,7 +534,7 @@ export default function DashboardPage() {
             </Link>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

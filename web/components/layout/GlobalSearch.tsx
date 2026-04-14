@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import type { AuthUser } from "@/lib/api";
+import { canAccessRoute, getStoredUser } from "@/lib/auth";
 
 // ─── Search index: all navigable areas + record types ────────────────────────
 interface SearchResult {
@@ -89,8 +91,18 @@ export function GlobalSearch() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const [recent, setRecent] = useState<string[]>([]);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUser(getStoredUser());
+  }, []);
+
+  const accessibleIndex = useMemo(
+    () => SEARCH_INDEX.filter((result) => canAccessRoute(user, result.href)),
+    [user]
+  );
 
   // Debounce query so scoring only runs 150ms after the user stops typing
   useEffect(() => {
@@ -102,13 +114,13 @@ export function GlobalSearch() {
   const results: SearchResult[] = useMemo(() => {
     const q = debouncedQuery.trim();
     if (q.length < 1) return [];
-    return SEARCH_INDEX
+    return accessibleIndex
       .map((r) => ({ r, score: scoreResult(r, q) }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS)
       .map((x) => x.r);
-  }, [debouncedQuery]);
+  }, [accessibleIndex, debouncedQuery]);
 
   // Group by category (preserving order)
   const grouped: { category: string; items: SearchResult[] }[] = useMemo(() => {
@@ -251,7 +263,7 @@ export function GlobalSearch() {
                   <div className="px-4 py-3 border-t border-neutral-50 dark:border-neutral-700/50">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">Quick Actions</p>
                     <div className="space-y-0.5">
-                      {SEARCH_INDEX.filter((r) => r.category === "Actions").map((r) => (
+                      {accessibleIndex.filter((r) => r.category === "Actions").map((r) => (
                         <button key={r.id} type="button"
                           onClick={() => navigate(r.href, r.label)}
                           className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-primary/5 hover:text-primary transition-colors text-left">
