@@ -26,9 +26,8 @@ export default function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <head suppressHydrationWarning>
+      <head>
         <script
-          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeBootstrap }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
