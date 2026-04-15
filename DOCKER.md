@@ -44,6 +44,30 @@ docker-compose build web
 docker-compose up -d web
 ```
 
+## Production web build integrity
+
+The production `web` image now verifies its build context before running `next build`.
+This catches stale or incomplete deploy checkouts where setup/auth helpers exist in the
+repo but are missing from the Docker build context.
+
+If you want to verify the checkout manually before rebuilding on the server:
+
+```bash
+cd web
+npm run verify:build-context
+```
+
+For CloudPanel / production rebuilds, the recommended sequence is:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml stop
+docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache web
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+If the checkout is inconsistent, the `web` build now fails early with explicit messages
+showing which expected setup/auth export or import is missing.
+
 ## URLs
 
 - Web app: http://localhost:3000 (or the port set in `WEB_PORT`, e.g. http://localhost:3001)  

@@ -81,6 +81,13 @@ Route::prefix('v1')->group(function () {
         Route::post('profile/2fa/disable', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'disable']);
         Route::post('profile/2fa/verify',  [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'verify']);
 
+        // Initial Setup Wizard (self-service, any authenticated user)
+        Route::prefix('setup')->group(function () {
+            Route::get('options',  [\App\Http\Controllers\Api\V1\SetupController::class, 'options']);
+            Route::put('identity', [\App\Http\Controllers\Api\V1\SetupController::class, 'updateIdentity']);
+            Route::post('complete',[\App\Http\Controllers\Api\V1\SetupController::class, 'complete']);
+        });
+
         // Email action processing — authenticated (token + user must match)
         Route::post('email-action/process',
             [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'process']

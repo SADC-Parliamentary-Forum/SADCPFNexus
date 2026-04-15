@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "verify:build-context": "node scripts/verify-build-context.js",
     "postinstall": "node scripts/vendor-pdf.js",
-    "prebuild": "node scripts/vendor-pdf.js",
+    "prebuild": "npm run verify:build-context && node scripts/vendor-pdf.js",
     "dev": "next dev",
     "dev:webpack": "next dev --turbopack false",
     "build": "next build",

@@ -33,7 +33,7 @@ ARG NEXT_OUTPUT=standalone
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_OUTPUT=$NEXT_OUTPUT \
     NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN npm run verify:build-context && npm run build
 
 # ── Stage 4: Production runner ─────────────────────────────────────────────────
 FROM node:20-alpine AS runner

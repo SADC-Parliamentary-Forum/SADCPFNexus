@@ -4,6 +4,7 @@ const AUTH_COOKIE = "sadcpf_authenticated";
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
 
+// Shared by login, reset-password, header logout, and setup wizard flows.
 export function setAuthCookie(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
@@ -22,6 +23,18 @@ export function setMustResetCookie(): void {
 export function clearMustResetCookie(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${MUST_RESET_COOKIE}=; path=/; max-age=0`;
+}
+
+const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
+
+export function setSetupCompleteCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SETUP_COMPLETE_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
+}
+
+export function clearSetupCompleteCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SETUP_COMPLETE_COOKIE}=; path=/; max-age=0`;
 }
 
 const api = axios.create({
@@ -179,6 +192,7 @@ export interface AuthUser {
   vendor_id?: number | null;
   classification: string;
   must_reset_password?: boolean;
+  setup_completed?: boolean;
   roles: string[];
   permissions: string[];
 }
@@ -453,6 +467,27 @@ export const profileApi = {
     }),
 };
 
+// ??? Setup Wizard ?????????????????????????????????????????????????????????????
+
+export interface SetupOptions {
+  departments: { id: number; name: string; code: string }[];
+  positions: { id: number; department_id: number; title: string; grade: string | null }[];
+}
+
+export const setupApi = {
+  getOptions: () =>
+    api.get<SetupOptions>("/setup/options"),
+  updateIdentity: (data: {
+    name: string;
+    email: string;
+    employee_number?: string | null;
+    department_id?: number | null;
+    position_id?: number | null;
+  }) =>
+    api.put<{ message: string; user: User }>("/setup/identity", data),
+  complete: () =>
+    api.post<{ message: string; setup_completed: boolean }>("/setup/complete"),
+};
 // ─── Profile Sessions ──────────────────────────────────────────────────────────
 
 export interface UserSession {

@@ -391,15 +391,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           return TimesheetDayScreen(
-            date:           extra?['date'] as String? ?? '',
-            timesheetId:    extra?['timesheetId'] as int?,
+            date: extra?['date'] as String? ?? '',
+            timesheetId: extra?['timesheetId'] as int?,
             initialEntries: (extra?['entries'] as List<dynamic>? ?? [])
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList(),
-            projects:       (extra?['projects'] as List<dynamic>? ?? [])
+            projects: (extra?['projects'] as List<dynamic>? ?? [])
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList(),
-            overlayLabel:   extra?['overlayLabel'] as String?,
+            overlayLabel: extra?['overlayLabel'] as String?,
           );
         },
       ),
@@ -495,12 +495,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pif/lifecycle',
         name: 'pif-lifecycle',
-        builder: (context, state) => const PifLifecycleFlowScreen(),
+        builder: (context, state) => PifLifecycleFlowScreen(
+          programmeId: state.uri.queryParameters['id'],
+        ),
       ),
       GoRoute(
         path: '/pif/lifecycle-review',
         name: 'pif-lifecycle-review',
-        builder: (context, state) => const PifLifecycleReviewScreen(),
+        builder: (context, state) => PifLifecycleReviewScreen(
+          programmeId: state.uri.queryParameters['id'],
+        ),
       ),
       GoRoute(
         path: '/pif/budget',

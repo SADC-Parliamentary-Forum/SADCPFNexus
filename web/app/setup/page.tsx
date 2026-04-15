@@ -165,6 +165,20 @@ function ReviewSection({ title, items }: { title: string; items: [string, string
   );
 }
 
+function FormSection({
+  title, description, children,
+}: { title: string; description?: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-5">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+        {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 // ─── Setup Header ─────────────────────────────────────────────────────────────
 
 function SetupHeader() {
@@ -458,7 +472,6 @@ function Step1Identity({
   loadError: string | null;
   onNext: () => void;
 }) {
-  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [emailErr, setEmailErr] = useState<string | null>(null);
 
@@ -471,24 +484,7 @@ function Step1Identity({
     if (!state.email.trim()) { setErr("Email is required."); return; }
     setErr(null);
     setEmailErr(null);
-    setSaving(true);
-    try {
-      await setupApi.updateIdentity({
-        name:            state.name.trim(),
-        email:           state.email.trim(),
-        employee_number: state.employeeNumber || null,
-        department_id:   state.departmentId,
-        position_id:     state.positionId,
-      });
-      onNext();
-    } catch (e: unknown) {
-      const ax = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-      const emailMsg = ax.response?.data?.errors?.email?.[0];
-      if (emailMsg) setEmailErr(emailMsg);
-      setErr(ax.response?.data?.message ?? "Failed to save identity. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    onNext();
   }
 
   return (
@@ -558,7 +554,7 @@ function Step1Identity({
           </p>
         </div>
       </div>
-      <StepFooter onNext={handleNext} saving={saving} nextLabel="Save & Continue" nextDisabled={Boolean(loadError)} />
+      <StepFooter onNext={handleNext} nextLabel="Continue" nextDisabled={Boolean(loadError)} />
     </StepCard>
   );
 }
@@ -566,37 +562,16 @@ function Step1Identity({
 function Step2Personal({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
-  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   async function handleNext() {
     if (!state.phone.trim()) { setErr("Mobile number is required."); return; }
     if (!state.addressLine1.trim()) { setErr("Residential address is required."); return; }
     if (!state.emergencyContactName.trim()) { setErr("Emergency contact name is required."); return; }
+    if (!state.nextOfKin.trim()) { setErr("Emergency contact relationship is required."); return; }
     if (!state.emergencyContactPhone.trim()) { setErr("Emergency contact number is required."); return; }
     setErr(null);
-    setSaving(true);
-    try {
-      await profileApi.update({
-        phone:                           state.phone || null,
-        nationality:                     state.nationality || null,
-        gender:                          state.gender || null,
-        emergency_contact_name:          state.emergencyContactName || null,
-        emergency_contact_phone:         state.emergencyContactPhone || null,
-        emergency_contact_relationship:  state.nextOfKin || null,
-        address_line1:                   state.addressLine1 || null,
-        address_line2:                   state.addressLine2 || null,
-        city:                            state.city || null,
-        country:                         state.country || null,
-        date_of_birth:                   state.dateOfBirth || null,
-        bio:                             state.altContact ? `Alt: ${state.altContact}` : null,
-      } as Parameters<typeof profileApi.update>[0]);
-      onNext();
-    } catch (e: unknown) {
-      setErr((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    onNext();
   }
 
   return (
@@ -610,15 +585,17 @@ function Step2Personal({
               className="form-input w-full" placeholder="+264 81 000 0000" />
           </div>
           <div>
-            <FieldLabel label="Alternative Contact" />
-            <input type="tel" value={state.altContact} onChange={(e) => update({ altContact: e.target.value })}
-              className="form-input w-full" placeholder="+264 61 000 000" />
+            <FieldLabel label="Date of Birth" />
+            <input type="date" value={state.dateOfBirth} onChange={(e) => update({ dateOfBirth: e.target.value })}
+              className="form-input w-full" />
           </div>
         </div>
         <div>
           <FieldLabel label="Residential Address" required />
           <input type="text" value={state.addressLine1} onChange={(e) => update({ addressLine1: e.target.value })}
             className="form-input w-full mb-2" placeholder="Street address" />
+          <input type="text" value={state.addressLine2} onChange={(e) => update({ addressLine2: e.target.value })}
+            className="form-input w-full mb-2" placeholder="Apartment, suburb, or additional details" />
           <div className="grid sm:grid-cols-2 gap-2">
             <input type="text" value={state.city} onChange={(e) => update({ city: e.target.value })}
               className="form-input w-full" placeholder="City" />
@@ -626,29 +603,34 @@ function Step2Personal({
               className="form-input w-full" placeholder="Country" />
           </div>
         </div>
+        <FormSection
+          title="Emergency Contact"
+          description="Provide the primary person and relationship we should use for urgent welfare, travel, or medical situations."
+        >
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <FieldLabel label="Emergency Contact Name" required />
+              <input type="text" value={state.emergencyContactName} onChange={(e) => update({ emergencyContactName: e.target.value })}
+                className="form-input w-full" placeholder="Full name" />
+            </div>
+            <div>
+              <FieldLabel label="Relationship to You" required />
+              <input type="text" value={state.nextOfKin} onChange={(e) => update({ nextOfKin: e.target.value })}
+                className="form-input w-full" placeholder="e.g. Spouse, Parent, Sibling" />
+            </div>
+            <div>
+              <FieldLabel label="Primary Emergency Number" required />
+              <input type="tel" value={state.emergencyContactPhone} onChange={(e) => update({ emergencyContactPhone: e.target.value })}
+                className="form-input w-full" placeholder="+264 81 000 0000" />
+            </div>
+            <div>
+              <FieldLabel label="Secondary Emergency Number" />
+              <input type="tel" value={state.altContact} onChange={(e) => update({ altContact: e.target.value })}
+                className="form-input w-full" placeholder="Optional backup number" />
+            </div>
+          </div>
+        </FormSection>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <FieldLabel label="Emergency Contact Name" required />
-            <input type="text" value={state.emergencyContactName} onChange={(e) => update({ emergencyContactName: e.target.value })}
-              className="form-input w-full" placeholder="Full name" />
-          </div>
-          <div>
-            <FieldLabel label="Emergency Contact Number" required />
-            <input type="tel" value={state.emergencyContactPhone} onChange={(e) => update({ emergencyContactPhone: e.target.value })}
-              className="form-input w-full" placeholder="+264 81 000 0000" />
-          </div>
-        </div>
-        <div>
-          <FieldLabel label="Next of Kin / Relationship" />
-          <input type="text" value={state.nextOfKin} onChange={(e) => update({ nextOfKin: e.target.value })}
-            className="form-input w-full" placeholder="e.g. Spouse, Parent" />
-        </div>
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div>
-            <FieldLabel label="Date of Birth" />
-            <input type="date" value={state.dateOfBirth} onChange={(e) => update({ dateOfBirth: e.target.value })}
-              className="form-input w-full" />
-          </div>
           <div>
             <FieldLabel label="Nationality" />
             <input type="text" value={state.nationality} onChange={(e) => update({ nationality: e.target.value })}
@@ -666,7 +648,7 @@ function Step2Personal({
           </div>
         </div>
       </div>
-      <StepFooter onBack={onBack} onNext={handleNext} saving={saving} nextLabel="Save & Continue" />
+      <StepFooter onBack={onBack} onNext={handleNext} nextLabel="Continue" />
     </StepCard>
   );
 }
@@ -938,6 +920,12 @@ function Step7Review({
           ["Address", address],
           ["Emergency Contact", state.emergencyContactName ? `${state.emergencyContactName} · ${state.emergencyContactPhone}` : ""],
         ]} />
+        <ReviewSection title="Emergency Contact" items={[
+          ["Contact Name", state.emergencyContactName],
+          ["Relationship", state.nextOfKin],
+          ["Primary Number", state.emergencyContactPhone],
+          ["Secondary Number", state.altContact],
+        ]} />
         <ReviewSection title="Documents" items={[
           ["Profile Photo", state.photoUploaded ? "✓ Uploaded" : "Not uploaded"],
           ["Full Signature", state.fullSigSaved ? "✓ Saved" : "Not saved"],
@@ -1044,22 +1032,82 @@ export default function SetupWizardPage() {
   function next() { setError(null); setStep((s) => Math.min(s + 1, 7)); }
   function back() { setError(null); setStep((s) => Math.max(s - 1, 1)); }
 
+  function validateBeforeSubmit() {
+    if (!state.name.trim()) return "Full name is required.";
+    if (!state.email.trim()) return "Email is required.";
+    if (!state.phone.trim()) return "Mobile number is required.";
+    if (!state.addressLine1.trim()) return "Residential address is required.";
+    if (!state.emergencyContactName.trim()) return "Emergency contact name is required.";
+    if (!state.nextOfKin.trim()) return "Emergency contact relationship is required.";
+    if (!state.emergencyContactPhone.trim()) return "Emergency contact number is required.";
+    if (!state.photoUploaded) return "Please upload your profile photo before completing setup.";
+    if (!state.fullSigSaved || !state.initialsSigSaved) return "Please save both your full signature and initials.";
+    if (!state.sigConfirmed) return "Please confirm your signature declaration before completing setup.";
+    if (!state.reviewConfirmed) return "Please confirm that your review information is accurate.";
+    return null;
+  }
+
   async function handleComplete() {
+    const validationError = validateBeforeSubmit();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
+      await setupApi.updateIdentity({
+        name: state.name.trim(),
+        email: state.email.trim(),
+        employee_number: state.employeeNumber || null,
+        department_id: state.departmentId,
+        position_id: state.positionId,
+      });
+
+      await profileApi.update({
+        name: state.name.trim(),
+        phone: state.phone || null,
+        nationality: state.nationality || null,
+        gender: state.gender || null,
+        emergency_contact_name: state.emergencyContactName || null,
+        emergency_contact_phone: state.emergencyContactPhone || null,
+        emergency_contact_relationship: state.nextOfKin || null,
+        address_line1: state.addressLine1 || null,
+        address_line2: state.addressLine2 || null,
+        city: state.city || null,
+        country: state.country || null,
+        date_of_birth: state.dateOfBirth || null,
+        bio: state.altContact ? `Alt: ${state.altContact}` : null,
+      } as Parameters<typeof profileApi.update>[0]);
+
       await setupApi.complete();
-      // Update the stored user object in localStorage
+
       const raw = localStorage.getItem("sadcpf_user");
       if (raw) {
         const u = JSON.parse(raw);
-        localStorage.setItem("sadcpf_user", JSON.stringify({ ...u, setup_completed: true }));
+        localStorage.setItem("sadcpf_user", JSON.stringify({
+          ...u,
+          name: state.name.trim(),
+          email: state.email.trim(),
+          phone: state.phone || null,
+          nationality: state.nationality || null,
+          gender: state.gender || null,
+          emergency_contact_name: state.emergencyContactName || null,
+          emergency_contact_relationship: state.nextOfKin || null,
+          emergency_contact_phone: state.emergencyContactPhone || null,
+          address_line1: state.addressLine1 || null,
+          address_line2: state.addressLine2 || null,
+          city: state.city || null,
+          country: state.country || null,
+          setup_completed: true,
+        }));
       }
       setSetupCompleteCookie();
       sessionStorage.removeItem(SESSION_KEY);
       window.location.href = "/dashboard";
-    } catch {
-      setError("Failed to complete setup. Please try again.");
+    } catch (e: unknown) {
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to complete setup. Please try again.");
       setSubmitting(false);
     }
   }
