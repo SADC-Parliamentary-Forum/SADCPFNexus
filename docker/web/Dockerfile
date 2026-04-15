@@ -27,10 +27,10 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Build-time env vars — NEXT_PUBLIC_* are baked into the bundle at build time
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+# Build-time env vars
+ARG API_INTERNAL_URL=http://localhost:8000/api/v1
 ARG NEXT_OUTPUT=standalone
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+ENV API_INTERNAL_URL=$API_INTERNAL_URL \
     NEXT_OUTPUT=$NEXT_OUTPUT \
     NEXT_TELEMETRY_DISABLED=1
 RUN npm run verify:build-context && npm run build
