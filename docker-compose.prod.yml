@@ -26,7 +26,7 @@ services:
       dockerfile: ../docker/web/Dockerfile
       target: runner                         # Production stage (not dev server)
       args:
-        API_INTERNAL_URL: http://10.20.30.8/api/v1
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nexus-api.sadcpf.org/api/v1}
         NEXT_OUTPUT: standalone
     environment:
       NODE_ENV: production
