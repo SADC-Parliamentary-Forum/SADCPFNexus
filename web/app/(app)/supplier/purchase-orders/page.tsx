@@ -18,7 +18,7 @@ export default function SupplierPurchaseOrdersPage() {
     <div className="space-y-5">
       <div>
         <h1 className="page-title">Purchase Orders</h1>
-        <p className="page-subtitle">Track issued orders and linked procurement requests.</p>
+        <p className="page-subtitle">Track issued orders and then move to the Invoices page to submit your proforma and final invoice documents.</p>
       </div>
 
       <div className="card overflow-hidden">

@@ -22,10 +22,20 @@ function getStoredUser(): { id: number | null; roles: string[] } {
   }
 }
 
+function isImprestRequest(value: unknown): value is ImprestRequest {
+  return typeof value === "object" && value !== null && "id" in value && "reference_number" in value;
+}
+
 function unwrapImprest(payload: unknown): ImprestRequest | null {
-  const response = payload as { data?: ImprestRequest | { data?: ImprestRequest } } | undefined;
-  if (!response?.data) return null;
-  return "data" in response.data ? response.data.data ?? null : response.data;
+  if (isImprestRequest(payload)) return payload;
+  if (typeof payload !== "object" || payload === null || !("data" in payload)) return null;
+
+  const outer = (payload as { data?: unknown }).data;
+  if (isImprestRequest(outer)) return outer;
+  if (typeof outer !== "object" || outer === null || !("data" in outer)) return null;
+
+  const inner = (outer as { data?: unknown }).data;
+  return isImprestRequest(inner) ? inner : null;
 }
 
 export default function ImprestLiquidatePage({ params }: { params: Promise<{ id: string }> }) {

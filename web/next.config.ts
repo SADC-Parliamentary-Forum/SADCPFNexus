@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   // Produces a self-contained build in .next/standalone — required for the production Docker image
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
@@ -11,6 +13,10 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    if (!isProduction) {
+      return [];
+    }
+
     return [
       {
         // HTML pages: never cache (data changes frequently)

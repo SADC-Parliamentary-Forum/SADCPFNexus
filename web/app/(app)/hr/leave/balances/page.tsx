@@ -3,7 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { leaveApi, tenantUsersApi, hrSettingsApi, type LeaveRequest, type TenantUserOption } from "@/lib/api";
+import {
+  leaveApi,
+  tenantUsersApi,
+  hrSettingsApi,
+  hrLeaveBalancesApi,
+  type LeaveRequest,
+  type TenantUserOption,
+  type AdminLeaveBalanceRow,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -12,6 +20,7 @@ interface StaffLeaveRow {
   user: TenantUserOption;
   annualUsed: number;
   annualTotal: number;
+  lilHoursAvailable: number;
   sickUsed: number;
   sickTotal: number;
   lilHours: number;
@@ -19,6 +28,7 @@ interface StaffLeaveRow {
   paternityDays: number;
   onLeaveToday: boolean;
   upcomingLeave: boolean;
+  hasBalanceRecord: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -99,15 +109,25 @@ function SkeletonRow() {
   );
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [CURRENT_YEAR + 1, CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LeaveBalancesPage() {
   const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [adminBalances, setAdminBalances] = useState<AdminLeaveBalanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterOnLeave, setFilterOnLeave] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
+
+  // Inline-edit state per user
+  const [editDraft, setEditDraft] = useState<Record<number, { days: string; lil: string }>>({});
+  const [saving, setSaving] = useState<Record<number, boolean>>({});
+  const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
 
   const { data: profilesData } = useQuery({
     queryKey: ["hr-settings", "leave-profiles"],
@@ -115,23 +135,30 @@ export default function LeaveBalancesPage() {
   });
 
   const activeProfile = (profilesData ?? []).find((p) => p.is_active) ?? null;
-  const annualEntitlement   = activeProfile?.annual_leave_days  ?? 21;
-  const sickEntitlement     = activeProfile?.sick_leave_days    ?? 30;
-  const maternityEntitlement = activeProfile?.maternity_days    ?? 90;
-  const paternityEntitlement = activeProfile?.paternity_days    ?? 10;
+  const annualEntitlement    = activeProfile?.annual_leave_days  ?? 21;
+  const sickEntitlement      = activeProfile?.sick_leave_days    ?? 30;
+  const maternityEntitlement = activeProfile?.maternity_days     ?? 90;
+  const paternityEntitlement = activeProfile?.paternity_days     ?? 10;
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const [usersRes, leaveRes] = await Promise.all([
+        const [usersRes, leaveRes, balancesRes] = await Promise.all([
           tenantUsersApi.list(),
-          leaveApi.list({ per_page: 200, status: "approved" }),
+          leaveApi.list({ per_page: 500, status: "approved" }),
+          hrLeaveBalancesApi.listAll(selectedYear),
         ]);
-        const usersData: TenantUserOption[] = (usersRes.data as { data?: TenantUserOption[] }).data ?? (Array.isArray(usersRes.data) ? (usersRes.data as unknown as TenantUserOption[]) : []);
+        const usersData: TenantUserOption[] =
+          (usersRes.data as { data?: TenantUserOption[] }).data ??
+          (Array.isArray(usersRes.data) ? (usersRes.data as unknown as TenantUserOption[]) : []);
         setUsers(usersData);
         setRequests(leaveRes.data.data ?? []);
+        setAdminBalances(balancesRes.data.data ?? []);
+        // Clear edit drafts when year changes
+        setEditDraft({});
+        setSaveErrors({});
       } catch {
         setError("Failed to load leave data. You may need HR administrator permissions.");
       } finally {
@@ -139,9 +166,15 @@ export default function LeaveBalancesPage() {
       }
     };
     load();
-  }, []);
+  }, [selectedYear]);
 
-  // Build per-staff balance rows by aggregating approved leave
+  // Build lookup map for admin balances
+  const balanceByUser = useMemo(
+    () => Object.fromEntries(adminBalances.map((b) => [b.user_id, b])),
+    [adminBalances]
+  );
+
+  // Build per-staff balance rows
   const rows: StaffLeaveRow[] = useMemo(() => {
     return users.map((user) => {
       const userReqs = requests.filter((r) => r.requester?.id === user.id);
@@ -162,23 +195,27 @@ export default function LeaveBalancesPage() {
         .filter((r) => r.leave_type === "paternity")
         .reduce((sum, r) => sum + (r.days_requested ?? 0), 0);
 
-      // Check if on leave today
       const onLeaveToday = userReqs.some((r) => {
         const start = parseDate(r.start_date);
         const end = parseDate(r.end_date);
         return TODAY >= start && TODAY <= end;
       });
 
-      // Check if has approved leave in next 7 days
       const upcomingLeave = userReqs.some((r) => {
         const start = parseDate(r.start_date);
         return start > TODAY && start <= NEXT_7;
       });
 
+      // Use stored opening balance if available, otherwise fall back to profile entitlement
+      const bal = balanceByUser[user.id];
+      const annualTotal = bal ? bal.annual_balance_days : annualEntitlement;
+      const lilHoursAvailable = bal ? bal.lil_hours_available : 0;
+
       return {
         user,
         annualUsed,
-        annualTotal: annualEntitlement,
+        annualTotal,
+        lilHoursAvailable,
         sickUsed,
         sickTotal: sickEntitlement,
         lilHours,
@@ -186,9 +223,10 @@ export default function LeaveBalancesPage() {
         paternityDays,
         onLeaveToday,
         upcomingLeave,
+        hasBalanceRecord: !!bal,
       };
     });
-  }, [users, requests, annualEntitlement, sickEntitlement]);
+  }, [users, requests, balanceByUser, annualEntitlement, sickEntitlement]);
 
   const filtered = useMemo(() => {
     let r = rows;
@@ -217,6 +255,50 @@ export default function LeaveBalancesPage() {
         )
       : 0;
 
+  // Handle save of a single employee's opening balance
+  const handleSave = async (userId: number) => {
+    const draft = editDraft[userId];
+    if (!draft) return;
+
+    setSaving((s) => ({ ...s, [userId]: true }));
+    setSaveErrors((e) => { const n = { ...e }; delete n[userId]; return n; });
+
+    try {
+      await hrLeaveBalancesApi.upsert({
+        user_id: userId,
+        period_year: selectedYear,
+        annual_balance_days: Math.max(0, parseInt(draft.days, 10) || 0),
+        lil_hours_available: Math.max(0, parseFloat(draft.lil) || 0),
+      });
+      // Refresh balances only (not the full page reload)
+      const res = await hrLeaveBalancesApi.listAll(selectedYear);
+      setAdminBalances(res.data.data ?? []);
+      setEditDraft((d) => { const n = { ...d }; delete n[userId]; return n; });
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Save failed. Please try again.";
+      setSaveErrors((e) => ({ ...e, [userId]: msg }));
+    } finally {
+      setSaving((s) => ({ ...s, [userId]: false }));
+    }
+  };
+
+  const startEdit = (row: StaffLeaveRow) => {
+    setEditDraft((d) => ({
+      ...d,
+      [row.user.id]: {
+        days: String(row.annualTotal),
+        lil: String(row.lilHoursAvailable),
+      },
+    }));
+  };
+
+  const cancelEdit = (userId: number) => {
+    setEditDraft((d) => { const n = { ...d }; delete n[userId]; return n; });
+    setSaveErrors((e) => { const n = { ...e }; delete n[userId]; return n; });
+  };
+
   return (
     <div className="space-y-6">
 
@@ -233,9 +315,20 @@ export default function LeaveBalancesPage() {
           <h1 className="page-title">Leave Balance Administration</h1>
           <p className="page-subtitle mt-1">
             Consolidated view of annual, sick, LIL, maternity &amp; paternity leave across all staff.
+            Opening balances are editable per employee.
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="form-input py-2 px-3 text-sm"
+            aria-label="Select year"
+          >
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
           <Link href="/hr/leave" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">event_note</span>
             Leave Requests
@@ -318,17 +411,19 @@ export default function LeaveBalancesPage() {
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-semibold text-neutral-900">Staff Leave Balances</h2>
-          <p className="text-xs text-neutral-400">Based on approved leave for {new Date().getFullYear()}</p>
+          <h2 className="text-sm font-semibold text-neutral-900">Staff Leave Balances — {selectedYear}</h2>
+          <p className="text-xs text-neutral-400">
+            Opening balance is editable · Used days derived from approved leave requests
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
                 <th className="min-w-[160px]">Employee</th>
-                <th className="min-w-[180px]">Annual Leave</th>
+                <th className="min-w-[200px]">Annual Leave (Opening / Used)</th>
                 <th className="min-w-[140px]">Sick Leave</th>
-                <th className="min-w-[80px]">LIL (hrs)</th>
+                <th className="min-w-[100px]">LIL Used / Avail</th>
                 <th className="min-w-[100px]">Mat / Pat</th>
                 <th className="min-w-[100px]">Status</th>
               </tr>
@@ -347,6 +442,9 @@ export default function LeaveBalancesPage() {
                   : filtered.map((row) => {
                     const remaining = row.annualTotal - row.annualUsed;
                     const barColor = utilColorClass(row.annualUsed, row.annualTotal);
+                    const isEditing = !!editDraft[row.user.id];
+                    const isSaving = !!saving[row.user.id];
+                    const saveError = saveErrors[row.user.id];
 
                     return (
                       <tr key={row.user.id}>
@@ -366,18 +464,74 @@ export default function LeaveBalancesPage() {
                           </div>
                         </td>
 
-                        {/* Annual Leave */}
+                        {/* Annual Leave — opening/used with inline edit */}
                         <td>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className={cn(
-                                "text-xs font-bold",
-                                remaining > 10 ? "text-green-700" : remaining > 5 ? "text-amber-600" : "text-red-600"
-                              )}>
-                                {remaining}d left
-                              </span>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              {isEditing ? (
+                                <>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={365}
+                                    value={editDraft[row.user.id].days}
+                                    onChange={(e) =>
+                                      setEditDraft((d) => ({
+                                        ...d,
+                                        [row.user.id]: { ...d[row.user.id], days: e.target.value },
+                                      }))
+                                    }
+                                    className="form-input w-16 py-0.5 text-sm"
+                                    aria-label="Opening annual balance days"
+                                  />
+                                  <span className="text-xs text-neutral-400">d opening</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSave(row.user.id)}
+                                    disabled={isSaving}
+                                    className="btn-primary py-0.5 px-2 text-xs"
+                                  >
+                                    {isSaving ? "…" : "Save"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => cancelEdit(row.user.id)}
+                                    disabled={isSaving}
+                                    className="text-neutral-400 hover:text-neutral-700 transition-colors"
+                                    aria-label="Cancel edit"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">close</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className={cn(
+                                    "text-xs font-bold",
+                                    remaining > 10 ? "text-green-700" : remaining > 5 ? "text-amber-600" : "text-red-600"
+                                  )}>
+                                    {remaining}d left
+                                  </span>
+                                  {!row.hasBalanceRecord && (
+                                    <span className="text-[10px] text-neutral-400 bg-neutral-100 rounded px-1 py-0.5">
+                                      profile default
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => startEdit(row)}
+                                    className="text-neutral-300 hover:text-primary transition-colors ml-auto"
+                                    title="Edit opening balance"
+                                    aria-label="Edit opening balance"
+                                  >
+                                    <span className="material-symbols-outlined text-[15px]">edit</span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                             <UtilBar used={row.annualUsed} total={row.annualTotal} colorClass={barColor} />
+                            {saveError && (
+                              <p className="text-[10px] text-red-600">{saveError}</p>
+                            )}
                           </div>
                         </td>
 
@@ -390,14 +544,40 @@ export default function LeaveBalancesPage() {
                           />
                         </td>
 
-                        {/* LIL */}
+                        {/* LIL used / available */}
                         <td>
-                          <span className={cn(
-                            "text-sm font-semibold",
-                            row.lilHours > 0 ? "text-blue-700" : "text-neutral-400"
-                          )}>
-                            {row.lilHours > 0 ? `${row.lilHours.toFixed(1)}h` : "—"}
-                          </span>
+                          <div className="space-y-1">
+                            <span className={cn(
+                              "text-sm font-semibold",
+                              row.lilHours > 0 ? "text-blue-700" : "text-neutral-400"
+                            )}>
+                              {row.lilHours > 0 ? `${row.lilHours.toFixed(1)}h used` : "—"}
+                            </span>
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.5}
+                                  value={editDraft[row.user.id].lil}
+                                  onChange={(e) =>
+                                    setEditDraft((d) => ({
+                                      ...d,
+                                      [row.user.id]: { ...d[row.user.id], lil: e.target.value },
+                                    }))
+                                  }
+                                  className="form-input w-20 py-0.5 text-xs"
+                                  placeholder="avail hrs"
+                                  aria-label="LIL hours available"
+                                />
+                                <span className="text-[10px] text-neutral-400">avail</span>
+                              </div>
+                            ) : (
+                              row.lilHoursAvailable > 0 && (
+                                <p className="text-[10px] text-blue-600">{row.lilHoursAvailable.toFixed(1)}h avail</p>
+                              )
+                            )}
+                          </div>
                         </td>
 
                         {/* Mat/Pat */}
@@ -468,7 +648,8 @@ export default function LeaveBalancesPage() {
               <span className="material-symbols-outlined text-[14px]">info</span>
               <span>
                 {activeProfile ? `${activeProfile.profile_name} — ` : ""}
-                Annual {annualEntitlement}d · Sick {sickEntitlement}d · Mat {maternityEntitlement}d · Pat {paternityEntitlement}d
+                Opening balance is HR-editable per employee · Remaining = Opening − Used ·
+                Sick {sickEntitlement}d · Mat {maternityEntitlement}d · Pat {paternityEntitlement}d
               </span>
             </div>
           </div>

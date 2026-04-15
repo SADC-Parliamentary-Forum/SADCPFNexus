@@ -167,16 +167,9 @@ function PurchaseOrdersPageInner() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Purchase Orders</h1>
-          <p className="page-subtitle">Track issued POs, deliveries, and fulfilment</p>
+          <p className="page-subtitle">Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={openModal}
-            className="btn-primary inline-flex items-center gap-1.5 text-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">add</span>
-            New Purchase Order
-          </button>
           <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
             Requests
@@ -237,7 +230,7 @@ function PurchaseOrdersPageInner() {
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">receipt_long</span>
           <p className="text-sm text-neutral-500">No purchase orders found.</p>
-          <p className="text-xs text-neutral-400">Click "New Purchase Order" above to create one against an awarded request.</p>
+          <p className="text-xs text-neutral-400">Purchase orders are created automatically after an RFQ is awarded to a registered supplier.</p>
         </div>
       ) : (
         <div className="card overflow-hidden">

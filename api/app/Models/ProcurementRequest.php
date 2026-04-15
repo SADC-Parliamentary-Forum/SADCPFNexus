@@ -47,6 +47,7 @@ class ProcurementRequest extends Model
     public function items()             { return $this->hasMany(ProcurementItem::class); }
     public function quotes()            { return $this->hasMany(ProcurementQuote::class); }
     public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
+    public function purchaseOrder()     { return $this->hasOne(PurchaseOrder::class); }
     public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
     public function rfqIssuer()         { return $this->belongsTo(User::class, 'rfq_issued_by'); }
     public function supplierCategories(){ return $this->belongsToMany(SupplierCategory::class, 'procurement_request_supplier_category')->withTimestamps(); }

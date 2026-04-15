@@ -1,13 +1,16 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { canIssueProcurementRfq, getStoredUser } from "@/lib/auth";
 import {
   procurementApi,
+  quoteAttachmentsApi,
   quotesApi,
   supplierCategoriesApi,
   type CreateQuotePayload,
+  type ProcurementAttachment,
   type ProcurementQuote,
   type ProcurementRequest,
 } from "@/lib/api";
@@ -16,15 +19,7 @@ import { formatDateShort } from "@/lib/utils";
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
 function canManage() {
-  if (typeof window === "undefined") return false;
-  try {
-    const user = JSON.parse(localStorage.getItem("sadcpf_user") ?? "null");
-    return (user?.roles ?? []).some((role: string) =>
-      ["Procurement Officer", "Finance Controller", "System Admin", "super-admin", "Secretary General"].includes(role)
-    );
-  } catch {
-    return false;
-  }
+  return canIssueProcurementRfq(getStoredUser());
 }
 
 type Assessment = "pending" | "pass" | "fail";
@@ -55,6 +50,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const reqId = Number(id);
   const queryClient = useQueryClient();
+  const quoteFileInputRef = useRef<HTMLInputElement>(null);
   const manager = canManage();
   const [showIssue, setShowIssue] = useState(false);
   const [rfqDeadline, setRfqDeadline] = useState("");
@@ -64,6 +60,10 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [editingQuote, setEditingQuote] = useState<ProcurementQuote | null>(null);
   const [quoteForm, setQuoteForm] = useState<QuoteForm>(emptyQuoteForm(DEFAULT_CURRENCY));
+  const [quoteFiles, setQuoteFiles] = useState<File[]>([]);
+  const [uploadTargetQuoteId, setUploadTargetQuoteId] = useState<number | null>(null);
+  const [uploadingQuoteId, setUploadingQuoteId] = useState<number | null>(null);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<number | null>(null);
   const [showAward, setShowAward] = useState(false);
   const [awardQuoteId, setAwardQuoteId] = useState<number | "">("");
   const [awardNotes, setAwardNotes] = useState("");
@@ -107,6 +107,77 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
     [quotes]
   );
 
+  const resetQuoteModal = () => {
+    setShowQuoteModal(false);
+    setEditingQuote(null);
+    setQuoteForm(emptyQuoteForm(currency));
+    setQuoteFiles([]);
+  };
+
+  const formatBytes = (bytes: number | null) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const downloadAttachment = async (attachment: ProcurementAttachment, url: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("sadcpf_token") : null;
+
+    try {
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error("Download failed");
+
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = attachment.original_filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      setError("Failed to download quote attachment.");
+    }
+  };
+
+  const refreshQuotes = async () => {
+    await quotesQuery.refetch();
+    await queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
+  };
+
+  const uploadQuoteFiles = async (quoteId: number, files: File[]) => {
+    if (files.length === 0) return false;
+
+    setUploadingQuoteId(quoteId);
+
+    try {
+      const results = await Promise.allSettled(
+        files.map((file) => quoteAttachmentsApi.upload(reqId, quoteId, file))
+      );
+      await refreshQuotes();
+      return results.some((result) => result.status === "rejected");
+    } finally {
+      setUploadingQuoteId(null);
+      setUploadTargetQuoteId(null);
+      if (quoteFileInputRef.current) quoteFileInputRef.current.value = "";
+    }
+  };
+
+  const deleteQuoteAttachment = async (quoteId: number, attachmentId: number) => {
+    setDeletingAttachmentId(attachmentId);
+
+    try {
+      await quoteAttachmentsApi.delete(reqId, quoteId, attachmentId);
+      await refreshQuotes();
+      setError(null);
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to delete quote attachment.");
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
+
   const issueMutation = useMutation({
     mutationFn: () =>
       procurementApi.issueRfq(reqId, {
@@ -141,13 +212,16 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       };
       return editingQuote ? quotesApi.update(reqId, editingQuote.id, payload) : quotesApi.create(reqId, payload);
     },
-    onSuccess: () => {
-      quotesQuery.refetch();
-      queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
-      setShowQuoteModal(false);
-      setEditingQuote(null);
-      setQuoteForm(emptyQuoteForm(currency));
-      setError(null);
+    onSuccess: async (response) => {
+      const savedQuote = response.data.data;
+      const uploadFailed = await uploadQuoteFiles(savedQuote.id, quoteFiles);
+
+      if (!quoteFiles.length) {
+        await refreshQuotes();
+      }
+
+      resetQuoteModal();
+      setError(uploadFailed ? "Quote saved, but one or more files failed to upload." : null);
     },
     onError: (err: unknown) =>
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save quote."),
@@ -157,6 +231,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
     mutationFn: () => procurementApi.award(reqId, Number(awardQuoteId), awardNotes || undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setShowAward(false);
       setAwardQuoteId("");
       setAwardNotes("");
@@ -178,6 +253,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="font-mono text-neutral-600">{req.reference_number}</span>
       </nav>
+
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="card p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
@@ -288,9 +365,9 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-neutral-800">Quote Assessment</h2>
-            <p className="text-xs text-neutral-400">Only assessed, compliant quotes can be awarded.</p>
+            <p className="text-xs text-neutral-400">Only assessed, compliant quotes can be awarded. Upload the supplier's submitted quote documents against each quote record.</p>
           </div>
-          {manager && req.status !== "awarded" && <button className="btn-primary text-xs px-3 py-1.5" onClick={() => { setEditingQuote(null); setQuoteForm(emptyQuoteForm(currency)); setShowQuoteModal(true); }}>Record Quote</button>}
+          {manager && req.status !== "awarded" && <button className="btn-primary text-xs px-3 py-1.5" onClick={() => { setEditingQuote(null); setQuoteForm(emptyQuoteForm(currency)); setQuoteFiles([]); setShowQuoteModal(true); }}>Record Quote</button>}
         </div>
         {sortedQuotes.length === 0 ? <p className="text-sm text-neutral-500">No quotes recorded yet.</p> : (
           <div className="space-y-3">
@@ -312,22 +389,77 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
                     </p>
                     {quote.notes && <p className="text-xs text-neutral-600">{quote.notes}</p>}
                     {quote.compliance_notes && <p className="text-xs text-neutral-600">{quote.compliance_notes}</p>}
+                    {(quote.attachments?.length ?? 0) > 0 ? (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Submitted Quote Files</p>
+                        <div className="space-y-2">
+                          {(quote.attachments ?? []).map((attachment) => (
+                            <div key={attachment.id} className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2">
+                              <span className="material-symbols-outlined text-[16px] text-neutral-400">attach_file</span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-xs font-medium text-neutral-800">{attachment.original_filename}</p>
+                                <p className="text-[11px] text-neutral-400">
+                                  {formatBytes(attachment.size_bytes)}
+                                  {attachment.uploader?.name ? ` · ${attachment.uploader.name}` : ""}
+                                  {attachment.created_at ? ` · ${formatDateShort(attachment.created_at)}` : ""}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => downloadAttachment(attachment, quoteAttachmentsApi.downloadUrl(reqId, quote.id, attachment.id))}
+                                  className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                                >
+                                  Download
+                                </button>
+                                {manager && req.status !== "awarded" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteQuoteAttachment(quote.id, attachment.id)}
+                                    disabled={deletingAttachmentId === attachment.id}
+                                    className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                                  >
+                                    {deletingAttachmentId === attachment.id ? "Removing..." : "Remove"}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-neutral-400">No submitted quote documents uploaded yet.</p>
+                    )}
                   </div>
                   {manager && req.status !== "awarded" && (
-                    <button className="btn-secondary text-xs px-3 py-1.5" onClick={() => {
-                      setEditingQuote(quote);
-                      setQuoteForm({
-                        vendor_name: quote.vendor_name,
-                        quoted_amount: String(quote.quoted_amount),
-                        currency: quote.currency ?? currency,
-                        quote_date: quote.quote_date ? quote.quote_date.split("T")[0] : "",
-                        notes: quote.notes ?? "",
-                        compliance_passed: quote.compliance_passed === true ? "pass" : quote.compliance_passed === false ? "fail" : "pending",
-                        compliance_notes: quote.compliance_notes ?? "",
-                        is_recommended: quote.is_recommended,
-                      });
-                      setShowQuoteModal(true);
-                    }}>Assess</button>
+                    <div className="flex flex-col items-end gap-2">
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs px-3 py-1.5"
+                        disabled={uploadingQuoteId === quote.id}
+                        onClick={() => {
+                          setUploadTargetQuoteId(quote.id);
+                          quoteFileInputRef.current?.click();
+                        }}
+                      >
+                        {uploadingQuoteId === quote.id ? "Uploading..." : "Upload Submitted Quote"}
+                      </button>
+                      <button className="btn-secondary text-xs px-3 py-1.5" onClick={() => {
+                        setEditingQuote(quote);
+                        setQuoteForm({
+                          vendor_name: quote.vendor_name,
+                          quoted_amount: String(quote.quoted_amount),
+                          currency: quote.currency ?? currency,
+                          quote_date: quote.quote_date ? quote.quote_date.split("T")[0] : "",
+                          notes: quote.notes ?? "",
+                          compliance_passed: quote.compliance_passed === true ? "pass" : quote.compliance_passed === false ? "fail" : "pending",
+                          compliance_notes: quote.compliance_notes ?? "",
+                          is_recommended: quote.is_recommended,
+                        });
+                        setQuoteFiles([]);
+                        setShowQuoteModal(true);
+                      }}>Assess</button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -336,13 +468,44 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
+      {req.purchaseOrder && (
+        <div className="card p-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-neutral-800">Purchase Order</h2>
+            <p className="text-xs text-neutral-400">
+              The purchase order for the awarded supplier has been created automatically.
+            </p>
+          </div>
+          <Link href={`/procurement/purchase-orders/${req.purchaseOrder.id}`} className="btn-primary text-xs px-3 py-1.5">
+            Open PO
+          </Link>
+        </div>
+      )}
+
       <Link href="/procurement/rfq" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to RFQs
       </Link>
 
+      {manager && (
+        <input
+          ref={quoteFileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+          className="hidden"
+          onChange={async (e) => {
+            const files = Array.from(e.target.files ?? []);
+            if (!uploadTargetQuoteId || files.length === 0) return;
+
+            const uploadFailed = await uploadQuoteFiles(uploadTargetQuoteId, files);
+            setError(uploadFailed ? "One or more quote files failed to upload." : null);
+          }}
+        />
+      )}
+
       {showQuoteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowQuoteModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={resetQuoteModal}>
           <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-bold">{editingQuote ? "Assess Quote" : "Record Quote"}</h2>
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
@@ -359,12 +522,44 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
               <option value="fail">Non-compliant</option>
             </select>
             <textarea className="form-input h-24 resize-none" placeholder="Assessment notes" value={quoteForm.compliance_notes} onChange={(e) => setQuoteForm((current) => ({ ...current, compliance_notes: e.target.value }))} />
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Submitted Quote Documents</label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  className="form-input"
+                  onChange={(e) => setQuoteFiles(Array.from(e.target.files ?? []))}
+                />
+                <p className="mt-1 text-[11px] text-neutral-400">Attach the supplier's actual submitted quotation document(s).</p>
+              </div>
+              {quoteFiles.length > 0 && (
+                <div className="space-y-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                  {quoteFiles.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-neutral-800">{file.name}</p>
+                        <p className="text-[11px] text-neutral-400">{formatBytes(file.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setQuoteFiles((current) => current.filter((_, currentIndex) => currentIndex !== index))}
+                        className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
               Recommend this quote for award
             </label>
             <div className="flex gap-2">
-              <button className="btn-secondary flex-1" onClick={() => setShowQuoteModal(false)}>Cancel</button>
+              <button className="btn-secondary flex-1" onClick={resetQuoteModal}>Cancel</button>
               <button className="btn-primary flex-1" disabled={saveQuoteMutation.isPending || !quoteForm.vendor_name.trim() || !quoteForm.quoted_amount} onClick={() => saveQuoteMutation.mutate()}>
                 {saveQuoteMutation.isPending ? "Saving..." : "Save"}
               </button>

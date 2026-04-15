@@ -189,6 +189,10 @@ class NotificationService
                 'subject' => 'RFQ invitation — {{reference}}',
                 'body'    => "Dear {{name}},\n\nAn RFQ matching your supplier profile is now open.\n\nReference: {{reference}}\nTitle: {{title}}\nDeadline: {{deadline}}\n\nPlease log in to the supplier portal to review the RFQ and submit your quotation.\n\nRegards,\nSADC-PF Procurement",
             ],
+            'supplier.proforma_invoice_requested' => [
+                'subject' => 'Purchase Order issued - submit proforma invoice',
+                'body'    => "Dear {{name}},\n\nPurchase Order {{reference}} has been issued to {{vendor}}.\n\nAmount: {{amount}}\nExpected delivery: {{delivery_date}}\n\nPlease log in to the supplier portal and submit your proforma invoice so payment processing can begin.\n\nRegards,\nSADC-PF Procurement",
+            ],
 
             // Supplier portal
             'supplier.application_submitted' => [
@@ -211,6 +215,22 @@ class NotificationService
                 'subject' => 'Your supplier account has been suspended',
                 'body'    => "Dear {{name}},\n\nYour supplier account for {{supplier}} has been suspended.\n\nReason:\n{{comment}}\n\nPlease contact Procurement for clarification.\n\nRegards,\nSADC-PF Procurement",
             ],
+            'supplier.quote_submitted' => [
+                'subject' => 'Supplier quote submitted â€” {{reference}}',
+                'body'    => "Dear {{name}},\n\nA supplier has submitted a quotation for RFQ {{reference}}.\n\nSupplier: {{supplier}}\nTitle: {{title}}\nAmount: {{amount}}\n\nPlease log in to procurement to review the submission.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.profile_updated' => [
+                'subject' => 'Supplier profile update awaiting review',
+                'body'    => "Dear {{name}},\n\nA supplier profile update requires procurement review.\n\nSupplier: {{supplier}}\nPrimary contact: {{contact}}\nCategories: {{categories}}\n\nPlease log in to procurement and review the updated supplier profile.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.final_invoice_requested' => [
+                'subject' => 'Payment recorded - submit final invoice documents',
+                'body'    => "Dear {{name}},\n\nPayment has been recorded for purchase order {{reference}}.\n\nVendor: {{vendor}}\nAmount: {{amount}}\n\nPlease upload the final invoice and proof-of-payment supporting documents in the supplier portal.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'supplier.final_invoice_submitted' => [
+                'subject' => 'Supplier final invoice submitted - {{reference}}',
+                'body'    => "Dear {{name}},\n\nThe supplier has submitted the final invoice and proof-of-payment package.\n\nReference: {{reference}}\nVendor: {{vendor}}\nAmount: {{amount}}\n\nPlease log in to procurement to review the submission.\n\nRegards,\nSADC-PF Finance",
+            ],
 
             // Finance
             'finance.advance_due' => [
@@ -224,6 +244,10 @@ class NotificationService
             'budget.exceeded' => [
                 'subject' => 'Budget line exceeded — immediate action required',
                 'body'    => "Dear {{name}},\n\nA budget line has exceeded its allocated amount.\n\n{{description}}\n\nPlease review immediately and contact the Finance Controller.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'finance.payment_requested' => [
+                'subject' => 'Supplier payment request awaiting action - {{reference}}',
+                'body'    => "Dear {{name}},\n\nA supplier has submitted a proforma invoice and payment processing is now required.\n\nInvoice reference: {{reference}}\nPurchase Order: {{po}}\nVendor: {{vendor}}\nAmount: {{amount}}\n\nPlease log in to finance and action this payment request.\n\nRegards,\nSADC-PF Procurement",
             ],
 
             // Assignments

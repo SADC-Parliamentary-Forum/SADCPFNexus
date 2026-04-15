@@ -78,5 +78,9 @@ class InvoiceAttachmentController extends Controller
         if ($invoice->tenant_id !== $request->user()->tenant_id) {
             abort(404);
         }
+
+        if ($request->user()->isSupplier() && (int) $request->user()->vendor_id !== (int) $invoice->vendor_id) {
+            abort(404);
+        }
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Models\Vendor;
 use Tests\TestCase;
 
@@ -177,7 +178,7 @@ class InvoiceTest extends TestCase
 
         $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/approve")
             ->assertOk()
-            ->assertJsonPath('data.status', 'approved');
+            ->assertJsonPath('data.status', 'approved_for_payment');
     }
 
     public function test_finance_officer_can_reject_invoice_with_reason(): void
@@ -236,6 +237,62 @@ class InvoiceTest extends TestCase
 
         $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/approve")
             ->assertForbidden();
+    }
+
+    public function test_supplier_can_submit_proforma_invoice_for_issued_po(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $vendor = Vendor::create([
+            'tenant_id'   => $tenant->id,
+            'name'        => 'Supplier Portal Vendor',
+            'is_approved' => true,
+            'is_active'   => true,
+            'status'      => 'approved',
+        ]);
+        $supplier = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'is_active' => true,
+        ]);
+        $supplier->assignRole('Supplier');
+
+        $po = PurchaseOrder::create([
+            'tenant_id'    => $tenant->id,
+            'vendor_id'    => $vendor->id,
+            'title'        => 'Issued PO',
+            'total_amount' => 5000,
+            'currency'     => 'NAD',
+            'status'       => 'issued',
+            'issued_at'    => now(),
+            'created_by'   => null,
+        ]);
+
+        $this->asUser($supplier)->postJson("/api/v1/procurement/supplier/purchase-orders/{$po->id}/proforma-invoice", [
+            'vendor_invoice_number' => 'PRO-001',
+            'invoice_date'          => now()->toDateString(),
+            'due_date'              => now()->addDays(7)->toDateString(),
+            'amount'                => 5000,
+            'currency'              => 'NAD',
+        ])->assertCreated()
+          ->assertJsonPath('data.status', 'proforma_submitted');
+    }
+
+    public function test_finance_controller_can_mark_invoice_paid(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asFinanceController($tenant);
+        [$po, , $grn, $vendor] = $this->makeIssuedPO($tenant, $user->id);
+
+        $invoice = Invoice::create(array_merge($this->invoicePayload($po, $vendor, $grn), [
+            'tenant_id'        => $tenant->id,
+            'reference_number' => 'INV-PAID-001',
+            'status'           => 'approved_for_payment',
+            'match_status'     => 'matched',
+        ]));
+
+        $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/mark-paid")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'paid');
     }
 
     // ── Tenant Isolation ──────────────────────────────────────────────────────

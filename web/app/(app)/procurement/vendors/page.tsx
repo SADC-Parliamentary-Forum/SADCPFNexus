@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, vendorsApi, type SupplierCategory, type Vendor } from "@/lib/api";
+import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({ canManage, onAdd }: { canManage: boolean; onAdd: () => void }) {
   return (
     <tr>
       <td colSpan={7} className="py-16 text-center">
@@ -62,11 +63,15 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-600">No vendors found</p>
-            <p className="text-xs text-neutral-400 mt-0.5">Add your first vendor to the register.</p>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              {canManage ? "Add your first vendor to the register." : "No vendors match your current filters."}
+            </p>
           </div>
-          <button type="button" onClick={onAdd} className="btn-primary mt-1 py-1.5 px-4 text-xs">
-            Add Vendor
-          </button>
+          {canManage && (
+            <button type="button" onClick={onAdd} className="btn-primary mt-1 py-1.5 px-4 text-xs">
+              Add Vendor
+            </button>
+          )}
         </div>
       </td>
     </tr>
@@ -503,6 +508,7 @@ function DeleteDialog({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function VendorsPage() {
+  const canManageVendors = canManageProcurementVendors(getStoredUser());
   const [search, setSearch]           = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -542,14 +548,16 @@ export default function VendorsPage() {
             <h1 className="page-title">Vendor Register</h1>
             <p className="page-subtitle">Approved suppliers and service providers for procurement.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => { setEditVendor(null); setShowForm(true); }}
-            className="btn-primary flex items-center gap-2 self-start sm:self-auto"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Vendor
-          </button>
+          {canManageVendors && (
+            <button
+              type="button"
+              onClick={() => { setEditVendor(null); setShowForm(true); }}
+              className="btn-primary flex items-center gap-2 self-start sm:self-auto"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Vendor
+            </button>
+          )}
         </div>
 
         {/* KPI strip */}
@@ -651,7 +659,10 @@ export default function VendorsPage() {
                 {isLoading ? (
                   <SkeletonRows />
                 ) : vendors.length === 0 ? (
-                  <EmptyState onAdd={() => { setEditVendor(null); setShowForm(true); }} />
+                  <EmptyState
+                    canManage={canManageVendors}
+                    onAdd={() => { setEditVendor(null); setShowForm(true); }}
+                  />
                 ) : (
                   vendors.map((v) => (
                     <tr key={v.id} className="group hover:bg-neutral-50/60">
@@ -724,22 +735,26 @@ export default function VendorsPage() {
                           >
                             <span className="material-symbols-outlined text-[17px]">open_in_new</span>
                           </Link>
-                          <button
-                            type="button"
-                            onClick={() => { setEditVendor(v); setShowForm(true); }}
-                            className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
-                            title="Edit vendor"
-                          >
-                            <span className="material-symbols-outlined text-[17px]">edit</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteVendor(v)}
-                            className="rounded-md p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            title="Deactivate vendor"
-                          >
-                            <span className="material-symbols-outlined text-[17px]">block</span>
-                          </button>
+                          {canManageVendors && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => { setEditVendor(v); setShowForm(true); }}
+                                className="rounded-md p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 transition-colors"
+                                title="Edit vendor"
+                              >
+                                <span className="material-symbols-outlined text-[17px]">edit</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteVendor(v)}
+                                className="rounded-md p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                title="Deactivate vendor"
+                              >
+                                <span className="material-symbols-outlined text-[17px]">block</span>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -752,7 +767,7 @@ export default function VendorsPage() {
       </div>
 
       {/* Modals */}
-      {showForm && (
+      {showForm && canManageVendors && (
         <VendorFormModal
           vendor={editVendor}
           categories={supplierCategories}
@@ -761,7 +776,7 @@ export default function VendorsPage() {
         />
       )}
 
-      {deleteVendor && (
+      {deleteVendor && canManageVendors && (
         <DeleteDialog
           vendor={deleteVendor}
           onClose={() => setDeleteVendor(null)}

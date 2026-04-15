@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ProcurementQuote extends Model
 {
@@ -35,4 +36,8 @@ class ProcurementQuote extends Model
     public function invitation()         { return $this->belongsTo(RfqInvitation::class, 'rfq_invitation_id'); }
     public function submitter()          { return $this->belongsTo(User::class, 'submitted_by_user_id'); }
     public function assessor()           { return $this->belongsTo(User::class, 'assessed_by'); }
+    public function attachments(): MorphMany
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 }

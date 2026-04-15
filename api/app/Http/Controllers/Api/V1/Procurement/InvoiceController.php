@@ -77,7 +77,7 @@ class InvoiceController extends Controller
         }
 
         $inv = $this->service->approve($invoice, $request->user());
-        return response()->json(['message' => 'Invoice approved.', 'data' => $inv]);
+        return response()->json(['message' => 'Invoice approved for payment.', 'data' => $inv]);
     }
 
     public function reject(Request $request, Invoice $invoice): JsonResponse
@@ -92,5 +92,18 @@ class InvoiceController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
         $inv  = $this->service->reject($invoice, $data['reason'], $request->user());
         return response()->json(['message' => 'Invoice rejected.', 'data' => $inv]);
+    }
+
+    public function markPaid(Request $request, Invoice $invoice): JsonResponse
+    {
+        if (! $request->user()->hasAnyRole(['Finance Controller', 'System Admin', 'Secretary General'])) {
+            abort(403);
+        }
+        if ((int) $invoice->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $inv = $this->service->markPaid($invoice, $request->user());
+        return response()->json(['message' => 'Invoice marked as paid.', 'data' => $inv]);
     }
 }

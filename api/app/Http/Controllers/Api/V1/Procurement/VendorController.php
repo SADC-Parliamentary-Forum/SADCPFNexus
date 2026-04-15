@@ -17,6 +17,8 @@ class VendorController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        abort_unless($this->canViewVendors($request), 403);
+
         $tenantId = $request->user()->tenant_id;
         $query = Vendor::withCount('quotes')
             ->with('categories:id,name,code')
@@ -59,9 +61,7 @@ class VendorController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
 
         $data = $request->validate([
             'name'                => ['required', 'string', 'max:300'],
@@ -124,6 +124,7 @@ class VendorController extends Controller
     public function show(Vendor $vendor): JsonResponse
     {
         $user = request()->user();
+        abort_unless($this->canViewVendors(request()), 403);
         $vendor = Vendor::where('id', $vendor->id)
             ->where('tenant_id', $user->tenant_id)
             ->firstOrFail();
@@ -160,9 +161,7 @@ class VendorController extends Controller
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
 
         $data = $request->validate([
             'name'                => ['sometimes', 'required', 'string', 'max:300'],
@@ -235,9 +234,7 @@ class VendorController extends Controller
         if ((int) $vendor->tenant_id !== (int) request()->user()->tenant_id) {
             abort(404);
         }
-        if (!request()->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors(request()), 403);
         $vendor->delete();
 
         return response()->json(['message' => 'Vendor deleted.']);
@@ -245,9 +242,7 @@ class VendorController extends Controller
 
     public function approve(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -259,9 +254,7 @@ class VendorController extends Controller
 
     public function reject(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -277,9 +270,7 @@ class VendorController extends Controller
 
     public function requestInfo(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -295,9 +286,7 @@ class VendorController extends Controller
 
     public function suspend(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -313,6 +302,7 @@ class VendorController extends Controller
 
     public function approvalLogs(Request $request, Vendor $vendor): JsonResponse
     {
+        abort_unless($this->canViewVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -324,6 +314,7 @@ class VendorController extends Controller
 
     public function listRatings(Request $request, Vendor $vendor): JsonResponse
     {
+        abort_unless($this->canViewVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -345,6 +336,7 @@ class VendorController extends Controller
 
     public function storeRating(Request $request, Vendor $vendor): JsonResponse
     {
+        abort_unless($this->canViewVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -375,6 +367,7 @@ class VendorController extends Controller
 
     public function listContracts(Request $request, Vendor $vendor): JsonResponse
     {
+        abort_unless($this->canViewVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -394,9 +387,7 @@ class VendorController extends Controller
 
     public function blacklist(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -413,9 +404,7 @@ class VendorController extends Controller
 
     public function unblacklist(Request $request, Vendor $vendor): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'Secretary General'])) {
-            abort(403);
-        }
+        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -445,5 +434,21 @@ class VendorController extends Controller
         $vendor->categories()->sync($validIds);
         $vendor->category = SupplierCategory::whereIn('id', $validIds)->orderBy('name')->pluck('name')->join(', ');
         $vendor->save();
+    }
+
+    private function canViewVendors(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user->isSystemAdmin()
+            || $user->hasAnyPermission(['procurement.view', 'procurement.manage_vendors', 'procurement.admin']);
+    }
+
+    private function canManageVendors(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user->isSystemAdmin()
+            || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']);
     }
 }

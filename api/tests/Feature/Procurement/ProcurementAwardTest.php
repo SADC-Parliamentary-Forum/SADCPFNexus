@@ -4,6 +4,7 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
+use App\Models\PurchaseOrder;
 use App\Models\Tenant;
 use App\Models\Vendor;
 use Tests\TestCase;
@@ -78,6 +79,12 @@ class ProcurementAwardTest extends TestCase
             'id'               => $req->id,
             'status'           => 'awarded',
             'awarded_quote_id' => $quote->id,
+        ]);
+        $this->assertDatabaseHas('purchase_orders', [
+            'tenant_id'              => $tenant->id,
+            'procurement_request_id' => $req->id,
+            'vendor_id'              => $vendor->id,
+            'status'                 => 'draft',
         ]);
     }
 

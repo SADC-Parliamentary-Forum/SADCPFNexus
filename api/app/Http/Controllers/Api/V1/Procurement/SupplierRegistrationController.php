@@ -13,7 +13,6 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class SupplierRegistrationController extends Controller
@@ -123,11 +122,7 @@ class SupplierRegistrationController extends Controller
             'performed_at' => now(),
         ]);
 
-        $procurementUsers = User::query()
-            ->where('tenant_id', $tenant->id)
-            ->where('is_active', true)
-            ->whereHas('roles', fn ($q) => $q->whereIn('name', ['Procurement Officer', 'System Admin', 'Secretary General']))
-            ->get();
+        $procurementUsers = $this->procurementRecipients($tenant->id);
 
         foreach ($procurementUsers as $procurementUser) {
             $this->notifications->dispatch(
@@ -162,5 +157,16 @@ class SupplierRegistrationController extends Controller
         abort_if(!$tenant, 422, 'Unable to resolve a tenant for supplier registration.');
 
         return $tenant;
+    }
+
+    private function procurementRecipients(int $tenantId): \Illuminate\Support\Collection
+    {
+        return User::query()
+            ->with(['roles.permissions', 'permissions'])
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $user) => $user->isSystemAdmin() || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']))
+            ->values();
     }
 }

@@ -45,12 +45,8 @@ test.describe("Procurement — create request", () => {
     await page.goto("/procurement/create");
     await page.waitForLoadState("networkidle");
 
-    const submitBtn = page.locator('button[type="submit"], button:has-text("Save"), button:has-text("Submit")').first();
-    if (await submitBtn.isVisible()) {
-      await submitBtn.click();
-      const error = page.locator('[class*="error"], .text-red').first();
-      await expect(error).toBeVisible({ timeout: 5_000 });
-    }
+    const nextStep = page.locator('button:has-text("Next Step")').first();
+    await expect(nextStep).toBeDisabled();
   });
 
   test("can create a procurement request as draft", async ({ page }) => {
@@ -67,12 +63,6 @@ test.describe("Procurement — create request", () => {
     const desc = page.locator('textarea[name="description"], textarea').first();
     if (await desc.isVisible()) {
       await desc.fill("Laptops and monitors for the new programme team");
-    }
-
-    // Amount
-    const amount = page.locator('input[name="estimated_amount"], input[type="number"]').first();
-    if (await amount.isVisible()) {
-      await amount.fill("45000");
     }
 
     const saveBtn = page.locator('button:has-text("Save"), button:has-text("Draft")').first();

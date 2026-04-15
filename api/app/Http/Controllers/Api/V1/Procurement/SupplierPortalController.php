@@ -10,12 +10,22 @@ use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
 use App\Models\SupplierCategory;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Modules\Procurement\Services\InvoiceService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 class SupplierPortalController extends Controller
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly InvoiceService $invoiceService,
+    ) {}
+
     public function me(Request $request): JsonResponse
     {
         $vendor = $this->currentVendor($request);
@@ -138,6 +148,15 @@ class SupplierPortalController extends Controller
             'responded_at' => now(),
         ]);
 
+        $this->notifyProcurementOfQuoteSubmission(
+            tenantId: $request->user()->tenant_id,
+            reference: $procurementRequest->reference_number,
+            title: $procurementRequest->title,
+            supplier: $vendor->name,
+            amount: number_format((float) $quote->quoted_amount, 2) . ' ' . $quote->currency,
+            url: '/procurement/rfq/' . $procurementRequest->id
+        );
+
         return response()->json(['message' => 'Quote submitted.', 'data' => $quote->fresh(['vendor', 'invitation'])], 201);
     }
 
@@ -148,7 +167,7 @@ class SupplierPortalController extends Controller
         $purchaseOrders = PurchaseOrder::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->where('vendor_id', $vendor->id)
-            ->with(['procurementRequest'])
+            ->with(['procurementRequest', 'items'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -167,6 +186,46 @@ class SupplierPortalController extends Controller
             ->get();
 
         return response()->json(['data' => $invoices]);
+    }
+
+    public function submitProformaInvoice(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
+    {
+        $this->currentVendor($request, true);
+
+        $data = $request->validate([
+            'vendor_invoice_number' => ['required', 'string', 'max:100'],
+            'invoice_date'          => ['required', 'date'],
+            'due_date'              => ['required', 'date', 'after_or_equal:invoice_date'],
+            'amount'                => ['required', 'numeric', 'min:0.01'],
+            'currency'              => ['nullable', 'string', 'max:10'],
+        ]);
+
+        try {
+            $invoice = $this->invoiceService->submitSupplierProforma($purchaseOrder, $data, $request->user());
+            return response()->json(['message' => 'Proforma invoice submitted.', 'data' => $invoice], 201);
+        } catch (InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        }
+    }
+
+    public function submitFinalInvoice(Request $request, Invoice $invoice): JsonResponse
+    {
+        $this->currentVendor($request, true);
+
+        $data = $request->validate([
+            'vendor_invoice_number' => ['nullable', 'string', 'max:100'],
+            'invoice_date'          => ['nullable', 'date'],
+            'due_date'              => ['nullable', 'date'],
+            'amount'                => ['nullable', 'numeric', 'min:0.01'],
+            'currency'              => ['nullable', 'string', 'max:10'],
+        ]);
+
+        try {
+            $updated = $this->invoiceService->submitSupplierFinal($invoice, $data, $request->user());
+            return response()->json(['message' => 'Final invoice submitted.', 'data' => $updated]);
+        } catch (InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        }
     }
 
     public function updateProfile(Request $request): JsonResponse
@@ -218,6 +277,14 @@ class SupplierPortalController extends Controller
             $vendor->syncLegacyFlagsFromStatus();
             $vendor->save();
             $vendor->portalUsers()->update(['is_active' => false]);
+
+            $this->notifyProcurementOfProfileUpdate(
+                tenantId: $request->user()->tenant_id,
+                supplier: $vendor->name,
+                contact: $vendor->contact_name ?: $vendor->name,
+                categories: SupplierCategory::whereIn('id', $categoryIds)->orderBy('name')->pluck('name')->join(', '),
+                url: '/procurement/vendors/' . $vendor->id
+            );
         }
 
         foreach ($request->file('documents', []) as $index => $file) {
@@ -253,5 +320,62 @@ class SupplierPortalController extends Controller
         }
 
         return $vendor;
+    }
+
+    private function procurementRecipients(int $tenantId): Collection
+    {
+        return User::query()
+            ->with(['roles.permissions', 'permissions'])
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $user) => $user->isSystemAdmin() || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']))
+            ->values();
+    }
+
+    private function notifyProcurementOfQuoteSubmission(
+        int $tenantId,
+        string $reference,
+        string $title,
+        string $supplier,
+        string $amount,
+        string $url
+    ): void {
+        foreach ($this->procurementRecipients($tenantId) as $recipient) {
+            $this->notifications->dispatch(
+                $recipient,
+                'supplier.quote_submitted',
+                [
+                    'name'      => $recipient->name,
+                    'reference' => $reference,
+                    'title'     => $title,
+                    'supplier'  => $supplier,
+                    'amount'    => $amount,
+                ],
+                ['module' => 'procurement', 'url' => $url]
+            );
+        }
+    }
+
+    private function notifyProcurementOfProfileUpdate(
+        int $tenantId,
+        string $supplier,
+        string $contact,
+        string $categories,
+        string $url
+    ): void {
+        foreach ($this->procurementRecipients($tenantId) as $recipient) {
+            $this->notifications->dispatch(
+                $recipient,
+                'supplier.profile_updated',
+                [
+                    'name'       => $recipient->name,
+                    'supplier'   => $supplier,
+                    'contact'    => $contact,
+                    'categories' => $categories ?: 'None specified',
+                ],
+                ['module' => 'procurement', 'url' => $url]
+            );
+        }
     }
 }

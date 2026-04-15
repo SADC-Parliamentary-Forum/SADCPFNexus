@@ -101,6 +101,9 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_DELIVERY_SCHEDULE,
         self::DOCUMENT_TYPE_PO_AMENDMENT,
         self::DOCUMENT_TYPE_TAX_INVOICE,
+        self::DOCUMENT_TYPE_PROFORMA_INVOICE,
+        self::DOCUMENT_TYPE_FINAL_INVOICE,
+        self::DOCUMENT_TYPE_PROOF_OF_PAYMENT,
         self::DOCUMENT_TYPE_CREDIT_NOTE,
         self::DOCUMENT_TYPE_REMITTANCE_ADVICE,
         self::DOCUMENT_TYPE_INVOICE_SUPPORTING,
@@ -160,6 +163,9 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_DELIVERY_SCHEDULE   = 'delivery_schedule';
     public const DOCUMENT_TYPE_PO_AMENDMENT        = 'po_amendment';
     public const DOCUMENT_TYPE_TAX_INVOICE         = 'tax_invoice';
+    public const DOCUMENT_TYPE_PROFORMA_INVOICE    = 'proforma_invoice';
+    public const DOCUMENT_TYPE_FINAL_INVOICE       = 'final_invoice';
+    public const DOCUMENT_TYPE_PROOF_OF_PAYMENT    = 'proof_of_payment';
     public const DOCUMENT_TYPE_CREDIT_NOTE         = 'credit_note';
     public const DOCUMENT_TYPE_REMITTANCE_ADVICE   = 'remittance_advice';
     public const DOCUMENT_TYPE_INVOICE_SUPPORTING  = 'invoice_supporting';
@@ -194,6 +200,9 @@ class Attachment extends Model
 
     public const INVOICE_DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_TAX_INVOICE,
+        self::DOCUMENT_TYPE_PROFORMA_INVOICE,
+        self::DOCUMENT_TYPE_FINAL_INVOICE,
+        self::DOCUMENT_TYPE_PROOF_OF_PAYMENT,
         self::DOCUMENT_TYPE_CREDIT_NOTE,
         self::DOCUMENT_TYPE_REMITTANCE_ADVICE,
         self::DOCUMENT_TYPE_INVOICE_SUPPORTING,

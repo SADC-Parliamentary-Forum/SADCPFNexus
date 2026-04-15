@@ -2,12 +2,14 @@
 
 namespace App\Modules\Procurement\Services;
 
+use App\Mail\ModuleNotificationMail;
 use App\Models\AuditLog;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class PurchaseOrderService
@@ -80,7 +82,6 @@ class PurchaseOrderService
                 ]);
                 $total += $item['total_price'] ?? $lineTotal;
             }
-            // Update total_amount from items if not explicitly provided
             if (empty($data['total_amount'])) {
                 $po->update(['total_amount' => $total]);
             }
@@ -139,24 +140,10 @@ class PurchaseOrderService
             'tags'           => 'procurement',
         ]);
 
-        // Notify vendor contact if available
-        $po->loadMissing('vendor');
-        if ($po->vendor && $po->vendor->contact_email) {
-            $this->notificationService->dispatch(
-                $po->vendor,
-                'procurement.po_issued',
-                [
-                    'name'          => $po->vendor->name,
-                    'reference'     => $po->reference_number,
-                    'vendor'        => $po->vendor->name,
-                    'amount'        => number_format($po->total_amount, 2) . ' ' . $po->currency,
-                    'delivery_date' => $po->expected_delivery_date?->toDateString() ?? '—',
-                ],
-                ['module' => 'procurement', 'record_id' => $po->id]
-            );
-        }
+        $po->loadMissing(['vendor.portalUsers']);
+        $this->notifySupplierToSubmitProformaInvoice($po);
 
-        return $po->fresh();
+        return $po->fresh(['vendor', 'procurementRequest', 'items']);
     }
 
     public function cancel(PurchaseOrder $po, string $reason, User $user): PurchaseOrder
@@ -170,8 +157,8 @@ class PurchaseOrderService
         }
 
         $po->update([
-            'status'               => 'cancelled',
-            'cancellation_reason'  => $reason,
+            'status'              => 'cancelled',
+            'cancellation_reason' => $reason,
         ]);
 
         AuditLog::record('procurement.po_cancelled', [
@@ -182,5 +169,41 @@ class PurchaseOrderService
         ]);
 
         return $po->fresh();
+    }
+
+    private function notifySupplierToSubmitProformaInvoice(PurchaseOrder $po): void
+    {
+        $portalUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/') . '/supplier/invoices';
+        $deliveryDate = $po->expected_delivery_date?->toDateString() ?? 'Not specified';
+        $amount = number_format((float) $po->total_amount, 2) . ' ' . $po->currency;
+
+        foreach ($po->vendor?->portalUsers ?? [] as $portalUser) {
+            if (! $portalUser->is_active) {
+                continue;
+            }
+
+            $this->notificationService->dispatch(
+                $portalUser,
+                'supplier.proforma_invoice_requested',
+                [
+                    'name'          => $portalUser->name,
+                    'reference'     => $po->reference_number,
+                    'vendor'        => $po->vendor?->name ?? 'Supplier',
+                    'amount'        => $amount,
+                    'delivery_date' => $deliveryDate,
+                ],
+                ['module' => 'procurement', 'record_id' => $po->id, 'url' => '/supplier/invoices']
+            );
+        }
+
+        if ($po->vendor?->contact_email) {
+            Mail::to($po->vendor->contact_email)->queue(new ModuleNotificationMail(
+                "Purchase Order issued - {$po->reference_number}",
+                "Purchase Order {$po->reference_number} has been issued to {$po->vendor->name}.\n\nPlease log in to the supplier portal and submit your proforma invoice so payment processing can begin.\n\nAmount: {$amount}\nExpected delivery: {$deliveryDate}",
+                $po->vendor->contact_name ?: $po->vendor->name,
+                $portalUrl,
+                null,
+            ));
+        }
     }
 }

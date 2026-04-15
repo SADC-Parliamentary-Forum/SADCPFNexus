@@ -4,6 +4,7 @@ namespace App\Modules\Procurement\Services;
 use App\Models\AuditLog;
 use App\Models\RfqInvitation;
 use App\Models\ProcurementRequest;
+use App\Models\PurchaseOrder;
 use App\Models\SupplierCategory;
 use App\Models\Vendor;
 use App\Models\User;
@@ -80,12 +81,6 @@ class ProcurementService
             }
         }
 
-        if (!empty($data['quotes'])) {
-            foreach ($data['quotes'] as $quote) {
-                $request->quotes()->create($quote);
-            }
-        }
-
         AuditLog::record('procurement.created', [
             'auditable_type' => ProcurementRequest::class,
             'auditable_id'   => $request->id,
@@ -93,7 +88,7 @@ class ProcurementService
             'tags'           => 'procurement',
         ]);
 
-        return $request->load(['requester', 'items', 'quotes']);
+        return $request->load(['requester', 'items']);
     }
 
     public function update(ProcurementRequest $request, array $data, User $user): ProcurementRequest
@@ -118,7 +113,7 @@ class ProcurementService
             'tags'           => 'procurement',
         ]);
 
-        return $request->fresh(['requester', 'items', 'quotes']);
+        return $request->fresh(['requester', 'items']);
     }
 
     public function submit(ProcurementRequest $request, User $user): ProcurementRequest
@@ -275,6 +270,12 @@ class ProcurementService
             ]);
         }
 
+        if (! $quote->vendor_id) {
+            throw ValidationException::withMessages([
+                'quote_id' => 'Only quotes from registered suppliers can be awarded because purchase order and invoice processing continues in the supplier portal.',
+            ]);
+        }
+
         $request->update([
             'status'           => 'awarded',
             'awarded_quote_id' => $quote->id,
@@ -299,6 +300,8 @@ class ProcurementService
 
         // Notify requester
         $request->loadMissing('requester');
+        $this->ensureDraftPurchaseOrderForAward($request, $quote, $awarder);
+
         if ($request->requester) {
             $this->notificationService->dispatch(
                 $request->requester,
@@ -313,7 +316,7 @@ class ProcurementService
             );
         }
 
-        return $request->fresh(['requester', 'items', 'quotes', 'awardedQuote', 'supplierCategories']);
+        return $request->fresh(['requester', 'items', 'quotes', 'awardedQuote', 'supplierCategories', 'purchaseOrder.vendor', 'purchaseOrder.items']);
     }
 
     public function reject(ProcurementRequest $request, string $reason, User $approver): ProcurementRequest
@@ -433,9 +436,10 @@ class ProcurementService
 
             $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
             $quoteUrl = $frontendBase . '/external-rfq/' . $invitation->response_token;
+            $registerUrl = $frontendBase . '/supplier/register';
             Mail::to($invite['email'])->queue(new ModuleNotificationMail(
                 "RFQ Invitation — {$request->reference_number}",
-                "You have been invited to submit a quotation for {$request->title}.\n\nPlease use the secure link below to view the RFQ and submit your quote before the deadline.",
+                "You have been invited to submit a quotation for {$request->title}.\n\nPlease use the secure link below to submit your quote before the deadline.\n\nWe strongly encourage you to register as a supplier on SADC-PF Nexus to view the full RFQ, receive future supplier notifications, and manage your submissions in one place.\n\nSupplier registration: {$registerUrl}",
                 $invite['name'] ?? 'Supplier',
                 $quoteUrl,
                 null,
@@ -483,6 +487,64 @@ class ProcurementService
                 $portalUrl,
                 null,
             ));
+        }
+    }
+
+    private function ensureDraftPurchaseOrderForAward(ProcurementRequest $request, $quote, User $awarder): void
+    {
+        $purchaseOrder = PurchaseOrder::query()
+            ->where('procurement_request_id', $request->id)
+            ->first();
+
+        if ($purchaseOrder && ! $purchaseOrder->isDraft()) {
+            return;
+        }
+
+        $vendor = Vendor::query()
+            ->where('tenant_id', $awarder->tenant_id)
+            ->findOrFail($quote->vendor_id);
+
+        if (! $purchaseOrder) {
+            $purchaseOrder = PurchaseOrder::create([
+                'tenant_id'              => $awarder->tenant_id,
+                'procurement_request_id' => $request->id,
+                'vendor_id'              => $vendor->id,
+                'title'                  => $request->title,
+                'description'            => $request->description,
+                'delivery_address'       => $vendor->address,
+                'payment_terms'          => in_array($vendor->payment_terms, ['net_30', 'net_60', 'on_delivery'], true)
+                    ? $vendor->payment_terms
+                    : 'net_30',
+                'total_amount'           => $quote->quoted_amount,
+                'currency'               => $quote->currency ?: $request->currency ?: 'USD',
+                'status'                 => 'draft',
+                'expected_delivery_date' => $request->required_by_date,
+                'created_by'             => $awarder->id,
+            ]);
+
+            foreach ($request->items as $item) {
+                $purchaseOrder->items()->create([
+                    'description'         => $item->description,
+                    'quantity'            => $item->quantity,
+                    'unit'                => $item->unit ?? 'unit',
+                    'unit_price'          => $item->estimated_unit_price ?? 0,
+                    'total_price'         => $item->total_price ?? (($item->quantity ?? 1) * ($item->estimated_unit_price ?? 0)),
+                    'procurement_item_id' => $item->id,
+                ]);
+            }
+        } else {
+            $purchaseOrder->update([
+                'vendor_id'              => $vendor->id,
+                'title'                  => $request->title,
+                'description'            => $request->description,
+                'delivery_address'       => $vendor->address,
+                'payment_terms'          => in_array($vendor->payment_terms, ['net_30', 'net_60', 'on_delivery'], true)
+                    ? $vendor->payment_terms
+                    : 'net_30',
+                'total_amount'           => $quote->quoted_amount,
+                'currency'               => $quote->currency ?: $request->currency ?: 'USD',
+                'expected_delivery_date' => $request->required_by_date,
+            ]);
         }
     }
 }

@@ -11,6 +11,9 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
   received: { label: "Received", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "inbox"        },
   matched:  { label: "Matched",  cls: "text-blue-700 bg-blue-50 border-blue-200",        icon: "link"         },
   approved: { label: "Approved", cls: "text-green-700 bg-green-50 border-green-200",     icon: "check_circle" },
+  approved_for_payment: { label: "Approved", cls: "text-green-700 bg-green-50 border-green-200", icon: "check_circle" },
+  proforma_submitted: { label: "Proforma Submitted", cls: "text-blue-700 bg-blue-50 border-blue-200", icon: "receipt_long" },
+  final_invoice_submitted: { label: "Final Submitted", cls: "text-teal-700 bg-teal-50 border-teal-200", icon: "task_alt" },
   rejected: { label: "Rejected", cls: "text-red-700 bg-red-50 border-red-200",           icon: "cancel"       },
   paid:     { label: "Paid",     cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "payments"  },
 };
@@ -64,6 +67,11 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     },
   });
 
+  const markPaidMutation = useMutation({
+    mutationFn: () => invoicesApi.markPaid(invId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["invoice", invId] }),
+  });
+
   if (isLoading) return (
     <div className="max-w-3xl mx-auto space-y-5 animate-pulse">
       <div className="h-4 w-48 bg-neutral-100 rounded" />
@@ -83,7 +91,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   );
 
   const s       = statusConfig[inv.status] ?? statusConfig.received;
-  const canAct  = canApproveInvoice() && (inv.status === "received" || inv.status === "matched");
+  const canApprove  = canApproveInvoice() && ["received", "matched", "proforma_submitted"].includes(inv.status);
+  const canMarkPaid = canApproveInvoice() && ["approved", "approved_for_payment"].includes(inv.status);
   const matchPO = inv.purchase_order?.total_amount ? Number(inv.purchase_order.total_amount) : null;
 
   const matchIndicator = {
@@ -146,7 +155,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
-            {canAct && (
+            {canApprove && (
               <>
                 <button
                   onClick={() => approveMutation.mutate()}
@@ -164,6 +173,16 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                   Reject
                 </button>
               </>
+            )}
+            {canMarkPaid && (
+              <button
+                onClick={() => markPaidMutation.mutate()}
+                disabled={markPaidMutation.isPending}
+                className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">payments</span>
+                {markPaidMutation.isPending ? "Recording..." : "Mark Paid"}
+              </button>
             )}
           </div>
         </div>

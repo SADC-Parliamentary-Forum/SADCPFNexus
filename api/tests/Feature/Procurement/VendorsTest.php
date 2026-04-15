@@ -93,6 +93,21 @@ class VendorsTest extends TestCase
              ->assertJsonPath('data.id', $id);
     }
 
+    public function test_staff_with_procurement_view_can_show_vendor(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$procurementHttp] = $this->asProcurementOfficer($tenant);
+
+        $create = $procurementHttp->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
+        $id = $create->json('data.id');
+
+        [$staffHttp] = $this->asStaff($tenant);
+
+        $staffHttp->getJson("/api/v1/procurement/vendors/{$id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $id);
+    }
+
     // ── Update ───────────────────────────────────────────────────────────────
 
     public function test_procurement_officer_can_update_vendor(): void

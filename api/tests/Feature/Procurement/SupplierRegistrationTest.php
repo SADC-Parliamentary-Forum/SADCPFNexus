@@ -76,4 +76,38 @@ class SupplierRegistrationTest extends TestCase
             'documents'             => [UploadedFile::fake()->create('tax-clearance.pdf', 20, 'application/pdf')],
         ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['category_ids']);
     }
+
+    public function test_registered_supplier_appears_in_procurement_vendor_register(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'Office Supplies', 'code' => 'office_supplies']);
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Stationery Hub',
+            'registration_number'   => 'REG-300',
+            'tax_number'            => 'TAX-300',
+            'contact_name'          => 'Casey Vendor',
+            'contact_email'         => 'casey@stationeryhub.test',
+            'contact_phone'         => '+264000003',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '300300300',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [UploadedFile::fake()->create('company-profile.pdf', 20, 'application/pdf')],
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        [$http] = $this->asProcurementOfficer($tenant);
+
+        $http->getJson('/api/v1/procurement/vendors')
+            ->assertOk()
+            ->assertJsonFragment([
+                'name'   => 'Stationery Hub',
+                'status' => 'pending_approval',
+            ]);
+    }
 }

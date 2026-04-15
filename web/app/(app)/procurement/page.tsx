@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
+import { canViewProcurementVendors, getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
@@ -32,6 +33,9 @@ const filterMap: Record<string, string | undefined> = {
 };
 
 export default function ProcurementPage() {
+  const user = getStoredUser();
+  const canCreateRequest = !!user && (isSystemAdmin(user) || hasPermission(user, ["procurement.create", "procurement.admin"]));
+  const canViewVendors = canViewProcurementVendors(user);
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
   const { data: requests = [], isLoading: loading, isError } = useQuery({
@@ -55,14 +59,18 @@ export default function ProcurementPage() {
           <p className="page-subtitle">Manage requisitions, vendor quotes, and procurement approvals.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/procurement/vendors" className="btn-secondary flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">storefront</span>
-            Vendors
-          </Link>
-          <Link href="/procurement/create" className="btn-primary flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Requisition
-          </Link>
+          {canViewVendors && (
+            <Link href="/procurement/vendors" className="btn-secondary flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px]">storefront</span>
+              Vendors
+            </Link>
+          )}
+          {canCreateRequest && (
+            <Link href="/procurement/create" className="btn-primary flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Requisition
+            </Link>
+          )}
         </div>
       </div>
 
@@ -173,10 +181,12 @@ export default function ProcurementPage() {
           <p className="text-xs text-neutral-400 mt-1">
             {statusFilter === "All" ? "Create a requisition to get started." : `No ${statusFilter.toLowerCase()} requests.`}
           </p>
-          <Link href="/procurement/create" className="btn-primary mt-5 inline-flex">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Requisition
-          </Link>
+          {canCreateRequest && (
+            <Link href="/procurement/create" className="btn-primary mt-5 inline-flex">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Requisition
+            </Link>
+          )}
         </div>
       )}
     </div>

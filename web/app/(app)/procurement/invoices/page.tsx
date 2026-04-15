@@ -10,6 +10,9 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
   received: { label: "Received", cls: "badge-warning",  icon: "inbox"         },
   matched:  { label: "Matched",  cls: "badge-primary",  icon: "link"          },
   approved: { label: "Approved", cls: "badge-success",  icon: "check_circle"  },
+  approved_for_payment: { label: "Approved", cls: "badge-success", icon: "check_circle" },
+  proforma_submitted: { label: "Proforma Submitted", cls: "badge-primary", icon: "receipt_long" },
+  final_invoice_submitted: { label: "Final Submitted", cls: "badge-success", icon: "task_alt" },
   rejected: { label: "Rejected", cls: "badge-danger",   icon: "cancel"        },
   paid:     { label: "Paid",     cls: "badge-muted",    icon: "payments"      },
 };
@@ -20,7 +23,7 @@ const matchConfig: Record<string, { label: string; cls: string; icon: string }> 
   variance: { label: "Variance", cls: "text-amber-600",   icon: "warning"         },
 };
 
-const FILTERS = ["all", "received", "matched", "approved", "rejected", "paid"];
+const FILTERS = ["all", "proforma_submitted", "received", "matched", "approved_for_payment", "rejected", "paid", "final_invoice_submitted"];
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -119,7 +122,7 @@ export default function InvoicesPage() {
   const total    = items.length;
   const pending  = items.filter((i) => i.match_status === "pending").length;
   const matched  = items.filter((i) => i.match_status === "matched").length;
-  const approved = items.filter((i) => i.status === "approved" || i.status === "paid").length;
+  const approved = items.filter((i) => ["approved", "approved_for_payment", "paid"].includes(i.status)).length;
 
   return (
     <div className="space-y-6">

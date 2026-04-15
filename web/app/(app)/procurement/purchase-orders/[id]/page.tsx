@@ -188,6 +188,13 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
             <p className="text-sm text-neutral-700">{po.delivery_address}</p>
           </div>
         )}
+        {po.status === "issued" && (
+          <div className="mt-4 pt-4 border-t border-neutral-50">
+            <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+              Supplier notification has been sent. The supplier must now submit a proforma invoice through the supplier portal before finance can process payment.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Line Items */}

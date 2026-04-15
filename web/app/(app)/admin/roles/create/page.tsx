@@ -10,7 +10,7 @@ const MODULE_GROUPS = [
   { label: "Leave",        icon: "event_available",      color: "emerald",perms: ["leave.view","leave.create","leave.approve","leave.admin"] },
   { label: "Imprest",      icon: "payments",             color: "amber",  perms: ["imprest.view","imprest.create","imprest.approve","imprest.liquidate"] },
   { label: "Finance",      icon: "account_balance",      color: "violet", perms: ["finance.view","finance.create","finance.approve","finance.export","finance.admin"] },
-  { label: "Procurement",  icon: "shopping_cart",        color: "orange", perms: ["procurement.view","procurement.create","procurement.approve","procurement.admin"] },
+  { label: "Procurement",  icon: "shopping_cart",        color: "orange", perms: ["procurement.view","procurement.create","procurement.approve","procurement.award","procurement.manage_vendors","procurement.manage_po","procurement.receive_goods","procurement.approve_invoice","procurement.hod_approve","procurement.manage_budget","procurement.admin"] },
   { label: "Assets",       icon: "inventory_2",          color: "teal",   perms: ["assets.view","assets.create","assets.edit","assets.dispose","assets.admin","assets.manage"] },
   { label: "Governance",   icon: "gavel",                color: "purple", perms: ["governance.view","governance.create","governance.approve","governance.admin"] },
   { label: "HR",           icon: "people",               color: "pink",   perms: ["hr.view","hr.create","hr.edit","hr.approve","hr.admin"] },

@@ -256,6 +256,9 @@ Route::prefix('v1')->group(function () {
         // Leave Module
         Route::prefix('leave')->group(function () {
             Route::get('balances', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'balances']);
+            // HR Admin: all-staff leave balance management
+            Route::get('admin/balances', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'index']);
+            Route::post('admin/balances/upsert', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'upsert']);
             Route::get('lil-accruals', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'lilAccruals']);
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
@@ -289,6 +292,10 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{procurementRequest}/quotes',           [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'store']);
             Route::put('requests/{procurementRequest}/quotes/{quote}',    [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'update']);
             Route::delete('requests/{procurementRequest}/quotes/{quote}', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'destroy']);
+            Route::get('requests/{procurementRequest}/quotes/{quote}/attachments',                       [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'index']);
+            Route::post('requests/{procurementRequest}/quotes/{quote}/attachments',                      [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'store']);
+            Route::delete('requests/{procurementRequest}/quotes/{quote}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'destroy']);
+            Route::get('requests/{procurementRequest}/quotes/{quote}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'download']);
 
             // Budget Reservations
             Route::get('budget-reservations', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'index']);
@@ -322,7 +329,9 @@ Route::prefix('v1')->group(function () {
                 Route::get('rfqs/{procurementRequest}', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'showRfq']);
                 Route::post('rfqs/{procurementRequest}/quote', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitQuote']);
                 Route::get('purchase-orders', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'purchaseOrders']);
+                Route::post('purchase-orders/{purchaseOrder}/proforma-invoice', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitProformaInvoice']);
                 Route::get('invoices', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'invoices']);
+                Route::post('invoices/{invoice}/final-invoice', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitFinalInvoice']);
             });
 
             // Purchase Orders
@@ -337,6 +346,7 @@ Route::prefix('v1')->group(function () {
                 ->only(['index', 'show', 'store']);
             Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'approve']);
             Route::post('invoices/{invoice}/reject',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
+            Route::post('invoices/{invoice}/mark-paid',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'markPaid']);
 
             // Contracts
             Route::apiResource('contracts', \App\Http\Controllers\Api\V1\Procurement\ContractController::class)

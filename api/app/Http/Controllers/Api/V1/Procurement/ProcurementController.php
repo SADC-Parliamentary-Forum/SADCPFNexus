@@ -32,6 +32,8 @@ class ProcurementController extends Controller
             'quotes.vendor',
             'quotes.assessor',
             'supplierCategories',
+            'purchaseOrder.vendor',
+            'purchaseOrder.items',
             'rfqInvitations.vendor',
             'rfqInvitations.quote',
         ]));
@@ -54,11 +56,6 @@ class ProcurementController extends Controller
             'items.*.quantity'             => ['nullable', 'integer', 'min:1'],
             'items.*.unit'                 => ['nullable', 'string'],
             'items.*.estimated_unit_price' => ['nullable', 'numeric', 'min:0'],
-            'quotes'             => ['nullable', 'array'],
-            'quotes.*.vendor_name'   => ['required_with:quotes', 'string'],
-            'quotes.*.quoted_amount' => ['required_with:quotes', 'numeric', 'min:0'],
-            'quotes.*.is_recommended'=> ['nullable', 'boolean'],
-            'quotes.*.notes'         => ['nullable', 'string'],
         ]);
 
         $procurement = $this->procurementService->create($data, $request->user());
@@ -173,7 +170,10 @@ class ProcurementController extends Controller
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'System Admin', 'super-admin', 'Secretary General'])) {
+        if (
+            !$request->user()->isSystemAdmin()
+            && !$request->user()->hasAnyPermission(['procurement.create', 'procurement.approve', 'procurement.admin'])
+        ) {
             abort(403);
         }
 

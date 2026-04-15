@@ -467,7 +467,7 @@ export const profileApi = {
     }),
 };
 
-// ??? Setup Wizard ?????????????????????????????????????????????????????????????
+// ─── Setup Wizard ─────────────────────────────────────────────────────────────
 
 export interface SetupOptions {
   departments: { id: number; name: string; code: string }[];
@@ -488,6 +488,7 @@ export const setupApi = {
   complete: () =>
     api.post<{ message: string; setup_completed: boolean }>("/setup/complete"),
 };
+
 // ─── Profile Sessions ──────────────────────────────────────────────────────────
 
 export interface UserSession {
@@ -990,7 +991,7 @@ export interface AssetRequest {
 }
 
 export const assetsApi = {
-  list: (params?: { assigned_to?: string; category?: string; per_page?: number; page?: number }) =>
+  list: (params?: { assigned_to?: string; category?: string; search?: string; per_page?: number; page?: number }) =>
     api.get<PaginatedResponse<Asset>>("/assets", { params }),
   get: (id: number) => api.get<Asset>(`/assets/${id}`),
   update: (id: number, data: {
@@ -1184,6 +1185,36 @@ export interface LilAccrual {
   is_verified: boolean;
 }
 
+export interface AdminLeaveBalanceRow {
+  user_id: number;
+  name: string;
+  email: string;
+  job_title: string | null;
+  annual_balance_days: number;
+  lil_hours_available: number;
+  annual_used: number;
+  annual_remaining: number;
+  has_balance_record: boolean;
+}
+
+export const hrLeaveBalancesApi = {
+  listAll: (year?: number) =>
+    api.get<{ data: AdminLeaveBalanceRow[]; year: number }>(
+      "/leave/admin/balances",
+      { params: year ? { year } : undefined }
+    ),
+  upsert: (payload: {
+    user_id: number;
+    period_year: number;
+    annual_balance_days: number;
+    lil_hours_available?: number;
+  }) =>
+    api.post<{ message: string; data: { id: number; annual_balance_days: number; lil_hours_available: number } }>(
+      "/leave/admin/balances/upsert",
+      payload
+    ),
+};
+
 // ─── Procurement ─────────────────────────────────────────────────────────────
 
 export interface ProcurementItem {
@@ -1214,6 +1245,7 @@ export interface ProcurementQuote {
   quote_date?: string | null;
   vendor?: Vendor;
   assessor?: User;
+  attachments?: ProcurementAttachment[];
 }
 
 export interface SupplierCategory {
@@ -1284,6 +1316,7 @@ export interface ProcurementRequest {
   quotes?: ProcurementQuote[];
   supplierCategories?: SupplierCategory[];
   rfqInvitations?: RfqInvitation[];
+  purchaseOrder?: PurchaseOrder | null;
 }
 
 export const procurementApi = {
@@ -1560,6 +1593,22 @@ export const supplierPortalApi = {
     api.post<{ data: ProcurementQuote; message: string }>(`/procurement/supplier/rfqs/${requestId}/quote`, data),
   purchaseOrders: () => api.get<{ data: PurchaseOrder[] }>("/procurement/supplier/purchase-orders"),
   invoices: () => api.get<{ data: Invoice[] }>("/procurement/supplier/invoices"),
+  submitProformaInvoice: (purchaseOrderId: number, data: {
+    vendor_invoice_number: string;
+    invoice_date: string;
+    due_date: string;
+    amount: number;
+    currency?: string;
+  }) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/supplier/purchase-orders/${purchaseOrderId}/proforma-invoice`, data),
+  submitFinalInvoice: (invoiceId: number, data: {
+    vendor_invoice_number?: string;
+    invoice_date?: string;
+    due_date?: string;
+    amount?: number;
+    currency?: string;
+  }) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/supplier/invoices/${invoiceId}/final-invoice`, data),
 };
 
 export const externalRfqApi = {
@@ -1667,7 +1716,7 @@ export interface Invoice {
   due_date: string;
   amount: number;
   currency: string;
-  status: "received" | "matched" | "approved" | "rejected" | "paid";
+  status: "received" | "matched" | "approved" | "approved_for_payment" | "proforma_submitted" | "rejected" | "paid" | "final_invoice_submitted";
   match_status: "pending" | "matched" | "variance";
   match_notes: string | null;
   rejection_reason: string | null;
@@ -1699,6 +1748,8 @@ export const invoicesApi = {
     api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/approve`),
   reject: (id: number, reason: string) =>
     api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/reject`, { reason }),
+  markPaid: (id: number) =>
+    api.post<{ data: Invoice; message: string }>(`/procurement/invoices/${id}/mark-paid`),
 };
 
 // ─── Procurement — Contracts ─────────────────────────────────────────────────
@@ -4195,6 +4246,12 @@ export const PROCUREMENT_REQUEST_DOC_TYPES = [
 ] as const;
 export type ProcurementRequestDocType = typeof PROCUREMENT_REQUEST_DOC_TYPES[number]["value"];
 
+export const QUOTE_DOC_TYPES = [
+  { value: "quote_received", label: "Submitted Quote", icon: "request_quote" },
+  { value: "other", label: "Other", icon: "attach_file" },
+] as const;
+export type QuoteDocType = typeof QUOTE_DOC_TYPES[number]["value"];
+
 export const PURCHASE_ORDER_DOC_TYPES = [
   { value: "signed_po",               label: "Signed Purchase Order",   icon: "order_approve"  },
   { value: "vendor_acknowledgement",  label: "Vendor Acknowledgement",  icon: "handshake"      },
@@ -4205,6 +4262,9 @@ export const PURCHASE_ORDER_DOC_TYPES = [
 export type PurchaseOrderDocType = typeof PURCHASE_ORDER_DOC_TYPES[number]["value"];
 
 export const INVOICE_DOC_TYPES = [
+  { value: "proforma_invoice",  label: "Proforma Invoice",    icon: "receipt_long"   },
+  { value: "final_invoice",     label: "Final Invoice",       icon: "request_quote"  },
+  { value: "proof_of_payment",  label: "Proof of Payment",    icon: "payments"       },
   { value: "tax_invoice",         label: "Tax Invoice",         icon: "receipt_long"   },
   { value: "credit_note",         label: "Credit Note",         icon: "credit_score"   },
   { value: "remittance_advice",   label: "Remittance Advice",   icon: "payments"       },
@@ -4283,6 +4343,28 @@ export const invoiceAttachmentsApi             = makeAttachmentApi("invoices",  
 export const contractAttachmentsApi            = makeAttachmentApi("contracts",      "signed_contract");
 export const goodsReceiptAttachmentsApi        = makeAttachmentApi("receipts",       "delivery_note");
 export const vendorAttachmentsApi              = makeAttachmentApi("vendors",        "company_profile");
+
+export const quoteAttachmentsApi = {
+  list: (requestId: number, quoteId: number) =>
+    api.get<{ data: ProcurementAttachment[] }>(`/procurement/requests/${requestId}/quotes/${quoteId}/attachments`),
+
+  upload: (requestId: number, quoteId: number, file: File, documentType: QuoteDocType = "quote_received") => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("document_type", documentType);
+    return api.post<{ data: ProcurementAttachment; message: string }>(
+      `/procurement/requests/${requestId}/quotes/${quoteId}/attachments`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+
+  delete: (requestId: number, quoteId: number, attachmentId: number) =>
+    api.delete(`/procurement/requests/${requestId}/quotes/${quoteId}/attachments/${attachmentId}`),
+
+  downloadUrl: (requestId: number, quoteId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/procurement/requests/${requestId}/quotes/${quoteId}/attachments/${attachmentId}/download`,
+};
 
 // ─── Weekly Summary ───────────────────────────────────────────────────────────
 

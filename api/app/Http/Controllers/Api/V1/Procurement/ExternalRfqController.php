@@ -5,12 +5,17 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementQuote;
 use App\Models\RfqInvitation;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class ExternalRfqController extends Controller
 {
+    public function __construct(private readonly NotificationService $notifications) {}
+
     public function show(string $token): JsonResponse
     {
         $invitation = $this->resolveInvitation($token);
@@ -72,6 +77,15 @@ class ExternalRfqController extends Controller
             'responded_at' => now(),
         ]);
 
+        $this->notifyProcurementOfQuoteSubmission(
+            tenantId: $invitation->tenant_id,
+            reference: $procurementRequest->reference_number,
+            title: $procurementRequest->title,
+            supplier: $data['vendor_name'],
+            amount: number_format((float) $quote->quoted_amount, 2) . ' ' . $quote->currency,
+            url: '/procurement/rfq/' . $procurementRequest->id
+        );
+
         return response()->json(['message' => 'Quote submitted.', 'data' => $quote], 201);
     }
 
@@ -82,5 +96,40 @@ class ExternalRfqController extends Controller
             ->where('invitation_type', 'email')
             ->with('procurementRequest')
             ->firstOrFail();
+    }
+
+    private function procurementRecipients(int $tenantId): Collection
+    {
+        return User::query()
+            ->with(['roles.permissions', 'permissions'])
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $user) => $user->isSystemAdmin() || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']))
+            ->values();
+    }
+
+    private function notifyProcurementOfQuoteSubmission(
+        int $tenantId,
+        string $reference,
+        string $title,
+        string $supplier,
+        string $amount,
+        string $url
+    ): void {
+        foreach ($this->procurementRecipients($tenantId) as $recipient) {
+            $this->notifications->dispatch(
+                $recipient,
+                'supplier.quote_submitted',
+                [
+                    'name'      => $recipient->name,
+                    'reference' => $reference,
+                    'title'     => $title,
+                    'supplier'  => $supplier,
+                    'amount'    => $amount,
+                ],
+                ['module' => 'procurement', 'url' => $url]
+            );
+        }
     }
 }

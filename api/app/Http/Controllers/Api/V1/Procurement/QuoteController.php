@@ -14,7 +14,7 @@ class QuoteController extends Controller
         if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
             abort(404);
         }
-        $quotes = $procurementRequest->quotes()->with(['vendor', 'assessor', 'invitation'])->orderBy('quoted_amount')->get();
+        $quotes = $procurementRequest->quotes()->with(['vendor', 'assessor', 'invitation', 'attachments.uploader:id,name'])->orderBy('quoted_amount')->get();
         return response()->json(['data' => $quotes]);
     }
 
@@ -47,7 +47,7 @@ class QuoteController extends Controller
         $data['submission_channel'] = 'internal';
 
         $quote = $procurementRequest->quotes()->create($data);
-        return response()->json(['message' => 'Quote added.', 'data' => $quote->load(['vendor', 'assessor'])], 201);
+        return response()->json(['message' => 'Quote added.', 'data' => $quote->load(['vendor', 'assessor', 'attachments.uploader:id,name'])], 201);
     }
 
     public function update(Request $request, ProcurementRequest $procurementRequest, ProcurementQuote $quote): JsonResponse
@@ -80,7 +80,7 @@ class QuoteController extends Controller
         }
 
         $quote->update($data);
-        return response()->json(['message' => 'Quote updated.', 'data' => $quote->fresh(['vendor', 'assessor'])]);
+        return response()->json(['message' => 'Quote updated.', 'data' => $quote->fresh(['vendor', 'assessor', 'attachments.uploader:id,name'])]);
     }
 
     public function destroy(ProcurementRequest $procurementRequest, ProcurementQuote $quote): JsonResponse

@@ -5,16 +5,12 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { vendorsApi, vendorAttachmentsApi, VENDOR_DOC_TYPES, type Vendor, type VendorRating, type VendorContract, type VendorPerformanceEvaluation, type ProcurementAttachment } from "@/lib/api";
+import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
 
-function getStoredUser(): { roles?: string[] } | null {
-  if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
-}
 function canManageVendors(): boolean {
-  const u = getStoredUser();
-  return (u?.roles ?? []).some(r => ["Procurement Officer","System Admin","Secretary General","super-admin"].includes(r));
+  return canManageProcurementVendors(getStoredUser());
 }
 
 // ─── Star Components ──────────────────────────────────────────────────────────
@@ -442,7 +438,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
   const [blacklistReason, setBlacklistReason]   = useState("");
   const [blacklistRef, setBlacklistRef]         = useState("");
   // Evaluation form state
-  const [evalScores, setEvalScores]   = useState({ delivery: 0, quality: 0, compliance: 0, communication: 0 });
+  const [evalScores, setEvalScores]   = useState({ delivery: 0, quality: 0, price: 0, compliance: 0, communication: 0 });
   const [evalContractId, setEvalContractId] = useState<number | "">("");
   const [evalNotes, setEvalNotes]           = useState("");
   const [evalSubmitting, setEvalSubmitting] = useState(false);
@@ -707,6 +703,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
           const avgCompliance = evals.length > 0 ? evals.reduce((s, e) => s + e.compliance_score, 0) / evals.length : null;
           const avgDelivery   = evals.length > 0 ? evals.reduce((s, e) => s + e.delivery_score, 0) / evals.length : null;
           const avgQuality    = evals.length > 0 ? evals.reduce((s, e) => s + e.quality_score, 0) / evals.length : null;
+          const avgPrice      = evals.length > 0 ? evals.reduce((s, e) => s + e.price_score, 0) / evals.length : null;
           const avgComms      = evals.length > 0 ? evals.reduce((s, e) => s + e.communication_score, 0) / evals.length : null;
 
           const scoreColor = (s: number | null) =>
@@ -748,11 +745,12 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                 {evals.length === 0 ? (
                   <p className="text-sm text-neutral-400 italic">No evaluations recorded yet.</p>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     {[
                       { label: "Compliance",     value: avgCompliance },
                       { label: "Delivery",       value: avgDelivery },
                       { label: "Quality",        value: avgQuality },
+                      { label: "Price",          value: avgPrice },
                       { label: "Communication",  value: avgComms },
                     ].map(({ label, value }) => (
                       <div key={label} className="rounded-xl bg-neutral-50 border border-neutral-100 p-4 text-center">
@@ -864,6 +862,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                           <th>Contract Ref</th>
                           <th className="text-center">Delivery</th>
                           <th className="text-center">Quality</th>
+                          <th className="text-center">Price</th>
                           <th className="text-center">Compliance</th>
                           <th className="text-center">Communication</th>
                           <th className="text-right">Overall</th>
@@ -875,7 +874,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                             <td className="font-mono text-[11px] text-neutral-500">
                               {ev.contract?.reference_number ?? `EVL-${ev.id}`}
                             </td>
-                            {[ev.delivery_score, ev.quality_score, ev.compliance_score, ev.communication_score].map((s, i) => (
+                            {[ev.delivery_score, ev.quality_score, ev.price_score, ev.compliance_score, ev.communication_score].map((s, i) => (
                               <td key={i} className="text-center">
                                 <span className={`inline-block h-3 w-3 rounded-full ${ragDot(s)}`} title={`${s}%`} />
                               </td>
@@ -1006,17 +1005,18 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                 <SectionIcon icon="verified" color="text-purple-600" bg="bg-purple-50" />
                 <div>
                   <h3 className="text-sm font-semibold text-neutral-800">Performance Evaluations</h3>
-                  <p className="text-xs text-neutral-400">Formal 4-dimension scored evaluations (linked to contracts)</p>
+                  <p className="text-xs text-neutral-400">Formal 5-dimension scored evaluations (linked to contracts)</p>
                 </div>
               </div>
 
               {/* Submit evaluation form */}
               <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 space-y-4">
                 <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Submit Evaluation</p>
-                {(["delivery", "quality", "compliance", "communication"] as const).map((dim) => {
+                {(["delivery", "quality", "price", "compliance", "communication"] as const).map((dim) => {
                   const labels: Record<typeof dim, { label: string; icon: string }> = {
                     delivery:      { label: "Delivery",      icon: "local_shipping" },
                     quality:       { label: "Quality",       icon: "high_quality"   },
+                    price:         { label: "Price",         icon: "payments"       },
                     compliance:    { label: "Compliance",    icon: "gavel"          },
                     communication: { label: "Communication", icon: "forum"          },
                   };
@@ -1069,12 +1069,13 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                       await vendorsApi.submitEvaluation(vendorId, {
                         delivery_score:      evalScores.delivery,
                         quality_score:       evalScores.quality,
+                        price_score:         evalScores.price,
                         compliance_score:    evalScores.compliance,
                         communication_score: evalScores.communication,
                         contract_id: evalContractId || undefined,
                         notes: evalNotes || undefined,
                       });
-                      setEvalScores({ delivery: 0, quality: 0, compliance: 0, communication: 0 });
+                      setEvalScores({ delivery: 0, quality: 0, price: 0, compliance: 0, communication: 0 });
                       setEvalContractId("");
                       setEvalNotes("");
                       refetchEvaluations();
@@ -1093,7 +1094,7 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Evaluation History</p>
                   {evaluationsData.map((ev) => {
-                    const overall = ev.overall_score ?? ((ev.delivery_score + ev.quality_score + ev.compliance_score + ev.communication_score) / 4);
+                    const overall = ev.overall_score ?? ((ev.delivery_score + ev.quality_score + ev.price_score + ev.compliance_score + ev.communication_score) / 5);
                     return (
                       <div key={ev.id} className="rounded-xl border border-neutral-100 bg-white p-4 space-y-3">
                         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1108,8 +1109,8 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                             {ev.created_at && <span className="text-xs text-neutral-400">{formatDateShort(ev.created_at)}</span>}
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {(["delivery", "quality", "compliance", "communication"] as const).map((dim) => {
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                          {(["delivery", "quality", "price", "compliance", "communication"] as const).map((dim) => {
                             const score = ev[`${dim}_score` as keyof VendorPerformanceEvaluation] as number;
                             return (
                               <div key={dim} className="rounded-lg bg-neutral-50 px-3 py-2">
@@ -1238,15 +1239,17 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
                   </button>
                 </>
               )}
-              <button
-                type="button"
-                onClick={() => setShowEdit(true)}
-                className="btn-secondary flex items-center gap-1.5 py-2 px-3 text-sm"
-              >
-                <span className="material-symbols-outlined text-[17px]">edit</span>
-                Edit
-              </button>
-              {vendor.is_active && !vendor.is_blacklisted && (
+              {canManageVendors() && (
+                <button
+                  type="button"
+                  onClick={() => setShowEdit(true)}
+                  className="btn-secondary flex items-center gap-1.5 py-2 px-3 text-sm"
+                >
+                  <span className="material-symbols-outlined text-[17px]">edit</span>
+                  Edit
+                </button>
+              )}
+              {canManageVendors() && vendor.is_active && !vendor.is_blacklisted && (
                 <button
                   type="button"
                   onClick={() => setShowDeactivate(true)}
@@ -1514,10 +1517,10 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
       </div>
 
       {/* Modals */}
-      {showEdit && (
+      {showEdit && canManageVendors() && (
         <EditModal vendor={vendor} onClose={() => setShowEdit(false)} />
       )}
-      {showDeactivate && (
+      {showDeactivate && canManageVendors() && (
         <DeactivateDialog vendor={vendor} onClose={() => setShowDeactivate(false)} />
       )}
       {showBlacklist && (
