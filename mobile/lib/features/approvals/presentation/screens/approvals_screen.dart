@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/cache/cache_provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -7,9 +8,10 @@ import '../../../../core/utils/date_format.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 const _typeConfig = {
-  'Travel':  _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary,  bg: Color(0x1A13EC80)),
-  'Leave':   _TypeConfig(icon: Icons.event_available,        color: AppColors.success,  bg: Color(0x1A13EC80)),
-  'Imprest': _TypeConfig(icon: Icons.account_balance_wallet, color: AppColors.warning,  bg: Color(0x1AD4AF37)),
+  'Travel':      _TypeConfig(icon: Icons.flight_takeoff,         color: AppColors.primary, bg: Color(0x1A13EC80)),
+  'Leave':       _TypeConfig(icon: Icons.event_available,        color: AppColors.success, bg: Color(0x1A13EC80)),
+  'Imprest':     _TypeConfig(icon: Icons.account_balance_wallet, color: AppColors.warning, bg: Color(0x1AD4AF37)),
+  'Procurement': _TypeConfig(icon: Icons.inventory_2_outlined,   color: AppColors.info,    bg: Color(0x1A3B82F4)),
 };
 
 class _TypeConfig {
@@ -74,10 +76,16 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
       final t = (results[0].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final l = (results[1].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
       final i = (results[2].data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      List<Map<String, dynamic>> p = [];
+      try {
+        final pr = await dio.get<Map<String, dynamic>>('/procurement/requests', queryParameters: {'status': 'submitted'});
+        p = (pr.data?['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      } catch (_) {}
       final combined = [
         ...t.map((e) => {...e, 'type': 'Travel'}),
         ...l.map((e) => {...e, 'type': 'Leave'}),
         ...i.map((e) => {...e, 'type': 'Imprest'}),
+        ...p.map((e) => {...e, 'type': 'Procurement'}),
       ];
       await cache.set(_cacheKey, combined, ttl: const Duration(minutes: 3));
       if (!mounted) return;
@@ -186,7 +194,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: ['All', 'Travel', 'Leave', 'Imprest'].map((f) {
+                      children: ['All', 'Travel', 'Leave', 'Imprest', 'Procurement'].map((f) {
                         final isActive = _activeFilter == f;
                         int count = 0;
                         if (f == 'All') {
@@ -335,7 +343,18 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
 
                       final cardC = Theme.of(context).colorScheme;
                       final cardText = Theme.of(context).textTheme;
-                      return Container(
+                      final itemId = e['id']?.toString() ?? '';
+                      return GestureDetector(
+                        onTap: () {
+                          if (itemId.isEmpty) return;
+                          switch (type) {
+                            case 'Travel':      context.push('/requests/travel/detail?id=$itemId');
+                            case 'Leave':       context.push('/requests/leave/detail?id=$itemId');
+                            case 'Imprest':     context.push('/requests/imprest/detail?id=$itemId');
+                            case 'Procurement': context.push('/procurement/detail?id=$itemId');
+                          }
+                        },
+                        child: Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
                           color: cardC.surface,
@@ -413,6 +432,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> {
                             ],
                           ),
                         ),
+                      ),
                       );
                     },
                     childCount: filtered.length,

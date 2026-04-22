@@ -316,7 +316,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/procurement/detail',
         name: 'procurement-detail',
-        builder: (context, state) => const ProcurementDetailScreen(),
+        builder: (context, state) => ProcurementDetailScreen(
+          requestId: state.uri.queryParameters['id'],
+        ),
       ),
 
       // ─── Imprest ───────────────────────────────────────────────────────────
