@@ -363,7 +363,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/salary/advance/preview',
         name: 'salary-advance-preview',
-        builder: (context, state) => const SalaryAdvancePreviewSignScreen(),
+        builder: (context, state) => SalaryAdvancePreviewSignScreen(
+          requestId: state.uri.queryParameters['id'],
+        ),
       ),
 
       // ─── HR ────────────────────────────────────────────────────────────────

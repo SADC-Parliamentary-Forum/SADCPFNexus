@@ -181,9 +181,6 @@ class _SalaryAdvanceRequestScreenState
         },
       );
       final id = createRes.data?['data']?['id'];
-      if (id != null) {
-        await dio.post('/finance/advances/$id/submit');
-      }
       if (widget.draftId != null) {
         final db = ref.read(draftDatabaseProvider);
         await (db.delete(db.draftEntries)
@@ -191,18 +188,13 @@ class _SalaryAdvanceRequestScreenState
             .go();
       }
       if (!mounted) return;
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Salary advance request submitted successfully.'),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      // Navigate to Preview & Sign screen; it will handle the submit step
+      context.push('/salary/advance/preview?id=$id');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to submit salary advance. Please try again.'),
+            content: Text('Failed to create salary advance request. Please try again.'),
             backgroundColor: AppColors.danger,
           ),
         );
