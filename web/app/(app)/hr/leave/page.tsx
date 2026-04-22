@@ -115,6 +115,11 @@ export default function HRLeavePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Balance override state
+  const [overrideId, setOverrideId] = useState<number | null>(null);
+  const [overrideBalanceMsg, setOverrideBalanceMsg] = useState<string | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
+
   // New leave request modal
   const [showNew, setShowNew] = useState(false);
   const [newEmployee, setNewEmployee] = useState<TenantUserOption | null>(null);
@@ -148,11 +153,20 @@ export default function HRLeavePage() {
     return matchStatus && matchSearch;
   });
 
-  const handleApprove = (id: number) => {
+  const handleApprove = (id: number, override?: string) => {
     setSubmitting(true);
-    leaveApi.approve(id)
-      .then(() => { showToast("Leave approved."); load(); })
-      .catch(() => showToast("Failed to approve."))
+    leaveApi.approve(id, override)
+      .then(() => { showToast("Leave approved."); load(); setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); })
+      .catch((e: unknown) => {
+        const err = e as { response?: { data?: { errors?: { balance?: string[] } } } };
+        const balMsg = err?.response?.data?.errors?.balance?.[0];
+        if (balMsg) {
+          setOverrideId(id);
+          setOverrideBalanceMsg(balMsg);
+        } else {
+          showToast("Failed to approve.");
+        }
+      })
       .finally(() => setSubmitting(false));
   };
 
@@ -378,6 +392,47 @@ export default function HRLeavePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Balance Override Modal */}
+      {overrideId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-600">warning</span>
+                <h2 className="text-base font-semibold text-neutral-900">Insufficient Leave Balance</h2>
+              </div>
+              <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} className="text-neutral-400 hover:text-neutral-600">
+                <span className="material-symbols-outlined text-[22px]">close</span>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-neutral-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">{overrideBalanceMsg}</p>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Override justification <span className="text-red-500">*</span></label>
+                <textarea
+                  rows={3}
+                  className="form-input resize-none"
+                  placeholder="Provide a written justification for approving despite insufficient balance…"
+                  value={overrideReason}
+                  onChange={(e) => setOverrideReason(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => handleApprove(overrideId!, overrideReason.trim())}
+                  disabled={!overrideReason.trim() || submitting}
+                  className="px-5 py-2 text-sm rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {submitting ? "Processing…" : "Approve Anyway"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

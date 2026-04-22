@@ -7,11 +7,11 @@ import {
   profileDocumentsApi,
   saamApi,
   setSetupCompleteCookie,
-  setToken,
   type SetupOptions,
 } from "@/lib/api";
 import { Stepper } from "@/components/ui/Stepper";
 import { cn } from "@/lib/utils";
+import { readStoredUser, writeStoredUser } from "@/lib/session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -982,11 +982,6 @@ export default function SetupWizardPage() {
 
   // Load options and restore session state + pre-fill from stored user
   useEffect(() => {
-    const savedToken = localStorage.getItem("sadcpf_token");
-    if (savedToken) {
-      setToken(savedToken);
-    }
-
     setupApi.getOptions()
       .then((r) => {
         setOptions(r.data);
@@ -1007,16 +1002,13 @@ export default function SetupWizardPage() {
       try { setState(JSON.parse(saved)); } catch { /* ignore */ }
     }
 
-    const rawUser = localStorage.getItem("sadcpf_user");
-    if (rawUser) {
-      try {
-        const u = JSON.parse(rawUser);
-        setState((prev) => ({
-          ...prev,
-          name:  u.name  ?? prev.name,
-          email: u.email ?? prev.email,
-        }));
-      } catch { /* ignore */ }
+    const storedUser = readStoredUser();
+    if (storedUser) {
+      setState((prev) => ({
+        ...prev,
+        name: storedUser.name ?? prev.name,
+        email: storedUser.email ?? prev.email,
+      }));
     }
   }, []);
 
@@ -1083,11 +1075,10 @@ export default function SetupWizardPage() {
 
       await setupApi.complete();
 
-      const raw = localStorage.getItem("sadcpf_user");
-      if (raw) {
-        const u = JSON.parse(raw);
-        localStorage.setItem("sadcpf_user", JSON.stringify({
-          ...u,
+      const storedUser = readStoredUser();
+      if (storedUser) {
+        writeStoredUser({
+          ...storedUser,
           name: state.name.trim(),
           email: state.email.trim(),
           phone: state.phone || null,
@@ -1101,7 +1092,7 @@ export default function SetupWizardPage() {
           city: state.city || null,
           country: state.country || null,
           setup_completed: true,
-        }));
+        });
       }
       setSetupCompleteCookie();
       sessionStorage.removeItem(SESSION_KEY);

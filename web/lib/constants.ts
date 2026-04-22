@@ -10,7 +10,6 @@ export const APP_NAME = "SADC-PF Nexus";
 export const APP_VERSION = "4.2.0";
 
 // ─── Authentication ───────────────────────────────────────────────────────────
-export const TOKEN_KEY = "sadcpf_token";
 export const USER_KEY  = "sadcpf_user";
 export const PREFS_KEY = "sadcpf_user_prefs";
 export const RECENT_SEARCHES_KEY = "sadcpf_recent_searches";

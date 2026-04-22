@@ -7,9 +7,8 @@ import { APIRequestContext, expect } from "@playwright/test";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
-export function apiClient(request: APIRequestContext, token: string) {
+export function apiClient(request: APIRequestContext) {
   const headers = {
-    Authorization: `Bearer ${token}`,
     Accept: "application/json",
     "Content-Type": "application/json",
   };
@@ -39,9 +38,6 @@ export function apiClient(request: APIRequestContext, token: string) {
     },
   };
 }
-
-/** Get the stored auth token from localStorage (call inside page.evaluate) */
-export const GET_TOKEN_JS = `localStorage.getItem('sadcpf_token')`;
 
 /** Wait for the page to show a toast or success indicator */
 export async function waitForToast(

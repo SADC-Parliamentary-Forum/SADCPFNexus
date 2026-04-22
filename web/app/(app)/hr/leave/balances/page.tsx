@@ -14,6 +14,70 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
+// ─── Initialize Year Modal ────────────────────────────────────────────────────
+
+function InitializeModal({
+  year,
+  onClose,
+  onSuccess,
+}: {
+  year: number;
+  onClose: () => void;
+  onSuccess: (created: number, skipped: number) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await hrLeaveBalancesApi.initializeYear(year);
+      onSuccess(res.data.created, res.data.skipped);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Initialization failed. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
+            <span className="material-symbols-outlined text-primary">event_available</span>
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-neutral-900">Initialize {year} Leave Balances</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              This will create opening leave balance records for all employees who do not yet have one for {year},
+              using their grade band&apos;s leave profile defaults (21 days if no profile is configured).
+              Employees who already have records will be skipped.
+            </p>
+          </div>
+        </div>
+        {error && (
+          <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{error}</div>
+        )}
+        <div className="flex justify-end gap-3 pt-2">
+          <button onClick={onClose} disabled={loading} className="btn-secondary text-sm">Cancel</button>
+          <button onClick={handleConfirm} disabled={loading}
+            className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50">
+            {loading ? (
+              <><span className="material-symbols-outlined text-base animate-spin">progress_activity</span>Initializing…</>
+            ) : (
+              <><span className="material-symbols-outlined text-base">bolt</span>Initialize {year}</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface StaffLeaveRow {
@@ -128,6 +192,10 @@ export default function LeaveBalancesPage() {
   const [editDraft, setEditDraft] = useState<Record<number, { days: string; lil: string }>>({});
   const [saving, setSaving] = useState<Record<number, boolean>>({});
   const [saveErrors, setSaveErrors] = useState<Record<number, string>>({});
+
+  // Initialize year modal
+  const [showInitModal, setShowInitModal] = useState(false);
+  const [initResult, setInitResult] = useState<{ created: number; skipped: number } | null>(null);
 
   const { data: profilesData } = useQuery({
     queryKey: ["hr-settings", "leave-profiles"],
@@ -302,6 +370,20 @@ export default function LeaveBalancesPage() {
   return (
     <div className="space-y-6">
 
+      {showInitModal && (
+        <InitializeModal
+          year={selectedYear}
+          onClose={() => setShowInitModal(false)}
+          onSuccess={async (created, skipped) => {
+            setShowInitModal(false);
+            setInitResult({ created, skipped });
+            // Refresh balances
+            const res = await hrLeaveBalancesApi.listAll(selectedYear);
+            setAdminBalances(res.data.data ?? []);
+          }}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -329,6 +411,15 @@ export default function LeaveBalancesPage() {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => { setInitResult(null); setShowInitModal(true); }}
+            className="btn-primary py-2 px-3 text-sm flex items-center gap-1.5"
+            title={`Initialize ${selectedYear} leave balances from profile defaults`}
+          >
+            <span className="material-symbols-outlined text-[16px]">bolt</span>
+            Initialize {selectedYear}
+          </button>
           <Link href="/hr/leave" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">event_note</span>
             Leave Requests
@@ -371,6 +462,21 @@ export default function LeaveBalancesPage() {
           iconColor="text-violet-600"
         />
       </div>
+
+      {initResult && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+            <span>
+              Initialized <strong>{initResult.created}</strong> balance record{initResult.created !== 1 ? "s" : ""} for {selectedYear}.
+              {initResult.skipped > 0 && <> <strong>{initResult.skipped}</strong> already had records and were skipped.</>}
+            </span>
+          </div>
+          <button onClick={() => setInitResult(null)} className="text-green-500 hover:text-green-700">
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

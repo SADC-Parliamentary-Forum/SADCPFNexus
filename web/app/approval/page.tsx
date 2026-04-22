@@ -2,8 +2,9 @@
 
 import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { readStoredUser, writeStoredUser } from "@/lib/session";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_BASE = "/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -26,12 +27,6 @@ interface SigProfile {
   } | null;
 }
 
-interface AuthUser {
-  id: number;
-  name: string;
-  email: string;
-}
-
 type PageState =
   | "loading"
   | "ready-logged-in"
@@ -44,27 +39,13 @@ type PageState =
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("sadcpf_token");
-}
-
-function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem("sadcpf_user");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 async function apiFetch(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
   return fetch(url, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
@@ -94,8 +75,7 @@ function ApprovalPage() {
 
   const [state, setState] = useState<PageState>("loading");
   const [preview, setPreview] = useState<PreviewData | null>(null);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [authBearerToken, setAuthBearerToken] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<ReturnType<typeof readStoredUser>>(null);
   const [signature, setSignature] = useState<SigProfile | null>(null);
   const [useSignature, setUseSignature] = useState(true);
   const [reason, setReason] = useState("");
@@ -126,16 +106,15 @@ function ApprovalPage() {
       setPreview(data);
 
       // 2. Check if user is logged in
-      const bearerToken = getStoredToken();
-      const user = getStoredUser();
-
-      if (!bearerToken || !user) {
+      const meRes = await apiFetch(`${API_BASE}/auth/me`);
+      if (!meRes.ok) {
         setState("ready-logged-out");
         return;
       }
 
+      const user = await meRes.json();
+      writeStoredUser(user);
       setAuthUser(user);
-      setAuthBearerToken(bearerToken);
 
       // 3. Check if this token was issued to this user
       if (data.approver_id && data.approver_id !== user.id) {
@@ -144,9 +123,7 @@ function ApprovalPage() {
       }
 
       // 4. Fetch signature profile
-      const sigRes = await apiFetch(`${API_BASE}/saam/profile`, {
-        headers: { Authorization: `Bearer ${bearerToken}` },
-      });
+      const sigRes = await apiFetch(`${API_BASE}/saam/profile`);
       if (sigRes.ok) {
         const profiles: SigProfile[] = await sigRes.json();
         const full = profiles.find((p) => p.type === "full" && p.status !== "revoked" && p.active_version?.image_url);
@@ -172,7 +149,6 @@ function ApprovalPage() {
     try {
       const res = await apiFetch(`${API_BASE}/email-action/process`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${authBearerToken}` },
         body: JSON.stringify({
           token,
           action,

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const AUTH_COOKIE = "sadcpf_authenticated";
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
 const LOGIN_PATH = "/login";
@@ -47,6 +46,11 @@ const PROTECTED_PREFIXES = [
   "/workplan",
 ];
 
+// Auth state is derived solely from the JS-controlled `sadcpf_authenticated`
+// cookie. The Laravel session cookie is httpOnly and cannot be cleared by the
+// client on 401 — using it as an auth signal causes /login → /setup redirect
+// loops when the server-side session has expired but the cookie still exists.
+
 function isPublicPath(path: string): boolean {
   return PUBLIC_PATHS.includes(path)
     || PUBLIC_PATH_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -61,10 +65,9 @@ function buildLoginRedirect(request: NextRequest, from: string): NextResponse {
 }
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
+  const isAuth = Boolean(request.cookies.get("sadcpf_authenticated")?.value);
   const mustReset = Boolean(request.cookies.get(MUST_RESET_COOKIE)?.value);
   const setupComplete = Boolean(request.cookies.get(SETUP_COMPLETE_COOKIE)?.value);
-  const isAuth = Boolean(token);
   const path = request.nextUrl.pathname;
   const pathWithSearch = `${path}${request.nextUrl.search}`;
 

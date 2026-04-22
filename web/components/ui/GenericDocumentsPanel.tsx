@@ -71,9 +71,8 @@ export default function GenericDocumentsPanel({
   };
 
   const handleDownload = async (doc: GenericAttachment, url: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("sadcpf_token") : null;
     try {
-      const resp = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error("Download failed");
       const blob = await resp.blob();
       const a = document.createElement("a");

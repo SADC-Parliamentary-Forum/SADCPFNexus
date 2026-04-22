@@ -16,6 +16,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!pathname) return;
     const user = getStoredUser();
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
     if (!canAccessRoute(user, pathname)) {
       router.replace("/dashboard");
     }

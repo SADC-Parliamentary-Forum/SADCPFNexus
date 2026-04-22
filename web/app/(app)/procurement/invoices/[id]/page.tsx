@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoicesApi, invoiceAttachmentsApi, INVOICE_DOC_TYPES, type Invoice, type ProcurementAttachment } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
+import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -19,8 +20,7 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
 };
 
 function getStoredUser() {
-  if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+  return readStoredUser();
 }
 function canApproveInvoice() {
   const u = getStoredUser();

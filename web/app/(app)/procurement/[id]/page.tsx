@@ -4,11 +4,12 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { procurementApi, quotesApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment, type ProcurementQuote } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
+import { readStoredUser } from "@/lib/session";
 import { useFormatDate } from "@/lib/useFormatDate";
 import axios from "axios";
 
 function getStoredUser(): { roles?: string[] } | null {
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+  return readStoredUser();
 }
 
 function canAward(user: { roles?: string[] } | null): boolean {

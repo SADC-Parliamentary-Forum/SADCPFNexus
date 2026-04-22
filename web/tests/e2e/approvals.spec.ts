@@ -52,14 +52,9 @@ test.describe("Email-based approval page (/approval)", () => {
 });
 
 test.describe("Approvals API direct checks", () => {
-  test("pending approvals API returns paginated list", async ({ page, request }) => {
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    if (!token) return test.skip(true, "No auth token");
-
+  test("pending approvals API returns paginated list", async ({ request }) => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-    const res = await request.get(`${apiBase}/approvals/pending`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await request.get(`${apiBase}/approvals/pending`);
 
     expect(res.ok()).toBeTruthy();
     const body = await res.json();

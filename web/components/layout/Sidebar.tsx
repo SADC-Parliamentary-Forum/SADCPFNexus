@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { authApi, clearAuthCookie } from "@/lib/api";
+import { authApi } from "@/lib/api";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
-import { USER_KEY } from "@/lib/constants";
+import { clearStoredUser } from "@/lib/session";
 import type { AuthUser } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 
@@ -83,6 +83,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Salary Advance", href: "/finance/advances", icon: "payments" },
       { label: "Payslips", href: "/finance/payslips", icon: "receipt_long" },
       { label: "Imprest", href: "/imprest", icon: "account_balance_wallet" },
+      { label: "Balance Register", href: "/finance/balance-register", icon: "balance" },
     ],
   },
   { label: "Programmes", href: "/pif", icon: "account_tree", section: "Management" },
@@ -235,6 +236,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Timesheet Projects",   href: "/admin/timesheet-projects", icon: "task_alt" },
       { label: "Holiday Calendar",     href: "/admin/calendar",         icon: "event_busy" },
       { label: "Payslip Upload",       href: "/admin/payslips",         icon: "upload_file" },
+      { label: "Salary Assignments",   href: "/admin/salary-assignments", icon: "badge" },
       { label: "Audit Logs",           href: "/admin/audit",            icon: "manage_search" },
       { label: "Ledger Verification",  href: "/admin/ledger",           icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",       icon: "database" },
@@ -292,9 +294,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
-    localStorage.removeItem("sadcpf_token");
-    localStorage.removeItem(USER_KEY);
-    clearAuthCookie();
+    clearStoredUser();
     router.push("/login");
   };
 

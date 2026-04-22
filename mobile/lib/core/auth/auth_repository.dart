@@ -16,6 +16,7 @@ class AuthRepository {
     String email,
     String password, {
     bool rememberMe = true,
+    String? code,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -23,11 +24,16 @@ class AuthRepository {
         data: {
           'email': email,
           'password': password,
+          if (code != null && code.isNotEmpty) 'code': code,
+          'client_type': 'mobile',
           'device_name': 'mobile',
         },
       );
       final data = response.data;
       if (data == null) throw Exception('Invalid response');
+      if (data['mfa_required'] == true) {
+        return AuthResult.mfaPending();
+      }
       final token = data['token'] as String?;
       final user = data['user'];
       if (token == null || token.isEmpty) throw Exception('No token received');
@@ -42,11 +48,6 @@ class AuthRepository {
         userJson: jsonStr,
         rememberMe: rememberMe,
       );
-      // Check if user has 2FA enabled
-      final mfaEnabled = user is Map && user['mfa_enabled'] == true;
-      if (mfaEnabled) {
-        return AuthResult.mfaPending(user: user);
-      }
       return AuthResult.success(user: user);
     } on DioException catch (e) {
       if (e.response?.statusCode == 422 || e.response?.statusCode == 401) {
@@ -63,29 +64,6 @@ class AuthRepository {
       return AuthResult.failure(
         isNetwork ? 'Cannot reach server. Check that the API is running and the app is using the correct API URL.' : 'Login failed. Please try again.',
       );
-    }
-  }
-
-  /// Verifies a TOTP code for a user who just logged in with 2FA enabled.
-  Future<AuthResult> verifyMfa(String code) async {
-    try {
-      await _dio.post<Map<String, dynamic>>(
-        '/profile/2fa/verify',
-        data: {'code': code},
-      );
-      return AuthResult.success();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 422) {
-        final errors = e.response?.data?['errors'] as Map?;
-        final codeErr = errors?['code'];
-        if (codeErr is List && codeErr.isNotEmpty) {
-          return AuthResult.failure(codeErr.first.toString());
-        }
-        return AuthResult.failure('Invalid or expired code. Please try again.');
-      }
-      return AuthResult.failure(_networkErrorMessage(e));
-    } catch (_) {
-      return AuthResult.failure('Verification failed. Please try again.');
     }
   }
 

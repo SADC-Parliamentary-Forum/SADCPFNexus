@@ -3,12 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { riskApi, type RiskDashboardData, type RiskMatrixData, type RiskDepartmentExposure } from "@/lib/api";
+import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getStoredUser(): { roles?: string[] } | null {
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+  return readStoredUser();
 }
 
 function cellBg(score: number): string {

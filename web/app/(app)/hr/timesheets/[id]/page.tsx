@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { hrApi, type Timesheet, type TimesheetEntry, type AuthUser } from "@/lib/api";
+import { readStoredUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useFormatDate } from "@/lib/useFormatDate";
-import { USER_KEY } from "@/lib/constants";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
 
@@ -80,9 +80,8 @@ export default function TimesheetDetailPage() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(USER_KEY);
-      if (raw) {
-        const u: AuthUser = JSON.parse(raw);
+      const u = readStoredUser();
+      if (u) {
         setIsAdmin(
           (u.permissions ?? []).some((p) => ["hr.admin", "hr.approve", "hr.edit", "system.admin"].includes(p))
         );

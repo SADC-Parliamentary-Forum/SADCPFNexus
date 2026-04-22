@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   authApi,
+  clearAuthCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
   setAuthCookie,
   setMustResetCookie,
   setSetupCompleteCookie,
-  setToken,
 } from "@/lib/api";
+import { clearStoredUser, writeStoredUser } from "@/lib/session";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -37,17 +38,38 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [code, setCode] = useState("");
+
+  // Defensive: any time the user lands on /login, drop client-side auth
+  // artifacts. Prevents the proxy middleware from bouncing the user away
+  // from /login when a stale `sadcpf_authenticated` cookie or cached user
+  // is left over from a previous session that has since expired server-side.
+  useEffect(() => {
+    clearAuthCookie();
+    clearStoredUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const response = await authApi.login(email, password);
-      const { token, user } = response.data;
-      setToken(token);
-      localStorage.setItem("sadcpf_user", JSON.stringify(user));
+      const response = await authApi.login(email, password, mfaRequired ? code : undefined);
+      if (response.data.mfa_required) {
+        setMfaRequired(true);
+        setCode("");
+        return;
+      }
+
+      const user = response.data.user;
+      if (!user) {
+        throw new Error("Missing authenticated user payload.");
+      }
+
+      writeStoredUser(user);
       setAuthCookie();
+
       if (user.must_reset_password) {
         setMustResetCookie();
         clearSetupCompleteCookie();
@@ -70,6 +92,7 @@ export default function LoginPage() {
       const ax = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }; status?: number };
       const data = ax.response?.data;
       const msg = data?.message
+        ?? (data?.errors?.code ? data.errors.code[0] : null)
         ?? (data?.errors?.email ? data.errors.email[0] : null)
         ?? (data?.errors?.password ? data.errors.password[0] : null)
         ?? (ax.response?.status === 422 ? "Invalid credentials. Please check your email and password." : null)
@@ -204,9 +227,30 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {mfaRequired && (
+              <div>
+                <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+                  Verification Code
+                </label>
+                <input
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  required
+                  className="form-input tracking-[0.35em] text-center"
+                  placeholder="000000"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                />
+                <p className="mt-2 text-xs text-neutral-400">
+                  Enter the 6-digit code from your authenticator app to finish signing in.
+                </p>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (mfaRequired && code.length !== 6)}
               className="btn-primary w-full justify-center py-3"
             >
               {loading ? (
@@ -214,7 +258,7 @@ export default function LoginPage() {
                   <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
                   Signing in…
                 </>
-              ) : "Sign in"}
+              ) : mfaRequired ? "Verify & Sign in" : "Sign in"}
             </button>
           </form>
 

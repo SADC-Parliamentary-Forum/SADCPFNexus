@@ -76,28 +76,18 @@ test.describe("Notification bell in header", () => {
 });
 
 test.describe("Notifications API", () => {
-  test("unread count endpoint returns a number", async ({ page, request }) => {
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    if (!token) return test.skip(true, "No auth token");
-
+  test("unread count endpoint returns a number", async ({ request }) => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-    const res = await request.get(`${apiBase}/notifications/unread-count`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await request.get(`${apiBase}/notifications/unread-count`);
 
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(typeof body.count).toBe("number");
   });
 
-  test("notifications list endpoint returns paginated data", async ({ page, request }) => {
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    if (!token) return test.skip(true, "No auth token");
-
+  test("notifications list endpoint returns paginated data", async ({ request }) => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-    const res = await request.get(`${apiBase}/notifications`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await request.get(`${apiBase}/notifications`);
 
     expect(res.ok()).toBeTruthy();
     const body = await res.json();

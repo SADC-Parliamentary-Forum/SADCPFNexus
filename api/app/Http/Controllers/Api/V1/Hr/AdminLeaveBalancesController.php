@@ -9,6 +9,7 @@ use App\Models\LeaveRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminLeaveBalancesController extends Controller
 {
@@ -113,6 +114,71 @@ class AdminLeaveBalancesController extends Controller
         return response()->json([
             'message' => 'Leave balance saved.',
             'data'    => $balance,
+        ]);
+    }
+
+    /** Bulk-initialize leave balances for all active employees for a given year using their grade band's leave profile defaults. */
+    public function initializeYear(Request $request): JsonResponse
+    {
+        $authUser = $request->user();
+
+        if (!$this->canManageLeaveBalances($authUser)) {
+            abort(403, 'Access restricted to HR administrators.');
+        }
+
+        $data = $request->validate([
+            'period_year' => ['required', 'integer', 'min:2000', 'max:2099'],
+        ]);
+
+        $year = (int) $data['period_year'];
+
+        $users = User::where('tenant_id', $authUser->tenant_id)
+            ->where('is_active', true)
+            ->with(['position.gradeBand.leaveProfile'])
+            ->get(['id']);
+
+        $existingUserIds = LeaveBalance::whereIn('user_id', $users->pluck('id'))
+            ->where('period_year', $year)
+            ->pluck('user_id')
+            ->flip()
+            ->all();
+
+        $created = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($users, $existingUserIds, $year, &$created, &$skipped) {
+            foreach ($users as $user) {
+                if (isset($existingUserIds[$user->id])) {
+                    $skipped++;
+                    continue;
+                }
+
+                $leaveProfile = $user->position?->gradeBand?->leaveProfile;
+
+                LeaveBalance::create([
+                    'user_id'             => $user->id,
+                    'period_year'         => $year,
+                    'annual_balance_days' => $leaveProfile ? (int) $leaveProfile->annual_leave_days : 21,
+                    'lil_hours_available' => $leaveProfile ? (float) $leaveProfile->lil_days : 0,
+                ]);
+
+                $created++;
+            }
+        });
+
+        AuditLog::record('hr.leave_balance.bulk_initialized', [
+            'new_values' => [
+                'period_year' => $year,
+                'created'     => $created,
+                'skipped'     => $skipped,
+            ],
+            'tags' => 'hr_leave',
+        ]);
+
+        return response()->json([
+            'message' => "Leave balances initialized for {$year}.",
+            'created' => $created,
+            'skipped' => $skipped,
         ]);
     }
 

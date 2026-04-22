@@ -140,8 +140,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final code = _totpController.text.trim();
     if (code.length != 6) return;
     setState(() { _totpLoading = true; _errorMessage = null; });
-    final repo = ref.read(authRepositoryProvider);
-    final result = await repo.verifyMfa(code);
+    final session = ref.read(authSessionControllerProvider);
+    final result = await session.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+      rememberMe: _rememberMe,
+      code: code,
+    );
     if (!mounted) return;
     setState(() => _totpLoading = false);
     if (result.isSuccess) {

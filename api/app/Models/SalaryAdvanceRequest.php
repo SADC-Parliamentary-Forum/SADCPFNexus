@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Modules\Finance\Services\BalanceRegisterService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class SalaryAdvanceRequest extends Model
 {
@@ -74,6 +76,15 @@ class SalaryAdvanceRequest extends Model
                 ],
                 ['module' => 'salary_advance', 'record_id' => $this->id, 'url' => '/finance/salary-advance/' . $this->id]
             );
+        }
+
+        try {
+            app(BalanceRegisterService::class)->createFromSalaryAdvance($this, $approver);
+        } catch (\Throwable $e) {
+            Log::error('BCRE register creation failed for salary advance', [
+                'advance_id' => $this->id,
+                'error'      => $e->getMessage(),
+            ]);
         }
     }
 

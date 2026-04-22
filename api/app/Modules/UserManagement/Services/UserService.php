@@ -3,6 +3,7 @@
 namespace App\Modules\UserManagement\Services;
 
 use App\Models\AuditLog;
+use App\Models\UserSession;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -191,9 +192,7 @@ class UserService
     public function deactivate(User $user, User $deactivatedBy): User
     {
         $user->update(['is_active' => false]);
-
-        // Revoke all tokens
-        $user->tokens()->delete();
+        $this->revokeAllAccess($user);
 
         AuditLog::record('user.deactivated', [
             'auditable_type' => User::class,
@@ -202,6 +201,12 @@ class UserService
         ]);
 
         return $user->fresh();
+    }
+
+    public function revokeAllAccess(User $user): void
+    {
+        $user->tokens()->delete();
+        UserSession::where('user_id', $user->id)->delete();
     }
 
     /**

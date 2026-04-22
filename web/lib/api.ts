@@ -1,19 +1,8 @@
 import axios from "axios";
+import { clearStoredUser } from "@/lib/session";
 
-const AUTH_COOKIE = "sadcpf_authenticated";
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
-
-// Shared by login, reset-password, header logout, and setup wizard flows.
-export function setAuthCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
-}
-
-export function clearAuthCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
-}
 
 export function setMustResetCookie(): void {
   if (typeof document === "undefined") return;
@@ -37,6 +26,18 @@ export function clearSetupCompleteCookie(): void {
   document.cookie = `${SETUP_COMPLETE_COOKIE}=; path=/; max-age=0`;
 }
 
+const AUTH_COOKIE = "sadcpf_authenticated";
+
+export function setAuthCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
+}
+
+export function clearAuthCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
+}
+
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
@@ -47,37 +48,40 @@ const api = axios.create({
 });
 
 // In-memory token cache — avoids synchronous localStorage read on every request
-let _cachedToken: string | null | undefined = undefined; // undefined = not yet loaded
-function getToken(): string | null {
-  if (_cachedToken === undefined) {
-    _cachedToken = typeof window !== "undefined" ? localStorage.getItem("sadcpf_token") : null;
-  }
-  return _cachedToken;
-}
-export function setToken(token: string | null): void {
-  _cachedToken = token;
-  if (typeof window !== "undefined") {
-    if (token) localStorage.setItem("sadcpf_token", token);
-    else localStorage.removeItem("sadcpf_token");
-  }
+let csrfBootstrapped = false;
+
+export async function ensureCsrfCookie(): Promise<void> {
+  if (csrfBootstrapped) return;
+  await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
+  csrfBootstrapped = true;
 }
 
-// Attach Sanctum token on each request (from memory cache, not localStorage)
-api.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// Handle 401 globally — flag prevents concurrent 401s from firing multiple hard reloads
+let _redirecting401 = false;
 
-// Handle 401 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      setToken(null);
-      localStorage.removeItem("sadcpf_user");
-      clearAuthCookie();
-      window.location.href = "/login";
+      if (!window.location.pathname.startsWith("/login") && !_redirecting401) {
+        _redirecting401 = true;
+        clearStoredUser();
+        clearAuthCookie();
+
+        // Best-effort: invalidate the server-side session so Laravel emits a
+        // Set-Cookie that wipes the httpOnly session cookie. Without this the
+        // proxy could still see a stale session cookie and bounce us back.
+        // Skip when the failing request was already /auth/logout to avoid
+        // recursion.
+        const failedUrl = (error.config?.url ?? "").toString();
+        if (!failedUrl.includes("/auth/logout")) {
+          // Fire-and-forget — don't block the redirect.
+          axios.post("/api/v1/auth/logout", null, { withCredentials: true })
+            .catch(() => { /* ignore — session is already invalid */ });
+        }
+
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   }
@@ -87,19 +91,25 @@ export default api;
 
 // Typed API helpers
 export const authApi = {
-  login: (email: string, password: string, deviceName?: string) =>
-    api.post<{ token: string; user: AuthUser }>("/auth/login", {
+  login: async (email: string, password: string, code?: string) => {
+    await ensureCsrfCookie();
+    return api.post<{ user?: AuthUser; mfa_required?: boolean; message?: string }>("/auth/login", {
       email,
       password,
-      device_name: deviceName ?? "web",
-    }),
+      code,
+      client_type: "browser",
+      device_name: "web",
+    });
+  },
   logout: () => api.post("/auth/logout"),
   me: () => api.get<AuthUser>("/auth/me"),
-  forceResetPassword: (password: string, passwordConfirmation: string) =>
-    api.post<{ message: string }>("/auth/force-reset-password", {
+  forceResetPassword: async (password: string, passwordConfirmation: string) => {
+    await ensureCsrfCookie();
+    return api.post<{ message: string }>("/auth/force-reset-password", {
       password,
       password_confirmation: passwordConfirmation,
-    }),
+    });
+  },
 };
 
 export interface DashboardStats {
@@ -1153,8 +1163,8 @@ export const leaveApi = {
   delete: (id: number) => api.delete(`/leave/requests/${id}`),
   submit: (id: number) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/submit`),
-  approve: (id: number) =>
-    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/approve`),
+  approve: (id: number, overrideReason?: string) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/approve`, overrideReason ? { override_reason: overrideReason } : undefined),
   reject: (id: number, reason: string) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/reject`, { reason }),
   listLilAccruals: () => api.get<{ data: LilAccrual[] }>("/leave/lil-accruals"),
@@ -1212,6 +1222,11 @@ export const hrLeaveBalancesApi = {
     api.post<{ message: string; data: { id: number; annual_balance_days: number; lil_hours_available: number } }>(
       "/leave/admin/balances/upsert",
       payload
+    ),
+  initializeYear: (period_year: number) =>
+    api.post<{ message: string; created: number; skipped: number }>(
+      "/leave/admin/balances/initialize-year",
+      { period_year }
     ),
 };
 
@@ -1916,6 +1931,202 @@ export const financeApi = {
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/approve`),
   rejectAdvance: (id: number, reason: string) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/reject`, { reason }),
+};
+
+// ─── BCRE: Balance Control & Reconciliation Engine ───────────────────────────
+
+export interface BalanceRegister {
+  id: number;
+  tenant_id: number;
+  module_type: "salary_advance" | "imprest";
+  employee_id: number;
+  source_request_type: string;
+  source_request_id: number;
+  reference_number: string;
+  approved_amount: number;
+  total_processed: number;
+  balance: number;
+  installment_amount: number | null;
+  recovery_start_date: string | null;
+  estimated_payoff_date: string | null;
+  status: "active" | "closed" | "disputed" | "locked";
+  period_locked_at: string | null;
+  locked_by: number | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  transactions_count?: number;
+  employee?: User;
+  creator?: User;
+  locker?: User;
+  transactions?: BalanceTransaction[];
+  acknowledgements?: BalanceAcknowledgement[];
+}
+
+export interface BalanceTransaction {
+  id: number;
+  register_id: number;
+  type: "disbursement" | "recovery" | "adjustment" | "write_off";
+  amount: number;
+  previous_balance: number;
+  new_balance: number;
+  reference_doc: string | null;
+  notes: string | null;
+  supporting_document_path: string | null;
+  created_by: number;
+  verification_status: "pending" | "approved" | "rejected";
+  created_at: string;
+  maker?: User;
+  createdBy?: User;
+  verification?: BalanceVerification;
+  acknowledgement?: BalanceAcknowledgement;
+}
+
+export interface BalanceVerification {
+  id: number;
+  transaction_id: number;
+  verified_by: number;
+  status: "approved" | "rejected" | "correction_requested";
+  comments: string | null;
+  verified_at: string;
+  verifier?: User;
+}
+
+export interface BalanceAcknowledgement {
+  id: number;
+  register_id: number;
+  transaction_id: number | null;
+  employee_id: number;
+  status: "pending" | "confirmed" | "disputed";
+  dispute_reason: string | null;
+  responded_at: string | null;
+  employee?: User;
+}
+
+export interface BcreDashboard {
+  total_active_registers: number;
+  total_outstanding_balance: number;
+  pending_verifications: number;
+  disputed_registers: number;
+  registers_by_module: Record<string, number>;
+}
+
+export const bcreApi = {
+  dashboard: () =>
+    api.get<{ data: BcreDashboard }>("/finance/balance-registers/dashboard"),
+  exceptions: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<BalanceRegister>>("/finance/balance-registers/exceptions", { params }),
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<BalanceRegister>>("/finance/balance-registers", { params }),
+  get: (id: number) =>
+    api.get<{ data: BalanceRegister }>(`/finance/balance-registers/${id}`),
+  create: (data: Partial<BalanceRegister>) =>
+    api.post<{ data: BalanceRegister; message: string }>("/finance/balance-registers", data),
+  update: (id: number, data: Partial<BalanceRegister>) =>
+    api.put<{ data: BalanceRegister; message: string }>(`/finance/balance-registers/${id}`, data),
+  lock: (id: number) =>
+    api.post<{ data: BalanceRegister; message: string }>(`/finance/balance-registers/${id}/lock`),
+  unlock: (id: number) =>
+    api.post<{ data: BalanceRegister; message: string }>(`/finance/balance-registers/${id}/unlock`),
+  acknowledge: (id: number, data: { status: "confirmed" | "disputed"; dispute_reason?: string }) =>
+    api.post<{ data: BalanceAcknowledgement; message: string }>(`/finance/balance-registers/${id}/acknowledge`, data),
+  listTransactions: (registerId: number, params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<BalanceTransaction>>(`/finance/balance-registers/${registerId}/transactions`, { params }),
+  createTransaction: (registerId: number, data: {
+    type: string;
+    amount: number;
+    notes?: string;
+    reference_doc?: string;
+    supporting_document_path?: string;
+  }) =>
+    api.post<{ data: BalanceTransaction; message: string }>(`/finance/balance-registers/${registerId}/transactions`, data),
+  getVerification: (registerId: number, txnId: number) =>
+    api.get<{ data: BalanceTransaction }>(`/finance/balance-registers/${registerId}/transactions/${txnId}/verify`),
+  verify: (registerId: number, txnId: number, data: {
+    status: "approved" | "rejected" | "correction_requested";
+    comments?: string;
+  }) =>
+    api.post<{ data: BalanceVerification; message: string }>(
+      `/finance/balance-registers/${registerId}/transactions/${txnId}/verify`,
+      data
+    ),
+};
+
+// ─── Living Payslip: Salary Assignments + Line Configs ───────────────────────
+
+export interface EmployeeSalaryAssignment {
+  id: number;
+  user_id: number;
+  grade_band_id: number;
+  salary_scale_id: number | null;
+  notch_number: number;
+  effective_from: string;
+  effective_to: string | null;
+  employment_type: string | null;
+  notes: string | null;
+  created_by: number;
+  employee?: User;
+  grade_band?: { id: number; code: string; label: string };
+}
+
+export interface PayslipLineConfig {
+  id: number;
+  user_id: number;
+  component_key: string;
+  label: string;
+  component_type: "earning" | "deduction" | "company_contribution" | "info";
+  source: "system" | "manual";
+  fixed_amount: number | null;
+  is_visible: boolean;
+  sort_order: number;
+}
+
+export interface PayslipDetails {
+  header: {
+    employee_name: string;
+    employee_id: number;
+    period: string;
+    employment_type: string;
+    grade_band: string;
+    notch: number;
+  };
+  earnings: Array<{ key: string; label: string; amount: number; source: string }>;
+  deductions: Array<{ key: string; label: string; amount: number; source: string }>;
+  company_contributions: Array<{ key: string; label: string; amount: number; source: string }>;
+  leave_balances: Array<{ label: string; days: number }>;
+  gross_amount: number;
+  total_deductions: number;
+  net_amount: number;
+}
+
+export const salaryAssignmentApi = {
+  list: (params?: { user_id?: number }) =>
+    api.get<{ data: EmployeeSalaryAssignment[] }>("/admin/salary-assignments", { params }),
+  create: (data: Partial<EmployeeSalaryAssignment>) =>
+    api.post<{ message: string; data: EmployeeSalaryAssignment }>("/admin/salary-assignments", data),
+  update: (id: number, data: Partial<EmployeeSalaryAssignment>) =>
+    api.put<{ message: string; data: EmployeeSalaryAssignment }>(`/admin/salary-assignments/${id}`, data),
+  remove: (id: number) =>
+    api.delete(`/admin/salary-assignments/${id}`),
+};
+
+export const payslipConfigApi = {
+  list: (userId: number) =>
+    api.get<{ data: PayslipLineConfig[] }>("/admin/payslip-configs", { params: { user_id: userId } }),
+  create: (data: Partial<PayslipLineConfig>) =>
+    api.post<{ message: string; data: PayslipLineConfig }>("/admin/payslip-configs", data),
+  update: (id: number, data: Partial<PayslipLineConfig>) =>
+    api.put<{ message: string; data: PayslipLineConfig }>(`/admin/payslip-configs/${id}`, data),
+  remove: (id: number) =>
+    api.delete(`/admin/payslip-configs/${id}`),
+  generateDefaults: (userId: number) =>
+    api.post<{ message: string; data: PayslipLineConfig[] }>("/admin/payslip-configs/defaults", { user_id: userId }),
+};
+
+// Extend adminPayslipApi with refresh
+export const payslipRefreshApi = {
+  refresh: (payslipId: number) =>
+    api.post<{ message: string; data: object }>(`/admin/payslips/${payslipId}/refresh`),
 };
 
 // ─── HR (Timesheets) ────────────────────────────────────────────────────────

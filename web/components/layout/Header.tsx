@@ -7,13 +7,12 @@ import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   authApi,
-  clearAuthCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
-  setToken,
   userNotificationsApi,
   type UserNotification,
 } from "@/lib/api";
+import { clearStoredUser, readStoredUser } from "@/lib/session";
 import { GlobalSearch } from "./GlobalSearch";
 
 interface StoredUser {
@@ -37,10 +36,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const raw = localStorage.getItem("sadcpf_user");
-    if (raw) {
-      try { setUser(JSON.parse(raw)); } catch { /* ignore */ }
-    }
+    const storedUser = readStoredUser();
+    if (storedUser) setUser(storedUser);
   }, []);
 
   // Unread count for bell badge — polls every 15s when tab is active, pauses when hidden
@@ -100,9 +97,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
-    setToken(null);
-    localStorage.removeItem("sadcpf_user");
-    clearAuthCookie();
+    clearStoredUser();
     clearMustResetCookie();
     clearSetupCompleteCookie();
     router.push("/login");

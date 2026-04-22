@@ -5,21 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
+import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 
 function getStoredUser(): { id: number | null; roles: string[] } {
-  if (typeof window === "undefined") return { id: null, roles: [] };
-  try {
-    const raw = localStorage.getItem("sadcpf_user");
-    if (!raw) return { id: null, roles: [] };
-    const parsed = JSON.parse(raw) as { id?: number; roles?: string[] };
-    return {
-      id: typeof parsed.id === "number" ? parsed.id : null,
-      roles: Array.isArray(parsed.roles) ? parsed.roles : [],
-    };
-  } catch {
-    return { id: null, roles: [] };
-  }
+  const parsed = readStoredUser();
+  return {
+    id: typeof parsed?.id === "number" ? parsed.id : null,
+    roles: Array.isArray(parsed?.roles) ? parsed.roles : [],
+  };
 }
 
 function isImprestRequest(value: unknown): value is ImprestRequest {

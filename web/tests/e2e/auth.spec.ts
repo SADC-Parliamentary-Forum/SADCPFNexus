@@ -43,18 +43,19 @@ test.describe("Login page", () => {
     expect(page.url()).toContain("/dashboard");
   });
 
-  test("token is stored in localStorage after login", async ({ page }) => {
+  test("successful login establishes a browser session", async ({ page }) => {
     await page.locator('input[type="email"]').fill("staff@sadcpf.org");
     await page.locator('input[type="password"]').fill("Staff@2024!");
     await page.locator('button[type="submit"]').click();
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-    const token = await page.evaluate(
-      () => localStorage.getItem("sadcpf_token")
+    const meResponse = await page.request.get(
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/auth/me`
     );
-    expect(token).toBeTruthy();
-    expect(token!.length).toBeGreaterThan(20);
+    expect(meResponse.ok()).toBeTruthy();
+    const me = await meResponse.json();
+    expect(me.email).toBe("staff@sadcpf.org");
   });
 });
 
@@ -65,7 +66,7 @@ test.describe("Auth protection", () => {
     // Clear any existing state
     await page.goto("/");
     await page.evaluate(() => {
-      localStorage.clear();
+      sessionStorage.clear();
     });
     await page.context().clearCookies();
 
@@ -77,7 +78,7 @@ test.describe("Auth protection", () => {
   test("unauthenticated access to /travel redirects to /login", async ({
     page,
   }) => {
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => sessionStorage.clear());
     await page.context().clearCookies();
 
     await page.goto("/travel");
@@ -87,7 +88,7 @@ test.describe("Auth protection", () => {
   test("unauthenticated access to /admin redirects to /login", async ({
     page,
   }) => {
-    await page.evaluate(() => localStorage.clear());
+    await page.evaluate(() => sessionStorage.clear());
     await page.context().clearCookies();
 
     await page.goto("/admin");
@@ -120,7 +121,9 @@ test.describe("Logout", () => {
     await page.waitForURL("**/login**", { timeout: 10_000 });
     expect(page.url()).toContain("login");
 
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    expect(token).toBeNull();
+    const meResponse = await page.request.get(
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/auth/me`
+    );
+    expect(meResponse.status()).toBe(401);
   });
 });

@@ -140,13 +140,23 @@ class LeaveController extends Controller
 
     public function approve(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
+        $data = $request->validate([
+            'comment'         => ['nullable', 'string', 'max:1000'],
+            'override_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $overrideReason = $data['override_reason'] ?? null;
+
         if (!$leaveRequest->approvalRequest) {
-            // Fallback for legacy or non-workflow requests
-            $leave = $this->leaveService->approve($leaveRequest, $request->user());
+            // Direct approval path — balance check is inside leaveService->approve()
+            $leave = $this->leaveService->approve($leaveRequest, $request->user(), $overrideReason);
             return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
         }
 
-        $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+        // Workflow path — validate balance here before advancing workflow
+        // (WorkflowService's onWorkflowApproved callback has no override context)
+        $this->leaveService->validateLeaveBalance($leaveRequest, $overrideReason);
+
         $this->workflowService->approve($leaveRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
 
         return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);

@@ -3,6 +3,7 @@ namespace App\Modules\Leave\Services;
 
 use App\Models\AuditLog;
 use App\Models\CalendarEntry;
+use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
 use App\Models\TravelRequest;
@@ -174,11 +175,13 @@ class LeaveService
         return $leave->fresh();
     }
 
-    public function approve(LeaveRequest $leave, User $approver): LeaveRequest
+    public function approve(LeaveRequest $leave, User $approver, ?string $overrideReason = null): LeaveRequest
     {
         if (!$leave->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
+
+        $this->checkLeaveBalance($leave, $overrideReason);
 
         $leave->update([
             'status'      => 'approved',
@@ -256,8 +259,15 @@ class LeaveService
         return $leave->fresh();
     }
 
+    /** Public entry point for controllers to validate balance (and log override) before triggering workflow. */
+    public function validateLeaveBalance(LeaveRequest $leave, ?string $overrideReason = null): void
+    {
+        $this->checkLeaveBalance($leave, $overrideReason);
+    }
+
     /**
      * Called by WorkflowService when the workflow is fully approved.
+     * Balance validation is done by the controller before the workflow step runs.
      */
     public function onWorkflowApproved(LeaveRequest $leave, User $approver): void
     {
@@ -316,6 +326,52 @@ class LeaveService
                 'end_date'   => $leave->end_date,
                 'comment'    => $reason ?? '',
             ], ['module' => 'leave', 'record_id' => $leave->id, 'url' => '/leave/' . $leave->id]);
+        }
+    }
+
+    /**
+     * Validates annual leave balance. Throws if insufficient and no override provided.
+     * Logs an audit entry when an authorized override is applied.
+     */
+    private function checkLeaveBalance(LeaveRequest $leave, ?string $overrideReason = null): void
+    {
+        if ($leave->leave_type !== 'annual') {
+            return;
+        }
+
+        $year    = Carbon::parse($leave->start_date)->year;
+        $balance = LeaveBalance::where('user_id', $leave->requester_id)
+            ->where('period_year', $year)
+            ->first();
+
+        $opening = $balance ? (int) $balance->annual_balance_days : 0;
+
+        $usedDays = (int) LeaveRequest::where('requester_id', $leave->requester_id)
+            ->where('leave_type', 'annual')
+            ->whereYear('start_date', $year)
+            ->where('status', 'approved')
+            ->where('id', '!=', $leave->id)
+            ->sum('days_requested');
+
+        $remaining = $opening - $usedDays;
+
+        if ($leave->days_requested > $remaining) {
+            if (!$overrideReason) {
+                throw ValidationException::withMessages([
+                    'balance' => "Insufficient leave balance. Requested: {$leave->days_requested} days. Remaining: {$remaining} days.",
+                ]);
+            }
+
+            AuditLog::record('leave.balance_override', [
+                'auditable_type' => LeaveRequest::class,
+                'auditable_id'   => $leave->id,
+                'new_values'     => [
+                    'days_requested'  => $leave->days_requested,
+                    'remaining'       => $remaining,
+                    'override_reason' => $overrideReason,
+                ],
+                'tags' => 'leave',
+            ]);
         }
     }
 

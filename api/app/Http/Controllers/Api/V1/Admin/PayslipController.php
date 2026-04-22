@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payslip;
 use App\Models\User;
+use App\Modules\Finance\Services\PayslipAutoFillService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -143,10 +145,35 @@ class PayslipController extends Controller
         );
         $payslip->load('user:id,name,email,employee_number');
 
+        // Auto-fill payslip details from system data
+        try {
+            app(PayslipAutoFillService::class)->fill($payslip->fresh('user'));
+        } catch (\Throwable $e) {
+            Log::error('Payslip auto-fill failed', ['payslip_id' => $payslip->id, 'error' => $e->getMessage()]);
+        }
+
         return response()->json([
             'message' => 'Payslip saved.',
-            'data'    => $payslip,
+            'data'    => $payslip->fresh('user'),
         ], 201);
+    }
+
+    /**
+     * Manually re-run auto-fill for a payslip (e.g. after grade or allowance data changes).
+     */
+    public function refresh(Request $request, Payslip $payslip): JsonResponse
+    {
+        $this->authorizePayslipAccess($request);
+        if ((int) $payslip->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $refreshed = app(PayslipAutoFillService::class)->fill($payslip->load('user'));
+
+        return response()->json([
+            'message' => 'Payslip auto-fill completed.',
+            'data'    => $refreshed->fresh('user'),
+        ]);
     }
 
     /**

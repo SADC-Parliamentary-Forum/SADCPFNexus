@@ -9,35 +9,21 @@ use App\Models\User;
 use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     path="/api/v1/auth/login",
-     *     summary="Authenticate user and issue Sanctum token",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email","password"},
-     *             @OA\Property(property="email", type="string", format="email"),
-     *             @OA\Property(property="password", type="string", format="password"),
-     *             @OA\Property(property="device_name", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(response=200, description="Token issued"),
-     *     @OA\Response(response=422, description="Invalid credentials")
-     * )
-     */
     public function login(Request $request): JsonResponse
     {
         $request->validate([
             'email'       => ['required', 'email'],
             'password'    => ['required'],
             'device_name' => ['nullable', 'string', 'max:255'],
+            'client_type' => ['nullable', 'string', 'in:browser,mobile'],
+            'code'        => ['nullable', 'string', 'digits:6'],
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -59,18 +45,67 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->mfa_enabled) {
+            $code = (string) $request->input('code', '');
+
+            if ($code === '') {
+                return response()->json([
+                    'message'      => 'Two-factor verification required.',
+                    'mfa_required' => true,
+                ]);
+            }
+
+            if (!$this->verifyTwoFactorCode($user, $code)) {
+                throw ValidationException::withMessages([
+                    'code' => ['Invalid or expired verification code.'],
+                ]);
+            }
+        }
+
         $user->update(['last_login_at' => now()]);
 
-        $newToken = $user->createToken($request->device_name ?? 'web');
-        $token    = $newToken->plainTextToken;
+        if ($this->isMobileClient($request)) {
+            $newToken = $user->createToken($request->device_name ?? 'mobile');
 
-        UserSession::create([
-            'user_id'        => $user->id,
-            'token_id'       => $newToken->accessToken->id,
-            'ip_address'     => $request->ip(),
-            'user_agent'     => $request->userAgent(),
-            'last_active_at' => now(),
-        ]);
+            UserSession::create([
+                'user_id'        => $user->id,
+                'token_id'       => $newToken->accessToken->id,
+                'session_id'     => null,
+                'auth_type'      => 'token',
+                'ip_address'     => $request->ip(),
+                'user_agent'     => $request->userAgent(),
+                'last_active_at' => now(),
+            ]);
+
+            AuditLog::record('auth.login.success', [
+                'auditable_type' => User::class,
+                'auditable_id'   => $user->id,
+                'tags'           => 'auth',
+            ]);
+
+            return response()->json([
+                'token' => $newToken->plainTextToken,
+                'user'  => $this->serializeUser($user),
+            ]);
+        }
+
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
+        $request->session()->regenerateToken();
+
+        UserSession::updateOrCreate(
+            [
+                'user_id'    => $user->id,
+                'session_id' => $request->session()->getId(),
+                'auth_type'  => 'browser',
+            ],
+            [
+                'token_id'       => null,
+                'ip_address'     => $request->ip(),
+                'user_agent'     => $request->userAgent(),
+                'last_active_at' => now(),
+            ]
+        );
 
         AuditLog::record('auth.login.success', [
             'auditable_type' => User::class,
@@ -79,30 +114,15 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'token' => $token,
-            'user'  => [
-                'id'                   => $user->id,
-                'name'                 => $user->name,
-                'email'                => $user->email,
-                'tenant_id'            => $user->tenant_id,
-                'vendor_id'            => $user->vendor_id,
-                'classification'       => $user->classification,
-                'must_reset_password'  => (bool) $user->must_reset_password,
-                'setup_completed'      => (bool) $user->setup_completed,
-                'roles'                => $user->getRoleNames(),
-                'permissions'          => $user->getAllPermissions()->pluck('name'),
-            ],
+            'user' => $this->serializeUser($user),
         ]);
     }
 
-    /**
-     * Force-reset the authenticated user's password on first login.
-     * Only permitted when must_reset_password = true.
-     * Does not require the old password.
-     */
     public function forceResetPassword(Request $request): JsonResponse
     {
         $user = $request->user();
+        $currentTokenId = $user->currentAccessToken()?->id;
+        $currentSessionId = $request->hasSession() ? $request->session()->getId() : null;
 
         if (! $user->must_reset_password) {
             return response()->json(['message' => 'Password reset not required.'], 403);
@@ -114,9 +134,27 @@ class AuthController extends Controller
         ]);
 
         $user->update([
-            'password'             => \Illuminate\Support\Facades\Hash::make($data['password']),
-            'must_reset_password'  => false,
+            'password'            => Hash::make($data['password']),
+            'must_reset_password' => false,
         ]);
+
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+        } else {
+            $user->tokens()->delete();
+        }
+
+        UserSession::where('user_id', $user->id)
+            ->where(function ($query) use ($currentTokenId, $currentSessionId) {
+                if ($currentTokenId) {
+                    $query->where('token_id', '!=', $currentTokenId);
+                    return;
+                }
+
+                $query->where('auth_type', '!=', 'browser')
+                    ->orWhere('session_id', '!=', $currentSessionId);
+            })
+            ->delete();
 
         AuditLog::record('auth.password_force_reset', [
             'auditable_type' => User::class,
@@ -127,66 +165,50 @@ class AuthController extends Controller
         return response()->json(['message' => 'Password updated successfully.']);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/v1/auth/logout",
-     *     summary="Revoke current token",
-     *     tags={"Auth"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(response=200, description="Logged out")
-     * )
-     */
     public function logout(Request $request): JsonResponse
     {
-        $tokenId = $request->user()->currentAccessToken()->id;
-        UserSession::where('token_id', $tokenId)->delete();
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $currentToken = $user->currentAccessToken();
+
+        if ($currentToken) {
+            UserSession::where('user_id', $user->id)
+                ->where('token_id', $currentToken->id)
+                ->delete();
+            $currentToken->delete();
+        } elseif ($request->hasSession()) {
+            $sessionId = $request->session()->getId();
+
+            UserSession::where('user_id', $user->id)
+                ->where('auth_type', 'browser')
+                ->where('session_id', $sessionId)
+                ->delete();
+
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         AuditLog::record('auth.logout', [
             'auditable_type' => User::class,
-            'auditable_id'   => $request->user()->id,
+            'auditable_id'   => $user->id,
             'tags'           => 'auth',
         ]);
 
         return response()->json(['message' => 'Logged out successfully']);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/api/v1/auth/me",
-     *     summary="Get authenticated user profile",
-     *     tags={"Auth"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(response=200, description="User profile")
-     * )
-     */
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load('tenant', 'department');
 
-        return response()->json([
-            'id'             => $user->id,
-            'name'           => $user->name,
-            'email'          => $user->email,
-            'tenant_id'      => $user->tenant_id,
-            'vendor_id'      => $user->vendor_id,
-            'employee_number'=> $user->employee_number,
-            'job_title'      => $user->job_title,
-            'tenant'         => $user->tenant,
-            'department'     => $user->department,
-            'classification'       => $user->classification,
-            'mfa_enabled'         => $user->mfa_enabled,
-            'must_reset_password' => (bool) $user->must_reset_password,
-            'setup_completed'     => (bool) $user->setup_completed,
-            'roles'               => $user->getRoleNames(),
-            'permissions'         => $user->getAllPermissions()->pluck('name'),
+        return response()->json($this->serializeUser($user) + [
+            'employee_number' => $user->employee_number,
+            'job_title'       => $user->job_title,
+            'tenant'          => $user->tenant,
+            'department'      => $user->department,
         ]);
     }
 
-    /**
-     * Register (or refresh) an FCM device token for push notifications.
-     * Called by the mobile app after login and on token refresh.
-     */
     public function registerDeviceToken(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -208,9 +230,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'Device token registered.']);
     }
 
-    /**
-     * Remove a specific FCM device token (called on logout from mobile).
-     */
     public function unregisterDeviceToken(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -222,5 +241,44 @@ class AuthController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Device token removed.']);
+    }
+
+    private function isMobileClient(Request $request): bool
+    {
+        if ($request->input('client_type') === 'mobile') {
+            return true;
+        }
+
+        return in_array(strtolower((string) $request->input('device_name')), [
+            'mobile',
+            'android',
+            'ios',
+        ], true);
+    }
+
+    private function verifyTwoFactorCode(User $user, string $code): bool
+    {
+        if (! $user->mfa_secret) {
+            return false;
+        }
+
+        return (new Google2FA())->verifyKey($user->mfa_secret, $code);
+    }
+
+    private function serializeUser(User $user): array
+    {
+        return [
+            'id'                  => $user->id,
+            'name'                => $user->name,
+            'email'               => $user->email,
+            'tenant_id'           => $user->tenant_id,
+            'vendor_id'           => $user->vendor_id,
+            'classification'      => $user->classification,
+            'mfa_enabled'         => (bool) $user->mfa_enabled,
+            'must_reset_password' => (bool) $user->must_reset_password,
+            'setup_completed'     => (bool) $user->setup_completed,
+            'roles'               => $user->getRoleNames(),
+            'permissions'         => $user->getAllPermissions()->pluck('name'),
+        ];
     }
 }

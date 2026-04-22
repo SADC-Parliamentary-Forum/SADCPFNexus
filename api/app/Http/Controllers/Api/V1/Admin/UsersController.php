@@ -210,6 +210,7 @@ class UsersController extends Controller
         ]);
 
         $user->update(['password' => \Illuminate\Support\Facades\Hash::make($data['password'])]);
+        $this->userService->revokeAllAccess($user);
 
         \App\Models\AuditLog::record('user.password_changed_by_admin', [
             'auditable_type' => User::class,

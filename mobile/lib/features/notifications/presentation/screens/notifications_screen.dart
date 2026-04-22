@@ -102,7 +102,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
         actions: [
           TextButton(
             onPressed: _markAllRead,
-            child: Text(
+            child: const Text(
               'Mark all read',
               style: TextStyle(color: primary, fontSize: 13),
             ),

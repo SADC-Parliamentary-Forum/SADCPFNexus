@@ -75,18 +75,9 @@ test.describe("Plenary sessions", () => {
 });
 
 test.describe("Governance API via browser", () => {
-  test("resolutions API returns data structure the UI can render", async ({ page, request }) => {
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    if (!token) {
-      test.skip(true, "No auth token available");
-      return;
-    }
-
+  test("resolutions API returns data structure the UI can render", async ({ request }) => {
     const res = await request.get(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/governance/resolutions`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/governance/resolutions`
     );
 
     expect(res.ok()).toBeTruthy();
@@ -95,18 +86,9 @@ test.describe("Governance API via browser", () => {
     expect(Array.isArray(body.data)).toBeTruthy();
   });
 
-  test("committees API returns data structure", async ({ page, request }) => {
-    const token = await page.evaluate(() => localStorage.getItem("sadcpf_token"));
-    if (!token) {
-      test.skip(true, "No auth token");
-      return;
-    }
-
+  test("committees API returns data structure", async ({ request }) => {
     const res = await request.get(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/governance/committees`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/governance/committees`
     );
 
     expect(res.ok()).toBeTruthy();

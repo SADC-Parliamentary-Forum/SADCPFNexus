@@ -122,12 +122,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   };
 
   const downloadAttachment = async (attachment: ProcurementAttachment, url: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("sadcpf_token") : null;
-
     try {
-      const response = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await fetch(url, { credentials: "include" });
       if (!response.ok) throw new Error("Download failed");
 
       const blob = await response.blob();

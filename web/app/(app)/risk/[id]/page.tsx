@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { riskApi, riskAttachmentsApi, policyApi, type Risk, type RiskAction, type RiskHistory, type RiskAttachment, type RiskDocumentType, type Policy } from "@/lib/api";
+import { readStoredUser } from "@/lib/session";
 import { useFormatDate } from "@/lib/useFormatDate";
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import axios from "axios";
@@ -44,7 +45,7 @@ const CHANGE_TYPE_ICONS: Record<string, { icon: string; color: string }> = {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function getStoredUser(): { roles?: string[]; id?: number } | null {
-  try { return JSON.parse(localStorage.getItem("sadcpf_user") ?? "null"); } catch { return null; }
+  return readStoredUser();
 }
 
 function hasRole(user: { roles?: string[] } | null, ...roles: string[]): boolean {

@@ -58,6 +58,11 @@ export default function LeaveDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const { confirm } = useConfirm();
 
+  // Balance override flow
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+
   // Attachments
   const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
   const [uploadDocType, setUploadDocType] = useState("other");
@@ -80,15 +85,25 @@ export default function LeaveDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleApprove = async () => {
+  const handleApprove = async (override?: string) => {
     if (!request) return;
     setActionLoading(true);
+    setBalanceError(null);
     try {
-      await leaveApi.approve(request.id);
+      await leaveApi.approve(request.id, override);
       const res = await leaveApi.get(request.id);
       setRequest((res.data as any).data ?? res.data);
-    } catch {
-      setError("Failed to approve request.");
+      setShowOverrideModal(false);
+      setOverrideReason("");
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { errors?: { balance?: string[] }; message?: string } } };
+      const balMsg = err?.response?.data?.errors?.balance?.[0];
+      if (balMsg) {
+        setBalanceError(balMsg);
+        setShowOverrideModal(true);
+      } else {
+        setError(err?.response?.data?.message ?? "Failed to approve request.");
+      }
     } finally {
       setActionLoading(false);
     }
@@ -489,6 +504,49 @@ export default function LeaveDetailPage() {
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Leave Requests
       </Link>
+
+      {/* Balance Override Modal */}
+      {showOverrideModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl bg-white p-6 max-w-md w-full shadow-2xl border border-neutral-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
+                <span className="material-symbols-outlined text-amber-600 text-[20px]">warning</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">Insufficient Leave Balance</h3>
+                <p className="text-xs text-neutral-400">Override requires justification</p>
+              </div>
+            </div>
+            <p className="text-sm text-neutral-600 mb-4 bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">{balanceError}</p>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">
+              Override Justification <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Provide a written justification for overriding the leave balance check…"
+              rows={3}
+              className="form-input resize-none"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setShowOverrideModal(false); setOverrideReason(""); setBalanceError(null); }}
+                className="btn-secondary flex-1 justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleApprove(overrideReason.trim())}
+                disabled={actionLoading || !overrideReason.trim()}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              >
+                {actionLoading ? "Processing…" : "Approve Anyway"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {showRejectModal && (

@@ -346,6 +346,32 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nYour SADC-PF Nexus account has been created.\n\nEmail: {{email}}\nTemporary password: {{password}}\nRole: {{role}}\n\nPlease log in at {{portal_url}} and change your password immediately.\n\nRegards,\nSADC-PF Nexus Administrator",
             ],
 
+            // BCRE — Balance Control & Reconciliation Engine
+            'bcre.register_created' => [
+                'subject' => 'Balance register opened — {{reference}}',
+                'body'    => "Dear {{name}},\n\nA balance register ({{reference}}) has been opened for your {{module_label}} of {{amount}}.\n\nPlease log in to review your balance and confirm the opening balance when prompted.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'bcre.balance_updated' => [
+                'subject' => 'Balance register updated — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYour balance register ({{reference}}) has been updated.\n\nTransaction type: {{type}}\nAmount: {{amount}}\nNew balance: {{new_balance}}\n\nPlease log in to confirm or dispute this update.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'bcre.verification_required' => [
+                'subject' => 'Balance update requires verification — {{reference}}',
+                'body'    => "Dear {{name}},\n\nA balance update on register {{reference}} has been submitted by {{maker}} and requires your verification.\n\nTransaction type: {{type}}\nAmount: {{amount}}\n\nPlease log in to approve or reject this update.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'bcre.transaction_verified' => [
+                'subject' => 'Your balance update has been {{status}} — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYour balance update on register {{reference}} has been {{status}} by {{checker}}.\n\n{{comments}}\n\nRegards,\nSADC-PF Finance",
+            ],
+            'bcre.balance_disputed' => [
+                'subject' => 'Balance dispute raised — {{reference}}',
+                'body'    => "Dear {{name}},\n\nAn employee has raised a dispute on balance register {{reference}}.\n\nEmployee: {{employee}}\nReason: {{reason}}\n\nPlease log in to review and resolve the dispute.\n\nRegards,\nSADC-PF Finance",
+            ],
+            'bcre.period_locked' => [
+                'subject' => 'Balance register period locked — {{reference}}',
+                'body'    => "Dear {{name}},\n\nBalance register {{reference}} has been locked for the current period by {{controller}}.\n\nNo further updates can be made until the period is unlocked.\n\nRegards,\nSADC-PF Finance",
+            ],
+
             // Daily alert digest (sent to managers/admins)
             'alerts.daily_digest' => [
                 'subject' => 'SADC-PF Nexus — Daily Alerts Digest ({{date}})',

@@ -32,18 +32,25 @@ Route::prefix('v1')->group(function () {
 
     // Public external integration endpoints (no auth required)
     Route::prefix('external')->group(function () {
-        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index']);
+        Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index'])
+            ->middleware('throttle:30,1');
     });
 
     Route::prefix('procurement')->group(function () {
-        Route::get('supplier-categories/public', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'publicIndex']);
+        Route::get('supplier-categories/public', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'publicIndex'])
+            ->middleware('throttle:60,1');
         Route::post('suppliers/register', [\App\Http\Controllers\Api\V1\Procurement\SupplierRegistrationController::class, 'register'])->middleware('throttle:10,1');
         Route::get('external-rfq/{token}', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'show'])->middleware('throttle:20,1');
         Route::post('external-rfq/{token}/quote', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'submit'])->middleware('throttle:20,1');
     });
 
     // Authenticated routes
-    Route::middleware(['auth:sanctum', 'throttle:60,1', \App\Http\Middleware\SetRlsContext::class])->group(function () {
+    Route::middleware([
+        'auth:sanctum',
+        \App\Http\Middleware\EnsureSessionAuthIsValid::class,
+        'throttle:60,1',
+        \App\Http\Middleware\SetRlsContext::class,
+    ])->group(function () {
 
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
@@ -137,12 +144,26 @@ Route::prefix('v1')->group(function () {
             Route::delete('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'destroy']);
             Route::put('roles/{role}/permissions', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'syncPermissions']);
 
-            // Payslips (list, show, download, upload, delete)
+            // Payslips (list, show, download, upload, delete, refresh auto-fill)
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'index']);
             Route::post('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'store']);
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'show']);
             Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'download']);
+            Route::post('payslips/{payslip}/refresh', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'refresh']);
             Route::delete('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'destroy']);
+
+            // Payslip line configs (per-employee)
+            Route::get('payslip-configs', [\App\Http\Controllers\Api\V1\Admin\PayslipConfigController::class, 'index']);
+            Route::post('payslip-configs/defaults', [\App\Http\Controllers\Api\V1\Admin\PayslipConfigController::class, 'defaults']);
+            Route::post('payslip-configs', [\App\Http\Controllers\Api\V1\Admin\PayslipConfigController::class, 'store']);
+            Route::put('payslip-configs/{config}', [\App\Http\Controllers\Api\V1\Admin\PayslipConfigController::class, 'update']);
+            Route::delete('payslip-configs/{config}', [\App\Http\Controllers\Api\V1\Admin\PayslipConfigController::class, 'destroy']);
+
+            // Employee salary grade/notch assignments
+            Route::get('salary-assignments', [\App\Http\Controllers\Api\V1\Admin\EmployeeSalaryAssignmentController::class, 'index']);
+            Route::post('salary-assignments', [\App\Http\Controllers\Api\V1\Admin\EmployeeSalaryAssignmentController::class, 'store']);
+            Route::put('salary-assignments/{salaryAssignment}', [\App\Http\Controllers\Api\V1\Admin\EmployeeSalaryAssignmentController::class, 'update']);
+            Route::delete('salary-assignments/{salaryAssignment}', [\App\Http\Controllers\Api\V1\Admin\EmployeeSalaryAssignmentController::class, 'destroy']);
 
             // Timesheet projects (admin CRUD)
             Route::get('timesheet-projects', [\App\Http\Controllers\Api\V1\Admin\TimesheetProjectController::class, 'index']);
@@ -258,6 +279,7 @@ Route::prefix('v1')->group(function () {
             Route::get('balances', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'balances']);
             // HR Admin: all-staff leave balance management
             Route::get('admin/balances', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'index']);
+            Route::post('admin/balances/initialize-year', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'initializeYear']);
             Route::post('admin/balances/upsert', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'upsert']);
             Route::get('lil-accruals', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'lilAccruals']);
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
@@ -424,6 +446,23 @@ Route::prefix('v1')->group(function () {
             Route::post('advances/{salaryAdvanceRequest}/submit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
             Route::post('advances/{salaryAdvanceRequest}/approve', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
             Route::post('advances/{salaryAdvanceRequest}/reject', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
+
+            // Balance Control & Reconciliation Engine (BCRE)
+            Route::prefix('balance-registers')->group(function () {
+                Route::get('dashboard',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'dashboard']);
+                Route::get('exceptions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'exceptions']);
+                Route::get('/',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'index']);
+                Route::post('/',   [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'store']);
+                Route::get('{balanceRegister}',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'show']);
+                Route::put('{balanceRegister}',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'update']);
+                Route::post('{balanceRegister}/lock',        [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'lock']);
+                Route::post('{balanceRegister}/unlock',      [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'unlock']);
+                Route::post('{balanceRegister}/acknowledge', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'acknowledge']);
+                Route::get('{balanceRegister}/transactions',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'transactions']);
+                Route::post('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeTransaction']);
+                Route::get('{balanceRegister}/transactions/{balanceTransaction}/verify',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'getVerification']);
+                Route::post('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeVerification']);
+            });
         });
 
         // HR - Timesheets & Summary

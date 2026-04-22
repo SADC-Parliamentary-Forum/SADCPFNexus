@@ -10,6 +10,8 @@ class UserSession extends Model
     protected $fillable = [
         'user_id',
         'token_id',
+        'session_id',
+        'auth_type',
         'ip_address',
         'user_agent',
         'last_active_at',

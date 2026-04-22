@@ -1,11 +1,11 @@
 import { createContext } from "react";
 import type { AuthUser } from "@/lib/api";
-import { USER_KEY } from "@/lib/constants";
+import { readStoredUser } from "@/lib/session";
 
 export interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
-  login: (token: string, user: AuthUser) => void;
+  login: (user: AuthUser) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -147,27 +147,5 @@ export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: stri
  * Parse stored user from localStorage (includes roles). Returns null if missing or invalid.
  */
 export function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(USER_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as unknown;
-    if (!data || typeof data !== "object") return null;
-    const user = data as Record<string, unknown>;
-    if (!user.id || !user.email) return null;
-    // Normalize roles: may be array, plain object (numeric keys), or missing.
-    if (!Array.isArray(user.roles)) {
-      user.roles = user.roles && typeof user.roles === "object"
-        ? Object.values(user.roles as Record<string, string>)
-        : [];
-    }
-    if (!Array.isArray(user.permissions)) {
-      user.permissions = user.permissions && typeof user.permissions === "object"
-        ? Object.values(user.permissions as Record<string, string>)
-        : [];
-    }
-    return user as unknown as AuthUser;
-  } catch {
-    return null;
-  }
+  return readStoredUser();
 }

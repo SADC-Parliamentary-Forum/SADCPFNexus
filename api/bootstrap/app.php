@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // so the Authenticate middleware throws a clean 401 instead of a
         // RouteNotFoundException when a request lacks credentials.
         $middleware->redirectGuestsTo(fn () => null);
+        $middleware->statefulApi();
 
         // Use custom AddCorsHeaders (with CorsHelper + config/cors.php) as the single CORS implementation.
         $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);

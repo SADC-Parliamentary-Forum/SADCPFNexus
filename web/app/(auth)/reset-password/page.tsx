@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authApi, clearMustResetCookie, clearSetupCompleteCookie, setSetupCompleteCookie } from "@/lib/api";
+import { readStoredUser, writeStoredUser } from "@/lib/session";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -31,11 +32,9 @@ export default function ResetPasswordPage() {
     try {
       await authApi.forceResetPassword(password, confirm);
       clearMustResetCookie();
-      // Check setup completion from the stored user object
-      const raw = localStorage.getItem("sadcpf_user");
-      const storedUser = raw ? JSON.parse(raw) : null;
+      const storedUser = readStoredUser();
       if (storedUser) {
-        localStorage.setItem("sadcpf_user", JSON.stringify({ ...storedUser, must_reset_password: false }));
+        writeStoredUser({ ...storedUser, must_reset_password: false });
       }
       if (storedUser?.setup_completed) {
         setSetupCompleteCookie();

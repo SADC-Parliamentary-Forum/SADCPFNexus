@@ -4,6 +4,7 @@ namespace App\Modules\Imprest\Services;
 use App\Models\AuditLog;
 use App\Models\ImprestRequest;
 use App\Models\User;
+use App\Modules\Finance\Services\BalanceRegisterService;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -137,6 +138,10 @@ class ImprestService
                 'amount'    => number_format($imprest->amount_approved ?? $imprest->amount_requested, 2) . ' ' . $imprest->currency,
             ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
         }
+
+        try {
+            app(BalanceRegisterService::class)->createFromImprest($imprest->fresh(), $approver);
+        } catch (\Throwable) {}
 
         return $imprest->fresh();
     }

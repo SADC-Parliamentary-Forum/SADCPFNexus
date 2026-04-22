@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { PrefsProvider } from "@/components/providers/PrefsProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -43,16 +44,18 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
         <ThemeProvider>
-          <PrefsProvider>
-            <QueryProvider>
-              <ToastProvider>
-                <ConfirmProvider>
-                  <RouteProgressBar />
-                  {children}
-                </ConfirmProvider>
-              </ToastProvider>
-            </QueryProvider>
-          </PrefsProvider>
+          <AuthProvider>
+            <PrefsProvider>
+              <QueryProvider>
+                <ToastProvider>
+                  <ConfirmProvider>
+                    <RouteProgressBar />
+                    {children}
+                  </ConfirmProvider>
+                </ToastProvider>
+              </QueryProvider>
+            </PrefsProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
