@@ -17,6 +17,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _name;
   String? _email;
+  String? _jobTitle;
+  String? _employeeNumber;
+  String? _department;
+  String? _roleLabel;
   bool _loading = true;
   bool _loggingOut = false;
 
@@ -27,16 +31,55 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _loadUser() async {
+    // Seed immediately from local cache so the screen isn't blank.
     final auth = ref.read(authRepositoryProvider);
-    final name = await auth.getStoredUserName();
-    final email = await auth.getStoredUserEmail();
+    final cachedName = await auth.getStoredUserName();
+    final cachedEmail = await auth.getStoredUserEmail();
+    final cachedRoles = await auth.getStoredRoles();
     if (mounted) {
       setState(() {
-        _name = name;
-        _email = email;
+        _name = cachedName;
+        _email = cachedEmail;
+        _roleLabel = _firstRole(cachedRoles);
         _loading = false;
       });
     }
+
+    // Refresh from live API (best-effort; preserve cached data on error).
+    try {
+      final res = await ref
+          .read(apiClientProvider)
+          .dio
+          .get<Map<String, dynamic>>('/profile');
+      if (!mounted) return;
+      final data = res.data ?? {};
+      final roles = data['roles'];
+      final roleList = roles is List
+          ? roles.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList()
+          : <String>[];
+      final dept = data['department'] as Map?;
+      setState(() {
+        _name = data['name']?.toString() ?? _name;
+        _email = data['email']?.toString() ?? _email;
+        _jobTitle = data['job_title']?.toString();
+        _employeeNumber = data['employee_number']?.toString();
+        _department = dept?['name']?.toString();
+        _roleLabel = _firstRole(roleList);
+      });
+    } catch (_) {
+      // Keep cached values — don't show an error for a background refresh.
+    }
+  }
+
+  String? _firstRole(List<String> roles) {
+    if (roles.isEmpty) return null;
+    // Convert snake_case role names to Title Case for display.
+    return roles.first
+        .replaceAll('-', ' ')
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+        .join(' ');
   }
 
   Future<void> _logout() async {
@@ -144,24 +187,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     textAlign: TextAlign.center,
                                     style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
                                 const SizedBox(height: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                                if (_roleLabel != null || _jobTitle != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.verified_user_outlined, size: 13, color: theme.colorScheme.primary),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          _jobTitle ?? _roleLabel ?? 'Staff Member',
+                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                            color: theme.colorScheme.primary),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.verified_user_outlined, size: 13, color: theme.colorScheme.primary),
-                                      const SizedBox(width: 5),
-                                      Text('Staff Member',
-                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                          color: theme.colorScheme.primary)),
-                                    ],
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -183,11 +229,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 label: 'Email Address',
                                 value: _email ?? '—',
                               ),
-                              const _InfoTile(
-                                icon: Icons.corporate_fare,
-                                label: 'Organisation',
-                                value: 'SADC Parliamentary Forum',
-                              ),
+                              if (_roleLabel != null)
+                                _InfoTile(
+                                  icon: Icons.badge_outlined,
+                                  label: 'Role',
+                                  value: _roleLabel!,
+                                ),
+                              if (_department != null)
+                                _InfoTile(
+                                  icon: Icons.corporate_fare,
+                                  label: 'Department',
+                                  value: _department!,
+                                ),
+                              if (_employeeNumber != null)
+                                _InfoTile(
+                                  icon: Icons.tag,
+                                  label: 'Employee No.',
+                                  value: _employeeNumber!,
+                                ),
                             ],
                           ),
 

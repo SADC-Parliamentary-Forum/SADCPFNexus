@@ -383,7 +383,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
                                         ? '/requests/travel/detail?id=${item['id']}'
                                         : i == 1
                                             ? '/requests/leave/detail?id=${item['id']}'
-                                            : '/requests/imprest/detail';
+                                            : '/requests/imprest/detail?id=${item['id']}';
                                     final isTravelDraft = i == 0 && status == 'draft';
                                     final travelId = item['id'] as int?;
                                     return GestureDetector(

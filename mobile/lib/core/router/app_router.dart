@@ -236,7 +236,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'imprest/detail',
                 name: 'imprest-detail',
-                builder: (context, state) => const ImprestDetailScreen(),
+                builder: (context, state) => ImprestDetailScreen(
+                  requestId: state.uri.queryParameters['id'],
+                ),
               ),
             ],
           ),
@@ -332,12 +334,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/imprest/retirement',
         name: 'imprest-retirement',
-        builder: (context, state) => const ExpenseRetirementScreen(),
+        builder: (context, state) => ExpenseRetirementScreen(
+          requestId: state.uri.queryParameters['id'],
+        ),
       ),
       GoRoute(
         path: '/imprest/audit',
         name: 'imprest-audit',
-        builder: (context, state) => const ExpenseRetirementAuditScreen(),
+        builder: (context, state) => ExpenseRetirementAuditScreen(
+          requestId: state.uri.queryParameters['id'],
+        ),
       ),
 
       // ─── Salary Advance ────────────────────────────────────────────────────
