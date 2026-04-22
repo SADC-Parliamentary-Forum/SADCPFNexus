@@ -107,9 +107,7 @@ mobile/lib/features/requests/presentation/screens/travel_request_detail_screen.d
 mobile/lib/features/salary_advance/presentation/screens/salary_advance_request_screen.dart
 mobile/lib/features/search/presentation/screens/search_reporting_screen.dart
 mobile/lib/features/splash/presentation/screens/splash_screen.dart
-mobile/lib/features/timesheets/presentation/screens/timesheet_day_screen.dart
 mobile/lib/features/timesheets/presentation/screens/timesheet_list_screen.dart
-mobile/lib/features/timesheets/presentation/screens/timesheet_weekly_screen.dart
 mobile/lib/shared/widgets/app_drawer.dart
 mobile/lib/shared/widgets/bottom_nav_bar.dart
 mobile/lib/shared/widgets/shell_drawer_scope.dart
