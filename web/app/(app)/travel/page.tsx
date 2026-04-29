@@ -49,7 +49,7 @@ export default function TravelPage() {
       </div>
 
       {isError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           Failed to load travel requests.
         </div>
@@ -71,7 +71,7 @@ export default function TravelPage() {
       {/* Content */}
       {loading ? (
         <div className="card p-12 text-center">
-          <div className="flex items-center justify-center gap-2 text-neutral-400">
+          <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
             <span className="text-sm">Loading…</span>
           </div>
@@ -93,11 +93,11 @@ export default function TravelPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-mono text-neutral-400">{req.reference_number}</span>
+                        <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500">{req.reference_number}</span>
                         <span className={`badge ${s.cls}`}>{s.label}</span>
                       </div>
-                      <p className="text-sm font-semibold text-neutral-900 truncate">{req.purpose}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500">
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{req.purpose}</p>
+                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">location_on</span>
                           {destination(req)}
@@ -110,8 +110,8 @@ export default function TravelPage() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Est. DSA</p>
-                    <p className="text-base font-bold text-neutral-900 mt-0.5">
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">Est. DSA</p>
+                    <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
                       {req.currency} {req.estimated_dsa.toLocaleString()}
                     </p>
                   </div>
@@ -122,11 +122,11 @@ export default function TravelPage() {
         </div>
       ) : (
         <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">flight_takeoff</span>
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
+            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">flight_takeoff</span>
           </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No travel requests found</p>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No travel requests found</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
             {statusFilter === "All" ? "Create your first travel request to get started." : `No ${statusFilter.toLowerCase()} requests.`}
           </p>
           <Link href="/travel/create" className="btn-primary mt-5 inline-flex">

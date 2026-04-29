@@ -81,7 +81,7 @@ export default function ImprestPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error}
         </div>
@@ -90,15 +90,15 @@ export default function ImprestPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Pending Approval", value: String(pendingCount),        icon: "pending_actions",         color: "text-amber-600", bg: "bg-amber-50"  },
+          { label: "Pending Approval", value: String(pendingCount),        icon: "pending_actions",         color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
           { label: "Unliquidated",     value: String(unliquidated),         icon: "account_balance_wallet",  color: "text-primary",   bg: "bg-primary/10"},
-          { label: "Total This View",  value: String(requests.length),     icon: "receipt_long",            color: "text-purple-600",bg: "bg-purple-50" },
+          { label: "Total This View",  value: String(requests.length),     icon: "receipt_long",            color: "text-purple-600",bg: "bg-purple-50 dark:bg-purple-900/20" },
         ].map((stat) => (
           <div key={stat.label} className="card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-neutral-500">{stat.label}</p>
-                <p className="text-xl font-bold text-neutral-900 mt-1">{stat.value}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{stat.label}</p>
+                <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{stat.value}</p>
               </div>
               <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
                 <span className={`material-symbols-outlined ${stat.color} text-[20px]`}>{stat.icon}</span>
@@ -138,7 +138,7 @@ export default function ImprestPage() {
       {/* Content */}
       {loading ? (
         <div className="card p-12 text-center">
-          <div className="flex items-center justify-center gap-2 text-neutral-400">
+          <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
             <span className="text-sm">Loading…</span>
           </div>
@@ -149,7 +149,7 @@ export default function ImprestPage() {
             <div className="flex items-center gap-2 px-1">
               <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 accent-primary"
                 checked={selected.size === requests.length} onChange={toggleAll} />
-              <span className="text-xs text-neutral-500">Select all</span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">Select all</span>
             </div>
           )}
           {requests.map((req) => {
@@ -163,16 +163,16 @@ export default function ImprestPage() {
                       <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 accent-primary mt-1"
                         checked={isSelected} onChange={() => toggleSelect(req.id)} />
                     </div>
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50">
-                      <span className="material-symbols-outlined text-amber-600 text-[20px]">account_balance_wallet</span>
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20">
+                      <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px]">account_balance_wallet</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-neutral-400">{req.reference_number}</span>
+                        <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500">{req.reference_number}</span>
                         <span className={`badge ${s.cls}`}>{s.label}</span>
                       </div>
-                      <p className="text-sm font-semibold text-neutral-900 truncate">{req.purpose}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500">
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{req.purpose}</p>
+                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                         <span className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">receipt</span>
                           {req.budget_line}
@@ -185,20 +185,20 @@ export default function ImprestPage() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-neutral-400 uppercase tracking-wide">Amount</p>
-                    <p className="text-base font-bold text-neutral-900 mt-0.5">
+                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">Amount</p>
+                    <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
                       {req.currency} {req.amount_requested.toLocaleString()}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-50">
+                <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50">
                   {req.status === "draft" && (
                     <Link href={`/imprest/create?edit=${req.id}`} className="text-xs font-semibold text-primary hover:underline">Edit</Link>
                   )}
                   {req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0) && (
                     <Link href={`/imprest/${req.id}/liquidate`} className="text-xs font-semibold text-amber-600 hover:underline">Retire →</Link>
                   )}
-                  <Link href={`/imprest/${req.id}`} className="text-xs font-medium text-neutral-500 hover:text-neutral-700">View Details →</Link>
+                  <Link href={`/imprest/${req.id}`} className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View Details →</Link>
                 </div>
               </div>
             );
@@ -206,11 +206,11 @@ export default function ImprestPage() {
         </div>
       ) : (
         <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">account_balance_wallet</span>
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
+            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">account_balance_wallet</span>
           </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No imprest requests found</p>
-          <p className="text-xs text-neutral-400 mt-1">
+          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No imprest requests found</p>
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
             {statusFilter === "All" ? "Create a petty cash request to get started." : `No ${statusFilter.toLowerCase()} requests.`}
           </p>
           <Link href="/imprest/create" className="btn-primary mt-5 inline-flex">

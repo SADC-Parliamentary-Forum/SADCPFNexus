@@ -59,9 +59,9 @@ function HRPageContent() {
 
   const stats = [
     { label: "Hours This Month", value: summary != null ? `${summary.hours_this_month} hrs` : "—", icon: "schedule", color: "text-primary", bg: "bg-primary/10" },
-    { label: "Overtime (MTD)", value: summary != null ? `${summary.overtime_mtd} hrs` : "—", icon: "more_time", color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Annual Leave Left", value: summary != null ? `${summary.annual_leave_left} days` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50" },
-    { label: "LIL Hours Available", value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Overtime (MTD)", value: summary != null ? `${summary.overtime_mtd} hrs` : "—", icon: "more_time", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
+    { label: "Annual Leave Left", value: summary != null ? `${summary.annual_leave_left} days` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
+    { label: "LIL Hours Available", value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
   ];
 
   const quickActions = [
@@ -78,7 +78,7 @@ function HRPageContent() {
       </div>
 
       {/* Sub-navigation tabs */}
-      <div className="flex gap-1 border-b border-neutral-200">
+      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700">
         {HR_TABS.map((tab) => (
           <button
             key={tab.key}
@@ -86,7 +86,7 @@ function HRPageContent() {
             onClick={() => router.push(`/hr${tab.key !== "overview" ? `?tab=${tab.key}` : ""}`)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === tab.key
                 ? "border-primary text-primary"
-                : "border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300"
+                : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600"
               }`}
           >
             <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 0" }}>{tab.icon}</span>
@@ -99,21 +99,21 @@ function HRPageContent() {
       {activeTab === "leave" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500">View and manage all staff leave requests.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">View and manage all staff leave requests.</p>
             <Link href="/hr/leave" className="btn-primary py-2 px-3 text-xs flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">open_in_new</span>
               Full Leave Manager
             </Link>
           </div>
           <Link href="/hr/leave" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <span className="material-symbols-outlined text-green-600 text-[24px]">event_available</span>
+            <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+              <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[24px]">event_available</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Staff Leave Requests</p>
-              <p className="text-xs text-neutral-500">Approve, reject, and manage leave applications for all staff.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Staff Leave Requests</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Approve, reject, and manage leave applications for all staff.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -121,16 +121,16 @@ function HRPageContent() {
       {/* Payroll tab */}
       {activeTab === "payroll" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500">Payroll management and payslip access.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Payroll management and payslip access.</p>
           <Link href="/finance" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-primary text-[24px]">account_balance</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Finance &amp; Payroll</p>
-              <p className="text-xs text-neutral-500">Access payslips, salary advances, and finance records.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Finance &amp; Payroll</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Access payslips, salary advances, and finance records.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -142,26 +142,26 @@ function HRPageContent() {
             <span className="material-symbols-outlined text-primary text-[24px]">edit_calendar</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-neutral-900">My Timesheets</p>
-            <p className="text-xs text-neutral-500">Log and submit your weekly hours.</p>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">My Timesheets</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Log and submit your weekly hours.</p>
           </div>
-          <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+          <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
         </Link>
       )}
 
       {/* Performance tab */}
       {activeTab === "performance" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500">Live performance tracking, status distribution, and employee profiles.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Live performance tracking, status distribution, and employee profiles.</p>
           <Link href="/hr/performance" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-primary text-[24px]">trending_up</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Performance Tracker</p>
-              <p className="text-xs text-neutral-500">View status distribution, watchlist, and employee performance profiles.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Performance Tracker</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">View status distribution, watchlist, and employee performance profiles.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -169,16 +169,16 @@ function HRPageContent() {
       {/* Appraisals tab */}
       {activeTab === "appraisals" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500">Formal performance review cycles, self-assessment, supervisor and HOD review, SG decision.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Formal performance review cycles, self-assessment, supervisor and HOD review, SG decision.</p>
           <Link href="/hr/appraisals" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-primary text-[24px]">rate_review</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Performance Appraisal</p>
-              <p className="text-xs text-neutral-500">View and manage appraisal cycles and employee appraisals.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Performance Appraisal</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">View and manage appraisal cycles and employee appraisals.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -186,16 +186,16 @@ function HRPageContent() {
       {/* Conduct tab */}
       {activeTab === "conduct" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500">Commendations, warnings, and corrective actions that support performance review.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Commendations, warnings, and corrective actions that support performance review.</p>
           <Link href="/hr/conduct" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-primary text-[24px]">gavel</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Conduct &amp; Recognition</p>
-              <p className="text-xs text-neutral-500">View conduct and recognition records.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Conduct &amp; Recognition</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">View conduct and recognition records.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -203,16 +203,16 @@ function HRPageContent() {
       {/* Personal files tab */}
       {activeTab === "files" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500">Employee directory and digital HR personal files.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Employee directory and digital HR personal files.</p>
           <Link href="/hr/files" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
               <span className="material-symbols-outlined text-primary text-[24px]">folder</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900">HR Personal Files</p>
-              <p className="text-xs text-neutral-500">Search employees, view file summaries, documents, and timeline.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">HR Personal Files</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Search employees, view file summaries, documents, and timeline.</p>
             </div>
-            <span className="material-symbols-outlined text-neutral-300 text-[20px] ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>
         </div>
       )}
@@ -227,8 +227,8 @@ function HRPageContent() {
               <div key={s.label} className="card p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-neutral-500">{s.label}</p>
-                    <p className="text-xl font-bold text-neutral-900 mt-1">{s.value}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.label}</p>
+                    <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{s.value}</p>
                   </div>
                   <div className={`h-10 w-10 rounded-xl ${s.bg} flex items-center justify-center`}>
                     <span className={`material-symbols-outlined ${s.color} text-[20px]`}>{s.icon}</span>
@@ -250,10 +250,10 @@ function HRPageContent() {
                   <span className="material-symbols-outlined text-primary text-[20px]">{a.icon}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-neutral-900">{a.label}</p>
-                  <p className="text-xs text-neutral-500">{a.desc}</p>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{a.label}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{a.desc}</p>
                 </div>
-                <span className="material-symbols-outlined text-neutral-300 text-[18px] ml-auto">chevron_right</span>
+                <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[18px] ml-auto">chevron_right</span>
               </Link>
             ))}
           </div>
@@ -262,14 +262,14 @@ function HRPageContent() {
           <div className="card">
             <div className="card-header">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-neutral-400 text-[18px]">calendar_today</span>
-                <h3 className="text-sm font-semibold text-neutral-900">Recent Timesheets</h3>
+                <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">calendar_today</span>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Recent Timesheets</h3>
               </div>
               <Link href="/hr/timesheets" className="text-xs font-semibold text-primary hover:underline">View all</Link>
             </div>
 
             {error && (
-              <div className="px-5 py-3 bg-red-50 border-b border-red-100 text-sm text-red-700 flex items-center gap-2">
+              <div className="px-5 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/50 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px]">error_outline</span>
                 {error}
               </div>
@@ -277,28 +277,28 @@ function HRPageContent() {
 
             {loading ? (
               <div className="px-5 py-10 text-center">
-                <div className="flex items-center justify-center gap-2 text-neutral-400">
+                <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
                   <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
                   <span className="text-sm">Loading…</span>
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-neutral-50">
+              <div className="divide-y divide-neutral-50 dark:divide-neutral-700/50">
                 {timesheets.map((ts) => {
                   const s = statusConfig[ts.status] ?? { label: ts.status, cls: "badge-muted" };
                   return (
                     <Link
                       key={ts.id}
                       href={`/hr/timesheets?week=${ts.id}`}
-                      className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 transition-colors"
+                      className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                           <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-neutral-900">{formatPeriod(ts)}</p>
-                          <p className="text-xs text-neutral-400">
+                          <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{formatPeriod(ts)}</p>
+                          <p className="text-xs text-neutral-400 dark:text-neutral-500">
                             {ts.total_hours} hrs{ts.overtime_hours ? ` · ${ts.overtime_hours} hrs OT` : ""}
                           </p>
                         </div>
@@ -309,8 +309,8 @@ function HRPageContent() {
                 })}
                 {timesheets.length === 0 && (
                   <div className="py-12 text-center">
-                    <span className="material-symbols-outlined text-4xl text-neutral-200">calendar_today</span>
-                    <p className="mt-3 text-sm text-neutral-400">No timesheets submitted yet.</p>
+                    <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">calendar_today</span>
+                    <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No timesheets submitted yet.</p>
                     <Link href="/hr/timesheets" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
                       Submit your first timesheet
                     </Link>
