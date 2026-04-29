@@ -93,13 +93,20 @@ export default api;
 export const authApi = {
   login: async (email: string, password: string, code?: string) => {
     await ensureCsrfCookie();
-    return api.post<{ user?: AuthUser; mfa_required?: boolean; message?: string }>("/auth/login", {
-      email,
+    // Omit `code` entirely unless it is a valid 6-digit TOTP string — sending
+    // `code: undefined` or empty string can make Laravel's optional `digits:6`
+    // rule fail depending on JSON shape, and trimming email avoids 422 on
+    // validation from whitespace.
+    const trimmedEmail = email.trim();
+    const body: Record<string, string> = {
+      email: trimmedEmail,
       password,
-      code,
       client_type: "browser",
       device_name: "web",
-    });
+    };
+    const c = code?.trim();
+    if (c && /^\d{6}$/.test(c)) body.code = c;
+    return api.post<{ user?: AuthUser; mfa_required?: boolean; message?: string }>("/auth/login", body);
   },
   logout: () => api.post("/auth/logout"),
   me: () => api.get<AuthUser>("/auth/me"),

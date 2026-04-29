@@ -152,7 +152,9 @@ export default function LoginPage() {
             <span className="text-xs text-white/50">All systems operational</span>
           </div>
           <p className="mt-3 text-xs text-white/30">
-            © {new Date().getFullYear()} SADC Parliamentary Forum. All rights reserved.
+            {/* Use UTC year so SSR (Node) and the browser agree — local getFullYear()
+                can differ across timezones at year boundaries and trigger React #418. */}
+            © {new Date().getUTCFullYear()} SADC Parliamentary Forum. All rights reserved.
           </p>
         </div>
       </div>
