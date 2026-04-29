@@ -186,7 +186,7 @@ export default function PayslipViewerPage() {
       </div>
 
       {/* Structured breakdown (shown when details JSON is populated by auto-fill) */}
-      {payslip.details && <PayslipBreakdown details={payslip.details as unknown as PayslipDetails} currency={payslip.currency} />}
+      {payslip.details && <PayslipBreakdown details={payslip.details} currency={payslip.currency} />}
     </div>
   );
 }

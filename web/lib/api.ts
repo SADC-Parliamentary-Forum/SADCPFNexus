@@ -1857,11 +1857,23 @@ export interface SalaryAdvanceRequest {
 
 export interface Payslip {
   id: number;
+  tenant_id?: number;
+  user_id?: number;
   period_month: number;
   period_year: number;
   gross_amount: number;
   net_amount: number;
   currency: string;
+  employment_type?: string | null;
+  period_end_date?: string | null;
+  total_deductions?: number | null;
+  total_company_contributions?: number | null;
+  /**
+   * Structured breakdown produced by PayslipAutoFillService.
+   * Cast server-side as `array`; null/undefined when auto-fill has not run.
+   */
+  details?: PayslipDetails | null;
+  file_path?: string | null;
   period_label?: string;
   issued_at: string | null;
 }

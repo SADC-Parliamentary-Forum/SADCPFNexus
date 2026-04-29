@@ -281,7 +281,7 @@ export default function LeaveDetailPage() {
           <p className="text-sm text-neutral-500 mb-4">Review the leave request details above and take an action.</p>
           <div className="flex gap-3">
             <button
-              onClick={handleApprove}
+              onClick={() => { void handleApprove(); }}
               disabled={actionLoading}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
@@ -386,7 +386,7 @@ export default function LeaveDetailPage() {
           <p className="text-sm text-neutral-500 mb-4">Review the leave request details above and take an action.</p>
           <div className="flex gap-3">
             <button
-              onClick={handleApprove}
+              onClick={() => { void handleApprove(); }}
               disabled={actionLoading}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
