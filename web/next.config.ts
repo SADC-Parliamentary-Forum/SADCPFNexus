@@ -34,16 +34,8 @@ const nextConfig: NextConfig = {
       static: 180,
     },
   },
-  webpack(config, { dev }) {
-    if (dev) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-        ignored: ["**/node_modules/**", "**/.next/**", "**/tests/**", "**/.git/**"],
-      };
-    }
-    return config;
-  },
+  // Acknowledge Turbopack (Next.js 16 default); webpack config removed — dev polling handled via WATCHPACK_POLLING env var in docker-compose
+  turbopack: {},
   async headers() {
     if (!isProduction) {
       return [];
