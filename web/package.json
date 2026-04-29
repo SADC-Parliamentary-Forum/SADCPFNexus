@@ -44,5 +44,10 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "dompurify": ">=3.4.0",
+    "follow-redirects": ">=1.16.0",
+    "postcss": ">=8.5.10"
   }
 }
