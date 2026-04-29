@@ -209,7 +209,6 @@ export default function RegisterDetailPage() {
           <p className="page-subtitle">{MODULE_LABELS[register.module_type] ?? register.module_type} — Balance Register</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {register.isLocked !== undefined ? null : null}
           {register.status === "active" && (
             <button onClick={handleLock} disabled={lockLoading}
               className="btn-secondary text-sm flex items-center gap-1">
