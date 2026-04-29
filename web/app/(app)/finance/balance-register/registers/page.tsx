@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { bcreApi, type BalanceRegister } from "@/lib/api";
@@ -35,7 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   locked:   { label: "Locked",   badge: "badge-warning" },
 };
 
-export default function RegistersPage() {
+function RegistersPageContent() {
   const searchParams = useSearchParams();
   const [registers, setRegisters]   = useState<BalanceRegister[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -186,5 +186,13 @@ export default function RegistersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function RegistersPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading…</div>}>
+      <RegistersPageContent />
+    </Suspense>
   );
 }

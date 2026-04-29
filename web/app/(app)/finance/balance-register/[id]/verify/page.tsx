@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { bcreApi, type BalanceRegister, type BalanceTransaction } from "@/lib/api";
@@ -17,7 +17,7 @@ const TXN_TYPE_CONFIG: Record<string, { label: string; color: string; icon: stri
   write_off:    { label: "Write-off",    color: "text-orange-600", icon: "do_not_disturb" },
 };
 
-export default function VerifyTransactionPage() {
+function VerifyTransactionPageContent() {
   const { id } = useParams<{ id: string }>();
   const searchParams  = useSearchParams();
   const txnId         = Number(searchParams.get("txn") ?? "0");
@@ -260,5 +260,13 @@ export default function VerifyTransactionPage() {
         </form>
       )}
     </div>
+  );
+}
+
+export default function VerifyTransactionPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading…</div>}>
+      <VerifyTransactionPageContent />
+    </Suspense>
   );
 }
