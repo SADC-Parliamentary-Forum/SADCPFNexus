@@ -109,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-white" suppressHydrationWarning>
       {/* Left panel – branding */}
       <div className="hidden lg:flex lg:w-[480px] flex-col justify-between bg-[#101922] px-12 py-14 text-white">
         {/* Logo */}
@@ -151,7 +151,7 @@ export default function LoginPage() {
             <span className="flex h-2 w-2 rounded-full bg-green-400" />
             <span className="text-xs text-white/50">All systems operational</span>
           </div>
-          <p className="mt-3 text-xs text-white/30">
+          <p className="mt-3 text-xs text-white/30" suppressHydrationWarning>
             {/* Use UTC year so SSR (Node) and the browser agree — local getFullYear()
                 can differ across timezones at year boundaries and trigger React #418. */}
             © {new Date().getUTCFullYear()} SADC Parliamentary Forum. All rights reserved.

@@ -18,9 +18,15 @@ class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
+        // Empty JSON string for optional `code` is not reliably treated as NULL by validators;
+        // strip it before rules run so MFA step / browser autofill quirks do not 422.
+        if ($request->input('code') === '') {
+            $request->merge(['code' => null]);
+        }
+
         $request->validate([
             'email'       => ['required', 'email'],
-            'password'    => ['required'],
+            'password'    => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:255'],
             'client_type' => ['nullable', 'string', 'in:browser,mobile'],
             'code'        => ['nullable', 'string', 'digits:6'],

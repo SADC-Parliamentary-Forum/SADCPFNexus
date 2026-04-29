@@ -76,8 +76,21 @@ class EnsureSessionAuthIsValid
 
     private function revokeCurrentAuth(Request $request): void
     {
-        if (($token = $request->user()?->currentAccessToken()) instanceof \Laravel\Sanctum\PersonalAccessToken) {
-            $token->delete();
+        $user = $request->user();
+
+        $currentToken = $user?->currentAccessToken();
+
+        if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $tokenId = $currentToken->getKey();
+            $currentToken->delete();
+            if ($tokenId !== null && $user) {
+                UserSession::where('user_id', $user->id)
+                    ->where('token_id', $tokenId)
+                    ->where('auth_type', 'token')
+                    ->delete();
+            }
+
+            return;
         }
 
         if ($request->hasSession()) {

@@ -30,7 +30,9 @@ class AuthTest extends TestCase
 
     public function test_browser_login_returns_session_for_valid_credentials(): void
     {
-        $response = $this->postJson('/api/v1/auth/login', [
+        // Sanctum only enables session middleware when Origin / Referer looks like the SPA ("stateful").
+        $origin = config('app.url');
+        $response = $this->withHeader('Origin', is_string($origin) ? rtrim($origin, '/') : 'http://localhost')->postJson('/api/v1/auth/login', [
             'email'    => 'test@sadcpf.org',
             'password' => 'Password@123',
         ]);

@@ -91,7 +91,7 @@ class CreateAdminUser extends Command
             'employee_number' => $empNumber,
             'job_title'       => 'System Administrator',
             'classification'  => 'SECRET',
-            'mfa_enabled'     => true,
+            'mfa_enabled'     => false,
             'is_active'       => true,
         ]);
 
@@ -103,7 +103,7 @@ class CreateAdminUser extends Command
             ['Email', $email],
             ['Name', $name],
             ['Role', 'System Admin'],
-            ['MFA', 'Enabled'],
+            ['MFA', 'Off (enable in Profile → Security)'],
         ]);
         $this->newLine();
         $this->warn('Keep these credentials secure. Do not share them over unencrypted channels.');
