@@ -23,6 +23,7 @@ use App\Models\VendorRating;
 use App\Models\VendorPerformanceEvaluation;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -44,6 +45,19 @@ use Illuminate\Support\Str;
  */
 class ComprehensiveDataSeeder extends Seeder
 {
+    /** @var array<string, int>|null */
+    private ?array $vendorColumnKeys = null;
+
+    /** Keep only columns that exist — seeders may run on DBs pending vendor migrations (e.g. tax_number). */
+    private function onlyVendorColumns(array $attrs): array
+    {
+        if ($this->vendorColumnKeys === null) {
+            $this->vendorColumnKeys = array_flip(Schema::getColumnListing('vendors'));
+        }
+
+        return array_intersect_key($attrs, $this->vendorColumnKeys);
+    }
+
     public function run(): void
     {
         $tenant = Tenant::where('slug', 'sadcpf')->first();
@@ -398,12 +412,22 @@ class ComprehensiveDataSeeder extends Seeder
         $count  = 0;
 
         foreach ($definitions as $def) {
+            $createAttrs = $this->onlyVendorColumns(array_merge($def, [
+                'tenant_id' => $tenant->id,
+                'is_active' => $def['is_active'] ?? true,
+            ]));
             $vendor = Vendor::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'name' => $def['name']],
-                array_merge($def, ['tenant_id' => $tenant->id, 'is_active' => $def['is_active'] ?? true])
+                $createAttrs
             );
             if ($vendor->wasRecentlyCreated && $approver && ($def['is_approved'] ?? false)) {
-                $vendor->update(['approved_by' => $approver->id, 'approved_at' => Carbon::today()->subMonths(rand(1,8))]);
+                $patch = $this->onlyVendorColumns([
+                    'approved_by' => $approver->id,
+                    'approved_at' => Carbon::today()->subMonths(rand(1, 8)),
+                ]);
+                if ($patch !== []) {
+                    $vendor->update($patch);
+                }
             }
             $seeded[$def['name']] = $vendor;
             if ($vendor->wasRecentlyCreated) $count++;
