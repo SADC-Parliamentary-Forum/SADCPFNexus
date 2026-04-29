@@ -191,11 +191,11 @@ services:
       - API_INTERNAL_URL=${API_INTERNAL_URL:-http://nginx/api/v1}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
       - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
-    volumes:
-      - ./web:/app
-      - /app/node_modules
+    # Dev-only bind mount and HMR polling env vars live in docker-compose.dev.yml.
+    # Keeping them out of this base file is critical: Docker Compose CONCATENATES
+    # volume lists across overlays (it does not replace them), so a `./web:/app`
+    # mount here would mask the runner image's standalone build in production
+    # and the container would crash with "Cannot find module '/app/server.js'".
     networks:
       sadcpf:
         ipv4_address: 10.20.30.9
