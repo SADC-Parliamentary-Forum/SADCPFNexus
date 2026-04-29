@@ -270,6 +270,19 @@ class ProcurementService
             ]);
         }
 
+        // Enforce minimum quotation count above the direct-purchase threshold.
+        $estimatedValue   = (float) ($request->estimated_value ?? 0);
+        $quotationLimit   = (float) config('procurement.quotation_limit', 50_000);
+        $minQuotes        = (int)   config('procurement.minimum_quotes_required', 3);
+        if ($estimatedValue > $quotationLimit) {
+            $receivedQuotes = $request->quotes()->whereNotNull('assessed_at')->count();
+            if ($receivedQuotes < $minQuotes) {
+                throw ValidationException::withMessages([
+                    'quote_id' => "At least {$minQuotes} assessed quotations are required for purchases above NAD " . number_format($quotationLimit, 2) . '. Only ' . $receivedQuotes . ' assessed quote(s) received.',
+                ]);
+            }
+        }
+
         if (! $quote->vendor_id) {
             throw ValidationException::withMessages([
                 'quote_id' => 'Only quotes from registered suppliers can be awarded because purchase order and invoice processing continues in the supplier portal.',
@@ -359,6 +372,16 @@ class ProcurementService
 
         if (!$request->isApproved()) {
             throw ValidationException::withMessages(['status' => 'Only approved procurement requests can be issued as RFQs.']);
+        }
+
+        // Enforce tender-method requirement above the tender threshold.
+        $estimatedValue    = (float) ($request->estimated_value ?? 0);
+        $tenderThreshold   = (float) config('procurement.tender_threshold', 500_000);
+        $procurementMethod = $request->procurement_method ?? 'quotation';
+        if ($estimatedValue >= $tenderThreshold && $procurementMethod !== 'tender') {
+            throw ValidationException::withMessages([
+                'procurement_method' => 'Purchases at or above NAD ' . number_format($tenderThreshold, 2) . ' require an open tender process. Please update the procurement method to "tender".',
+            ]);
         }
 
         $categoryIds = SupplierCategory::query()

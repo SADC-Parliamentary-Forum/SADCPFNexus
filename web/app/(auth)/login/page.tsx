@@ -185,8 +185,8 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
+          <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
+            <div suppressHydrationWarning>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
                 Email address
               </label>

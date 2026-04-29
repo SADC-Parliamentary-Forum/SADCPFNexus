@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Vendor extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'contact_name', 'registration_number', 'tax_number',
+        'tenant_id', 'supplier_type', 'name', 'contact_name', 'registration_number', 'tax_number',
         'contact_email', 'contact_phone', 'website', 'address', 'country', 'category',
         'payment_terms', 'bank_name', 'bank_account', 'bank_branch',
         'is_approved', 'is_active', 'status', 'risk_level', 'submitted_at', 'is_sme', 'notes',

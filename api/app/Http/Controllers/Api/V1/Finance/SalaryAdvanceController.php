@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeSalaryAssignment;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -111,6 +112,45 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->status !== 'draft') {
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }
+
+        $user = $request->user();
+
+        // Block submission when an approved (outstanding) advance already exists.
+        $hasOutstanding = SalaryAdvanceRequest::where('requester_id', $user->id)
+            ->where('status', 'approved')
+            ->where('id', '!=', $salaryAdvanceRequest->id)
+            ->exists();
+        if ($hasOutstanding) {
+            throw ValidationException::withMessages([
+                'advance' => ['You have an outstanding salary advance that must be fully repaid before submitting a new request.'],
+            ]);
+        }
+
+        // Enforce 50% of gross monthly salary cap.
+        $assignment = EmployeeSalaryAssignment::with('salaryScale')
+            ->where('user_id', $user->id)
+            ->where('effective_from', '<=', now())
+            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
+            ->latest('effective_from')
+            ->first();
+
+        if ($assignment && $assignment->salaryScale) {
+            $notchEntry = collect($assignment->salaryScale->notches ?? [])
+                ->firstWhere('notch', $assignment->notch_number);
+            if ($notchEntry) {
+                $monthlyGross = (float) ($notchEntry['monthly'] ?? 0);
+                $cap = $monthlyGross * 0.5;
+                if ($cap > 0 && (float) $salaryAdvanceRequest->amount > $cap) {
+                    throw ValidationException::withMessages([
+                        'amount' => [
+                            'The advance amount exceeds the maximum of 50% of gross monthly salary ('
+                            . number_format($cap, 2) . ' ' . $salaryAdvanceRequest->currency . ').',
+                        ],
+                    ]);
+                }
+            }
+        }
+
         $salaryAdvanceRequest->update(['status' => 'submitted', 'submitted_at' => now()]);
 
         // Initiate workflow — will notify first-step approvers with email action buttons.

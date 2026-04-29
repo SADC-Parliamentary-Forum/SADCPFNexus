@@ -34,6 +34,16 @@ const nextConfig: NextConfig = {
       static: 180,
     },
   },
+  webpack(config, { dev }) {
+    if (dev) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ["**/node_modules/**", "**/.next/**", "**/tests/**", "**/.git/**"],
+      };
+    }
+    return config;
+  },
   async headers() {
     if (!isProduction) {
       return [];

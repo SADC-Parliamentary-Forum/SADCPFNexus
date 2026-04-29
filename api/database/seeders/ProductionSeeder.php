@@ -22,6 +22,7 @@ class ProductionSeeder extends Seeder
             LookupsSeeder::class,
             AssetCategorySeeder::class,
             WorkflowSeeder::class,
+            SupplierCategorySeeder::class,
         ]);
 
         $this->command->info('Structural data seeded. Run [php artisan app:create-admin] to create the System Admin user.');

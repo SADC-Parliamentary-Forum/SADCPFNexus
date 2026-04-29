@@ -38,6 +38,7 @@ class PositionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $data = $request->validate([
             'department_id' => 'required|integer|exists:departments,id',
             'title'         => 'required|string|max:150',

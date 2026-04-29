@@ -23,11 +23,14 @@ class SupplierRegistrationController extends Controller
     {
         $tenant = $this->resolveTenant($request);
 
+        $isIndividual = $request->input('supplier_type', 'company') === 'individual';
+
         $data = $request->validate([
             'tenant_id'            => ['nullable', 'integer'],
+            'supplier_type'        => ['nullable', 'string', 'in:company,individual'],
             'company_name'         => ['required', 'string', 'max:300'],
-            'registration_number'  => ['required', 'string', 'max:100'],
-            'tax_number'           => ['required', 'string', 'max:100'],
+            'registration_number'  => [$isIndividual ? 'nullable' : 'required', 'string', 'max:100'],
+            'tax_number'           => [$isIndividual ? 'nullable' : 'required', 'string', 'max:100'],
             'contact_name'         => ['required', 'string', 'max:255'],
             'contact_email'        => ['required', 'email', 'max:255', 'unique:users,email'],
             'contact_phone'        => ['required', 'string', 'max:50'],
@@ -60,6 +63,7 @@ class SupplierRegistrationController extends Controller
 
         $vendor = Vendor::create([
             'tenant_id'           => $tenant->id,
+            'supplier_type'       => $data['supplier_type'] ?? 'company',
             'name'                => $data['company_name'],
             'contact_name'        => $data['contact_name'],
             'registration_number' => $data['registration_number'],

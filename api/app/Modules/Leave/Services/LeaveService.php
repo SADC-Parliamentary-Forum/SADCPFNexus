@@ -86,9 +86,21 @@ class LeaveService
                 if ($sourceId && str_starts_with($sourceId, 'overtime-')) {
                     $accrualId = (int) substr($sourceId, strlen('overtime-'));
                     if ($accrualId > 0) {
-                        OvertimeAccrual::where('id', $accrualId)
+                        $accrual = OvertimeAccrual::where('id', $accrualId)
                             ->where('user_id', $user->id)
-                            ->update(['is_linked' => true]);
+                            ->first();
+                        if ($accrual) {
+                            // Admin Rules: LIL lapses after 30 days unless SG has authorised an extension.
+                            if ($accrual->accrual_date->diffInDays(now()) > 30) {
+                                throw ValidationException::withMessages([
+                                    'lil' => [
+                                        "Overtime accrual {$accrual->code} has lapsed — it is more than 30 days old. "
+                                        . 'Contact the Secretary General to authorise use of this accrual.',
+                                    ],
+                                ]);
+                            }
+                            $accrual->update(['is_linked' => true]);
+                        }
                     }
                 }
             }

@@ -67,11 +67,11 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
               <span className={`material-symbols-outlined text-[16px] ${colors.iconColor}`}>{colors.icon}</span>
             </div>
             {/* Module label */}
-            <div className={`w-24 text-sm font-medium shrink-0 capitalize truncate ${url ? "text-primary group-hover:underline" : "text-neutral-700"}`}>
+            <div className={`w-24 text-sm font-medium shrink-0 capitalize truncate ${url ? "text-primary group-hover:underline" : "text-neutral-700 dark:text-neutral-300"}`}>
               {mod.label || mod.module}
             </div>
             {/* Bar track */}
-            <div className="flex-1 h-7 bg-neutral-100 rounded-lg overflow-hidden">
+            <div className="flex-1 h-7 bg-neutral-100 dark:bg-neutral-700/40 rounded-lg overflow-hidden">
               <div
                 className={`h-full ${colors.bar} rounded-lg transition-all duration-500 group-hover:brightness-110`}
                 style={{ width: `${Math.max(barPct, 1)}%` }}
@@ -79,7 +79,7 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
             </div>
             {/* Count */}
             <div className="w-14 text-right">
-              <span className="text-sm font-bold text-neutral-900">{mod.count.toLocaleString()}</span>
+              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{mod.count.toLocaleString()}</span>
             </div>
             {/* Percentage + arrow */}
             <div className="w-10 text-right flex items-center justify-end gap-1">
@@ -89,9 +89,9 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
           </div>
         );
       })}
-      <div className="pt-2 border-t border-neutral-100 flex justify-between text-xs text-neutral-400">
+      <div className="pt-2 border-t border-neutral-100 dark:border-neutral-700/30 flex justify-between text-xs text-neutral-400 dark:text-neutral-500">
         <span>Total requests across all modules</span>
-        <span className="font-semibold text-neutral-600">{totalCount.toLocaleString()}</span>
+        <span className="font-semibold text-neutral-600 dark:text-neutral-300">{totalCount.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -110,7 +110,7 @@ function buildPath(pts: number[], w: number, h: number): string {
     .join(" ");
 }
 
-const CELL_STYLE = ["bg-neutral-100", "bg-blue-100", "bg-primary/30", "bg-primary"];
+const CELL_STYLE = ["bg-neutral-100 dark:bg-neutral-700/40", "bg-blue-100 dark:bg-blue-900/30", "bg-primary/30", "bg-primary"];
 
 function heatmapLevel(count: number, max: number): number {
   if (count === 0) return 0;
@@ -166,10 +166,10 @@ export default function AnalyticsPage() {
           <p className="page-subtitle">Cross-module performance insights and operational intelligence.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex rounded-lg border border-neutral-200 overflow-hidden text-sm">
+          <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden text-sm">
             {["MTD", "QTD", "YTD"].map(p => (
               <button key={p} onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 font-medium transition-colors ${period === p ? "bg-primary text-white" : "bg-white text-neutral-600 hover:bg-neutral-50"}`}>
+                className={`px-3 py-1.5 font-medium transition-colors ${period === p ? "bg-primary text-white" : "bg-white dark:bg-[var(--dk-bg-elevated)] text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5"}`}>
                 {p}
               </button>
             ))}
@@ -201,11 +201,11 @@ export default function AnalyticsPage() {
               </div>
             </div>
             <div>
-              <p className="text-neutral-500 text-sm font-medium mb-1">{k.label}</p>
+              <p className="text-neutral-500 dark:text-neutral-400 text-sm font-medium mb-1">{k.label}</p>
               {loading ? (
-                <div className="h-8 w-20 bg-neutral-100 rounded animate-pulse" />
+                <div className="h-8 w-20 bg-neutral-100 dark:bg-neutral-700/40 rounded animate-pulse" />
               ) : (
-                <h3 className="text-3xl font-bold text-neutral-900">{k.value}</h3>
+                <h3 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{k.value}</h3>
               )}
             </div>
           </div>
@@ -218,8 +218,8 @@ export default function AnalyticsPage() {
         <div className="lg:col-span-2 card p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-semibold text-neutral-900">Submissions by Month</h3>
-              <p className="text-sm text-neutral-500">Requests across travel, leave & imprest modules.</p>
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Submissions by Month</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">Requests across travel, leave & imprest modules.</p>
             </div>
             <Link href="/reports" className="text-primary hover:underline text-sm font-medium flex items-center gap-1">
               Full Report <span className="material-symbols-outlined text-base">arrow_forward</span>
@@ -227,8 +227,8 @@ export default function AnalyticsPage() {
           </div>
           <div className="relative h-64 w-full">
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6">
-              {[0, 1, 2, 3].map(i => <div key={i} className="w-full border-t border-dashed border-neutral-200" />)}
-              <div className="w-full border-t border-neutral-200" />
+              {[0, 1, 2, 3].map(i => <div key={i} className="w-full border-t border-dashed border-neutral-200 dark:border-neutral-700/30" />)}
+              <div className="w-full border-t border-neutral-200 dark:border-neutral-700/30" />
             </div>
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center">
@@ -255,15 +255,15 @@ export default function AnalyticsPage() {
         {/* Bar chart */}
         <div className="card p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-neutral-900">Module Activity</h3>
-            <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-1 rounded font-medium">All time</span>
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Module Activity</h3>
+            <span className="text-xs bg-neutral-100 dark:bg-neutral-700/40 text-neutral-500 dark:text-neutral-400 px-2 py-1 rounded font-medium">All time</span>
           </div>
           {loading ? (
             <div className="flex-1 flex items-end justify-between gap-3 px-2 pb-2 animate-pulse">
               {[40, 75, 55, 90].map((h, i) => (
                 <div key={i} className="flex flex-col items-center gap-2 w-full">
-                  <div className="w-full bg-neutral-100 rounded-t-sm" style={{ height: `${h * 1.8}px` }} />
-                  <div className="h-3 w-8 bg-neutral-100 rounded" />
+                  <div className="w-full bg-neutral-100 dark:bg-neutral-700/40 rounded-t-sm" style={{ height: `${h * 1.8}px` }} />
+                  <div className="h-3 w-8 bg-neutral-100 dark:bg-neutral-700/40 rounded" />
                 </div>
               ))}
             </div>
@@ -276,7 +276,7 @@ export default function AnalyticsPage() {
                       {b.label}: {b.val}
                     </div>
                   </div>
-                  <span className="text-xs font-medium text-neutral-500">{b.label}</span>
+                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{b.label}</span>
                 </div>
               ))}
             </div>
@@ -288,21 +288,21 @@ export default function AnalyticsPage() {
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-400 text-lg">bar_chart</span>
               Module Activity Breakdown
             </h3>
-            <p className="text-sm text-neutral-500">Request counts per module for the selected period.</p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">Request counts per module for the selected period.</p>
           </div>
-          <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-1 rounded font-medium">{period}</span>
+          <span className="text-xs bg-neutral-100 dark:bg-neutral-700/40 text-neutral-500 dark:text-neutral-400 px-2 py-1 rounded font-medium">{period}</span>
         </div>
         {loading ? (
           <div className="space-y-3 animate-pulse">
             {[85, 60, 45, 72, 38].map((w, i) => (
               <div key={i} className="flex items-center gap-4">
-                <div className="h-3 w-20 bg-neutral-100 rounded" />
-                <div className="flex-1 h-7 bg-neutral-100 rounded-lg" style={{ maxWidth: `${w}%` }} />
-                <div className="h-3 w-8 bg-neutral-100 rounded" />
+                <div className="h-3 w-20 bg-neutral-100 dark:bg-neutral-700/40 rounded" />
+                <div className="flex-1 h-7 bg-neutral-100 dark:bg-neutral-700/40 rounded-lg" style={{ maxWidth: `${w}%` }} />
+                <div className="h-3 w-8 bg-neutral-100 dark:bg-neutral-700/40 rounded" />
               </div>
             ))}
           </div>
@@ -317,11 +317,11 @@ export default function AnalyticsPage() {
         <div className="card p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <span className="material-symbols-outlined text-neutral-400 text-lg">grid_on</span>
                 Peak Action Times
               </h3>
-              <p className="text-sm text-neutral-500">User activity heat map by day and hour (last 90 days).</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">User activity heat map by day and hour (last 90 days).</p>
             </div>
             <div className="flex items-center gap-1.5">
               {CELL_STYLE.map((c, i) => <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />)}
@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
             {DOW_LABELS.map(d => <div key={d} className="font-medium">{d}</div>)}
             {HOUR_SLOTS.map((hour) => (
               <React.Fragment key={hour}>
-                <div className="text-left text-neutral-600 font-medium self-center text-[11px]">{hour > 12 ? `${hour-12} PM` : `${hour} AM`}</div>
+                <div className="text-left text-neutral-600 dark:text-neutral-400 font-medium self-center text-[11px]">{hour > 12 ? `${hour-12} PM` : `${hour} AM`}</div>
                 {[1, 2, 3, 4, 5, 6, 0].map((dow) => {
                   const count = heatmapMap[`${dow}-${hour}`] ?? 0;
                   const level = heatmapLevel(count, maxHeat);
@@ -351,11 +351,11 @@ export default function AnalyticsPage() {
         <div className="card p-6 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-semibold text-neutral-900 flex items-center gap-2">
+              <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <span className="material-symbols-outlined text-neutral-400 text-lg">history</span>
                 Recent Activity
               </h3>
-              <p className="text-sm text-neutral-500">Latest system events from the audit log.</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">Latest system events from the audit log.</p>
             </div>
             <Link href="/admin/audit" className="text-sm text-primary hover:underline">View All</Link>
           </div>
@@ -363,10 +363,10 @@ export default function AnalyticsPage() {
             <div className="space-y-3 animate-pulse">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-neutral-100 flex-shrink-0" />
+                  <div className="w-9 h-9 rounded-lg bg-neutral-100 dark:bg-neutral-700/40 flex-shrink-0" />
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-3 bg-neutral-100 rounded w-3/4" />
-                    <div className="h-2.5 bg-neutral-100 rounded w-1/2" />
+                    <div className="h-3 bg-neutral-100 dark:bg-neutral-700/40 rounded w-3/4" />
+                    <div className="h-2.5 bg-neutral-100 dark:bg-neutral-700/40 rounded w-1/2" />
                   </div>
                 </div>
               ))}
@@ -374,13 +374,13 @@ export default function AnalyticsPage() {
           ) : (
             <div className="flex flex-col gap-2">
               {(data?.recent_activity ?? []).map(r => (
-                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 border border-transparent hover:border-neutral-200 transition-all group cursor-pointer">
+                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700 transition-all group cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary/10">
                       <span className="material-symbols-outlined text-primary text-[18px]">history</span>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-neutral-800 group-hover:text-primary transition-colors">{r.event} · {r.module}</p>
+                      <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-primary transition-colors">{r.event} · {r.module}</p>
                       <p className="text-xs text-neutral-400">{r.user} · {formatDateShort(r.timestamp)}</p>
                     </div>
                   </div>

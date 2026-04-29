@@ -90,7 +90,7 @@ class SrhrSeeder extends Seeder
             [
                 'tenant_id'       => $tenant->id,
                 'name'            => 'Tendai Moyo',
-                'password'        => Hash::make('SRHR@2024!'),
+                'password'        => Hash::make('SRHR@2024!', ['rounds' => (int) env('BCRYPT_ROUNDS', 12)]),
                 'employee_number' => 'SADCPF-R01',
                 'job_title'       => 'Field Researcher',
                 'classification'  => 'UNCLASSIFIED',
@@ -107,7 +107,7 @@ class SrhrSeeder extends Seeder
             [
                 'tenant_id'       => $tenant->id,
                 'name'            => 'Chanda Mwansa',
-                'password'        => Hash::make('SRHR@2024!'),
+                'password'        => Hash::make('SRHR@2024!', ['rounds' => (int) env('BCRYPT_ROUNDS', 12)]),
                 'employee_number' => 'SADCPF-R02',
                 'job_title'       => 'Field Researcher',
                 'classification'  => 'UNCLASSIFIED',

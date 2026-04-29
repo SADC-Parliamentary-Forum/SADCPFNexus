@@ -13,6 +13,7 @@ import {
   type UserNotification,
 } from "@/lib/api";
 import { clearStoredUser, readStoredUser } from "@/lib/session";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import { GlobalSearch } from "./GlobalSearch";
 
 interface StoredUser {
@@ -34,6 +35,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const notifRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const storedUser = readStoredUser();
@@ -154,6 +156,18 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
 
       {/* Right: Actions + User */}
       <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="flex size-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          <span className="material-symbols-outlined text-[20px]">
+            {theme === "dark" ? "light_mode" : "dark_mode"}
+          </span>
+        </button>
+
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
           <button

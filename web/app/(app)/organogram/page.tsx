@@ -149,14 +149,14 @@ function NodeCard({
         </button>
         <button
           onPointerDown={stopP} onClick={() => onEdit(dept)}
-          className="size-7 rounded-full bg-white text-neutral-600 border border-neutral-200 shadow-lg flex items-center justify-center hover:text-primary hover:scale-110 transition-transform"
+          className="size-7 rounded-full bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-600 shadow-lg flex items-center justify-center hover:text-primary hover:scale-110 transition-transform"
           title="Edit unit"
         >
           <span className="material-symbols-outlined text-[15px]">edit</span>
         </button>
         <button
           onPointerDown={stopP} onClick={() => onDelete(dept.id)}
-          className="size-7 rounded-full bg-white text-red-500 border border-neutral-200 shadow-lg flex items-center justify-center hover:bg-red-50 hover:scale-110 transition-transform"
+          className="size-7 rounded-full bg-white dark:bg-neutral-800 text-red-500 border border-neutral-200 dark:border-neutral-600 shadow-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 hover:scale-110 transition-transform"
           title="Delete unit"
         >
           <span className="material-symbols-outlined text-[15px]">delete</span>
@@ -165,30 +165,30 @@ function NodeCard({
 
       {/* Card body */}
       <div
-        className={`h-full bg-white rounded-2xl p-3.5 shadow-sm border border-neutral-200 border-t-4 cursor-grab active:cursor-grabbing
-          hover:shadow-lg hover:border-neutral-300 transition-all
-          ${isRoot ? "border-t-primary" : "border-t-slate-300"}`}
+        className={`h-full bg-white dark:bg-neutral-800 rounded-2xl p-3.5 shadow-sm border border-neutral-200 dark:border-neutral-700 border-t-4 cursor-grab active:cursor-grabbing
+          hover:shadow-lg hover:border-neutral-300 dark:hover:border-neutral-600 transition-all
+          ${isRoot ? "border-t-primary" : "border-t-slate-300 dark:border-t-slate-600"}`}
       >
         <div className="flex items-center gap-2.5">
           <div className={`size-9 rounded-xl flex items-center justify-center flex-shrink-0
-            ${isRoot ? "bg-primary/10 text-primary" : "bg-neutral-100 text-neutral-500"}`}>
+            ${isRoot ? "bg-primary/10 text-primary" : "bg-neutral-100 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400"}`}>
             <span className="material-symbols-outlined text-[18px]">{isRoot ? "account_balance" : "hub"}</span>
           </div>
           <div className="overflow-hidden min-w-0">
             <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 truncate">{dept.code}</p>
-            <h3 className="font-bold text-neutral-900 leading-tight truncate text-[13px]">{dept.name}</h3>
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 leading-tight truncate text-[13px]">{dept.name}</h3>
           </div>
         </div>
 
         {dept.supervisor ? (
-          <div className="mt-2.5 pt-2.5 border-t border-neutral-100 flex items-center gap-2">
+          <div className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-neutral-700/50 flex items-center gap-2">
             <div className="size-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0">
               {dept.supervisor.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
             </div>
-            <p className="text-[11px] font-semibold text-neutral-600 truncate">{dept.supervisor.name}</p>
+            <p className="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300 truncate">{dept.supervisor.name}</p>
           </div>
         ) : (
-          <div className="mt-2.5 pt-2.5 border-t border-neutral-100 flex items-center gap-1.5 opacity-40">
+          <div className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-neutral-700/50 flex items-center gap-1.5 opacity-40">
             <span className="material-symbols-outlined text-[13px] text-neutral-400">person_off</span>
             <p className="text-[10px] text-neutral-400 italic">Unassigned</p>
           </div>
@@ -440,11 +440,11 @@ export default function OrganogramPage() {
 
       {/* ─ Zoom bar ─ */}
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={() => setScale(s => Math.min(2, +(s + 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 bg-white flex items-center justify-center hover:bg-neutral-50 shadow-sm text-neutral-600">
+        <button onClick={() => setScale(s => Math.min(2, +(s + 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300">
           <span className="material-symbols-outlined text-[16px]">add</span>
         </button>
-        <span className="text-xs text-neutral-500 w-11 text-center font-mono tabular-nums">{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(s => Math.max(0.25, +(s - 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 bg-white flex items-center justify-center hover:bg-neutral-50 shadow-sm text-neutral-600">
+        <span className="text-xs text-neutral-500 dark:text-neutral-400 w-11 text-center font-mono tabular-nums">{Math.round(scale * 100)}%</span>
+        <button onClick={() => setScale(s => Math.max(0.25, +(s - 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300">
           <span className="material-symbols-outlined text-[16px]">remove</span>
         </button>
         <button onClick={() => { setScale(1); setPan({ x: 60, y: 60 }); }} className="text-[11px] text-neutral-400 hover:text-primary px-2">Reset View</button>
@@ -452,7 +452,7 @@ export default function OrganogramPage() {
       </div>
 
       {error && (
-        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center justify-between text-sm">
+        <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center justify-between text-sm">
           <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">error</span>{error}</span>
           <button onClick={() => setError(null)}><span className="material-symbols-outlined text-[16px]">close</span></button>
         </div>
@@ -461,11 +461,8 @@ export default function OrganogramPage() {
       {/* ─ Canvas ─ */}
       <div
         ref={canvasRef}
-        className="flex-1 rounded-2xl overflow-hidden relative select-none"
-        style={{
-          background: "radial-gradient(circle, #d1d5db 1px, transparent 1px) 0 0 / 22px 22px, #f8fafc",
-          cursor: isPanningRef.current ? "grabbing" : "grab",
-        }}
+        className="organogram-canvas flex-1 rounded-2xl overflow-hidden relative select-none"
+        style={{ cursor: isPanningRef.current ? "grabbing" : "grab" }}
         onPointerDown={handleCanvasPointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -519,21 +516,21 @@ export default function OrganogramPage() {
       {/* ─ Change Parent Modal ─ */}
       {reparentId !== null && reparentDept && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-4 mb-6">
-              <div className="size-12 rounded-2xl bg-amber-50 flex items-center justify-center">
+              <div className="size-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
                 <span className="material-symbols-outlined text-amber-600 text-[26px]">account_tree</span>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-neutral-900">Change Parent</h2>
-                <p className="text-xs text-neutral-500">Move <span className="font-semibold text-neutral-700">{reparentDept.name}</span> to a different position in the hierarchy.</p>
+                <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">Change Parent</h2>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Move <span className="font-semibold text-neutral-700 dark:text-neutral-300">{reparentDept.name}</span> to a different position in the hierarchy.</p>
               </div>
             </div>
 
             {/* Current path */}
-            <div className="mb-5 p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+            <div className="mb-5 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-xl border border-neutral-100 dark:border-neutral-700">
               <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">Currently under</p>
-              <p className="text-sm font-semibold text-neutral-700">
+              <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                 {reparentDept.parent_id
                   ? flat.find(d => d.id === reparentDept.parent_id)?.name ?? "Unknown"
                   : "— (Root unit)"}
@@ -541,7 +538,7 @@ export default function OrganogramPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
+              <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
               <select
                 className="input-field w-full"
                 value={newParentId === null || newParentId === "root" ? "root" : String(newParentId)}
@@ -559,7 +556,7 @@ export default function OrganogramPage() {
                     </option>
                   ))}
               </select>
-              <p className="text-[11px] text-neutral-400 mt-1.5 ml-1">Descendants of this unit are excluded to prevent circular references.</p>
+              <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1.5 ml-1">Descendants of this unit are excluded to prevent circular references.</p>
             </div>
 
             <div className="flex gap-3">
@@ -583,7 +580,7 @@ export default function OrganogramPage() {
       {/* ─ CRUD Modal ─ */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-neutral-100 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-neutral-100 dark:border-neutral-700 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-4 mb-7">
               <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <span className="material-symbols-outlined text-primary text-[26px]">
@@ -591,14 +588,14 @@ export default function OrganogramPage() {
                 </span>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-neutral-900">{editingDept ? "Edit Unit" : "Create Unit"}</h2>
-                <p className="text-xs text-neutral-400 uppercase tracking-widest font-bold">Organisational Management</p>
+                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{editingDept ? "Edit Unit" : "Create Unit"}</h2>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-widest font-bold">Organisational Management</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Unit Name</label>
+                <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Name</label>
                 <input
                   className="input-field w-full"
                   value={form.name}
@@ -608,7 +605,7 @@ export default function OrganogramPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Unit Code</label>
+                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Code</label>
                   <input
                     className="input-field font-mono uppercase w-full"
                     value={form.code}
@@ -618,7 +615,7 @@ export default function OrganogramPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Supervisor</label>
+                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Supervisor</label>
                   <select
                     className="input-field w-full"
                     value={form.supervisor_id ?? ""}
@@ -632,7 +629,7 @@ export default function OrganogramPage() {
               {/* Parent selector in create mode */}
               {!editingDept && (
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Parent Unit</label>
+                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Parent Unit</label>
                   <select
                     className="input-field w-full"
                     value={formParentId ?? ""}
@@ -663,11 +660,11 @@ export default function OrganogramPage() {
       {showHistory && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowHistory(false)} />
-          <div className="relative w-full max-w-md bg-white shadow-2xl flex flex-col h-full">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 shadow-2xl flex flex-col h-full">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-700">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-primary">history</span>
-                <h3 className="text-sm font-semibold text-neutral-900">Organogram Change History</h3>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Organogram Change History</h3>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1">
@@ -681,7 +678,7 @@ export default function OrganogramPage() {
             <div className="flex-1 overflow-y-auto">
               {historyLoading ? (
                 <div className="space-y-3 p-5 animate-pulse">
-                  {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-14 bg-neutral-100 rounded-xl" />)}
+                  {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-14 bg-neutral-100 dark:bg-neutral-700/40 rounded-xl" />)}
                 </div>
               ) : history.length === 0 ? (
                 <div className="py-20 text-center">
@@ -689,7 +686,7 @@ export default function OrganogramPage() {
                   <p className="text-sm text-neutral-400 mt-3">No changes recorded yet.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-neutral-50">
+                <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
                   {history.map(entry => {
                     const isCreate = entry.action.includes("created");
                     const isDelete = entry.action.includes("deleted");
@@ -703,7 +700,7 @@ export default function OrganogramPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs font-semibold text-neutral-800 capitalize">{label}</p>
+                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 capitalize">{label}</p>
                             <span className="text-[11px] text-neutral-400 flex-shrink-0">
                               {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""}
                             </span>
@@ -719,8 +716,8 @@ export default function OrganogramPage() {
                 </div>
               )}
             </div>
-            <div className="border-t border-neutral-100 px-5 py-3">
-              <p className="text-[11px] text-neutral-400">Showing latest 50 changes. Full history in the Admin Audit Ledger.</p>
+            <div className="border-t border-neutral-100 dark:border-neutral-700 px-5 py-3">
+              <p className="text-[11px] text-neutral-400 dark:text-neutral-500">Showing latest 50 changes. Full history in the Admin Audit Ledger.</p>
             </div>
           </div>
         </div>

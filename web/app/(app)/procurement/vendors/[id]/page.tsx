@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { vendorsApi, vendorAttachmentsApi, VENDOR_DOC_TYPES, type Vendor, type VendorRating, type VendorContract, type VendorPerformanceEvaluation, type ProcurementAttachment } from "@/lib/api";
+import { vendorsApi, vendorAttachmentsApi, supplierCategoriesApi, VENDOR_DOC_TYPES, type Vendor, type VendorRating, type VendorContract, type VendorPerformanceEvaluation, type ProcurementAttachment, type SupplierCategory } from "@/lib/api";
 import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
@@ -137,14 +137,7 @@ function SkeletonDetail() {
   );
 }
 
-// ─── Edit Modal (re-uses shared form from vendors/page.tsx approach) ──────────
-const VENDOR_CATEGORIES_EDIT = [
-  "IT & Technology", "Catering & Hospitality", "Transport & Logistics",
-  "Office Supplies", "Printing & Publishing", "Professional Services",
-  "Maintenance & Repairs", "Security Services", "Audio Visual",
-  "Cleaning Services", "Healthcare & Pharmaceuticals", "Construction & Works", "Other",
-] as const;
-
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
 const PAYMENT_TERMS_EDIT  = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
 
 const COUNTRIES_EDIT = [
@@ -168,7 +161,7 @@ function EditModal({ vendor, onClose }: EditModalProps) {
     contact_name:        vendor.contact_name        ?? "",
     registration_number: vendor.registration_number ?? "",
     tax_number:          vendor.tax_number          ?? "",
-    category:            vendor.category            ?? "",
+    category_ids:        (vendor.categories ?? []).map((c) => c.id),
     country:             vendor.country             ?? "",
     website:             vendor.website             ?? "",
     contact_email:       vendor.contact_email       ?? "",
@@ -185,8 +178,23 @@ function EditModal({ vendor, onClose }: EditModalProps) {
   });
   const [formError, setFormError] = useState("");
 
+  const { data: categoriesData, isLoading: catsLoading } = useQuery({
+    queryKey: ["supplier-categories"],
+    queryFn: () => supplierCategoriesApi.list().then((r) => r.data.data),
+    staleTime: 60_000,
+  });
+  const availableCategories: SupplierCategory[] = (categoriesData ?? []).filter((c) => c.is_active);
+
+  const toggleCategory = (id: number) => {
+    setForm((f) => {
+      if (f.category_ids.includes(id)) return { ...f, category_ids: f.category_ids.filter((x) => x !== id) };
+      if (f.category_ids.length >= 3) return f;
+      return { ...f, category_ids: [...f.category_ids, id] };
+    });
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: typeof form) => vendorsApi.update(vendor.id, data),
+    mutationFn: (data: typeof form) => vendorsApi.update(vendor.id, data as unknown as Partial<Vendor>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor", vendor.id] });
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
@@ -200,6 +208,7 @@ function EditModal({ vendor, onClose }: EditModalProps) {
 
   const handleSubmit = () => {
     if (!form.name.trim()) { setFormError("Vendor name is required."); setTab("basic"); return; }
+    if (form.category_ids.length === 0) { setFormError("Select at least one category."); setTab("basic"); return; }
     setFormError("");
     mutation.mutate(form);
   };
@@ -262,12 +271,51 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                   <input type="text" className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
                 </div>
               ))}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
-                <select className="form-input" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>
-                  <option value="">— Select —</option>
-                  {VENDOR_CATEGORIES_EDIT.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
+              <div className="sm:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-neutral-600">
+                    Categories <span className="text-red-500">*</span>
+                  </label>
+                  <span className={`text-xs font-medium tabular-nums ${form.category_ids.length === 3 ? "text-amber-600" : "text-neutral-400"}`}>
+                    {form.category_ids.length} / 3 selected
+                  </span>
+                </div>
+                {catsLoading ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[1,2,3,4].map((i) => <div key={i} className="h-9 rounded-lg bg-neutral-100 animate-pulse" />)}
+                  </div>
+                ) : availableCategories.length === 0 ? (
+                  <p className="text-xs text-neutral-400 py-2">No categories configured.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
+                    {availableCategories.map((cat) => {
+                      const selected = form.category_ids.includes(cat.id);
+                      const disabled = !selected && form.category_ids.length >= 3;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => toggleCategory(cat.id)}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-left transition-all
+                            ${selected
+                              ? "border-primary bg-primary/8 text-primary font-semibold"
+                              : disabled
+                                ? "border-neutral-100 bg-neutral-50 text-neutral-300 cursor-not-allowed"
+                                : "border-neutral-200 text-neutral-600 hover:border-primary/50 hover:bg-primary/5"
+                            }`}
+                        >
+                          <span className={`material-symbols-outlined flex-shrink-0 text-[16px] ${selected ? "text-primary" : "text-neutral-300"}`}
+                            style={{ fontVariationSettings: selected ? "'FILL' 1" : "'FILL' 0" }}>
+                            check_box{selected ? "" : "_outline_blank"}
+                          </span>
+                          <span className="truncate">{cat.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="mt-1.5 text-[11px] text-neutral-400">Select up to 3 categories that best describe this vendor.</p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 mb-1">Country</label>
@@ -419,8 +467,9 @@ function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => 
 }
 
 // ─── Main detail page ─────────────────────────────────────────────────────────
-export default function VendorDetailPage({ params }: { params: { id: string } }) {
-  const vendorId = Number(params.id);
+export default function VendorDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = React.use(params);
+  const vendorId = Number(id);
   const queryClient = useQueryClient();
   const [showEdit, setShowEdit]               = useState(false);
   const [showDeactivate, setShowDeactivate]   = useState(false);

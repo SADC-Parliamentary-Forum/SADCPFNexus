@@ -418,7 +418,7 @@ export default function ReportsPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error}
         </div>
@@ -432,7 +432,7 @@ export default function ReportsPage() {
               const mods = MODULES.filter((m) => m.group === group);
               return (
                 <div key={group}>
-                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{group}</p>
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{group}</p>
                   {mods.map((m) => (
                     <button
                       key={m.key}
@@ -441,7 +441,7 @@ export default function ReportsPage() {
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
                         activeModule === m.key
                           ? "bg-primary text-white font-medium"
-                          : "text-neutral-700 hover:bg-neutral-50"
+                          : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5"
                       }`}
                     >
                       <span
@@ -488,7 +488,7 @@ export default function ReportsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {/* Period from */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">From</label>
+                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">From</label>
                   <input
                     type="date"
                     className="form-input text-sm"
@@ -498,7 +498,7 @@ export default function ReportsPage() {
                 </div>
                 {/* Period to */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">To</label>
+                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">To</label>
                   <input
                     type="date"
                     className="form-input text-sm"
@@ -509,7 +509,7 @@ export default function ReportsPage() {
                 {/* Staff member (managers only) */}
                 {isManager && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">Staff Member</label>
+                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Staff Member</label>
                     <select
                       className="form-input text-sm"
                       value={filters.user_id}
@@ -524,7 +524,7 @@ export default function ReportsPage() {
                 )}
                 {/* Department */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">Department</label>
+                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Department</label>
                   <select
                     className="form-input text-sm"
                     value={filters.department_id}
@@ -539,7 +539,7 @@ export default function ReportsPage() {
                 {/* Status */}
                 {module.statusOptions.length > 0 && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Status</label>
                     <select
                       className="form-input text-sm"
                       value={filters.status}
@@ -555,7 +555,7 @@ export default function ReportsPage() {
                 {/* Governance: committee */}
                 {activeModule === "governance" && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">Committee</label>
+                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Committee</label>
                     <input
                       type="text"
                       className="form-input text-sm"
@@ -568,7 +568,7 @@ export default function ReportsPage() {
                 {/* Assets: category */}
                 {activeModule === "assets" && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
+                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Category</label>
                     <select
                       className="form-input text-sm"
                       value={filters.category}
@@ -584,7 +584,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
+              <div className="flex items-center gap-2 pt-1 border-t border-neutral-100 dark:border-neutral-700/50">
                 <button
                   type="button"
                   onClick={generate}
@@ -645,9 +645,9 @@ export default function ReportsPage() {
 
           {rows !== null && rows.length > 0 && (
             <div className="card overflow-hidden">
-              <div className="px-5 py-3 border-b border-neutral-100 flex items-center gap-2">
+              <div className="px-5 py-3 border-b border-neutral-100 dark:border-neutral-700/50 flex items-center gap-2">
                 <span className={`material-symbols-outlined text-[18px] ${module.color}`} style={{ fontVariationSettings: "'FILL' 0" }}>{module.icon}</span>
-                <span className="text-sm font-semibold text-neutral-800">{module.label} Report</span>
+                <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{module.label} Report</span>
                 {(filters.period_from || filters.period_to) && (
                   <span className="ml-2 text-xs text-neutral-400">
                     {filters.period_from && `From ${filters.period_from}`} {filters.period_to && `to ${filters.period_to}`}

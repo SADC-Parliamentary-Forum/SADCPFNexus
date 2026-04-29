@@ -34,12 +34,13 @@ function statusBadge(vendor: Vendor) {
 }
 
 // ─── Star display ─────────────────────────────────────────────────────────────
-function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
-  if (!avg) return <span className="text-xs text-neutral-300">—</span>;
-  const full  = Math.floor(avg);
-  const half  = avg - full >= 0.5;
+function StarDisplay({ avg, count }: { avg?: number | string | null; count?: number }) {
+  const n = avg != null ? Number(avg) : null;
+  if (!n) return <span className="text-xs text-neutral-300">—</span>;
+  const full  = Math.floor(n);
+  const half  = n - full >= 0.5;
   return (
-    <span className="flex items-center gap-0.5" title={`${avg.toFixed(1)} / 5 (${count ?? 0} ratings)`}>
+    <span className="flex items-center gap-0.5" title={`${n.toFixed(1)} / 5 (${count ?? 0} ratings)`}>
       {Array.from({ length: 5 }, (_, i) => (
         <span key={i} className={`material-symbols-outlined text-[14px] leading-none ${
           i < full ? "text-amber-400" : i === full && half ? "text-amber-300" : "text-neutral-200"
@@ -47,7 +48,7 @@ function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
           {i < full ? "star" : i === full && half ? "star_half" : "star"}
         </span>
       ))}
-      <span className="text-[10px] text-neutral-400 ml-1">{avg.toFixed(1)}</span>
+      <span className="text-[10px] text-neutral-400 ml-1">{n.toFixed(1)}</span>
     </span>
   );
 }
@@ -508,7 +509,10 @@ function DeleteDialog({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function VendorsPage() {
-  const canManageVendors = canManageProcurementVendors(getStoredUser());
+  const [canManageVendors, setCanManageVendors] = useState(false);
+  useEffect(() => {
+    setCanManageVendors(canManageProcurementVendors(getStoredUser()));
+  }, []);
   const [search, setSearch]           = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");

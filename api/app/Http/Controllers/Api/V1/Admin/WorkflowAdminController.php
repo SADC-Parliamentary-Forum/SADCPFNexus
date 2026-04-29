@@ -21,6 +21,7 @@ class WorkflowAdminController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $data = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'module_type' => ['required', 'string', 'max:64'],
@@ -58,6 +59,7 @@ class WorkflowAdminController extends Controller
 
     public function update(Request $request, ApprovalWorkflow $workflow): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $data = $request->validate([
             'name'        => ['sometimes', 'string', 'max:255'],
             'is_active'   => ['sometimes', 'boolean'],
@@ -99,8 +101,9 @@ class WorkflowAdminController extends Controller
         return response()->json(['message' => 'Workflow updated.', 'data' => $workflow->load('steps')]);
     }
 
-    public function destroy(ApprovalWorkflow $workflow): JsonResponse
+    public function destroy(Request $request, ApprovalWorkflow $workflow): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $workflow->delete();
         return response()->json(['message' => 'Workflow deleted.']);
     }

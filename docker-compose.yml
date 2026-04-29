@@ -114,6 +114,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       - SESSION_DRIVER=redis
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - BCRYPT_ROUNDS=4
     networks:
       sadcpf:
         ipv4_address: 10.20.30.4
@@ -123,11 +124,11 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "php-fpm -t 2>/dev/null || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+      test: ["CMD-SHELL", "nc -z -w 3 127.0.0.1 9000 2>/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
 
   queue:
     build:
@@ -144,6 +145,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       - SESSION_DRIVER=redis
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - BCRYPT_ROUNDS=4
     volumes:
       - ./api:/var/www/api
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
@@ -189,6 +191,11 @@ services:
       - API_INTERNAL_URL=${API_INTERNAL_URL:-http://nginx/api/v1}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
       - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - ./web:/app
+      - /app/node_modules
     networks:
       sadcpf:
         ipv4_address: 10.20.30.9

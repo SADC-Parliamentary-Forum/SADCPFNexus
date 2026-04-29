@@ -6,7 +6,7 @@ import { AuthContext } from "@/lib/auth";
 import { authApi, type AuthUser } from "@/lib/api";
 import { clearStoredUser, readStoredUser, writeStoredUser } from "@/lib/session";
 
-const SKIP_REFRESH_PATHS = ["/login", "/reset-password", "/setup", "/approval"];
+const SKIP_REFRESH_PATHS = ["/login", "/reset-password", "/setup", "/approval", "/supplier"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();

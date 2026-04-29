@@ -17,10 +17,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
-    // Sync React state with the class already applied by the anti-flash script
     const stored = localStorage.getItem(THEME_KEY) as Theme | null;
     const resolved: Theme = stored === "dark" ? "dark" : "light";
     setThemeState(resolved);
+    // Sync DOM — anti-flash script sets class; sync the data-theme attribute here
+    if (resolved === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
   }, []);
 
   const setTheme = useCallback((t: Theme) => {
@@ -28,8 +33,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(THEME_KEY, t);
     if (t === "dark") {
       document.documentElement.classList.add("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
+      document.documentElement.removeAttribute("data-theme");
     }
   }, []);
 

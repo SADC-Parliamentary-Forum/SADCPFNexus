@@ -31,7 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Append security headers to all responses.
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([
-            'rls' => \App\Http\Middleware\SetRlsContext::class,
+            'rls'            => \App\Http\Middleware\SetRlsContext::class,
+            'role'           => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'     => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
         // Exclude email-approval POST routes from CSRF: the token in the URL path

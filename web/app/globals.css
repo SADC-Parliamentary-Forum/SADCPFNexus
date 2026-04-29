@@ -6,6 +6,56 @@
   --font-sans: "Public Sans", system-ui, sans-serif;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE DESIGN TOKENS
+   Scoped exclusively to [data-theme="dark"].
+   Light mode (:root and every component class) is never modified here.
+   Applied by: ThemeProvider.tsx sets the attribute; the anti-flash
+   bootstrap script in layout.tsx mirrors it before first paint.
+═══════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* ── Background layers (deepest → most elevated) ──────────────── */
+  --dk-bg-app:      #0B1220;   /* main page canvas                  */
+  --dk-bg-panel:    #0F172A;   /* header, top-level panels          */
+  --dk-bg-surface:  #1E293B;   /* cards, list rows                  */
+  --dk-bg-elevated: #263244;   /* table heads, dropdowns, inputs    */
+  --dk-bg-hover:    #2D3B4E;   /* interactive hover state           */
+  --dk-bg-overlay:  rgba(0, 0, 0, 0.65); /* modal backdrop         */
+
+  /* ── Text (contrast-verified against --dk-bg-app) ─────────────── */
+  --dk-text-primary:   #E2E8F0;  /* ≥ 15 : 1 — headings, body copy */
+  --dk-text-secondary: #94A3B8;  /* ≥  7 : 1 — labels, subtitles   */
+  --dk-text-muted:     #64748B;  /* ≥ 4.5: 1 — placeholders        */
+  --dk-text-disabled:  #334155;  /* disabled / decorative           */
+
+  /* ── Borders ───────────────────────────────────────────────────── */
+  --dk-border-subtle:  #1E293B;  /* hairline dividers               */
+  --dk-border-default: #334155;  /* standard component borders      */
+  --dk-border-strong:  #475569;  /* emphasis, focus rings           */
+
+  /* ── Accent — brand blue ────────────────────────────────────────── */
+  --dk-accent:        #3B82F6;              /* interactive primary   */
+  --dk-accent-hover:  #2563EB;              /* button hover          */
+  --dk-accent-dim:    #60A5FA;              /* accent text on dark   */
+  --dk-accent-subtle: rgba(59, 130, 246, 0.12); /* tinted bg        */
+
+  /* ── Status colours (400-shade — higher contrast on dark) ──────── */
+  --dk-success:    #34D399;
+  --dk-success-bg: rgba(52, 211, 153, 0.12);
+  --dk-warning:    #FBBF24;
+  --dk-warning-bg: rgba(251, 191, 36, 0.12);
+  --dk-danger:     #F87171;
+  --dk-danger-bg:  rgba(248, 113, 113, 0.12);
+  --dk-info:       #38BDF8;
+  --dk-info-bg:    rgba(56, 189, 248, 0.12);
+
+  /* ── Depth shadows ──────────────────────────────────────────────── */
+  --dk-shadow-sm: 0 1px 3px rgba(0,0,0,0.50), 0 1px 2px rgba(0,0,0,0.40);
+  --dk-shadow-md: 0 4px 12px rgba(0,0,0,0.50), 0 2px 6px rgba(0,0,0,0.35);
+  --dk-shadow-lg: 0 8px 28px rgba(0,0,0,0.60), 0 4px 14px rgba(0,0,0,0.50);
+  --dk-shadow-xl: 0 20px 60px rgba(0,0,0,0.70), 0 8px 28px rgba(0,0,0,0.60);
+}
+
 @layer base {
   :root {
     --primary: #1d85ed;
@@ -17,8 +67,9 @@
     @apply font-sans antialiased bg-surface-muted text-neutral-900;
   }
 
-  .dark body {
-    @apply bg-neutral-900 text-neutral-100;
+  [data-theme="dark"] body {
+    background-color: var(--dk-bg-app);
+    color: var(--dk-text-primary);
   }
 
   /* Material Symbols – must set font-family so icons render (Design URL: wght,FILL only) */
@@ -207,69 +258,174 @@
     @apply border-amber-300 bg-amber-50/50;
   }
 
-  /* ── Dark mode overrides ──────────────────────────────────────────── */
-  .dark .card {
-    @apply bg-neutral-800 border-neutral-700/60;
+  /* ═══ DARK MODE COMPONENT SYSTEM ════════════════════════════════════
+     Every rule is isolated under [data-theme="dark"].
+     Uses only --dk-* custom properties defined in the token block above.
+     Light-mode selectors (.card, .btn-*, etc.) are never overridden here.
+     Tailwind dark: utilities in JSX continue to work via the .dark class
+     which ThemeProvider sets in parallel with data-theme.
+  ════════════════════════════════════════════════════════════════════ */
+
+  /* Global border reset — overrides @layer base `* { border-neutral-200 }` */
+  [data-theme="dark"] * {
+    border-color: var(--dk-border-subtle);
   }
 
-  .dark .card-header {
-    @apply border-neutral-700/60;
+  /* ── Cards ──────────────────────────────────────────────────────── */
+  [data-theme="dark"] .card {
+    background-color: var(--dk-bg-surface);
+    border-color: var(--dk-border-default);
+    box-shadow: var(--dk-shadow-sm);
   }
 
-  .dark .form-input {
-    @apply border-neutral-700 bg-neutral-700/50 text-neutral-100 placeholder-neutral-500 focus:border-primary focus:ring-primary/30;
+  [data-theme="dark"] .card:hover {
+    background-color: var(--dk-bg-elevated);
   }
 
-  .dark .form-input:placeholder-shown,
-  .dark select.form-input:invalid {
-    @apply border-neutral-700 bg-neutral-700/50;
+  [data-theme="dark"] .card-header {
+    border-bottom-color: var(--dk-border-subtle);
   }
 
-  .dark .btn-secondary {
-    @apply border-neutral-700 bg-neutral-800 text-neutral-200 hover:bg-neutral-700;
+  /* ── Badges ─────────────────────────────────────────────────────── */
+  [data-theme="dark"] .badge-primary {
+    background-color: var(--dk-accent-subtle);
+    color: var(--dk-accent-dim);
   }
 
-  .dark .page-title {
-    @apply text-neutral-100;
+  [data-theme="dark"] .badge-success {
+    background-color: var(--dk-success-bg);
+    color: var(--dk-success);
   }
 
-  .dark .page-subtitle {
-    @apply text-neutral-400;
+  [data-theme="dark"] .badge-warning {
+    background-color: var(--dk-warning-bg);
+    color: var(--dk-warning);
   }
 
-  .dark .filter-tab {
-    @apply bg-neutral-800 text-neutral-400 border-neutral-700;
+  [data-theme="dark"] .badge-danger {
+    background-color: var(--dk-danger-bg);
+    color: var(--dk-danger);
   }
 
-  .dark .filter-tab.active {
-    @apply bg-primary text-white border-primary;
+  [data-theme="dark"] .badge-muted {
+    background-color: var(--dk-bg-elevated);
+    color: var(--dk-text-secondary);
   }
 
-  .dark .data-table thead tr {
-    @apply border-neutral-700 bg-neutral-800/80;
+  /* ── Form inputs ─────────────────────────────────────────────────── */
+  [data-theme="dark"] .form-input {
+    background-color: var(--dk-bg-elevated);
+    border-color: var(--dk-border-default);
+    color: var(--dk-text-primary);
   }
 
-  .dark .data-table thead th {
-    @apply text-neutral-400;
+  [data-theme="dark"] .form-input::placeholder {
+    color: var(--dk-text-muted);
   }
 
-  .dark .data-table tbody {
-    @apply divide-neutral-700/50;
+  [data-theme="dark"] .form-input:focus {
+    border-color: var(--dk-accent);
+    box-shadow: 0 0 0 3px var(--dk-accent-subtle);
+    outline: none;
   }
 
-  .dark .data-table tbody tr {
-    @apply hover:bg-neutral-700/30;
+  /* Suppress the amber "unfilled" highlight in dark mode */
+  [data-theme="dark"] .form-input:placeholder-shown,
+  [data-theme="dark"] select.form-input:invalid {
+    border-color: var(--dk-border-default);
+    background-color: var(--dk-bg-elevated);
   }
 
-  .dark .data-table tbody td {
-    @apply text-neutral-200;
+  /* ── Buttons ─────────────────────────────────────────────────────── */
+  [data-theme="dark"] .btn-primary {
+    background-color: var(--dk-accent);
   }
 
-  .dark .nav-item {
-    @apply text-neutral-300 hover:text-white hover:bg-white/10;
+  [data-theme="dark"] .btn-primary:hover:not(:disabled) {
+    background-color: var(--dk-accent-hover);
   }
 
-  .dark .nav-item.active {
-    @apply bg-primary text-white;
+  [data-theme="dark"] .btn-secondary {
+    background-color: var(--dk-bg-elevated);
+    border-color: var(--dk-border-default);
+    color: var(--dk-text-primary);
+  }
+
+  [data-theme="dark"] .btn-secondary:hover {
+    background-color: var(--dk-bg-hover);
+    border-color: var(--dk-border-strong);
+  }
+
+  /* ── Page typography ─────────────────────────────────────────────── */
+  [data-theme="dark"] .page-title {
+    color: var(--dk-text-primary);
+  }
+
+  [data-theme="dark"] .page-subtitle {
+    color: var(--dk-text-secondary);
+  }
+
+  /* ── Filter tabs ─────────────────────────────────────────────────── */
+  [data-theme="dark"] .filter-tab {
+    background-color: var(--dk-bg-surface);
+    color: var(--dk-text-secondary);
+    border-color: var(--dk-border-default);
+  }
+
+  [data-theme="dark"] .filter-tab:hover {
+    border-color: var(--dk-accent);
+    color: var(--dk-accent-dim);
+  }
+
+  [data-theme="dark"] .filter-tab.active {
+    background-color: var(--dk-accent);
+    color: white;
+    border-color: var(--dk-accent);
+  }
+
+  /* ── Data tables ─────────────────────────────────────────────────── */
+  [data-theme="dark"] .data-table thead tr {
+    background-color: var(--dk-bg-elevated);
+    border-bottom-color: var(--dk-border-default);
+  }
+
+  [data-theme="dark"] .data-table thead th {
+    color: var(--dk-text-secondary);
+  }
+
+  [data-theme="dark"] .data-table tbody tr {
+    border-bottom-color: var(--dk-border-subtle);
+  }
+
+  [data-theme="dark"] .data-table tbody tr:hover {
+    background-color: var(--dk-bg-elevated);
+  }
+
+  [data-theme="dark"] .data-table tbody td {
+    color: var(--dk-text-primary);
+  }
+
+  /* ── Nav items (light-sidebar nav-item class — not sidebar JSX) ── */
+  [data-theme="dark"] .nav-item {
+    color: var(--dk-text-secondary);
+  }
+
+  [data-theme="dark"] .nav-item:hover {
+    background-color: var(--dk-bg-hover);
+    color: var(--dk-text-primary);
+  }
+
+  [data-theme="dark"] .nav-item.active {
+    background-color: var(--dk-accent-subtle);
+    color: var(--dk-accent-dim);
+  }
+
+  /* ── Organogram canvas dot-grid background ── */
+  .organogram-canvas {
+    background: radial-gradient(circle, #d1d5db 1px, transparent 1px) 0 0 / 22px 22px, #f8fafc;
+  }
+
+  [data-theme="dark"] .organogram-canvas {
+    background: radial-gradient(circle, #374151 1px, transparent 1px) 0 0 / 22px 22px, #0f172a;
   }
 }

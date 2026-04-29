@@ -68,7 +68,7 @@ class UserService
             'employee_number' => $data['employee_number'] ?? null,
             'job_title'       => $data['job_title'] ?? null,
             'classification'  => $data['classification'] ?? 'UNCLASSIFIED',
-            'mfa_enabled'          => $data['mfa_enabled'] ?? true,
+            'mfa_enabled'          => $data['mfa_enabled'] ?? false,
             'must_reset_password'  => true,
             'is_active'            => true,
             'bio'             => $data['bio'] ?? null,

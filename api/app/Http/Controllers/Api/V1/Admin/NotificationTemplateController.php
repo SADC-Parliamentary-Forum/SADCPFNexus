@@ -99,6 +99,7 @@ class NotificationTemplateController extends Controller
 
     public function updateByTrigger(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $tenantId  = $request->user()->tenant_id;
         $validated = $request->validate([
             'trigger_key' => 'required|string',
@@ -122,6 +123,7 @@ class NotificationTemplateController extends Controller
      */
     public function testSend(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $validated = $request->validate([
             'trigger_key' => 'required|string',
         ]);
@@ -172,6 +174,7 @@ class NotificationTemplateController extends Controller
      */
     public function resetToDefault(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $validated = $request->validate([
             'trigger_key' => 'required|string',
         ]);

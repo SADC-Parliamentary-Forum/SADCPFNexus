@@ -28,6 +28,7 @@ class TimesheetProjectController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $request->validate([
             'label'      => ['required', 'string', 'max:500'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -48,6 +49,7 @@ class TimesheetProjectController extends Controller
      */
     public function update(Request $request, TimesheetProject $timesheet_project): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $tenantId = $request->user()->tenant_id;
         if ((int) $timesheet_project->tenant_id !== (int) $tenantId) {
             abort(404);
@@ -68,6 +70,7 @@ class TimesheetProjectController extends Controller
      */
     public function destroy(Request $request, TimesheetProject $timesheet_project): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $tenantId = $request->user()->tenant_id;
         if ((int) $timesheet_project->tenant_id !== (int) $tenantId) {
             abort(404);

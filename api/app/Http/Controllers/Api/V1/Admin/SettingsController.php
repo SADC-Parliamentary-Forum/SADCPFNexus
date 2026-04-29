@@ -29,6 +29,7 @@ class SettingsController extends Controller
 
     public function update(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $tenantId = $request->user()->tenant_id;
         $allowed = array_keys($this->defaults);
         foreach ($request->only($allowed) as $key => $value) {

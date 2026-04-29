@@ -81,6 +81,9 @@ class DatabaseSeeder extends Seeder
 
             // ── Comprehensive module data (vendors, contracts, lifecycle, travel, leave, imprest, assets) ──
             ComprehensiveDataSeeder::class,
+
+            // ── Supplier Portal ────────────────────────────
+            SupplierCategorySeeder::class,
         ]);
     }
 }

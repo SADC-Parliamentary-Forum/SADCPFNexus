@@ -28,7 +28,7 @@ class EnsureSessionAuthIsValid
 
         $currentToken = $user->currentAccessToken();
 
-        if ($currentToken) {
+        if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
             UserSession::updateOrCreate(
                 [
                     'user_id'   => $user->id,
@@ -76,7 +76,7 @@ class EnsureSessionAuthIsValid
 
     private function revokeCurrentAuth(Request $request): void
     {
-        if ($token = $request->user()?->currentAccessToken()) {
+        if (($token = $request->user()?->currentAccessToken()) instanceof \Laravel\Sanctum\PersonalAccessToken) {
             $token->delete();
         }
 

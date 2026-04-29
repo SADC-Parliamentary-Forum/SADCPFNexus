@@ -51,7 +51,7 @@ class DemoTenantSeeder extends Seeder
                 'employee_number' => 'SADCPF-001',
                 'job_title'       => 'System Administrator',
                 'classification'  => 'SECRET',
-                'mfa_enabled'     => true,
+                'mfa_enabled'     => false,
                 'is_active'       => true,
             ]
         );
