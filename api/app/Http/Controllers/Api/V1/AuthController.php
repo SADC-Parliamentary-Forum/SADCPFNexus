@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
@@ -127,7 +128,10 @@ class AuthController extends Controller
     public function forceResetPassword(Request $request): JsonResponse
     {
         $user = $request->user();
-        $currentTokenId = $user->currentAccessToken()?->id;
+        $currentToken = $user->currentAccessToken();
+        $currentTokenId = $currentToken instanceof PersonalAccessToken
+            ? $currentToken->getKey()
+            : null;
         $currentSessionId = $request->hasSession() ? $request->session()->getId() : null;
 
         if (! $user->must_reset_password) {
@@ -176,9 +180,10 @@ class AuthController extends Controller
         $user = $request->user();
         $currentToken = $user->currentAccessToken();
 
-        if ($currentToken) {
+        if ($currentToken instanceof PersonalAccessToken) {
+            $tokenId = $currentToken->getKey();
             UserSession::where('user_id', $user->id)
-                ->where('token_id', $currentToken->id)
+                ->where('token_id', $tokenId)
                 ->delete();
             $currentToken->delete();
         } elseif ($request->hasSession()) {

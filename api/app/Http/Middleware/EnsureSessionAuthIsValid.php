@@ -29,10 +29,12 @@ class EnsureSessionAuthIsValid
         $currentToken = $user->currentAccessToken();
 
         if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+            $tokenId = $currentToken->getKey();
+
             UserSession::updateOrCreate(
                 [
                     'user_id'   => $user->id,
-                    'token_id'  => $currentToken->id,
+                    'token_id'  => $tokenId,
                     'auth_type' => 'token',
                 ],
                 [
