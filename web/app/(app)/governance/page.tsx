@@ -10,11 +10,11 @@ import { useToast } from "@/components/ui/Toast";
 const MEETING_TYPES = ["All", "ExCo", "Sub-Committee", "Plenary", "Technical", "Other"] as const;
 
 const TYPE_STYLE: Record<string, string> = {
-  "ExCo":          "bg-blue-100 text-blue-800 border-blue-200",
-  "Sub-Committee": "bg-purple-100 text-purple-800 border-purple-200",
-  "Plenary":       "bg-emerald-100 text-emerald-800 border-emerald-200",
-  "Technical":     "bg-amber-100 text-amber-800 border-amber-200",
-  "Other":         "bg-neutral-100 text-neutral-700 border-neutral-200",
+  "ExCo":          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
+  "Sub-Committee": "bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/50",
+  "Plenary":       "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50",
+  "Technical":     "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
+  "Other":         "bg-neutral-100 dark:bg-neutral-700/40 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600",
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -99,8 +99,8 @@ export default function MeetingsMinutesPage() {
           <div className="p-12 text-center text-neutral-400 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">meeting_room</span>
-            <p className="mt-2 text-sm text-neutral-500">No meetings found.</p>
+            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600">meeting_room</span>
+            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">No meetings found.</p>
           </div>
         ) : (
           <table className="data-table">
@@ -120,17 +120,17 @@ export default function MeetingsMinutesPage() {
                 return (
                   <tr key={m.id}>
                     <td>
-                      <div className="font-medium text-neutral-900">{m.title}</div>
+                      <div className="font-medium text-neutral-900 dark:text-neutral-100">{m.title}</div>
                     </td>
                     <td>
                       <span className={`badge border text-xs ${TYPE_STYLE[m.type] ?? TYPE_STYLE["Other"]}`}>
                         {m.type}
                       </span>
                     </td>
-                    <td className="text-sm text-neutral-600">
+                    <td className="text-sm text-neutral-600 dark:text-neutral-400">
                       {m.date ? new Date(m.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </td>
-                    <td className="text-sm text-neutral-600">{m.responsible ?? "—"}</td>
+                    <td className="text-sm text-neutral-600 dark:text-neutral-400">{m.responsible ?? "—"}</td>
                     <td>
                       {mins.length > 0 ? (
                         <span className="badge badge-success text-xs">{mins.length} attached</span>

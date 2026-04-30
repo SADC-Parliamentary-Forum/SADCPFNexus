@@ -32,11 +32,11 @@ function initials(name: string): string {
 
 const MODULE_ICONS: Record<string, { icon: string; color: string; bg: string }> = {
   travel:      { icon: "flight_takeoff",         color: "text-primary",     bg: "bg-primary/10" },
-  leave:       { icon: "event_available",        color: "text-green-600",   bg: "bg-green-50" },
-  imprest:     { icon: "account_balance_wallet", color: "text-amber-600",   bg: "bg-amber-50" },
-  procurement: { icon: "shopping_cart",          color: "text-purple-600",  bg: "bg-purple-50" },
-  assignment:  { icon: "task_alt",               color: "text-blue-600",    bg: "bg-blue-50" },
-  finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50" },
+  leave:       { icon: "event_available",        color: "text-green-600",   bg: "bg-green-50 dark:bg-green-900/20" },
+  imprest:     { icon: "account_balance_wallet", color: "text-amber-600",   bg: "bg-amber-50 dark:bg-amber-900/20" },
+  procurement: { icon: "shopping_cart",          color: "text-purple-600",  bg: "bg-purple-50 dark:bg-purple-900/20" },
+  assignment:  { icon: "task_alt",               color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-900/20" },
+  finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
 };
 
 function timeAgo(iso: string, fmt: (d: string) => string): string {
@@ -93,20 +93,20 @@ function AlertsTab() {
         {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
           <div className="card p-4 text-center">
-            <p className="text-3xl font-bold text-neutral-900">{loading ? "—" : awayToday.length}</p>
-            <p className="text-xs text-neutral-500 mt-1">Staff Away Today</p>
+            <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">{loading ? "—" : awayToday.length}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Staff Away Today</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-teal-600">{loading ? "—" : activeMissions.length}</p>
-            <p className="text-xs text-neutral-500 mt-1">Active Missions</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Active Missions</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-red-500">{loading ? "—" : urgentDeadlines}</p>
-            <p className="text-xs text-neutral-500 mt-1">Urgent Deadlines</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Urgent Deadlines</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-primary">{loading ? "—" : weekEvents.length}</p>
-            <p className="text-xs text-neutral-500 mt-1">Events This Week</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Events This Week</p>
           </div>
         </div>
         <div className="ml-4 flex-shrink-0">
@@ -122,7 +122,7 @@ function AlertsTab() {
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error}
         </div>
@@ -133,25 +133,25 @@ function AlertsTab() {
         <div className="card overflow-hidden">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20">
                 <span className="material-symbols-outlined text-amber-600 text-[18px]">person_off</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Who&apos;s Away Today</h2>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Who&apos;s Away Today</h2>
             </div>
             <span className="text-xs text-neutral-400">{awayToday.length} staff absent</span>
           </div>
           {loading ? <Spinner /> : awayToday.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-neutral-400">All staff are present today.</p>
+            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">All staff are present today.</p>
           ) : (
-            <div className="divide-y divide-neutral-100">
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
               {awayToday.map((s, i) => (
                 <div key={i} className="flex items-center gap-3 px-5 py-3">
-                  <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-800 text-xs font-bold">
+                  <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 text-amber-800 dark:text-amber-200 text-xs font-bold">
                     {initials(s.name)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-neutral-900">{s.name}</p>
-                    <p className="text-xs text-neutral-500">Until {fmt(s.to_date)}</p>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{s.name}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Until {fmt(s.to_date)}</p>
                   </div>
                   <span className={`badge ${s.type === "leave" ? "badge-warning" : "badge-primary"} capitalize`}>
                     {s.type === "leave" ? "On Leave" : "On Mission"}
@@ -166,15 +166,15 @@ function AlertsTab() {
         <div className="card overflow-hidden">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 dark:bg-teal-900/20">
                 <span className="material-symbols-outlined text-teal-600 text-[18px]">flight_takeoff</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Active Missions Board</h2>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Active Missions Board</h2>
             </div>
             <span className="text-xs text-neutral-400">{activeMissions.length} in progress</span>
           </div>
           {loading ? <Spinner /> : activeMissions.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-neutral-400">No active missions at this time.</p>
+            <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No active missions at this time.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -185,11 +185,11 @@ function AlertsTab() {
                   {activeMissions.map((m) => (
                     <tr key={m.id} className="cursor-pointer hover:bg-primary/5 transition-colors" onClick={() => window.location.href = `/travel/${m.id}`}>
                       <td>
-                        <p className="font-semibold text-neutral-900">{m.requester_name}</p>
+                        <p className="font-semibold text-neutral-900 dark:text-neutral-100">{m.requester_name}</p>
                         <p className="text-xs text-neutral-400 font-mono">{m.reference_number}</p>
                       </td>
-                      <td className="text-neutral-600">{m.destination_country}</td>
-                      <td className="text-xs text-neutral-500">{fmt(m.departure_date)}</td>
+                      <td className="text-neutral-600 dark:text-neutral-400">{m.destination_country}</td>
+                      <td className="text-xs text-neutral-500 dark:text-neutral-400">{fmt(m.departure_date)}</td>
                       <td><span className="badge badge-primary">{fmt(m.return_date)}</span></td>
                     </tr>
                   ))}
@@ -204,30 +204,30 @@ function AlertsTab() {
       <div className="card overflow-hidden">
         <div className="card-header">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20">
               <span className="material-symbols-outlined text-red-500 text-[18px]">timer</span>
             </div>
-            <h2 className="text-sm font-semibold text-neutral-900">Upcoming Deadlines</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Upcoming Deadlines</h2>
           </div>
           <span className="text-xs text-neutral-400">Next 14 days</span>
         </div>
         {loading ? <Spinner /> : deadlines.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-neutral-400">No upcoming deadlines in the next 14 days.</p>
+          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No upcoming deadlines in the next 14 days.</p>
         ) : (
-          <div className="divide-y divide-neutral-100">
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
             {[...deadlines].sort((a, b) => daysUntil(a.deadline_date) - daysUntil(b.deadline_date)).map((d, i) => {
               const days = daysUntil(d.deadline_date);
               return (
                 <div key={i} className="flex items-center gap-4 px-5 py-3.5">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-lg flex-shrink-0 ${
-                    days < 0 ? "bg-red-100" : days < 3 ? "bg-red-50" : days <= 7 ? "bg-amber-50" : "bg-green-50"
+                    days < 0 ? "bg-red-100 dark:bg-red-900/30" : days < 3 ? "bg-red-50 dark:bg-red-900/20" : days <= 7 ? "bg-amber-50 dark:bg-amber-900/20" : "bg-green-50 dark:bg-green-900/20"
                   }`}>
                     <span className={`material-symbols-outlined text-[18px] ${
                       days < 0 ? "text-red-600" : days < 3 ? "text-red-500" : days <= 7 ? "text-amber-500" : "text-green-600"
                     }`}>schedule</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-neutral-900 truncate">{d.title}</p>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">{d.title}</p>
                     <p className="text-xs text-neutral-400 mt-0.5">
                       Due: {fmt(d.deadline_date)}
                       {d.responsible && ` · ${d.responsible}`}
@@ -249,12 +249,12 @@ function AlertsTab() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">calendar_view_week</span>
             </div>
-            <h2 className="text-sm font-semibold text-neutral-900">Events This Week</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Events This Week</h2>
           </div>
           <a href="/workplan" className="text-xs text-primary hover:underline font-medium">View full workplan →</a>
         </div>
         {loading ? <Spinner /> : weekEvents.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-neutral-400">No events scheduled this week.</p>
+          <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No events scheduled this week.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5">
             {weekEvents.map((e) => {
@@ -267,13 +267,18 @@ function AlertsTab() {
               const yearLabel  = valid && d.getFullYear() !== new Date().getFullYear()
                 ? ` ${d.getFullYear()}` : "";
               const typeColors: Record<string, string> = {
-                meeting: "border-primary/30 bg-primary/5", travel: "border-teal-200 bg-teal-50",
-                leave: "border-amber-200 bg-amber-50",     milestone: "border-purple-200 bg-purple-50",
-                deadline: "border-red-200 bg-red-50",
+                meeting: "border-primary/30 bg-primary/5",
+                travel: "border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-900/20",
+                leave: "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20",
+                milestone: "border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20",
+                deadline: "border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20",
               };
               const labelColors: Record<string, string> = {
-                meeting: "text-primary", travel: "text-teal-700", leave: "text-amber-700",
-                milestone: "text-purple-700", deadline: "text-red-700",
+                meeting: "text-primary",
+                travel: "text-teal-700 dark:text-teal-300",
+                leave: "text-amber-700 dark:text-amber-300",
+                milestone: "text-purple-700 dark:text-purple-300",
+                deadline: "text-red-700 dark:text-red-300",
               };
               const typeIcons: Record<string, string> = {
                 meeting: "groups", travel: "flight_takeoff", leave: "event_available",
@@ -281,14 +286,14 @@ function AlertsTab() {
               };
               return (
                 <Link key={e.id} href={`/workplan?event=${e.id}`}
-                  className={`rounded-xl border p-4 block hover:shadow-md transition-shadow ${typeColors[e.type] || "border-neutral-100 bg-neutral-50"}`}>
+                  className={`rounded-xl border p-4 block hover:shadow-md transition-shadow ${typeColors[e.type] || "border-neutral-100 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-800/50"}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-bold uppercase tracking-wider ${labelColors[e.type] || "text-neutral-500"}`}>{dayLabel}</span>
-                    <span className="text-lg font-bold text-neutral-800 leading-tight">
-                      {dayNum} <span className="text-sm font-semibold text-neutral-500">{monthLabel}{yearLabel}</span>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${labelColors[e.type] || "text-neutral-500 dark:text-neutral-400"}`}>{dayLabel}</span>
+                    <span className="text-lg font-bold text-neutral-800 dark:text-neutral-200 leading-tight">
+                      {dayNum} <span className="text-sm font-semibold text-neutral-500 dark:text-neutral-400">{monthLabel}{yearLabel}</span>
                     </span>
                   </div>
-                  <p className={`text-sm font-semibold ${labelColors[e.type] || "text-neutral-700"}`}>{e.title}</p>
+                  <p className={`text-sm font-semibold ${labelColors[e.type] || "text-neutral-700 dark:text-neutral-300"}`}>{e.title}</p>
                   {e.responsible && <p className="text-xs text-neutral-400 mt-1">{e.responsible}</p>}
                   <div className="flex items-center gap-1 mt-1.5">
                     <span className={`material-symbols-outlined text-[12px] ${labelColors[e.type] || "text-neutral-400"}`}>{typeIcons[e.type] || "event"}</span>
@@ -379,7 +384,7 @@ function InboxTab() {
       )}
 
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 border-b border-neutral-200 flex-1">
+        <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700 flex-1">
           {filterTabs.map(tab => (
             <button
               key={tab.key}
@@ -387,7 +392,7 @@ function InboxTab() {
               className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                 filter === tab.key
                   ? "border-primary text-primary"
-                  : "border-transparent text-neutral-500 hover:text-neutral-800"
+                  : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
               {tab.label}
@@ -405,45 +410,45 @@ function InboxTab() {
         )}
       </div>
 
-      <div className="card overflow-hidden divide-y divide-neutral-100">
+      <div className="card overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-700/50">
         {(isLoading || isFetching) && notifications.length === 0 ? (
-          <div className="space-y-0 animate-pulse divide-y divide-neutral-100">
+          <div className="space-y-0 animate-pulse divide-y divide-neutral-100 dark:divide-neutral-700/50">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="flex items-start gap-4 px-5 py-4">
-                <div className="h-10 w-10 rounded-full bg-neutral-100 flex-shrink-0" />
+                <div className="h-10 w-10 rounded-full bg-neutral-100 dark:bg-neutral-700/40 flex-shrink-0" />
                 <div className="flex-1 space-y-2 py-1">
-                  <div className="h-3 bg-neutral-100 rounded w-2/3" />
-                  <div className="h-2.5 bg-neutral-100 rounded w-1/2" />
+                  <div className="h-3 bg-neutral-100 dark:bg-neutral-700/40 rounded w-2/3" />
+                  <div className="h-2.5 bg-neutral-100 dark:bg-neutral-700/40 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : notifications.length === 0 ? (
           <div className="py-20 text-center">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">notifications_off</span>
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700/40 mb-4">
+              <span className="material-symbols-outlined text-3xl text-neutral-300 dark:text-neutral-600">notifications_off</span>
             </div>
-            <p className="text-sm font-semibold text-neutral-500">
+            <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400">
               {filter === "unread" ? "No unread notifications" : filter === "read" ? "No read notifications" : "No notifications yet"}
             </p>
-            <p className="text-xs text-neutral-400 mt-1">Notifications will appear here when you have approvals, rejections, or assignments.</p>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Notifications will appear here when you have approvals, rejections, or assignments.</p>
           </div>
         ) : notifications.map(n => {
           const isUnread = !n.read_at;
           const mod = n.meta?.module ?? "";
-          const ic  = MODULE_ICONS[mod] ?? { icon: "notifications", color: "text-neutral-500", bg: "bg-neutral-100" };
+          const ic  = MODULE_ICONS[mod] ?? { icon: "notifications", color: "text-neutral-500", bg: "bg-neutral-100 dark:bg-neutral-700/40" };
           return (
             <div
               key={n.id}
               onClick={() => handleMarkRead(n)}
-              className={`group flex items-start gap-4 px-5 py-4 cursor-pointer hover:bg-neutral-50 transition-colors ${isUnread ? "bg-primary/[0.03]" : ""}`}
+              className={`group flex items-start gap-4 px-5 py-4 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors ${isUnread ? "bg-primary/[0.03]" : ""}`}
             >
               <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${ic.bg}`}>
                 <span className={`material-symbols-outlined text-[20px] ${ic.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{ic.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className={`text-sm leading-snug ${isUnread ? "font-semibold text-neutral-900" : "font-medium text-neutral-700"}`}>
+                  <p className={`text-sm leading-snug ${isUnread ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-700 dark:text-neutral-300"}`}>
                     {n.subject}
                   </p>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -452,7 +457,7 @@ function InboxTab() {
                   </div>
                 </div>
                 {n.body && (
-                  <p className="text-xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed whitespace-pre-wrap">
                     {n.body.split("\n").slice(2, 4).join(" ").trim()}
                   </p>
                 )}
@@ -515,21 +520,21 @@ function NotificationsPageInner() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-3">
+        <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-3">
           <Link href="/dashboard" className="hover:text-primary transition-colors">Home</Link>
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span className="text-neutral-900 font-medium">Alerts &amp; Notifications</span>
+          <span className="text-neutral-900 dark:text-neutral-100 font-medium">Alerts &amp; Notifications</span>
         </div>
         <h1 className="page-title">Alerts &amp; Notifications</h1>
         <p className="page-subtitle">Operational awareness, upcoming deadlines, and your personal notification inbox.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-neutral-200">
+      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700">
         <button
           onClick={() => switchTab("alerts")}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tab === "alerts" ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"
+            tab === "alerts" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">notifications_active</span>
@@ -538,7 +543,7 @@ function NotificationsPageInner() {
         <button
           onClick={() => switchTab("inbox")}
           className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tab === "inbox" ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"
+            tab === "inbox" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">inbox</span>

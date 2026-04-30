@@ -18,11 +18,11 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_COLOR: Record<string, { bg: string; text: string; border: string; bar: string }> = {
-  meeting:   { bg: "bg-primary/10",  text: "text-primary",     border: "border-primary/25",   bar: "#1d85ed" },
-  travel:    { bg: "bg-amber-100",   text: "text-amber-800",   border: "border-amber-300",    bar: "#f59e0b" },
-  leave:     { bg: "bg-green-100",   text: "text-green-800",   border: "border-green-300",    bar: "#10b981" },
-  milestone: { bg: "bg-purple-100",  text: "text-purple-800",  border: "border-purple-300",   bar: "#8b5cf6" },
-  deadline:  { bg: "bg-red-100",     text: "text-red-800",     border: "border-red-300",      bar: "#ef4444" },
+  meeting:   { bg: "bg-primary/10",                                     text: "text-primary",                         border: "border-primary/25",                                    bar: "#1d85ed" },
+  travel:    { bg: "bg-amber-100 dark:bg-amber-900/20",                 text: "text-amber-800 dark:text-amber-300",   border: "border-amber-300 dark:border-amber-700/50",             bar: "#f59e0b" },
+  leave:     { bg: "bg-green-100 dark:bg-green-900/20",                 text: "text-green-800 dark:text-green-300",   border: "border-green-300 dark:border-green-700/50",             bar: "#10b981" },
+  milestone: { bg: "bg-purple-100 dark:bg-purple-900/20",               text: "text-purple-800 dark:text-purple-300", border: "border-purple-300 dark:border-purple-700/50",           bar: "#8b5cf6" },
+  deadline:  { bg: "bg-red-100 dark:bg-red-900/20",                     text: "text-red-800 dark:text-red-300",       border: "border-red-300 dark:border-red-700/50",                 bar: "#ef4444" },
 };
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -203,7 +203,7 @@ function CalendarView({
             Prev
           </button>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-neutral-900">{MONTHS[month]} {year}</h2>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{MONTHS[month]} {year}</h2>
             {!isCurrentMonth && (
               <button
                 type="button"
@@ -221,26 +221,26 @@ function CalendarView({
         </div>
 
         {events.length === 0 && (
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 py-10 text-center mb-4">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">event_busy</span>
-            <p className="mt-2 text-sm font-medium text-neutral-600">No events loaded for this year.</p>
-            <p className="text-xs text-neutral-500 mt-1">Add an event or check your filters.</p>
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 py-10 text-center mb-4">
+            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600">event_busy</span>
+            <p className="mt-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">No events loaded for this year.</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">Add an event or check your filters.</p>
           </div>
         )}
         {events.length > 0 && eventsThisMonth === 0 && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800">
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
             <span className="material-symbols-outlined text-[20px]">info</span>
             <span>No events in {MONTHS[month]} {year}. Use Prev/Next to switch month, or add an event.</span>
           </div>
         )}
 
         {/* Day-name header — Mon … Sun */}
-        <div className="grid grid-cols-7 border-l border-t border-neutral-200 rounded-t-lg overflow-hidden">
+        <div className="grid grid-cols-7 border-l border-t border-neutral-200 dark:border-neutral-700 rounded-t-lg overflow-hidden">
           {DAY_NAMES_MON.map((d) => (
             <div
               key={d}
-              className={`text-center text-xs font-semibold py-2 border-r border-b border-neutral-200 bg-neutral-50 ${
-                d === "Sat" || d === "Sun" ? "text-neutral-400" : "text-neutral-500"
+              className={`text-center text-xs font-semibold py-2 border-r border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 ${
+                d === "Sat" || d === "Sun" ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-500 dark:text-neutral-400"
               }`}
             >
               {d}
@@ -249,12 +249,12 @@ function CalendarView({
         </div>
 
         {/* Week rows */}
-        <div className="border-l border-neutral-200">
+        <div className="border-l border-neutral-200 dark:border-neutral-700">
           {Array.from({ length: rows }).map((_, rowIdx) => (
             <div key={rowIdx} className="contents">
               {/* Bar row — multi-day spans */}
               <div
-                className="grid grid-cols-7 border-r border-b border-neutral-200 bg-neutral-50/30"
+                className="grid grid-cols-7 border-r border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50/30 dark:bg-neutral-800/20"
                 style={{ minHeight: 26 }}
               >
                 {spansByWeekRow[rowIdx]?.map(({ ev, startDay, endDay }) => {
@@ -294,7 +294,7 @@ function CalendarView({
               </div>
 
               {/* Day cells row */}
-              <div className="grid grid-cols-7 border-r border-neutral-200">
+              <div className="grid grid-cols-7 border-r border-neutral-200 dark:border-neutral-700">
                 {Array.from({ length: 7 }).map((_, colIdx) => {
                   const cellIdx = rowIdx * 7 + colIdx;
                   const day = cellIdx - startOffset + 1;
@@ -317,16 +317,16 @@ function CalendarView({
                       onClick={inMonth ? () => setSelectedDay(day === selectedDay ? null : day) : undefined}
                       onKeyDown={inMonth ? (e) => { if (e.key === "Enter" || e.key === " ") setSelectedDay(day === selectedDay ? null : day); } : undefined}
                       className={[
-                        "min-h-[96px] border-r border-b border-neutral-200 p-1.5 transition-colors",
-                        inMonth ? "cursor-pointer" : "bg-neutral-50/60",
-                        isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : inMonth ? (isWeekend ? "bg-neutral-50/40 hover:bg-neutral-50" : "bg-white hover:bg-neutral-50/80") : "",
+                        "min-h-[96px] border-r border-b border-neutral-200 dark:border-neutral-700 p-1.5 transition-colors",
+                        inMonth ? "cursor-pointer" : "bg-neutral-50/60 dark:bg-neutral-800/30",
+                        isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : inMonth ? (isWeekend ? "bg-neutral-50/40 dark:bg-neutral-800/20 hover:bg-neutral-50 dark:hover:bg-neutral-800/40" : "bg-white dark:bg-neutral-900/20 hover:bg-neutral-50/80 dark:hover:bg-neutral-800/30") : "",
                       ].filter(Boolean).join(" ")}
                     >
                       {inMonth && (
                         <>
                           <div className={[
                             "w-7 h-7 flex items-center justify-center rounded-full text-xs font-bold mb-1",
-                            isToday ? "bg-primary text-white shadow-sm" : isSelected ? "bg-primary/15 text-primary" : isWeekend ? "text-neutral-400" : "text-neutral-700",
+                            isToday ? "bg-primary text-white shadow-sm" : isSelected ? "bg-primary/15 text-primary" : isWeekend ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-700 dark:text-neutral-300",
                           ].join(" ")}>
                             {day}
                           </div>
