@@ -17,9 +17,29 @@ import {
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 
+function asValidDate(value: string): Date | null {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function localYmdFromDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function plusOneDayYmd(value: string): string | null {
+  const base = asValidDate(`${value}T00:00:00`);
+  if (!base) return null;
+  base.setDate(base.getDate() + 1);
+  return localYmdFromDate(base);
+}
+
 // ─── iCal export helper ────────────────────────────────────────────────────────
 function toICalDate(dateStr: string, allDay = true): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const d = asValidDate(`${dateStr}T00:00:00`);
+  if (!d) return "";
   if (allDay) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -31,9 +51,8 @@ function toICalDate(dateStr: string, allDay = true): string {
 
 function generateICS(event: WorkplanEvent): string {
   const dtStart = toICalDate(event.date);
-  const dtEnd = event.end_date
-    ? toICalDate(new Date(new Date(event.end_date + "T00:00:00").getTime() + 86400000).toISOString().slice(0, 10))
-    : toICalDate(new Date(new Date(event.date + "T00:00:00").getTime() + 86400000).toISOString().slice(0, 10));
+  const dtEndSource = plusOneDayYmd(event.end_date ?? event.date);
+  const dtEnd = toICalDate(dtEndSource ?? event.date);
   const desc = (event.description ?? "").replace(/\n/g, "\\n");
   const uid = `sadcpf-event-${event.id}-${Date.now()}@sadcpf.org`;
   const lines = [
@@ -70,9 +89,7 @@ function downloadICS(event: WorkplanEvent) {
 function googleCalendarUrl(event: WorkplanEvent): string {
   const start = event.date.replace(/-/g, "");
   const endRaw = event.end_date ?? event.date;
-  const endDate = new Date(endRaw + "T00:00:00");
-  endDate.setDate(endDate.getDate() + 1);
-  const end = endDate.toISOString().slice(0, 10).replace(/-/g, "");
+  const end = (plusOneDayYmd(endRaw) ?? event.date).replace(/-/g, "");
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: event.title,

@@ -18,6 +18,12 @@ const typeLabel: Record<string, string> = {
   diplomatic_note: "Diplomatic", procurement: "Procurement",
 };
 
+function safeIsoDay(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
 export default function CorrespondenceRegistryPage() {
   const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
   const [total, setTotal] = useState(0);
@@ -70,7 +76,7 @@ export default function CorrespondenceRegistryPage() {
         l.direction,
         l.status,
         l.creator?.name ?? "",
-        new Date(l.created_at).toISOString().slice(0, 10),
+        safeIsoDay(l.created_at),
       ]),
     ];
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");

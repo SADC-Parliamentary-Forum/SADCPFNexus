@@ -28,6 +28,12 @@ function formatPeriod(p: Payslip): string {
   return `${months[p.period_month] ?? p.period_month} ${p.period_year}`;
 }
 
+function safeIsoDay(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
 function BudgetBar({ budget }: { budget: Budget }) {
   const total = Number(budget.total_amount) || 0;
   // Compute spent from lines if available, otherwise show 0
@@ -363,7 +369,7 @@ export default function FinancePage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{adv.purpose}</p>
-                      <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">{adv.reference_number}{requestedDate ? ` · ${new Date(requestedDate).toISOString().slice(0, 10)}` : ""}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">{adv.reference_number}{safeIsoDay(requestedDate) ? ` · ${safeIsoDay(requestedDate)}` : ""}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
