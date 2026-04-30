@@ -185,18 +185,26 @@ function FormSection({
 function SetupHeader() {
   return (
     <div className="border-b border-neutral-200 bg-white px-6 py-4">
-      <div className="mx-auto max-w-3xl flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/sadcpf-logo.jpg" alt="SADC-PF" className="h-8 w-auto object-contain" />
-          <div>
+          <img src="/sadcpf-logo.jpg" alt="SADC-PF" className="h-8 w-auto object-contain shrink-0" />
+          <div className="min-w-0">
             <p className="text-sm font-bold text-neutral-900">SADC-PF Nexus</p>
             <p className="text-xs text-neutral-400">Account Setup</p>
           </div>
         </div>
-        <p className="text-xs text-neutral-400 hidden sm:block">
-          Complete your profile to access the system
-        </p>
+        <div className="flex items-center gap-4 shrink-0">
+          <p className="text-xs text-neutral-400 hidden sm:block max-w-[200px] md:max-w-none text-right">
+            Complete your profile to access the system
+          </p>
+          <a
+            href="/login?signout=1"
+            className="text-sm font-medium text-primary hover:text-primary-hover underline-offset-4 hover:underline whitespace-nowrap"
+          >
+            Sign out
+          </a>
+        </div>
       </div>
     </div>
   );

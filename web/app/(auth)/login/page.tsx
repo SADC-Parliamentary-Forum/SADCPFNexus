@@ -7,6 +7,7 @@ import {
   clearAuthCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
+  ensureCsrfCookie,
   setAuthCookie,
   setMustResetCookie,
   setSetupCompleteCookie,
@@ -41,11 +42,27 @@ export default function LoginPage() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [code, setCode] = useState("");
 
-  // Defensive: any time the user lands on /login, drop client-side auth
-  // artifacts. Prevents the proxy middleware from bouncing the user away
-  // from /login when a stale `sadcpf_authenticated` cookie or cached user
-  // is left over from a previous session that has since expired server-side.
+  // `signout` query: middleware allows `/login` so we can wipe cookies — otherwise
+  // authenticated users incomplete on setup were redirected `/login` → `/setup` forever.
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.has("signout")) {
+      void (async () => {
+        try {
+          await ensureCsrfCookie();
+          await authApi.logout();
+        } catch {
+          /* session may already be invalid */
+        }
+        clearAuthCookie();
+        clearStoredUser();
+        clearMustResetCookie();
+        clearSetupCompleteCookie();
+        window.history.replaceState({}, "", "/login");
+      })();
+      return;
+    }
     clearAuthCookie();
     clearStoredUser();
   }, []);

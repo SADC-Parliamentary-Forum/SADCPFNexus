@@ -6,6 +6,8 @@ const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
 const LOGIN_PATH = "/login";
 const RESET_PATH = "/reset-password";
 const SETUP_PATH = "/setup";
+/** When present on `/login`, skip redirect so the user can sign out client-side */
+const LOGIN_SIGNOUT_PARAM = "signout";
 
 const PUBLIC_PATH_PREFIXES = [
   "/approval",
@@ -88,14 +90,17 @@ export function proxy(request: NextRequest) {
 
   if (isPublicPath(path)) {
     if (path === LOGIN_PATH && isAuth) {
-      return NextResponse.redirect(new URL(
-        mustReset
-          ? RESET_PATH
-          : !setupComplete
-            ? SETUP_PATH
-            : "/dashboard",
-        request.url
-      ));
+      const wantsSignOut = request.nextUrl.searchParams.has(LOGIN_SIGNOUT_PARAM);
+      if (!wantsSignOut) {
+        return NextResponse.redirect(new URL(
+          mustReset
+            ? RESET_PATH
+            : !setupComplete
+              ? SETUP_PATH
+              : "/dashboard",
+          request.url
+        ));
+      }
     }
     return NextResponse.next();
   }
