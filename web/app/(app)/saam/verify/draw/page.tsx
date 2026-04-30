@@ -4,6 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saamApi } from "@/lib/api";
+import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
 
 type SigType = "full" | "initials";
 
@@ -23,6 +24,28 @@ export default function DrawSignaturePage() {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
+
+  const getPos = useCallback((
+    canvas: HTMLCanvasElement,
+    e: MouseEvent | TouchEvent
+  ): { x: number; y: number } => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const te = e as unknown as TouchEvent;
+    const pt = te.touches?.[0] ?? te.changedTouches?.[0];
+    if (pt) {
+      return {
+        x: (pt.clientX - rect.left) * scaleX,
+        y: (pt.clientY - rect.top) * scaleY,
+      };
+    }
+    const me = e as MouseEvent;
+    return {
+      x: (me.clientX - rect.left) * scaleX,
+      y: (me.clientY - rect.top) * scaleY,
+    };
+  }, []);
 
   // Initialize canvas with white background
   const initCanvas = useCallback(() => {
@@ -51,54 +74,50 @@ export default function DrawSignaturePage() {
     ctx.lineWidth = penSize;
   }, [penSize]);
 
-  function getPos(
-    canvas: HTMLCanvasElement,
-    e: MouseEvent | TouchEvent
-  ): { x: number; y: number } {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if ("touches" in e) {
-      const touch = e.touches[0];
-      return {
-        x: (touch.clientX - rect.left) * scaleX,
-        y: (touch.clientY - rect.top) * scaleY,
-      };
+  useEffect(() => {
+    function getPaintCtx() {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      return { canvas, ctx };
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
-    };
-  }
+    return attachCanvasPassiveFalseTouchListeners(canvasRef, {
+      lastPos,
+      getPos,
+      getPaintCtx,
+      setHasStrokes,
+    });
+  }, [getPos]);
 
-  function startDraw(e: React.MouseEvent | React.TouchEvent) {
+  function startDraw(e: React.MouseEvent) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     e.preventDefault();
     setIsDrawing(true);
-    const pos = getPos(canvas, e.nativeEvent as MouseEvent | TouchEvent);
+    const pos = getPos(canvas, e.nativeEvent);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     lastPos.current = pos;
   }
 
-  function draw(e: React.MouseEvent | React.TouchEvent) {
+  function draw(e: React.MouseEvent) {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     e.preventDefault();
-    const pos = getPos(canvas, e.nativeEvent as MouseEvent | TouchEvent);
+    const pos = getPos(canvas, e.nativeEvent);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
     setHasStrokes(true);
   }
 
-  function endDraw(e: React.MouseEvent | React.TouchEvent) {
+  function endDraw(e: React.MouseEvent) {
     e.preventDefault();
     setIsDrawing(false);
     lastPos.current = null;
@@ -240,9 +259,6 @@ export default function DrawSignaturePage() {
               onMouseMove={draw}
               onMouseUp={endDraw}
               onMouseLeave={endDraw}
-              onTouchStart={startDraw}
-              onTouchMove={draw}
-              onTouchEnd={endDraw}
             />
           </div>
 

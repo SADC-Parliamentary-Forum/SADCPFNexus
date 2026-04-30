@@ -301,13 +301,12 @@ export default function LoginPage() {
           <p className="mt-6 text-center text-xs text-neutral-400">
             Forgot your password? Contact IT Support.
           </p>
-          <p className="mt-3 text-center text-xs text-neutral-500">
-            Supplier onboarding:
-            {" "}
+          <div className="mt-3 text-center text-xs text-neutral-500">
+            Supplier onboarding:{" "}
             <Link href="/supplier/register" className="font-medium text-primary hover:underline">
               Register your supplier account
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>

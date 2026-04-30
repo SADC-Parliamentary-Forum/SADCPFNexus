@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   authApi,
+  clearAuthCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
   userNotificationsApi,
@@ -100,6 +101,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     clearStoredUser();
+    clearAuthCookie();
     clearMustResetCookie();
     clearSetupCompleteCookie();
     router.push("/login");

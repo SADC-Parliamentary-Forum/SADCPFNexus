@@ -115,8 +115,9 @@ Route::prefix('v1')->group(function () {
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
         Route::get('tenant-users', [\App\Http\Controllers\Api\V1\TenantUsersController::class, 'index']);
 
-        // Admin - User Management (tighter rate limit for sensitive operations)
-        Route::prefix('admin')->middleware('throttle:20,1')->group(function () {
+        // Admin SPA: many parallel GETs (user edit loads users, departments, roles, …).
+        // The previous throttle:20,1 capped the whole prefix and caused frequent 429s.
+        Route::prefix('admin')->middleware('throttle:180,1')->group(function () {
             // Users
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);

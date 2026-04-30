@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { authApi } from "@/lib/api";
+import { authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { clearStoredUser } from "@/lib/session";
 import type { AuthUser } from "@/lib/api";
@@ -295,6 +295,9 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     clearStoredUser();
+    clearAuthCookie();
+    clearMustResetCookie();
+    clearSetupCompleteCookie();
     router.push("/login");
   };
 

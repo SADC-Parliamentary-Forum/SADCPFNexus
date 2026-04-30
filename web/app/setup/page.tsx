@@ -12,6 +12,7 @@ import {
 import { Stepper } from "@/components/ui/Stepper";
 import { cn } from "@/lib/utils";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
+import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -217,6 +218,25 @@ function SignatureCanvas({
   const [error, setError] = useState<string | null>(null);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
 
+  const getPos = useCallback((canvas: HTMLCanvasElement, e: MouseEvent | TouchEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const te = e as unknown as TouchEvent;
+    const pt = te.touches?.[0] ?? te.changedTouches?.[0];
+    if (pt) {
+      return {
+        x: (pt.clientX - rect.left) * scaleX,
+        y: (pt.clientY - rect.top) * scaleY,
+      };
+    }
+    const me = e as MouseEvent;
+    return {
+      x: (me.clientX - rect.left) * scaleX,
+      y: (me.clientY - rect.top) * scaleY,
+    };
+  }, []);
+
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -230,47 +250,54 @@ function SignatureCanvas({
     ctx.lineJoin = "round";
   }, []);
 
-  useEffect(() => { initCanvas(); }, [initCanvas]);
+  useEffect(() => {
+    initCanvas();
+  }, [initCanvas]);
 
-  function getPos(canvas: HTMLCanvasElement, e: MouseEvent | TouchEvent) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if ("touches" in e) {
-      const touch = (e as TouchEvent).touches[0];
-      return { x: (touch.clientX - rect.left) * scaleX, y: (touch.clientY - rect.top) * scaleY };
+  useEffect(() => {
+    function getPaintCtx() {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      return { canvas, ctx };
     }
-    return { x: ((e as MouseEvent).clientX - rect.left) * scaleX, y: ((e as MouseEvent).clientY - rect.top) * scaleY };
-  }
+    return attachCanvasPassiveFalseTouchListeners(canvasRef, {
+      lastPos,
+      getPos,
+      getPaintCtx,
+      setHasStrokes,
+    });
+  }, [getPos]);
 
-  function startDraw(e: React.MouseEvent | React.TouchEvent) {
+  function startDraw(e: React.MouseEvent) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     e.preventDefault();
     setIsDrawing(true);
-    const pos = getPos(canvas, e.nativeEvent as MouseEvent | TouchEvent);
+    const pos = getPos(canvas, e.nativeEvent);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     lastPos.current = pos;
   }
 
-  function onDraw(e: React.MouseEvent | React.TouchEvent) {
+  function onDraw(e: React.MouseEvent) {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     e.preventDefault();
-    const pos = getPos(canvas, e.nativeEvent as MouseEvent | TouchEvent);
+    const pos = getPos(canvas, e.nativeEvent);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
     setHasStrokes(true);
   }
 
-  function endDraw(e: React.MouseEvent | React.TouchEvent) {
+  function endDraw(e: React.MouseEvent) {
     e.preventDefault();
     setIsDrawing(false);
     lastPos.current = null;
@@ -310,9 +337,6 @@ function SignatureCanvas({
           onMouseMove={onDraw}
           onMouseUp={endDraw}
           onMouseLeave={endDraw}
-          onTouchStart={startDraw}
-          onTouchMove={onDraw}
-          onTouchEnd={endDraw}
         />
       </div>
       <div className="flex items-center gap-2">
