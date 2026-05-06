@@ -13,11 +13,17 @@ function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
 }
 
+const toNum = (v: unknown): number | null => {
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+};
+
 // ─── Star Components ──────────────────────────────────────────────────────────
 function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
-  if (!avg) return <span className="text-sm text-neutral-400">No ratings yet</span>;
-  const full = Math.floor(avg);
-  const half = avg - full >= 0.5;
+  const safeAvg = toNum(avg);
+  if (safeAvg == null) return <span className="text-sm text-neutral-400">No ratings yet</span>;
+  const full = Math.floor(safeAvg);
+  const half = safeAvg - full >= 0.5;
   return (
     <span className="flex items-center gap-1">
       {Array.from({ length: 5 }, (_, i) => (
@@ -27,7 +33,7 @@ function StarDisplay({ avg, count }: { avg?: number | null; count?: number }) {
           {i < full ? "star" : i === full && half ? "star_half" : "star"}
         </span>
       ))}
-      <span className="text-sm font-bold text-neutral-700 ml-1">{avg.toFixed(1)}</span>
+      <span className="text-sm font-bold text-neutral-700 ml-1">{safeAvg.toFixed(1)}</span>
       <span className="text-xs text-neutral-400">/ 5</span>
       {count !== undefined && <span className="text-xs text-neutral-400">· {count} {count === 1 ? "rating" : "ratings"}</span>}
     </span>
@@ -551,7 +557,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const vendor = data;
   const quotes = vendor.recent_quotes ?? [];
   const ratings: VendorRating[] = vendor.ratings ?? [];
-  const avgRating = vendor.ratings_avg_rating ?? null;
+  const avgRating = toNum(vendor.ratings_avg_rating);
 
   // Pre-populate own rating once data loads
   const preloadedMyRating = vendor.my_rating?.rating ?? 0;
@@ -1143,7 +1149,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Evaluation History</p>
                   {evaluationsData.map((ev) => {
-                    const overall = ev.overall_score ?? ((ev.delivery_score + ev.quality_score + ev.price_score + ev.compliance_score + ev.communication_score) / 5);
+                    const overall = toNum(ev.overall_score) ??
+                      ([ev.delivery_score, ev.quality_score, ev.price_score, ev.compliance_score, ev.communication_score]
+                        .map(s => toNum(s) ?? 0)
+                        .reduce((a, b) => a + b, 0) / 5);
                     return (
                       <div key={ev.id} className="rounded-xl border border-neutral-100 bg-white p-4 space-y-3">
                         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1154,7 +1163,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                             <span className="text-sm font-semibold text-neutral-800">{ev.evaluator?.name ?? "Staff member"}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-purple-600">{overall.toFixed(1)} / 5</span>
+                            <span className="text-sm font-bold text-purple-600">{overall != null ? overall.toFixed(1) : "—"} / 5</span>
                             {ev.created_at && <span className="text-xs text-neutral-400">{formatDateShort(ev.created_at)}</span>}
                           </div>
                         </div>
