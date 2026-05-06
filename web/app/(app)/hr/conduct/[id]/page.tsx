@@ -79,9 +79,11 @@ interface WorkflowStep {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(d: string | null) {
+function formatDate(d: string | null | undefined) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", {
+  const dt = new Date(d);
+  if (!Number.isFinite(dt.getTime())) return "—";
+  return dt.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -91,6 +93,7 @@ function formatDate(d: string | null) {
 function initials(name: string) {
   return name
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .slice(0, 2)
     .join("")

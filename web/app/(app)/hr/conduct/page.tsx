@@ -32,8 +32,11 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "Closed",
 };
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+function formatDate(d: string | null | undefined) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  if (!Number.isFinite(dt.getTime())) return "—";
+  return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function UserAutocomplete({
