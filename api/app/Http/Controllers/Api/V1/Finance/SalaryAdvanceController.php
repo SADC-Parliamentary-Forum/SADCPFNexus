@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeSalaryAssignment;
+use App\Models\Payslip;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
 use App\Services\NotificationService;
@@ -35,12 +36,48 @@ class SalaryAdvanceController extends Controller
         return response()->json($paginated);
     }
 
+    public function eligibility(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $payslip = Payslip::where('user_id', $user->id)
+            ->where('confirmation_status', 'confirmed')
+            ->orderByDesc('period_year')
+            ->orderByDesc('period_month')
+            ->first();
+
+        if (!$payslip) {
+            return response()->json([
+                'eligible'     => false,
+                'reason'       => 'no_confirmed_payslip',
+                'net_salary'   => null,
+                'gross_salary' => null,
+                'max_eligible' => null,
+                'payslip'      => null,
+            ]);
+        }
+
+        $maxEligible = round((float) $payslip->net_amount * 0.5, 2);
+
+        return response()->json([
+            'eligible'     => true,
+            'net_salary'   => (float) $payslip->net_amount,
+            'gross_salary' => (float) $payslip->gross_amount,
+            'max_eligible' => $maxEligible,
+            'payslip'      => [
+                'id'           => $payslip->id,
+                'period_month' => $payslip->period_month,
+                'period_year'  => $payslip->period_year,
+                'currency'     => $payslip->currency,
+            ],
+        ]);
+    }
+
     public function show(SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         if ($salaryAdvanceRequest->requester_id !== request()->user()->id) {
             abort(403);
         }
-        return response()->json(['data' => $salaryAdvanceRequest->load(['requester', 'approver'])]);
+        return response()->json(['data' => $salaryAdvanceRequest->load(['requester', 'approver', 'payslip'])]);
     }
 
     public function store(Request $request): JsonResponse
@@ -126,32 +163,40 @@ class SalaryAdvanceController extends Controller
             ]);
         }
 
-        // Enforce 50% of gross monthly salary cap.
-        $assignment = EmployeeSalaryAssignment::with('salaryScale')
-            ->where('user_id', $user->id)
-            ->where('effective_from', '<=', now())
-            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', now()))
-            ->latest('effective_from')
+        // Enforce 50% of confirmed net salary cap.
+        $payslip = Payslip::where('user_id', $user->id)
+            ->where('confirmation_status', 'confirmed')
+            ->orderByDesc('period_year')
+            ->orderByDesc('period_month')
             ->first();
 
-        if ($assignment && $assignment->salaryScale) {
-            $notchEntry = collect($assignment->salaryScale->notches ?? [])
-                ->firstWhere('notch', $assignment->notch_number);
-            if ($notchEntry) {
-                $monthlyGross = (float) ($notchEntry['monthly'] ?? 0);
-                $cap = $monthlyGross * 0.5;
-                if ($cap > 0 && (float) $salaryAdvanceRequest->amount > $cap) {
-                    throw ValidationException::withMessages([
-                        'amount' => [
-                            'The advance amount exceeds the maximum of 50% of gross monthly salary ('
-                            . number_format($cap, 2) . ' ' . $salaryAdvanceRequest->currency . ').',
-                        ],
-                    ]);
-                }
-            }
+        if (!$payslip) {
+            throw ValidationException::withMessages([
+                'amount' => ['No confirmed payslip on file. Please contact HR to confirm your salary before submitting an advance request.'],
+            ]);
         }
 
-        $salaryAdvanceRequest->update(['status' => 'submitted', 'submitted_at' => now()]);
+        $maxEligible = round((float) $payslip->net_amount * 0.5, 2);
+
+        if ((float) $salaryAdvanceRequest->amount > $maxEligible) {
+            throw ValidationException::withMessages([
+                'amount' => [
+                    'The advance amount exceeds 50% of your confirmed net salary. Maximum eligible: '
+                    . $salaryAdvanceRequest->currency . ' ' . number_format($maxEligible, 2) . '.',
+                ],
+            ]);
+        }
+
+        // Store salary snapshot for audit.
+        $salaryAdvanceRequest->update([
+            'payslip_id'             => $payslip->id,
+            'net_salary_at_request'  => (float) $payslip->net_amount,
+            'gross_salary_at_request'=> (float) $payslip->gross_amount,
+            'max_eligible_amount'    => $maxEligible,
+            'eligibility_status'     => 'eligible',
+            'status'                 => 'submitted',
+            'submitted_at'           => now(),
+        ]);
 
         // Initiate workflow — will notify first-step approvers with email action buttons.
         $this->workflowService->initiate($salaryAdvanceRequest, 'salary_advance', $request->user());

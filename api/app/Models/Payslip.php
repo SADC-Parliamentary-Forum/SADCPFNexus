@@ -30,6 +30,10 @@ class Payslip extends Model
         'details',
         'file_path',
         'issued_at',
+        'confirmation_status',
+        'confirmed_by',
+        'confirmed_at',
+        'confirmation_notes',
     ];
 
     protected function casts(): array
@@ -42,6 +46,7 @@ class Payslip extends Model
             'period_end_date'             => 'date',
             'details'                     => 'array',
             'issued_at'                   => 'datetime',
+            'confirmed_at'                => 'datetime',
         ];
     }
 
@@ -53,6 +58,11 @@ class Payslip extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function confirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by');
     }
 
     public function getPeriodLabelAttribute(): string

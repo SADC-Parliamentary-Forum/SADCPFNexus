@@ -439,6 +439,7 @@ Route::prefix('v1')->group(function () {
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'index']);
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'show']);
             Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'download']);
+            Route::get('advances/eligibility', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'eligibility']);
             Route::get('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'index']);
             Route::get('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'show']);
             Route::post('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'store']);
@@ -469,6 +470,9 @@ Route::prefix('v1')->group(function () {
         // HR - Timesheets & Summary
         Route::prefix('hr')->group(function () {
             Route::get('summary', [\App\Http\Controllers\Api\V1\Hr\HrSummaryController::class, 'summary']);
+
+            // Payslip salary confirmation (HR only)
+            Route::post('payslips/{payslip}/confirm', [\App\Http\Controllers\Api\V1\Hr\PayslipConfirmationController::class, 'confirm']);
 
             // Profile Change Approval (HR)
             Route::get('profile-requests', [\App\Http\Controllers\Api\V1\Hr\ProfileRequestController::class, 'index']);

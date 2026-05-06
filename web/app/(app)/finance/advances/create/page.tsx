@@ -8,6 +8,17 @@ import { cn } from "@/lib/utils";
 
 type AdvanceTypeOption = { value: string; label: string; desc?: string; icon?: string };
 
+type EligibilityResult = {
+  eligible: boolean;
+  reason?: string;
+  net_salary: number | null;
+  gross_salary: number | null;
+  max_eligible: number | null;
+  payslip: { id: number; period_month: number; period_year: number; currency: string } | null;
+};
+
+const MONTH_NAMES = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 const STEPS = [
   { id: 0, label: "Eligibility",  icon: "assignment_turned_in" },
   { id: 1, label: "Schedule",     icon: "calendar_month" },
@@ -19,8 +30,9 @@ export default function SalaryAdvanceCreatePage() {
   const [step, setStep] = useState(0);
 
   // Data from API
-  const [advanceTypes, setAdvanceTypes] = useState<AdvanceTypeOption[]>([]);
-  const [grossSalary, setGrossSalary]   = useState<number | null>(null);
+  const [advanceTypes, setAdvanceTypes]     = useState<AdvanceTypeOption[]>([]);
+  const [eligibility, setEligibility]       = useState<EligibilityResult | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
 
   // Form fields
   const [advanceType, setAdvanceType]         = useState("");
@@ -38,16 +50,24 @@ export default function SalaryAdvanceCreatePage() {
 
   useEffect(() => {
     lookupsApi.get(["advance_types"]).then((res) => setAdvanceTypes(res.data.advance_types ?? [])).catch(() => {});
-    financeApi.getSummary().then((res) => setGrossSalary(res.data.current_gross_salary ?? null)).catch(() => {});
+    setEligibilityLoading(true);
+    financeApi.getSalaryAdvanceEligibility()
+      .then((res) => setEligibility(res.data))
+      .catch(() => setEligibility(null))
+      .finally(() => setEligibilityLoading(false));
   }, []);
 
   // Derived computations
-  const amountNum         = parseFloat(amount) || 0;
-  const monthsNum         = parseInt(repaymentMonths) || 12;
-  const maxAdvance        = grossSalary ? grossSalary * 3 : 999999;
-  const monthlyDeduction  = monthsNum > 0 && amountNum > 0 ? amountNum / monthsNum : 0;
-  const exceedsMax        = amountNum > maxAdvance;
-  const percentOfMax      = maxAdvance < 999999 ? Math.min((amountNum / maxAdvance) * 100, 100) : 0;
+  const amountNum        = parseFloat(amount) || 0;
+  const monthsNum        = parseInt(repaymentMonths) || 12;
+  const netSalary        = eligibility?.net_salary ?? null;
+  const maxEligible      = eligibility?.max_eligible ?? null;
+  const monthlyDeduction = monthsNum > 0 && amountNum > 0 ? amountNum / monthsNum : 0;
+  const exceedsMax       = maxEligible != null && amountNum > maxEligible;
+  const percentOfMax     = maxEligible != null && maxEligible > 0 ? Math.min((amountNum / maxEligible) * 100, 100) : 0;
+  const payslipLabel     = eligibility?.payslip
+    ? `${MONTH_NAMES[eligibility.payslip.period_month] ?? eligibility.payslip.period_month} ${eligibility.payslip.period_year}`
+    : null;
 
   const nextPayDate = (() => {
     const d = new Date();
@@ -59,7 +79,7 @@ export default function SalaryAdvanceCreatePage() {
   // Validation per step
   const canProceed = () => {
     if (step === 0) return !!advanceType;
-    if (step === 1) return !!amount && !!purpose && !!justification && amountNum > 0 && !exceedsMax;
+    if (step === 1) return eligibility?.eligible === true && !!amount && !!purpose && !!justification && amountNum > 0 && !exceedsMax;
     if (step === 2) return consented;
     return false;
   };
@@ -101,33 +121,51 @@ export default function SalaryAdvanceCreatePage() {
       </div>
 
       {/* Eligibility indicators */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-          <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
+      {eligibilityLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-neutral-100 animate-pulse" />)}
+        </div>
+      ) : !eligibility?.eligible ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-amber-600 text-[20px] mt-0.5">warning</span>
           <div>
-            <p className="text-xs font-semibold text-green-800">Salary on Record</p>
-            <p className="text-[11px] text-green-600">
-              {grossSalary != null ? `${currencySymbol} ${grossSalary.toLocaleString()}` : "Loading…"}
+            <p className="text-sm font-semibold text-amber-900">Salary Not Yet Confirmed</p>
+            <p className="text-xs text-amber-700 mt-1">
+              Your payslip has not been confirmed by HR. You will not be able to proceed until HR confirms your net salary.
+              Please contact HR to confirm your latest payslip.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-          <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
-          <div>
-            <p className="text-xs font-semibold text-green-800">No Active Advance</p>
-            <p className="text-[11px] text-green-600">Account is clear</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+            <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
+            <div>
+              <p className="text-xs font-semibold text-green-800">Confirmed Net Salary</p>
+              <p className="text-[11px] text-green-600">
+                {netSalary != null ? `${currencySymbol} ${netSalary.toLocaleString()}` : "—"}
+                {payslipLabel ? ` (${payslipLabel})` : ""}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+            <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
+            <div>
+              <p className="text-xs font-semibold text-green-800">No Active Advance</p>
+              <p className="text-[11px] text-green-600">Account is clear</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+            <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
+            <div>
+              <p className="text-xs font-semibold text-green-800">Maximum Advance</p>
+              <p className="text-[11px] text-green-600">
+                {maxEligible != null ? `${currencySymbol} ${maxEligible.toLocaleString()}` : "—"}
+              </p>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-          <span className="material-symbols-outlined text-green-600 text-[20px]">check_circle</span>
-          <div>
-            <p className="text-xs font-semibold text-green-800">Advance Limit</p>
-            <p className="text-[11px] text-green-600">
-              {maxAdvance < 999999 ? `Up to ${currencySymbol} ${maxAdvance.toLocaleString()}` : "Standard limit"}
-            </p>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Advance type grid */}
       <div className="space-y-2">
@@ -182,7 +220,7 @@ export default function SalaryAdvanceCreatePage() {
         <ul className="text-xs opacity-90 space-y-1.5">
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Maximum advance: 3× monthly gross salary
+            Maximum advance: 50% of confirmed net salary
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
@@ -232,10 +270,10 @@ export default function SalaryAdvanceCreatePage() {
           {exceedsMax && (
             <p className="text-[11px] text-red-500 flex items-center gap-1">
               <span className="material-symbols-outlined text-[13px]">error</span>
-              Exceeds maximum ({currencySymbol} {maxAdvance.toLocaleString()})
+              Exceeds 50% of net salary ({currencySymbol} {maxEligible?.toLocaleString() ?? "—"})
             </p>
           )}
-          {maxAdvance < 999999 && !exceedsMax && amountNum > 0 && (
+          {maxEligible != null && !exceedsMax && amountNum > 0 && (
             <>
               <div className="mt-1 w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
                 <div className="bg-primary h-1.5 rounded-full transition-all" style={{ width: `${percentOfMax}%` }} />
@@ -292,9 +330,15 @@ export default function SalaryAdvanceCreatePage() {
             <p className="text-sm font-semibold text-neutral-900 mb-3">Projected Deduction Schedule</p>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Gross Salary</span>
+                <span className="text-neutral-500">Confirmed Net Salary</span>
                 <span className="font-medium text-neutral-800">
-                  {grossSalary != null ? `${currencySymbol} ${grossSalary.toLocaleString()}` : "—"}
+                  {netSalary != null ? `${currencySymbol} ${netSalary.toLocaleString()}` : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-neutral-500">Maximum Eligible (50%)</span>
+                <span className="font-medium text-neutral-800">
+                  {maxEligible != null ? `${currencySymbol} ${maxEligible.toLocaleString()}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">

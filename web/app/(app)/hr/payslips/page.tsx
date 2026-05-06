@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES } from "@/lib/constants";
-import { adminApi, payslipRefreshApi } from "@/lib/api";
+import { adminApi, hrApi, payslipRefreshApi } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import type { AdminPayslip, User } from "@/lib/api";
 
@@ -83,6 +83,10 @@ export default function HrPayslipsPage() {
   const reuploadInputRef = useRef<HTMLInputElement>(null);
   const [canManage, setCanManage] = useState(false);
   const [refreshingId, setRefreshingId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<AdminPayslip | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<"confirmed" | "rejected">("confirmed");
+  const [confirmNotes, setConfirmNotes] = useState("");
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -212,6 +216,22 @@ export default function HrPayslipsPage() {
     setUploading(false);
   };
 
+  const handleConfirm = async () => {
+    if (!confirmTarget) return;
+    setConfirmLoading(true);
+    try {
+      await hrApi.confirmPayslip(confirmTarget.id, { confirmation_status: confirmStatus, confirmation_notes: confirmNotes || undefined });
+      showToast(`Payslip ${confirmStatus}.`);
+      setConfirmTarget(null);
+      setConfirmNotes("");
+      fetchList();
+    } catch {
+      showToast("Confirmation failed. Please try again.", true);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-4xl">
       {toast && (
@@ -249,6 +269,70 @@ export default function HrPayslipsPage() {
                   <input ref={reuploadInputRef} type="file" accept={PAYSLIP_ACCEPTED_TYPES} className="hidden" onChange={handleReuploadSelect} disabled={reuploading} />
                 </label>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Salary Confirmation Modal */}
+      {confirmTarget && canManage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => { setConfirmTarget(null); setConfirmNotes(""); }}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-blue-600 text-[20px]">verified</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900">Confirm Salary</h3>
+                  <p className="text-xs text-neutral-500">{confirmTarget.user?.name ?? "—"} — {formatPeriod(confirmTarget)}</p>
+                </div>
+              </div>
+              <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4 text-sm space-y-2">
+                <div className="flex justify-between"><span className="text-neutral-500">Net Salary</span><span className="font-semibold">{Number(confirmTarget.net_amount).toLocaleString()} {confirmTarget.currency}</span></div>
+                <div className="flex justify-between"><span className="text-neutral-500">Gross Salary</span><span className="font-medium">{Number(confirmTarget.gross_amount).toLocaleString()} {confirmTarget.currency}</span></div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-neutral-700">Action</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmStatus("confirmed")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-all ${confirmStatus === "confirmed" ? "border-green-400 bg-green-50 text-green-700" : "border-neutral-200 text-neutral-500 hover:border-neutral-300"}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                    Confirm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmStatus("rejected")}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-all ${confirmStatus === "rejected" ? "border-red-400 bg-red-50 text-red-700" : "border-neutral-200 text-neutral-500 hover:border-neutral-300"}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">cancel</span>
+                    Reject
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-neutral-700">Notes (optional)</label>
+                <textarea
+                  className="form-input resize-none h-20"
+                  placeholder="Add a note for this confirmation…"
+                  value={confirmNotes}
+                  onChange={(e) => setConfirmNotes(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => { setConfirmTarget(null); setConfirmNotes(""); }} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={confirmLoading}
+                  className={`flex-1 py-2.5 text-sm font-semibold rounded-xl text-white transition-colors disabled:opacity-50 ${confirmStatus === "confirmed" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+                >
+                  {confirmLoading ? "Processing…" : confirmStatus === "confirmed" ? "Confirm Salary" : "Reject Payslip"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -302,7 +386,8 @@ export default function HrPayslipsPage() {
                   <th className="text-right">Gross</th>
                   <th className="text-right">Net</th>
                   <th>Currency</th>
-                  <th>Status</th>
+                  <th>Auto-fill</th>
+                  <th>Salary Conf.</th>
                   {canManage && <th />}
                 </tr>
               </thead>
@@ -324,6 +409,33 @@ export default function HrPayslipsPage() {
                       ) : (
                         <span className="badge-muted text-xs flex items-center gap-1">
                           <span className="material-symbols-outlined text-[11px]">pending</span>
+                          Pending
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {(p as AdminPayslip & { confirmation_status?: string }).confirmation_status === "confirmed" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+                          <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                          Confirmed
+                        </span>
+                      ) : (p as AdminPayslip & { confirmation_status?: string }).confirmation_status === "rejected" ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-50 rounded-full px-2 py-0.5">
+                          <span className="material-symbols-outlined text-[11px]">cancel</span>
+                          Rejected
+                        </span>
+                      ) : canManage ? (
+                        <button
+                          type="button"
+                          onClick={() => { setConfirmTarget(p); setConfirmStatus("confirmed"); setConfirmNotes(""); }}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[11px]">pending_actions</span>
+                          Confirm
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-500 bg-neutral-100 rounded-full px-2 py-0.5">
+                          <span className="material-symbols-outlined text-[11px]">schedule</span>
                           Pending
                         </span>
                       )}

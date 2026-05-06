@@ -1860,6 +1860,12 @@ export interface SalaryAdvanceRequest {
   approved_at: string | null;
   requester?: User;
   approver?: User;
+  payslip_id?: number | null;
+  net_salary_at_request?: number | null;
+  gross_salary_at_request?: number | null;
+  max_eligible_amount?: number | null;
+  eligibility_status?: string | null;
+  payslip?: Payslip | null;
 }
 
 export interface Payslip {
@@ -1883,6 +1889,11 @@ export interface Payslip {
   file_path?: string | null;
   period_label?: string;
   issued_at: string | null;
+  confirmation_status?: "pending" | "confirmed" | "rejected";
+  confirmed_by?: number | null;
+  confirmed_at?: string | null;
+  confirmation_notes?: string | null;
+  confirmed_by_user?: { id: number; name: string } | null;
 }
 
 export interface FinanceSummary {
@@ -1950,6 +1961,15 @@ export const financeApi = {
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/approve`),
   rejectAdvance: (id: number, reason: string) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/reject`, { reason }),
+  getSalaryAdvanceEligibility: () =>
+    api.get<{
+      eligible: boolean;
+      reason?: string;
+      net_salary: number | null;
+      gross_salary: number | null;
+      max_eligible: number | null;
+      payslip: { id: number; period_month: number; period_year: number; currency: string } | null;
+    }>("/finance/advances/eligibility"),
 };
 
 // ─── BCRE: Balance Control & Reconciliation Engine ───────────────────────────
@@ -2224,6 +2244,8 @@ export const hrApi = {
       "/hr/timesheets/holiday-dates",
       { params: { start, end } }
     ),
+  confirmPayslip: (id: number, data: { confirmation_status: "confirmed" | "rejected"; confirmation_notes?: string }) =>
+    api.post<{ message: string; payslip: Payslip }>(`/hr/payslips/${id}/confirm`, data),
 };
 
 // ─── Holiday Calendars ───────────────────────────────────────────────────────

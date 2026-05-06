@@ -340,6 +340,53 @@ export default function AdvanceDetailPage() {
         </div>
       </div>
 
+      {/* Salary Eligibility Snapshot */}
+      {(advance.net_salary_at_request != null || advance.max_eligible_amount != null) && (
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-blue-600 text-[16px]">verified</span>
+            </div>
+            <h2 className="text-sm font-semibold text-neutral-900">Salary Eligibility Snapshot</h2>
+            <span className="ml-auto text-[11px] text-neutral-400">Frozen at time of submission</span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <div>
+              <p className="text-xs text-neutral-400 mb-0.5">Confirmed Net Salary</p>
+              <p className="font-semibold text-neutral-900">
+                {advance.net_salary_at_request != null ? formatCurrency(advance.net_salary_at_request, advance.currency) : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-400 mb-0.5">Gross Salary</p>
+              <p className="font-medium text-neutral-800">
+                {advance.gross_salary_at_request != null ? formatCurrency(advance.gross_salary_at_request, advance.currency) : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-400 mb-0.5">Maximum Eligible (50% of net)</p>
+              <p className="font-semibold text-neutral-900">
+                {advance.max_eligible_amount != null ? formatCurrency(advance.max_eligible_amount, advance.currency) : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-400 mb-0.5">Payslip Period</p>
+              <p className="font-medium text-neutral-800">
+                {advance.payslip
+                  ? `${["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][advance.payslip.period_month] ?? advance.payslip.period_month} ${advance.payslip.period_year}`
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-400 mb-0.5">Eligibility Status</p>
+              <span className={`badge ${advance.eligibility_status === "eligible" ? "badge-success" : "badge-warning"}`}>
+                {advance.eligibility_status ?? "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Repayment Schedule */}
       {(advance.status === "approved" || advance.status === "paid") && advance.repayment_months > 0 && (
         <RepaymentSchedule advance={advance} formatCurrency={formatCurrency} />

@@ -18,12 +18,17 @@ class SalaryAdvanceRequest extends Model
         'advance_type', 'amount', 'currency', 'repayment_months',
         'purpose', 'justification', 'status', 'rejection_reason',
         'submitted_at', 'approved_at',
+        'payslip_id', 'net_salary_at_request', 'gross_salary_at_request',
+        'max_eligible_amount', 'eligibility_status',
     ];
 
     protected $casts = [
-        'submitted_at' => 'datetime',
-        'approved_at'  => 'datetime',
-        'amount'       => 'float',
+        'submitted_at'           => 'datetime',
+        'approved_at'            => 'datetime',
+        'amount'                 => 'float',
+        'net_salary_at_request'  => 'float',
+        'gross_salary_at_request'=> 'float',
+        'max_eligible_amount'    => 'float',
     ];
 
     public function requester()
@@ -34,6 +39,11 @@ class SalaryAdvanceRequest extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function payslip()
+    {
+        return $this->belongsTo(\App\Models\Payslip::class);
     }
 
     public function approvalRequest(): MorphOne
