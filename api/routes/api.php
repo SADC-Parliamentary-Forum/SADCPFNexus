@@ -21,6 +21,8 @@ Route::prefix('v1')->group(function () {
     // Public auth routes
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
+        Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
         // Lightweight connection pre-warm used by the mobile splash screen.
         Route::get('ping', fn () => response()->json(['ok' => true]))->middleware('throttle:60,1');
     });
@@ -341,6 +343,7 @@ Route::prefix('v1')->group(function () {
             Route::get('vendors/{vendor}/contracts',    [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
             Route::post('vendors/{vendor}/blacklist',   [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'blacklist']);
             Route::post('vendors/{vendor}/unblacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'unblacklist']);
+            Route::post('vendors/{vendor}/portal-users/{portalUser}/change-password', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'changePortalUserPassword']);
             Route::get('vendors/{vendor}/evaluations',  [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
             Route::post('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'store']);
 

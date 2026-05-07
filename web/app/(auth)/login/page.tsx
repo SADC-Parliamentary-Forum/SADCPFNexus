@@ -315,9 +315,19 @@ export default function LoginPage() {
             </div>
           )}
 
-          <p className="mt-6 text-center text-xs text-neutral-400">
-            Forgot your password? Contact IT Support.
-          </p>
+          <div className="mt-6 text-center text-xs text-neutral-500 space-y-1.5">
+            <p>
+              <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+                Reset password
+              </Link>
+              {" "}or{" "}
+              <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+                request a password
+              </Link>
+              {" "}for staff and supplier accounts.
+            </p>
+            <p className="text-neutral-400">If you no longer have mailbox access, contact IT Support.</p>
+          </div>
           <div className="mt-3 text-center text-xs text-neutral-500">
             Supplier onboarding:{" "}
             <Link href="/supplier/register" className="font-medium text-primary hover:underline">

@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Contract;
 use App\Models\SupplierCategory;
+use App\Models\User;
+use App\Models\UserSession;
 use App\Models\Vendor;
 use App\Models\VendorRating;
 use App\Modules\Procurement\Services\VendorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class VendorController extends Controller
 {
@@ -412,6 +416,44 @@ class VendorController extends Controller
         $vendor = $this->vendorService->unblacklistVendor($vendor, $request->user());
 
         return response()->json(['message' => 'Vendor removed from blacklist.', 'data' => $vendor->fresh()]);
+    }
+
+    public function changePortalUserPassword(Request $request, Vendor $vendor, User $portalUser): JsonResponse
+    {
+        abort_unless($this->canManageVendors($request), 403);
+        if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        if ((int) $portalUser->tenant_id !== (int) $request->user()->tenant_id || (int) $portalUser->vendor_id !== (int) $vendor->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password_confirmation' => ['required', 'string'],
+            'must_reset_password' => ['sometimes', 'boolean'],
+        ]);
+
+        $portalUser->forceFill([
+            'password' => Hash::make($data['password']),
+            'must_reset_password' => (bool) ($data['must_reset_password'] ?? true),
+        ])->save();
+
+        $portalUser->tokens()->delete();
+        UserSession::where('user_id', $portalUser->id)->delete();
+
+        AuditLog::record('vendor.portal_user_password_changed', [
+            'auditable_type' => User::class,
+            'auditable_id' => $portalUser->id,
+            'actor_id' => $request->user()->id,
+            'meta' => [
+                'vendor_id' => $vendor->id,
+                'target_user' => $portalUser->email,
+            ],
+        ]);
+
+        return response()->json(['message' => 'Supplier portal password updated.']);
     }
 
     private function syncCategories(Vendor $vendor, array $categoryIds, int $tenantId): void

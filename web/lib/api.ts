@@ -110,6 +110,19 @@ export const authApi = {
   },
   logout: () => api.post("/auth/logout"),
   me: () => api.get<AuthUser>("/auth/me"),
+  forgotPassword: async (email: string) => {
+    await ensureCsrfCookie();
+    return api.post<{ message: string }>("/auth/forgot-password", { email: email.trim() });
+  },
+  resetPassword: async (token: string, email: string, password: string, passwordConfirmation: string) => {
+    await ensureCsrfCookie();
+    return api.post<{ message: string }>("/auth/reset-password", {
+      token,
+      email: email.trim(),
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+  },
   forceResetPassword: async (password: string, passwordConfirmation: string) => {
     await ensureCsrfCookie();
     return api.post<{ message: string }>("/auth/force-reset-password", {
@@ -1551,6 +1564,18 @@ export const vendorsApi = {
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/blacklist`, { reason, reference }),
   unblacklist: (id: number) =>
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/unblacklist`),
+  changePortalUserPassword: (
+    vendorId: number,
+    portalUserId: number,
+    password: string,
+    passwordConfirmation: string,
+    mustResetPassword = true
+  ) =>
+    api.post<{ message: string }>(`/procurement/vendors/${vendorId}/portal-users/${portalUserId}/change-password`, {
+      password,
+      password_confirmation: passwordConfirmation,
+      must_reset_password: mustResetPassword,
+    }),
   listEvaluations: (id: number) =>
     api.get<{ data: VendorPerformanceEvaluation[]; avg: Record<string, number>; count: number }>(
       `/procurement/vendors/${id}/evaluations`

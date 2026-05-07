@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { authApi, clearMustResetCookie, clearSetupCompleteCookie, setSetupCompleteCookie } from "@/lib/api";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
 
 export default function ResetPasswordPage() {
+  const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
+  const isTokenResetFlow = Boolean(token && email);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -23,6 +27,13 @@ export default function ResetPasswordPage() {
 
   const strength = password ? passwordStrength(password) : null;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setToken(params.get("token") ?? "");
+    setEmail(params.get("email") ?? "");
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -30,18 +41,25 @@ export default function ResetPasswordPage() {
     if (password.length < 8)  { setError("Password must be at least 8 characters."); return; }
     setSaving(true);
     try {
-      await authApi.forceResetPassword(password, confirm);
-      clearMustResetCookie();
-      const storedUser = readStoredUser();
-      if (storedUser) {
-        writeStoredUser({ ...storedUser, must_reset_password: false });
-      }
-      if (storedUser?.setup_completed) {
-        setSetupCompleteCookie();
-        window.location.href = "/dashboard";
-      } else {
+      if (isTokenResetFlow) {
+        await authApi.resetPassword(token, email, password, confirm);
+        clearMustResetCookie();
         clearSetupCompleteCookie();
-        window.location.href = "/setup";
+        window.location.href = "/login";
+      } else {
+        await authApi.forceResetPassword(password, confirm);
+        clearMustResetCookie();
+        const storedUser = readStoredUser();
+        if (storedUser) {
+          writeStoredUser({ ...storedUser, must_reset_password: false });
+        }
+        if (storedUser?.setup_completed) {
+          setSetupCompleteCookie();
+          window.location.href = "/dashboard";
+        } else {
+          clearSetupCompleteCookie();
+          window.location.href = "/setup";
+        }
       }
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -80,7 +98,9 @@ export default function ResetPasswordPage() {
             <div>
               <h1 className="text-lg font-bold text-neutral-900">Set your password</h1>
               <p className="text-sm text-neutral-500 mt-0.5">
-                Your account requires a new password before you can continue.
+                {isTokenResetFlow
+                  ? "Reset your password to regain access to your account."
+                  : "Your account requires a new password before you can continue."}
               </p>
             </div>
           </div>
@@ -191,7 +211,11 @@ export default function ResetPasswordPage() {
         </div>
 
         <p className="mt-5 text-center text-xs text-neutral-400">
-          Need help? Contact IT Support.
+          {isTokenResetFlow ? (
+            <Link href="/login" className="text-primary hover:underline">Back to login</Link>
+          ) : (
+            "Need help? Contact IT Support."
+          )}
         </p>
       </div>
     </div>

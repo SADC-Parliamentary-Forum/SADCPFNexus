@@ -497,6 +497,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const [evalContractId, setEvalContractId] = useState<number | "">("");
   const [evalNotes, setEvalNotes]           = useState("");
   const [evalSubmitting, setEvalSubmitting] = useState(false);
+  const [showPortalPwModal, setShowPortalPwModal] = useState(false);
+  const [selectedPortalUser, setSelectedPortalUser] = useState<{ id: number; name: string; email: string } | null>(null);
+  const [portalPassword, setPortalPassword] = useState("");
+  const [portalPasswordConfirm, setPortalPasswordConfirm] = useState("");
+  const [portalPwSaving, setPortalPwSaving] = useState(false);
+  const [portalPwError, setPortalPwError] = useState<string | null>(null);
 
   useEffect(() => {
     if (vendorId) vendorAttachmentsApi.list(vendorId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
@@ -1389,6 +1395,38 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   <p className="text-xs text-neutral-700">{vendor.notes}</p>
                 </div>
               )}
+              {canManageVendors() && (
+                <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-2.5 space-y-2">
+                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Supplier Portal Credentials</p>
+                  {(vendor.portal_users ?? []).length === 0 ? (
+                    <p className="text-xs text-neutral-500">No supplier portal users linked yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(vendor.portal_users ?? []).map((pu) => (
+                        <div key={pu.id} className="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-white px-2.5 py-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-neutral-800 truncate">{pu.name}</p>
+                            <p className="text-[11px] text-neutral-500 truncate">{pu.email}</p>
+                          </div>
+                          <button
+                            type="button"
+                            className="rounded-md border border-primary/30 bg-primary/5 px-2 py-1 text-[11px] font-semibold text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              setSelectedPortalUser({ id: pu.id, name: pu.name, email: pu.email });
+                              setPortalPwError(null);
+                              setPortalPassword("");
+                              setPortalPasswordConfirm("");
+                              setShowPortalPwModal(true);
+                            }}
+                          >
+                            Reset Password
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1677,6 +1715,95 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   : <span className="material-symbols-outlined text-[14px]">cancel</span>
                 }
                 {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPortalPwModal && selectedPortalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowPortalPwModal(false)}>
+          <div className="card w-full max-w-md p-6 shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                <span className="material-symbols-outlined text-[20px] text-primary">lock_reset</span>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-800">Reset Supplier Password</h2>
+                <p className="text-xs text-neutral-500">{selectedPortalUser.email}</p>
+              </div>
+            </div>
+            {portalPwError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{portalPwError}</div>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+              <input
+                type="password"
+                className="form-input"
+                value={portalPassword}
+                onChange={(e) => setPortalPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
+              <input
+                type="password"
+                className="form-input"
+                value={portalPasswordConfirm}
+                onChange={(e) => setPortalPasswordConfirm(e.target.value)}
+                placeholder="Repeat password"
+              />
+            </div>
+            <p className="text-[11px] text-neutral-500">
+              The supplier user will be required to set a new password on next login.
+            </p>
+            <div className="flex gap-3">
+              <button
+                className="btn-secondary flex-1"
+                onClick={() => {
+                  setShowPortalPwModal(false);
+                  setPortalPwError(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary flex-1 disabled:opacity-60"
+                disabled={portalPwSaving || !portalPassword || !portalPasswordConfirm}
+                onClick={async () => {
+                  if (portalPassword.length < 8) {
+                    setPortalPwError("Password must be at least 8 characters.");
+                    return;
+                  }
+                  if (portalPassword !== portalPasswordConfirm) {
+                    setPortalPwError("Passwords do not match.");
+                    return;
+                  }
+                  setPortalPwSaving(true);
+                  setPortalPwError(null);
+                  try {
+                    await vendorsApi.changePortalUserPassword(
+                      vendorId,
+                      selectedPortalUser.id,
+                      portalPassword,
+                      portalPasswordConfirm,
+                      true
+                    );
+                    queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+                    setShowPortalPwModal(false);
+                    setPortalPassword("");
+                    setPortalPasswordConfirm("");
+                  } catch (e: unknown) {
+                    const msg = (e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data?.message
+                      ?? "Failed to reset supplier password.";
+                    setPortalPwError(msg);
+                  } finally {
+                    setPortalPwSaving(false);
+                  }
+                }}
+              >
+                {portalPwSaving ? "Saving..." : "Reset Password"}
               </button>
             </div>
           </div>
