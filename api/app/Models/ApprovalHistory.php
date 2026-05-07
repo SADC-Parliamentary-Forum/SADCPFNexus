@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ApprovalHistory extends Model
 {
     protected $fillable = [
-        'approval_request_id', 'user_id', 'action', 'comment'
+        'approval_request_id', 'user_id', 'action', 'step_index', 'comment'
     ];
 
     public function request(): BelongsTo

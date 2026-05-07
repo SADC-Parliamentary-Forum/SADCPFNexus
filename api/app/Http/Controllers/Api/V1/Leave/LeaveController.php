@@ -148,31 +148,36 @@ class LeaveController extends Controller
         $overrideReason = $data['override_reason'] ?? null;
 
         if (!$leaveRequest->approvalRequest) {
-            // Direct approval path — balance check is inside leaveService->approve()
             $leave = $this->leaveService->approve($leaveRequest, $request->user(), $overrideReason);
             return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
         }
 
-        // Workflow path — validate balance here before advancing workflow
-        // (WorkflowService's onWorkflowApproved callback has no override context)
         $this->leaveService->validateLeaveBalance($leaveRequest, $overrideReason);
 
-        $this->workflowService->approve($leaveRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
+        $result = $this->workflowService->approve(
+            $leaveRequest->approvalRequest,
+            $request->user(),
+            $data['comment'] ?? null
+        );
 
-        return response()->json(['message' => 'Leave request approved.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);
+        return response()->json([
+            'message'            => 'Leave request approved.',
+            'data'               => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest']),
+            'notified_approvers' => $result['notified_approvers'],
+        ]);
     }
 
     public function reject(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
         $data = $request->validate([
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason'  => ['nullable', 'string', 'max:1000'],
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
         $reason = $data['reason'] ?? $data['comment'] ?? null;
         if (!$reason) {
             return response()->json([
                 'message' => 'The comment field is required.',
-                'errors' => ['comment' => ['The comment field is required.']],
+                'errors'  => ['comment' => ['The comment field is required.']],
             ], 422);
         }
 
@@ -184,5 +189,52 @@ class LeaveController extends Controller
         $this->workflowService->reject($leaveRequest->approvalRequest, $request->user(), $reason);
 
         return response()->json(['message' => 'Leave request rejected.', 'data' => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest'])]);
+    }
+
+    public function returnForCorrection(Request $request, LeaveRequest $leaveRequest): JsonResponse
+    {
+        $data = $request->validate(['comment' => ['required', 'string', 'max:1000']]);
+        abort_unless($leaveRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->returnForCorrection(
+            $leaveRequest->approvalRequest,
+            $request->user(),
+            $data['comment']
+        );
+        return response()->json([
+            'message' => 'Request returned to requester for correction.',
+            'data'    => $leaveRequest->fresh(['requester', 'approver', 'approvalRequest']),
+        ]);
+    }
+
+    public function withdraw(Request $request, LeaveRequest $leaveRequest): JsonResponse
+    {
+        abort_unless($leaveRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->withdraw($leaveRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Leave request withdrawn.',
+            'data'    => $leaveRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function resubmit(Request $request, LeaveRequest $leaveRequest): JsonResponse
+    {
+        abort_unless($leaveRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->resubmit($leaveRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Leave request resubmitted.',
+            'data'    => $leaveRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function certificate(LeaveRequest $leaveRequest): JsonResponse
+    {
+        abort_unless($leaveRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        return response()->json([
+            'data' => $leaveRequest->load([
+                'requester.department',
+                'approvalRequest.history.user',
+                'approvalRequest.workflow.steps',
+            ]),
+        ]);
     }
 }

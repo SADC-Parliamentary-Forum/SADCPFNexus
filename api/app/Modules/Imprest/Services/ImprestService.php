@@ -6,13 +6,17 @@ use App\Models\ImprestRequest;
 use App\Models\User;
 use App\Modules\Finance\Services\BalanceRegisterService;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ImprestService
 {
-    public function __construct(protected NotificationService $notificationService) {}
+    public function __construct(
+        protected NotificationService $notificationService,
+        protected WorkflowService     $workflowService,
+    ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ImprestRequest::with(['requester'])
@@ -79,22 +83,27 @@ class ImprestService
 
     public function submit(ImprestRequest $imprest, User $user): ImprestRequest
     {
-        if (!$imprest->isDraft()) {
-            throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
+        if (!$imprest->isDraft() && $imprest->status !== 'returned_for_correction') {
+            throw ValidationException::withMessages(['status' => 'Only draft or returned requests can be submitted.']);
         }
 
         $imprest->update(['status' => 'submitted', 'submitted_at' => now()]);
 
-        // Notify Finance approvers, excluding the requester
-        $approvers = User::role(['Finance Controller', 'Secretary General'])
-            ->where('tenant_id', $user->tenant_id)
-            ->where('id', '!=', $user->id)
-            ->get();
-        $this->notificationService->dispatchToMany($approvers, 'imprest.submitted', [
-            'reference' => $imprest->reference_number,
-            'requester' => $user->name,
-            'amount'    => number_format($imprest->amount_requested, 2) . ' ' . $imprest->currency,
-        ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
+        // Try to start the WorkflowService chain for this imprest request
+        $workflowStarted = $this->workflowService->initiate($imprest, 'imprest', $user);
+
+        if (!$workflowStarted) {
+            // Fallback: no workflow configured for this tenant — notify Finance directly
+            $approvers = User::role(['Finance Controller', 'Secretary General'])
+                ->where('tenant_id', $user->tenant_id)
+                ->where('id', '!=', $user->id)
+                ->get();
+            $this->notificationService->dispatchToMany($approvers, 'imprest.submitted', [
+                'reference' => $imprest->reference_number,
+                'requester' => $user->name,
+                'amount'    => number_format($imprest->amount_requested, 2) . ' ' . $imprest->currency,
+            ], ['module' => 'imprest', 'record_id' => $imprest->id, 'url' => '/imprest/' . $imprest->id]);
+        }
 
         AuditLog::record('imprest.submitted', [
             'auditable_type' => ImprestRequest::class,

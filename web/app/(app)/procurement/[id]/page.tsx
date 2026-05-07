@@ -6,6 +6,9 @@ import { procurementApi, quotesApi, procurementRequestAttachmentsApi, PROCUREMEN
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { ReturnModal } from "@/components/workflow/ReturnModal";
 import axios from "axios";
 
 function getStoredUser(): { roles?: string[] } | null {
@@ -22,14 +25,16 @@ function isHOD(user: { roles?: string[] } | null): boolean {
 }
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:       { label: "Approved",        cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"    },
-  submitted:      { label: "Pending Review",  cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"         },
-  hod_approved:   { label: "HOD Approved",    cls: "text-teal-700 bg-teal-50 border-teal-200",           icon: "supervisor_account" },
-  hod_rejected:   { label: "HOD Rejected",    cls: "text-red-700 bg-red-50 border-red-200",              icon: "person_off"      },
-  budget_reserved:{ label: "Budget Reserved", cls: "text-indigo-700 bg-indigo-50 border-indigo-200",     icon: "savings"         },
-  rejected:       { label: "Rejected",        cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"          },
-  draft:          { label: "Draft",           cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"       },
-  awarded:        { label: "Awarded",         cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"    },
+  approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"       },
+  submitted:               { label: "Pending Review",         cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"            },
+  hod_approved:            { label: "HOD Approved",           cls: "text-teal-700 bg-teal-50 border-teal-200",           icon: "supervisor_account" },
+  hod_rejected:            { label: "HOD Rejected",           cls: "text-red-700 bg-red-50 border-red-200",              icon: "person_off"         },
+  budget_reserved:         { label: "Budget Reserved",        cls: "text-indigo-700 bg-indigo-50 border-indigo-200",     icon: "savings"            },
+  rejected:                { label: "Rejected",               cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"             },
+  draft:                   { label: "Draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"          },
+  awarded:                 { label: "Awarded",                cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"       },
+  returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200",       icon: "undo"               },
+  withdrawn:               { label: "Withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block"              },
 };
 
 const categoryConfig: Record<string, { icon: string; color: string; bg: string }> = {
@@ -89,6 +94,15 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [hodRejReason, setHodRejReason]   = useState("");
   const [hodWorking, setHodWorking]       = useState(false);
   const [hodError, setHodError]           = useState<string | null>(null);
+
+  // Workflow action state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason]       = useState("");
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnLoading, setReturnLoading]     = useState(false);
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [toast, setToast]                     = useState<string | null>(null);
+  const { confirm } = useConfirm();
 
   useEffect(() => { setCurrentUser(getStoredUser()); }, []);
 
@@ -171,6 +185,101 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     }
   }
 
+  const refreshRequest = async () => {
+    const id = Number(paramId);
+    const res = await procurementApi.get(id);
+    setRequest(res.data);
+  };
+
+  const showToastMsg = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  async function handleWorkflowApprove() {
+    if (!request) return;
+    setWorkflowLoading(true);
+    try {
+      const res = await procurementApi.approve(request.id);
+      const notified: string[] = (res.data as any).notified_approvers ?? [];
+      await refreshRequest();
+      if (notified.length > 0) {
+        showToastMsg(`Approved. Notified: ${notified.join(", ")}`);
+      } else {
+        showToastMsg("Request fully approved.");
+      }
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to approve." : "Failed to approve.";
+      setError(msg);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }
+
+  async function handleWorkflowReject() {
+    if (!request || !rejectReason.trim()) return;
+    setWorkflowLoading(true);
+    try {
+      await procurementApi.reject(request.id, rejectReason.trim());
+      await refreshRequest();
+      setShowRejectModal(false);
+      setRejectReason("");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to reject." : "Failed to reject.";
+      setError(msg);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }
+
+  async function handleReturn(comment: string) {
+    if (!request) return;
+    setReturnLoading(true);
+    try {
+      await procurementApi.returnForCorrection(request.id, comment);
+      await refreshRequest();
+      setShowReturnModal(false);
+      showToastMsg("Request returned to requester for correction.");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to return." : "Failed to return.";
+      setError(msg);
+    } finally {
+      setReturnLoading(false);
+    }
+  }
+
+  async function handleWithdraw() {
+    if (!request) return;
+    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this procurement request? This cannot be undone.", variant: "danger" }))) return;
+    setWorkflowLoading(true);
+    try {
+      await procurementApi.withdraw(request.id);
+      await refreshRequest();
+      showToastMsg("Request withdrawn.");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to withdraw." : "Failed to withdraw.";
+      setError(msg);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }
+
+  async function handleResubmit() {
+    if (!request) return;
+    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this procurement request? It will restart from the first step.", variant: "primary" }))) return;
+    setWorkflowLoading(true);
+    try {
+      await procurementApi.resubmit(request.id);
+      await refreshRequest();
+      showToastMsg("Request resubmitted for approval.");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to resubmit." : "Failed to resubmit.";
+      setError(msg);
+    } finally {
+      setWorkflowLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -207,9 +316,22 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const quotes = request.quotes ?? [];
   const totalItems = items.reduce((sum, i) => sum + (i.total_price ?? 0), 0);
   const currency = request.currency ?? "USD";
+  const approvalRequest = (request as any).approval_request;
+  const currentStep = approvalRequest?.workflow?.steps?.[approvalRequest?.current_step_index];
+  const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
+  const isReturnedForCorrection = request.status === "returned_for_correction";
+  const hasWorkflowApprovalPending = approvalRequest?.status === "pending" && request.status === "submitted";
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
+          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+          {toast}
+        </div>
+      )}
 
       {/* Tab Bar */}
       <div className="flex gap-1 border-b border-neutral-200">
@@ -274,11 +396,20 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             </div>
             <h1 className="text-xl font-bold text-neutral-900">{request.title}</h1>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
+            {request.status === "approved" && (
+              <Link
+                href={`/procurement/${request.id}/certificate`}
+                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+                Certificate
+              </Link>
+            )}
             {/* HOD action buttons — visible when submitted and current user is HOD */}
             {request.status === "submitted" && isHOD(currentUser) && (
               <>
@@ -307,9 +438,81 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                 Award Contract
               </button>
             )}
+            {hasWorkflowApprovalPending && (
+              <button
+                onClick={() => setShowRejectModal(true)}
+                disabled={workflowLoading}
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 font-semibold transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">cancel</span>
+                Reject
+              </button>
+            )}
+            {request.status === "submitted" && approvalRequest?.status === "pending" && (
+              <button
+                onClick={handleWithdraw}
+                disabled={workflowLoading}
+                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">block</span>
+                Withdraw
+              </button>
+            )}
+            {isReturnedForCorrection && (
+              <button
+                onClick={handleResubmit}
+                disabled={workflowLoading}
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                Resubmit
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Workflow Approval Decision */}
+      {hasWorkflowApprovalPending && (
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="gavel" color="text-amber-600" bg="bg-amber-50" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
+          </div>
+          <p className="text-sm text-neutral-500 mb-4">Review the procurement request and take an action.</p>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={handleWorkflowApprove}
+              disabled={workflowLoading}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              {workflowLoading ? "Processing…" : "Approve Request"}
+            </button>
+            {canReturn && (
+              <button
+                onClick={() => setShowReturnModal(true)}
+                disabled={workflowLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">undo</span>
+                Return
+              </button>
+            )}
+            <button
+              onClick={() => setShowRejectModal(true)}
+              disabled={workflowLoading}
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[18px]">cancel</span>
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Timeline */}
+      <ApprovalTimeline request={approvalRequest} />
 
       {/* Requested By */}
       {request.requester && (
@@ -616,6 +819,53 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       </Link>
 
       </> /* end details tab */}
+
+      {/* Return for Correction Modal */}
+      <ReturnModal
+        open={showReturnModal}
+        onClose={() => setShowReturnModal(false)}
+        onConfirm={handleReturn}
+        loading={returnLoading}
+      />
+
+      {/* Workflow Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl bg-white p-6 max-w-md w-full shadow-2xl border border-neutral-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
+                <span className="material-symbols-outlined text-red-600 text-[20px]">cancel</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">Reject Procurement Request</h3>
+                <p className="text-xs text-neutral-400">A reason is required</p>
+              </div>
+            </div>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Enter your reason for rejection…"
+              rows={3}
+              className="form-input resize-none"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setShowRejectModal(false); setRejectReason(""); }}
+                className="btn-secondary flex-1 justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWorkflowReject}
+                disabled={workflowLoading || !rejectReason.trim()}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {workflowLoading ? "Rejecting…" : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* HOD Approve / Reject Modal */}
       {hodAction && (

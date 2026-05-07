@@ -11,7 +11,8 @@ class ApprovalStep extends Model
     protected $table = 'approval_workflow_steps';
 
     protected $fillable = [
-        'workflow_id', 'step_order', 'approver_type', 'role_id', 'user_id'
+        'workflow_id', 'step_order', 'step_name', 'approver_type', 'role_id', 'user_id',
+        'allow_return', 'allow_reject', 'allow_delegate', 'sla_hours', 'requires_comment',
     ];
 
     public function workflow(): BelongsTo

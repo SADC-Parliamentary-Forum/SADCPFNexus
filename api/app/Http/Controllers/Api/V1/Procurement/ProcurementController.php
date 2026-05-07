@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementRequest;
 use App\Modules\Procurement\Services\ProcurementService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProcurementController extends Controller
 {
-    public function __construct(private readonly ProcurementService $procurementService) {}
+    public function __construct(
+        private readonly ProcurementService $procurementService,
+        private readonly WorkflowService    $workflowService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -36,6 +40,8 @@ class ProcurementController extends Controller
             'purchaseOrder.items',
             'rfqInvitations.vendor',
             'rfqInvitations.quote',
+            'approvalRequest.workflow.steps',
+            'approvalRequest.history.user',
         ]));
     }
 
@@ -131,11 +137,26 @@ class ProcurementController extends Controller
 
     public function approve(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if ($request->user()->hasRole('staff')) {
-            abort(403);
-        }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
+        }
+
+        if ($procurementRequest->approvalRequest) {
+            $data   = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+            $result = $this->workflowService->approve(
+                $procurementRequest->approvalRequest,
+                $request->user(),
+                $data['comment'] ?? null
+            );
+            return response()->json([
+                'message'            => 'Procurement request approved.',
+                'data'               => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+                'notified_approvers' => $result['notified_approvers'],
+            ]);
+        }
+
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
         }
         $procurement = $this->procurementService->approve($procurementRequest, $request->user());
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
@@ -210,7 +231,62 @@ class ProcurementController extends Controller
                 'errors' => ['comment' => ['The comment field is required.']],
             ], 422);
         }
+        if ($procurementRequest->approvalRequest) {
+            $this->workflowService->reject($procurementRequest->approvalRequest, $request->user(), $reason);
+            return response()->json([
+                'message' => 'Procurement request rejected.',
+                'data'    => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+            ]);
+        }
+
         $procurement = $this->procurementService->reject($procurementRequest, $reason, $request->user());
         return response()->json(['message' => 'Procurement request rejected.', 'data' => $procurement]);
+    }
+
+    public function returnForCorrection(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        $data = $request->validate(['comment' => ['required', 'string', 'max:1000']]);
+        abort_unless($procurementRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->returnForCorrection(
+            $procurementRequest->approvalRequest,
+            $request->user(),
+            $data['comment']
+        );
+        return response()->json([
+            'message' => 'Request returned to requester for correction.',
+            'data'    => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+        ]);
+    }
+
+    public function withdraw(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        abort_unless($procurementRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->withdraw($procurementRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Procurement request withdrawn.',
+            'data'    => $procurementRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function resubmit(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        abort_unless($procurementRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->resubmit($procurementRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Procurement request resubmitted.',
+            'data'    => $procurementRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function certificate(ProcurementRequest $procurementRequest): JsonResponse
+    {
+        abort_unless($procurementRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        return response()->json([
+            'data' => $procurementRequest->load([
+                'requester.department',
+                'approvalRequest.history.user',
+                'approvalRequest.workflow.steps',
+            ]),
+        ]);
     }
 }

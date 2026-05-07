@@ -8,6 +8,7 @@ use App\Models\ApprovalStep;
 use App\Models\ApprovalWorkflow;
 use App\Models\Department;
 use App\Models\User;
+use App\Models\WorkflowDelegation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -61,23 +62,28 @@ class WorkflowService
 
     /**
      * Handle an approval action.
+     *
+     * Returns ['advanced_to_step' => int|null, 'notified_approvers' => string[]]
+     * so controllers can include the notified role labels in the JSON response (sequential toast).
      */
-    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null): void
+    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null): array
     {
         $this->verifyActorCanApprove($request, $actor);
 
-        $advancedToStep = null;
+        $stepIndexBefore = $request->current_step_index;
+        $advancedToStep  = null;
 
-        DB::transaction(function () use ($request, $actor, $comment, &$advancedToStep) {
+        DB::transaction(function () use ($request, $actor, $comment, $stepIndexBefore, &$advancedToStep) {
             ApprovalHistory::create([
                 'approval_request_id' => $request->id,
                 'user_id'             => $actor->id,
                 'action'              => 'approve',
+                'step_index'          => $stepIndexBefore,
                 'comment'             => $comment,
             ]);
 
-            $workflow = $request->workflow;
-            $nextStepIndex = $request->current_step_index + 1;
+            $workflow      = $request->workflow;
+            $nextStepIndex = $stepIndexBefore + 1;
 
             if ($nextStepIndex >= $workflow->steps()->count()) {
                 // Workflow complete
@@ -90,12 +96,19 @@ class WorkflowService
             }
         });
 
+        $notifiedApprovers = [];
+
         // Notify next-step approvers AFTER the transaction commits (so queued
         // jobs don't run against uncommitted data).
         if ($advancedToStep !== null) {
             $request->refresh();
-            $this->notifyApprovers($request);
+            $notifiedApprovers = $this->notifyApprovers($request);
         }
+
+        return [
+            'advanced_to_step'   => $advancedToStep,
+            'notified_approvers' => $notifiedApprovers,
+        ];
     }
 
     /**
@@ -105,17 +118,180 @@ class WorkflowService
     {
         $this->verifyActorCanApprove($request, $actor);
 
-        DB::transaction(function () use ($request, $actor, $comment) {
+        $stepIndexBefore = $request->current_step_index;
+
+        DB::transaction(function () use ($request, $actor, $comment, $stepIndexBefore) {
             ApprovalHistory::create([
                 'approval_request_id' => $request->id,
                 'user_id'             => $actor->id,
                 'action'              => 'reject',
+                'step_index'          => $stepIndexBefore,
                 'comment'             => $comment,
             ]);
 
             $request->update(['status' => 'rejected']);
             $this->finalizeApprovable($request, 'rejected', $actor, $comment);
         });
+    }
+
+    /**
+     * Return a request for correction to the requester.
+     * Resets the workflow to step 0 so it restarts after resubmission.
+     */
+    public function returnForCorrection(ApprovalRequest $request, User $actor, string $comment): array
+    {
+        $this->verifyActorCanApprove($request, $actor);
+
+        $step = $request->workflow->steps->get($request->current_step_index);
+        if ($step && !$step->allow_return) {
+            throw ValidationException::withMessages([
+                'approval' => 'This step does not permit returning the request for correction.',
+            ]);
+        }
+
+        if ($request->returned_count >= 3) {
+            throw ValidationException::withMessages([
+                'approval' => 'This request has been returned for correction too many times. Please reject it instead.',
+            ]);
+        }
+
+        $stepIndexBefore = $request->current_step_index;
+
+        DB::transaction(function () use ($request, $actor, $comment, $stepIndexBefore) {
+            ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'user_id'             => $actor->id,
+                'action'              => 'return',
+                'step_index'          => $stepIndexBefore,
+                'comment'             => $comment,
+            ]);
+
+            $request->update([
+                'status'          => 'returned',
+                'returned_count'  => $request->returned_count + 1,
+                'current_step_index' => 0,
+            ]);
+
+            $this->finalizeApprovable($request, 'returned', $actor, $comment);
+        });
+
+        // Notify the requester that correction is needed
+        $this->notifyRequesterOfReturn($request, $comment);
+
+        return ['returned_to_requester' => true];
+    }
+
+    /**
+     * Allow the original requester to withdraw their own pending request.
+     */
+    public function withdraw(ApprovalRequest $request, User $actor): void
+    {
+        $requester = $this->getRequesterFromApprovable($request);
+        if (!$requester || (int) $requester->id !== (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'Only the original requester can withdraw this request.',
+            ]);
+        }
+
+        if (!in_array($request->status, ['pending', 'returned'])) {
+            throw ValidationException::withMessages([
+                'approval' => 'Only pending or returned requests can be withdrawn.',
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $actor) {
+            ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'user_id'             => $actor->id,
+                'action'              => 'withdraw',
+                'step_index'          => $request->current_step_index,
+            ]);
+
+            $request->update(['status' => 'withdrawn']);
+            $this->finalizeApprovable($request, 'withdrawn', $actor);
+        });
+    }
+
+    /**
+     * Allow the original requester to resubmit after a return for correction.
+     */
+    public function resubmit(ApprovalRequest $request, User $actor): void
+    {
+        if ($request->status !== 'returned') {
+            throw ValidationException::withMessages([
+                'approval' => 'Only requests returned for correction can be resubmitted.',
+            ]);
+        }
+
+        $requester = $this->getRequesterFromApprovable($request);
+        if (!$requester || (int) $requester->id !== (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'Only the original requester can resubmit this request.',
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $actor) {
+            ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'user_id'             => $actor->id,
+                'action'              => 'resubmit',
+                'step_index'          => 0,
+            ]);
+
+            $request->update([
+                'status'             => 'pending',
+                'current_step_index' => 0,
+            ]);
+
+            $this->finalizeApprovable($request, 'resubmitted', $actor);
+        });
+
+        // Restart: notify first-step approvers
+        $request->refresh();
+        $this->notifyApprovers($request);
+    }
+
+    /**
+     * Delegate the active step to another user.
+     */
+    public function delegate(ApprovalRequest $request, User $actor, User $delegateTo, ?string $reason = null): void
+    {
+        $this->verifyActorCanApprove($request, $actor);
+
+        $step = $request->workflow->steps->get($request->current_step_index);
+        if ($step && !$step->allow_delegate) {
+            throw ValidationException::withMessages([
+                'approval' => 'This step does not permit delegation.',
+            ]);
+        }
+
+        $requester = $this->getRequesterFromApprovable($request);
+        if ($requester && (int) $requester->id === (int) $delegateTo->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'Cannot delegate to the original requester of this request.',
+            ]);
+        }
+
+        DB::transaction(function () use ($request, $actor, $delegateTo, $reason) {
+            WorkflowDelegation::create([
+                'approval_request_id' => $request->id,
+                'from_user_id'        => $actor->id,
+                'to_user_id'          => $delegateTo->id,
+                'step_index'          => $request->current_step_index,
+                'reason'              => $reason,
+            ]);
+
+            ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'user_id'             => $actor->id,
+                'action'              => 'delegate',
+                'step_index'          => $request->current_step_index,
+                'comment'             => $reason,
+            ]);
+        });
+
+        // Notify the delegate
+        $this->notifyDelegate($request, $delegateTo);
     }
 
     /**
@@ -202,23 +378,34 @@ class WorkflowService
     {
         $entity = $request->approvable;
 
-        if ($status === 'approved') {
-            // This is a generic way to call methods on the model
-            if (method_exists($entity, 'onWorkflowApproved')) {
-                $entity->onWorkflowApproved($actor);
-            } else {
-                $entity->update(['status' => 'approved', 'approved_by' => $actor->id, 'approved_at' => now()]);
-            }
-        } else {
-            if (method_exists($entity, 'onWorkflowRejected')) {
-                $entity->onWorkflowRejected($actor, $reason);
-            } else {
-                $entity->update(['status' => 'rejected', 'rejection_reason' => $reason]);
-            }
-        }
+        match ($status) {
+            'approved' => method_exists($entity, 'onWorkflowApproved')
+                ? $entity->onWorkflowApproved($actor)
+                : $entity->update(['status' => 'approved', 'approved_by' => $actor->id, 'approved_at' => now()]),
 
-        // Notify HR staff and Directors about the final outcome
-        $this->notifyHrOnCompletion($request, $status, $actor);
+            'rejected' => method_exists($entity, 'onWorkflowRejected')
+                ? $entity->onWorkflowRejected($actor, $reason)
+                : $entity->update(['status' => 'rejected', 'rejection_reason' => $reason]),
+
+            'returned' => method_exists($entity, 'onWorkflowReturned')
+                ? $entity->onWorkflowReturned($actor, $reason)
+                : $entity->update(['status' => 'returned_for_correction']),
+
+            'withdrawn' => method_exists($entity, 'onWorkflowWithdrawn')
+                ? $entity->onWorkflowWithdrawn()
+                : $entity->update(['status' => 'withdrawn']),
+
+            'resubmitted' => method_exists($entity, 'onWorkflowResubmitted')
+                ? $entity->onWorkflowResubmitted()
+                : $entity->update(['status' => 'resubmitted']),
+
+            default => null,
+        };
+
+        // Notify HR staff and Directors about final-state outcomes only
+        if (in_array($status, ['approved', 'rejected'])) {
+            $this->notifyHrOnCompletion($request, $status, $actor);
+        }
     }
 
     /**
@@ -309,13 +496,16 @@ class WorkflowService
 
     /**
      * Notify all current-step approvers with email action buttons (approve / reject).
+     * Returns an array of human-readable role/name labels for the sequential toast.
      */
-    private function notifyApprovers(ApprovalRequest $request): void
+    private function notifyApprovers(ApprovalRequest $request): array
     {
+        $notifiedLabels = [];
+
         try {
             $approvers = $this->getCurrentApprovers($request);
             if (empty($approvers)) {
-                return;
+                return [];
             }
 
             $entity    = $request->approvable;
@@ -323,10 +513,21 @@ class WorkflowService
             $module    = $this->resolveModuleType($request);
             $label     = self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
 
-            // Build a brief human-readable summary of the request
             $summary = $this->buildSummary($entity, $module);
 
+            // Build a human-readable label for each approver for the toast
+            $step = $request->workflow->steps->get($request->current_step_index);
+            $stepLabel = $step?->step_name ?? match ($step?->approver_type) {
+                'supervisor'    => 'Direct Supervisor',
+                'up_the_chain'  => 'Department Head',
+                'specific_role' => $step->role?->name ?? 'Required Role',
+                'specific_user' => $step->user?->name ?? 'Specific User',
+                default         => 'Next Approver',
+            };
+
             foreach ($approvers as $approver) {
+                $notifiedLabels[] = $approver->name . ' (' . $stepLabel . ')';
+
                 try {
                     $urls = $this->signedTokenService->createPair($request, $approver);
 
@@ -358,6 +559,69 @@ class WorkflowService
             }
         } catch (Throwable) {
             // Silently swallow — notification errors must not bubble up
+        }
+
+        return $notifiedLabels;
+    }
+
+    private function notifyRequesterOfReturn(ApprovalRequest $request, string $comment): void
+    {
+        try {
+            $requester = $this->getRequesterFromApprovable($request);
+            $entity    = $request->approvable;
+            $module    = $this->resolveModuleType($request);
+            $label     = self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
+
+            if (!$requester || !$entity) return;
+
+            $this->notificationService->dispatch(
+                $requester,
+                'workflow.returned',
+                [
+                    'name'         => $requester->name,
+                    'module_label' => $label,
+                    'reference'    => $entity->reference_number ?? "#{$entity->id}",
+                    'comment'      => $comment,
+                ],
+                ['module' => $module, 'record_id' => $entity->id, 'url' => "/{$module}/" . $entity->id]
+            );
+        } catch (Throwable) {
+            // Never block the workflow due to notification failures
+        }
+    }
+
+    private function notifyDelegate(ApprovalRequest $request, User $delegateTo): void
+    {
+        try {
+            $entity    = $request->approvable;
+            $requester = $this->getRequesterFromApprovable($request);
+            $module    = $this->resolveModuleType($request);
+            $label     = self::MODULE_LABELS[$module] ?? ucfirst(str_replace('_', ' ', $module));
+
+            if (!$entity) return;
+
+            $urls = $this->signedTokenService->createPair($request, $delegateTo);
+
+            $this->notificationService->dispatch(
+                $delegateTo,
+                'workflow.approval_required',
+                [
+                    'name'         => $delegateTo->name,
+                    'module_label' => $label,
+                    'reference'    => $entity->reference_number ?? "#{$entity->id}",
+                    'requester'    => $requester?->name ?? 'A staff member',
+                    'summary'      => $this->buildSummary($entity, $module),
+                ],
+                [
+                    'module'      => $module,
+                    'record_id'   => $entity->id,
+                    'url'         => "/{$module}/" . $entity->id,
+                    'approve_url' => $urls['approve_url'],
+                    'reject_url'  => $urls['reject_url'],
+                ]
+            );
+        } catch (Throwable) {
+            // Never block the workflow due to notification failures
         }
     }
 

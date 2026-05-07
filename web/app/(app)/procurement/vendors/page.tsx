@@ -519,6 +519,53 @@ export default function VendorsPage() {
   const [showForm, setShowForm]       = useState(false);
   const [editVendor, setEditVendor]   = useState<Vendor | null>(null);
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
+  const [pwVendorId, setPwVendorId]   = useState<number | null>(null);
+  const [pwVendorName, setPwVendorName] = useState("");
+  const [pwPortalUsers, setPwPortalUsers] = useState<{ id: number; name: string; email: string }[]>([]);
+  const [pwSelectedUser, setPwSelectedUser] = useState<{ id: number; name: string; email: string } | null>(null);
+  const [pwLoading, setPwLoading]     = useState(false);
+  const [pw, setPw]                   = useState("");
+  const [pwConfirm, setPwConfirm]     = useState("");
+  const [pwSaving, setPwSaving]       = useState(false);
+  const [pwError, setPwError]         = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess]     = useState(false);
+
+  const openPwModal = async (v: Vendor) => {
+    setPwVendorId(v.id);
+    setPwVendorName(v.name);
+    setPwPortalUsers([]);
+    setPwSelectedUser(null);
+    setPw(""); setPwConfirm(""); setPwError(null); setPwSuccess(false);
+    setPwLoading(true);
+    try {
+      const detail = await vendorsApi.get(v.id).then((r) => r.data.data);
+      const users = (detail.portal_users ?? []).map((u: { id: number; name: string; email: string }) => ({ id: u.id, name: u.name, email: u.email }));
+      setPwPortalUsers(users);
+      if (users.length === 1) setPwSelectedUser(users[0]);
+    } catch {
+      setPwError("Could not load supplier portal users.");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  const closePwModal = () => { setPwVendorId(null); setPwError(null); setPwSuccess(false); };
+
+  const submitPwReset = async () => {
+    if (!pwVendorId || !pwSelectedUser) return;
+    if (pw.length < 8) { setPwError("Password must be at least 8 characters."); return; }
+    if (pw !== pwConfirm) { setPwError("Passwords do not match."); return; }
+    setPwSaving(true); setPwError(null);
+    try {
+      await vendorsApi.changePortalUserPassword(pwVendorId, pwSelectedUser.id, pw, pwConfirm, true);
+      setPwSuccess(true);
+      setPw(""); setPwConfirm("");
+    } catch (e: unknown) {
+      setPwError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reset password.");
+    } finally {
+      setPwSaving(false);
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -751,6 +798,14 @@ export default function VendorsPage() {
                               </button>
                               <button
                                 type="button"
+                                onClick={() => openPwModal(v)}
+                                className="rounded-md p-1.5 text-neutral-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                                title="Reset supplier password"
+                              >
+                                <span className="material-symbols-outlined text-[17px]">lock_reset</span>
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => setDeleteVendor(v)}
                                 className="rounded-md p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                                 title="Deactivate vendor"
@@ -786,6 +841,104 @@ export default function VendorsPage() {
           onClose={() => setDeleteVendor(null)}
           onDeleted={() => setDeleteVendor(null)}
         />
+      )}
+
+      {pwVendorId !== null && canManageVendors && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={closePwModal}>
+          <div className="card w-full max-w-md p-6 shadow-xl space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50">
+                <span className="material-symbols-outlined text-[20px] text-amber-600">lock_reset</span>
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-800">Reset Supplier Password</h2>
+                <p className="text-xs text-neutral-500">{pwVendorName}</p>
+              </div>
+            </div>
+
+            {pwLoading && (
+              <div className="flex items-center gap-2 text-xs text-neutral-500 py-4">
+                <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                Loading portal users…
+              </div>
+            )}
+
+            {!pwLoading && pwPortalUsers.length === 0 && !pwError && (
+              <p className="text-sm text-neutral-500 py-2">No supplier portal users linked to this vendor yet.</p>
+            )}
+
+            {!pwLoading && pwPortalUsers.length > 1 && !pwSelectedUser && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-neutral-600">Select portal user</p>
+                {pwPortalUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-left hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                    onClick={() => setPwSelectedUser(u)}
+                  >
+                    <p className="text-xs font-semibold text-neutral-800">{u.name}</p>
+                    <p className="text-[11px] text-neutral-500">{u.email}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!pwLoading && pwSelectedUser && !pwSuccess && (
+              <>
+                <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[15px] text-neutral-400">person</span>
+                  <div>
+                    <p className="text-xs font-semibold text-neutral-700">{pwSelectedUser.name}</p>
+                    <p className="text-[11px] text-neutral-500">{pwSelectedUser.email}</p>
+                  </div>
+                  {pwPortalUsers.length > 1 && (
+                    <button type="button" className="ml-auto text-[11px] text-primary hover:underline" onClick={() => setPwSelectedUser(null)}>Change</button>
+                  )}
+                </div>
+                {pwError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pwError}</div>
+                )}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+                  <input type="password" className="form-input" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Minimum 8 characters" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
+                  <input type="password" className="form-input" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} placeholder="Repeat password" />
+                </div>
+                <p className="text-[11px] text-neutral-400">The supplier will be required to set a new password on next login.</p>
+                <div className="flex gap-3">
+                  <button className="btn-secondary flex-1" onClick={closePwModal}>Cancel</button>
+                  <button
+                    className="btn-primary flex-1 disabled:opacity-60"
+                    disabled={pwSaving || !pw || !pwConfirm}
+                    onClick={submitPwReset}
+                  >
+                    {pwSaving ? "Saving…" : "Reset Password"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {pwSuccess && (
+              <>
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <span className="material-symbols-outlined text-[26px] text-green-600">check_circle</span>
+                  </div>
+                  <p className="text-sm font-semibold text-neutral-800">Password reset successfully</p>
+                  <p className="text-xs text-neutral-500 text-center">The supplier has been notified and will be prompted to change their password on next login.</p>
+                </div>
+                <button className="btn-primary w-full" onClick={closePwModal}>Done</button>
+              </>
+            )}
+
+            {pwError && !pwSelectedUser && !pwLoading && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pwError}</div>
+            )}
+          </div>
+        </div>
       )}
     </>
   );

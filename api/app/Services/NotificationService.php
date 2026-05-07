@@ -316,6 +316,12 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nThe {{module_label}} request ({{reference}}) submitted by {{requester}} has been {{status}} by {{approved_by}}.\n\nThis notification is for your records.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Workflow — returned for correction (sent to requester)
+            'workflow.returned' => [
+                'subject' => 'Your {{module_label}} request {{reference}} has been returned for correction',
+                'body'    => "Dear {{name}},\n\nYour {{module_label}} request ({{reference}}) has been returned for correction with the following instructions:\n\n{{comment}}\n\nPlease make the necessary corrections and resubmit.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Salary advance
             'salary_advance.approved' => [
                 'subject' => 'Your salary advance request has been approved',

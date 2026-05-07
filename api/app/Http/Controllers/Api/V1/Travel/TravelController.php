@@ -87,10 +87,15 @@ class TravelController extends Controller
     {
         if ($travelRequest->approvalRequest) {
             $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
-            $this->workflowService->approve($travelRequest->approvalRequest, $request->user(), $data['comment'] ?? null);
+            $result = $this->workflowService->approve(
+                $travelRequest->approvalRequest,
+                $request->user(),
+                $data['comment'] ?? null
+            );
             return response()->json([
-                'message' => 'Travel request approved.',
-                'data'    => $travelRequest->fresh(['requester', 'approver', 'itineraries', 'approvalRequest']),
+                'message'            => 'Travel request approved.',
+                'data'               => $travelRequest->fresh(['requester', 'approver', 'itineraries', 'approvalRequest']),
+                'notified_approvers' => $result['notified_approvers'],
             ]);
         }
 
@@ -101,14 +106,14 @@ class TravelController extends Controller
     public function reject(Request $request, TravelRequest $travelRequest): JsonResponse
     {
         $data = $request->validate([
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason'  => ['nullable', 'string', 'max:1000'],
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
         $reason = $data['reason'] ?? $data['comment'] ?? null;
         if (!$reason) {
             return response()->json([
                 'message' => 'The comment field is required.',
-                'errors' => ['comment' => ['The comment field is required.']],
+                'errors'  => ['comment' => ['The comment field is required.']],
             ], 422);
         }
 
@@ -122,5 +127,52 @@ class TravelController extends Controller
 
         $travel = $this->travelService->reject($travelRequest, $reason, $request->user());
         return response()->json(['message' => 'Travel request rejected.', 'data' => $travel]);
+    }
+
+    public function returnForCorrection(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate(['comment' => ['required', 'string', 'max:1000']]);
+        abort_unless($travelRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->returnForCorrection(
+            $travelRequest->approvalRequest,
+            $request->user(),
+            $data['comment']
+        );
+        return response()->json([
+            'message' => 'Request returned to requester for correction.',
+            'data'    => $travelRequest->fresh(['requester', 'approver', 'approvalRequest']),
+        ]);
+    }
+
+    public function withdraw(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        abort_unless($travelRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->withdraw($travelRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Travel request withdrawn.',
+            'data'    => $travelRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function resubmit(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        abort_unless($travelRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->resubmit($travelRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Travel request resubmitted.',
+            'data'    => $travelRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function certificate(TravelRequest $travelRequest): JsonResponse
+    {
+        abort_unless($travelRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        return response()->json([
+            'data' => $travelRequest->load([
+                'requester.department',
+                'approvalRequest.history.user',
+                'approvalRequest.workflow.steps',
+            ]),
+        ]);
     }
 }

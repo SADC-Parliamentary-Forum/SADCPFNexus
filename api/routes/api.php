@@ -256,9 +256,13 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
                 ->names('travel.requests');
-            Route::post('requests/{travelRequest}/submit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
-            Route::post('requests/{travelRequest}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
-            Route::post('requests/{travelRequest}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
+            Route::post('requests/{travelRequest}/submit',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
+            Route::post('requests/{travelRequest}/approve',  [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
+            Route::post('requests/{travelRequest}/reject',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
+            Route::post('requests/{travelRequest}/return',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'returnForCorrection']);
+            Route::post('requests/{travelRequest}/withdraw', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'withdraw']);
+            Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
+            Route::get('requests/{travelRequest}/certificate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'certificate']);
             // Travel attachments
             Route::get('requests/{travelRequest}/attachments',                        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'index']);
             Route::post('requests/{travelRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'store']);
@@ -271,10 +275,14 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Imprest\ImprestController::class)
                 ->parameters(['requests' => 'imprestRequest'])
                 ->names('imprest.requests');
-            Route::post('requests/{imprestRequest}/submit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
-            Route::post('requests/{imprestRequest}/approve', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
-            Route::post('requests/{imprestRequest}/reject', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
-            Route::post('requests/{imprestRequest}/retire', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'retire']);
+            Route::post('requests/{imprestRequest}/submit',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
+            Route::post('requests/{imprestRequest}/approve',  [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
+            Route::post('requests/{imprestRequest}/reject',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
+            Route::post('requests/{imprestRequest}/return',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'returnForCorrection']);
+            Route::post('requests/{imprestRequest}/withdraw', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'withdraw']);
+            Route::post('requests/{imprestRequest}/resubmit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'resubmit']);
+            Route::post('requests/{imprestRequest}/retire',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'retire']);
+            Route::get('requests/{imprestRequest}/certificate', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'certificate']);
         });
 
         // Leave Module
@@ -288,9 +296,13 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
                 ->names('leave.requests');
-            Route::post('requests/{leaveRequest}/submit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
-            Route::post('requests/{leaveRequest}/approve', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
-            Route::post('requests/{leaveRequest}/reject', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
+            Route::post('requests/{leaveRequest}/submit',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
+            Route::post('requests/{leaveRequest}/approve',  [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
+            Route::post('requests/{leaveRequest}/reject',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
+            Route::post('requests/{leaveRequest}/return',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'returnForCorrection']);
+            Route::post('requests/{leaveRequest}/withdraw', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'withdraw']);
+            Route::post('requests/{leaveRequest}/resubmit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'resubmit']);
+            Route::get('requests/{leaveRequest}/certificate', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certificate']);
             // Leave attachments
             Route::get('requests/{leaveRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'index']);
             Route::post('requests/{leaveRequest}/attachments',                      [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'store']);
@@ -308,6 +320,10 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
             Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
             Route::post('requests/{procurementRequest}/reject',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/return',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'returnForCorrection']);
+            Route::post('requests/{procurementRequest}/withdraw',    [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'withdraw']);
+            Route::post('requests/{procurementRequest}/resubmit',    [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'resubmit']);
+            Route::get('requests/{procurementRequest}/certificate',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'certificate']);
             Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
             Route::post('requests/{procurementRequest}/issue-rfq',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'issueRfq']);
             Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
@@ -448,9 +464,13 @@ Route::prefix('v1')->group(function () {
             Route::post('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'store']);
             Route::put('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'update']);
             Route::delete('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'destroy']);
-            Route::post('advances/{salaryAdvanceRequest}/submit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
-            Route::post('advances/{salaryAdvanceRequest}/approve', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
-            Route::post('advances/{salaryAdvanceRequest}/reject', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
+            Route::post('advances/{salaryAdvanceRequest}/submit',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
+            Route::post('advances/{salaryAdvanceRequest}/approve',  [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
+            Route::post('advances/{salaryAdvanceRequest}/reject',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
+            Route::post('advances/{salaryAdvanceRequest}/return',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'returnForCorrection']);
+            Route::post('advances/{salaryAdvanceRequest}/withdraw', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'withdraw']);
+            Route::post('advances/{salaryAdvanceRequest}/resubmit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'resubmit']);
+            Route::get('advances/{salaryAdvanceRequest}/certificate', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'certificate']);
 
             // Balance Control & Reconciliation Engine (BCRE)
             Route::prefix('balance-registers')->group(function () {

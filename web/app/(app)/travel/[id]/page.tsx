@@ -8,13 +8,17 @@ import { formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
+import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { ReturnModal } from "@/components/workflow/ReturnModal";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved: { label: "Approved", cls: "text-green-700 bg-green-50 border-green-200", icon: "check_circle" },
-  submitted: { label: "Pending Approval", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "pending" },
-  rejected: { label: "Rejected", cls: "text-red-700 bg-red-50 border-red-200", icon: "cancel" },
-  draft: { label: "Draft", cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
-  cancelled: { label: "Cancelled", cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
+  approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
+  submitted:               { label: "Pending Approval",      cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "pending" },
+  rejected:                { label: "Rejected",              cls: "text-red-700 bg-red-50 border-red-200",         icon: "cancel" },
+  draft:                   { label: "Draft",                 cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
+  cancelled:               { label: "Cancelled",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
+  returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
+  withdrawn:               { label: "Withdrawn",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
 };
 
 function SkeletonCard() {
@@ -45,6 +49,9 @@ export default function TravelDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const { confirm } = useConfirm();
 
   // Attachments
@@ -70,13 +77,28 @@ export default function TravelDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const refreshRequest = async () => {
+    const res = await travelApi.get(id);
+    setRequest((res.data as any).data ?? res.data);
+  };
+
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 5000);
+  };
+
   const handleApprove = async () => {
     if (!request) return;
     setActionLoading(true);
     try {
-      await travelApi.approve(request.id);
-      const res = await travelApi.get(request.id);
-      setRequest((res.data as any).data ?? res.data);
+      const res = await travelApi.approve(request.id);
+      const notified: string[] = (res.data as any).notified_approvers ?? [];
+      await refreshRequest();
+      if (notified.length > 0) {
+        showToast(`Approved. Notified: ${notified.join(", ")}`);
+      } else {
+        showToast("Request fully approved.");
+      }
     } catch {
       setError("Failed to approve request.");
     } finally {
@@ -89,8 +111,7 @@ export default function TravelDetailPage() {
     setActionLoading(true);
     try {
       await travelApi.reject(request.id, rejectReason.trim());
-      const res = await travelApi.get(request.id);
-      setRequest((res.data as any).data ?? res.data);
+      await refreshRequest();
       setShowRejectModal(false);
       setRejectReason("");
     } catch {
@@ -100,10 +121,54 @@ export default function TravelDetailPage() {
     }
   };
 
+  const handleReturn = async (comment: string) => {
+    if (!request) return;
+    setReturnLoading(true);
+    try {
+      await travelApi.returnForCorrection(request.id, comment);
+      await refreshRequest();
+      setShowReturnModal(false);
+      showToast("Request returned to requester for correction.");
+    } catch {
+      setError("Failed to return request.");
+    } finally {
+      setReturnLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!request) return;
+    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this travel request? This cannot be undone.", variant: "danger" }))) return;
+    setActionLoading(true);
+    try {
+      await travelApi.withdraw(request.id);
+      await refreshRequest();
+      showToast("Request withdrawn.");
+    } catch {
+      setError("Failed to withdraw request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResubmit = async () => {
+    if (!request) return;
+    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this travel request for approval? It will restart from the first step.", variant: "primary" }))) return;
+    setActionLoading(true);
+    try {
+      await travelApi.resubmit(request.id);
+      await refreshRequest();
+      showToast("Request resubmitted for approval.");
+    } catch {
+      setError("Failed to resubmit request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Breadcrumb skeleton */}
         <div className="h-4 w-48 bg-neutral-100 rounded animate-pulse" />
         <div className="h-7 w-64 bg-neutral-100 rounded animate-pulse" />
         <SkeletonCard />
@@ -133,9 +198,21 @@ export default function TravelDetailPage() {
 
   const s = statusConfig[request.status] ?? statusConfig.draft;
   const itineraries = request.itineraries ?? [];
+  const approvalRequest = (request as any).approval_request;
+  const currentStep = approvalRequest?.workflow?.steps?.[approvalRequest?.current_step_index];
+  const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
+  const isReturnedForCorrection = request.status === "returned_for_correction";
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg animate-in slide-in-from-top-2">
+          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+          {toast}
+        </div>
+      )}
 
       {/* Breadcrumb + title */}
       <div>
@@ -159,11 +236,20 @@ export default function TravelDetailPage() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
+            {request.status === "approved" && (
+              <Link
+                href={`/travel/${request.id}/certificate`}
+                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+                Certificate
+              </Link>
+            )}
             {request.status === "draft" && (
               <>
                 <button
@@ -172,8 +258,7 @@ export default function TravelDetailPage() {
                     setActionLoading(true);
                     try {
                       await travelApi.submit(request.id);
-                      const res = await travelApi.get(request.id);
-                      setRequest((res.data as any).data ?? res.data);
+                      await refreshRequest();
                     } catch { setError("Failed to submit."); }
                     finally { setActionLoading(false); }
                   }}
@@ -198,9 +283,42 @@ export default function TravelDetailPage() {
                 </button>
               </>
             )}
+            {/* Withdraw: visible when submitted/pending, requester can act */}
+            {request.status === "submitted" && approvalRequest?.status === "pending" && (
+              <button
+                onClick={handleWithdraw}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">block</span>
+                Withdraw
+              </button>
+            )}
+            {/* Resubmit: visible when returned for correction */}
+            {isReturnedForCorrection && (
+              <button
+                onClick={handleResubmit}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                Resubmit
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Returned for correction banner */}
+      {isReturnedForCorrection && (
+        <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <span className="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0 mt-0.5">undo</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800">Returned for Correction</p>
+            <p className="text-xs text-amber-700 mt-0.5">This request was returned. Make the required corrections and resubmit.</p>
+          </div>
+        </div>
+      )}
 
       {/* Status Timeline */}
       <div className="card p-5">
@@ -222,6 +340,9 @@ export default function TravelDetailPage() {
           rejectionReason={request.rejection_reason}
         />
       </div>
+
+      {/* Approval Timeline */}
+      <ApprovalTimeline request={approvalRequest} />
 
       {/* Requester */}
       {request.requester && (
@@ -334,7 +455,7 @@ export default function TravelDetailPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
           </div>
           <p className="text-sm text-neutral-500 mb-4">Review the travel request details above and take an action.</p>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleApprove}
               disabled={actionLoading}
@@ -343,6 +464,16 @@ export default function TravelDetailPage() {
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
               {actionLoading ? "Processing…" : "Approve Request"}
             </button>
+            {canReturn && (
+              <button
+                onClick={() => setShowReturnModal(true)}
+                disabled={actionLoading}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">undo</span>
+                Return
+              </button>
+            )}
             <button
               onClick={() => setShowRejectModal(true)}
               disabled={actionLoading}
@@ -455,6 +586,14 @@ export default function TravelDetailPage() {
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Travel Requests
       </Link>
+
+      {/* Return for Correction Modal */}
+      <ReturnModal
+        open={showReturnModal}
+        onClose={() => setShowReturnModal(false)}
+        onConfirm={handleReturn}
+        loading={returnLoading}
+      />
 
       {/* Reject Modal */}
       {showRejectModal && (

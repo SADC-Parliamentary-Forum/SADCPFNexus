@@ -6,15 +6,20 @@ import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { getStoredUser } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
+import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { ReturnModal } from "@/components/workflow/ReturnModal";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
-  draft:     { label: "Draft",     badge: "badge-muted",    icon: "edit_note" },
-  submitted: { label: "Submitted", badge: "badge-warning",  icon: "pending" },
-  approved:  { label: "Approved",  badge: "badge-success",  icon: "check_circle" },
-  rejected:  { label: "Rejected",  badge: "badge-danger",   icon: "cancel" },
-  paid:      { label: "Paid",      badge: "badge-primary",  icon: "payments" },
+  draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
+  submitted:               { label: "Submitted",              badge: "badge-warning",  icon: "pending" },
+  approved:                { label: "Approved",               badge: "badge-success",  icon: "check_circle" },
+  rejected:                { label: "Rejected",               badge: "badge-danger",   icon: "cancel" },
+  paid:                    { label: "Paid",                   badge: "badge-primary",  icon: "payments" },
+  returned_for_correction: { label: "Returned for Correction", badge: "badge-warning", icon: "undo" },
+  withdrawn:               { label: "Withdrawn",              badge: "badge-muted",    icon: "block" },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -150,6 +155,10 @@ export default function AdvanceDetailPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     const user = getStoredUser();
@@ -175,12 +184,28 @@ export default function AdvanceDetailPage() {
     finally { setActionLoading(false); }
   };
 
+  const refreshAdvance = async () => {
+    const res = await financeApi.getAdvance(id);
+    setAdvance(getEntity<SalaryAdvanceRequest>(res.data));
+  };
+
+  const showToastMsg = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 5000);
+  };
+
   const handleApprove = async () => {
     if (!advance) return;
     setActionLoading(true);
     try {
       const res = await financeApi.approveAdvance(advance.id);
-      setAdvance(res.data.data);
+      const notified: string[] = (res.data as any).notified_approvers ?? [];
+      await refreshAdvance();
+      if (notified.length > 0) {
+        showToastMsg(`Approved. Notified: ${notified.join(", ")}`);
+      } else {
+        showToastMsg("Request fully approved.");
+      }
     } catch { setError("Failed to approve request."); }
     finally { setActionLoading(false); }
   };
@@ -189,10 +214,46 @@ export default function AdvanceDetailPage() {
     if (!advance || !rejectReason.trim()) return;
     setActionLoading(true);
     try {
-      const res = await financeApi.rejectAdvance(advance.id, rejectReason.trim());
-      setAdvance(res.data.data);
+      await financeApi.rejectAdvance(advance.id, rejectReason.trim());
+      await refreshAdvance();
       setShowRejectDialog(false);
     } catch { setError("Failed to reject request."); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleReturn = async (comment: string) => {
+    if (!advance) return;
+    setReturnLoading(true);
+    try {
+      await financeApi.returnAdvanceForCorrection(advance.id, comment);
+      await refreshAdvance();
+      setShowReturnModal(false);
+      showToastMsg("Request returned to requester for correction.");
+    } catch { setError("Failed to return request."); }
+    finally { setReturnLoading(false); }
+  };
+
+  const handleWithdraw = async () => {
+    if (!advance) return;
+    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this salary advance request? This cannot be undone.", variant: "danger" }))) return;
+    setActionLoading(true);
+    try {
+      await financeApi.withdrawAdvance(advance.id);
+      await refreshAdvance();
+      showToastMsg("Request withdrawn.");
+    } catch { setError("Failed to withdraw request."); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleResubmit = async () => {
+    if (!advance) return;
+    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this salary advance request? It will restart from the first step.", variant: "primary" }))) return;
+    setActionLoading(true);
+    try {
+      await financeApi.resubmitAdvance(advance.id);
+      await refreshAdvance();
+      showToastMsg("Request resubmitted for approval.");
+    } catch { setError("Failed to resubmit request."); }
     finally { setActionLoading(false); }
   };
 
@@ -222,9 +283,22 @@ export default function AdvanceDetailPage() {
   const monthlyRepayment = advance.repayment_months > 0
     ? formatCurrency(advance.amount / advance.repayment_months, advance.currency)
     : "—";
+  const approvalRequest = (advance as any).approval_request;
+  const currentStep = approvalRequest?.workflow?.steps?.[approvalRequest?.current_step_index];
+  const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
+  const isReturnedForCorrection = advance.status === "returned_for_correction";
 
   return (
     <div className="space-y-6 max-w-3xl">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
+          <span className="material-symbols-outlined text-[18px]">check_circle</span>
+          {toast}
+        </div>
+      )}
+
       {/* Breadcrumb + header */}
       <div>
         <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
@@ -240,6 +314,35 @@ export default function AdvanceDetailPage() {
             <span className="material-symbols-outlined text-[13px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{sc.icon}</span>
             {sc.label}
           </span>
+          {advance.status === "approved" && (
+            <Link
+              href={`/finance/advances/${advance.id}/certificate`}
+              className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+              Certificate
+            </Link>
+          )}
+          {advance.status === "submitted" && approvalRequest?.status === "pending" && (
+            <button
+              onClick={handleWithdraw}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[14px]">block</span>
+              Withdraw
+            </button>
+          )}
+          {isReturnedForCorrection && (
+            <button
+              onClick={handleResubmit}
+              disabled={actionLoading}
+              className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[14px]">refresh</span>
+              Resubmit
+            </button>
+          )}
         </div>
         <p className="page-subtitle">{advance.reference_number}</p>
       </div>
@@ -281,6 +384,9 @@ export default function AdvanceDetailPage() {
           rejectionReason={advance.rejection_reason}
         />
       </div>
+
+      {/* Approval Timeline */}
+      <ApprovalTimeline request={approvalRequest} />
 
       {/* Main details card */}
       <div className="card p-6 space-y-5">
@@ -416,6 +522,17 @@ export default function AdvanceDetailPage() {
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
               Approve
             </button>
+            {canReturn && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => setShowReturnModal(true)}
+                className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg border-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-60"
+              >
+                <span className="material-symbols-outlined text-[18px]">undo</span>
+                Return
+              </button>
+            )}
             <button
               type="button"
               disabled={actionLoading}
@@ -431,6 +548,14 @@ export default function AdvanceDetailPage() {
           Back to list
         </Link>
       </div>
+
+      {/* Return for Correction Modal */}
+      <ReturnModal
+        open={showReturnModal}
+        onClose={() => setShowReturnModal(false)}
+        onConfirm={handleReturn}
+        loading={returnLoading}
+      />
 
       {/* Reject dialog */}
       {showRejectDialog && (

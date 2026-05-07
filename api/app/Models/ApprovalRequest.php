@@ -10,7 +10,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ApprovalRequest extends Model
 {
     protected $fillable = [
-        'tenant_id', 'approvable_type', 'approvable_id', 'workflow_id', 'current_step_index', 'status'
+        'tenant_id', 'approvable_type', 'approvable_id', 'workflow_id',
+        'current_step_index', 'status', 'returned_count',
     ];
 
     public function approvable(): MorphTo
@@ -27,4 +28,12 @@ class ApprovalRequest extends Model
     {
         return $this->hasMany(ApprovalHistory::class);
     }
+
+    public function delegations(): HasMany
+    {
+        return $this->hasMany(WorkflowDelegation::class);
+    }
+
+    public function isReturned(): bool { return $this->status === 'returned'; }
+    public function isWithdrawn(): bool { return $this->status === 'withdrawn'; }
 }

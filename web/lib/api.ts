@@ -302,11 +302,17 @@ export interface ApprovalStep {
   id: number;
   workflow_id: number;
   step_order: number;
+  step_name?: string | null;
   approver_type: 'supervisor' | 'up_the_chain' | 'specific_role' | 'specific_user';
   role_id?: number | null;
   user_id?: number | null;
   role?: { id: number; name: string };
   user?: User;
+  allow_return: boolean;
+  allow_reject: boolean;
+  allow_delegate: boolean;
+  sla_hours?: number | null;
+  requires_comment: boolean;
 }
 
 export interface ApprovalRequest {
@@ -315,7 +321,8 @@ export interface ApprovalRequest {
   approvable_id: number;
   workflow_id: number;
   current_step_index: number;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'withdrawn';
+  returned_count: number;
   created_at: string;
   approvable?: any;
   workflow?: ApprovalWorkflow;
@@ -326,7 +333,8 @@ export interface ApprovalHistory {
   id: number;
   approval_request_id: number;
   user_id: number;
-  action: 'approve' | 'reject';
+  step_index: number | null;
+  action: 'approve' | 'reject' | 'return' | 'withdraw' | 'delegate' | 'resubmit';
   comment?: string;
   created_at: string;
   user?: User;
@@ -839,7 +847,7 @@ export interface TravelRequest {
   return_date: string;
   estimated_dsa: number;
   currency: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled";
+  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "returned_for_correction" | "withdrawn";
   justification: string | null;
   rejection_reason: string | null;
   submitted_at: string | null;
@@ -902,10 +910,18 @@ export const travelApi = {
   delete: (id: number) => api.delete(`/travel/requests/${id}`),
   submit: (id: number) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/submit`),
-  approve: (id: number) =>
-    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/approve`),
+  approve: (id: number, comment?: string) =>
+    api.post<{ data: TravelRequest; message: string; notified_approvers: string[] }>(`/travel/requests/${id}/approve`, comment ? { comment } : {}),
   reject: (id: number, reason: string) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/reject`, { reason }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/return`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/withdraw`),
+  resubmit: (id: number) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/resubmit`),
+  certificate: (id: number) =>
+    api.get<{ data: TravelRequest }>(`/travel/requests/${id}/certificate`),
   // Attachments
   listAttachments: (id: number) =>
     api.get<{ data: ModuleAttachment[] }>(`/travel/requests/${id}/attachments`),
@@ -934,7 +950,7 @@ export interface ImprestRequest {
   expected_liquidation_date: string;
   purpose: string;
   justification: string | null;
-  status: "draft" | "submitted" | "approved" | "rejected" | "liquidated";
+  status: "draft" | "submitted" | "approved" | "rejected" | "liquidated" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
@@ -955,10 +971,18 @@ export const imprestApi = {
   delete: (id: number) => api.delete(`/imprest/requests/${id}`),
   submit: (id: number) =>
     api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/submit`),
-  approve: (id: number, amount_approved?: number) =>
-    api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/approve`, { amount_approved }),
+  approve: (id: number, amount_approved?: number, comment?: string) =>
+    api.post<{ data: ImprestRequest; message: string; notified_approvers: string[] }>(`/imprest/requests/${id}/approve`, { amount_approved, comment }),
   reject: (id: number, reason: string) =>
     api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/reject`, { reason }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/return`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/withdraw`),
+  resubmit: (id: number) =>
+    api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/resubmit`),
+  certificate: (id: number) =>
+    api.get<{ data: ImprestRequest }>(`/imprest/requests/${id}/certificate`),
   retire: (id: number, data: { amount_liquidated: number; notes?: string; receipts_attached?: boolean }) =>
     api.post<{ data: ImprestRequest; message: string }>(`/imprest/requests/${id}/retire`, data),
 };
@@ -1160,7 +1184,7 @@ export interface LeaveRequest {
   end_date: string;
   days_requested: number;
   reason: string | null;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled";
+  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
   has_lil_linking: boolean;
   lil_hours_required: number | null;
@@ -1183,10 +1207,18 @@ export const leaveApi = {
   delete: (id: number) => api.delete(`/leave/requests/${id}`),
   submit: (id: number) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/submit`),
-  approve: (id: number, overrideReason?: string) =>
-    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/approve`, overrideReason ? { override_reason: overrideReason } : undefined),
+  approve: (id: number, overrideReason?: string, comment?: string) =>
+    api.post<{ data: LeaveRequest; message: string; notified_approvers: string[] }>(`/leave/requests/${id}/approve`, { ...(overrideReason ? { override_reason: overrideReason } : {}), ...(comment ? { comment } : {}) }),
   reject: (id: number, reason: string) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/reject`, { reason }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/return`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/withdraw`),
+  resubmit: (id: number) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/resubmit`),
+  certificate: (id: number) =>
+    api.get<{ data: LeaveRequest }>(`/leave/requests/${id}/certificate`),
   listLilAccruals: () => api.get<{ data: LilAccrual[] }>("/leave/lil-accruals"),
   getBalances: () =>
     api.get<{ annual_balance_days: number; lil_hours_available: number; sick_leave_used_days: number; period_year: number }>("/leave/balances"),
@@ -1331,7 +1363,7 @@ export interface ProcurementRequest {
   budget_line: string | null;
   justification: string | null;
   required_by_date: string;
-  status: "draft" | "submitted" | "hod_approved" | "hod_rejected" | "budget_reserved" | "approved" | "rejected" | "cancelled" | "awarded";
+  status: "draft" | "submitted" | "hod_approved" | "hod_rejected" | "budget_reserved" | "approved" | "rejected" | "cancelled" | "awarded" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
@@ -1365,10 +1397,18 @@ export const procurementApi = {
   delete: (id: number) => api.delete(`/procurement/requests/${id}`),
   submit: (id: number) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/submit`),
-  approve: (id: number) =>
-    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/approve`),
+  approve: (id: number, comment?: string) =>
+    api.post<{ data: ProcurementRequest; message: string; notified_approvers: string[] }>(`/procurement/requests/${id}/approve`, comment ? { comment } : {}),
   reject: (id: number, reason: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/reject`, { reason }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/return`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/withdraw`),
+  resubmit: (id: number) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/resubmit`),
+  certificate: (id: number) =>
+    api.get<{ data: ProcurementRequest }>(`/procurement/requests/${id}/certificate`),
   award: (id: number, quoteId: number, awardNotes?: string) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, { quote_id: quoteId, award_notes: awardNotes }),
   hodApprove: (id: number) =>
@@ -1879,7 +1919,7 @@ export interface SalaryAdvanceRequest {
   repayment_months: number;
   purpose: string;
   justification: string | null;
-  status: "draft" | "submitted" | "approved" | "rejected" | "paid";
+  status: "draft" | "submitted" | "approved" | "rejected" | "paid" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
@@ -1982,10 +2022,18 @@ export const financeApi = {
   deleteAdvance: (id: number) => api.delete(`/finance/advances/${id}`),
   submitAdvance: (id: number) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/submit`),
-  approveAdvance: (id: number) =>
-    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/approve`),
+  approveAdvance: (id: number, comment?: string) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string; notified_approvers: string[] }>(`/finance/advances/${id}/approve`, comment ? { comment } : {}),
   rejectAdvance: (id: number, reason: string) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/reject`, { reason }),
+  returnAdvanceForCorrection: (id: number, comment: string) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/return`, { comment }),
+  withdrawAdvance: (id: number) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/withdraw`),
+  resubmitAdvance: (id: number) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/resubmit`),
+  getAdvanceCertificate: (id: number) =>
+    api.get<{ data: SalaryAdvanceRequest }>(`/finance/advances/${id}/certificate`),
   getSalaryAdvanceEligibility: () =>
     api.get<{
       eligible: boolean;

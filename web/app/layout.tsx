@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { PrefsProvider } from "@/components/providers/PrefsProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -26,13 +27,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* eslint-disable-next-line @next/next/no-before-interactive-script-outside-document */}
-        <script
-          id="theme-bootstrap"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('sadcpf_theme');if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
-          }}
-        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -45,6 +39,13 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen" suppressHydrationWarning>
+        <Script
+          id="theme-bootstrap"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('sadcpf_theme');if(t==='dark'){document.documentElement.classList.add('dark');document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+          }}
+        />
         <ThemeProvider>
           <AuthProvider>
             <PrefsProvider>

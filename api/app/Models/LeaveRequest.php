@@ -54,6 +54,21 @@ class LeaveRequest extends Model
         app(\App\Modules\Leave\Services\LeaveService::class)->onWorkflowRejected($this, $approver, $reason);
     }
 
+    public function onWorkflowReturned(User $approver, ?string $comment = null): void
+    {
+        $this->update(['status' => 'returned_for_correction']);
+    }
+
+    public function onWorkflowWithdrawn(): void
+    {
+        $this->update(['status' => 'withdrawn']);
+    }
+
+    public function onWorkflowResubmitted(): void
+    {
+        $this->update(['status' => 'resubmitted']);
+    }
+
     public function attachments(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable')->latest();

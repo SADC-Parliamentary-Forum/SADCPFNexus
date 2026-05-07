@@ -120,4 +120,19 @@ class SalaryAdvanceRequest extends Model
             );
         }
     }
+
+    public function onWorkflowReturned(User $approver, ?string $comment = null): void
+    {
+        $this->update(['status' => 'returned_for_correction']);
+    }
+
+    public function onWorkflowWithdrawn(): void
+    {
+        $this->update(['status' => 'withdrawn']);
+    }
+
+    public function onWorkflowResubmitted(): void
+    {
+        $this->update(['status' => 'resubmitted']);
+    }
 }

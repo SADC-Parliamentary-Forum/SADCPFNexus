@@ -77,7 +77,11 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->requester_id !== request()->user()->id) {
             abort(403);
         }
-        return response()->json(['data' => $salaryAdvanceRequest->load(['requester', 'approver', 'payslip'])]);
+        return response()->json(['data' => $salaryAdvanceRequest->load([
+            'requester', 'approver', 'payslip',
+            'approvalRequest.workflow.steps',
+            'approvalRequest.history.user',
+        ])]);
     }
 
     public function store(Request $request): JsonResponse
@@ -206,6 +210,21 @@ class SalaryAdvanceController extends Controller
 
     public function approve(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
+        if ($salaryAdvanceRequest->approvalRequest) {
+            $data   = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+            $result = $this->workflowService->approve(
+                $salaryAdvanceRequest->approvalRequest,
+                $request->user(),
+                $data['comment'] ?? null
+            );
+            return response()->json([
+                'message'            => 'Approved.',
+                'data'               => $salaryAdvanceRequest->fresh(['requester', 'approver', 'approvalRequest']),
+                'notified_approvers' => $result['notified_approvers'],
+            ]);
+        }
+
+        // Legacy direct-approval path (no workflow configured)
         if ($request->user()->hasRole('staff')) {
             abort(403);
         }
@@ -214,67 +233,87 @@ class SalaryAdvanceController extends Controller
         }
         if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
             throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
+                'approval' => 'You cannot approve your own request.',
             ]);
         }
-        $salaryAdvanceRequest->update([
-            'status'      => 'approved',
-            'approved_at' => now(),
-            'approved_by' => $request->user()->id,
-        ]);
-
-        $salaryAdvanceRequest->loadMissing('requester');
-        if ($salaryAdvanceRequest->requester) {
-            $this->notificationService->dispatch(
-                $salaryAdvanceRequest->requester,
-                'salary_advance.approved',
-                [
-                    'name'      => $salaryAdvanceRequest->requester->name,
-                    'reference' => $salaryAdvanceRequest->reference_number,
-                    'amount'    => number_format((float) $salaryAdvanceRequest->amount, 2) . ' ' . $salaryAdvanceRequest->currency,
-                ],
-                ['module' => 'salary_advance', 'record_id' => $salaryAdvanceRequest->id, 'url' => '/finance/salary-advance/' . $salaryAdvanceRequest->id]
-            );
-        }
-
+        $salaryAdvanceRequest->onWorkflowApproved($request->user());
         return response()->json(['message' => 'Approved.', 'data' => $salaryAdvanceRequest->fresh(['requester', 'approver'])]);
     }
 
     public function reject(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
-        if ($request->user()->hasRole('staff')) {
-            abort(403);
-        }
         $data = $request->validate([
-            'reason' => ['nullable', 'string', 'max:1000'],
+            'reason'  => ['nullable', 'string', 'max:1000'],
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
         $reason = $data['reason'] ?? $data['comment'] ?? null;
         if (!$reason) {
             throw ValidationException::withMessages(['comment' => ['The comment field is required.']]);
         }
+
+        if ($salaryAdvanceRequest->approvalRequest) {
+            $this->workflowService->reject($salaryAdvanceRequest->approvalRequest, $request->user(), $reason);
+            return response()->json([
+                'message' => 'Rejected.',
+                'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+            ]);
+        }
+
+        // Legacy path
+        if ($request->user()->hasRole('staff')) {
+            abort(403);
+        }
         if ($salaryAdvanceRequest->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be rejected.']);
         }
-        $salaryAdvanceRequest->update([
-            'status'            => 'rejected',
-            'rejection_reason'  => $reason,
-        ]);
-
-        $salaryAdvanceRequest->loadMissing('requester');
-        if ($salaryAdvanceRequest->requester) {
-            $this->notificationService->dispatch(
-                $salaryAdvanceRequest->requester,
-                'salary_advance.rejected',
-                [
-                    'name'      => $salaryAdvanceRequest->requester->name,
-                    'reference' => $salaryAdvanceRequest->reference_number,
-                    'comment'   => $reason,
-                ],
-                ['module' => 'salary_advance', 'record_id' => $salaryAdvanceRequest->id, 'url' => '/finance/salary-advance/' . $salaryAdvanceRequest->id]
-            );
-        }
-
+        $salaryAdvanceRequest->onWorkflowRejected($request->user(), $reason);
         return response()->json(['message' => 'Rejected.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
+    }
+
+    public function returnForCorrection(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate(['comment' => ['required', 'string', 'max:1000']]);
+        abort_unless($salaryAdvanceRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->returnForCorrection(
+            $salaryAdvanceRequest->approvalRequest,
+            $request->user(),
+            $data['comment']
+        );
+        return response()->json([
+            'message' => 'Request returned to requester for correction.',
+            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function withdraw(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        abort_unless($salaryAdvanceRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->withdraw($salaryAdvanceRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Salary advance request withdrawn.',
+            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function resubmit(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        abort_unless($salaryAdvanceRequest->approvalRequest, 422, 'No active workflow on this request.');
+        $this->workflowService->resubmit($salaryAdvanceRequest->approvalRequest, $request->user());
+        return response()->json([
+            'message' => 'Salary advance request resubmitted.',
+            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+        ]);
+    }
+
+    public function certificate(SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        abort_unless($salaryAdvanceRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        return response()->json([
+            'data' => $salaryAdvanceRequest->load([
+                'requester.department',
+                'approvalRequest.history.user',
+                'approvalRequest.workflow.steps',
+            ]),
+        ]);
     }
 }
