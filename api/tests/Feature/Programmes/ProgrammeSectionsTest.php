@@ -56,4 +56,31 @@ class ProgrammeSectionsTest extends TestCase
             );
         }
     }
+
+    public function test_programme_mass_assigns_and_casts_new_section_fields(): void
+    {
+        $tenant = \App\Models\Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $programme = \App\Models\Programme::create([
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $user->id,
+            'reference_number' => 'PIF-' . uniqid(),
+            'title'            => 'Venue Test',
+            'status'           => 'draft',
+            'venue_country'                    => 'Namibia',
+            'venue_accommodation_required'     => true,
+            'venue_accommodation_count'        => 12,
+            'support_services'                 => ['ground_transport', 'catering'],
+            'languages_required'               => ['English', 'French'],
+            'conflict_declared'                => false,
+            'declaration_confirmed'            => false,
+        ]);
+
+        $this->assertTrue($programme->venue_accommodation_required);
+        $this->assertSame(12, $programme->venue_accommodation_count);
+        $this->assertIsArray($programme->support_services);
+        $this->assertSame(['ground_transport', 'catering'], $programme->support_services);
+        $this->assertIsArray($programme->languages_required);
+    }
 }

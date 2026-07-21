@@ -23,6 +23,45 @@ class Programme extends Model
         'travel_required', 'delegates_count', 'member_states', 'travel_services',
         'procurement_required', 'media_options',
         'submitted_at', 'approved_at', 'rejection_reason',
+        // Venue
+        'venue_country', 'venue_city', 'venue_proposed_hotel',
+        'venue_accommodation_required', 'venue_accommodation_count',
+        'venue_conferencing_required', 'venue_conferencing_participants',
+        'venue_quotation_attached', 'venue_hotel_quotation_attached',
+        'venue_accessibility_requirements', 'venue_security_considerations', 'venue_comments',
+        // Budget / participant provisions
+        'proposed_dsa_rate', 'original_budget_rate', 'dsa_variance_reason',
+        'proposed_participants', 'budgeted_participants', 'participants_variance_reason',
+        'proposed_funding_difference', 'estimated_activity_amount',
+        // budget_availability_status and finance_comments are intentionally NOT
+        // fillable here — they are only writable via ProgrammeController::updateFinanceReview()
+        // Consultants
+        'secretariat_staff_required', 'secretariat_staff_count',
+        'consultants_required', 'consultants_count', 'consultants_rate',
+        'resource_persons_required', 'resource_persons_count', 'resource_persons_rate',
+        'rapporteurs_required', 'rapporteurs_count', 'rapporteurs_rate',
+        'media_liaison_required', 'media_liaison_count',
+        'local_support_required', 'local_support_count', 'local_support_rate',
+        'personnel_comments',
+        // Interpretation
+        'interpretation_required',
+        'en_fr_required', 'en_fr_interpreters_count',
+        'en_pt_required', 'en_pt_interpreters_count',
+        'fr_pt_required', 'fr_pt_interpreters_count',
+        'interpreter_rate', 'interpreter_source', 'interpreter_source_other_note',
+        'interpretation_equipment_required', 'translation_required',
+        'languages_required', 'interpretation_comments',
+        // Support services
+        'support_services', 'support_services_other_note',
+        // Conflict of interest (conflict_declared_by/at are set server-side only, still fillable
+        // internally via ->update() calls made from the service, just excluded from controller validation)
+        'conflict_declared', 'conflict_details', 'conflict_mitigation',
+        'conflict_declared_by', 'conflict_declared_at',
+        // Declaration
+        'declaration_confirmed', 'declaration_confirmed_by',
+        'declaration_confirmed_at', 'declaration_version',
+        // Amendment tracking
+        'amended_from_id', 'superseded_at',
     ];
 
     protected $casts = [
@@ -47,6 +86,38 @@ class Programme extends Model
         'member_states'            => 'array',
         'travel_services'          => 'array',
         'media_options'            => 'array',
+        'venue_accommodation_required'  => 'boolean',
+        'venue_conferencing_required'   => 'boolean',
+        'venue_quotation_attached'      => 'boolean',
+        'venue_hotel_quotation_attached'=> 'boolean',
+        'proposed_dsa_rate'             => 'decimal:2',
+        'original_budget_rate'          => 'decimal:2',
+        'proposed_funding_difference'   => 'decimal:2',
+        'estimated_activity_amount'     => 'decimal:2',
+        'secretariat_staff_required'    => 'boolean',
+        'consultants_required'          => 'boolean',
+        'consultants_rate'              => 'decimal:2',
+        'resource_persons_required'     => 'boolean',
+        'resource_persons_rate'         => 'decimal:2',
+        'rapporteurs_required'          => 'boolean',
+        'rapporteurs_rate'              => 'decimal:2',
+        'media_liaison_required'        => 'boolean',
+        'local_support_required'        => 'boolean',
+        'local_support_rate'            => 'decimal:2',
+        'interpretation_required'       => 'boolean',
+        'en_fr_required'                => 'boolean',
+        'en_pt_required'                => 'boolean',
+        'fr_pt_required'                => 'boolean',
+        'interpreter_rate'              => 'decimal:2',
+        'interpretation_equipment_required' => 'boolean',
+        'translation_required'          => 'boolean',
+        'languages_required'            => 'array',
+        'support_services'              => 'array',
+        'conflict_declared'             => 'boolean',
+        'conflict_declared_at'          => 'datetime',
+        'declaration_confirmed'         => 'boolean',
+        'declaration_confirmed_at'      => 'datetime',
+        'superseded_at'                 => 'datetime',
     ];
 
     public function creator()
@@ -102,6 +173,63 @@ class Programme extends Model
     public function attachments()
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function conflictDeclaredBy()
+    {
+        return $this->belongsTo(User::class, 'conflict_declared_by');
+    }
+
+    public function declarationConfirmedBy()
+    {
+        return $this->belongsTo(User::class, 'declaration_confirmed_by');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(ProgrammeDocument::class);
+    }
+
+    public function arrivalDepartures()
+    {
+        return $this->hasMany(ProgrammeArrivalDeparture::class);
+    }
+
+    public function meActivityReport()
+    {
+        return $this->hasOne(MeActivityReport::class, 'programme_id');
+    }
+
+    public function amendedFrom()
+    {
+        return $this->belongsTo(Programme::class, 'amended_from_id');
+    }
+
+    public function amendments()
+    {
+        return $this->hasMany(Programme::class, 'amended_from_id');
+    }
+
+    public function getMeStatusAttribute(): string
+    {
+        $report = $this->meActivityReport;
+
+        if ($report) {
+            if ($report->closure_status === 'closed' || $report->review_status === MeActivityReport::STATUS_CLOSED) {
+                return 'closed';
+            }
+            return match ($report->review_status) {
+                MeActivityReport::STATUS_NOT_SUBMITTED => 'report_pending',
+                MeActivityReport::STATUS_SUBMITTED     => 'report_submitted',
+                MeActivityReport::STATUS_RETURNED      => 'returned_for_correction',
+                MeActivityReport::STATUS_REVIEWED      => 'me_reviewed',
+                MeActivityReport::STATUS_ACCEPTED      => 'accepted',
+                default => 'link_unavailable',
+            };
+        }
+
+        $wasLinked = MeActivityReport::onlyTrashed()->where('programme_id', $this->id)->exists();
+        return $wasLinked ? 'linked_record_archived' : 'not_yet_linked';
     }
 
     public function isDraft(): bool { return $this->status === 'draft'; }
