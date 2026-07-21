@@ -1,0 +1,92 @@
+{
+  "module": "leave",
+  "scenarios": [
+    {
+      "name": "missing_auth_blocks",
+      "method": "GET",
+      "path": "/api/v1/leave/requests",
+      "expect": [401]
+    },
+    {
+      "name": "index_success_for_staff",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/requests",
+      "expect": [200]
+    },
+    {
+      "name": "create_validation_failure",
+      "auth": "staff",
+      "method": "POST",
+      "path": "/api/v1/leave/requests",
+      "payload": {},
+      "expect": [422]
+    },
+    {
+      "name": "create_success",
+      "auth": "staff",
+      "method": "POST",
+      "path": "/api/v1/leave/requests",
+      "payload_template": "leave_create_valid",
+      "expect": [201]
+    },
+    {
+      "name": "invalid_id_format_is_handled",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/requests/not-a-valid-id",
+      "expect": [404, 422]
+    },
+    {
+      "name": "not_found_id_returns_clean_error",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/requests/99999999",
+      "expect": [404]
+    },
+    {
+      "name": "submit_invalid_transition_draft_missing_record",
+      "auth": "staff",
+      "method": "POST",
+      "path": "/api/v1/leave/requests/99999999/submit",
+      "expect": [404]
+    },
+    {
+      "name": "approve_nonexistent_request",
+      "auth": "staff",
+      "method": "POST",
+      "path": "/api/v1/leave/requests/99999999/approve",
+      "payload": {"comment": "approve attempt"},
+      "expect": [404]
+    },
+    {
+      "name": "reject_requires_comment",
+      "auth": "staff",
+      "method": "POST",
+      "path": "/api/v1/leave/requests/99999999/reject",
+      "payload": {},
+      "expect": [404, 422]
+    },
+    {
+      "name": "balances_success",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/balances",
+      "expect": [200]
+    },
+    {
+      "name": "lil_accruals_success",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/lil-accruals",
+      "expect": [200]
+    },
+    {
+      "name": "admin_balances_forbidden_for_staff",
+      "auth": "staff",
+      "method": "GET",
+      "path": "/api/v1/leave/admin/balances",
+      "expect": [403]
+    }
+  ]
+}

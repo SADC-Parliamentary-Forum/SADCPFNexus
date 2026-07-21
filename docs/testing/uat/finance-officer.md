@@ -1,0 +1,129 @@
+# UAT Script - Finance Officer
+
+Date: __________
+Tester: __________
+Environment: Staging / Pre-Prod
+
+## Evidence
+- Screenshot or recording attached: [ ]
+- Defects logged with IDs: [ ]
+- Retest evidence attached: [ ]
+
+## Test Cases
+- [ ] ADV-001 (ADV): Staff creates salary advance request
+- [ ] ADV-002 (ADV): Required fields are validated
+- [ ] ADV-003 (ADV): Amount cannot be zero or negative
+- [ ] ADV-004 (ADV): Amount format supports N$
+- [ ] ADV-005 (ADV): Finance sees request only at finance stage
+- [ ] ADV-006 (ADV): Finance captures monthly salary
+- [ ] ADV-007 (ADV): Finance captures existing advance status
+- [ ] ADV-008 (ADV): System calculates whether request exceeds 50% of monthly salary
+- [ ] ADV-009 (ADV): Existing outstanding advance triggers warning or block based on policy
+- [ ] ADV-010 (ADV): Finance certifies request
+- [ ] ADV-011 (ADV): Finance rejects or returns request
+- [ ] ADV-012 (ADV): Final approver approves
+- [ ] ADV-013 (ADV): Final approver rejects with reason
+- [ ] ADV-014 (ADV): Requester cannot finance-certify own request
+- [ ] ADV-015 (ADV): Requester cannot finally approve own request
+- [ ] ADV-016 (ADV): Payroll deduction schedule is created
+- [ ] ADV-017 (ADV): Deduction date is captured
+- [ ] ADV-018 (ADV): Approved advance appears in finance dashboard
+- [ ] ADV-019 (ADV): Approved advance appears in employee record
+- [ ] ADV-020 (ADV): Repayment status can be updated by authorised officer
+- [ ] ADV-021 (ADV): Requester confirms repayment/advance record where required
+- [ ] ADV-022 (ADV): Full audit trail is created
+- [ ] ADV-023 (ADV): PDF output matches official salary advance form
+- [ ] ADV-024 (ADV): Rejected request does not create payroll deduction
+- [ ] ADV-025 (ADV): Duplicate salary advance request detection works
+- [ ] TRAVEL-001 (TRAVEL): Create travel requisition
+- [ ] TRAVEL-002 (TRAVEL): Capture traveller and mission details
+- [ ] TRAVEL-003 (TRAVEL): Capture destination and travel dates
+- [ ] TRAVEL-004 (TRAVEL): System calculates number of days
+- [ ] TRAVEL-005 (TRAVEL): Funding agency, project and budget line required
+- [ ] TRAVEL-006 (TRAVEL): Support documentation upload required where configured
+- [ ] TRAVEL-007 (TRAVEL): Vehicle section appears only when vehicle is requested
+- [ ] TRAVEL-008 (TRAVEL): Private vehicle reason required
+- [ ] TRAVEL-009 (TRAVEL): Admin captures itinerary
+- [ ] TRAVEL-010 (TRAVEL): Finance captures DSA rate
+- [ ] TRAVEL-011 (TRAVEL): Finance calculates DSA total
+- [ ] TRAVEL-012 (TRAVEL): System calculates terminal allowance/communication where configured
+- [ ] TRAVEL-013 (TRAVEL): Director Finance confirms funds/logistics
+- [ ] TRAVEL-014 (TRAVEL): SG approves travel
+- [ ] TRAVEL-015 (TRAVEL): SG rejects travel
+- [ ] TRAVEL-016 (TRAVEL): Traveller cannot approve own travel
+- [ ] TRAVEL-017 (TRAVEL): Finance cannot approve before itinerary/logistics step
+- [ ] TRAVEL-018 (TRAVEL): SG not notified before finance confirmation
+- [ ] TRAVEL-019 (TRAVEL): Approved travel appears in calendar
+- [ ] TRAVEL-020 (TRAVEL): Approved travel auto-fills timesheet/travel mission days
+- [ ] TRAVEL-021 (TRAVEL): Travel mission appears in weekly summary
+- [ ] TRAVEL-022 (TRAVEL): Post-travel retirement task is created
+- [ ] TRAVEL-023 (TRAVEL): Retirement due date reminder is sent
+- [ ] TRAVEL-024 (TRAVEL): Supporting invoices can be uploaded
+- [ ] TRAVEL-025 (TRAVEL): Outstanding retirement appears on dashboard
+- [ ] TRAVEL-026 (TRAVEL): PDF output matches official travel form
+- [ ] TRAVEL-027 (TRAVEL): All calculations are reproducible
+- [ ] TRAVEL-028 (TRAVEL): Audit trail records every transition
+- [ ] PROC-001 (PROC): Create procurement request
+- [ ] PROC-002 (PROC): Budget line required
+- [ ] PROC-003 (PROC): Finance verifies budget availability
+- [ ] PROC-004 (PROC): HOD approves request
+- [ ] PROC-005 (PROC): Procurement officer receives request only after HOD approval
+- [ ] PROC-006 (PROC): Threshold below N$10,000 follows approved supplier process
+- [ ] PROC-007 (PROC): Threshold N$10,001-N$100,000 requires at least three quotations for goods
+- [ ] PROC-008 (PROC): Services follow selective tender/sole-source rules where applicable
+- [ ] PROC-009 (PROC): Above threshold triggers tender committee process
+- [ ] PROC-010 (PROC): Purchase splitting detection works
+- [ ] PROC-011 (PROC): Supplier list is searchable
+- [ ] PROC-012 (PROC): Supplier performance rating visible to authorised users
+- [ ] PROC-013 (PROC): Supplier self-registration works
+- [ ] PROC-014 (PROC): Supplier access remains disabled until approved
+- [ ] PROC-015 (PROC): Supplier sees only own RFQs, quotes, LPOs and invoices
+- [ ] PROC-016 (PROC): External RFQ token opens public quotation page
+- [ ] PROC-017 (PROC): Expired RFQ token blocked
+- [ ] PROC-018 (PROC): Supplier submits quotation with attachments
+- [ ] PROC-019 (PROC): Late quotation blocked or flagged
+- [ ] PROC-020 (PROC): Evaluation committee scoring works
+- [ ] PROC-021 (PROC): Conflict of interest declaration required
+- [ ] PROC-022 (PROC): Award decision recorded
+- [ ] PROC-023 (PROC): LPO generated only after approval
+- [ ] PROC-024 (PROC): LPO cannot be edited after issue except by amendment workflow
+- [ ] PROC-025 (PROC): Supplier receives LPO notification
+- [ ] PROC-026 (PROC): GRN/service confirmation required before final payment
+- [ ] PROC-027 (PROC): Proforma invoice uploaded
+- [ ] PROC-028 (PROC): Finance approves proforma
+- [ ] PROC-029 (PROC): Payment proof uploaded
+- [ ] PROC-030 (PROC): Final invoice uploaded
+- [ ] PROC-031 (PROC): Invoice lifecycle statuses work
+- [ ] PROC-032 (PROC): Duplicate invoice number detection works
+- [ ] PROC-033 (PROC): Invoice amount cannot exceed LPO without variation approval
+- [ ] PROC-034 (PROC): Payment closure locks record
+- [ ] PROC-035 (PROC): Complete procurement file export works
+- [ ] PROC-036 (PROC): Audit trail includes all procurement decisions
+- [ ] REIMB-001 (REIMB): Create reimbursement claim
+- [ ] REIMB-002 (REIMB): Attach receipts
+- [ ] REIMB-003 (REIMB): Expense category validation works
+- [ ] REIMB-004 (REIMB): Claim cannot exceed approved amount without reason
+- [ ] REIMB-005 (REIMB): Finance checks supporting documents
+- [ ] REIMB-006 (REIMB): Missing receipt triggers return-for-correction
+- [ ] REIMB-007 (REIMB): Approved reimbursement appears in finance dashboard
+- [ ] REIMB-008 (REIMB): Retirement of travel advance reconciles against amount advanced
+- [ ] REIMB-009 (REIMB): Balance payable/refundable is calculated
+- [ ] REIMB-010 (REIMB): Outstanding retirement flagged
+- [ ] REIMB-011 (REIMB): Audit history complete
+- [ ] WEEKLY-001 (WEEKLY): Weekly summary generated
+- [ ] WEEKLY-002 (WEEKLY): User receives summary based on role
+- [ ] WEEKLY-003 (WEEKLY): Staff sees own requests and actions
+- [ ] WEEKLY-004 (WEEKLY): Manager sees team pending approvals
+- [ ] WEEKLY-005 (WEEKLY): Finance sees finance pending items
+- [ ] WEEKLY-006 (WEEKLY): SG sees institutional overview
+- [ ] WEEKLY-007 (WEEKLY): Travel/leave absences included
+- [ ] WEEKLY-008 (WEEKLY): Completed workflows included
+- [ ] WEEKLY-009 (WEEKLY): Overdue tasks included
+- [ ] WEEKLY-010 (WEEKLY): Confidential data excluded where role lacks access
+- [ ] WEEKLY-011 (WEEKLY): Email links open correct records
+- [ ] WEEKLY-012 (WEEKLY): No broken links in email
+- [ ] WEEKLY-013 (WEEKLY): Email generation failure is retried and logged
+
+## Sign-off
+- Module owner sign-off: ____________________
+- QA lead sign-off: ____________________

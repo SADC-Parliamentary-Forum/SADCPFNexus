@@ -1,0 +1,132 @@
+# UAT Script - Secretary General
+
+Date: __________
+Tester: __________
+Environment: Staging / Pre-Prod
+
+## Evidence
+- Screenshot or recording attached: [ ]
+- Defects logged with IDs: [ ]
+- Retest evidence attached: [ ]
+
+## Test Cases
+- [ ] LEAVE-001 (LEAVE): Create annual leave request
+- [ ] LEAVE-002 (LEAVE): Create sick leave request
+- [ ] LEAVE-003 (LEAVE): Create compassionate leave request
+- [ ] LEAVE-004 (LEAVE): Create study leave request
+- [ ] LEAVE-005 (LEAVE): Create maternity/paternity leave request
+- [ ] LEAVE-006 (LEAVE): Create leave in lieu of overtime
+- [ ] LEAVE-007 (LEAVE): System calculates working days excluding weekends
+- [ ] LEAVE-008 (LEAVE): System excludes public holidays
+- [ ] LEAVE-009 (LEAVE): System prevents negative leave balance unless policy allows
+- [ ] LEAVE-010 (LEAVE): System checks leave in lieu expiry rules
+- [ ] LEAVE-011 (LEAVE): HOD recommends leave
+- [ ] LEAVE-012 (LEAVE): HOD does not recommend leave and must provide reason
+- [ ] LEAVE-013 (LEAVE): HR certifies accrued days, days taken and balance
+- [ ] LEAVE-014 (LEAVE): SG authorises leave
+- [ ] LEAVE-015 (LEAVE): SG declines leave with reason
+- [ ] LEAVE-016 (LEAVE): Requester cannot approve own leave
+- [ ] LEAVE-017 (LEAVE): HR cannot skip HOD recommendation
+- [ ] LEAVE-018 (LEAVE): SG does not receive notification before HR certification
+- [ ] LEAVE-019 (LEAVE): Approved leave auto-blocks timesheet days
+- [ ] LEAVE-020 (LEAVE): Approved leave appears in calendar
+- [ ] LEAVE-021 (LEAVE): Approved leave appears in weekly summary
+- [ ] LEAVE-022 (LEAVE): Leave balance updates correctly
+- [ ] LEAVE-023 (LEAVE): PDF output matches official leave form
+- [ ] LEAVE-024 (LEAVE): Leave cancellation follows approval workflow
+- [ ] LEAVE-025 (LEAVE): Leave amendment creates new approval trail
+- [ ] LEAVE-026 (LEAVE): Overlapping leave request is blocked or warned
+- [ ] LEAVE-027 (LEAVE): Leave for a past date follows configured policy
+- [ ] LEAVE-028 (LEAVE): Attachment upload works for sick leave
+- [ ] LEAVE-029 (LEAVE): Rejection restores leave balance
+- [ ] LEAVE-030 (LEAVE): Audit log contains all actions
+- [ ] TRAVEL-001 (TRAVEL): Create travel requisition
+- [ ] TRAVEL-002 (TRAVEL): Capture traveller and mission details
+- [ ] TRAVEL-003 (TRAVEL): Capture destination and travel dates
+- [ ] TRAVEL-004 (TRAVEL): System calculates number of days
+- [ ] TRAVEL-005 (TRAVEL): Funding agency, project and budget line required
+- [ ] TRAVEL-006 (TRAVEL): Support documentation upload required where configured
+- [ ] TRAVEL-007 (TRAVEL): Vehicle section appears only when vehicle is requested
+- [ ] TRAVEL-008 (TRAVEL): Private vehicle reason required
+- [ ] TRAVEL-009 (TRAVEL): Admin captures itinerary
+- [ ] TRAVEL-010 (TRAVEL): Finance captures DSA rate
+- [ ] TRAVEL-011 (TRAVEL): Finance calculates DSA total
+- [ ] TRAVEL-012 (TRAVEL): System calculates terminal allowance/communication where configured
+- [ ] TRAVEL-013 (TRAVEL): Director Finance confirms funds/logistics
+- [ ] TRAVEL-014 (TRAVEL): SG approves travel
+- [ ] TRAVEL-015 (TRAVEL): SG rejects travel
+- [ ] TRAVEL-016 (TRAVEL): Traveller cannot approve own travel
+- [ ] TRAVEL-017 (TRAVEL): Finance cannot approve before itinerary/logistics step
+- [ ] TRAVEL-018 (TRAVEL): SG not notified before finance confirmation
+- [ ] TRAVEL-019 (TRAVEL): Approved travel appears in calendar
+- [ ] TRAVEL-020 (TRAVEL): Approved travel auto-fills timesheet/travel mission days
+- [ ] TRAVEL-021 (TRAVEL): Travel mission appears in weekly summary
+- [ ] TRAVEL-022 (TRAVEL): Post-travel retirement task is created
+- [ ] TRAVEL-023 (TRAVEL): Retirement due date reminder is sent
+- [ ] TRAVEL-024 (TRAVEL): Supporting invoices can be uploaded
+- [ ] TRAVEL-025 (TRAVEL): Outstanding retirement appears on dashboard
+- [ ] TRAVEL-026 (TRAVEL): PDF output matches official travel form
+- [ ] TRAVEL-027 (TRAVEL): All calculations are reproducible
+- [ ] TRAVEL-028 (TRAVEL): Audit trail records every transition
+- [ ] PIF-001 (PIF): Create programme implementation request
+- [ ] PIF-002 (PIF): Required general information fields validate
+- [ ] PIF-003 (PIF): Proposed venue fields validate
+- [ ] PIF-004 (PIF): Accommodation/conferencing fields calculate numbers
+- [ ] PIF-005 (PIF): DSA rate variance reason required where applicable
+- [ ] PIF-006 (PIF): Participant number variance reason required
+- [ ] PIF-007 (PIF): Consultant/resource person rates validate
+- [ ] PIF-008 (PIF): Interpreter language pairs validate
+- [ ] PIF-009 (PIF): Documentation translation requirements captured
+- [ ] PIF-010 (PIF): Support services captured
+- [ ] PIF-011 (PIF): Arrival/departure details captured
+- [ ] PIF-012 (PIF): Conflict of interest declaration required
+- [ ] PIF-013 (PIF): Programme Manager signs
+- [ ] PIF-014 (PIF): Activity authorised by correct role
+- [ ] PIF-015 (PIF): Finance confirms budget line and availability of funds
+- [ ] PIF-016 (PIF): Director Finance authorises funds, procurement and rates
+- [ ] PIF-017 (PIF): SG approves
+- [ ] PIF-018 (PIF): Logistics cannot proceed before approval
+- [ ] PIF-019 (PIF): PIF cannot skip budget confirmation
+- [ ] PIF-020 (PIF): SG receives notification only after Director Finance step
+- [ ] PIF-021 (PIF): Requester cannot approve own PIF
+- [ ] PIF-022 (PIF): Approved PIF generates PDF
+- [ ] PIF-023 (PIF): Final approved PIF and support docs stored in correct folder
+- [ ] PIF-024 (PIF): Relevant officers receive automatic email
+- [ ] PIF-025 (PIF): Activity appears on programme dashboard
+- [ ] PIF-026 (PIF): Activity appears in weekly summary
+- [ ] PIF-027 (PIF): Audit log records all stages
+- [ ] PIF-028 (PIF): Returned PIF preserves comments and version history
+- [ ] WEEKLY-001 (WEEKLY): Weekly summary generated
+- [ ] WEEKLY-002 (WEEKLY): User receives summary based on role
+- [ ] WEEKLY-003 (WEEKLY): Staff sees own requests and actions
+- [ ] WEEKLY-004 (WEEKLY): Manager sees team pending approvals
+- [ ] WEEKLY-005 (WEEKLY): Finance sees finance pending items
+- [ ] WEEKLY-006 (WEEKLY): SG sees institutional overview
+- [ ] WEEKLY-007 (WEEKLY): Travel/leave absences included
+- [ ] WEEKLY-008 (WEEKLY): Completed workflows included
+- [ ] WEEKLY-009 (WEEKLY): Overdue tasks included
+- [ ] WEEKLY-010 (WEEKLY): Confidential data excluded where role lacks access
+- [ ] WEEKLY-011 (WEEKLY): Email links open correct records
+- [ ] WEEKLY-012 (WEEKLY): No broken links in email
+- [ ] WEEKLY-013 (WEEKLY): Email generation failure is retried and logged
+- [ ] AUDIT-001 (AUDIT): Create action logged
+- [ ] AUDIT-002 (AUDIT): Update action logged
+- [ ] AUDIT-003 (AUDIT): Delete/archive action logged
+- [ ] AUDIT-004 (AUDIT): Approval action logged
+- [ ] AUDIT-005 (AUDIT): Rejection action logged
+- [ ] AUDIT-006 (AUDIT): Return-for-correction logged
+- [ ] AUDIT-007 (AUDIT): File upload logged
+- [ ] AUDIT-008 (AUDIT): File download logged
+- [ ] AUDIT-009 (AUDIT): Login/logout logged
+- [ ] AUDIT-010 (AUDIT): Failed login logged
+- [ ] AUDIT-011 (AUDIT): Permission failure logged
+- [ ] AUDIT-012 (AUDIT): Audit log cannot be edited
+- [ ] AUDIT-013 (AUDIT): Audit log cannot be deleted by normal admin
+- [ ] AUDIT-014 (AUDIT): Hash-chain/integrity check passes if implemented
+- [ ] AUDIT-015 (AUDIT): Audit export works
+- [ ] AUDIT-016 (AUDIT): Internal auditor can view logs
+- [ ] AUDIT-017 (AUDIT): Ordinary user cannot view system audit logs
+
+## Sign-off
+- Module owner sign-off: ____________________
+- QA lead sign-off: ____________________
