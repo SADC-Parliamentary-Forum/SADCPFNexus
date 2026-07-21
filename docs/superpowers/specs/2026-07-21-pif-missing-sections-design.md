@@ -2,143 +2,228 @@
 
 ## Context
 
-The Programme Implementation Form (PIF), implemented as the `Programme` model/module, is the activity-level request-and-approval form for SADC PF Nexus. A code audit against the PRD found that while the PIF's workflow, notifications, delegation, attachments, and approval machinery are fully implemented, the `programmes` schema is missing most of the PRD's form sections (Sections C–N below), and the M&E and Procurement connection points are either free-text or entirely disconnected.
+The Programme Implementation Form (PIF), implemented as the `Programme` model/module, is the activity-level request-and-approval form for SADC PF Nexus. A code audit against the PRD found the PIF's workflow, notifications, delegation, attachments, and approval machinery fully implemented, but the `programmes` schema missing most of the PRD's form sections, and the M&E/Procurement connection points either free-text or disconnected.
 
-This spec was revised after the user supplied a full, detailed PIF Module PRD (Sections 1–21) superseding the earlier lighter-weight version of this spec. It closes the gap end to end: schema, model, API, permissions, and the web PIF forms — while keeping the PIF itself simple and strictly separate from the M&E module, which remains its own menu item and owns all reporting/indicator/evidence logic.
+This is the **third revision** of this spec. The first added 7 sections as JSON/flat columns. The second (after the full PIF Module PRD was supplied) switched Documentation/Arrival-Departure to child tables and added procurement linkage. This revision responds to a detailed review that approved the overall direction but required 10 specific changes before implementation, all incorporated below. Each change was verified against the actual codebase before being written in — not applied blindly.
 
-**Two design decisions were revised from the original draft of this spec, driven by explicit new requirements:**
+**Still explicitly out of scope** (unchanged): converting `strategic_alignment`/`strategic_pillars` to FK-backed cascading dropdowns; any change to M&E's own indicators/results-frameworks/evidence-validation logic; Budget Module's own ledger/commitments; Travel, leave-in-lieu, supplier evaluation, RFQ evaluation, purchase orders, payroll/salary advance.
 
-1. **Documentation (§8.7) and Arrival/Departure (§8.10) become real child tables**, not JSON array columns. The PRD requires each row to have "its own stable record identifier" and requires attachments to "link to the document record, not merely to a document title" (§17.3: *"Module links must not depend on mutable text such as document titles"*). A JSON array element has no queryable, FK-able identity, so this uses the same child-table pattern already established 5× elsewhere on `Programme` (`ProgrammeActivity`, `ProgrammeMilestone`, `ProgrammeDeliverable`, `ProgrammeBudgetLine`, `ProgrammeProcurementItem`).
-2. **Procurement linkage is now in scope.** §8.11 and §12.2 require a real `linked_procurement_request` reference and the ability to transfer approved PIF procurement items into the Procurement module. `ProgrammeProcurementItem` already exists — this spec adds the FK and the transfer action rather than deferring it.
+## Product Principle
 
-**Still explicitly out of scope** (per PRD §20 and unchanged from the original deferral):
-- Converting `strategic_alignment`/`strategic_pillars` to FK-backed cascading dropdowns sourced from M&E's Strategic Plan configuration.
-- Any change to the M&E module's own indicators, results frameworks, evidence validation, or reporting logic — M&E only *reads* approved PIF data and *writes back* a linkage/status pointer.
-- Budget Module's own ledger, commitments, and variance reporting (Budget remains authoritative; PIF only reads budget lines and displays what Finance sets).
-- Travel, leave-in-lieu, supplier evaluation, RFQ evaluation, purchase orders, payroll/salary advance — all explicitly out of scope per PRD §20.
-
-## Product Principle (from PRD §2–3)
-
-The PIF is an activity-level request, costing, logistical-planning, and approval form — one PIF per activity, owned by the Programme/Requesting Officer. It is not the M&E module, not a procurement/budget system of record, and not a post-activity reporting tool. After approval, its data becomes available to M&E, Procurement, Budget, and Travel, but those modules remain authoritative for their own specialised workflows.
+The PIF is an activity-level request, costing, logistical-planning, and approval form — one PIF per activity. It is not the M&E module, not a procurement/budget system of record, and not a post-activity reporting tool. After approval, its data becomes available to M&E, Procurement, Budget, and Travel, but those modules remain authoritative for their own specialised workflows.
 
 ## Architecture
 
-One migration adds the new flat/simple columns to `programmes` (Sections C, D, E, F, H, M, N below). Two new child tables — `programme_documents` and `programme_arrival_departures` — replace what would otherwise be JSON blobs, each with a real auto-increment `id`, matching the existing `Programme` child-table pattern. `Attachment`'s existing generic `MorphTo attachable` relation (no hardcoded allowlist of target models — confirmed in `app/Models/Attachment.php`) lets attachments polymorphically target a specific `ProgrammeDocument` row directly, satisfying the "not merely a title" requirement with zero changes to `Attachment` itself beyond a new `PIF_DOCUMENT_TYPES` constant.
+One migration adds new flat columns to `programmes` for Sections C (Venue), D (Budget/Participant Provisions), E (Consultants), F (Interpretation), H (Support Services), M (Conflict of Interest), plus a single simplified declaration block and self-referential amendment tracking. Two new child tables — `programme_documents` and `programme_arrival_departures` — give repeatable rows real, stable, auto-increment IDs, matching the existing `ProgrammeBudgetLine`/`ProgrammeProcurementItem`/`ProgrammeActivity`/`ProgrammeMilestone`/`ProgrammeDeliverable` pattern exactly (verified: each is a simple `HasFactory` model with `belongsTo(Programme::class)`, a matching migration, a controller that validates then delegates to `ProgrammeService`, and routes registered as `Route::apiResource('{programme}/x', XController::class)->only(['store','update','destroy'])`).
 
-`ProgrammeProcurementItem` gains a nullable `procurement_request_id` FK plus `currency` and `rfq_required` columns, and a new service action creates/links a real `ProcurementRequest` from selected approved items.
+**Critically, no M&E-owned data is stored on `programmes` at all.** `MeActivityReport` already has `programme_id` (verified: `app/Models/MeActivityReport.php:35,68-71`, `belongsTo(Programme::class, 'programme_id')`, uses `SoftDeletes`, and its real status field is `review_status` with constants `not_submitted`/`submitted`/`returned`/`reviewed`/`accepted`/`closed`, plus a separate `closure_status`). `Programme` gets a `meActivityReport()` `hasOne(MeActivityReport::class, 'programme_id')` relation and reads through it — nothing is duplicated or cached on the PIF side.
 
-Section D (Budget) fields `budget_availability_status` and `finance_comments` are **not** editable via the general `ProgrammeController::update()` — they're gated behind a separate authorization check (new `programme.finance-review` permission), enforcing PRD §8.4/§13.3's "Programme Officers must not edit Finance-only fields" at the API layer, not just the UI layer.
-
-Section N (Declaration and Submission) is a submit-time gate, not a draft-time field: five boolean confirmations plus a timestamp, captured only when `submit()` is called, not editable afterward.
-
-Section 11's read-only M&E status block reads `MeActivityReport.status` (existing values: `Not Submitted`, `Submitted for M&E Review`, `Returned for Correction`, `M&E Reviewed`, `Accepted`, `Closed`) through a small mapping function into the PRD's stated PIF-facing labels (`Not Yet Linked`, `Reporting Record Created`, `Report Pending`, `Report Submitted`, `Returned for Correction`, `M&E Reviewed`, `Closed`) — this spec does not touch the M&E module's own status enum, only how the PIF displays it.
+`ProgrammeProcurementItem` gains a nullable `procurement_request_id` FK, plus `currency` and `rfq_required` columns. A programme-level batch action creates one `ProcurementRequest` (with one `ProcurementItem` row per transferred item — verified `ProcurementItem` is `{procurement_request_id, description, quantity, unit, estimated_unit_price, total_price}`) rather than one request per item.
 
 ## Data Model
 
-### New columns on `programmes` (all nullable unless noted)
+### 1. No M&E fields on `programmes` (Revision 1)
 
-**Section C — Venue**
-`venue_country`, `venue_city`, `venue_proposed_hotel` string; `venue_accommodation_required` boolean; `venue_accommodation_count` integer; `venue_conferencing_required` boolean; `venue_conferencing_participants` integer; `venue_quotation_attached` boolean; `venue_hotel_quotation_attached` boolean; `venue_accessibility_requirements`, `venue_security_considerations`, `venue_comments` text.
+Removed entirely from this spec: `me_classification_required`, `me_activity_report_id`, `me_planned_output`, `me_planned_target`, `me_indicator_id`, `me_reporting_category`. None of these are added to `programmes`. `Programme::meActivityReport()` is the only connection point, and it is a relationship, not a stored field:
 
-**Section D — Budget and Participant Provisions**
-`proposed_dsa_rate`, `original_budget_rate` decimal(10,2); `dsa_variance_reason` text; `proposed_participants`, `budgeted_participants` integer; `participants_variance_reason` text; `proposed_funding_difference` decimal(15,2); `estimated_activity_amount` decimal(15,2); `budget_availability_status` string, enum: `not_checked` / `available` / `partially_available` / `unavailable` / `confirmed_with_conditions`, default `not_checked`; `finance_comments` text. (`primary_currency`/`budget_line`/`funding_source` already exist on `Programme`.)
+```php
+public function meActivityReport(): HasOne
+{
+    return $this->hasOne(MeActivityReport::class, 'programme_id');
+}
+```
 
-**Section E — Consultants and Support Personnel**
-Per category (`secretariat_staff`, `consultants`, `resource_persons`, `rapporteurs`, `media_liaison`, `local_support`): `{category}_required` boolean, `{category}_count` integer, and `{category}_rate` decimal(10,2) for the categories with rates (consultants, resource_persons, rapporteurs, local_support). `personnel_comments` text.
+### 2. M&E intake — verified, not assumed (Revision 2)
 
-**Section F — Interpretation and Languages**
-`interpretation_required` boolean; per pair (`en_fr`, `en_pt`, `fr_pt`): `{pair}_required` boolean, `{pair}_interpreters_count` integer; `interpreter_rate` decimal(10,2); `interpreter_source` string enum: `internal`/`supplier`/`partner`/`other` (+ `interpreter_source_other_note` when `other`); `interpretation_equipment_required` boolean; `translation_required` boolean; `languages_required` json array of strings; `interpretation_comments` text.
+An intake mechanism **already exists**: `MeActivityReportController::linkablePifs()` (`app/Http/Controllers/Api/V1/MAndE/MeActivityReportController.php:56-83`, routed at `GET /mande/pif-linkages`) lists approved programmes with a `has_report` flag, and `MeActivityReportController::store()` already creates a report linked by `programme_id`. What's genuinely missing, confirmed by reading `ProgrammeService::approve()`: **no notification is dispatched on approval to either the Responsible Officer or M&E**. This spec adds that dispatch (see Notifications below) and adds an `unlinked=true` query filter to `linkablePifs()` so the M&E queue view can show only what still needs a report, rather than requiring client-side filtering of the full approved list.
 
-**Section H — Support Services Required**
-`support_services` json array of selected keys (`ground_transport`, `air_travel`, `interpretation_equipment`, `zoom_hybrid`, `audio_recording`, `video_recording`, `live_streaming`, `data_projector`, `conference_bags`, `regalia`, `report_newsletter`, `ict_support`, `comms_support`, `procurement_support`, `finance_support`, `admin_support`, `research_support`, `other`); `support_services_other_note` text (required when `other` selected).
+### 3. Draft-first creation (Revision 3)
 
-**Section M — Conflict of Interest**
-`conflict_declared` boolean; `conflict_details`, `conflict_mitigation` text; `conflict_declared_by` foreignId → `users`, nullable; `conflict_declared_at` datetime, nullable. Required-when-declared rules enforced at validation (see API section).
+Adopted the recommended approach. A new PIF is no longer built entirely in frontend state and submitted atomically. Instead:
+- The frontend's `pif/create` page, on mount, immediately calls `POST /programmes` with a minimal payload (`{ title: <user-entered activity name or a timestamped placeholder> }`), gets back a draft `Programme` with a real `id`, and redirects (`router.replace`) to `pif/{id}/edit`.
+- `pif/{id}/edit` becomes the single real authoring surface for both truly-new and in-progress drafts — no separate "create" form logic to maintain.
+- Documents, arrival/departure rows, and attachments can now be created immediately via their nested endpoints (`POST /programmes/{id}/documents`, etc.) from the moment the draft exists, because a real `programme_id` is always available. This also gives the frontend a natural autosave anchor (PUT the changed section on blur) and interrupted-session recovery (reopening `pif/{id}/edit` reloads whatever was already saved).
 
-**Section N — Declaration and Submission** (captured at submit time only)
-`declaration_info_accurate`, `declaration_documentation_complete`, `declaration_single_activity_confirmed`, `declaration_conflict_disclosed`, `declaration_funding_estimate_acknowledged` — five booleans; `declaration_confirmed_at` datetime.
+### 4. Batched procurement transfer (Revision 4)
 
-**Section 11.4 — M&E Linkage Summary** (read-only from the PIF's own endpoints; unchanged from the earlier draft of this spec)
-`me_classification_required` boolean; `me_activity_report_id` foreignId → `me_activity_reports`, nullable, writable only by M&E-side endpoints; `me_planned_output` text; `me_planned_target` string, nullable; `me_indicator_id` foreignId → `indicators`, nullable, writable only by M&E-side endpoints; `me_reporting_category` string. No stored status column — see mapping function above.
+Replaces the earlier per-item endpoint. New programme-level action:
+
+```
+POST /programmes/{programme}/send-to-procurement
+{ "procurement_item_ids": [1,2,3], "request_title": "Procurement requirements for approved activity" }
+```
+
+Creates one `ProcurementRequest` (title = `request_title`, `requester_id` = acting user, `budget_line`/currency defaulted from the `Programme`), one `ProcurementItem` per transferred `ProgrammeProcurementItem` (copying `description`→`description`, `estimated_cost`→`estimated_unit_price`/`total_price`), and sets `procurement_request_id` on each transferred `ProgrammeProcurementItem`. Guarded: only callable when `Programme::isApproved()`, and rejects (409) if any selected item already has a `procurement_request_id`. Users may still call it multiple times with different subsets to create separate requests where genuinely needed (e.g. different procurement methods), but the UI defaults to selecting all untransferred items into one batch.
+
+### 5. Full PIF PDF is in scope (Revision 5)
+
+Verified reusable infrastructure: `barryvdh/laravel-dompdf` is already a dependency and already used via `Pdf::loadView('pdf.signed_document', [...])` in `app/Services/SaamService.php:173`; QR code generation is already available via `Endroid\QrCode\Builder\Builder` (also used in `SaamService`). This spec adds:
+- A new Blade view `resources/views/pdf/programme.blade.php` rendering every completed section (A–N), the attachments index (type/uploaded-by/date per `Attachment`), the full approval history (from the existing `ApprovalRequest`/`ApprovalHistory` records already surfaced by `WorkflowService::snapshot()`), signatory names/positions/decisions/dates, the PIF reference number, and a QR code encoding a verification URL (`/pif/{id}/verify` or similar), reusing the existing `Endroid\QrCode` call pattern.
+- `GET /programmes/{programme}/pdf` on `ProgrammeController`, permission-gated identically to `show()`, streaming the rendered PDF via `Pdf::loadView(...)->stream(...)`.
+- Excel/CSV register-level reporting (PIF list, PIF-by-officer, etc.) remains a separate, already-flagged pre-existing gap in `ReportsController` and is **not** part of this spec — only the single-record full PDF is in scope, per the review's distinction.
+
+### 6. Simplified single declaration (Revision 6)
+
+Replaces the five booleans with one:
+
+```php
+'declaration_confirmed'   => boolean
+'declaration_confirmed_by'=> foreignId → users, nullable, set server-side
+'declaration_confirmed_at'=> datetime, nullable, set server-side
+'declaration_version'     => string, e.g. "v1", identifying which stored declaration text was shown
+```
+
+The declaration text itself (*"I confirm that this PIF relates to one activity, the information provided is accurate to the best of my knowledge, required supporting documents have been included, and any known conflict of interest has been disclosed."*) is stored as a versioned constant (e.g. `config('pif.declaration_versions.v1')`) rather than duplicated per-record, so `declaration_version` is enough to reconstruct exactly what the requester agreed to, satisfying the audit requirement without storing the full text on every row.
+
+### 7. Document owner supports internal and external people (Revision 7)
+
+On `programme_documents`: `owner_user_id` (nullable FK → `users`), `owner_name` (nullable string), `owner_organisation` (nullable string). Validation requires at least one of `owner_user_id` or `owner_name` to be present when the document row is saved.
+
+### 8. Distinct, honest M&E link statuses (Revision 8)
+
+`Programme::getMeStatusAttribute()` no longer collapses every non-happy-path into `not_yet_linked`. Using the verified `MeActivityReport` fields (`SoftDeletes`, `review_status`, `closure_status`):
+
+```php
+public function getMeStatusAttribute(): string
+{
+    $report = $this->meActivityReport; // excludes trashed by default
+    if ($report) {
+        if ($report->closure_status === 'closed' || $report->review_status === MeActivityReport::STATUS_CLOSED) {
+            return 'closed';
+        }
+        return match ($report->review_status) {
+            MeActivityReport::STATUS_NOT_SUBMITTED => 'report_pending',
+            MeActivityReport::STATUS_SUBMITTED     => 'report_submitted',
+            MeActivityReport::STATUS_RETURNED      => 'returned_for_correction',
+            MeActivityReport::STATUS_REVIEWED      => 'me_reviewed',
+            MeActivityReport::STATUS_ACCEPTED       => 'accepted',
+            default => 'link_unavailable',
+        };
+    }
+    // No live record — check whether one existed and was archived (soft-deleted)
+    $trashed = MeActivityReport::onlyTrashed()->where('programme_id', $this->id)->exists();
+    return $trashed ? 'linked_record_archived' : 'not_yet_linked';
+}
+```
+
+This distinguishes "never linked" from "was linked, record archived" from "linked but in an unexpected state" rather than flattening all three to one misleading label.
+
+### 9. Array-safe, complete conditional validation (Revision 9)
+
+`support_services` and similar array fields use `Rule::requiredIf(fn () => in_array('other', request()->input('support_services', []), true))` instead of `required_if:support_services,other`, which does not evaluate correctly against array-typed inputs. Full validation rule set added (see API section) for every conditional case called out in the review: DSA-variance reason required when `proposed_dsa_rate` ≠ `original_budget_rate`; participant-variance reason required when `proposed_participants` ≠ `budgeted_participants`; `target_languages` required on a `programme_documents` row when `translation_required`; interpreter count required when the corresponding language pair is selected; `arrival_date` must not be after `departure_date`; all rate/count fields `min:0`; `venue_accommodation_count` required and `>0` when `venue_accommodation_required`; currency present for every new monetary field (reuses `Programme.primary_currency` as the default rather than requiring it per-field, since PRD §17.3 already establishes currency-per-financial-value at the `Programme` level); `conflict_mitigation` required when `conflict_declared`.
+
+### 10. Controlled amendment after approval (Revision 10)
+
+New self-referential column on `programmes`: `amended_from_id` (nullable FK → `programmes.id`), `superseded_at` (nullable datetime). Status enum extended with `amendment_draft`, `amendment_pending_approval`, `amended`, `superseded` (alongside existing `draft`/`submitted`/`approved`/`rejected`/etc.).
+
+- `ProgrammeService::createAmendment(Programme $approved, User $user): Programme` — guarded to only run on an `isApproved()` programme with no existing open amendment (`amendment_draft`/`amendment_pending_approval` status referencing it via `amended_from_id`); clones the approved programme's fillable attributes and its child rows (`documents`, `arrivalDepartures`, `procurementItems` — cloned without their `procurement_request_id`, since a new amendment's procurement needs are re-evaluated) into a new `Programme` with `status = 'amendment_draft'`, `amended_from_id = $approved->id`, `reference_number = "{$approved->reference_number}-A{n}"`.
+- `ProgrammeService::submitAmendment()` moves the amendment to `amendment_pending_approval` and routes it through the existing approval workflow (`WorkflowService`), unchanged from how normal submissions work.
+- On amendment approval: amendment → `amended`, original → `superseded` (+ `superseded_at = now()`). The original approved record is never mutated or deleted — it just changes status, preserving full history per PRD §17.3 "historical values must remain intact."
+- `GET /programmes/{amendment}/diff` — new read-only endpoint doing a field-by-field comparison of the amendment's fillable attributes against `amended_from`'s, returning only the fields that differ. This is intentionally simple (no per-field change tracking/versioning infrastructure) — sufficient for an approver to see what changed before approving an amendment.
+
+## Data Model — full column reference
+
+### New columns on `programmes`
+
+**Venue (C)**: `venue_country`, `venue_city`, `venue_proposed_hotel` string; `venue_accommodation_required` boolean; `venue_accommodation_count` integer; `venue_conferencing_required` boolean; `venue_conferencing_participants` integer; `venue_quotation_attached` boolean; `venue_hotel_quotation_attached` boolean; `venue_accessibility_requirements`, `venue_security_considerations`, `venue_comments` text.
+
+**Budget/Participant Provisions (D)**: `proposed_dsa_rate`, `original_budget_rate` decimal(10,2); `dsa_variance_reason` text; `proposed_participants`, `budgeted_participants` integer; `participants_variance_reason` text; `proposed_funding_difference`, `estimated_activity_amount` decimal(15,2); `budget_availability_status` string enum `not_checked`/`available`/`partially_available`/`unavailable`/`confirmed_with_conditions`, default `not_checked`; `finance_comments` text — **both of the last two are excluded from `ProgrammeController::update()` and only writable via the finance-review endpoint (unchanged from prior revision).**
+
+**Consultants (E)**: per category (`secretariat_staff`, `consultants`, `resource_persons`, `rapporteurs`, `media_liaison`, `local_support`): `{category}_required` boolean, `{category}_count` integer, `{category}_rate` decimal(10,2) where PRD specifies a rate. `personnel_comments` text.
+
+**Interpretation (F)**: `interpretation_required` boolean; per pair (`en_fr`, `en_pt`, `fr_pt`): `{pair}_required` boolean, `{pair}_interpreters_count` integer; `interpreter_rate` decimal(10,2); `interpreter_source` enum `internal`/`supplier`/`partner`/`other` (+`interpreter_source_other_note`); `interpretation_equipment_required` boolean; `translation_required` boolean; `languages_required` json array of strings; `interpretation_comments` text.
+
+**Support Services (H)**: `support_services` json array of keys (`ground_transport`, `air_travel`, `interpretation_equipment`, `zoom_hybrid`, `audio_recording`, `video_recording`, `live_streaming`, `data_projector`, `conference_bags`, `regalia`, `report_newsletter`, `ict_support`, `comms_support`, `procurement_support`, `finance_support`, `admin_support`, `research_support`, `other`); `support_services_other_note` text.
+
+**Conflict of Interest (M)**: `conflict_declared` boolean; `conflict_details`, `conflict_mitigation` text; `conflict_declared_by` foreignId → `users`, nullable, set server-side; `conflict_declared_at` datetime, nullable, set server-side.
+
+**Declaration (N, simplified per Revision 6)**: `declaration_confirmed` boolean; `declaration_confirmed_by` foreignId → `users`, nullable; `declaration_confirmed_at` datetime, nullable; `declaration_version` string, nullable.
+
+**Amendment tracking (Revision 10)**: `amended_from_id` foreignId → `programmes.id`, nullable; `superseded_at` datetime, nullable.
+
+*(No M&E columns — see Revision 1.)*
 
 ### New table: `programme_documents` (Section G)
 
-`id`, `programme_id` foreignId, `title` string, `document_type` string, `word_count` integer nullable, `translation_required` boolean, `source_language` string nullable, `target_languages` json array of strings, `owner` string (or `owner_user_id` foreignId → `users`, nullable — see open question below), `deadline` date nullable, `budget_line` string nullable, `comments` text nullable, timestamps, soft deletes. Model `ProgrammeDocument belongsTo Programme`, `hasMany` via `Programme::documents()`. Attachments target it via `attachable_type = ProgrammeDocument::class`.
+`id`, `programme_id` foreignId, `title` string, `document_type` string, `word_count` integer nullable, `translation_required` boolean, `source_language` string nullable, `target_languages` json array of strings, `owner_user_id` foreignId → `users` nullable, `owner_name` string nullable, `owner_organisation` string nullable, `deadline` date nullable, `budget_line` string nullable, `comments` text nullable, timestamps, soft deletes. `ProgrammeDocument belongsTo Programme` and `belongsTo(User::class, 'owner_user_id')`; `Programme::documents()` hasMany. Attachments target it directly via `attachable_type = ProgrammeDocument::class`.
 
 ### New table: `programme_arrival_departures` (Section J)
 
-`id`, `programme_id` foreignId, `category` string (participant/secretariat/rapporteur/consultant/resource_person/media_liaison/expert/ict_support/interpreter/local_support/other), `arrival_date` date nullable, `departure_date` date nullable, `airport` string nullable, `flight_details` text nullable, `transport_required` boolean, `accommodation_required` boolean, `comments` text nullable, timestamps, soft deletes. Model `ProgrammeArrivalDeparture belongsTo Programme`, `hasMany` via `Programme::arrivalDepartures()`. Validation: `departure_date` must not be before `arrival_date`.
+`id`, `programme_id` foreignId, `category` string, `arrival_date` date nullable, `departure_date` date nullable, `airport` string nullable, `flight_details` text nullable, `transport_required` boolean, `accommodation_required` boolean, `comments` text nullable, timestamps, soft deletes. Validation: `departure_date` must not be before `arrival_date`.
 
 ### Changes to `ProgrammeProcurementItem` (Section K)
 
-Add `procurement_request_id` foreignId → `procurement_requests`, nullable (set only by the transfer action, never directly editable); `currency` string; `rfq_required` boolean. `linked_procurement_request` is exposed in API responses as the related `ProcurementRequest`'s summary (reference number, status), read-only.
-
-### Model changes (`app/Models/Programme.php`)
-
-- Extend `$fillable`/`$casts` with all new flat columns above.
-- New relations: `documents()` hasMany `ProgrammeDocument`, `arrivalDepartures()` hasMany `ProgrammeArrivalDeparture`, `conflictDeclaredBy()` belongsTo `User`, `meActivityReport()` belongsTo `MeActivityReport`, `meIndicator()` belongsTo `Indicator`.
-- Accessor `getMeStatusAttribute()` — implements the status-label mapping described above, returning `not_yet_linked` when `me_activity_report_id` is null, otherwise the mapped label from `meActivityReport->status`, degrading to `not_yet_linked` if the linked record is unresolvable (soft-deleted, etc.).
+Add `procurement_request_id` foreignId → `procurement_requests`, nullable (set only by `send-to-procurement`); `currency` string; `rfq_required` boolean.
 
 ## API Changes
 
-`ProgrammeController::store()`/`update()` validation is extended with rules for all new flat fields, following existing conventions. Key conditional/cross-field rules (mirroring PRD conditional-behaviour requirements):
+`ProgrammeController::store()` becomes minimal — only `title` (or a default) is required to create a draft; all other fields move to `update()`, which continues to require `isDraft()` (or, for amendments, `amendment_draft`). Conditional/cross-field validation (Revision 9), representative examples:
 
 ```php
-'venue_accommodation_count'  => ['required_if:venue_accommodation_required,true', 'nullable', 'integer', 'min:0'],
-'venue_conferencing_participants' => ['required_if:venue_conferencing_required,true', 'nullable', 'integer', 'min:0'],
-'conflict_details'    => ['required_if:conflict_declared,true', 'nullable', 'string'],
-'conflict_mitigation' => ['required_if:conflict_declared,true', 'nullable', 'string'],
-'support_services_other_note' => ['required_if:support_services,other', 'nullable', 'string'],
-'interpreter_source_other_note' => ['required_if:interpreter_source,other', 'nullable', 'string'],
+'venue_accommodation_count'   => ['required_if:venue_accommodation_required,true', 'nullable', 'integer', 'min:1'],
+'support_services'            => ['nullable', 'array'],
+'support_services_other_note' => [Rule::requiredIf(fn () => in_array('other', request()->input('support_services', []), true)), 'nullable', 'string'],
+'dsa_variance_reason'         => [Rule::requiredIf(fn () => request()->input('proposed_dsa_rate') != request()->input('original_budget_rate')), 'nullable', 'string'],
+'participants_variance_reason'=> [Rule::requiredIf(fn () => request()->input('proposed_participants') != request()->input('budgeted_participants')), 'nullable', 'string'],
+'conflict_details'            => ['required_if:conflict_declared,true', 'nullable', 'string'],
+'conflict_mitigation'         => ['required_if:conflict_declared,true', 'nullable', 'string'],
 ```
 
-`conflict_declared_by`/`conflict_declared_at` are set server-side from the authenticated user, never accepted from the request payload — matching PRD §8.13 "another user must not overwrite the requester's declaration."
+`programme_documents` row validation: `target_languages` `required_if:translation_required,true`; at least one of `owner_user_id`/`owner_name` required (`Rule::requiredIf` closure checking both). `programme_arrival_departures` row validation: `departure_date` `after_or_equal:arrival_date`.
 
-`budget_availability_status` and `finance_comments` are **excluded** from the standard `update()` validation entirely and instead handled by a new `ProgrammeController::updateFinanceReview()` endpoint gated by `$this->authorize('finance-review', $programme)` (new policy method backed by a `programme.finance-review` permission) — this is the API-layer enforcement of PRD §13.3, not just a hidden/disabled UI field.
+`budget_availability_status`/`finance_comments` remain on the separate `ProgrammeController::updateFinanceReview()` endpoint, gated by the `programme.finance-review` permission (new — seeded and assigned to Finance/Project Accountant/Director Finance roles, following the exact pattern already used for `mande.*` permissions in `RolesAndPermissionsSeeder`, verified lines 55-62 and 237-260: a flat permission-name array, then `$role->givePermissionTo(Permission::whereIn('name', [...])->where('guard_name', $guard)->get())` per role per guard).
 
-`me_activity_report_id`/`me_indicator_id` remain excluded from the PIF's own `store()`/`update()`, unchanged from the earlier draft — only M&E-side endpoints write them.
+`conflict_declared_by`/`conflict_declared_at`/`declaration_confirmed_by`/`declaration_confirmed_at` are always set server-side from the authenticated user — never accepted from the request payload.
 
-**New nested endpoints** (matching the existing `ProgrammeBudgetLine`/`ProgrammeProcurementItem` nested-resource pattern):
-- `POST/PUT/DELETE /programmes/{programme}/documents/{document?}` → `ProgrammeDocumentController`
-- `POST/PUT/DELETE /programmes/{programme}/arrival-departures/{row?}` → `ProgrammeArrivalDepartureController`
-- `POST /programmes/{programme}/procurement-items/{item}/send-to-procurement` → creates/links a `ProcurementRequest` from that item, sets `procurement_request_id`, only callable once the `Programme` is approved (guards against pre-approval procurement creation).
+**New/changed endpoints:**
+- `POST /programmes` — minimal draft creation (Revision 3).
+- `POST/PUT/DELETE /programmes/{programme}/documents/{document?}` → `ProgrammeDocumentController` (mirrors `ProgrammeBudgetLineController` exactly).
+- `POST/PUT/DELETE /programmes/{programme}/arrival-departures/{row?}` → `ProgrammeArrivalDepartureController`.
+- `PUT /programmes/{programme}/finance-review` → `ProgrammeController::updateFinanceReview()`.
+- `POST /programmes/{programme}/send-to-procurement` (Revision 4, batched).
+- `GET /programmes/{programme}/pdf` (Revision 5).
+- `POST /programmes/{programme}/amend` → `createAmendment()`; `POST /programmes/{amendment}/submit-amendment`; `GET /programmes/{amendment}/diff` (Revision 10).
+- `GET /mande/pif-linkages?unlinked=true` — extends the existing endpoint with a filter (Revision 2).
+- `ProgrammeController::submit()` requires `declaration_confirmed = true` in the payload (or already true, for resubmission), stamping `declaration_confirmed_by`/`declaration_confirmed_at`/`declaration_version` server-side.
 
-**Submission endpoint** (`ProgrammeController::submit()`) now requires the five `declaration_*` booleans to all be `true` in the request payload (or already true if resubmitting), rejecting with a validation error naming which confirmation is missing, and stamps `declaration_confirmed_at = now()`.
+## Notifications (Revision 2)
+
+`ProgrammeService::approve()` gains a dispatch (following the existing `NotificationService::dispatch()` pattern already used identically in `ProcurementRequest::onWorkflowApproved()`): notify the Responsible Officer ("Your approved PIF is ready for M&E reporting") and all users holding `mande.create` ("A new approved PIF is available for M&E linkage"), each with a deep link — the PIF for the officer, the M&E PIF-linkages queue for M&E.
 
 ## Frontend Changes
 
-`web/app/(app)/pif/create/page.tsx` and `web/app/(app)/pif/[id]/edit/page.tsx` gain sections C through N as collapsible accordion sections, following the existing pattern in those files, with conditional field visibility exactly as specified in PRD §15.2 (e.g., interpretation details hidden until `interpretation_required` is checked, venue/accommodation fields hidden for `activity_format = virtual`). Documents and Arrival/Departure become proper repeatable-row sub-forms backed by the new nested endpoints (add/edit/remove per row, with each row's real database `id` used for edit/delete rather than array index). Section D's `budget_availability_status`/`finance_comments` render as **read-only** for non-Finance users and as editable only for users with the `programme.finance-review` permission (matching a pattern that should already exist for other permission-gated fields elsewhere in the app — reuse rather than invent). Section N renders as a final confirmation checklist immediately before the Submit action, blocking submission client-side until all five boxes are checked, in addition to the server-side enforcement.
+`pif/create/page.tsx` becomes a thin redirect shell (Revision 3): on mount, POST a minimal draft, then `router.replace('/pif/{id}/edit')`. `pif/{id}/edit/page.tsx` gains all new sections as collapsible accordions matching the existing pattern, with conditional visibility per PRD §15.2. Documents and Arrival/Departure become repeatable-row sub-forms backed by their real nested endpoints, using each row's database `id` (not array index) for edit/delete. Section D's Finance-only fields render read-only for users without `programme.finance-review`. Section N renders as a single confirmation checkbox with the versioned declaration text, blocking submission until checked (mirrored server-side). An "Amend" action appears on approved PIFs (visible to the Responsible Officer / users with `pif.approve`), creating an amendment draft and routing to its own edit view; the diff endpoint powers a simple before/after view for approvers reviewing an amendment. A "Download PDF" action appears on the view page, hitting the new `/pdf` endpoint.
 
-`web/app/(app)/pif/[id]/page.tsx` (view page) gets matching read-only display blocks for all sections, the workflow tracker (already exists per the audit), and the read-only M&E status block (§11.4) showing the mapped status label and a link to the linked M&E record when permitted.
+`pif/[id]/page.tsx` gets matching read-only display blocks for all sections, the workflow tracker (already implemented), and the M&E status block using the 9-state mapping from Revision 8 with human-readable labels (Not Yet Linked / Report Pending / Report Submitted / Returned for Correction / M&E Reviewed / Accepted / Closed / Linked Record Archived / Link Unavailable).
 
 ## Permissions
 
-New permission: `programme.finance-review` (controls editing `budget_availability_status`/`finance_comments`), assigned to Finance/Project Accountant/Director Finance roles in the seeder. All other new fields follow the existing `Programme` authorization already in place (requester edits own drafts, approvers act on pending-with-them records, auditors get read-only). M&E-side write access to `me_activity_report_id`/`me_indicator_id` continues to be governed by the existing `mande.admin` permission on the M&E controllers, not by anything new here.
+`programme.finance-review` (new) — Finance/Project Accountant/Director Finance roles, seeded following the verified `RolesAndPermissionsSeeder` pattern. `pif.approve` (existing) gates the amend action. M&E-side access to `MeActivityReport` continues to be governed entirely by the existing `mande.*` permissions — this spec adds no new M&E permissions since M&E now has zero write surface on `Programme` itself (Revision 1).
 
 ## Audit Trail
 
-New audit events, following the existing `AuditLog::record()` call pattern already used ~182 times across the codebase: `programme.document_added`, `programme.document_removed`, `programme.arrival_departure_added`, `programme.arrival_departure_removed`, `programme.conflict_declared`, `programme.conflict_amended`, `programme.finance_review_updated`, `programme.procurement_item_sent_to_procurement`, `programme.declaration_confirmed`.
+New events via the verified `AuditLog::record('event.name', ['auditable_type' => ..., 'auditable_id' => ..., 'new_values' => [...], 'tags' => 'programme'])` pattern: `programme.document_added/removed`, `programme.arrival_departure_added/removed`, `programme.conflict_declared/amended`, `programme.finance_review_updated`, `programme.procurement_sent` (batched — logs the item IDs and the created `ProcurementRequest` id), `programme.declaration_confirmed`, `programme.amendment_created`, `programme.amendment_approved`, `programme.superseded`, `programme.pdf_generated`.
 
 ## Error Handling
 
-Standard Laravel validation errors throughout, consistent with existing PIF fields. Specific cases: (1) a broken/soft-deleted `MeActivityReport` link degrades the status accessor to `not_yet_linked` rather than throwing; (2) `send-to-procurement` on an item that already has a `procurement_request_id` returns a 409 rather than creating a duplicate; (3) attempting to edit `budget_availability_status`/`finance_comments` without the `programme.finance-review` permission returns 403, not a silent no-op, so the UI can surface a clear message.
+Standard Laravel validation throughout. Specific cases: `send-to-procurement` returns 409 on any already-linked item; `finance-review` endpoint returns 403 (not a silent no-op) for unauthorized users; `getMeStatusAttribute()` never throws — it always resolves to one of the 9 defined states; `createAmendment()` returns a validation error (not a 500) if an open amendment already exists for the target programme.
 
 ## Testing
 
-**Backend**: feature tests for `ProgrammeController` covering the new flat-field validation (including all `required_if` conditional rules), `ProgrammeDocumentController`/`ProgrammeArrivalDepartureController` CRUD, the finance-review permission gate (403 for non-Finance, 200 for Finance), the `send-to-procurement` action (success, duplicate-guard, pre-approval-guard), the declaration gate on `submit()`, and the `me_status` accessor mapping (all six mapped states plus `not_yet_linked`/unresolvable). Regression tests confirm existing workflow, notifications, delegation, attachments, approvals, and audit logging are unaffected (per PRD §19).
+**Backend**: feature tests for all new flat-field validation (every conditional rule from Revision 9, individually), `ProgrammeDocumentController`/`ProgrammeArrivalDepartureController` CRUD, the finance-review permission gate (403/200), `send-to-procurement` (success, duplicate-guard, pre-approval-guard, verifying one `ProcurementRequest` with N `ProcurementItem`s is created), the declaration gate on `submit()`, the `me_status` accessor across all 9 states (including a soft-deleted `MeActivityReport` producing `linked_record_archived`), the draft-first creation flow, the amendment lifecycle (`createAmendment` → `submitAmendment` → approval → original superseded), the `/diff` endpoint, and PDF generation (asserting a 200 response with `application/pdf` content type and that the rendered view includes data from each section). Regression tests confirm existing workflow, notifications, delegation, attachments, approvals, and audit logging are unaffected.
 
-**Frontend**: Playwright coverage (via `sadcpf-playwright-e2e` conventions) for: happy-path creation through all sections, conditional section show/hide behavior, repeatable-row add/edit/remove for documents and arrival/departure, the declaration checklist blocking submission until complete, and the read-only rendering of Finance-only and M&E-linkage fields for a non-privileged user. No existing PIF e2e suite was found in the codebase (pre-existing gap, not fully backfilled by this spec).
+**Frontend**: Playwright coverage for the draft-first create-then-redirect flow, conditional section show/hide, repeatable-row CRUD for documents and arrival/departure, the single declaration checkbox blocking submission, read-only rendering of Finance-only and M&E status fields for a non-privileged user, the amend action and diff view, and the PDF download action.
 
 ## Acceptance Criteria
 
-Adopting PRD §18 directly as the acceptance criteria for this spec:
-- One PIF per activity; requester auto-captured and visible throughout; one Responsible Officer, multiple Supporting Officers; delegated preparation recorded; draft save and submit both work.
-- Venue, Budget, Personnel, Interpretation/Documentation, Support Services, Arrival/Departure, and Conflict of Interest sections all behave per §18.2–§18.8, including all conditional-visibility and required-when-declared rules.
-- Workflow tracker shows current holder, stage, and full history (§18.9) — already implemented, unaffected by this spec.
-- M&E connection: no editable M&E fields appear in create/edit; approved PIFs appear in the M&E intake queue (existing M&E-side mechanism, unaffected); M&E cannot edit the approved PIF; the PIF shows the read-only, non-duplicated M&E status (§18.10).
-- Full PIF PDF/exports include all completed sections and approval history (§18.11) — PDF/Excel export generation itself is flagged as a separate pre-existing gap (`ReportsController` has no PDF/Excel path today); this spec ensures the new fields are *available* to be included once that export capability exists, but does not build PDF/Excel generation itself.
-- Regression: existing workflows, notifications, delegations, attachments, approvals, and audit logs continue to work unchanged.
-
-## Open Question for Implementation
-
-PRD §8.7 lists "Document owner" as a field but doesn't specify whether it's a free-text name or a `User` reference. Given the rest of the PIF consistently uses real `User` FKs for accountable roles (Responsible Officer, Supporting Officers, Conflict declarant), the plan defaults to `owner_user_id` (nullable FK → `users`) for consistency — flagging here rather than silently deciding, since it's a real judgment call the implementer should confirm against how the frontend team wants to render the picker.
+- No M&E-owned field is stored on `programmes`; the only connection is the `meActivityReport()` relationship.
+- Approving a PIF notifies the Responsible Officer and M&E, and the PIF appears in the (now filterable) M&E intake queue.
+- Creating a new PIF returns a real draft ID immediately, before any other section is filled in; documents/arrival-departure rows can be added from that point onward.
+- Procurement items can be transferred to a single batched `ProcurementRequest`, not one-per-item.
+- A complete PIF PDF — all sections, attachments index, approval history, signatories, QR verification — can be generated and downloaded.
+- Submission requires exactly one declaration confirmation, recorded with who/when/which version.
+- Document rows accept an internal user, an external name, or both.
+- The M&E status shown on a PIF distinguishes never-linked, archived-link, and unavailable-link from the real review states, and is never stored redundantly.
+- All conditional validation rules from Revision 9 are enforced server-side, including array-typed fields.
+- Approved PIFs cannot be edited directly; amendments go through a controlled draft → pending → approved cycle that supersedes (never deletes) the original, with a diff visible to approvers.
+- Existing workflows, notifications, delegations, attachments, approvals, and audit logs continue to work unchanged.
