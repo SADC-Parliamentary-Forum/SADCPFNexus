@@ -6,6 +6,7 @@ use App\Models\Programme;
 use App\Models\ProgrammeActivity;
 use App\Models\ProgrammeBudgetLine;
 use App\Models\ProgrammeDeliverable;
+use App\Models\ProgrammeDocument;
 use App\Models\ProgrammeMilestone;
 use App\Models\ProgrammeProcurementItem;
 use App\Models\User;
@@ -341,6 +342,40 @@ class ProgrammeService
     public function deleteProcurementItem(ProgrammeProcurementItem $item): void
     {
         $item->delete();
+    }
+
+    // --- Sub-resource: Documents ---
+
+    public function addDocument(Programme $programme, array $data): ProgrammeDocument
+    {
+        $document = $programme->documents()->create($data);
+
+        AuditLog::record('programme.document_added', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => ['document_id' => $document->id, 'title' => $document->title],
+            'tags'           => 'programme',
+        ]);
+
+        return $document;
+    }
+
+    public function updateDocument(ProgrammeDocument $document, array $data): ProgrammeDocument
+    {
+        $document->update($data);
+        return $document->fresh();
+    }
+
+    public function deleteDocument(ProgrammeDocument $document): void
+    {
+        AuditLog::record('programme.document_removed', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $document->programme_id,
+            'new_values'     => ['document_id' => $document->id],
+            'tags'           => 'programme',
+        ]);
+
+        $document->delete();
     }
 
     // --- Private helpers ---
