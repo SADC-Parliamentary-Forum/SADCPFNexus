@@ -193,6 +193,10 @@ class LeaveService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        if ((int) $leave->requester_id === (int) $approver->id) {
+            abort(403, 'You cannot approve your own request.');
+        }
+
         $this->checkLeaveBalance($leave, $overrideReason);
 
         $leave->update([

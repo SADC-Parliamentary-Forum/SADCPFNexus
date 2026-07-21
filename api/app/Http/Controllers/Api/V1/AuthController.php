@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -124,7 +125,10 @@ class AuthController extends Controller
 
         $user->update(['last_login_at' => now()]);
 
-        if ($this->isMobileClient($request)) {
+        $isMobileClient = $this->isMobileClient($request);
+        $canUseSessionAuth = $request->hasSession();
+
+        if ($isMobileClient || !$canUseSessionAuth) {
             $newToken = $user->createToken($request->device_name ?? 'mobile');
 
             UserSession::create([
@@ -149,33 +153,59 @@ class AuthController extends Controller
             ]);
         }
 
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
-        $request->session()->regenerateToken();
+        try {
+            Auth::guard('web')->login($user);
+            $request->session()->regenerate();
+            $request->session()->regenerateToken();
 
-        UserSession::updateOrCreate(
-            [
-                'user_id'    => $user->id,
-                'session_id' => $request->session()->getId(),
-                'auth_type'  => 'browser',
-            ],
-            [
-                'token_id'       => null,
+            UserSession::updateOrCreate(
+                [
+                    'user_id'    => $user->id,
+                    'session_id' => $request->session()->getId(),
+                    'auth_type'  => 'browser',
+                ],
+                [
+                    'token_id'       => null,
+                    'ip_address'     => $request->ip(),
+                    'user_agent'     => $request->userAgent(),
+                    'last_active_at' => now(),
+                ]
+            );
+
+            AuditLog::record('auth.login.success', [
+                'auditable_type' => User::class,
+                'auditable_id'   => $user->id,
+                'tags'           => 'auth',
+            ]);
+
+            return response()->json([
+                'user' => $this->serializeUser($user),
+            ]);
+        } catch (RuntimeException) {
+            // Fallback for clients that present browser credentials but lack a session store context.
+            $newToken = $user->createToken($request->device_name ?? 'browser-fallback');
+
+            UserSession::create([
+                'user_id'        => $user->id,
+                'token_id'       => $newToken->accessToken->id,
+                'session_id'     => null,
+                'auth_type'      => 'token',
                 'ip_address'     => $request->ip(),
                 'user_agent'     => $request->userAgent(),
                 'last_active_at' => now(),
-            ]
-        );
+            ]);
 
-        AuditLog::record('auth.login.success', [
-            'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'tags'           => 'auth',
-        ]);
+            AuditLog::record('auth.login.success', [
+                'auditable_type' => User::class,
+                'auditable_id'   => $user->id,
+                'tags'           => 'auth',
+            ]);
 
-        return response()->json([
-            'user' => $this->serializeUser($user),
-        ]);
+            return response()->json([
+                'token' => $newToken->plainTextToken,
+                'user'  => $this->serializeUser($user),
+            ]);
+        }
     }
 
     public function forceResetPassword(Request $request): JsonResponse

@@ -52,6 +52,30 @@ export function canManageAssets(user: AuthUser | null | undefined): boolean {
   return hasPermission(user, ASSETS_MANAGE_PERMISSIONS);
 }
 
+/** Permission(s) that allow managing the consumables/stock register. */
+const STOCK_MANAGE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.create", "stock.edit"];
+
+/** Permission(s) that allow recording stock movements (in/out/adjustment). */
+const STOCK_ISSUE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.issue"];
+
+/**
+ * True if the user can add or manage consumable stock items (not just view).
+ */
+export function canManageStock(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, STOCK_MANAGE_PERMISSIONS);
+}
+
+/**
+ * True if the user can record stock movements (stock-in / stock-out / adjustment).
+ */
+export function canIssueStock(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, STOCK_ISSUE_PERMISSIONS);
+}
+
 export function canViewProcurementVendors(user: AuthUser | null | undefined): boolean {
   if (!user) return false;
   if (isSystemAdmin(user)) return true;
@@ -106,6 +130,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets", permission: "assets.view" },
+  { path: "/stock", permission: "stock.view" },
   { path: "/governance", permission: "governance.view" },
   { path: "/procurement/create", permission: ["procurement.create", "procurement.admin"] },
   { path: "/procurement/rfq", permission: ["procurement.view", "procurement.approve", "procurement.admin"] },
@@ -120,6 +145,12 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
   { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
+  // M&E / Results Monitoring (PRD §10)
+  { path: "/mande/strategic-plan", permission: ["mande.admin"] },
+  { path: "/mande/results-framework", permission: ["mande.admin", "mande.view"] },
+  { path: "/mande/settings", permission: ["mande.admin"] },
+  { path: "/mande/review-queue", permission: ["mande.review", "mande.admin"] },
+  { path: "/mande", permission: "mande.view" },
 ];
 
 /**

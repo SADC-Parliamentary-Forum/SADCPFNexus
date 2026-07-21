@@ -26,6 +26,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'procurement.hod_approve', 'procurement.manage_budget',
             'supplier.portal',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
+            // Consumables / Stock Register (separate from Fixed Assets)
+            'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.admin',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin', 'hr.supervisor',
             // HR Settings (master data governance — restricted to HR Manager & Finance Director)
@@ -56,6 +58,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'system.admin',
             // Risk Register
             'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin',
+            // M&E / Results Monitoring (PRD §10)
+            'mande.view', 'mande.create', 'mande.review', 'mande.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -102,6 +106,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
                     'procurement.receive_goods',
                     'assets.view', 'assets.create', 'finance.view', 'governance.view',
+                    // Procurement officers manage the consumables/stock register
+                    'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -131,6 +137,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
                     'governance.view', 'reports.view', 'assets.view',
+                    'stock.view',
                     'saam.view', 'saam.delegate',
                     'correspondence.view', 'correspondence.create',
                     'parliaments.view',
@@ -224,6 +231,36 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::where('name', 'risk.view')->where('guard_name', $guard)->get()
             );
 
+            // ── M&E / Results Monitoring: extend existing roles ───────────────────
+
+            // Staff create activity reports against their approved PIFs.
+            $staff->givePermissionTo(
+                Permission::whereIn('name', ['mande.view', 'mande.create'])
+                    ->where('guard_name', $guard)->get()
+            );
+
+            // Governance Officer owns the M&E function (config + review).
+            $governanceOfficer->givePermissionTo(
+                Permission::whereIn('name', ['mande.view', 'mande.create', 'mande.review', 'mande.admin'])
+                    ->where('guard_name', $guard)->get()
+            );
+
+            // Finance Controller: read-only oversight.
+            $financeController->givePermissionTo(
+                Permission::where('name', 'mande.view')->where('guard_name', $guard)->get()
+            );
+
+            // HR Administrator / Procurement Officer: read-only visibility.
+            $hrAdmin->givePermissionTo(
+                Permission::where('name', 'mande.view')->where('guard_name', $guard)->get()
+            );
+
+            // Secretary General: oversight + reviewer.
+            $secretaryGeneral->givePermissionTo(
+                Permission::whereIn('name', ['mande.view', 'mande.review'])
+                    ->where('guard_name', $guard)->get()
+            );
+
             // ── New roles ─────────────────────────────────────────────────────────
 
             $director = Role::firstOrCreate(['name' => 'Director', 'guard_name' => $guard]);
@@ -233,6 +270,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'leave.view', 'imprest.view', 'finance.view',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'workplan.view', 'assignments.view',
+                    'mande.view', 'mande.create', 'mande.review',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -242,6 +280,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'risk.view', 'risk.review',
                     'travel.view', 'leave.view', 'imprest.view', 'finance.view',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
+                    'mande.view', 'mande.review',
                 ])->where('guard_name', $guard)->get()
             );
 

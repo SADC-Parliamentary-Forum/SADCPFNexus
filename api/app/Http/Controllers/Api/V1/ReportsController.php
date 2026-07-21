@@ -340,6 +340,55 @@ class ReportsController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Stock / Consumables Register (PRD §24)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Consumables / stock report. Filters: category_id, status, low_stock, format=csv.
+     * Kept separate from the asset register.
+     */
+    public function stock(Request $request): JsonResponse|StreamedResponse
+    {
+        if ($denied = $this->gateExport($request)) return $denied;
+
+        $user  = $request->user();
+        $query = \App\Models\StockItem::where('tenant_id', $user->tenant_id)
+            ->with(['category:id,name,code', 'vendor:id,name'])
+            ->orderBy('name');
+
+        if ($categoryId = $request->input('category_id')) {
+            $query->where('stock_category_id', $categoryId);
+        }
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+        if ($request->boolean('low_stock')) {
+            $query->lowStock();
+        }
+
+        if ($request->input('format') === 'csv') {
+            $rows = $query->get()->map(fn ($i) => [
+                'item_code'       => $i->item_code,
+                'name'            => $i->name,
+                'category'        => $i->category?->name,
+                'unit'            => $i->unit,
+                'current_balance' => $i->current_balance,
+                'reorder_level'   => $i->reorder_level,
+                'low_stock'       => $i->is_low_stock ? 'YES' : 'no',
+                'unit_cost'       => $i->unit_cost,
+                'stock_value'     => $i->stock_value,
+                'storage_location'=> $i->storage_location,
+                'supplier'        => $i->vendor?->name,
+                'status'          => $i->status,
+            ])->toArray();
+            return $this->csvResponse($rows, 'stock-report-' . now()->format('Ymd') . '.csv');
+        }
+
+        $perPage = min((int) $request->input('per_page', 100), 100);
+        return response()->json($query->paginate($perPage));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Imprest
     // ─────────────────────────────────────────────────────────────────────────
 

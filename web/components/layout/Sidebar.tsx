@@ -155,6 +155,25 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "M&E / Results Monitoring",
+    href: "/mande",
+    icon: "monitoring",
+    section: "Governance",
+    children: [
+      { label: "Dashboard",            href: "/mande",                     icon: "dashboard"          },
+      { label: "Strategic Plan",       href: "/mande/strategic-plan",      icon: "flag"               },
+      { label: "Results Framework",    href: "/mande/results-framework",   icon: "account_tree"       },
+      { label: "Indicators",           href: "/mande/indicators",          icon: "speed"              },
+      { label: "Activity Reports",     href: "/mande/activity-reports",    icon: "summarize"          },
+      { label: "PIF Linkages",         href: "/mande/pif-linkages",        icon: "link"               },
+      { label: "Evidence Repository",  href: "/mande/evidence",            icon: "folder_open"        },
+      { label: "Donor / Project Reporting", href: "/mande/donor-reporting", icon: "volunteer_activism" },
+      { label: "Institutional Reports",href: "/mande/reports",             icon: "assessment"         },
+      { label: "M&E Review Queue",     href: "/mande/review-queue",        icon: "rule"               },
+      { label: "Settings",             href: "/mande/settings",            icon: "settings"           },
+    ],
+  },
+  {
     label: "Reports",
     href: "/reports",
     icon: "assessment",
@@ -170,6 +189,18 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "Inventory", href: "/assets", icon: "inventory_2" },
       { label: "My Requests", href: "/assets/requests", icon: "request_quote" },
+    ],
+  },
+  {
+    label: "Consumables / Stock",
+    href: "/stock",
+    icon: "shelves",
+    children: [
+      { label: "Stock Items", href: "/stock", icon: "inventory" },
+      { label: "Stock Movements", href: "/stock/movements", icon: "swap_vert" },
+      { label: "Low Stock / Reorder", href: "/stock/low-stock", icon: "production_quantity_limits" },
+      { label: "Reports", href: "/stock/reports", icon: "summarize" },
+      { label: "Categories", href: "/stock/categories", icon: "category" },
     ],
   },
   {

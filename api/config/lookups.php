@@ -13,6 +13,20 @@ return [
 
     'classifications' => array_filter(array_map('trim', explode(',', env('CLASSIFICATION_LEVELS', 'UNCLASSIFIED,RESTRICTED,CONFIDENTIAL,SECRET')))),
 
+    // Default M&E thematic areas (PRD §10). These are seeded per-tenant into the
+    // admin-configurable `me_thematic_areas` table; admins may add/edit/disable.
+    'me_thematic_areas' => [
+        ['code' => 'democracy_governance', 'name' => 'Democracy & Governance'],
+        ['code' => 'srhr_hiv_aids',        'name' => 'SRHR, HIV & AIDS'],
+        ['code' => 'gender_equality',      'name' => 'Gender Equality & Women Empowerment'],
+        ['code' => 'human_rights',         'name' => 'Human Rights'],
+        ['code' => 'regional_integration', 'name' => 'Regional Integration & Trade'],
+        ['code' => 'natural_resources',    'name' => 'Natural Resources & Climate Change'],
+        ['code' => 'food_security',        'name' => 'Food & Nutrition Security'],
+        ['code' => 'peace_security',       'name' => 'Peace & Security'],
+        ['code' => 'institutional_dev',    'name' => 'Institutional Development'],
+    ],
+
     'leave_types' => [
         ['value' => 'annual', 'label' => 'Annual Leave', 'icon' => 'event_available'],
         ['value' => 'sick', 'label' => 'Sick Leave', 'icon' => 'sick'],

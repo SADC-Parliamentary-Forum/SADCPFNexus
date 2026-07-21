@@ -58,7 +58,7 @@ export default defineConfig({
         storageState: "playwright/.auth/admin.json",
       },
       dependencies: ["setup"],
-      testMatch: ["**/admin.spec.ts"],
+      testMatch: ["**/admin.spec.ts", "**/readiness-routes.spec.ts"],
     },
 
     // ── Auth tests (no stored state — tests the login flow itself) ────────

@@ -315,6 +315,139 @@ class WorkflowService
     }
 
     /**
+     * WS1 — Build a rich, frontend-ready workflow visibility snapshot for a
+     * request (PRD §8, §28.2). Exposes the current stage, who currently holds
+     * the request, submitted/prepared-by, the next step, and the full history
+     * with per-step status + reasons.
+     */
+    public function snapshot(ApprovalRequest $request): array
+    {
+        $request->loadMissing(['workflow.steps.role', 'workflow.steps.user', 'history.user', 'approvable']);
+
+        $steps        = $request->workflow?->steps ?? collect();
+        $currentIndex = (int) $request->current_step_index;
+        $entity       = $request->approvable;
+        $requester    = $this->getRequesterFromApprovable($request);
+
+        $mapUser = fn (?User $u) => $u ? [
+            'id'        => $u->id,
+            'name'      => $u->name,
+            'job_title' => $u->job_title ?? $u->position?->title ?? null,
+            'position'  => $u->position?->title ?? $u->job_title ?? null,
+        ] : null;
+
+        // Who currently holds the request.
+        $currentlyWith = [];
+        if (in_array($request->status, ['pending', 'returned'], true)) {
+            $currentlyWith = collect($this->getCurrentApprovers($request))
+                ->map($mapUser)
+                ->filter()
+                ->values()
+                ->all();
+        }
+
+        $stageLabel = function ($step, int $index): string {
+            if (!$step) {
+                return 'Stage ' . ($index + 1);
+            }
+            return $step->step_name ?? match ($step->approver_type) {
+                'supervisor'    => 'Direct Supervisor',
+                'up_the_chain'  => 'Department Head',
+                'specific_role' => $step->role?->name ?? 'Required Role',
+                'specific_user' => $step->user?->name ?? 'Specific User',
+                default         => 'Stage ' . ($index + 1),
+            };
+        };
+
+        $currentStep = $steps->get($currentIndex);
+        $nextStep    = $steps->get($currentIndex + 1);
+
+        // History with the actor + a normalised per-action status.
+        $history = $request->history->sortBy('id')->values()->map(function ($h) use ($mapUser) {
+            return [
+                'id'         => $h->id,
+                'action'     => $h->action,
+                'status'     => $this->historyActionStatus($h->action),
+                'step_index' => $h->step_index,
+                'actor'      => $mapUser($h->user),
+                'comment'    => $h->comment,
+                'created_at' => optional($h->created_at)->toIso8601String(),
+            ];
+        })->all();
+
+        // Latest rejection / return reasons.
+        $rejection = $request->history->where('action', 'reject')->sortByDesc('id')->first();
+        $return    = $request->history->where('action', 'return')->sortByDesc('id')->first();
+
+        // Per-step status list (pending/approved/returned/rejected/skipped/escalated/delegated/upcoming).
+        $perStep = $steps->map(function ($step, $idx) use ($request, $currentIndex, $stageLabel) {
+            $entry = $request->history->firstWhere('step_index', $idx);
+            $status = match (true) {
+                $request->status === 'withdrawn'                          => 'withdrawn',
+                $request->status === 'rejected' && $idx === $currentIndex  => 'rejected',
+                $request->status === 'returned' && $idx === $currentIndex  => 'returned',
+                $idx < $currentIndex || $request->status === 'approved'    => 'approved',
+                $idx === $currentIndex                                     => 'pending',
+                default                                                    => 'upcoming',
+            };
+            if ($entry && in_array($entry->action, ['delegate', 'escalate', 'skip'], true)) {
+                $status = $entry->action === 'delegate' ? 'delegated'
+                        : ($entry->action === 'escalate' ? 'escalated' : 'skipped');
+            }
+
+            return [
+                'index'         => $idx,
+                'label'         => $stageLabel($step, $idx),
+                'approver_type' => $step->approver_type,
+                'status'        => $status,
+                'sla_hours'     => $step->sla_hours,
+            ];
+        })->all();
+
+        return [
+            'status'              => $request->status,
+            'current_step_index'  => $currentIndex,
+            'current_stage'       => $currentStep ? [
+                'index'         => $currentIndex,
+                'label'         => $stageLabel($currentStep, $currentIndex),
+                'approver_type' => $currentStep->approver_type,
+                'sla_hours'     => $currentStep->sla_hours,
+            ] : null,
+            'currently_with'      => $currentlyWith,
+            'next_step'           => $nextStep ? [
+                'index'         => $currentIndex + 1,
+                'label'         => $stageLabel($nextStep, $currentIndex + 1),
+                'approver_type' => $nextStep->approver_type,
+            ] : null,
+            'submitted_by'        => $mapUser($requester),
+            'prepared_by'         => $entity && isset($entity->prepared_by)
+                ? $mapUser(User::find($entity->prepared_by)) : null,
+            'prepared_on_behalf_of' => $entity && isset($entity->prepared_on_behalf_of)
+                ? $mapUser(User::find($entity->prepared_on_behalf_of)) : null,
+            'rejection_reason'    => $rejection?->comment,
+            'return_reason'       => $return?->comment,
+            'returned_count'      => $request->returned_count,
+            'steps'               => $perStep,
+            'history'             => $history,
+        ];
+    }
+
+    private function historyActionStatus(string $action): string
+    {
+        return match ($action) {
+            'approve'   => 'approved',
+            'reject'    => 'rejected',
+            'return'    => 'returned',
+            'withdraw'  => 'withdrawn',
+            'resubmit'  => 'resubmitted',
+            'delegate'  => 'delegated',
+            'escalate'  => 'escalated',
+            'skip'      => 'skipped',
+            default     => $action,
+        };
+    }
+
+    /**
      * Get the current approver(s) for a request.
      */
     public function getCurrentApprovers(ApprovalRequest $request): array

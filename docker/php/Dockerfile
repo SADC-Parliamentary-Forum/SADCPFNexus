@@ -1,22 +1,22 @@
 FROM php:8.4-fpm-alpine
 
-RUN apk add --no-cache \
-    postgresql-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    oniguruma-dev \
-    curl \
-    git \
-    unzip \
-    autoconf \
-    g++ \
-    make
-
-RUN docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl
-
-RUN pecl install redis && docker-php-ext-enable redis
+RUN set -eux; \
+    apk add --no-cache \
+        curl \
+        git \
+        unzip \
+        libpq \
+        libzip \
+        oniguruma; \
+    apk add --no-cache --virtual .build-deps \
+        $PHPIZE_DEPS \
+        libpq-dev \
+        libzip-dev \
+        oniguruma-dev; \
+    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl; \
+    pecl install redis; \
+    docker-php-ext-enable redis; \
+    apk del .build-deps
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

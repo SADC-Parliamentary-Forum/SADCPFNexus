@@ -322,6 +322,16 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nYour {{module_label}} request ({{reference}}) has been returned for correction with the following instructions:\n\n{{comment}}\n\nPlease make the necessary corrections and resubmit.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Delegated authority lifecycle (WS1 — PRD §7.4)
+            'delegation.activated' => [
+                'subject' => 'Delegated authority activated — {{principal}}',
+                'body'    => "Dear {{name}},\n\nYou have been granted delegated authority to act on behalf of {{principal}} for {{module}} from {{start_date}} to {{end_date}}.\n\nActions you take under this delegation are recorded as \"prepared on behalf of {{principal}}\". You are NOT logged in as {{principal}}.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'delegation.expired' => [
+                'subject' => 'Delegated authority expired — {{principal}}',
+                'body'    => "Dear {{name}},\n\nYour delegated authority to act on behalf of {{principal}} for {{module}} expired on {{end_date}}.\n\nYou can no longer prepare or submit requests on their behalf.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Salary advance
             'salary_advance.approved' => [
                 'subject' => 'Your salary advance request has been approved',

@@ -1131,6 +1131,128 @@ export const assetMovementsApi = {
   get: (id: number) => api.get<AssetMovement>(`/assets/movements/${id}`),
 };
 
+// ─── Consumables / Stock Register (separate from Fixed Assets) ────────────────
+
+export interface StockCategory {
+  id: number;
+  tenant_id: number;
+  name: string;
+  code: string;
+  sort_order: number;
+  items_count?: number;
+}
+
+export interface StockItem {
+  id: number;
+  tenant_id: number;
+  stock_category_id: number | null;
+  item_code: string;
+  name: string;
+  description: string | null;
+  unit: string | null;
+  unit_cost: number | string | null;
+  current_balance: number;
+  reorder_level: number;
+  storage_location: string | null;
+  vendor_id: number | null;
+  procurement_request_id: number | null;
+  purchase_order_id: number | null;
+  status: string;
+  notes: string | null;
+  is_low_stock?: boolean;
+  stock_value?: number | null;
+  category?: Pick<StockCategory, "id" | "name" | "code"> | null;
+  vendor?: { id: number; name: string } | null;
+  transactions?: StockTransaction[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StockTransaction {
+  id: number;
+  tenant_id: number;
+  stock_item_id: number;
+  type: "in" | "out" | "adjustment";
+  quantity: number;
+  balance_after: number;
+  issued_to_user_id: number | null;
+  issued_to_department_id: number | null;
+  issued_to_other: string | null;
+  unit_cost: number | string | null;
+  reference: string | null;
+  reason: string | null;
+  notes: string | null;
+  transaction_date: string;
+  recorded_by: number;
+  created_at?: string;
+  item?: Pick<StockItem, "id" | "item_code" | "name" | "unit">;
+  issued_to_user?: Pick<User, "id" | "name" | "email"> | null;
+  issued_to_department?: { id: number; name: string } | null;
+  recorder?: Pick<User, "id" | "name" | "email">;
+}
+
+export interface StockItemInput {
+  item_code: string;
+  name: string;
+  stock_category_id?: number | null;
+  description?: string | null;
+  unit?: string | null;
+  unit_cost?: number | null;
+  opening_balance?: number;
+  reorder_level?: number;
+  storage_location?: string | null;
+  vendor_id?: number | null;
+  procurement_request_id?: number | null;
+  purchase_order_id?: number | null;
+  status?: string;
+  notes?: string | null;
+}
+
+export const stockCategoriesApi = {
+  list: () => api.get<{ data: StockCategory[] }>("/stock/categories"),
+  create: (data: { name: string; code: string; sort_order?: number }) =>
+    api.post<{ data: StockCategory; message: string }>("/stock/categories", data),
+  update: (id: number, data: { name?: string; code?: string; sort_order?: number }) =>
+    api.put<{ data: StockCategory; message: string }>(`/stock/categories/${id}`, data),
+  delete: (id: number) => api.delete<{ message: string }>(`/stock/categories/${id}`),
+};
+
+export const stockItemsApi = {
+  list: (params?: {
+    category_id?: number;
+    status?: string;
+    search?: string;
+    low_stock?: number | boolean;
+    per_page?: number;
+    page?: number;
+  }) => api.get<PaginatedResponse<StockItem>>("/stock/items", { params }),
+  get: (id: number) => api.get<{ data: StockItem }>(`/stock/items/${id}`),
+  create: (data: StockItemInput) =>
+    api.post<{ data: StockItem; message: string }>("/stock/items", data),
+  update: (id: number, data: Partial<StockItemInput>) =>
+    api.put<{ data: StockItem; message: string }>(`/stock/items/${id}`, data),
+  delete: (id: number) => api.delete<{ message: string }>(`/stock/items/${id}`),
+};
+
+export const stockTransactionsApi = {
+  list: (params?: { stock_item_id?: number; type?: string; per_page?: number; page?: number }) =>
+    api.get<PaginatedResponse<StockTransaction>>("/stock/transactions", { params }),
+  create: (data: {
+    stock_item_id: number;
+    type: StockTransaction["type"];
+    quantity: number;
+    issued_to_user_id?: number | null;
+    issued_to_department_id?: number | null;
+    issued_to_other?: string | null;
+    unit_cost?: number | null;
+    reference?: string | null;
+    reason?: string | null;
+    notes?: string | null;
+    transaction_date: string;
+  }) => api.post<{ data: StockTransaction; message: string }>("/stock/transactions", data),
+  get: (id: number) => api.get<{ data: StockTransaction }>(`/stock/transactions/${id}`),
+};
+
 // ─── Reports (hub endpoints for report types) ───────────────────────────────────
 
 export interface ReportFilter {
@@ -1166,6 +1288,8 @@ export const reportsApi = {
   leave: (params?: ReportFilter) => api.get("/reports/leave", { params }),
   dsa: (params?: ReportFilter) => api.get("/reports/dsa", { params }),
   assets: (params?: ReportFilter) => api.get<PaginatedResponse<Asset>>("/reports/assets", { params }),
+  stock: (params?: ReportFilter & { category_id?: number; low_stock?: number | boolean }) =>
+    api.get<PaginatedResponse<StockItem>>("/reports/stock", { params }),
   imprest: (params?: ReportFilter) => api.get("/reports/imprest", { params }),
   procurement: (params?: ReportFilter) => api.get("/reports/procurement", { params }),
   salaryAdvances: (params?: ReportFilter) => api.get("/reports/salary-advances", { params }),
@@ -3905,9 +4029,53 @@ export interface DelegatedAuthority {
   start_date: string;
   end_date: string;
   role_scope: string | null;
+  module?: string | null;
+  can_draft?: boolean;
+  can_submit?: boolean;
+  can_upload?: boolean;
+  can_act_on_behalf?: boolean;
+  requires_principal_confirmation?: boolean;
   reason: string | null;
   principal?: { id: number; name: string; email?: string };
-  delegate?: { id: number; name: string; email?: string };
+  delegate?: { id: number; name: string; email?: string; job_title?: string };
+}
+
+// WS1 — workflow visibility snapshot
+export interface WorkflowSnapshotUser {
+  id: number;
+  name: string;
+  job_title?: string | null;
+  position?: string | null;
+}
+export interface WorkflowSnapshotStep {
+  index: number;
+  label: string;
+  approver_type: string;
+  status: 'pending' | 'approved' | 'rejected' | 'returned' | 'skipped' | 'escalated' | 'delegated' | 'withdrawn' | 'upcoming';
+  sla_hours?: number | null;
+}
+export interface WorkflowSnapshot {
+  status: string;
+  current_step_index: number;
+  current_stage?: { index: number; label: string; approver_type: string; sla_hours?: number | null } | null;
+  currently_with: WorkflowSnapshotUser[];
+  next_step?: { index: number; label: string; approver_type: string } | null;
+  submitted_by?: WorkflowSnapshotUser | null;
+  prepared_by?: WorkflowSnapshotUser | null;
+  prepared_on_behalf_of?: WorkflowSnapshotUser | null;
+  rejection_reason?: string | null;
+  return_reason?: string | null;
+  returned_count: number;
+  steps: WorkflowSnapshotStep[];
+  history: Array<{
+    id: number;
+    action: string;
+    status: string;
+    step_index: number | null;
+    actor?: WorkflowSnapshotUser | null;
+    comment?: string | null;
+    created_at?: string | null;
+  }>;
 }
 
 export interface SignedDocument {
@@ -3970,6 +4138,12 @@ export const saamApi = {
     start_date: string;
     end_date: string;
     role_scope?: string;
+    module?: string;
+    can_draft?: boolean;
+    can_submit?: boolean;
+    can_upload?: boolean;
+    can_act_on_behalf?: boolean;
+    requires_principal_confirmation?: boolean;
     reason?: string;
   }) =>
     api.post<{ message: string; data: DelegatedAuthority }>("/saam/delegations", data),
@@ -4745,4 +4919,280 @@ export const weeklySummaryApi = {
     api.get("/admin/weekly-summary/runs", { params }),
   triggerRun: () =>
     api.post<{ message: string }>("/admin/weekly-summary/run"),
+};
+
+// ── M&E / Results Monitoring (PRD §10 + §23.5) ───────────────────────────────
+
+export type StrategicPlanStatus = "draft" | "active" | "archived";
+export type ResultLevel = "impact" | "outcome" | "output" | "activity";
+export type IndicatorFrequency = "monthly" | "quarterly" | "bi_annual" | "annual";
+export type ResultsFrameworkType = "sadc_pf" | "srhr" | "giz" | "donor" | "institutional";
+export type MeReviewStatus =
+  | "not_submitted" | "submitted" | "returned" | "reviewed" | "accepted" | "closed";
+export type EvidenceReviewStatus = "pending" | "validated" | "rejected";
+
+export interface StrategicOutput {
+  id: number; strategic_outcome_id: number; code: string | null;
+  title: string; description: string | null; sort_order: number;
+}
+export interface StrategicOutcome {
+  id: number; strategic_objective_id: number; code: string | null;
+  title: string; description: string | null; sort_order: number;
+  outputs?: StrategicOutput[];
+}
+export interface StrategicObjective {
+  id: number; strategic_goal_id: number; code: string | null;
+  title: string; description: string | null; sort_order: number;
+  outcomes?: StrategicOutcome[];
+}
+export interface StrategicGoal {
+  id: number; strategic_plan_id: number; code: string | null;
+  title: string; description: string | null; sort_order: number;
+  objectives?: StrategicObjective[];
+}
+export interface StrategicPlan {
+  id: number; tenant_id: number; name: string; period: string | null;
+  start_date: string | null; end_date: string | null; status: StrategicPlanStatus;
+  description: string | null; created_by: number | null;
+  created_at: string; updated_at: string;
+  goals_count?: number; goals?: StrategicGoal[]; creator?: User;
+}
+
+export interface ResultsFramework {
+  id: number; tenant_id: number; name: string; type: ResultsFrameworkType;
+  donor_name: string | null; description: string | null;
+  strategic_plan_id: number | null; strategic_goal_id: number | null;
+  start_date: string | null; end_date: string | null; status: string;
+  created_at: string; updated_at: string;
+  indicators_count?: number; plan?: { id: number; name: string }; goal?: { id: number; title: string };
+}
+
+export interface Indicator {
+  id: number; tenant_id: number; results_framework_id: number | null;
+  strategic_objective_id: number | null; strategic_output_id: number | null;
+  programme_id: number | null; code: string | null; name: string;
+  result_level: ResultLevel; unit: string | null;
+  baseline_value: string | number | null; baseline_year: string | null;
+  annual_target: string | number | null; cumulative_target: string | number | null;
+  disaggregation: string[] | null; data_source: string | null;
+  evidence_required: boolean; frequency: IndicatorFrequency | null;
+  responsible_person_id: number | null; is_active: boolean; description: string | null;
+  created_at: string; updated_at: string;
+  framework?: { id: number; name: string };
+  objective?: { id: number; title: string };
+  responsiblePerson?: { id: number; name: string };
+  pivot?: { planned_value: number | null; actual_value: number | null; notes: string | null };
+}
+
+export interface MeThematicArea {
+  id: number; tenant_id: number; code: string; name: string;
+  description: string | null; is_active: boolean; sort_order: number;
+}
+
+export interface MeEvidence {
+  id: number; tenant_id: number; me_activity_report_id: number | null;
+  programme_id: number | null; indicator_id: number | null; title: string | null;
+  evidence_type: string; review_status: EvidenceReviewStatus; version: number;
+  review_notes: string | null; uploaded_by: number | null;
+  reviewed_by: number | null; reviewed_at: string | null; created_at: string;
+  uploader?: { id: number; name: string };
+  indicator?: { id: number; name: string; code: string | null };
+  attachments?: Array<{ id: number; original_filename: string; mime_type: string | null; size_bytes: number | null }>;
+}
+
+export interface MeReviewHistoryEntry {
+  id: number; me_activity_report_id: number; actor_id: number;
+  change_type: string; from_status: string | null; to_status: string | null;
+  notes: string | null; hash: string | null; created_at: string;
+  actor?: { id: number; name: string };
+}
+
+export interface MeActivityReport {
+  id: number; tenant_id: number; programme_id: number; reference_number: string;
+  activity_title: string; responsible_officer_id: number | null;
+  thematic_area_id: number | null; strategic_goal_id: number | null;
+  start_date: string | null; end_date: string | null;
+  planned_output: string | null; actual_output: string | null;
+  planned_participants: number | null; actual_participants: number | null;
+  narrative: string | null; challenges: string | null; lessons_learned: string | null;
+  recommendations: string | null; follow_up_actions: string | null;
+  review_status: MeReviewStatus; closure_status: "open" | "closed";
+  review_notes: string | null; submitted_at: string | null; reviewed_at: string | null;
+  accepted_at: string | null; closed_at: string | null;
+  created_at: string; updated_at: string;
+  evidence_count?: number;
+  programme?: { id: number; title: string; reference_number: string; status: string; strategic_pillar?: string | null };
+  responsibleOfficer?: { id: number; name: string };
+  thematicArea?: { id: number; name: string };
+  strategicGoal?: { id: number; title: string };
+  reviewer?: { id: number; name: string };
+  indicators?: Indicator[];
+  evidence?: MeEvidence[];
+  history?: MeReviewHistoryEntry[];
+}
+
+export interface PifLinkage {
+  id: number; reference_number: string; title: string;
+  strategic_pillar: string | null; start_date: string | null; end_date: string | null;
+  has_report: boolean;
+}
+
+export interface MeDashboardData {
+  kpis: {
+    approved_pifs: number; awaiting_report: number; total_reports: number;
+    submitted: number; reviewed: number; accepted: number; closed: number;
+    returned: number; not_submitted: number; pending_review: number;
+    evidence_pending: number; reports_missing_evidence: number;
+    overdue_reports: number; indicators_updated: number;
+  };
+  by_strategic_goal: Array<{ strategic_goal_id: number | null; goal_title: string; total: number }>;
+  by_thematic_area: Array<{ thematic_area_id: number | null; area_name: string; total: number }>;
+  review_queue: Array<{
+    id: number; reference_number: string; activity_title: string;
+    review_status: string; submitted_at: string | null; pif_number: string | null;
+  }>;
+}
+
+export interface MeStrategicReport {
+  activities_per_goal: Array<{ goal_title: string; activities: number; closed: number }>;
+  outputs_per_programme: Array<{ pif_number: string; programme_title: string; activities: number; participants: number }>;
+  indicators: { total: number; updated: number; coverage_pct: number };
+  evidence_coverage: { submitted_reports: number; reports_with_evidence: number; coverage_pct: number };
+  thematic_distribution: Array<{ area_name: string; activities: number }>;
+  underreported_areas: Array<{ id: number; pif_number: string; title: string }>;
+}
+
+export const ME_EVIDENCE_TYPES = [
+  { value: "attendance",  label: "Attendance Register", icon: "groups"        },
+  { value: "photo",       label: "Photographs",         icon: "photo_camera"  },
+  { value: "report",      label: "Activity Report",     icon: "description"   },
+  { value: "publication", label: "Publication",         icon: "menu_book"     },
+  { value: "media",       label: "Media Coverage",      icon: "newspaper"     },
+  { value: "financial",   label: "Financial Record",    icon: "payments"      },
+  { value: "other",       label: "Other",               icon: "attach_file"   },
+] as const;
+
+export const RESULTS_FRAMEWORK_TYPES = [
+  { value: "sadc_pf",       label: "SADC PF Strategic Plan" },
+  { value: "srhr",          label: "SRHR" },
+  { value: "giz",           label: "GIZ" },
+  { value: "donor",         label: "Donor-specific" },
+  { value: "institutional", label: "Institutional" },
+] as const;
+
+export const mandeApi = {
+  // Dashboard & reporting
+  getDashboard: (params?: Record<string, string | number>) =>
+    api.get<{ data: MeDashboardData }>("/mande/dashboard", { params }),
+  getStrategicReport: (params?: Record<string, string | number>) =>
+    api.get<{ data: MeStrategicReport }>("/mande/reports/strategic", { params }),
+  getPifLinkages: () =>
+    api.get<{ data: PifLinkage[] }>("/mande/pif-linkages"),
+
+  // Strategic plans
+  listPlans: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<StrategicPlan>>("/mande/strategic-plans", { params }),
+  getPlan: (id: number) =>
+    api.get<{ data: StrategicPlan }>(`/mande/strategic-plans/${id}`),
+  createPlan: (data: Partial<StrategicPlan>) =>
+    api.post<{ data: StrategicPlan; message: string }>("/mande/strategic-plans", data),
+  updatePlan: (id: number, data: Partial<StrategicPlan>) =>
+    api.put<{ data: StrategicPlan; message: string }>(`/mande/strategic-plans/${id}`, data),
+  deletePlan: (id: number) =>
+    api.delete<{ message: string }>(`/mande/strategic-plans/${id}`),
+  archivePlan: (id: number) =>
+    api.post<{ data: StrategicPlan; message: string }>(`/mande/strategic-plans/${id}/archive`),
+  activatePlan: (id: number) =>
+    api.post<{ data: StrategicPlan; message: string }>(`/mande/strategic-plans/${id}/activate`),
+  addGoal: (planId: number, data: { title: string; code?: string; description?: string }) =>
+    api.post<{ data: StrategicGoal; message: string }>(`/mande/strategic-plans/${planId}/goals`, data),
+  addObjective: (goalId: number, data: { title: string; code?: string; description?: string }) =>
+    api.post<{ data: StrategicObjective; message: string }>(`/mande/strategic-goals/${goalId}/objectives`, data),
+  addOutcome: (objectiveId: number, data: { title: string; code?: string; description?: string }) =>
+    api.post<{ data: StrategicOutcome; message: string }>(`/mande/strategic-objectives/${objectiveId}/outcomes`, data),
+  addOutput: (outcomeId: number, data: { title: string; code?: string; description?: string }) =>
+    api.post<{ data: StrategicOutput; message: string }>(`/mande/strategic-outcomes/${outcomeId}/outputs`, data),
+  deleteNode: (type: "goal" | "objective" | "outcome" | "output", id: number) =>
+    api.delete<{ message: string }>(`/mande/strategic-nodes/${type}/${id}`),
+
+  // Results frameworks
+  listFrameworks: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<ResultsFramework>>("/mande/results-frameworks", { params }),
+  getFramework: (id: number) =>
+    api.get<{ data: ResultsFramework }>(`/mande/results-frameworks/${id}`),
+  createFramework: (data: Partial<ResultsFramework>) =>
+    api.post<{ data: ResultsFramework; message: string }>("/mande/results-frameworks", data),
+  updateFramework: (id: number, data: Partial<ResultsFramework>) =>
+    api.put<{ data: ResultsFramework; message: string }>(`/mande/results-frameworks/${id}`, data),
+  deleteFramework: (id: number) =>
+    api.delete<{ message: string }>(`/mande/results-frameworks/${id}`),
+
+  // Indicators
+  listIndicators: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Indicator>>("/mande/indicators", { params }),
+  getIndicator: (id: number) =>
+    api.get<{ data: Indicator }>(`/mande/indicators/${id}`),
+  createIndicator: (data: Partial<Indicator>) =>
+    api.post<{ data: Indicator; message: string }>("/mande/indicators", data),
+  updateIndicator: (id: number, data: Partial<Indicator>) =>
+    api.put<{ data: Indicator; message: string }>(`/mande/indicators/${id}`, data),
+  deleteIndicator: (id: number) =>
+    api.delete<{ message: string }>(`/mande/indicators/${id}`),
+
+  // Activity reports
+  listReports: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<MeActivityReport>>("/mande/activity-reports", { params }),
+  getReport: (id: number) =>
+    api.get<{ data: MeActivityReport }>(`/mande/activity-reports/${id}`),
+  createReport: (data: Record<string, unknown>) =>
+    api.post<{ data: MeActivityReport; message: string }>("/mande/activity-reports", data),
+  updateReport: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}`, data),
+  deleteReport: (id: number) =>
+    api.delete<{ message: string }>(`/mande/activity-reports/${id}`),
+  getReportHistory: (id: number) =>
+    api.get<{ data: MeReviewHistoryEntry[] }>(`/mande/activity-reports/${id}/history`),
+
+  // Review workflow
+  submitReport: (id: number) =>
+    api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/submit`),
+  reviewReport: (id: number, data?: { review_notes?: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/review`, data),
+  returnReport: (id: number, data: { review_notes: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/return`, data),
+  acceptReport: (id: number, data?: { review_notes?: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/accept`, data),
+  closeReport: (id: number, data?: { notes?: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/close`, data),
+
+  // Evidence
+  listEvidence: (reportId: number) =>
+    api.get<{ data: MeEvidence[] }>(`/mande/activity-reports/${reportId}/evidence`),
+  uploadEvidence: (reportId: number, file: File, meta?: { evidence_type?: string; indicator_id?: number; title?: string }) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (meta?.evidence_type) form.append("evidence_type", meta.evidence_type);
+    if (meta?.indicator_id) form.append("indicator_id", String(meta.indicator_id));
+    if (meta?.title) form.append("title", meta.title);
+    return api.post<{ data: MeEvidence; message: string }>(
+      `/mande/activity-reports/${reportId}/evidence`, form,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+  },
+  reviewEvidence: (reportId: number, evidenceId: number, data: { review_status: "validated" | "rejected"; review_notes?: string }) =>
+    api.post<{ data: MeEvidence; message: string }>(`/mande/activity-reports/${reportId}/evidence/${evidenceId}/review`, data),
+  deleteEvidence: (reportId: number, evidenceId: number) =>
+    api.delete<{ message: string }>(`/mande/activity-reports/${reportId}/evidence/${evidenceId}`),
+  evidenceDownloadUrl: (reportId: number, evidenceId: number, attachmentId: number): string =>
+    `${api.defaults.baseURL}/mande/activity-reports/${reportId}/evidence/${evidenceId}/attachments/${attachmentId}/download`,
+
+  // Thematic areas (settings)
+  listThematicAreas: () =>
+    api.get<{ data: MeThematicArea[] }>("/mande/thematic-areas"),
+  createThematicArea: (data: Partial<MeThematicArea>) =>
+    api.post<{ data: MeThematicArea; message: string }>("/mande/thematic-areas", data),
+  updateThematicArea: (id: number, data: Partial<MeThematicArea>) =>
+    api.put<{ data: MeThematicArea; message: string }>(`/mande/thematic-areas/${id}`, data),
+  deleteThematicArea: (id: number) =>
+    api.delete<{ message: string }>(`/mande/thematic-areas/${id}`),
 };

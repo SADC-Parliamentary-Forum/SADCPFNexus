@@ -69,4 +69,16 @@ class ApprovalController extends Controller
     {
         return response()->json(['data' => $approvalRequest->history()->with('user')->get()]);
     }
+
+    /**
+     * WS1 — Rich workflow visibility snapshot (current stage, who holds it,
+     * prepared-by/on-behalf-of, next step, full history with per-step status).
+     */
+    public function snapshot(Request $request, ApprovalRequest $approvalRequest): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless((int) $approvalRequest->tenant_id === (int) $user->tenant_id, 404);
+
+        return response()->json(['data' => $this->workflowService->snapshot($approvalRequest)]);
+    }
 }

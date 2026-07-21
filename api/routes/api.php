@@ -608,6 +608,86 @@ Route::prefix('v1')->group(function () {
             Route::get('{programme}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'download']);
         });
 
+        // ── M&E / Results Monitoring (PRD §10 + §23.5) ─────────────────────────
+        Route::prefix('mande')->group(function () {
+            // Dashboard & strategic reporting (read — gated on mande.view)
+            Route::middleware('can:mande.view')->group(function () {
+                Route::get('dashboard',        [\App\Http\Controllers\Api\V1\MAndE\MeDashboardController::class, 'summary']);
+                Route::get('reports/strategic',[\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'strategic']);
+                Route::get('pif-linkages',     [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'linkablePifs']);
+            });
+
+            // Strategic Plans + nested configuration (§10.4) — admin-configurable
+            Route::middleware('can:mande.view')->get('strategic-plans', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'index']);
+            Route::middleware('can:mande.view')->get('strategic-plans/{strategicPlan}', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'show']);
+            Route::middleware('can:mande.admin')->group(function () {
+                Route::post('strategic-plans',                       [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'store']);
+                Route::put('strategic-plans/{strategicPlan}',        [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'update']);
+                Route::delete('strategic-plans/{strategicPlan}',     [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'destroy']);
+                Route::post('strategic-plans/{strategicPlan}/archive',  [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'archive']);
+                Route::post('strategic-plans/{strategicPlan}/activate', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'activate']);
+                Route::post('strategic-plans/{strategicPlan}/goals',    [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addGoal']);
+                Route::post('strategic-goals/{goal}/objectives',        [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addObjective']);
+                Route::post('strategic-objectives/{objective}/outcomes',[\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutcome']);
+                Route::post('strategic-outcomes/{outcome}/outputs',     [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutput']);
+                Route::delete('strategic-nodes/{type}/{id}',            [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'deleteNode']);
+            });
+
+            // Results Frameworks (§10.5)
+            Route::middleware('can:mande.view')->get('results-frameworks', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'index']);
+            Route::middleware('can:mande.view')->get('results-frameworks/{resultsFramework}', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'show']);
+            Route::middleware('can:mande.admin')->group(function () {
+                Route::post('results-frameworks',                       [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'store']);
+                Route::put('results-frameworks/{resultsFramework}',     [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'update']);
+                Route::delete('results-frameworks/{resultsFramework}',  [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'destroy']);
+            });
+
+            // Indicators (§10.6)
+            Route::middleware('can:mande.view')->get('indicators', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'index']);
+            Route::middleware('can:mande.view')->get('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'show']);
+            Route::middleware('can:mande.create')->group(function () {
+                Route::post('indicators',               [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'store']);
+                Route::put('indicators/{indicator}',    [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'update']);
+                Route::delete('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'destroy']);
+            });
+
+            // Activity Reports (§10.7 + §10.8)
+            Route::middleware('can:mande.view')->group(function () {
+                Route::get('activity-reports',                  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'index']);
+                Route::get('activity-reports/{activityReport}', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'show']);
+                Route::get('activity-reports/{activityReport}/history', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'history']);
+            });
+            Route::middleware('can:mande.create')->group(function () {
+                Route::post('activity-reports',                  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'store']);
+                Route::put('activity-reports/{activityReport}',  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'update']);
+                Route::delete('activity-reports/{activityReport}',[\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'destroy']);
+                Route::post('activity-reports/{activityReport}/submit', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'submit']);
+            });
+
+            // Review workflow (§10.10) — reviewer actions gated on mande.review
+            Route::middleware('can:mande.review')->group(function () {
+                Route::post('activity-reports/{activityReport}/review',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'review']);
+                Route::post('activity-reports/{activityReport}/return',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'requestCorrection']);
+                Route::post('activity-reports/{activityReport}/accept',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'accept']);
+                Route::post('activity-reports/{activityReport}/close',   [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'close']);
+            });
+
+            // Evidence Repository (§10.9)
+            Route::middleware('can:mande.view')->get('activity-reports/{activityReport}/evidence', [\App\Http\Controllers\Api\V1\MAndE\MeEvidenceController::class, 'index']);
+            Route::middleware('can:mande.create')->post('activity-reports/{activityReport}/evidence', [\App\Http\Controllers\Api\V1\MAndE\MeEvidenceController::class, 'store']);
+            Route::middleware('can:mande.review')->post('activity-reports/{activityReport}/evidence/{evidence}/review', [\App\Http\Controllers\Api\V1\MAndE\MeEvidenceController::class, 'review']);
+            Route::middleware('can:mande.create')->delete('activity-reports/{activityReport}/evidence/{evidence}', [\App\Http\Controllers\Api\V1\MAndE\MeEvidenceController::class, 'destroy']);
+            Route::middleware('can:mande.view')->get('activity-reports/{activityReport}/evidence/{evidence}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\MAndE\MeEvidenceController::class, 'download']);
+
+            // Thematic Areas (admin-configurable lookup, §9.7/§27)
+            Route::middleware('can:mande.view')->get('thematic-areas', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'index']);
+            Route::middleware('can:mande.admin')->group(function () {
+                Route::post('thematic-areas',                  [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'store']);
+                Route::put('thematic-areas/{thematicArea}',    [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'update']);
+                Route::delete('thematic-areas/{thematicArea}', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'destroy']);
+            });
+        });
+
         // Workplan
         Route::prefix('workplan')->group(function () {
             Route::get('meeting-types', [\App\Http\Controllers\Api\V1\Workplan\MeetingTypeController::class, 'index']);
@@ -648,6 +728,7 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/leave',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
             Route::get('reports/dsa',             [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
             Route::get('reports/assets',          [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
+            Route::get('reports/stock',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'stock']);
             Route::get('reports/imprest',         [\App\Http\Controllers\Api\V1\ReportsController::class, 'imprest']);
             Route::get('reports/procurement',     [\App\Http\Controllers\Api\V1\ReportsController::class, 'procurement']);
             Route::get('reports/salary-advances', [\App\Http\Controllers\Api\V1\ReportsController::class, 'salaryAdvances']);
@@ -682,6 +763,30 @@ Route::prefix('v1')->group(function () {
         Route::get('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'show']);
         Route::put('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'update']);
         Route::delete('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'destroy']);
+
+        // ── Consumables / Stock Register (PRD §17, §27) ───────────────────────
+        // SEPARATE from the Fixed Asset Register above. Read routes gated on
+        // stock.view; write actions are gated by Form Request authorize() using
+        // stock.create / stock.edit / stock.issue / stock.manage / stock.admin.
+        Route::middleware('can:stock.view')->group(function () {
+            // Stock categories (admin config — §27)
+            Route::get('stock/categories', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'index']);
+            Route::post('stock/categories', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'store']);
+            Route::put('stock/categories/{stockCategory}', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'update']);
+            Route::delete('stock/categories/{stockCategory}', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'destroy']);
+
+            // Stock movements (in/out/adjustment) — declared before {stockItem} to avoid clashes
+            Route::get('stock/transactions', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'index']);
+            Route::post('stock/transactions', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'store']);
+            Route::get('stock/transactions/{stockTransaction}', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'show']);
+
+            // Stock items (§17.2)
+            Route::get('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'index']);
+            Route::post('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'store']);
+            Route::get('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'show']);
+            Route::put('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'update']);
+            Route::delete('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'destroy']);
+        });
 
         // Assignments, Oversight & Accountability
         Route::prefix('assignments')->group(function () {
@@ -778,6 +883,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve']);
             Route::post('{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject']);
             Route::get('{approvalRequest}/history', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'history']);
+            Route::get('{approvalRequest}/snapshot', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'snapshot']);
         });
 
         // SAAM — Signature & Approval Authentication Module

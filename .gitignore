@@ -47,6 +47,9 @@ Loc8Mobile/
 # Claude Code worktrees
 .claude/worktrees/
 
+# Playwright saved auth state (contains live session cookies/tokens)
+web/playwright/.auth/
+
 # ─── Laravel runtime caches & ephemeral files ────────────────────────────────
 api/bootstrap/cache/*.php
 api/storage/app/public/*

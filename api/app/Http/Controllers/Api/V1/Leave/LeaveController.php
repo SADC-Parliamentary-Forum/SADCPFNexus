@@ -13,7 +13,8 @@ class LeaveController extends Controller
 {
     public function __construct(
         private readonly LeaveService $leaveService,
-        private readonly \App\Services\WorkflowService $workflowService
+        private readonly \App\Services\WorkflowService $workflowService,
+        private readonly \App\Services\DelegationService $delegationService,
     ) {}
 
     /** Leave balances for the current user (annual days, LIL hours, and used days per leave type). */
@@ -104,10 +105,26 @@ class LeaveController extends Controller
             'lil_linkings.*.hours'               => ['required_with:lil_linkings', 'numeric', 'min:0.5'],
             'lil_linkings.*.accrual_date'        => ['required_with:lil_linkings', 'date'],
             'lil_linkings.*.approved_by_name'    => ['nullable', 'string'],
+            'prepared_on_behalf_of'              => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $leave = $this->leaveService->create($data, $request->user());
-        return response()->json(['message' => 'Leave request created.', 'data' => $leave], 201);
+        $actor       = $request->user();
+        $onBehalfOf  = $data['prepared_on_behalf_of'] ?? null;
+        $delegation  = $this->delegationService->authorise($actor, $onBehalfOf, 'leave', 'draft');
+
+        // When acting on behalf of a principal, the leave belongs to the
+        // principal (their balance) — the actor is recorded as the preparer.
+        $ownerId    = $this->delegationService->ownerId($actor, $onBehalfOf);
+        $ownerUser  = $ownerId === $actor->id ? $actor : \App\Models\User::find($ownerId);
+
+        $leave = $this->leaveService->create($data, $ownerUser);
+
+        $this->delegationService->stampPreparation($leave, $actor, $onBehalfOf, 'leave', 'draft', $delegation);
+        if ($onBehalfOf) {
+            $leave->save();
+        }
+
+        return response()->json(['message' => 'Leave request created.', 'data' => $leave->fresh(['requester', 'preparedBy', 'preparedOnBehalfOf'])], 201);
     }
 
     public function update(Request $request, LeaveRequest $leaveRequest): JsonResponse
