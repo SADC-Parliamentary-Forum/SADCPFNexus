@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\PreparedOnBehalf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProcurementRequest extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, PreparedOnBehalf;
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
@@ -19,6 +20,8 @@ class ProcurementRequest extends Model
         'awarded_quote_id', 'awarded_at', 'award_notes',
         'hod_id', 'hod_reviewed_at',
         'rfq_issued_at', 'rfq_issued_by', 'rfq_deadline', 'rfq_notes',
+        'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
+        'budget_line_id',
     ];
 
     protected $casts = [

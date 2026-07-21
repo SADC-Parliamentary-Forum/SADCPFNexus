@@ -53,6 +53,9 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_OTHER,
     ];
 
+    // M&E (Monitoring & Evaluation) document types
+    public const DOCUMENT_TYPE_ME_EVIDENCE          = 'me_evidence';
+
     // Risk document types
     public const DOCUMENT_TYPE_RISK_POLICY          = 'risk_policy';
     public const DOCUMENT_TYPE_RISK_ASSESSMENT      = 'risk_assessment';
@@ -81,6 +84,8 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_RISK_EVIDENCE,
         self::DOCUMENT_TYPE_RISK_MITIGATION_PLAN,
         self::DOCUMENT_TYPE_CLOSURE_EVIDENCE,
+        // M&E
+        self::DOCUMENT_TYPE_ME_EVIDENCE,
         // Travel
         self::DOCUMENT_TYPE_TRAVEL_ITINERARY,
         self::DOCUMENT_TYPE_VISA_COPY,

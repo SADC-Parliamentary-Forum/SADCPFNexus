@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\PreparedOnBehalf;
 use App\Modules\Finance\Services\BalanceRegisterService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class SalaryAdvanceRequest extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, PreparedOnBehalf;
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
@@ -20,6 +21,12 @@ class SalaryAdvanceRequest extends Model
         'submitted_at', 'approved_at',
         'payslip_id', 'net_salary_at_request', 'gross_salary_at_request',
         'max_eligible_amount', 'eligibility_status',
+        'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
+        // WS2 — consolidation / exception fields
+        'parent_advance_id', 'is_consolidation', 'consolidated_outstanding',
+        'new_cash_requested', 'policy_mode', 'is_exception', 'exception_reason',
+        'repayment_plan', 'finance_recommendation', 'finance_recommended_by',
+        'finance_recommended_at',
     ];
 
     protected $casts = [

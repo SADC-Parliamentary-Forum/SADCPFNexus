@@ -1,13 +1,14 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\PreparedOnBehalf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TravelRequest extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, PreparedOnBehalf;
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
@@ -15,6 +16,8 @@ class TravelRequest extends Model
         'destination_country', 'destination_city', 'estimated_dsa',
         'actual_dsa', 'currency', 'justification', 'rejection_reason',
         'workplan_event_id', 'submitted_at', 'approved_at',
+        'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
+        'budget_line_id',
     ];
 
     protected $casts = [

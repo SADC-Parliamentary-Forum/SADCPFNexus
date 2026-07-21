@@ -1,16 +1,18 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\PreparedOnBehalf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Programme extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, PreparedOnBehalf;
 
     protected $fillable = [
         'tenant_id', 'created_by', 'approved_by', 'reference_number', 'title', 'status',
+        'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
         'strategic_alignment', 'strategic_pillar', 'strategic_pillars', 'implementing_department',
         'implementing_departments', 'supporting_departments',
         'background', 'overall_objective', 'specific_objectives', 'expected_outputs',

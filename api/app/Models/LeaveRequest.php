@@ -1,19 +1,21 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\PreparedOnBehalf;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LeaveRequest extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, PreparedOnBehalf;
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
         'leave_type', 'start_date', 'end_date', 'days_requested', 'reason',
         'status', 'rejection_reason', 'has_lil_linking',
         'lil_hours_required', 'lil_hours_linked', 'submitted_at', 'approved_at',
+        'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
     ];
 
     protected $casts = [
