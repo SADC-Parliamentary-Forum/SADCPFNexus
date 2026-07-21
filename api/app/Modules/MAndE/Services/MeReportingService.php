@@ -1,0 +1,112 @@
+<?php
+
+namespace App\Modules\MAndE\Services;
+
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Strategic reporting aggregates (PRD §10.11). Foundational reporting only —
+ * advanced indicator aggregation dashboards are out of scope (Phase 2).
+ */
+class MeReportingService
+{
+    public function strategic(User $user, array $filters = []): array
+    {
+        $tid = $user->tenant_id;
+
+        // Activities per strategic goal / objective.
+        $activitiesPerGoal = DB::table('me_activity_reports')
+            ->leftJoin('strategic_goals', 'strategic_goals.id', '=', 'me_activity_reports.strategic_goal_id')
+            ->where('me_activity_reports.tenant_id', $tid)
+            ->whereNull('me_activity_reports.deleted_at')
+            ->select([
+                DB::raw("COALESCE(strategic_goals.title, 'Unassigned') as goal_title"),
+                DB::raw('COUNT(*) as activities'),
+                DB::raw("SUM(CASE WHEN me_activity_reports.review_status = 'closed' THEN 1 ELSE 0 END) as closed"),
+            ])
+            ->groupBy('strategic_goals.title')
+            ->get()->map(fn ($r) => (array) $r)->toArray();
+
+        // Outputs per programme (number of activity reports per PIF).
+        $outputsPerProgramme = DB::table('me_activity_reports')
+            ->join('programmes', 'programmes.id', '=', 'me_activity_reports.programme_id')
+            ->where('me_activity_reports.tenant_id', $tid)
+            ->whereNull('me_activity_reports.deleted_at')
+            ->select([
+                'programmes.reference_number as pif_number',
+                'programmes.title as programme_title',
+                DB::raw('COUNT(*) as activities'),
+                DB::raw('SUM(COALESCE(me_activity_reports.actual_participants, 0)) as participants'),
+            ])
+            ->groupBy('programmes.reference_number', 'programmes.title')
+            ->get()->map(fn ($r) => (array) $r)->toArray();
+
+        // Indicators updated vs total.
+        $totalIndicators = DB::table('indicators')
+            ->where('tenant_id', $tid)->whereNull('deleted_at')->where('is_active', true)->count();
+        $updatedIndicators = DB::table('me_activity_report_indicator')
+            ->join('me_activity_reports', 'me_activity_reports.id', '=', 'me_activity_report_indicator.me_activity_report_id')
+            ->where('me_activity_reports.tenant_id', $tid)
+            ->whereNull('me_activity_reports.deleted_at')
+            ->whereNotNull('me_activity_report_indicator.actual_value')
+            ->distinct('me_activity_report_indicator.indicator_id')
+            ->count('me_activity_report_indicator.indicator_id');
+
+        // Evidence coverage: reports with evidence vs total submitted reports.
+        $submittedReports = DB::table('me_activity_reports')
+            ->where('tenant_id', $tid)->whereNull('deleted_at')
+            ->whereNotIn('review_status', ['not_submitted'])->count();
+        $reportsWithEvidence = DB::table('me_activity_reports')
+            ->where('me_activity_reports.tenant_id', $tid)->whereNull('me_activity_reports.deleted_at')
+            ->whereNotIn('review_status', ['not_submitted'])
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))->from('me_evidence')
+                  ->whereColumn('me_evidence.me_activity_report_id', 'me_activity_reports.id')
+                  ->whereNull('me_evidence.deleted_at');
+            })->count();
+
+        // Thematic distribution.
+        $thematicDistribution = DB::table('me_activity_reports')
+            ->leftJoin('me_thematic_areas', 'me_thematic_areas.id', '=', 'me_activity_reports.thematic_area_id')
+            ->where('me_activity_reports.tenant_id', $tid)
+            ->whereNull('me_activity_reports.deleted_at')
+            ->select([
+                DB::raw("COALESCE(me_thematic_areas.name, 'Unassigned') as area_name"),
+                DB::raw('COUNT(*) as activities'),
+            ])
+            ->groupBy('me_thematic_areas.name')
+            ->get()->map(fn ($r) => (array) $r)->toArray();
+
+        // Underreported areas: active programmes (approved) without any reports.
+        $underreported = DB::table('programmes')
+            ->where('programmes.tenant_id', $tid)
+            ->whereNull('programmes.deleted_at')
+            ->where('programmes.status', 'approved')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))->from('me_activity_reports')
+                  ->whereColumn('me_activity_reports.programme_id', 'programmes.id')
+                  ->whereNull('me_activity_reports.deleted_at');
+            })
+            ->select(['programmes.id', 'programmes.reference_number as pif_number', 'programmes.title'])
+            ->limit(50)
+            ->get()->map(fn ($r) => (array) $r)->toArray();
+
+        return [
+            'activities_per_goal'   => $activitiesPerGoal,
+            'outputs_per_programme' => $outputsPerProgramme,
+            'indicators' => [
+                'total'   => $totalIndicators,
+                'updated' => $updatedIndicators,
+                'coverage_pct' => $totalIndicators > 0 ? round(($updatedIndicators / $totalIndicators) * 100, 1) : 0,
+            ],
+            'evidence_coverage' => [
+                'submitted_reports'    => $submittedReports,
+                'reports_with_evidence'=> $reportsWithEvidence,
+                'coverage_pct' => $submittedReports > 0 ? round(($reportsWithEvidence / $submittedReports) * 100, 1) : 0,
+            ],
+            'thematic_distribution' => $thematicDistribution,
+            'underreported_areas'   => $underreported,
+        ];
+    }
+}
