@@ -11,15 +11,22 @@ class ProgrammeProcurementItem extends Model
     protected $fillable = [
         'programme_id', 'description', 'estimated_cost', 'method',
         'vendor', 'delivery_date', 'status',
+        'procurement_request_id', 'currency', 'rfq_required',
     ];
 
     protected $casts = [
         'estimated_cost' => 'decimal:2',
         'delivery_date'  => 'date',
+        'rfq_required'   => 'boolean',
     ];
 
     public function programme()
     {
         return $this->belongsTo(Programme::class);
+    }
+
+    public function procurementRequest()
+    {
+        return $this->belongsTo(ProcurementRequest::class);
     }
 }
