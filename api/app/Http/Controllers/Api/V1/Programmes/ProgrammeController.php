@@ -186,13 +186,15 @@ class ProgrammeController extends Controller
             'conflict_details'                   => [
                 Rule::requiredIf(fn () =>
                     ($request->has('conflict_declared') || $request->has('conflict_details'))
-                    && $this->resultingBool($request, $programme, 'conflict_declared')),
+                    && $this->resultingBool($request, $programme, 'conflict_declared')
+                    && empty($this->resulting($request, $programme, 'conflict_details'))),
                 'nullable', 'string',
             ],
             'conflict_mitigation'                => [
                 Rule::requiredIf(fn () =>
                     ($request->has('conflict_declared') || $request->has('conflict_mitigation'))
-                    && $this->resultingBool($request, $programme, 'conflict_declared')),
+                    && $this->resultingBool($request, $programme, 'conflict_declared')
+                    && empty($this->resulting($request, $programme, 'conflict_mitigation'))),
                 'nullable', 'string',
             ],
         ];

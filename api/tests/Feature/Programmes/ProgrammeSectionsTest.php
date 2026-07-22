@@ -214,4 +214,41 @@ class ProgrammeSectionsTest extends TestCase
             'conflict_details'  => 'corrected wording',
         ]);
     }
+
+    public function test_reaffirming_already_declared_conflict_without_resending_details_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Reaffirm Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared'   => true,
+            'conflict_details'    => 'Spouse works at the proposed vendor',
+            'conflict_mitigation' => 'Recused from vendor selection',
+        ])->assertOk();
+
+        // Re-affirming conflict_declared=true alone, without resending the
+        // text fields, must succeed — the DB already has non-empty details
+        // and mitigation to fall back on.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                   => $programmeId,
+            'conflict_details'     => 'Spouse works at the proposed vendor',
+            'conflict_mitigation'  => 'Recused from vendor selection',
+        ]);
+    }
+
+    public function test_fresh_conflict_declaration_without_details_anywhere_still_fails(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Fresh Test'])->json('data.id');
+
+        // No prior conflict declared, no details in DB or request — must
+        // still 422 since there is genuinely nothing to fall back to.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['conflict_details', 'conflict_mitigation']);
+    }
 }
