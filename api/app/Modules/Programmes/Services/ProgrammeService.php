@@ -599,7 +599,7 @@ class ProgrammeService
                 'requester_id'     => $user->id,
                 'title'            => $data['request_title'],
                 'description'      => 'Generated from approved PIF ' . $programme->reference_number,
-                'category'         => 'goods',
+                'category'         => $data['category'] ?? 'goods',
                 'estimated_value'  => $estimatedValue,
                 'status'           => 'draft',
                 'currency'         => $programme->primary_currency ?? 'USD',

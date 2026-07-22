@@ -22,7 +22,10 @@ class ProgrammeProcurementTransferTest extends TestCase
         $item2 = ProgrammeProcurementItem::create([
             'programme_id' => $programme->id, 'description' => 'Printing', 'estimated_cost' => 150,
         ]);
-        return [$programme, $item1, $item2];
+        $item3 = ProgrammeProcurementItem::create([
+            'programme_id' => $programme->id, 'description' => 'Venue hire', 'estimated_cost' => 800,
+        ]);
+        return [$programme, $item1, $item2, $item3];
     }
 
     public function test_send_to_procurement_creates_one_request_with_multiple_items(): void
@@ -73,5 +76,43 @@ class ProgrammeProcurementTransferTest extends TestCase
         $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
             'procurement_item_ids' => [$item1->id], 'request_title' => 'Duplicate',
         ])->assertStatus(409);
+    }
+
+    public function test_send_to_procurement_leaves_untransferred_items_alone(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        [$programme, $item1, $item2, $item3] = $this->approvedProgrammeWithItems($tenant, $user->id);
+
+        $response = $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
+            'procurement_item_ids' => [$item1->id, $item2->id],
+            'request_title'        => 'Partial transfer of approved items',
+        ]);
+
+        $response->assertOk();
+        $requestId = $response->json('data.id');
+
+        $this->assertDatabaseCount('procurement_items', 2);
+        $this->assertDatabaseHas('programme_procurement_items', ['id' => $item1->id, 'procurement_request_id' => $requestId]);
+        $this->assertDatabaseHas('programme_procurement_items', ['id' => $item2->id, 'procurement_request_id' => $requestId]);
+        $this->assertDatabaseHas('programme_procurement_items', ['id' => $item3->id, 'procurement_request_id' => null]);
+    }
+
+    public function test_send_to_procurement_uses_client_supplied_category(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        [$programme, $item1] = $this->approvedProgrammeWithItems($tenant, $user->id);
+
+        $response = $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
+            'procurement_item_ids' => [$item1->id],
+            'request_title'        => 'Catering services request',
+            'category'              => 'services',
+        ]);
+
+        $response->assertOk();
+        $requestId = $response->json('data.id');
+
+        $this->assertDatabaseHas('procurement_requests', ['id' => $requestId, 'category' => 'services']);
     }
 }

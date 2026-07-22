@@ -358,6 +358,7 @@ class ProgrammeController extends Controller
             'procurement_item_ids'   => ['required', 'array', 'min:1'],
             'procurement_item_ids.*' => ['integer', 'exists:programme_procurement_items,id'],
             'request_title'          => ['required', 'string', 'max:255'],
+            'category'               => ['nullable', 'string', Rule::in(['goods', 'services', 'works'])],
         ]);
 
         $procurementRequest = $this->service->sendToProcurement($programme, $data, $request->user());
