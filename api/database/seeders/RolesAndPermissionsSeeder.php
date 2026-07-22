@@ -34,6 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
             // Programmes / PIF
             'pif.view', 'pif.create', 'pif.approve', 'pif.admin',
+            'programme.finance-review',
             // Workplan
             'workplan.view', 'workplan.create', 'workplan.approve', 'workplan.admin',
             // Assignments (Oversight & Accountability)
@@ -248,6 +249,11 @@ class RolesAndPermissionsSeeder extends Seeder
             // Finance Controller: read-only oversight.
             $financeController->givePermissionTo(
                 Permission::where('name', 'mande.view')->where('guard_name', $guard)->get()
+            );
+
+            // Finance Controller reviews PIF budget-availability and finance comments.
+            $financeController->givePermissionTo(
+                Permission::where('name', 'programme.finance-review')->where('guard_name', $guard)->get()
             );
 
             // HR Administrator / Procurement Officer: read-only visibility.
