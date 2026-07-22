@@ -116,6 +116,31 @@ class ProgrammesTest extends TestCase
         ]);
     }
 
+    public function test_staff_can_create_a_minimal_draft_with_only_a_title(): void
+    {
+        [$http] = $this->asStaff();
+
+        $response = $http->postJson('/api/v1/programmes', ['title' => 'Untitled PIF']);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.status', 'draft');
+        $this->assertNotNull($response->json('data.id'));
+    }
+
+    public function test_new_draft_can_immediately_receive_a_document_row(): void
+    {
+        [$http] = $this->asStaff();
+
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Untitled PIF'])
+            ->json('data.id');
+
+        $http->postJson("/api/v1/programmes/{$programmeId}/documents", [
+            'title'         => 'Concept Note',
+            'document_type' => 'concept_note',
+            'owner_name'    => 'Jane Partner',
+        ])->assertCreated();
+    }
+
     public function test_admin_can_approve_programme(): void
     {
         $tenant = Tenant::factory()->create();
