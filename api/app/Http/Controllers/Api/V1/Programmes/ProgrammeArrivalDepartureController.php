@@ -43,7 +43,20 @@ class ProgrammeArrivalDepartureController extends Controller
                 'nullable', 'date',
                 function (string $attribute, $value, \Closure $fail) use ($updating, $arrivalDeparture) {
                     $arrival = $this->resultingArrivalDate($updating, $arrivalDeparture);
-                    if ($arrival && $value && Carbon::parse($value)->lt(Carbon::parse($arrival))) {
+                    if (!$arrival || !$value) {
+                        return;
+                    }
+
+                    try {
+                        $arrivalDate = Carbon::parse($arrival);
+                        $departureDate = Carbon::parse($value);
+                    } catch (\Exception) {
+                        // Malformed input: defer to the sibling 'date' rule to report
+                        // the format error instead of throwing here.
+                        return;
+                    }
+
+                    if ($departureDate->lt($arrivalDate)) {
                         $fail('The departure date must be a date after or equal to arrival date.');
                     }
                 },

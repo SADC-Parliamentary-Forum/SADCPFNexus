@@ -52,6 +52,20 @@ class ProgrammeArrivalDeparturesTest extends TestCase
           ->assertJsonValidationErrors(['departure_date']);
     }
 
+    public function test_malformed_departure_date_returns_validation_error_not_a_server_error(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $programme = $this->draftProgramme($tenant, $user->id);
+
+        $http->postJson("/api/v1/programmes/{$programme->id}/arrival-departures", [
+            'category'       => 'participant',
+            'arrival_date'   => '2026-08-01',
+            'departure_date' => 'not-a-date',
+        ])->assertUnprocessable()
+          ->assertJsonValidationErrors(['departure_date']);
+    }
+
     public function test_staff_can_delete_an_arrival_departure_row(): void
     {
         $tenant = Tenant::factory()->create();
