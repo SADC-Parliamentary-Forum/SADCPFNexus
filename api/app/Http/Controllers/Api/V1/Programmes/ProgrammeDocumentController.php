@@ -13,7 +13,7 @@ class ProgrammeDocumentController extends Controller
 {
     public function __construct(private readonly ProgrammeService $service) {}
 
-    private function rules(bool $updating = false): array
+    private function rules(bool $updating = false, ?ProgrammeDocument $document = null): array
     {
         $required = $updating ? 'sometimes' : 'required';
         return [
@@ -34,11 +34,14 @@ class ProgrammeDocumentController extends Controller
             'target_languages.*'   => ['string', 'max:100'],
             'owner_user_id'        => ['nullable', 'integer', 'exists:users,id'],
             'owner_name'           => [
-                Rule::requiredIf(function () use ($updating) {
-                    if ($updating && ! request()->has('owner_user_id') && ! request()->has('owner_name')) {
-                        return false;
-                    }
-                    return empty(request()->input('owner_user_id'));
+                Rule::requiredIf(function () use ($updating, $document) {
+                    $resultingOwnerUserId = request()->has('owner_user_id')
+                        ? request()->input('owner_user_id')
+                        : ($updating && $document ? $document->owner_user_id : null);
+                    $resultingOwnerName = request()->has('owner_name')
+                        ? request()->input('owner_name')
+                        : ($updating && $document ? $document->owner_name : null);
+                    return empty($resultingOwnerUserId) && empty($resultingOwnerName);
                 }),
                 'nullable', 'string', 'max:255',
             ],
@@ -58,7 +61,7 @@ class ProgrammeDocumentController extends Controller
 
     public function update(Request $request, Programme $programme, ProgrammeDocument $document): JsonResponse
     {
-        $data = $request->validate($this->rules(true));
+        $data = $request->validate($this->rules(true, $document));
         $document = $this->service->updateDocument($document, $data);
         return response()->json(['message' => 'Document updated.', 'data' => $document]);
     }

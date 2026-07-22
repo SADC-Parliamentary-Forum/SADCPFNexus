@@ -89,4 +89,45 @@ class ProgrammeDocumentsTest extends TestCase
         $http->deleteJson("/api/v1/programmes/{$programme->id}/documents/{$doc->id}")->assertOk();
         $this->assertSoftDeleted('programme_documents', ['id' => $doc->id]);
     }
+
+    public function test_clearing_owner_user_id_is_allowed_when_owner_name_already_exists(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $programme = $this->draftProgramme($tenant, $user->id);
+        $doc = ProgrammeDocument::create([
+            'programme_id' => $programme->id,
+            'title'        => 'Old Title',
+            'document_type'=> 'agenda',
+            'owner_name'   => 'Jane Partner',
+        ]);
+
+        $http->putJson("/api/v1/programmes/{$programme->id}/documents/{$doc->id}", [
+            'owner_user_id' => null,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programme_documents', [
+            'id'            => $doc->id,
+            'owner_user_id' => null,
+            'owner_name'    => 'Jane Partner',
+        ]);
+    }
+
+    public function test_clearing_owner_name_with_no_owner_user_id_is_rejected(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $programme = $this->draftProgramme($tenant, $user->id);
+        $doc = ProgrammeDocument::create([
+            'programme_id' => $programme->id,
+            'title'        => 'Old Title',
+            'document_type'=> 'agenda',
+            'owner_name'   => 'Jane Partner',
+        ]);
+
+        $http->putJson("/api/v1/programmes/{$programme->id}/documents/{$doc->id}", [
+            'owner_name' => null,
+        ])->assertUnprocessable()
+          ->assertJsonValidationErrors(['owner_name']);
+    }
 }
