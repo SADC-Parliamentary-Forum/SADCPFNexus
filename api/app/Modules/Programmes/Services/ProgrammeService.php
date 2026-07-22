@@ -542,12 +542,17 @@ class ProgrammeService
      */
     private function applyConflictDeclaration(Programme $programme, array $data, User $user): void
     {
-        if (!array_key_exists('conflict_declared', $data)) {
+        if (!array_key_exists('conflict_declared', $data)
+            && !array_key_exists('conflict_details', $data)
+            && !array_key_exists('conflict_mitigation', $data)
+        ) {
             return;
         }
 
         $wasDeclared = (bool) $programme->conflict_declared;
-        $nowDeclared = (bool) $data['conflict_declared'];
+        $nowDeclared = array_key_exists('conflict_declared', $data)
+            ? (bool) $data['conflict_declared']
+            : $wasDeclared;
 
         $payload = [
             'conflict_declared'   => $nowDeclared,

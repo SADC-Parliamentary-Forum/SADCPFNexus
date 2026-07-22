@@ -61,12 +61,16 @@ class ProgrammeController extends Controller
             'venue_proposed_hotel'               => ['nullable', 'string', 'max:255'],
             'venue_accommodation_required'       => ['nullable', 'boolean'],
             'venue_accommodation_count'          => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'venue_accommodation_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('venue_accommodation_required') || $request->has('venue_accommodation_count'))
+                    && $this->resultingBool($request, $programme, 'venue_accommodation_required')),
                 'nullable', 'integer', 'min:1',
             ],
             'venue_conferencing_required'        => ['nullable', 'boolean'],
             'venue_conferencing_participants'    => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'venue_conferencing_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('venue_conferencing_required') || $request->has('venue_conferencing_participants'))
+                    && $this->resultingBool($request, $programme, 'venue_conferencing_required')),
                 'nullable', 'integer', 'min:1',
             ],
             'venue_quotation_attached'           => ['nullable', 'boolean'],
@@ -79,6 +83,9 @@ class ProgrammeController extends Controller
             'original_budget_rate'               => ['nullable', 'numeric', 'min:0'],
             'dsa_variance_reason'                => [
                 Rule::requiredIf(function () use ($request, $programme) {
+                    if (!$request->has('proposed_dsa_rate') && !$request->has('original_budget_rate') && !$request->has('dsa_variance_reason')) {
+                        return false;
+                    }
                     $proposed = $this->resulting($request, $programme, 'proposed_dsa_rate');
                     $original = $this->resulting($request, $programme, 'original_budget_rate');
                     if ($proposed === null || $proposed === '' || $original === null || $original === '') {
@@ -92,6 +99,9 @@ class ProgrammeController extends Controller
             'budgeted_participants'               => ['nullable', 'integer', 'min:0'],
             'participants_variance_reason'       => [
                 Rule::requiredIf(function () use ($request, $programme) {
+                    if (!$request->has('proposed_participants') && !$request->has('budgeted_participants') && !$request->has('participants_variance_reason')) {
+                        return false;
+                    }
                     $proposed = $this->resulting($request, $programme, 'proposed_participants');
                     $budgeted = $this->resulting($request, $programme, 'budgeted_participants');
                     if ($proposed === null || $proposed === '' || $budgeted === null || $budgeted === '') {
@@ -125,29 +135,39 @@ class ProgrammeController extends Controller
             'interpretation_required'            => ['nullable', 'boolean'],
             'en_fr_required'                     => ['nullable', 'boolean'],
             'en_fr_interpreters_count'           => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'en_fr_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('en_fr_required') || $request->has('en_fr_interpreters_count'))
+                    && $this->resultingBool($request, $programme, 'en_fr_required')),
                 'nullable', 'integer', 'min:1',
             ],
             'en_pt_required'                     => ['nullable', 'boolean'],
             'en_pt_interpreters_count'           => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'en_pt_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('en_pt_required') || $request->has('en_pt_interpreters_count'))
+                    && $this->resultingBool($request, $programme, 'en_pt_required')),
                 'nullable', 'integer', 'min:1',
             ],
             'fr_pt_required'                     => ['nullable', 'boolean'],
             'fr_pt_interpreters_count'           => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'fr_pt_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('fr_pt_required') || $request->has('fr_pt_interpreters_count'))
+                    && $this->resultingBool($request, $programme, 'fr_pt_required')),
                 'nullable', 'integer', 'min:1',
             ],
             'interpreter_rate'                   => ['nullable', 'numeric', 'min:0'],
             'interpreter_source'                 => ['nullable', 'string', Rule::in(['internal', 'supplier', 'partner', 'other'])],
             'interpreter_source_other_note'      => [
-                Rule::requiredIf(fn () => $this->resulting($request, $programme, 'interpreter_source') === 'other'),
+                Rule::requiredIf(fn () =>
+                    ($request->has('interpreter_source') || $request->has('interpreter_source_other_note'))
+                    && $this->resulting($request, $programme, 'interpreter_source') === 'other'),
                 'nullable', 'string',
             ],
             'interpretation_equipment_required'  => ['nullable', 'boolean'],
             'translation_required'               => ['nullable', 'boolean'],
             'languages_required'                 => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'translation_required')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('translation_required') || $request->has('languages_required'))
+                    && $this->resultingBool($request, $programme, 'translation_required')),
                 'nullable', 'array',
             ],
             'languages_required.*'               => ['string', 'max:100'],
@@ -156,17 +176,23 @@ class ProgrammeController extends Controller
             'support_services'                   => ['nullable', 'array'],
             'support_services.*'                 => ['string'],
             'support_services_other_note'        => [
-                Rule::requiredIf(fn () => in_array('other', $this->resultingArray($request, $programme, 'support_services'), true)),
+                Rule::requiredIf(fn () =>
+                    ($request->has('support_services') || $request->has('support_services_other_note'))
+                    && in_array('other', $this->resultingArray($request, $programme, 'support_services'), true)),
                 'nullable', 'string',
             ],
             // Conflict of interest — conflict_declared_by/at deliberately absent (server-side only)
             'conflict_declared'                  => ['nullable', 'boolean'],
             'conflict_details'                   => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'conflict_declared')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('conflict_declared') || $request->has('conflict_details'))
+                    && $this->resultingBool($request, $programme, 'conflict_declared')),
                 'nullable', 'string',
             ],
             'conflict_mitigation'                => [
-                Rule::requiredIf(fn () => $this->resultingBool($request, $programme, 'conflict_declared')),
+                Rule::requiredIf(fn () =>
+                    ($request->has('conflict_declared') || $request->has('conflict_mitigation'))
+                    && $this->resultingBool($request, $programme, 'conflict_declared')),
                 'nullable', 'string',
             ],
         ];

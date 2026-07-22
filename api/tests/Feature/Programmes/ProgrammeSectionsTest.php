@@ -156,4 +156,62 @@ class ProgrammeSectionsTest extends TestCase
             'conflict_declared_by'  => $user->id,
         ]);
     }
+
+    public function test_unrelated_update_does_not_retrigger_venue_accommodation_requirement(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Regression Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_accommodation_required' => true,
+            'venue_accommodation_count'    => 5,
+        ])->assertOk();
+
+        // A later, totally unrelated partial update must not re-trigger the
+        // venue_accommodation_count requirement just because the DB flag is true.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'title' => 'Renamed',
+        ])->assertOk();
+    }
+
+    public function test_unrelated_update_does_not_retrigger_conflict_requirements(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Regression Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared'   => true,
+            'conflict_details'    => 'Spouse works at the proposed vendor',
+            'conflict_mitigation' => 'Recused from vendor selection',
+        ])->assertOk();
+
+        // A later, totally unrelated partial update must not re-trigger the
+        // conflict_details/conflict_mitigation requirement just because the
+        // DB flag is true.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'title' => 'Renamed Conflict Test',
+        ])->assertOk();
+    }
+
+    public function test_conflict_details_can_be_amended_without_resending_conflict_declared(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Amend Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared'   => true,
+            'conflict_details'    => 'Spouse works at the proposed vendor',
+            'conflict_mitigation' => 'Recused from vendor selection',
+        ])->assertOk();
+
+        // Amend conflict_details only, without resending conflict_declared.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_details' => 'corrected wording',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                => $programmeId,
+            'conflict_details'  => 'corrected wording',
+        ]);
+    }
 }
