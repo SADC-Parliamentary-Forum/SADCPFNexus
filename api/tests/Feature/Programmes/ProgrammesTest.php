@@ -211,4 +211,35 @@ class ProgrammesTest extends TestCase
             'trigger' => 'programme.me_intake_available',
         ]);
     }
+
+    public function test_approving_a_programme_notifies_all_responsible_officers(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $officerOne = $this->makeUser('staff', $tenant);
+        $officerTwo = $this->makeUser('staff', $tenant);
+
+        $programme = Programme::create([
+            'tenant_id'               => $tenant->id,
+            'created_by'              => $staff->id,
+            'reference_number'        => 'PIF-' . uniqid(),
+            'title'                   => 'Notify All Officers',
+            'status'                  => 'submitted',
+            'responsible_officer_id'  => $officerOne->id,
+            'responsible_officer_ids' => [$officerOne->id, $officerTwo->id],
+        ]);
+
+        $http->postJson("/api/v1/programmes/{$programme->id}/approve")->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $officerOne->id,
+            'trigger' => 'programme.approved_for_me',
+        ]);
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $officerTwo->id,
+            'trigger' => 'programme.approved_for_me',
+        ]);
+    }
 }
