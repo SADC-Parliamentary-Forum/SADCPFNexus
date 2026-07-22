@@ -83,4 +83,77 @@ class ProgrammeSectionsTest extends TestCase
         $this->assertSame(['ground_transport', 'catering'], $programme->support_services);
         $this->assertIsArray($programme->languages_required);
     }
+
+    public function test_venue_accommodation_count_required_when_accommodation_required(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_accommodation_required' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['venue_accommodation_count']);
+    }
+
+    public function test_support_services_other_requires_note_even_as_array(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Support Services Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'support_services' => ['ground_transport', 'other'],
+        ])->assertUnprocessable()->assertJsonValidationErrors(['support_services_other_note']);
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'support_services'            => ['ground_transport', 'other'],
+            'support_services_other_note' => 'Boat transfer for delegates',
+        ])->assertOk();
+    }
+
+    public function test_dsa_variance_reason_required_when_rates_differ(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_dsa_rate'    => 250,
+            'original_budget_rate' => 200,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['dsa_variance_reason']);
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_dsa_rate'    => 250,
+            'original_budget_rate' => 200,
+            'dsa_variance_reason'  => 'Venue city has higher accommodation costs',
+        ])->assertOk();
+    }
+
+    public function test_conflict_mitigation_required_when_conflict_declared(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared' => true,
+            'conflict_details'  => 'Spouse works at the proposed vendor',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['conflict_mitigation']);
+    }
+
+    public function test_conflict_declared_by_and_at_are_set_server_side_not_from_payload(): void
+    {
+        $tenant = \App\Models\Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $other = $this->makeUser('staff', $tenant);
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Stamp Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'conflict_declared'    => true,
+            'conflict_details'     => 'Details',
+            'conflict_mitigation'  => 'Mitigation',
+            'conflict_declared_by' => $other->id, // must be ignored
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                    => $programmeId,
+            'conflict_declared_by'  => $user->id,
+        ]);
+    }
 }

@@ -95,9 +95,68 @@ class ProgrammeService
             'travel_services'          => $data['travel_services'] ?? null,
             'procurement_required'     => $data['procurement_required'] ?? false,
             'media_options'            => $data['media_options'] ?? null,
+            // Venue
+            'venue_country'                    => $data['venue_country'] ?? null,
+            'venue_city'                        => $data['venue_city'] ?? null,
+            'venue_proposed_hotel'              => $data['venue_proposed_hotel'] ?? null,
+            'venue_accommodation_required'      => $data['venue_accommodation_required'] ?? false,
+            'venue_accommodation_count'         => $data['venue_accommodation_count'] ?? null,
+            'venue_conferencing_required'       => $data['venue_conferencing_required'] ?? false,
+            'venue_conferencing_participants'   => $data['venue_conferencing_participants'] ?? null,
+            'venue_quotation_attached'          => $data['venue_quotation_attached'] ?? false,
+            'venue_hotel_quotation_attached'    => $data['venue_hotel_quotation_attached'] ?? false,
+            'venue_accessibility_requirements'  => $data['venue_accessibility_requirements'] ?? null,
+            'venue_security_considerations'     => $data['venue_security_considerations'] ?? null,
+            'venue_comments'                     => $data['venue_comments'] ?? null,
+            // Budget / participant provisions
+            'proposed_dsa_rate'                  => $data['proposed_dsa_rate'] ?? null,
+            'original_budget_rate'               => $data['original_budget_rate'] ?? null,
+            'dsa_variance_reason'                => $data['dsa_variance_reason'] ?? null,
+            'proposed_participants'              => $data['proposed_participants'] ?? null,
+            'budgeted_participants'              => $data['budgeted_participants'] ?? null,
+            'participants_variance_reason'       => $data['participants_variance_reason'] ?? null,
+            'proposed_funding_difference'        => $data['proposed_funding_difference'] ?? null,
+            'estimated_activity_amount'          => $data['estimated_activity_amount'] ?? null,
+            // Consultants
+            'secretariat_staff_required'         => $data['secretariat_staff_required'] ?? false,
+            'secretariat_staff_count'            => $data['secretariat_staff_count'] ?? null,
+            'consultants_required'               => $data['consultants_required'] ?? false,
+            'consultants_count'                  => $data['consultants_count'] ?? null,
+            'consultants_rate'                   => $data['consultants_rate'] ?? null,
+            'resource_persons_required'          => $data['resource_persons_required'] ?? false,
+            'resource_persons_count'             => $data['resource_persons_count'] ?? null,
+            'resource_persons_rate'              => $data['resource_persons_rate'] ?? null,
+            'rapporteurs_required'               => $data['rapporteurs_required'] ?? false,
+            'rapporteurs_count'                  => $data['rapporteurs_count'] ?? null,
+            'rapporteurs_rate'                   => $data['rapporteurs_rate'] ?? null,
+            'media_liaison_required'             => $data['media_liaison_required'] ?? false,
+            'media_liaison_count'                => $data['media_liaison_count'] ?? null,
+            'local_support_required'             => $data['local_support_required'] ?? false,
+            'local_support_count'                => $data['local_support_count'] ?? null,
+            'local_support_rate'                 => $data['local_support_rate'] ?? null,
+            'personnel_comments'                 => $data['personnel_comments'] ?? null,
+            // Interpretation
+            'interpretation_required'            => $data['interpretation_required'] ?? false,
+            'en_fr_required'                     => $data['en_fr_required'] ?? false,
+            'en_fr_interpreters_count'           => $data['en_fr_interpreters_count'] ?? null,
+            'en_pt_required'                     => $data['en_pt_required'] ?? false,
+            'en_pt_interpreters_count'           => $data['en_pt_interpreters_count'] ?? null,
+            'fr_pt_required'                     => $data['fr_pt_required'] ?? false,
+            'fr_pt_interpreters_count'           => $data['fr_pt_interpreters_count'] ?? null,
+            'interpreter_rate'                   => $data['interpreter_rate'] ?? null,
+            'interpreter_source'                 => $data['interpreter_source'] ?? null,
+            'interpreter_source_other_note'      => $data['interpreter_source_other_note'] ?? null,
+            'interpretation_equipment_required'  => $data['interpretation_equipment_required'] ?? false,
+            'translation_required'               => $data['translation_required'] ?? false,
+            'languages_required'                 => $data['languages_required'] ?? null,
+            'interpretation_comments'            => $data['interpretation_comments'] ?? null,
+            'support_services'                   => $data['support_services'] ?? null,
+            'support_services_other_note'        => $data['support_services_other_note'] ?? null,
         ]);
 
         $this->syncSubRecords($programme, $data);
+
+        $this->applyConflictDeclaration($programme, $data, $user);
 
         AuditLog::record('programme.created', [
             'auditable_type' => Programme::class,
@@ -146,6 +205,63 @@ class ProgrammeService
             'travel_services'         => $data['travel_services'] ?? null,
             'procurement_required'    => $data['procurement_required'] ?? null,
             'media_options'            => $data['media_options'] ?? null,
+            // Venue
+            'venue_country'                    => $data['venue_country'] ?? null,
+            'venue_city'                        => $data['venue_city'] ?? null,
+            'venue_proposed_hotel'              => $data['venue_proposed_hotel'] ?? null,
+            'venue_accommodation_required'      => $data['venue_accommodation_required'] ?? null,
+            'venue_accommodation_count'         => $data['venue_accommodation_count'] ?? null,
+            'venue_conferencing_required'       => $data['venue_conferencing_required'] ?? null,
+            'venue_conferencing_participants'   => $data['venue_conferencing_participants'] ?? null,
+            'venue_quotation_attached'          => $data['venue_quotation_attached'] ?? null,
+            'venue_hotel_quotation_attached'    => $data['venue_hotel_quotation_attached'] ?? null,
+            'venue_accessibility_requirements'  => $data['venue_accessibility_requirements'] ?? null,
+            'venue_security_considerations'     => $data['venue_security_considerations'] ?? null,
+            'venue_comments'                     => $data['venue_comments'] ?? null,
+            // Budget / participant provisions
+            'proposed_dsa_rate'                  => $data['proposed_dsa_rate'] ?? null,
+            'original_budget_rate'               => $data['original_budget_rate'] ?? null,
+            'dsa_variance_reason'                => $data['dsa_variance_reason'] ?? null,
+            'proposed_participants'              => $data['proposed_participants'] ?? null,
+            'budgeted_participants'              => $data['budgeted_participants'] ?? null,
+            'participants_variance_reason'       => $data['participants_variance_reason'] ?? null,
+            'proposed_funding_difference'        => $data['proposed_funding_difference'] ?? null,
+            'estimated_activity_amount'          => $data['estimated_activity_amount'] ?? null,
+            // Consultants
+            'secretariat_staff_required'         => $data['secretariat_staff_required'] ?? null,
+            'secretariat_staff_count'            => $data['secretariat_staff_count'] ?? null,
+            'consultants_required'               => $data['consultants_required'] ?? null,
+            'consultants_count'                  => $data['consultants_count'] ?? null,
+            'consultants_rate'                   => $data['consultants_rate'] ?? null,
+            'resource_persons_required'          => $data['resource_persons_required'] ?? null,
+            'resource_persons_count'             => $data['resource_persons_count'] ?? null,
+            'resource_persons_rate'              => $data['resource_persons_rate'] ?? null,
+            'rapporteurs_required'               => $data['rapporteurs_required'] ?? null,
+            'rapporteurs_count'                  => $data['rapporteurs_count'] ?? null,
+            'rapporteurs_rate'                   => $data['rapporteurs_rate'] ?? null,
+            'media_liaison_required'             => $data['media_liaison_required'] ?? null,
+            'media_liaison_count'                => $data['media_liaison_count'] ?? null,
+            'local_support_required'             => $data['local_support_required'] ?? null,
+            'local_support_count'                => $data['local_support_count'] ?? null,
+            'local_support_rate'                 => $data['local_support_rate'] ?? null,
+            'personnel_comments'                 => $data['personnel_comments'] ?? null,
+            // Interpretation
+            'interpretation_required'            => $data['interpretation_required'] ?? null,
+            'en_fr_required'                     => $data['en_fr_required'] ?? null,
+            'en_fr_interpreters_count'           => $data['en_fr_interpreters_count'] ?? null,
+            'en_pt_required'                     => $data['en_pt_required'] ?? null,
+            'en_pt_interpreters_count'           => $data['en_pt_interpreters_count'] ?? null,
+            'fr_pt_required'                     => $data['fr_pt_required'] ?? null,
+            'fr_pt_interpreters_count'           => $data['fr_pt_interpreters_count'] ?? null,
+            'interpreter_rate'                   => $data['interpreter_rate'] ?? null,
+            'interpreter_source'                 => $data['interpreter_source'] ?? null,
+            'interpreter_source_other_note'      => $data['interpreter_source_other_note'] ?? null,
+            'interpretation_equipment_required'  => $data['interpretation_equipment_required'] ?? null,
+            'translation_required'               => $data['translation_required'] ?? null,
+            'languages_required'                 => $data['languages_required'] ?? null,
+            'interpretation_comments'            => $data['interpretation_comments'] ?? null,
+            'support_services'                   => $data['support_services'] ?? null,
+            'support_services_other_note'        => $data['support_services_other_note'] ?? null,
         ], fn ($v) => $v !== null);
 
         if (array_key_exists('strategic_pillars', $data)) {
@@ -171,6 +287,8 @@ class ProgrammeService
         }
 
         $programme->update(array_filter($updatePayload, fn ($v) => $v !== null));
+
+        $this->applyConflictDeclaration($programme, $data, $user);
 
         AuditLog::record('programme.updated', [
             'auditable_type' => Programme::class,
@@ -411,6 +529,50 @@ class ProgrammeService
         ]);
 
         $row->delete();
+    }
+
+    /**
+     * Applies conflict-of-interest fields, stamping declared_by/declared_at
+     * server-side from the acting user — never from the request payload.
+     *
+     * conflict_details/conflict_mitigation fall back to the Programme's
+     * existing values when the request doesn't include them, so that a later,
+     * unrelated partial update (e.g. one that only resends conflict_declared)
+     * doesn't silently wipe previously-recorded conflict details.
+     */
+    private function applyConflictDeclaration(Programme $programme, array $data, User $user): void
+    {
+        if (!array_key_exists('conflict_declared', $data)) {
+            return;
+        }
+
+        $wasDeclared = (bool) $programme->conflict_declared;
+        $nowDeclared = (bool) $data['conflict_declared'];
+
+        $payload = [
+            'conflict_declared'   => $nowDeclared,
+            'conflict_details'    => $data['conflict_details'] ?? $programme->conflict_details ?? null,
+            'conflict_mitigation' => $data['conflict_mitigation'] ?? $programme->conflict_mitigation ?? null,
+        ];
+
+        if ($nowDeclared && !$wasDeclared) {
+            $payload['conflict_declared_by'] = $user->id;
+            $payload['conflict_declared_at'] = now();
+
+            AuditLog::record('programme.conflict_declared', [
+                'auditable_type' => Programme::class,
+                'auditable_id'   => $programme->id,
+                'tags'           => 'programme',
+            ]);
+        } elseif ($nowDeclared && $wasDeclared) {
+            AuditLog::record('programme.conflict_amended', [
+                'auditable_type' => Programme::class,
+                'auditable_id'   => $programme->id,
+                'tags'           => 'programme',
+            ]);
+        }
+
+        $programme->update($payload);
     }
 
     // --- Private helpers ---
