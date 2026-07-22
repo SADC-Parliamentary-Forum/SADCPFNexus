@@ -435,38 +435,28 @@ class ProgrammeService
 
         $revisionCount = Programme::where('amended_from_id', $original->id)->count() + 1;
 
-        $attributes = $original->only([
-            'tenant_id', 'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
-            'strategic_alignment', 'strategic_pillar', 'strategic_pillars',
-            'implementing_department', 'implementing_departments', 'supporting_departments',
-            'background', 'overall_objective', 'specific_objectives', 'expected_outputs',
-            'target_beneficiaries', 'gender_considerations', 'primary_currency', 'base_currency',
-            'exchange_rate', 'contingency_pct', 'total_budget', 'funding_source', 'funding_sources',
-            'responsible_officer', 'responsible_officer_id', 'responsible_officer_ids', 'start_date', 'end_date',
-            'travel_required', 'delegates_count', 'member_states', 'travel_services',
-            'procurement_required', 'media_options',
-            'venue_country', 'venue_city', 'venue_proposed_hotel', 'venue_accommodation_required',
-            'venue_accommodation_count', 'venue_conferencing_required', 'venue_conferencing_participants',
-            'venue_quotation_attached', 'venue_hotel_quotation_attached', 'venue_accessibility_requirements',
-            'venue_security_considerations', 'venue_comments',
-            'proposed_dsa_rate', 'original_budget_rate', 'dsa_variance_reason',
-            'proposed_participants', 'budgeted_participants', 'participants_variance_reason',
-            'proposed_funding_difference', 'estimated_activity_amount',
-            'secretariat_staff_required', 'secretariat_staff_count', 'consultants_required', 'consultants_count',
-            'consultants_rate', 'resource_persons_required', 'resource_persons_count', 'resource_persons_rate',
-            'rapporteurs_required', 'rapporteurs_count', 'rapporteurs_rate', 'media_liaison_required',
-            'media_liaison_count', 'local_support_required', 'local_support_count', 'local_support_rate',
-            'personnel_comments',
-            'interpretation_required', 'en_fr_required', 'en_fr_interpreters_count', 'en_pt_required',
-            'en_pt_interpreters_count', 'fr_pt_required', 'fr_pt_interpreters_count', 'interpreter_rate',
-            'interpreter_source', 'interpreter_source_other_note', 'interpretation_equipment_required',
-            'translation_required', 'languages_required', 'interpretation_comments',
-            'support_services', 'support_services_other_note',
-        ]);
+        // Cloned attributes are derived from Programme::$fillable rather than a hand-
+        // maintained inclusion list, so newly-added fillable fields are cloned onto
+        // amendments automatically instead of silently drifting out of sync (this list
+        // previously missed several fields as new ones were added). Only the fields
+        // below are excluded, each because cloning them would be wrong for a new
+        // approval cycle:
+        $excludedFromClone = [
+            // Bookkeeping / identity — set explicitly below or by Programme::create()
+            'id', 'created_by', 'approved_by', 'reference_number', 'title', 'status',
+            // Reset for the new approval cycle
+            'submitted_at', 'approved_at', 'rejection_reason',
+            'amended_from_id', 'superseded_at',
+            // Conflict-of-interest — an amendment is a new approval cycle and must go
+            // through its own conflict declaration before it can be submitted/approved
+            'conflict_declared', 'conflict_details', 'conflict_mitigation',
+            'conflict_declared_by', 'conflict_declared_at',
+            // Declaration — must be re-confirmed for the amendment's own submission
+            'declaration_confirmed', 'declaration_confirmed_by',
+            'declaration_confirmed_at', 'declaration_version',
+        ];
 
-        // Conflict-of-interest and declaration fields are deliberately NOT cloned: an
-        // amendment is a new approval cycle and must go through its own conflict
-        // declaration and re-confirmation before it can be submitted/approved.
+        $attributes = $original->only(array_diff($original->getFillable(), $excludedFromClone));
 
         $amendment = Programme::create(array_merge($attributes, [
             'created_by'        => $user->id,
