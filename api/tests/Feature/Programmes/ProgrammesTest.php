@@ -164,4 +164,51 @@ class ProgrammesTest extends TestCase
             'status' => 'approved',
         ]);
     }
+
+    public function test_approving_a_programme_notifies_the_responsible_officer(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $programme = Programme::create([
+            'tenant_id'               => $tenant->id,
+            'created_by'              => $staff->id,
+            'reference_number'        => 'PIF-' . uniqid(),
+            'title'                   => 'Notify Me',
+            'status'                  => 'submitted',
+            'responsible_officer_id'  => $staff->id,
+        ]);
+
+        $http->postJson("/api/v1/programmes/{$programme->id}/approve")->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $staff->id,
+            'trigger' => 'programme.approved_for_me',
+        ]);
+    }
+
+    public function test_approving_a_programme_notifies_me_officers(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant); // staff already holds mande.create per seeder
+        $meOfficer = $this->makeUser('Governance Officer', $tenant); // holds mande.admin per seeder
+
+        $programme = Programme::create([
+            'tenant_id'               => $tenant->id,
+            'created_by'              => $staff->id,
+            'reference_number'        => 'PIF-' . uniqid(),
+            'title'                   => 'Notify ME',
+            'status'                  => 'submitted',
+            'responsible_officer_id'  => $staff->id,
+        ]);
+
+        $http->postJson("/api/v1/programmes/{$programme->id}/approve")->assertOk();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $meOfficer->id,
+            'trigger' => 'programme.me_intake_available',
+        ]);
+    }
 }

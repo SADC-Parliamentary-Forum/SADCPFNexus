@@ -332,6 +332,16 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nYour delegated authority to act on behalf of {{principal}} for {{module}} expired on {{end_date}}.\n\nYou can no longer prepare or submit requests on their behalf.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Programmes / PIF → M&E handoff
+            'programme.approved_for_me' => [
+                'subject' => 'Your PIF is approved — ready for M&E reporting',
+                'body'    => "Dear {{name}},\n\nYour approved PIF ({{reference}}) \"{{title}}\" is now ready for post-activity reporting in the M&E module once the activity is implemented.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'programme.me_intake_available' => [
+                'subject' => 'A new approved PIF is available for M&E linkage',
+                'body'    => "Dear {{name}},\n\nA newly approved PIF ({{reference}}) \"{{title}}\" is available in the M&E PIF-linkages queue for reporting setup.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Salary advance
             'salary_advance.approved' => [
                 'subject' => 'Your salary advance request has been approved',

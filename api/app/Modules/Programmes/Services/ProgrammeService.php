@@ -11,6 +11,7 @@ use App\Models\ProgrammeDocument;
 use App\Models\ProgrammeMilestone;
 use App\Models\ProgrammeProcurementItem;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -393,7 +394,38 @@ class ProgrammeService
             'tags'           => 'programme',
         ]);
 
+        $this->notifyMeOfPifApproval($programme);
+
         return $programme->fresh(['creator', 'approver']);
+    }
+
+    private function notifyMeOfPifApproval(Programme $programme): void
+    {
+        $notifier = app(NotificationService::class);
+        $vars = ['reference' => $programme->reference_number, 'title' => $programme->title];
+
+        $officer = $programme->responsible_officer_id
+            ? User::find($programme->responsible_officer_id)
+            : null;
+        if ($officer) {
+            $notifier->dispatch(
+                $officer,
+                'programme.approved_for_me',
+                array_merge($vars, ['name' => $officer->name]),
+                ['module' => 'programme', 'record_id' => $programme->id, 'url' => '/pif/' . $programme->id]
+            );
+        }
+
+        $meOfficers = User::where('tenant_id', $programme->tenant_id)
+            ->permission('mande.create')
+            ->get();
+
+        $notifier->dispatchToMany(
+            $meOfficers,
+            'programme.me_intake_available',
+            $vars,
+            ['module' => 'mande', 'record_id' => $programme->id, 'url' => '/mande/pif-linkages']
+        );
     }
 
     public function reject(Programme $programme, string $reason, User $approver): Programme
