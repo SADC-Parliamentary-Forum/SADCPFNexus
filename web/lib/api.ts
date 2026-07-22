@@ -2618,8 +2618,8 @@ export const programmeApi = {
   update: (id: number, data: Partial<Programme>) =>
     api.put<{ data: Programme; message: string }>(`/programmes/${id}`, data),
   delete: (id: number) => api.delete(`/programmes/${id}`),
-  submit: (id: number) =>
-    api.post<{ data: Programme; message: string }>(`/programmes/${id}/submit`),
+  submit: (id: number, data: { declaration_confirmed: boolean }) =>
+    api.post<{ data: Programme; message: string }>(`/programmes/${id}/submit`, data),
   approve: (id: number) =>
     api.post<{ data: Programme; message: string }>(`/programmes/${id}/approve`),
   reject: (id: number, reason: string) =>
@@ -2664,6 +2664,41 @@ export const programmeApi = {
     api.put<{ data: ProgrammeProcurementItem; message: string }>(`/programmes/${programmeId}/procurement/${itemId}`, data),
   deleteProcurementItem: (programmeId: number, itemId: number) =>
     api.delete(`/programmes/${programmeId}/procurement/${itemId}`),
+
+  // Finance review
+  updateFinanceReview: (programmeId: number, data: { budget_availability_status: string; finance_comments?: string }) =>
+    api.put<{ data: Programme; message: string }>(`/programmes/${programmeId}/finance-review`, data),
+
+  // Documents
+  addDocument: (programmeId: number, data: Record<string, unknown>) =>
+    api.post<{ data: any; message: string }>(`/programmes/${programmeId}/documents`, data),
+  updateDocument: (programmeId: number, documentId: number, data: Record<string, unknown>) =>
+    api.put<{ data: any; message: string }>(`/programmes/${programmeId}/documents/${documentId}`, data),
+  deleteDocument: (programmeId: number, documentId: number) =>
+    api.delete(`/programmes/${programmeId}/documents/${documentId}`),
+
+  // Arrival / Departure
+  addArrivalDeparture: (programmeId: number, data: Record<string, unknown>) =>
+    api.post<{ data: any; message: string }>(`/programmes/${programmeId}/arrival-departures`, data),
+  updateArrivalDeparture: (programmeId: number, rowId: number, data: Record<string, unknown>) =>
+    api.put<{ data: any; message: string }>(`/programmes/${programmeId}/arrival-departures/${rowId}`, data),
+  deleteArrivalDeparture: (programmeId: number, rowId: number) =>
+    api.delete(`/programmes/${programmeId}/arrival-departures/${rowId}`),
+
+  // Procurement transfer
+  sendToProcurement: (programmeId: number, data: { procurement_item_ids: number[]; request_title: string; category?: string }) =>
+    api.post<{ data: any; message: string }>(`/programmes/${programmeId}/send-to-procurement`, data),
+
+  // PDF
+  pdfUrl: (programmeId: number) => `${api.defaults.baseURL}/programmes/${programmeId}/pdf`,
+
+  // Amendment
+  amend: (programmeId: number) =>
+    api.post<{ data: Programme; message: string }>(`/programmes/${programmeId}/amend`),
+  submitAmendment: (programmeId: number, data: { declaration_confirmed: boolean }) =>
+    api.post<{ data: Programme; message: string }>(`/programmes/${programmeId}/submit-amendment`, data),
+  diff: (programmeId: number) =>
+    api.get<{ data: Record<string, { before: unknown; after: unknown }> }>(`/programmes/${programmeId}/diff`),
 
   // Attachments (Concept Notes, memos, hotel/transport quotes)
   listAttachments: (programmeId: number) =>
