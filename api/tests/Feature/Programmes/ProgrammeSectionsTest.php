@@ -251,4 +251,265 @@ class ProgrammeSectionsTest extends TestCase
             'conflict_declared' => true,
         ])->assertUnprocessable()->assertJsonValidationErrors(['conflict_details', 'conflict_mitigation']);
     }
+
+    // -------------------------------------------------------------------
+    // Symmetric fix: reaffirmation-without-resending regression coverage
+    // for the remaining 10 conditional validation fields.
+    // -------------------------------------------------------------------
+
+    public function test_reaffirming_venue_accommodation_required_without_resending_count_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Accom Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_accommodation_required' => true,
+            'venue_accommodation_count'    => 5,
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_accommodation_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                         => $programmeId,
+            'venue_accommodation_count'  => 5,
+        ]);
+    }
+
+    public function test_reaffirming_venue_conferencing_required_without_resending_participants_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Conf Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_conferencing_required'     => true,
+            'venue_conferencing_participants' => 20,
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_conferencing_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                                => $programmeId,
+            'venue_conferencing_participants'    => 20,
+        ]);
+    }
+
+    public function test_fresh_venue_conferencing_required_without_participants_anywhere_still_fails(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Conf Fresh'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'venue_conferencing_required' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['venue_conferencing_participants']);
+    }
+
+    public function test_reaffirming_en_fr_required_without_resending_interpreters_count_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-FR Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'en_fr_required'           => true,
+            'en_fr_interpreters_count' => 2,
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'en_fr_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'en_fr_interpreters_count'    => 2,
+        ]);
+    }
+
+    public function test_fresh_en_fr_required_without_interpreters_count_anywhere_still_fails(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-FR Fresh'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'en_fr_required' => true,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['en_fr_interpreters_count']);
+    }
+
+    public function test_reaffirming_en_pt_required_without_resending_interpreters_count_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-PT Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'en_pt_required'           => true,
+            'en_pt_interpreters_count' => 3,
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'en_pt_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'en_pt_interpreters_count'    => 3,
+        ]);
+    }
+
+    public function test_reaffirming_fr_pt_required_without_resending_interpreters_count_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'FR-PT Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'fr_pt_required'           => true,
+            'fr_pt_interpreters_count' => 1,
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'fr_pt_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'fr_pt_interpreters_count'    => 1,
+        ]);
+    }
+
+    public function test_reaffirming_interpreter_source_other_without_resending_note_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Interpreter Source Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'interpreter_source'            => 'other',
+            'interpreter_source_other_note' => 'Community volunteer interpreters',
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'interpreter_source' => 'other',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                               => $programmeId,
+            'interpreter_source_other_note'    => 'Community volunteer interpreters',
+        ]);
+    }
+
+    public function test_reaffirming_translation_required_without_resending_languages_required_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Translation Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'translation_required' => true,
+            'languages_required'   => ['English', 'French'],
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'translation_required' => true,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id' => $programmeId,
+        ]);
+        $programme = \App\Models\Programme::find($programmeId);
+        $this->assertSame(['English', 'French'], $programme->languages_required);
+    }
+
+    public function test_reaffirming_support_services_other_without_resending_note_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Support Services Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'support_services'            => ['ground_transport', 'other'],
+            'support_services_other_note' => 'Boat transfer for delegates',
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'support_services' => ['ground_transport', 'other'],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                            => $programmeId,
+            'support_services_other_note'   => 'Boat transfer for delegates',
+        ]);
+    }
+
+    public function test_reaffirming_dsa_rates_without_resending_variance_reason_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_dsa_rate'    => 250,
+            'original_budget_rate' => 200,
+            'dsa_variance_reason'  => 'Venue city has higher accommodation costs',
+        ])->assertOk();
+
+        // Re-send the same rates alone (e.g. a follow-up PUT re-affirming the
+        // section) without resending the reason — must succeed via DB fallback.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_dsa_rate'    => 250,
+            'original_budget_rate' => 200,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                    => $programmeId,
+            'dsa_variance_reason'   => 'Venue city has higher accommodation costs',
+        ]);
+    }
+
+    public function test_reaffirming_participants_variance_without_resending_reason_succeeds(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Participants Reaffirm'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_participants'          => 40,
+            'budgeted_participants'          => 30,
+            'participants_variance_reason'   => 'Additional member state delegates confirmed late',
+        ])->assertOk();
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_participants' => 40,
+            'budgeted_participants' => 30,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                              => $programmeId,
+            'participants_variance_reason'    => 'Additional member state delegates confirmed late',
+        ]);
+    }
+
+    public function test_fresh_participants_variance_without_reason_anywhere_still_fails(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Participants Fresh'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_participants' => 40,
+            'budgeted_participants' => 30,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['participants_variance_reason']);
+    }
+
+    public function test_unrelated_update_does_not_retrigger_dsa_variance_reason_requirement(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Variance Regression'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'proposed_dsa_rate'    => 250,
+            'original_budget_rate' => 200,
+            'dsa_variance_reason'  => 'Venue city has higher accommodation costs',
+        ])->assertOk();
+
+        // A later, totally unrelated partial update touching neither the
+        // trigger rates nor the reason must not re-trigger the requirement.
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'title' => 'DSA Variance Regression Renamed',
+        ])->assertOk();
+    }
 }

@@ -63,14 +63,16 @@ class ProgrammeController extends Controller
             'venue_accommodation_count'          => [
                 Rule::requiredIf(fn () =>
                     ($request->has('venue_accommodation_required') || $request->has('venue_accommodation_count'))
-                    && $this->resultingBool($request, $programme, 'venue_accommodation_required')),
+                    && $this->resultingBool($request, $programme, 'venue_accommodation_required')
+                    && empty($this->resulting($request, $programme, 'venue_accommodation_count'))),
                 'nullable', 'integer', 'min:1',
             ],
             'venue_conferencing_required'        => ['nullable', 'boolean'],
             'venue_conferencing_participants'    => [
                 Rule::requiredIf(fn () =>
                     ($request->has('venue_conferencing_required') || $request->has('venue_conferencing_participants'))
-                    && $this->resultingBool($request, $programme, 'venue_conferencing_required')),
+                    && $this->resultingBool($request, $programme, 'venue_conferencing_required')
+                    && empty($this->resulting($request, $programme, 'venue_conferencing_participants'))),
                 'nullable', 'integer', 'min:1',
             ],
             'venue_quotation_attached'           => ['nullable', 'boolean'],
@@ -91,7 +93,10 @@ class ProgrammeController extends Controller
                     if ($proposed === null || $proposed === '' || $original === null || $original === '') {
                         return false;
                     }
-                    return (float) $proposed !== (float) $original;
+                    if ((float) $proposed === (float) $original) {
+                        return false;
+                    }
+                    return empty($this->resulting($request, $programme, 'dsa_variance_reason'));
                 }),
                 'nullable', 'string',
             ],
@@ -107,7 +112,10 @@ class ProgrammeController extends Controller
                     if ($proposed === null || $proposed === '' || $budgeted === null || $budgeted === '') {
                         return false;
                     }
-                    return (int) $proposed !== (int) $budgeted;
+                    if ((int) $proposed === (int) $budgeted) {
+                        return false;
+                    }
+                    return empty($this->resulting($request, $programme, 'participants_variance_reason'));
                 }),
                 'nullable', 'string',
             ],
@@ -137,21 +145,24 @@ class ProgrammeController extends Controller
             'en_fr_interpreters_count'           => [
                 Rule::requiredIf(fn () =>
                     ($request->has('en_fr_required') || $request->has('en_fr_interpreters_count'))
-                    && $this->resultingBool($request, $programme, 'en_fr_required')),
+                    && $this->resultingBool($request, $programme, 'en_fr_required')
+                    && empty($this->resulting($request, $programme, 'en_fr_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
             'en_pt_required'                     => ['nullable', 'boolean'],
             'en_pt_interpreters_count'           => [
                 Rule::requiredIf(fn () =>
                     ($request->has('en_pt_required') || $request->has('en_pt_interpreters_count'))
-                    && $this->resultingBool($request, $programme, 'en_pt_required')),
+                    && $this->resultingBool($request, $programme, 'en_pt_required')
+                    && empty($this->resulting($request, $programme, 'en_pt_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
             'fr_pt_required'                     => ['nullable', 'boolean'],
             'fr_pt_interpreters_count'           => [
                 Rule::requiredIf(fn () =>
                     ($request->has('fr_pt_required') || $request->has('fr_pt_interpreters_count'))
-                    && $this->resultingBool($request, $programme, 'fr_pt_required')),
+                    && $this->resultingBool($request, $programme, 'fr_pt_required')
+                    && empty($this->resulting($request, $programme, 'fr_pt_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
             'interpreter_rate'                   => ['nullable', 'numeric', 'min:0'],
@@ -159,7 +170,8 @@ class ProgrammeController extends Controller
             'interpreter_source_other_note'      => [
                 Rule::requiredIf(fn () =>
                     ($request->has('interpreter_source') || $request->has('interpreter_source_other_note'))
-                    && $this->resulting($request, $programme, 'interpreter_source') === 'other'),
+                    && $this->resulting($request, $programme, 'interpreter_source') === 'other'
+                    && empty($this->resulting($request, $programme, 'interpreter_source_other_note'))),
                 'nullable', 'string',
             ],
             'interpretation_equipment_required'  => ['nullable', 'boolean'],
@@ -167,7 +179,8 @@ class ProgrammeController extends Controller
             'languages_required'                 => [
                 Rule::requiredIf(fn () =>
                     ($request->has('translation_required') || $request->has('languages_required'))
-                    && $this->resultingBool($request, $programme, 'translation_required')),
+                    && $this->resultingBool($request, $programme, 'translation_required')
+                    && empty($this->resulting($request, $programme, 'languages_required'))),
                 'nullable', 'array',
             ],
             'languages_required.*'               => ['string', 'max:100'],
@@ -178,7 +191,8 @@ class ProgrammeController extends Controller
             'support_services_other_note'        => [
                 Rule::requiredIf(fn () =>
                     ($request->has('support_services') || $request->has('support_services_other_note'))
-                    && in_array('other', $this->resultingArray($request, $programme, 'support_services'), true)),
+                    && in_array('other', $this->resultingArray($request, $programme, 'support_services'), true)
+                    && empty($this->resulting($request, $programme, 'support_services_other_note'))),
                 'nullable', 'string',
             ],
             // Conflict of interest — conflict_declared_by/at deliberately absent (server-side only)
