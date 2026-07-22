@@ -57,17 +57,23 @@ class MeActivityReportController extends Controller
     {
         $tenantId = $request->user()->tenant_id;
 
-        $programmes = Programme::query()
-            ->where('tenant_id', $tenantId)
-            ->where('status', 'approved')
-            ->withCount(['attachments'])
-            ->orderByDesc('approved_at')
-            ->get(['id', 'reference_number', 'title', 'strategic_pillar', 'responsible_officer_id', 'start_date', 'end_date', 'approved_at']);
-
         $reportedIds = MeActivityReport::where('tenant_id', $tenantId)
             ->distinct()
             ->pluck('programme_id')
             ->all();
+
+        $query = Programme::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'approved');
+
+        if ($request->boolean('unlinked')) {
+            $query->whereNotIn('id', $reportedIds);
+        }
+
+        $programmes = $query
+            ->withCount(['attachments'])
+            ->orderByDesc('approved_at')
+            ->get(['id', 'reference_number', 'title', 'strategic_pillar', 'responsible_officer_id', 'start_date', 'end_date', 'approved_at']);
 
         $data = $programmes->map(function (Programme $p) use ($reportedIds) {
             return [

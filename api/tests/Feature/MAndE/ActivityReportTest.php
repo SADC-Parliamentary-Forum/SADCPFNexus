@@ -99,6 +99,45 @@ class ActivityReportTest extends TestCase
              ->assertJsonPath('data.0.has_report', false);
     }
 
+    public function test_unlinked_filter_excludes_programmes_with_a_report(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $linked = $this->approvedProgramme($tenant, $user->id);
+        $unlinked = $this->approvedProgramme($tenant, $user->id);
+
+        MeActivityReport::create([
+            'tenant_id' => $tenant->id, 'programme_id' => $linked->id,
+            'activity_title' => 'Linked', 'created_by' => $user->id,
+        ]);
+
+        $response = $http->getJson('/api/v1/mande/pif-linkages?unlinked=true')->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($unlinked->id));
+        $this->assertFalse($ids->contains($linked->id));
+    }
+
+    public function test_unlinked_filter_treats_soft_deleted_report_as_unlinked(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $programme = $this->approvedProgramme($tenant, $user->id);
+
+        $report = MeActivityReport::create([
+            'tenant_id' => $tenant->id, 'programme_id' => $programme->id,
+            'activity_title' => 'Archived', 'created_by' => $user->id,
+        ]);
+        $report->delete();
+
+        $response = $http->getJson('/api/v1/mande/pif-linkages?unlinked=true')->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($programme->id));
+    }
+
     public function test_cannot_update_submitted_report(): void
     {
         $tenant = Tenant::factory()->create();
