@@ -202,6 +202,17 @@ class Programme extends Model
         return $this->hasOne(MeActivityReport::class, 'programme_id');
     }
 
+    /**
+     * Soft-deleted MeActivityReport for this programme, if any. Eager-loaded
+     * alongside meActivityReport() in ProgrammeService::list() so that
+     * getMeStatusAttribute() never has to issue a per-row onlyTrashed()->exists()
+     * query when serializing a list of programmes.
+     */
+    public function trashedMeActivityReport()
+    {
+        return $this->hasOne(MeActivityReport::class, 'programme_id')->onlyTrashed();
+    }
+
     public function amendedFrom()
     {
         return $this->belongsTo(Programme::class, 'amended_from_id');
@@ -230,7 +241,10 @@ class Programme extends Model
             };
         }
 
-        $wasLinked = MeActivityReport::onlyTrashed()->where('programme_id', $this->id)->exists();
+        $wasLinked = $this->relationLoaded('trashedMeActivityReport')
+            ? $this->trashedMeActivityReport !== null
+            : MeActivityReport::onlyTrashed()->where('programme_id', $this->id)->exists();
+
         return $wasLinked ? 'linked_record_archived' : 'not_yet_linked';
     }
 

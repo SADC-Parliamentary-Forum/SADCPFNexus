@@ -5,6 +5,7 @@ namespace Tests\Feature\Programmes;
 use App\Models\MeActivityReport;
 use App\Models\Programme;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProgrammeMeStatusTest extends TestCase
@@ -127,5 +128,41 @@ class ProgrammeMeStatusTest extends TestCase
         $http->getJson("/api/v1/programmes/{$programme->id}")
             ->assertOk()
             ->assertJsonPath('me_status', 'not_yet_linked');
+    }
+
+    /**
+     * `me_status` is served via $appends on Programme, so every listed row triggers
+     * getMeStatusAttribute(). ProgrammeService::list() eager-loads meActivityReport
+     * specifically to keep that from becoming an N+1: without the eager-load, each
+     * additional programme in a page would add a lazy-loaded relation query. This
+     * asserts the query count for index() stays roughly flat as the number of
+     * programmes grows, rather than scaling linearly with the row count.
+     */
+    public function test_index_query_count_does_not_scale_with_programme_count(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $this->approvedProgramme($tenant, $user->id);
+
+        DB::enableQueryLog();
+        $http->getJson('/api/v1/programmes')->assertOk();
+        $queriesForOne = count(DB::getQueryLog());
+        DB::flushQueryLog();
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->approvedProgramme($tenant, $user->id);
+        }
+
+        $http->getJson('/api/v1/programmes')->assertOk();
+        $queriesForFive = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertLessThanOrEqual(
+            $queriesForOne + 3,
+            $queriesForFive,
+            "Query count grew from {$queriesForOne} (1 programme) to {$queriesForFive} (5 programmes), "
+            . 'indicating an N+1 query from the me_status accessor on Programme::$appends.'
+        );
     }
 }

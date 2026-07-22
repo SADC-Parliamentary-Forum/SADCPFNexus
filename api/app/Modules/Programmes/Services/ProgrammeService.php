@@ -18,7 +18,7 @@ class ProgrammeService
 {
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = Programme::with(['creator', 'approver', 'responsibleOfficer', 'budgetLines'])
+        $query = Programme::with(['creator', 'approver', 'responsibleOfficer', 'budgetLines', 'meActivityReport', 'trashedMeActivityReport'])
             ->orderByDesc('created_at');
 
         if ($user->hasRole('staff')) {
