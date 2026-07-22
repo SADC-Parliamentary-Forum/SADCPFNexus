@@ -178,7 +178,10 @@ class ProgrammeService
 
     public function update(Programme $programme, array $data, User $user): Programme
     {
-        if (!$programme->isDraft()) {
+        // Amendment drafts ('amendment_draft') are edited through the same update()
+        // flow as ordinary drafts — the amendment workflow (Task 16) reuses this
+        // method so amendment content can be revised before submit-amendment/approve.
+        if (!$programme->isDraft() && $programme->status !== 'amendment_draft') {
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be edited.']);
         }
 
@@ -379,7 +382,9 @@ class ProgrammeService
 
     public function approve(Programme $programme, User $approver): Programme
     {
-        if (!$programme->isSubmitted()) {
+        $isAmendment = $programme->status === 'amendment_pending_approval';
+
+        if (!$isAmendment && !$programme->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted programmes can be approved.']);
         }
 
@@ -390,12 +395,21 @@ class ProgrammeService
         }
 
         $programme->update([
-            'status'      => 'approved',
+            'status'      => $isAmendment ? 'amended' : 'approved',
             'approved_by' => $approver->id,
             'approved_at' => now(),
         ]);
 
-        AuditLog::record('programme.approved', [
+        if ($isAmendment && $programme->amended_from_id) {
+            $programme->amendedFrom?->update(['status' => 'superseded', 'superseded_at' => now()]);
+            AuditLog::record('programme.superseded', [
+                'auditable_type' => Programme::class,
+                'auditable_id'   => $programme->amended_from_id,
+                'tags'           => 'programme',
+            ]);
+        }
+
+        AuditLog::record($isAmendment ? 'programme.amendment_approved' : 'programme.approved', [
             'auditable_type' => Programme::class,
             'auditable_id'   => $programme->id,
             'tags'           => 'programme',
@@ -404,6 +418,119 @@ class ProgrammeService
         $this->notifyMeOfPifApproval($programme);
 
         return $programme->fresh(['creator', 'approver']);
+    }
+
+    public function createAmendment(Programme $original, User $user): Programme
+    {
+        if (!$original->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved programmes can be amended.']);
+        }
+
+        $openAmendmentExists = Programme::where('amended_from_id', $original->id)
+            ->whereIn('status', ['amendment_draft', 'amendment_pending_approval'])
+            ->exists();
+        if ($openAmendmentExists) {
+            throw ValidationException::withMessages(['amendment' => 'An open amendment already exists for this PIF.']);
+        }
+
+        $revisionCount = Programme::where('amended_from_id', $original->id)->count() + 1;
+
+        $attributes = $original->only([
+            'tenant_id', 'strategic_alignment', 'strategic_pillar', 'strategic_pillars',
+            'implementing_department', 'implementing_departments', 'supporting_departments',
+            'background', 'overall_objective', 'specific_objectives', 'expected_outputs',
+            'target_beneficiaries', 'gender_considerations', 'primary_currency', 'base_currency',
+            'exchange_rate', 'contingency_pct', 'total_budget', 'funding_source', 'funding_sources',
+            'responsible_officer', 'responsible_officer_id', 'responsible_officer_ids', 'start_date', 'end_date',
+            'travel_required', 'delegates_count', 'member_states', 'travel_services',
+            'procurement_required', 'media_options',
+            'venue_country', 'venue_city', 'venue_proposed_hotel', 'venue_accommodation_required',
+            'venue_accommodation_count', 'venue_conferencing_required', 'venue_conferencing_participants',
+            'venue_quotation_attached', 'venue_hotel_quotation_attached', 'venue_accessibility_requirements',
+            'venue_security_considerations', 'venue_comments',
+            'proposed_dsa_rate', 'original_budget_rate', 'dsa_variance_reason',
+            'proposed_participants', 'budgeted_participants', 'participants_variance_reason',
+            'proposed_funding_difference', 'estimated_activity_amount',
+            'secretariat_staff_required', 'secretariat_staff_count', 'consultants_required', 'consultants_count',
+            'consultants_rate', 'resource_persons_required', 'resource_persons_count', 'resource_persons_rate',
+            'rapporteurs_required', 'rapporteurs_count', 'rapporteurs_rate', 'media_liaison_required',
+            'media_liaison_count', 'local_support_required', 'local_support_count', 'local_support_rate',
+            'personnel_comments',
+            'interpretation_required', 'en_fr_required', 'en_fr_interpreters_count', 'en_pt_required',
+            'en_pt_interpreters_count', 'fr_pt_required', 'fr_pt_interpreters_count', 'interpreter_rate',
+            'interpreter_source', 'interpreter_source_other_note', 'interpretation_equipment_required',
+            'translation_required', 'languages_required', 'interpretation_comments',
+            'support_services', 'support_services_other_note',
+        ]);
+
+        // Conflict-of-interest and declaration fields are deliberately NOT cloned: an
+        // amendment is a new approval cycle and must go through its own conflict
+        // declaration and re-confirmation before it can be submitted/approved.
+
+        $amendment = Programme::create(array_merge($attributes, [
+            'created_by'        => $user->id,
+            'reference_number'  => "{$original->reference_number}-A{$revisionCount}",
+            'title'             => $original->title,
+            'status'            => 'amendment_draft',
+            'amended_from_id'   => $original->id,
+        ]));
+
+        foreach ($original->documents as $doc) {
+            $amendment->documents()->create($doc->only([
+                'title', 'document_type', 'word_count', 'translation_required', 'source_language',
+                'target_languages', 'owner_user_id', 'owner_name', 'owner_organisation', 'deadline',
+                'budget_line', 'comments',
+            ]));
+        }
+        foreach ($original->arrivalDepartures as $row) {
+            $amendment->arrivalDepartures()->create($row->only([
+                'category', 'arrival_date', 'departure_date', 'airport', 'flight_details',
+                'transport_required', 'accommodation_required', 'comments',
+            ]));
+        }
+        foreach ($original->procurementItems as $item) {
+            $amendment->procurementItems()->create($item->only([
+                'description', 'estimated_cost', 'method', 'vendor', 'delivery_date', 'currency', 'rfq_required',
+                // procurement_request_id intentionally excluded — re-evaluated for the amendment
+            ]));
+        }
+
+        AuditLog::record('programme.amendment_created', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $amendment->id,
+            'new_values'     => ['amended_from_id' => $original->id],
+            'tags'           => 'programme',
+        ]);
+
+        return $amendment->fresh(['documents', 'arrivalDepartures', 'procurementItems']);
+    }
+
+    public function submitAmendment(Programme $amendment): Programme
+    {
+        if ($amendment->status !== 'amendment_draft') {
+            throw ValidationException::withMessages(['status' => 'Only an amendment draft can be submitted.']);
+        }
+        $amendment->update(['status' => 'amendment_pending_approval', 'submitted_at' => now()]);
+        return $amendment->fresh();
+    }
+
+    public function diff(Programme $amendment): array
+    {
+        if (!$amendment->amended_from_id) {
+            return [];
+        }
+        $original = $amendment->amendedFrom;
+        $fields = array_diff($amendment->getFillable(), ['id', 'created_at', 'updated_at', 'amended_from_id', 'status', 'reference_number']);
+
+        $diff = [];
+        foreach ($fields as $field) {
+            $before = $original->{$field};
+            $after  = $amendment->{$field};
+            if ($before != $after) {
+                $diff[$field] = ['before' => $before, 'after' => $after];
+            }
+        }
+        return $diff;
     }
 
     /**

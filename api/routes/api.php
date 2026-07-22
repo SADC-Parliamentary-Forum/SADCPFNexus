@@ -589,6 +589,9 @@ Route::prefix('v1')->group(function () {
             Route::post('{programme}/submit',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
             Route::post('{programme}/approve', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'approve']);
             Route::post('{programme}/reject',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
+            Route::post('{programme}/amend', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'amend']);
+            Route::post('{programme}/submit-amendment', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submitAmendment']);
+            Route::get('{programme}/diff', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'diff']);
             Route::post('{programme}/send-to-procurement', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'sendToProcurement']);
             Route::get('{programme}/pdf', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'pdf']);
             Route::middleware('can:programme.finance-review')

@@ -352,6 +352,23 @@ class ProgrammeController extends Controller
         return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
     }
 
+    public function amend(Request $request, Programme $programme): JsonResponse
+    {
+        $amendment = $this->service->createAmendment($programme, $request->user());
+        return response()->json(['message' => 'Amendment created.', 'data' => $amendment], 201);
+    }
+
+    public function submitAmendment(Programme $programme): JsonResponse
+    {
+        $amendment = $this->service->submitAmendment($programme);
+        return response()->json(['message' => 'Amendment submitted.', 'data' => $amendment]);
+    }
+
+    public function diff(Programme $programme): JsonResponse
+    {
+        return response()->json(['data' => $this->service->diff($programme)]);
+    }
+
     public function pdf(Programme $programme)
     {
         $pdf = $this->service->generatePdf($programme);
