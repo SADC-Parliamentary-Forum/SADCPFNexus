@@ -120,6 +120,8 @@ class Programme extends Model
         'superseded_at'                 => 'datetime',
     ];
 
+    protected $appends = ['me_status'];
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
