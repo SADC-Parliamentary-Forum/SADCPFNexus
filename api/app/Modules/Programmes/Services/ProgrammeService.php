@@ -14,6 +14,9 @@ use App\Models\ProcurementItem;
 use App\Models\ProcurementRequest;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Builder\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -748,6 +751,34 @@ class ProgrammeService
         }
 
         $programme->update($payload);
+    }
+
+    /**
+     * Renders the full Programme Implementation Form as a PDF, embedding a
+     * verification QR code and the approval history (if a workflow has been
+     * started for this Programme — a draft/never-submitted Programme has no
+     * ApprovalRequest yet, so the history is simply empty in that case).
+     */
+    public function generatePdf(Programme $programme): \Barryvdh\DomPDF\PDF
+    {
+        $programme->load(['creator', 'approver', 'responsibleOfficer', 'attachments.uploader', 'conflictDeclaredBy']);
+
+        $verifyUrl = config('app.url') . '/pif/verify/' . $programme->id;
+        $qrResult  = Builder::create()->data($verifyUrl)->size(90)->build();
+        $qrBase64  = base64_encode($qrResult->getString());
+
+        $approvalRequest = $programme->approvalRequest;
+        $approvalHistory = $approvalRequest
+            ? (app(WorkflowService::class)->snapshot($approvalRequest)['history'] ?? [])
+            : [];
+
+        return Pdf::loadView('pdf.programme', [
+            'programme'       => $programme,
+            'attachments'     => $programme->attachments,
+            'approvalHistory' => $approvalHistory,
+            'qrBase64'        => $qrBase64,
+            'verifyUrl'       => $verifyUrl,
+        ])->setPaper('a4');
     }
 
     // --- Private helpers ---

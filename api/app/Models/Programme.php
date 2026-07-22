@@ -177,6 +177,11 @@ class Programme extends Model
         return $this->morphMany(Attachment::class, 'attachable');
     }
 
+    public function approvalRequest()
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
     public function conflictDeclaredBy()
     {
         return $this->belongsTo(User::class, 'conflict_declared_by');

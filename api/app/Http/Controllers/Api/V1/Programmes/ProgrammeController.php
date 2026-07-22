@@ -352,6 +352,12 @@ class ProgrammeController extends Controller
         return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
     }
 
+    public function pdf(Programme $programme)
+    {
+        $pdf = $this->service->generatePdf($programme);
+        return $pdf->stream("PIF-{$programme->reference_number}.pdf");
+    }
+
     public function sendToProcurement(Request $request, Programme $programme): JsonResponse
     {
         $data = $request->validate([
