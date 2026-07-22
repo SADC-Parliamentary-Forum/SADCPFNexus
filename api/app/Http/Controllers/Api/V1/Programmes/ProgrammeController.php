@@ -310,6 +310,19 @@ class ProgrammeController extends Controller
         return response()->json(['message' => 'Programme updated.', 'data' => $programme]);
     }
 
+    public function updateFinanceReview(Request $request, Programme $programme): JsonResponse
+    {
+        $data = $request->validate([
+            'budget_availability_status' => ['required', 'string', Rule::in([
+                'not_checked', 'available', 'partially_available', 'unavailable', 'confirmed_with_conditions',
+            ])],
+            'finance_comments' => ['nullable', 'string'],
+        ]);
+
+        $programme = $this->service->updateFinanceReview($programme, $data);
+        return response()->json(['message' => 'Finance review updated.', 'data' => $programme]);
+    }
+
     public function destroy(Programme $programme): JsonResponse
     {
         $this->service->delete($programme);

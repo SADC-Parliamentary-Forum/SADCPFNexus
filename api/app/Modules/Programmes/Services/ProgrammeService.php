@@ -299,6 +299,45 @@ class ProgrammeService
         return $this->get($programme->fresh());
     }
 
+    /**
+     * Finance-only field update, restricted to programme.finance-review holders.
+     *
+     * finance_comments falls back to the Programme's existing value when the
+     * request omits it, mirroring the DB-fallback pattern used for
+     * conflict_details/conflict_mitigation (applyConflictDeclaration) and the
+     * conditional companion fields in ProgrammeController::resulting(). This
+     * is a single-purpose endpoint: Finance is expected to set
+     * budget_availability_status repeatedly (e.g. moving from
+     * 'partially_available' to 'available' as a budget line clears) without
+     * necessarily resending the same comment each time. Unconditionally
+     * nulling finance_comments whenever it's absent from the request would
+     * silently wipe a previously-recorded comment on every status-only
+     * update, which is surprising and destructive for a field that reads as
+     * a running annotation rather than a value replaced wholesale each call.
+     */
+    public function updateFinanceReview(Programme $programme, array $data): Programme
+    {
+        // budget_availability_status and finance_comments are deliberately
+        // excluded from Programme::$fillable (see the comment there) — this
+        // is the only writer for them, so forceFill() bypasses the mass-
+        // assignment guard intentionally, rather than widening $fillable.
+        $programme->forceFill([
+            'budget_availability_status' => $data['budget_availability_status'],
+            'finance_comments'           => array_key_exists('finance_comments', $data)
+                ? $data['finance_comments']
+                : $programme->finance_comments,
+        ])->save();
+
+        AuditLog::record('programme.finance_review_updated', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => ['budget_availability_status' => $data['budget_availability_status']],
+            'tags'           => 'programme',
+        ]);
+
+        return $programme->fresh();
+    }
+
     public function submit(Programme $programme, User $user): Programme
     {
         if (!$programme->isDraft()) {

@@ -18,4 +18,75 @@ class ProgrammeFinanceReviewTest extends TestCase
         $this->assertNotNull($role);
         $this->assertTrue($role->hasPermissionTo('programme.finance-review', 'sanctum'));
     }
+
+    public function test_staff_cannot_update_finance_only_fields_via_finance_review_endpoint(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Finance Gate Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}/finance-review", [
+            'budget_availability_status' => 'available',
+            'finance_comments'           => 'Confirmed.',
+        ])->assertForbidden();
+    }
+
+    public function test_staff_cannot_smuggle_finance_fields_through_normal_update(): void
+    {
+        [$http] = $this->asStaff();
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Finance Smuggle Test'])->json('data.id');
+
+        $http->putJson("/api/v1/programmes/{$programmeId}", [
+            'budget_availability_status' => 'available',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'budget_availability_status'  => 'not_checked', // unchanged — field is silently ignored, not validated on this endpoint
+        ]);
+    }
+
+    public function test_finance_controller_can_update_finance_only_fields(): void
+    {
+        $tenant = \App\Models\Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant); // create the programme as staff
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Finance OK Test'])->json('data.id');
+
+        [$financeHttp] = $this->asFinanceController($tenant);
+
+        $financeHttp->putJson("/api/v1/programmes/{$programmeId}/finance-review", [
+            'budget_availability_status' => 'available',
+            'finance_comments'           => 'Confirmed with Finance.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'budget_availability_status'  => 'available',
+            'finance_comments'            => 'Confirmed with Finance.',
+        ]);
+    }
+
+    public function test_finance_review_preserves_existing_comment_when_omitted(): void
+    {
+        $tenant = \App\Models\Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+        $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Finance Preserve Test'])->json('data.id');
+
+        [$financeHttp] = $this->asFinanceController($tenant);
+
+        $financeHttp->putJson("/api/v1/programmes/{$programmeId}/finance-review", [
+            'budget_availability_status' => 'partially_available',
+            'finance_comments'           => 'Initial comment.',
+        ])->assertOk();
+
+        // Follow-up call updates only the status, without resending the comment.
+        $financeHttp->putJson("/api/v1/programmes/{$programmeId}/finance-review", [
+            'budget_availability_status' => 'available',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('programmes', [
+            'id'                          => $programmeId,
+            'budget_availability_status'  => 'available',
+            'finance_comments'            => 'Initial comment.',
+        ]);
+    }
 }

@@ -589,6 +589,8 @@ Route::prefix('v1')->group(function () {
             Route::post('{programme}/submit',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
             Route::post('{programme}/approve', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'approve']);
             Route::post('{programme}/reject',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
+            Route::middleware('can:programme.finance-review')
+                ->put('{programme}/finance-review', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'updateFinanceReview']);
 
             Route::apiResource('{programme}/activities',   \App\Http\Controllers\Api\V1\Programmes\ProgrammeActivityController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['activities' => 'activity']);
