@@ -351,4 +351,16 @@ class ProgrammeController extends Controller
         $result = $this->service->reject($programme, $data['reason'], $request->user());
         return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
     }
+
+    public function sendToProcurement(Request $request, Programme $programme): JsonResponse
+    {
+        $data = $request->validate([
+            'procurement_item_ids'   => ['required', 'array', 'min:1'],
+            'procurement_item_ids.*' => ['integer', 'exists:programme_procurement_items,id'],
+            'request_title'          => ['required', 'string', 'max:255'],
+        ]);
+
+        $procurementRequest = $this->service->sendToProcurement($programme, $data, $request->user());
+        return response()->json(['message' => 'Procurement request created.', 'data' => $procurementRequest]);
+    }
 }

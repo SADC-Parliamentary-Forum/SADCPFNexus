@@ -10,9 +10,12 @@ use App\Models\ProgrammeDeliverable;
 use App\Models\ProgrammeDocument;
 use App\Models\ProgrammeMilestone;
 use App\Models\ProgrammeProcurementItem;
+use App\Models\ProcurementItem;
+use App\Models\ProcurementRequest;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -562,6 +565,72 @@ class ProgrammeService
     public function deleteProcurementItem(ProgrammeProcurementItem $item): void
     {
         $item->delete();
+    }
+
+    /**
+     * Batch-transfers a set of approved PIF procurement items into a single
+     * ProcurementRequest. Wrapped in a DB transaction: this creates one
+     * ProcurementRequest, one ProcurementItem per selected row, and updates
+     * each ProgrammeProcurementItem's procurement_request_id link. Without a
+     * transaction, a failure partway through the loop (e.g. a DB error on
+     * item N) would leave a ProcurementRequest linked to only some of the
+     * intended items — a partial, inconsistent transfer with no rollback.
+     * Since this endpoint's whole purpose is creating multiple related rows
+     * atomically, that partial-failure state is unacceptable.
+     */
+    public function sendToProcurement(Programme $programme, array $data, User $user): ProcurementRequest
+    {
+        if (!$programme->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved programmes can send items to procurement.']);
+        }
+
+        $items = $programme->procurementItems()->whereIn('id', $data['procurement_item_ids'])->get();
+
+        $alreadyLinked = $items->whereNotNull('procurement_request_id');
+        if ($alreadyLinked->isNotEmpty()) {
+            abort(409, 'One or more selected items have already been sent to procurement.');
+        }
+
+        $procurementRequest = DB::transaction(function () use ($programme, $data, $user, $items) {
+            $estimatedValue = $items->sum(fn (ProgrammeProcurementItem $item) => (float) $item->estimated_cost);
+
+            $procurementRequest = ProcurementRequest::create([
+                'tenant_id'        => $programme->tenant_id,
+                'requester_id'     => $user->id,
+                'title'            => $data['request_title'],
+                'description'      => 'Generated from approved PIF ' . $programme->reference_number,
+                'category'         => 'goods',
+                'estimated_value'  => $estimatedValue,
+                'status'           => 'draft',
+                'currency'         => $programme->primary_currency ?? 'USD',
+            ]);
+
+            foreach ($items as $item) {
+                ProcurementItem::create([
+                    'procurement_request_id' => $procurementRequest->id,
+                    'description'             => $item->description,
+                    'quantity'                => 1,
+                    'unit'                    => 'item',
+                    'estimated_unit_price'    => $item->estimated_cost,
+                    'total_price'             => $item->estimated_cost,
+                ]);
+                $item->update(['procurement_request_id' => $procurementRequest->id]);
+            }
+
+            return $procurementRequest;
+        });
+
+        AuditLog::record('programme.procurement_sent', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => [
+                'procurement_item_ids'   => $data['procurement_item_ids'],
+                'procurement_request_id' => $procurementRequest->id,
+            ],
+            'tags' => 'programme',
+        ]);
+
+        return $procurementRequest->fresh();
     }
 
     // --- Sub-resource: Documents ---
