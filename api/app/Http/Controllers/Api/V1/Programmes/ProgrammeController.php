@@ -358,9 +358,13 @@ class ProgrammeController extends Controller
         return response()->json(['message' => 'Amendment created.', 'data' => $amendment], 201);
     }
 
-    public function submitAmendment(Programme $programme): JsonResponse
+    public function submitAmendment(Request $request, Programme $programme): JsonResponse
     {
-        $amendment = $this->service->submitAmendment($programme);
+        $request->validate([
+            'declaration_confirmed' => ['required', 'accepted'],
+        ]);
+
+        $amendment = $this->service->submitAmendment($programme, $request->user());
         return response()->json(['message' => 'Amendment submitted.', 'data' => $amendment]);
     }
 

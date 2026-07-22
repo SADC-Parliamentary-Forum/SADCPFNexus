@@ -4,6 +4,7 @@ namespace Tests\Feature\Programmes;
 
 use App\Models\Programme;
 use App\Models\ProgrammeDocument;
+use App\Models\ProgrammeProcurementItem;
 use App\Models\Tenant;
 use Tests\TestCase;
 
@@ -67,7 +68,7 @@ class ProgrammeAmendmentTest extends TestCase
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
-        $http->postJson("/api/v1/programmes/{$amendmentId}/submit-amendment")->assertOk();
+        $http->postJson("/api/v1/programmes/{$amendmentId}/submit-amendment", ['declaration_confirmed' => true])->assertOk();
 
         // Switch the acting user to admin immediately before the approval request:
         // Sanctum::actingAs() is a global override, so calling asAdmin() any earlier
@@ -90,5 +91,88 @@ class ProgrammeAmendmentTest extends TestCase
 
         $response = $http->getJson("/api/v1/programmes/{$amendmentId}/diff")->assertOk();
         $this->assertArrayHasKey('venue_city', $response->json('data'));
+    }
+
+    public function test_submitting_amendment_without_declaration_confirmation_is_rejected(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $original = $this->approvedProgramme($tenant, $user->id);
+        $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
+
+        $http->postJson("/api/v1/programmes/{$amendmentId}/submit-amendment")->assertUnprocessable();
+
+        $this->assertDatabaseHas('programmes', ['id' => $amendmentId, 'status' => 'amendment_draft']);
+    }
+
+    public function test_submitting_amendment_with_declaration_confirmation_stamps_declaration_fields(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $original = $this->approvedProgramme($tenant, $user->id);
+        $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
+
+        $http->postJson("/api/v1/programmes/{$amendmentId}/submit-amendment", ['declaration_confirmed' => true])
+            ->assertOk();
+
+        $amendment = Programme::find($amendmentId);
+        $this->assertEquals('amendment_pending_approval', $amendment->status);
+        $this->assertTrue((bool) $amendment->declaration_confirmed);
+        $this->assertEquals($user->id, $amendment->declaration_confirmed_by);
+        $this->assertNotNull($amendment->declaration_confirmed_at);
+        $this->assertEquals(config('pif.current_declaration_version'), $amendment->declaration_version);
+    }
+
+    public function test_an_amended_programme_can_be_amended_again_and_chains_to_the_amended_record(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $original = $this->approvedProgramme($tenant, $user->id);
+
+        $firstAmendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
+        $http->postJson("/api/v1/programmes/{$firstAmendmentId}/submit-amendment", ['declaration_confirmed' => true])
+            ->assertOk();
+
+        [$adminHttp] = $this->asAdmin($tenant);
+        $adminHttp->postJson("/api/v1/programmes/{$firstAmendmentId}/approve")->assertOk();
+
+        $this->assertDatabaseHas('programmes', ['id' => $firstAmendmentId, 'status' => 'amended']);
+
+        // Amend the already-amended record.
+        [$http2] = $this->asStaff($tenant);
+        $response = $http2->postJson("/api/v1/programmes/{$firstAmendmentId}/amend")->assertCreated();
+        $secondAmendmentId = $response->json('data.id');
+
+        $this->assertDatabaseHas('programmes', [
+            'id' => $secondAmendmentId, 'status' => 'amendment_draft', 'amended_from_id' => $firstAmendmentId,
+        ]);
+    }
+
+    public function test_send_to_procurement_works_on_an_amended_programme(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $original = $this->approvedProgramme($tenant, $user->id);
+
+        $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
+        $http->postJson("/api/v1/programmes/{$amendmentId}/submit-amendment", ['declaration_confirmed' => true])
+            ->assertOk();
+
+        [$adminHttp] = $this->asAdmin($tenant);
+        $adminHttp->postJson("/api/v1/programmes/{$amendmentId}/approve")->assertOk();
+        $this->assertDatabaseHas('programmes', ['id' => $amendmentId, 'status' => 'amended']);
+
+        $item = ProgrammeProcurementItem::create([
+            'programme_id' => $amendmentId, 'description' => 'Catering', 'estimated_cost' => 500,
+        ]);
+
+        $response = $http->postJson("/api/v1/programmes/{$amendmentId}/send-to-procurement", [
+            'procurement_item_ids' => [$item->id],
+            'request_title'        => 'Procurement for amended activity',
+        ]);
+
+        $response->assertOk();
+        $requestId = $response->json('data.id');
+        $this->assertDatabaseHas('programme_procurement_items', ['id' => $item->id, 'procurement_request_id' => $requestId]);
     }
 }

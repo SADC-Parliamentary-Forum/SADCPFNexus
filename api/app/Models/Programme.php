@@ -256,4 +256,16 @@ class Programme extends Model
     public function isDraft(): bool { return $this->status === 'draft'; }
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }
+
+    /**
+     * An amended PIF (status = 'amended') is the current, approved version of
+     * its activity after an amendment cycle completed. It should support the
+     * same downstream actions as a normally-approved PIF (further amendment,
+     * sending items to procurement). isApproved() intentionally still checks
+     * only the literal 'approved' status for callers where that distinction
+     * matters (e.g. surfacing whether this exact record is pending its first
+     * approval) — use this helper wherever "approved" is meant to include
+     * "approved via an amendment".
+     */
+    public function isApprovedOrAmended(): bool { return in_array($this->status, ['approved', 'amended'], true); }
 }

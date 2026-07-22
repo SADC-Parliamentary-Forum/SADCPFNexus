@@ -422,7 +422,7 @@ class ProgrammeService
 
     public function createAmendment(Programme $original, User $user): Programme
     {
-        if (!$original->isApproved()) {
+        if (!$original->isApprovedOrAmended()) {
             throw ValidationException::withMessages(['status' => 'Only approved programmes can be amended.']);
         }
 
@@ -436,7 +436,8 @@ class ProgrammeService
         $revisionCount = Programme::where('amended_from_id', $original->id)->count() + 1;
 
         $attributes = $original->only([
-            'tenant_id', 'strategic_alignment', 'strategic_pillar', 'strategic_pillars',
+            'tenant_id', 'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
+            'strategic_alignment', 'strategic_pillar', 'strategic_pillars',
             'implementing_department', 'implementing_departments', 'supporting_departments',
             'background', 'overall_objective', 'specific_objectives', 'expected_outputs',
             'target_beneficiaries', 'gender_considerations', 'primary_currency', 'base_currency',
@@ -505,12 +506,19 @@ class ProgrammeService
         return $amendment->fresh(['documents', 'arrivalDepartures', 'procurementItems']);
     }
 
-    public function submitAmendment(Programme $amendment): Programme
+    public function submitAmendment(Programme $amendment, User $user): Programme
     {
         if ($amendment->status !== 'amendment_draft') {
             throw ValidationException::withMessages(['status' => 'Only an amendment draft can be submitted.']);
         }
-        $amendment->update(['status' => 'amendment_pending_approval', 'submitted_at' => now()]);
+        $amendment->update([
+            'status'                    => 'amendment_pending_approval',
+            'submitted_at'              => now(),
+            'declaration_confirmed'     => true,
+            'declaration_confirmed_by'  => $user->id,
+            'declaration_confirmed_at'  => now(),
+            'declaration_version'       => config('pif.current_declaration_version'),
+        ]);
         return $amendment->fresh();
     }
 
@@ -710,7 +718,7 @@ class ProgrammeService
      */
     public function sendToProcurement(Programme $programme, array $data, User $user): ProcurementRequest
     {
-        if (!$programme->isApproved()) {
+        if (!$programme->isApprovedOrAmended()) {
             throw ValidationException::withMessages(['status' => 'Only approved programmes can send items to procurement.']);
         }
 
