@@ -344,11 +344,25 @@ class ProgrammeService
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be submitted.']);
         }
 
-        $programme->update(['status' => 'submitted', 'submitted_at' => now()]);
+        $programme->update([
+            'status'                    => 'submitted',
+            'submitted_at'              => now(),
+            'declaration_confirmed'     => true,
+            'declaration_confirmed_by'  => $user->id,
+            'declaration_confirmed_at'  => now(),
+            'declaration_version'       => config('pif.current_declaration_version'),
+        ]);
 
         AuditLog::record('programme.submitted', [
             'auditable_type' => Programme::class,
             'auditable_id'   => $programme->id,
+            'tags'           => 'programme',
+        ]);
+
+        AuditLog::record('programme.declaration_confirmed', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => ['declaration_version' => config('pif.current_declaration_version')],
             'tags'           => 'programme',
         ]);
 

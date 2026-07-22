@@ -107,8 +107,9 @@ class ProgrammesTest extends TestCase
             'status'           => 'draft',
         ]);
 
-        $http->postJson("/api/v1/programmes/{$programme->id}/submit")
-             ->assertOk();
+        $http->postJson("/api/v1/programmes/{$programme->id}/submit", [
+            'declaration_confirmed' => true,
+        ])->assertOk();
 
         $this->assertDatabaseHas('programmes', [
             'id'     => $programme->id,

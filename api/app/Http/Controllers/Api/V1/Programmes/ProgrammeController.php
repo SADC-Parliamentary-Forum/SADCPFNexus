@@ -331,6 +331,10 @@ class ProgrammeController extends Controller
 
     public function submit(Request $request, Programme $programme): JsonResponse
     {
+        $request->validate([
+            'declaration_confirmed' => ['required', 'accepted'],
+        ]);
+
         $result = $this->service->submit($programme, $request->user());
         return response()->json(['message' => 'Programme submitted.', 'data' => $result]);
     }
