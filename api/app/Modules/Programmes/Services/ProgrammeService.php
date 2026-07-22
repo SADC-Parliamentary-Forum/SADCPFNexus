@@ -4,6 +4,7 @@ namespace App\Modules\Programmes\Services;
 use App\Models\AuditLog;
 use App\Models\Programme;
 use App\Models\ProgrammeActivity;
+use App\Models\ProgrammeArrivalDeparture;
 use App\Models\ProgrammeBudgetLine;
 use App\Models\ProgrammeDeliverable;
 use App\Models\ProgrammeDocument;
@@ -376,6 +377,40 @@ class ProgrammeService
         ]);
 
         $document->delete();
+    }
+
+    // --- Sub-resource: Arrival/Departure ---
+
+    public function addArrivalDeparture(Programme $programme, array $data): ProgrammeArrivalDeparture
+    {
+        $row = $programme->arrivalDepartures()->create($data);
+
+        AuditLog::record('programme.arrival_departure_added', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => ['arrival_departure_id' => $row->id, 'category' => $row->category],
+            'tags'           => 'programme',
+        ]);
+
+        return $row;
+    }
+
+    public function updateArrivalDeparture(ProgrammeArrivalDeparture $row, array $data): ProgrammeArrivalDeparture
+    {
+        $row->update($data);
+        return $row->fresh();
+    }
+
+    public function deleteArrivalDeparture(ProgrammeArrivalDeparture $row): void
+    {
+        AuditLog::record('programme.arrival_departure_removed', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $row->programme_id,
+            'new_values'     => ['arrival_departure_id' => $row->id],
+            'tags'           => 'programme',
+        ]);
+
+        $row->delete();
     }
 
     // --- Private helpers ---

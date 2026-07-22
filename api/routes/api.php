@@ -602,6 +602,8 @@ Route::prefix('v1')->group(function () {
                 ->only(['store', 'update', 'destroy'])->parameters(['procurement' => 'procurementItem']);
             Route::apiResource('{programme}/documents', \App\Http\Controllers\Api\V1\Programmes\ProgrammeDocumentController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['documents' => 'document']);
+            Route::apiResource('{programme}/arrival-departures', \App\Http\Controllers\Api\V1\Programmes\ProgrammeArrivalDepartureController::class)
+                ->only(['store', 'update', 'destroy'])->parameters(['arrival-departures' => 'arrivalDeparture']);
 
             Route::get('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'index']);
             Route::post('{programme}/attachments', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeAttachmentController::class, 'store']);
