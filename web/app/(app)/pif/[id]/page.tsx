@@ -43,6 +43,12 @@ const MS_BADGE: Record<string, string> = {
 const DEL_BADGE: Record<string, string> = {
   pending: "badge-warning", submitted: "badge-primary", accepted: "badge-success",
 };
+// Hardcoded to match config('pif.declaration_versions.v1') — the server is the
+// source of truth for what was actually agreed (via the stored declaration_version),
+// this is only client-side copy shown before submission.
+const DECLARATION_TEXT =
+  "I confirm that this PIF relates to one activity, the information provided is accurate to the best of my knowledge, required supporting documents have been included, and any known conflict of interest has been disclosed.";
+
 const PROC_BADGE: Record<string, string> = {
   pending: "badge-warning", ordered: "badge-primary", delivered: "badge-success", cancelled: "badge-danger",
 };
@@ -105,6 +111,7 @@ export default function PifDetailPage() {
   const [delModal, setDelModal] = useState<{ open: boolean; editing?: ProgrammeDeliverable }>({ open: false });
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
   const [attachments, setAttachments] = useState<ProgrammeAttachment[]>([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [uploadSubmitting, setUploadSubmitting] = useState(false);
@@ -248,11 +255,12 @@ export default function PifDetailPage() {
   };
 
   const handleSubmitProgramme = async () => {
-    if (!programme) return;
+    if (!programme || !declarationConfirmed) return;
     setSubmitting(true);
     try {
-      await programmeApi.submit(programme.id);
+      await programmeApi.submit(programme.id, { declaration_confirmed: declarationConfirmed });
       showToast("Programme submitted for approval.");
+      setDeclarationConfirmed(false);
       load();
     } catch (err) {
       showToast(getApiError(err) || "Failed to submit.");
@@ -1109,12 +1117,27 @@ export default function PifDetailPage() {
           {/* Action buttons */}
           <div className="card p-5">
             <h3 className="text-sm font-semibold text-neutral-900 mb-4">Actions</h3>
+            {programme.status === "draft" && (
+              <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Declaration</p>
+                <p className="text-sm text-neutral-700 mb-3">{DECLARATION_TEXT}</p>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={declarationConfirmed}
+                    onChange={(e) => setDeclarationConfirmed(e.target.checked)}
+                    className="mt-0.5 rounded border-neutral-300"
+                  />
+                  <span className="text-sm font-medium text-neutral-800">I confirm the declaration above.</span>
+                </label>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3">
               {programme.status === "draft" && (
                 <button
                   type="button"
                   onClick={handleSubmitProgramme}
-                  disabled={submitting}
+                  disabled={submitting || !declarationConfirmed}
                   className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60"
                 >
                   <span className="material-symbols-outlined text-[16px]">send</span>

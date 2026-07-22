@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { programmeApi, tenantUsersApi, type Programme } from "@/lib/api";
+import { programmeApi, tenantUsersApi, SUPPORT_SERVICE_OPTIONS, type Programme } from "@/lib/api";
+import DocumentsSection from "./DocumentsSection";
+import ArrivalDepartureSection from "./ArrivalDepartureSection";
 
 export default function PifEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -89,6 +91,15 @@ export default function PifEditPage() {
   const [languagesRequired, setLanguagesRequired] = useState("");
   const [interpretationComments, setInterpretationComments] = useState("");
 
+  // Support services
+  const [supportServices, setSupportServices] = useState<string[]>([]);
+  const [supportServicesOtherNote, setSupportServicesOtherNote] = useState("");
+
+  // Conflict of interest
+  const [conflictDeclared, setConflictDeclared] = useState(false);
+  const [conflictDetails, setConflictDetails] = useState("");
+  const [conflictMitigation, setConflictMitigation] = useState("");
+
   useEffect(() => {
     tenantUsersApi.list().then((r) => setTenantUsers(r.data.data ?? [])).catch(() => {});
   }, []);
@@ -171,6 +182,13 @@ export default function PifEditPage() {
         setTranslationRequired(p.translation_required ?? false);
         setLanguagesRequired((p.languages_required ?? []).join(", "));
         setInterpretationComments(p.interpretation_comments ?? "");
+
+        setSupportServices(p.support_services ?? []);
+        setSupportServicesOtherNote(p.support_services_other_note ?? "");
+
+        setConflictDeclared(p.conflict_declared ?? false);
+        setConflictDetails(p.conflict_details ?? "");
+        setConflictMitigation(p.conflict_mitigation ?? "");
 
         setError(null);
       })
@@ -260,6 +278,13 @@ export default function PifEditPage() {
           ? languagesRequired.split(",").map((s) => s.trim()).filter(Boolean)
           : undefined,
         interpretation_comments: interpretationComments || undefined,
+
+        support_services: supportServices,
+        support_services_other_note: supportServicesOtherNote || undefined,
+
+        conflict_declared: conflictDeclared,
+        conflict_details: conflictDetails || undefined,
+        conflict_mitigation: conflictMitigation || undefined,
       });
       showToast("Programme updated.");
       router.push(`/pif/${programme.id}`);
@@ -728,6 +753,78 @@ export default function PifEditPage() {
             <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpretation comments</label>
             <textarea rows={2} className="form-input w-full resize-none" value={interpretationComments} onChange={(e) => setInterpretationComments(e.target.value)} />
           </div>
+        </div>
+
+        {/* Support services */}
+        <div className="pt-4 border-t border-neutral-100 space-y-4">
+          <h2 className="text-sm font-bold text-neutral-900">Support services</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {SUPPORT_SERVICE_OPTIONS.map((opt) => (
+              <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded border-neutral-300"
+                  checked={supportServices.includes(opt.key)}
+                  onChange={(e) =>
+                    setSupportServices((prev) =>
+                      e.target.checked ? [...prev, opt.key] : prev.filter((k) => k !== opt.key)
+                    )
+                  }
+                />
+                <span className="text-sm text-neutral-700">{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {supportServices.includes("other") && (
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Other support services <span className="text-red-500">*</span></label>
+              <input required className="form-input w-full" value={supportServicesOtherNote} onChange={(e) => setSupportServicesOtherNote(e.target.value)} />
+            </div>
+          )}
+        </div>
+
+        {/* Conflict of interest */}
+        <div className="pt-4 border-t border-neutral-100 space-y-4">
+          <h2 className="text-sm font-bold text-neutral-900">Conflict of interest</h2>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={conflictDeclared} onChange={(e) => setConflictDeclared(e.target.checked)} className="rounded border-neutral-300" />
+            <span className="text-sm text-neutral-700">A conflict of interest is declared for this programme</span>
+          </label>
+          {conflictDeclared && (
+            <div className="space-y-4 pl-1">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Conflict details <span className="text-red-500">*</span></label>
+                <textarea required rows={3} className="form-input w-full resize-none" value={conflictDetails} onChange={(e) => setConflictDetails(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Mitigation measures <span className="text-red-500">*</span></label>
+                <textarea required rows={3} className="form-input w-full resize-none" value={conflictMitigation} onChange={(e) => setConflictMitigation(e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Documents */}
+        <div className="pt-4 border-t border-neutral-100 space-y-4">
+          <h2 className="text-sm font-bold text-neutral-900">Documents</h2>
+          <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it's added — it is not held until the form is submitted.</p>
+          <DocumentsSection
+            programmeId={programme.id}
+            initialRows={programme.documents ?? []}
+            tenantUsers={tenantUsers}
+            onToast={showToast}
+          />
+        </div>
+
+        {/* Arrival / Departure */}
+        <div className="pt-4 border-t border-neutral-100 space-y-4">
+          <h2 className="text-sm font-bold text-neutral-900">Arrival / Departure</h2>
+          <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it's added — it is not held until the form is submitted.</p>
+          <ArrivalDepartureSection
+            programmeId={programme.id}
+            initialRows={programme.arrivalDepartures ?? []}
+            onToast={showToast}
+          />
         </div>
 
         <div className="flex items-center gap-3 pt-4 border-t border-neutral-100">

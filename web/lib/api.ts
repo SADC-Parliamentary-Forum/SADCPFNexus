@@ -2532,6 +2532,58 @@ export interface ProgrammeFundingSource {
   pays_for?: string | null;
 }
 
+export interface ProgrammeDocument {
+  id: number;
+  programme_id: number;
+  title: string;
+  document_type: string;
+  word_count: number | null;
+  translation_required: boolean;
+  source_language: string | null;
+  target_languages: string[] | null;
+  owner_user_id: number | null;
+  owner_name: string | null;
+  owner_organisation: string | null;
+  deadline: string | null;
+  budget_line: string | null;
+  comments: string | null;
+}
+
+export interface ProgrammeArrivalDeparture {
+  id: number;
+  programme_id: number;
+  category: string;
+  arrival_date: string | null;
+  departure_date: string | null;
+  airport: string | null;
+  flight_details: string | null;
+  transport_required: boolean;
+  accommodation_required: boolean;
+  comments: string | null;
+}
+
+/** Support Services (Section H) — verified against ProgrammeController::sectionRules() */
+export const SUPPORT_SERVICE_OPTIONS: { key: string; label: string }[] = [
+  { key: "ground_transport", label: "Ground Transport" },
+  { key: "air_travel", label: "Air Travel" },
+  { key: "interpretation_equipment", label: "Interpretation Equipment" },
+  { key: "zoom_hybrid", label: "Zoom / Hybrid Meeting Support" },
+  { key: "audio_recording", label: "Audio Recording" },
+  { key: "video_recording", label: "Video Recording" },
+  { key: "live_streaming", label: "Live Streaming" },
+  { key: "data_projector", label: "Data Projector" },
+  { key: "conference_bags", label: "Conference Bags" },
+  { key: "regalia", label: "Regalia" },
+  { key: "report_newsletter", label: "Report / Newsletter" },
+  { key: "ict_support", label: "ICT Support" },
+  { key: "comms_support", label: "Communications Support" },
+  { key: "procurement_support", label: "Procurement Support" },
+  { key: "finance_support", label: "Finance Support" },
+  { key: "admin_support", label: "Admin Support" },
+  { key: "research_support", label: "Research Support" },
+  { key: "other", label: "Other" },
+];
+
 export interface Programme {
   id: number;
   reference_number: string;
@@ -2622,6 +2674,16 @@ export interface Programme {
   translation_required: boolean | null;
   languages_required: string[] | null;
   interpretation_comments: string | null;
+  // Support services
+  support_services: string[] | null;
+  support_services_other_note: string | null;
+  // Conflict of interest (conflict_declared_by/at are server-stamped only, not accepted from the client)
+  conflict_declared: boolean | null;
+  conflict_details: string | null;
+  conflict_mitigation: string | null;
+  // Declaration
+  declaration_confirmed: boolean | null;
+  declaration_version: string | null;
   submitted_at: string | null;
   approved_at: string | null;
   rejection_reason: string | null;
@@ -2634,6 +2696,8 @@ export interface Programme {
   deliverables?: ProgrammeDeliverable[];
   budget_lines?: ProgrammeBudgetLine[];
   procurement_items?: ProgrammeProcurementItem[];
+  documents?: ProgrammeDocument[];
+  arrivalDepartures?: ProgrammeArrivalDeparture[];
 }
 
 export type ProgrammeAttachmentType =
@@ -2725,18 +2789,18 @@ export const programmeApi = {
     api.put<{ data: Programme; message: string }>(`/programmes/${programmeId}/finance-review`, data),
 
   // Documents
-  addDocument: (programmeId: number, data: Record<string, unknown>) =>
-    api.post<{ data: any; message: string }>(`/programmes/${programmeId}/documents`, data),
-  updateDocument: (programmeId: number, documentId: number, data: Record<string, unknown>) =>
-    api.put<{ data: any; message: string }>(`/programmes/${programmeId}/documents/${documentId}`, data),
+  addDocument: (programmeId: number, data: Partial<ProgrammeDocument>) =>
+    api.post<{ data: ProgrammeDocument; message: string }>(`/programmes/${programmeId}/documents`, data),
+  updateDocument: (programmeId: number, documentId: number, data: Partial<ProgrammeDocument>) =>
+    api.put<{ data: ProgrammeDocument; message: string }>(`/programmes/${programmeId}/documents/${documentId}`, data),
   deleteDocument: (programmeId: number, documentId: number) =>
     api.delete(`/programmes/${programmeId}/documents/${documentId}`),
 
   // Arrival / Departure
-  addArrivalDeparture: (programmeId: number, data: Record<string, unknown>) =>
-    api.post<{ data: any; message: string }>(`/programmes/${programmeId}/arrival-departures`, data),
-  updateArrivalDeparture: (programmeId: number, rowId: number, data: Record<string, unknown>) =>
-    api.put<{ data: any; message: string }>(`/programmes/${programmeId}/arrival-departures/${rowId}`, data),
+  addArrivalDeparture: (programmeId: number, data: Partial<ProgrammeArrivalDeparture>) =>
+    api.post<{ data: ProgrammeArrivalDeparture; message: string }>(`/programmes/${programmeId}/arrival-departures`, data),
+  updateArrivalDeparture: (programmeId: number, rowId: number, data: Partial<ProgrammeArrivalDeparture>) =>
+    api.put<{ data: ProgrammeArrivalDeparture; message: string }>(`/programmes/${programmeId}/arrival-departures/${rowId}`, data),
   deleteArrivalDeparture: (programmeId: number, rowId: number) =>
     api.delete(`/programmes/${programmeId}/arrival-departures/${rowId}`),
 

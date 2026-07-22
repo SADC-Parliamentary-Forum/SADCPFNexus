@@ -53,6 +53,7 @@ class ProgrammeService
             'creator', 'approver', 'responsibleOfficer',
             'activities', 'milestones', 'deliverables',
             'budgetLines', 'procurementItems',
+            'documents', 'arrivalDepartures',
         ]);
     }
 
