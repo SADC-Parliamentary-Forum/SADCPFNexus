@@ -57,7 +57,26 @@ cd web
 npm run verify:build-context
 ```
 
-For CloudPanel / production rebuilds, the recommended sequence is:
+## Deploying to production (CloudPanel)
+
+Preferred path — run the deploy script from the app root on the server:
+
+```bash
+./scripts/deploy.sh              # deploys origin/main
+./scripts/deploy.sh some-ref     # deploys a specific branch/tag
+```
+
+It backs up the database, stashes/restores server-local state (`.env`, etc.),
+fast-forwards the checkout, installs Composer dependencies, runs migrations,
+reseeds roles/permissions only (never demo/user data), rebuilds Laravel
+caches, restarts the `php`/`queue` containers, rebuilds and restarts `web`,
+then runs post-deploy health checks. It aborts on the first failed step
+rather than continuing into a half-deployed state, and never runs
+`db:seed` (full) or `migrate:fresh` against production. Run it as the app's
+own unprivileged user — it does not require or use `sudo`.
+
+If you need to do a step manually (e.g. only rebuilding `web` after a
+frontend-only change), the underlying commands are:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml stop
