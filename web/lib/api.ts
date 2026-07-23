@@ -2706,7 +2706,7 @@ export interface Programme {
   budget_lines?: ProgrammeBudgetLine[];
   procurement_items?: ProgrammeProcurementItem[];
   documents?: ProgrammeDocument[];
-  arrivalDepartures?: ProgrammeArrivalDeparture[];
+  arrival_departures?: ProgrammeArrivalDeparture[];
 }
 
 export type ProgrammeAttachmentType =

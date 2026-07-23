@@ -822,7 +822,7 @@ export default function PifEditPage() {
           <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it's added — it is not held until the form is submitted.</p>
           <ArrivalDepartureSection
             programmeId={programme.id}
-            initialRows={programme.arrivalDepartures ?? []}
+            initialRows={programme.arrival_departures ?? []}
             onToast={showToast}
           />
         </div>

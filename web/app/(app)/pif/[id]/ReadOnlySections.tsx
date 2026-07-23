@@ -1,6 +1,6 @@
 "use client";
 
-import type { Programme, ProgrammeDocument, ProgrammeArrivalDeparture } from "@/lib/api";
+import type { Programme, ProgrammeDocument } from "@/lib/api";
 import { SUPPORT_SERVICE_OPTIONS } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
 
@@ -69,8 +69,7 @@ export default function ReadOnlySections({
   };
 
   const documents = programme.documents ?? [];
-  const arrivalDepartures =
-    (programme as { arrivalDepartures?: ProgrammeArrivalDeparture[] }).arrivalDepartures ?? [];
+  const arrivalDepartures = programme.arrival_departures ?? [];
   const supportServices = programme.support_services ?? [];
 
   return (
