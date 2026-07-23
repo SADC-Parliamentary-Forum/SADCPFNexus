@@ -437,7 +437,7 @@ export default function PifDetailPage() {
             <a
               href={programmeApi.pdfUrl(programme.id)}
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>

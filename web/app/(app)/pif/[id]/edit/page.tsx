@@ -318,11 +318,11 @@ export default function PifEditPage() {
     );
   }
 
-  if (programme.status !== "draft") {
+  if (programme.status !== "draft" && programme.status !== "amendment_draft") {
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          Only draft programmes can be edited.
+          Only draft or amendment-draft programmes can be edited.
         </div>
         <Link href={`/pif/${programme.id}`} className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
           Back to programme
