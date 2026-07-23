@@ -26,7 +26,10 @@ use App\Policies\HrPersonnelFileSectionPolicy;
 use App\Policies\HrSalaryScalePolicy;
 use App\Policies\PortfolioPolicy;
 use App\Policies\UserPolicy;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
 
@@ -45,6 +48,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Login throttle: brute-force protection in production, but a plain
+        // `throttle:5,1` is keyed per-IP and shared across every user logging
+        // in from the same machine. Local dev/e2e flows routinely authenticate
+        // 2+ demo users per Playwright run (see web/tests/e2e/global.setup.ts),
+        // and re-running the suite a few times in a debugging session was
+        // enough to exhaust 5 attempts/min and silently strand the login page
+        // behind a "Too Many Attempts" 429 that looked like an unrelated app
+        // bug. Keep the strict production limit; widen it for local/testing.
+        RateLimiter::for('login', function (Request $request) {
+            $perMinute = app()->environment(['local', 'testing']) ? 60 : 5;
+
+            return Limit::perMinute($perMinute)->by($request->ip());
+        });
+
         ResetPassword::createUrlUsing(function (User $user, string $token): string {
             $frontendUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
             $email = urlencode($user->email);

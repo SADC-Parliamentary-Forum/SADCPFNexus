@@ -15,6 +15,15 @@ async function loginAndSave(
   fileName: string
 ) {
   await page.goto("/login");
+  // `goto` only waits for the "load" event, which can fire before this client
+  // component finishes hydrating (especially the first hit against a Next.js
+  // dev server, which compiles the route on demand). Locator.fill() populates
+  // the DOM value regardless of hydration state, so a fill+click landing
+  // ahead of hydration silently no-ops (React's onChange/onSubmit handlers
+  // aren't wired up yet) and the test hangs waiting for a navigation that
+  // will never come. Waiting for networkidle first — same guard already used
+  // in pif-sections.spec.ts for an analogous race — lets hydration settle.
+  await page.waitForLoadState("networkidle");
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator('button[type="submit"]').click();

@@ -20,7 +20,7 @@ Route::prefix('v1')->group(function () {
 
     // Public auth routes
     Route::prefix('auth')->group(function () {
-        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
         // Lightweight connection pre-warm used by the mobile splash screen.
