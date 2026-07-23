@@ -106,10 +106,19 @@ export default function PifEditPage() {
 
   useEffect(() => {
     if (!id) return;
+    // Guards against a stale response clobbering in-progress edits: React
+    // Strict Mode's dev-only double-invoke of effects (and, more generally,
+    // any slow re-fetch that resolves after the user has already started
+    // typing) can otherwise let an old GET's `.then()` overwrite Venue/
+    // Budget/Personnel/etc. state with the pre-edit values, silently
+    // discarding what the user just entered. Only the most recently fired
+    // fetch for this `id` is allowed to hydrate state.
+    let cancelled = false;
     setLoading(true);
     programmeApi
       .get(Number(id))
       .then((r) => {
+        if (cancelled) return;
         const p = r.data;
         setProgramme(p);
         setTitle(p.title ?? "");
@@ -192,8 +201,15 @@ export default function PifEditPage() {
 
         setError(null);
       })
-      .catch(() => setError("Failed to load programme."))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setError("Failed to load programme.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const showToast = (msg: string) => {
