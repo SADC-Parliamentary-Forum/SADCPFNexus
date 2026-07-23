@@ -182,20 +182,32 @@ class UsersSeeder extends Seeder
         if ($user) {
             // Reconcile the keys so future lookups are stable; never overwrite password.
             $user->fill([
-                'email'           => $email,
-                'employee_number' => $employeeNumber,
-                'tenant_id'       => $attributes['tenant_id']     ?? $user->tenant_id,
-                'department_id'   => $attributes['department_id'] ?? $user->department_id,
-                'name'            => $attributes['name']          ?? $user->name,
-                'job_title'       => $attributes['job_title']     ?? $user->job_title,
-                'classification'  => $attributes['classification']?? $user->classification,
-                'is_active'       => $attributes['is_active']     ?? $user->is_active,
+                'email'                => $email,
+                'employee_number'      => $employeeNumber,
+                'tenant_id'            => $attributes['tenant_id']       ?? $user->tenant_id,
+                'department_id'        => $attributes['department_id']  ?? $user->department_id,
+                'name'                 => $attributes['name']           ?? $user->name,
+                'job_title'            => $attributes['job_title']      ?? $user->job_title,
+                'classification'       => $attributes['classification'] ?? $user->classification,
+                'is_active'            => $attributes['is_active']      ?? $user->is_active,
+                // Seeded demo/system users must always be able to log straight
+                // into the dashboard (dev/e2e/test use) — reconcile these flags
+                // on every seeder run so a stale row can't strand logins on the
+                // /setup wizard. Not credentials, so safe to overwrite.
+                'setup_completed'      => $attributes['setup_completed']      ?? true,
+                'must_reset_password'  => $attributes['must_reset_password']  ?? false,
             ])->save();
 
             return $user;
         }
 
-        return User::create(array_merge($attributes, [
+        return User::create(array_merge([
+            // Seeded demo/system users are pre-provisioned for immediate login
+            // (dev/e2e/test use) — they should never be routed through the
+            // first-time setup wizard or forced to reset their password.
+            'setup_completed'     => true,
+            'must_reset_password' => false,
+        ], $attributes, [
             'email'           => $email,
             'employee_number' => $employeeNumber,
         ]));
