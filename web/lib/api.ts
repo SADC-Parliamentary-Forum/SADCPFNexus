@@ -2588,7 +2588,8 @@ export interface Programme {
   id: number;
   reference_number: string;
   title: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "active" | "on_hold" | "completed" | "financially_closed" | "archived";
+  status: "draft" | "submitted" | "approved" | "rejected" | "active" | "on_hold" | "completed" | "financially_closed" | "archived"
+    | "amended" | "amendment_draft" | "amendment_pending_approval" | "superseded";
   strategic_alignment: string[] | null;
   strategic_pillar: string | null;
   strategic_pillars: string[] | null;
@@ -2641,6 +2642,9 @@ export interface Programme {
   participants_variance_reason: string | null;
   proposed_funding_difference: number | null;
   estimated_activity_amount: number | null;
+  // Finance review — writable only via programmeApi.updateFinanceReview(), read-only everywhere else
+  budget_availability_status: string | null;
+  finance_comments: string | null;
   // Personnel / consultants
   secretariat_staff_required: boolean | null;
   secretariat_staff_count: number | null;
@@ -2688,6 +2692,11 @@ export interface Programme {
   approved_at: string | null;
   rejection_reason: string | null;
   created_at: string;
+  // Amendment tracking — amended_from_id links an amendment back to the PIF it was
+  // created from; me_status is server-computed (Programme::getMeStatusAttribute()),
+  // never sent by the client.
+  amended_from_id: number | null;
+  me_status: string;
   creator?: User;
   approver?: User;
   responsible_officer_user?: User;

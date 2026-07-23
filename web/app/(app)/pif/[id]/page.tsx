@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useFormatDate } from "@/lib/useFormatDate";
 import {
   programmeApi,
+  tenantUsersApi,
   QUOTE_ATTACHMENT_TYPES,
   type Programme,
   type ProgrammeActivity,
@@ -17,21 +18,51 @@ import {
   type ProgrammeAttachmentType,
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import ReadOnlySections from "./ReadOnlySections";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
   draft: "badge-muted",
   submitted: "badge-warning",
   approved: "badge-success",
+  rejected: "badge-danger",
   active: "badge-primary",
   on_hold: "badge-warning",
   completed: "badge-success",
   financially_closed: "badge-muted",
   archived: "badge-muted",
+  amended: "badge-success",
+  amendment_draft: "badge-muted",
+  amendment_pending_approval: "badge-warning",
+  superseded: "badge-muted",
 };
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft", submitted: "Submitted", approved: "Approved", active: "Active",
+  draft: "Draft", submitted: "Submitted", approved: "Approved", rejected: "Rejected", active: "Active",
   on_hold: "On Hold", completed: "Completed", financially_closed: "Fin. Closed", archived: "Archived",
+  amended: "Amended", amendment_draft: "Amendment Draft",
+  amendment_pending_approval: "Amendment Pending Approval", superseded: "Superseded",
+};
+const ME_STATUS_LABEL: Record<string, string> = {
+  not_yet_linked: "Not Yet Linked",
+  linked_record_archived: "Linked Record Archived",
+  report_pending: "Report Pending",
+  report_submitted: "Report Submitted",
+  returned_for_correction: "Returned for Correction",
+  me_reviewed: "M&E Reviewed",
+  accepted: "Accepted",
+  closed: "Closed",
+  link_unavailable: "Link Unavailable",
+};
+const ME_STATUS_BADGE: Record<string, string> = {
+  not_yet_linked: "badge-muted",
+  linked_record_archived: "badge-muted",
+  report_pending: "badge-warning",
+  report_submitted: "badge-primary",
+  returned_for_correction: "badge-danger",
+  me_reviewed: "badge-primary",
+  accepted: "badge-success",
+  closed: "badge-success",
+  link_unavailable: "badge-muted",
 };
 const ACT_BADGE: Record<string, string> = {
   draft: "badge-muted", approved: "badge-success", in_progress: "badge-primary",
@@ -63,7 +94,7 @@ const ATTACHMENT_TYPE_LABEL: Record<ProgrammeAttachmentType, string> = {
   other: "Other",
 };
 
-type DetailTab = "overview" | "activities" | "milestones" | "budget" | "procurement" | "attachments" | "approval";
+type DetailTab = "overview" | "logistics" | "activities" | "milestones" | "budget" | "procurement" | "attachments" | "approval";
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg }: { msg: string }) {
@@ -118,6 +149,8 @@ export default function PifDetailPage() {
   const [chosenQuoteModal, setChosenQuoteModal] = useState<{ open: boolean; attachment: ProgrammeAttachment | null }>({ open: false, attachment: null });
   const [chosenReason, setChosenReason] = useState("");
   const [chosenQuoteSubmitting, setChosenQuoteSubmitting] = useState(false);
+  const [tenantUsers, setTenantUsers] = useState<{ id: number; name: string; email: string }[]>([]);
+  const [amending, setAmending] = useState(false);
   const { confirm } = useConfirm();
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -131,6 +164,10 @@ export default function PifDetailPage() {
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    tenantUsersApi.list().then((r) => setTenantUsers(r.data.data ?? [])).catch(() => {});
+  }, []);
 
   const loadAttachments = useCallback(() => {
     if (!id) return;
@@ -281,6 +318,24 @@ export default function PifDetailPage() {
     finally { setSubmitting(false); }
   };
 
+  const handleAmendProgramme = async () => {
+    if (!programme) return;
+    if (!(await confirm({
+      title: "Create Amendment",
+      message: "Create a draft amendment of this PIF? You'll be taken to the amendment's edit page to make changes before resubmitting for approval.",
+    }))) return;
+    setAmending(true);
+    try {
+      const res = await programmeApi.amend(programme.id);
+      showToast("Amendment created.");
+      router.push(`/pif/${res.data.data.id}/edit`);
+    } catch (err) {
+      showToast(getApiError(err) || "Failed to create amendment.");
+    } finally {
+      setAmending(false);
+    }
+  };
+
   const handleRejectProgramme = async () => {
     if (!programme || !rejectReason.trim()) return;
     setSubmitting(true);
@@ -332,6 +387,7 @@ export default function PifDetailPage() {
 
   const TABS: { key: DetailTab; label: string; icon: string }[] = [
     { key: "overview", label: "Overview", icon: "dashboard" },
+    { key: "logistics", label: "Logistics & Compliance", icon: "fact_check" },
     { key: "activities", label: "Activities", icon: "checklist" },
     { key: "milestones", label: "Milestones & Del.", icon: "flag" },
     { key: "budget", label: "Budget", icon: "payments" },
@@ -364,6 +420,12 @@ export default function PifDetailPage() {
                 <span className={`badge ${STATUS_BADGE[programme.status] ?? "badge-muted"}`}>
                   {STATUS_LABEL[programme.status] ?? programme.status}
                 </span>
+                <span
+                  className={`badge ${ME_STATUS_BADGE[programme.me_status] ?? "badge-muted"}`}
+                  title="Monitoring & Evaluation status"
+                >
+                  M&amp;E: {ME_STATUS_LABEL[programme.me_status] ?? programme.me_status}
+                </span>
               </div>
               <h1 className="text-xl font-bold text-neutral-900 mt-0.5">{programme.title}</h1>
               {programme.background && (
@@ -372,6 +434,15 @@ export default function PifDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href={programmeApi.pdfUrl(programme.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
+              <span className="hidden sm:inline">Download PDF</span>
+            </a>
             <button
               type="button"
               onClick={() => setTab("attachments")}
@@ -559,6 +630,11 @@ export default function PifDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── LOGISTICS & COMPLIANCE TAB ───────────────────────────────────────── */}
+      {tab === "logistics" && (
+        <ReadOnlySections programme={programme} tenantUsers={tenantUsers} />
       )}
 
       {/* ── ACTIVITIES TAB ───────────────────────────────────────────────────── */}
@@ -1166,7 +1242,24 @@ export default function PifDetailPage() {
                   </button>
                 </>
               )}
-              {!["draft", "submitted"].includes(programme.status) && (
+              {/* Amend: mirrors the backend guard Programme::isApprovedOrAmended() —
+                  only a PIF whose status is literally 'approved' or 'amended' may be
+                  amended (not 'active'/'completed'/etc., even though those are also
+                  post-approval states). Attempting this server-side on any other
+                  status raises a 422 ("Only approved programmes can be amended."),
+                  so gating the button the same way avoids a round-trip failure. */}
+              {["approved", "amended"].includes(programme.status) && (
+                <button
+                  type="button"
+                  onClick={handleAmendProgramme}
+                  disabled={amending}
+                  className="btn-secondary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit_document</span>
+                  {amending ? "Creating amendment…" : "Amend"}
+                </button>
+              )}
+              {!["draft", "submitted", "approved", "amended"].includes(programme.status) && (
                 <p className="text-sm text-neutral-400">No actions available for status: {STATUS_LABEL[programme.status] ?? programme.status}</p>
               )}
             </div>
