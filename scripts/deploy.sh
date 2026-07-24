@@ -111,7 +111,13 @@ docker exec sadcpf_php php artisan route:cache
 log "Restarting php + queue containers"
 $COMPOSE restart php queue
 
-sleep 3
+# FPM can take >3s after restart before the healthcheck flips to healthy.
+for i in $(seq 1 30); do
+  if docker ps --filter name=sadcpf_php --format '{{.Status}}' | grep -qi healthy; then
+    break
+  fi
+  sleep 2
+done
 docker ps --filter name=sadcpf_php --format '{{.Status}}' | grep -qi healthy \
   || die "php container did not report healthy after restart — check 'docker logs sadcpf_php'."
 
