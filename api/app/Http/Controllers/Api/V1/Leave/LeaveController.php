@@ -6,11 +6,14 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
 use App\Modules\Leave\Services\LeaveService;
+use App\Support\AuthorizesCertificates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
+    use AuthorizesCertificates;
+
     public function __construct(
         private readonly LeaveService $leaveService,
         private readonly \App\Services\WorkflowService $workflowService,
@@ -243,9 +246,16 @@ class LeaveController extends Controller
         ]);
     }
 
-    public function certificate(LeaveRequest $leaveRequest): JsonResponse
+    public function certificate(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
-        abort_unless($leaveRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        $this->authorizeCertificateView($request->user(), $leaveRequest, [
+            'HR Manager',
+            'HR Administrator',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+        ]);
+
         return response()->json([
             'data' => $leaveRequest->load([
                 'requester.department',

@@ -5,11 +5,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ImprestRequest;
 use App\Modules\Imprest\Services\ImprestService;
 use App\Services\WorkflowService;
+use App\Support\AuthorizesCertificates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ImprestController extends Controller
 {
+    use AuthorizesCertificates;
+
     public function __construct(
         private readonly ImprestService $imprestService,
         private readonly WorkflowService $workflowService,
@@ -157,9 +160,15 @@ class ImprestController extends Controller
         return response()->json(['message' => 'Imprest request retired successfully.', 'data' => $imprest]);
     }
 
-    public function certificate(ImprestRequest $imprestRequest): JsonResponse
+    public function certificate(Request $request, ImprestRequest $imprestRequest): JsonResponse
     {
-        abort_unless($imprestRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        $this->authorizeCertificateView($request->user(), $imprestRequest, [
+            'Finance Controller',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+        ]);
+
         return response()->json([
             'data' => $imprestRequest->load([
                 'requester.department',

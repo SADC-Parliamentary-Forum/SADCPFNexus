@@ -5,11 +5,14 @@ use App\Http\Controllers\Controller;
 use App\Models\ProcurementRequest;
 use App\Modules\Procurement\Services\ProcurementService;
 use App\Services\WorkflowService;
+use App\Support\AuthorizesCertificates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProcurementController extends Controller
 {
+    use AuthorizesCertificates;
+
     public function __construct(
         private readonly ProcurementService $procurementService,
         private readonly WorkflowService    $workflowService,
@@ -278,9 +281,16 @@ class ProcurementController extends Controller
         ]);
     }
 
-    public function certificate(ProcurementRequest $procurementRequest): JsonResponse
+    public function certificate(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        abort_unless($procurementRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        $this->authorizeCertificateView($request->user(), $procurementRequest, [
+            'Procurement Officer',
+            'Finance Controller',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+        ]);
+
         return response()->json([
             'data' => $procurementRequest->load([
                 'requester.department',

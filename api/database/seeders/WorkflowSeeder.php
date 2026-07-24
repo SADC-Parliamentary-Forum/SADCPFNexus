@@ -69,6 +69,13 @@ class WorkflowSeeder extends Seeder
             ...($sgRole  ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
         ]);
 
+        // Dedicated salary-advance module (must not fall back to unscoped legacy approve).
+        $this->makeWorkflow($tenant, 'Salary Advance Approval',           'salary_advance', [
+            ['approver_type' => 'supervisor'],
+            ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id]] : []),
+            ...($sgRole  ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
+        ]);
+
         $this->makeWorkflow($tenant, 'HR Request Approval',               'hr', [
             ['approver_type' => 'supervisor'],
             ...($hrAdminRole ?? $hrRole ? [['approver_type' => 'specific_role', 'role_id' => ($hrAdminRole ?? $hrRole)->id]] : []),

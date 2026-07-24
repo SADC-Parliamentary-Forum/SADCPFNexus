@@ -97,8 +97,9 @@ docker exec sadcpf_php composer install --no-dev --optimize-autoloader --no-inte
 log "Running pending migrations"
 docker exec sadcpf_php php artisan migrate --force
 
-log "Reseeding roles/permissions only (idempotent, no demo/user data touched)"
+log "Reseeding roles/permissions + workflows (idempotent, no demo/user data touched)"
 docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\RolesAndPermissionsSeeder" --force
+docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\WorkflowSeeder" --force
 
 log "Rebuilding Laravel caches"
 docker exec sadcpf_php php artisan config:clear

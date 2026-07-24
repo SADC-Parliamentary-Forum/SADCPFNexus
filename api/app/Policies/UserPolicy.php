@@ -33,11 +33,14 @@ class UserPolicy
     }
 
     /**
-     * System Admins can update any user; others can only update themselves.
+     * Admin user updates (including role/classification) are System Admin only.
+     *
+     * Self-service profile edits must go through ProfileController — allowing
+     * self-update here previously let any user PUT /admin/users/{self} and
+     * escalate role/classification (privilege escalation).
      */
     public function update(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return true;
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 

@@ -5,11 +5,14 @@ use App\Http\Controllers\Controller;
 use App\Models\TravelRequest;
 use App\Modules\Travel\Services\TravelService;
 use App\Services\WorkflowService;
+use App\Support\AuthorizesCertificates;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TravelController extends Controller
 {
+    use AuthorizesCertificates;
+
     public function __construct(
         private readonly TravelService $travelService,
         private readonly WorkflowService $workflowService
@@ -164,9 +167,15 @@ class TravelController extends Controller
         ]);
     }
 
-    public function certificate(TravelRequest $travelRequest): JsonResponse
+    public function certificate(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        abort_unless($travelRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        $this->authorizeCertificateView($request->user(), $travelRequest, [
+            'Finance Controller',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+        ]);
+
         return response()->json([
             'data' => $travelRequest->load([
                 'requester.department',

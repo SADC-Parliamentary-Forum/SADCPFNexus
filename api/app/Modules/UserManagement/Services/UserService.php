@@ -124,9 +124,24 @@ class UserService
 
     /**
      * Update a user's profile fields.
+     *
+     * Privileged fields (role, classification, MFA, department, position) may
+     * only be changed by a System Admin — never by the subject user themselves
+     * via this service (closes privilege-escalation via self PUT).
      */
     public function update(User $user, array $data, User $updatedBy): User
     {
+        if (! $updatedBy->isSystemAdmin()) {
+            unset(
+                $data['role'],
+                $data['classification'],
+                $data['mfa_enabled'],
+                $data['department_id'],
+                $data['position_id'],
+                $data['portfolio_ids'],
+            );
+        }
+
         $oldValues = $user->only([
             'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'bio', 'date_of_birth', 'join_date', 'phone',
             'nationality', 'gender', 'marital_status', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone',

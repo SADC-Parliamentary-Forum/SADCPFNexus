@@ -149,6 +149,11 @@ class UsersController extends Controller
             'position_id'     => ['nullable', 'exists:positions,id'],
         ]);
 
+        // Defense in depth: role/classification changes require assignRole ability.
+        if (array_key_exists('role', $data) || array_key_exists('classification', $data)) {
+            $this->authorize('assignRole', $user);
+        }
+
         $user = $this->userService->update($user, $data, $request->user());
 
         return response()->json([

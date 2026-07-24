@@ -9,6 +9,7 @@ use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
+use App\Support\AuthorizesCertificates;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class SalaryAdvanceController extends Controller
 {
+    use AuthorizesCertificates;
+
     public function __construct(
         protected NotificationService $notificationService,
         protected WorkflowService     $workflowService,
@@ -224,10 +227,10 @@ class SalaryAdvanceController extends Controller
             ]);
         }
 
-        // Legacy direct-approval path (no workflow configured)
-        if ($request->user()->hasRole('staff')) {
-            abort(403);
-        }
+        // Legacy direct-approval path when no workflow is configured.
+        // Must require finance.approve — never "anyone who is not staff".
+        $this->authorizeLegacySalaryAdvanceAction($request->user(), $salaryAdvanceRequest);
+
         if ($salaryAdvanceRequest->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
@@ -259,12 +262,15 @@ class SalaryAdvanceController extends Controller
             ]);
         }
 
-        // Legacy path
-        if ($request->user()->hasRole('staff')) {
-            abort(403);
-        }
+        $this->authorizeLegacySalaryAdvanceAction($request->user(), $salaryAdvanceRequest);
+
         if ($salaryAdvanceRequest->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be rejected.']);
+        }
+        if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot reject your own request.',
+            ]);
         }
         $salaryAdvanceRequest->onWorkflowRejected($request->user(), $reason);
         return response()->json(['message' => 'Rejected.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
@@ -305,9 +311,15 @@ class SalaryAdvanceController extends Controller
         ]);
     }
 
-    public function certificate(SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    public function certificate(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
-        abort_unless($salaryAdvanceRequest->isApproved(), 403, 'Certificate only available for approved requests.');
+        $this->authorizeCertificateView($request->user(), $salaryAdvanceRequest, [
+            'Finance Controller',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+        ]);
+
         return response()->json([
             'data' => $salaryAdvanceRequest->load([
                 'requester.department',
@@ -315,5 +327,21 @@ class SalaryAdvanceController extends Controller
                 'approvalRequest.workflow.steps',
             ]),
         ]);
+    }
+
+    /**
+     * Gate the no-workflow approve/reject path to finance approvers only.
+     */
+    private function authorizeLegacySalaryAdvanceAction(User $actor, SalaryAdvanceRequest $advance): void
+    {
+        if ((int) $advance->requester_id === (int) $actor->id) {
+            abort(403, 'You cannot act on your own salary advance.');
+        }
+
+        $allowed = $actor->isSystemAdmin()
+            || $actor->can('finance.approve')
+            || $actor->hasAnyRole(['Finance Controller', 'Secretary General']);
+
+        abort_unless($allowed, 403, 'Only finance approvers may approve salary advances when no workflow is configured.');
     }
 }
