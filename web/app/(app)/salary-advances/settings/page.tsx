@@ -15,9 +15,13 @@ export default function SalaryAdvanceSettingsPage() {
   const [payroll, setPayroll] = useState<{
     mode: string;
     adapter?: string;
+    driver?: string;
     enabled: boolean;
     message: string;
     coming_soon?: boolean;
+    recording_mode?: string;
+    supports_auto_push?: boolean;
+    supports_auto_pull?: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -191,10 +195,21 @@ export default function SalaryAdvanceSettingsPage() {
             <h2 className="text-sm font-semibold text-neutral-900">Payroll recovery adapter</h2>
             <p className="text-sm text-neutral-600">{payroll?.message ?? "Manual recovery is the default."}</p>
             <div className="flex flex-wrap gap-2">
-              <span className="badge badge-muted text-xs">Mode: {payroll?.mode ?? "manual"}</span>
+              <span className="badge badge-muted text-xs">Driver: {payroll?.driver ?? payroll?.mode ?? "manual"}</span>
               <span className="badge badge-muted text-xs">Adapter: {payroll?.adapter ?? "manual"}</span>
-              <span className="badge badge-muted text-xs">{payroll?.enabled ? "Vendor enabled" : "Manual recording only"}</span>
+              <span className="badge badge-muted text-xs">
+                {payroll?.recording_mode === "manual_reference_required"
+                  ? "Reference required"
+                  : (payroll?.recording_mode ?? "manual")}
+              </span>
+              <span className={`badge text-xs ${payroll?.enabled ? "badge-warning" : "badge-success"}`}>
+                {payroll?.enabled ? "Vendor automation enabled" : "Manual recording only"}
+              </span>
             </div>
+            <p className="text-xs text-neutral-500">
+              Auto push: {payroll?.supports_auto_push ? "yes" : "no"} · Auto pull: {payroll?.supports_auto_pull ? "yes" : "no"}.
+              Change driver via <code className="font-mono">SALARY_ADVANCE_PAYROLL_DRIVER</code> — vendor stays rejected until a reviewed class is configured.
+            </p>
           </div>
 
           <div className="card p-5 space-y-4">

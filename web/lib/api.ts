@@ -2502,12 +2502,14 @@ export const financeApi = {
       data: {
         mode: string;
         adapter: string;
+        driver?: string;
         enabled: boolean;
         provider: string | null;
         message: string;
         coming_soon: boolean;
         supports_auto_push: boolean;
         supports_auto_pull: boolean;
+        recording_mode?: string;
       };
     }>("/finance/advances/payroll-integration"),
   listSalaryAdvancePolicyExceptions: (params?: Record<string, string | number>) =>

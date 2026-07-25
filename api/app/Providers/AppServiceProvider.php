@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
 use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
-use App\Modules\Finance\Services\ManualPayrollRecoveryAdapter;
+use App\Modules\Finance\Services\PayrollRecoveryAdapterFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,7 +42,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(PayrollRecoveryAdapterInterface::class, ManualPayrollRecoveryAdapter::class);
+        $this->app->singleton(PayrollRecoveryAdapterFactory::class);
+
+        // Resolve from SALARY_ADVANCE_PAYROLL_DRIVER (default: manual).
+        // Unknown / unconfigured vendor drivers fail closed at resolve time.
+        $this->app->bind(PayrollRecoveryAdapterInterface::class, function ($app) {
+            return $app->make(PayrollRecoveryAdapterFactory::class)->make();
+        });
     }
 
     /**

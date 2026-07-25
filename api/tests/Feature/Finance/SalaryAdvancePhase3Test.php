@@ -144,7 +144,9 @@ class SalaryAdvancePhase3Test extends TestCase
             ->assertJsonPath('data.mode', 'manual')
             ->assertJsonPath('data.enabled', false)
             ->assertJsonPath('data.adapter', 'manual')
-            ->assertJsonPath('data.coming_soon', false);
+            ->assertJsonPath('data.driver', 'manual')
+            ->assertJsonPath('data.coming_soon', false)
+            ->assertJsonPath('data.recording_mode', 'manual_reference_required');
     }
 
     public function test_policy_exception_create_approve_audited_without_silent_eligibility_bypass(): void

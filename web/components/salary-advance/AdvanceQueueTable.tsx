@@ -75,6 +75,14 @@ export function AdvanceQueueTable({
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
+  const [payrollAdapter, setPayrollAdapter] = useState<{
+    mode: string;
+    adapter?: string;
+    driver?: string;
+    enabled: boolean;
+    message: string;
+    recording_mode?: string;
+  } | null>(null);
   const isRecovery = queue === "recovery";
 
   const load = useCallback(async (pg = 1) => {
@@ -85,6 +93,14 @@ export function AdvanceQueueTable({
       setAdvances(getListData<SalaryAdvanceRequest>(res.data));
       setLastPage(getLastPage(res.data));
       setPage(pg);
+      if (queue === "recovery") {
+        try {
+          const pay = await financeApi.getSalaryAdvancePayrollIntegration();
+          setPayrollAdapter(pay.data.data);
+        } catch {
+          setPayrollAdapter(null);
+        }
+      }
     } catch {
       setError("Failed to load salary advances.");
     } finally {
@@ -105,9 +121,26 @@ export function AdvanceQueueTable({
         <h1 className="page-title">{title}</h1>
         {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
         {isRecovery ? (
-          <p className="text-xs text-neutral-500 mt-1">
-            Manual payroll recovery — record each deduction with a payroll transaction reference. Adapter mode remains manual until an authorised binding is configured.
-          </p>
+          <div className="mt-2 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <span className="badge badge-muted text-xs">
+                Adapter: {payrollAdapter?.adapter ?? payrollAdapter?.mode ?? "manual"}
+              </span>
+              <span className="badge badge-muted text-xs">
+                Driver: {payrollAdapter?.driver ?? "manual"}
+              </span>
+              <span className={`badge text-xs ${payrollAdapter?.enabled ? "badge-warning" : "badge-success"}`}>
+                {payrollAdapter?.enabled ? "Vendor automation on" : "Manual recording"}
+              </span>
+              {(payrollAdapter?.recording_mode === "manual_reference_required" || !payrollAdapter?.enabled) && (
+                <span className="badge badge-muted text-xs">Payroll transaction ref required</span>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500">
+              {payrollAdapter?.message
+                ?? "Manual payroll recovery — record each deduction with a payroll transaction reference."}
+            </p>
+          </div>
         ) : null}
       </div>
 
