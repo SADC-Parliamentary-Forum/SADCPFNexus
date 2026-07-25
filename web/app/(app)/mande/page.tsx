@@ -54,10 +54,20 @@ export default function MandeDashboardPage() {
           <h1 className="page-title">M&amp;E Dashboard</h1>
           <p className="page-subtitle">Results monitoring across approved programmes — reporting, evidence and review status.</p>
         </div>
-        <Link href="/mande/activity-reports/create" className="btn-primary flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New Activity Report
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/mande/intake" className="btn-secondary flex items-center gap-1.5 text-sm">
+            <span className="material-symbols-outlined text-[16px]">inbox</span>
+            Intake
+          </Link>
+          <Link href="/mande/activity-reports" className="btn-secondary flex items-center gap-1.5 text-sm">
+            <span className="material-symbols-outlined text-[16px]">description</span>
+            Reports
+          </Link>
+          <Link href="/mande/activity-reports/create" className="btn-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Activity Report
+          </Link>
+        </div>
       </div>
 
       {isError && (

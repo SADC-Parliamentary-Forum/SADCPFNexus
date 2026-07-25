@@ -26,13 +26,10 @@ interface NavItem {
   i18nKey?: string;
 }
 
-/** Feature flag: unfinished M&E children stay hidden unless explicitly enabled. */
-const ENABLE_MANDE_EXTRA = process.env.NEXT_PUBLIC_ENABLE_MANDE_EXTRA === "true";
-
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", i18nKey: "nav.dashboard" },
   { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
-  { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active" },
+  { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active", i18nKey: "nav.notifications" },
   {
     label: "Assignments",
     href: "/assignments",
@@ -84,6 +81,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Finance",
     href: "/finance",
     icon: "payments",
+    i18nKey: "nav.finance",
     children: [
       { label: "Overview", href: "/finance", icon: "bar_chart_4_bars" },
       { label: "Budgets", href: "/finance/budget", icon: "account_balance" },
@@ -131,6 +129,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "HR",
     href: "/hr",
     icon: "people",
+    i18nKey: "nav.hr",
     children: [
       { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
       { label: "Leave", href: "/hr/leave", icon: "event_available" },
@@ -168,15 +167,16 @@ const NAV_ITEMS: NavItem[] = [
     section: "Governance",
     i18nKey: "nav.mande",
     children: [
-      { label: "Dashboard",  href: "/mande",            icon: "dashboard" },
+      { label: "Dashboard", href: "/mande", icon: "dashboard" },
+      { label: "Intake Queue", href: "/mande/intake", icon: "inbox" },
+      { label: "My Reports", href: "/mande/activity-reports/mine", icon: "assignment_ind" },
+      { label: "All Reports", href: "/mande/activity-reports", icon: "description" },
+      { label: "Review Queue", href: "/mande/review-queue", icon: "rate_review" },
+      { label: "Strategic Plans", href: "/mande/strategic-plan", icon: "flag" },
+      { label: "Results Frameworks", href: "/mande/results", icon: "account_tree" },
       { label: "Indicators", href: "/mande/indicators", icon: "speed" },
-      // Extra M&E routes stay hidden unless NEXT_PUBLIC_ENABLE_MANDE_EXTRA=true
-      ...(ENABLE_MANDE_EXTRA
-        ? [
-            { label: "Results Framework", href: "/mande/results", icon: "account_tree" },
-            { label: "Data Collection", href: "/mande/data", icon: "database" },
-          ]
-        : []),
+      { label: "Reports", href: "/mande/reports", icon: "assessment" },
+      { label: "Settings", href: "/mande/settings", icon: "settings" },
     ],
   },
   {
@@ -576,7 +576,8 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
           )}
           <button
             onClick={handleLogout}
-            title="Sign out"
+            title={t("nav.signOut")}
+            aria-label={t("nav.signOut")}
             className={cn(
               "flex items-center justify-center rounded-lg text-neutral-400 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0",
               isCollapsed ? "h-8 w-8" : "h-7 w-7"

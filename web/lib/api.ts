@@ -1,5 +1,7 @@
 import axios from "axios";
 import { clearStoredUser } from "@/lib/session";
+import { captureClientException } from "@/lib/observability";
+import { MFA_SETUP_PATH } from "@/lib/privilegedMfa";
 
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
@@ -58,29 +60,49 @@ export async function ensureCsrfCookie(): Promise<void> {
 
 // Handle 401 globally — flag prevents concurrent 401s from firing multiple hard reloads
 let _redirecting401 = false;
+let _redirectingMfaSetup = false;
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      if (!window.location.pathname.startsWith("/login") && !_redirecting401) {
-        _redirecting401 = true;
-        clearStoredUser();
-        clearAuthCookie();
+    if (typeof window !== "undefined") {
+      const status = error.response?.status;
+      const data = error.response?.data as { mfa_setup_required?: boolean; message?: string } | undefined;
 
-        // Best-effort: invalidate the server-side session so Laravel emits a
-        // Set-Cookie that wipes the httpOnly session cookie. Without this the
-        // proxy could still see a stale session cookie and bounce us back.
-        // Skip when the failing request was already /auth/logout to avoid
-        // recursion.
-        const failedUrl = (error.config?.url ?? "").toString();
-        if (!failedUrl.includes("/auth/logout")) {
-          // Fire-and-forget — don't block the redirect.
-          axios.post("/api/v1/auth/logout", null, { withCredentials: true })
-            .catch(() => { /* ignore — session is already invalid */ });
+      // Privileged role without MFA — send user to security setup (API middleware).
+      if (
+        status === 403 &&
+        data?.mfa_setup_required === true &&
+        !_redirectingMfaSetup &&
+        !window.location.pathname.startsWith(MFA_SETUP_PATH)
+      ) {
+        _redirectingMfaSetup = true;
+        window.location.href = MFA_SETUP_PATH;
+        return Promise.reject(error);
+      }
+
+      if (status === 401) {
+        if (!window.location.pathname.startsWith("/login") && !_redirecting401) {
+          _redirecting401 = true;
+          clearStoredUser();
+          clearAuthCookie();
+
+          // Best-effort: invalidate the server-side session so Laravel emits a
+          // Set-Cookie that wipes the httpOnly session cookie. Without this the
+          // proxy could still see a stale session cookie and bounce us back.
+          // Skip when the failing request was already /auth/logout to avoid
+          // recursion.
+          const failedUrl = (error.config?.url ?? "").toString();
+          if (!failedUrl.includes("/auth/logout")) {
+            // Fire-and-forget — don't block the redirect.
+            axios.post("/api/v1/auth/logout", null, { withCredentials: true })
+              .catch(() => { /* ignore — session is already invalid */ });
+          }
+
+          window.location.href = "/login";
         }
-
-        window.location.href = "/login";
+      } else if (status && status >= 500) {
+        captureClientException(error, { status, url: error.config?.url });
       }
     }
     return Promise.reject(error);
@@ -221,6 +243,7 @@ export interface AuthUser {
   tenant_id: number;
   vendor_id?: number | null;
   classification: string;
+  mfa_enabled?: boolean;
   must_reset_password?: boolean;
   setup_completed?: boolean;
   roles: string[];
@@ -5091,8 +5114,15 @@ export type ResultLevel = "impact" | "outcome" | "output" | "activity";
 export type IndicatorFrequency = "monthly" | "quarterly" | "bi_annual" | "annual";
 export type ResultsFrameworkType = "sadc_pf" | "srhr" | "giz" | "donor" | "institutional";
 export type MeReviewStatus =
-  | "not_submitted" | "submitted" | "returned" | "reviewed" | "accepted" | "closed";
+  | "not_submitted" | "submitted" | "returned" | "reviewed" | "accepted" | "closed"
+  | "not_reportable" | "cancelled";
 export type EvidenceReviewStatus = "pending" | "validated" | "rejected";
+
+export interface MeSettings {
+  auto_intake: boolean;
+  report_due_days: number;
+  programme_manager_review: boolean;
+}
 
 export interface StrategicOutput {
   id: number; strategic_outcome_id: number; code: string | null;
@@ -5173,6 +5203,7 @@ export interface MeReviewHistoryEntry {
 export interface MeActivityReport {
   id: number; tenant_id: number; programme_id: number; reference_number: string;
   activity_title: string; responsible_officer_id: number | null;
+  created_by?: number | null;
   thematic_area_id: number | null; strategic_goal_id: number | null;
   start_date: string | null; end_date: string | null;
   planned_output: string | null; actual_output: string | null;
@@ -5182,6 +5213,8 @@ export interface MeActivityReport {
   review_status: MeReviewStatus; closure_status: "open" | "closed";
   review_notes: string | null; submitted_at: string | null; reviewed_at: string | null;
   accepted_at: string | null; closed_at: string | null;
+  return_section?: string | null; return_required_action?: string | null;
+  correction_due_at?: string | null;
   created_at: string; updated_at: string;
   evidence_count?: number;
   programme?: { id: number; title: string; reference_number: string; status: string; strategic_pillar?: string | null };
@@ -5249,8 +5282,21 @@ export const mandeApi = {
     api.get<{ data: MeDashboardData }>("/mande/dashboard", { params }),
   getStrategicReport: (params?: Record<string, string | number>) =>
     api.get<{ data: MeStrategicReport }>("/mande/reports/strategic", { params }),
-  getPifLinkages: () =>
-    api.get<{ data: PifLinkage[] }>("/mande/pif-linkages"),
+  getPifLinkages: (params?: { unlinked?: boolean }) =>
+    api.get<{ data: PifLinkage[] }>("/mande/pif-linkages", {
+      params: params?.unlinked ? { unlinked: 1 } : undefined,
+    }),
+
+  // Settings
+  getSettings: () =>
+    api.get<{ data: MeSettings }>("/mande/settings"),
+  updateSettings: (data: Partial<MeSettings>) =>
+    api.put<{ data: MeSettings; message: string }>("/mande/settings", data),
+  markNotReportable: (programmeId: number, reason: string) =>
+    api.post<{ data: MeActivityReport; message: string }>(
+      `/mande/intake/${programmeId}/not-reportable`,
+      { reason }
+    ),
 
   // Strategic plans
   listPlans: (params?: Record<string, string | number>) =>
@@ -5321,7 +5367,12 @@ export const mandeApi = {
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/submit`),
   reviewReport: (id: number, data?: { review_notes?: string }) =>
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/review`, data),
-  returnReport: (id: number, data: { review_notes: string }) =>
+  returnReport: (id: number, data: {
+    review_notes: string;
+    section?: string;
+    required_action?: string;
+    correction_due_at?: string;
+  }) =>
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/return`, data),
   acceptReport: (id: number, data?: { review_notes?: string }) =>
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/accept`, data),

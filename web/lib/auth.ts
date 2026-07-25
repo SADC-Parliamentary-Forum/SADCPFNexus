@@ -145,11 +145,16 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
   { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
-  // M&E / Results Monitoring (PRD §10)
+  // M&E / Results Monitoring (PRD §10) — more specific paths first
   { path: "/mande/strategic-plan", permission: ["mande.admin"] },
   { path: "/mande/results-framework", permission: ["mande.admin", "mande.view"] },
+  { path: "/mande/results", permission: ["mande.admin", "mande.view"] },
   { path: "/mande/settings", permission: ["mande.admin"] },
   { path: "/mande/review-queue", permission: ["mande.review", "mande.admin"] },
+  { path: "/mande/intake", permission: ["mande.view", "mande.create", "mande.review"] },
+  { path: "/mande/activity-reports", permission: ["mande.view", "mande.create", "mande.review"] },
+  { path: "/mande/indicators", permission: ["mande.view", "mande.create"] },
+  { path: "/mande/reports", permission: ["mande.view"] },
   { path: "/mande", permission: "mande.view" },
 ];
 
