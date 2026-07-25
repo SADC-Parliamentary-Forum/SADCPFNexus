@@ -17,7 +17,9 @@
     "test:report": "playwright show-report playwright-report",
     "test:auth": "playwright test --project=auth",
     "test:staff": "playwright test --project=staff",
-    "test:admin": "playwright test --project=admin"
+    "test:admin": "playwright test --project=admin",
+    "verify:redirect": "node --experimental-strip-types scripts/verify-safe-internal-path.mts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
@@ -37,6 +39,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

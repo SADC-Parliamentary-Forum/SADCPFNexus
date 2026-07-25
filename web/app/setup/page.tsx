@@ -837,14 +837,19 @@ function Step5Security({ onNext, onBack }: { onNext: () => void; onBack: () => v
           </div>
         </div>
         <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-          <span className="material-symbols-outlined text-neutral-400 text-[22px]">shield_lock</span>
+          <span className="material-symbols-outlined text-neutral-500 text-[22px]">shield_lock</span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-neutral-600">Multi-Factor Authentication (MFA)</p>
-            <p className="text-xs text-neutral-400">MFA configuration will be available in a future update.</p>
+            <p className="text-sm font-semibold text-neutral-700">Multi-Factor Authentication (MFA)</p>
+            <p className="text-xs text-neutral-500">
+              Privileged roles (Admin, Finance, HR, SG) must enable MFA. You can set it up now or from Profile → Security after finishing setup.
+            </p>
           </div>
-          <span className="text-xs bg-neutral-200 text-neutral-500 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
-            Coming soon
-          </span>
+          <a
+            href="/profile/security"
+            className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full font-medium whitespace-nowrap hover:bg-primary/20 transition-colors"
+          >
+            Set up MFA
+          </a>
         </div>
       </div>
       <StepFooter onBack={onBack} onNext={onNext} nextLabel="Continue" />

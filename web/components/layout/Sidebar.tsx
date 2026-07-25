@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { clearStoredUser } from "@/lib/session";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
 import type { AuthUser } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,11 +22,16 @@ interface NavItem {
   icon: string;
   section?: string;
   children?: NavChild[];
+  /** Optional i18n key for critical shell labels (EN/FR/PT). */
+  i18nKey?: string;
 }
 
+/** Feature flag: unfinished M&E children stay hidden unless explicitly enabled. */
+const ENABLE_MANDE_EXTRA = process.env.NEXT_PUBLIC_ENABLE_MANDE_EXTRA === "true";
+
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
-  { label: "Approvals", href: "/approvals", icon: "fact_check" },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard", i18nKey: "nav.dashboard" },
+  { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
   { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active" },
   {
     label: "Assignments",
@@ -42,13 +48,14 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
-    label: "Travel", href: "/travel", icon: "flight_takeoff", section: "Operations",
+    label: "Travel", href: "/travel", icon: "flight_takeoff", section: "Operations", i18nKey: "nav.travel",
   },
-  { label: "Leave", href: "/leave", icon: "event_available" },
+  { label: "Leave", href: "/leave", icon: "event_available", i18nKey: "nav.leave" },
   {
     label: "Procurement",
     href: "/procurement",
     icon: "shopping_cart",
+    i18nKey: "nav.procurement",
     children: [
       { label: "Requests",        href: "/procurement",                  icon: "bar_chart_4_bars"    },
       { label: "Quotations (RFQ)",href: "/procurement/rfq",              icon: "request_quote"       },
@@ -159,24 +166,24 @@ const NAV_ITEMS: NavItem[] = [
     href: "/mande",
     icon: "monitoring",
     section: "Governance",
+    i18nKey: "nav.mande",
     children: [
-      { label: "Dashboard",            href: "/mande",                     icon: "dashboard"          },
-      { label: "Strategic Plan",       href: "/mande/strategic-plan",      icon: "flag"               },
-      { label: "Results Framework",    href: "/mande/results-framework",   icon: "account_tree"       },
-      { label: "Indicators",           href: "/mande/indicators",          icon: "speed"              },
-      { label: "Activity Reports",     href: "/mande/activity-reports",    icon: "summarize"          },
-      { label: "PIF Linkages",         href: "/mande/pif-linkages",        icon: "link"               },
-      { label: "Evidence Repository",  href: "/mande/evidence",            icon: "folder_open"        },
-      { label: "Donor / Project Reporting", href: "/mande/donor-reporting", icon: "volunteer_activism" },
-      { label: "Institutional Reports",href: "/mande/reports",             icon: "assessment"         },
-      { label: "M&E Review Queue",     href: "/mande/review-queue",        icon: "rule"               },
-      { label: "Settings",             href: "/mande/settings",            icon: "settings"           },
+      { label: "Dashboard",  href: "/mande",            icon: "dashboard" },
+      { label: "Indicators", href: "/mande/indicators", icon: "speed" },
+      // Extra M&E routes stay hidden unless NEXT_PUBLIC_ENABLE_MANDE_EXTRA=true
+      ...(ENABLE_MANDE_EXTRA
+        ? [
+            { label: "Results Framework", href: "/mande/results", icon: "account_tree" },
+            { label: "Data Collection", href: "/mande/data", icon: "database" },
+          ]
+        : []),
     ],
   },
   {
     label: "Reports",
     href: "/reports",
     icon: "assessment",
+    i18nKey: "nav.reports",
     children: [
       { label: "Overview",        href: "/reports",         icon: "bar_chart_4_bars" },
       { label: "Weekly Summary",  href: "/reports/weekly",  icon: "calendar_month" },
@@ -285,9 +292,12 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useI18n();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isCollapsed = !isOpen;
+
+  const navLabel = (item: NavItem) => (item.i18nKey ? t(item.i18nKey) : item.label);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -368,7 +378,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
         <Link
           key={item.href}
           href={collapsedHref}
-          title={item.label}
+          title={navLabel(item)}
           className={cn(
             "flex items-center justify-center rounded-lg py-2.5 text-sm font-medium transition-all min-w-0",
             isParentActive
@@ -412,7 +422,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
             >
               {item.icon}
             </span>
-            <span className="flex-1 truncate text-left">{item.label}</span>
+            <span className="flex-1 truncate text-left">{navLabel(item)}</span>
             <span
               className={cn(
                 "material-symbols-outlined flex-shrink-0 text-[16px] transition-transform duration-200",
@@ -486,7 +496,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
         >
           {item.icon}
         </span>
-        <span className="truncate">{item.label}</span>
+        <span className="truncate">{navLabel(item)}</span>
         {isActive && (
           <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-white/60 flex-shrink-0" />
         )}
@@ -537,6 +547,11 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
 
       {/* ── User footer ───────────────────────────────────────────────── */}
       <div className={cn("border-t border-neutral-700/50 flex-shrink-0", isCollapsed ? "p-2" : "p-3")}>
+        {!isCollapsed && (
+          <div className="mb-2 px-1">
+            <LocaleSwitcher className="w-full [&_select]:w-full [&_select]:bg-neutral-800 [&_select]:border-neutral-600 [&_select]:text-neutral-200" />
+          </div>
+        )}
         <div
           className={cn(
             "rounded-lg transition-colors",

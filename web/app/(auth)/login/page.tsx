@@ -13,6 +13,8 @@ import {
   setSetupCompleteCookie,
 } from "@/lib/api";
 import { clearStoredUser, writeStoredUser } from "@/lib/session";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
+import { safeInternalPath } from "@/lib/safeInternalPath";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -33,6 +35,7 @@ const FEATURES = [
 ];
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -99,7 +102,7 @@ export default function LoginPage() {
         setSetupCompleteCookie();
         const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
         const isSupplier = (user.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));
-        window.location.href = from && from.startsWith("/") ? from : (isSupplier ? "/supplier" : "/dashboard");
+        window.location.href = safeInternalPath(from) ?? (isSupplier ? "/supplier" : "/dashboard");
       } else {
         // setup_completed = false → go to wizard (sadcpf_setup_complete cookie NOT set)
         clearSetupCompleteCookie();
@@ -192,9 +195,12 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-neutral-900">Welcome back</h2>
-            <p className="text-sm text-neutral-500 mt-1">Sign in to your account to continue.</p>
+          <div className="mb-8 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold text-neutral-900">{t("login.title")}</h2>
+              <p className="text-sm text-neutral-500 mt-1">Sign in to your account to continue.</p>
+            </div>
+            <LocaleSwitcher />
           </div>
 
           {error && (
@@ -207,7 +213,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
             <div suppressHydrationWarning>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
-                Email address
+                {t("login.email")}
               </label>
               <input
                 type="email"
@@ -223,7 +229,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
-                Password
+                {t("login.password")}
               </label>
               <div className="relative">
                 <input
@@ -249,7 +255,7 @@ export default function LoginPage() {
             {mfaRequired && (
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
-                  Verification Code
+                  {t("login.mfa")}
                 </label>
                 <input
                   type="text"
@@ -277,7 +283,7 @@ export default function LoginPage() {
                   <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
                   Signing in…
                 </>
-              ) : mfaRequired ? "Verify & Sign in" : "Sign in"}
+              ) : mfaRequired ? "Verify & Sign in" : t("login.submit")}
             </button>
           </form>
 

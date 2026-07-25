@@ -33,6 +33,7 @@ const PROTECTED_PREFIXES = [
   "/hr",
   "/imprest",
   "/leave",
+  "/mande",
   "/notifications",
   "/organogram",
   "/pif",
@@ -43,6 +44,7 @@ const PROTECTED_PREFIXES = [
   "/saam",
   "/settings",
   "/srhr",
+  "/stock",
   "/supplier",
   "/travel",
   "/workplan",
@@ -133,9 +135,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow MFA setup during onboarding so Setup → Security can reach the real page.
+  const allowDuringSetup =
+    path === "/profile/security" || path.startsWith("/profile/security/");
+
   const isProtected = PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   if (isProtected) {
-    if (!setupComplete) {
+    if (!setupComplete && !allowDuringSetup) {
       return NextResponse.redirect(new URL(SETUP_PATH, request.url));
     }
     return NextResponse.next();
@@ -164,6 +170,7 @@ export const config = {
     "/hr/:path*",
     "/imprest/:path*",
     "/leave/:path*",
+    "/mande/:path*",
     "/notifications/:path*",
     "/organogram/:path*",
     "/pif/:path*",
@@ -175,6 +182,7 @@ export const config = {
     "/saam/:path*",
     "/settings/:path*",
     "/srhr/:path*",
+    "/stock/:path*",
     "/supplier/:path*",
     "/travel/:path*",
     "/workplan/:path*",

@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { ToastProvider } from "@/components/ui/Toast";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -47,18 +48,20 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
-          <AuthProvider>
-            <PrefsProvider>
-              <QueryProvider>
-                <ToastProvider>
-                  <ConfirmProvider>
-                    <RouteProgressBar />
-                    {children}
-                  </ConfirmProvider>
-                </ToastProvider>
-              </QueryProvider>
-            </PrefsProvider>
-          </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <PrefsProvider>
+                <QueryProvider>
+                  <ToastProvider>
+                    <ConfirmProvider>
+                      <RouteProgressBar />
+                      {children}
+                    </ConfirmProvider>
+                  </ToastProvider>
+                </QueryProvider>
+              </PrefsProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>
