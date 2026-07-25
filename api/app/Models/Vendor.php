@@ -28,6 +28,8 @@ class Vendor extends Model
         'blacklisted_at' => 'datetime',
     ];
 
+    protected $appends = ['derived_star_rating'];
+
     public function quotes()        { return $this->hasMany(ProcurementQuote::class); }
     public function approvedBy()    { return $this->belongsTo(User::class, 'approved_by'); }
     public function rejectedBy()    { return $this->belongsTo(User::class, 'rejected_by'); }
@@ -55,6 +57,46 @@ class Vendor extends Model
             'id',
             'procurement_request_id'
         );
+    }
+
+    /**
+     * Mean overall_score from performance evaluations mapped to 1–5 stars.
+     */
+    public function getDerivedStarRatingAttribute(): ?int
+    {
+        $evaluations = $this->relationLoaded('evaluations')
+            ? $this->evaluations
+            : $this->evaluations()->get();
+
+        if ($evaluations->isEmpty()) {
+            return null;
+        }
+
+        $meanOverall = (float) $evaluations->avg(fn (VendorPerformanceEvaluation $e) => $e->overall_score);
+        $percent = $meanOverall * 20;
+
+        return self::starsFromOverallPercent($percent);
+    }
+
+    public static function starsFromOverallPercent(float $percent): ?int
+    {
+        if ($percent <= 0) {
+            return null;
+        }
+        if ($percent >= 90) {
+            return 5;
+        }
+        if ($percent >= 70) {
+            return 4;
+        }
+        if ($percent >= 50) {
+            return 3;
+        }
+        if ($percent >= 30) {
+            return 2;
+        }
+
+        return 1;
     }
 
     public function syncLegacyFlagsFromStatus(): void

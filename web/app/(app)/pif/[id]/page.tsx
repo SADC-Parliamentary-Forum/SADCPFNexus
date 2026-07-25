@@ -151,6 +151,11 @@ export default function PifDetailPage() {
   const [chosenQuoteSubmitting, setChosenQuoteSubmitting] = useState(false);
   const [tenantUsers, setTenantUsers] = useState<{ id: number; name: string; email: string }[]>([]);
   const [amending, setAmending] = useState(false);
+  const [selectedProcIds, setSelectedProcIds] = useState<number[]>([]);
+  const [sendProcModal, setSendProcModal] = useState(false);
+  const [sendProcTitle, setSendProcTitle] = useState("");
+  const [sendProcCategory, setSendProcCategory] = useState("goods");
+  const [sendProcSubmitting, setSendProcSubmitting] = useState(false);
   const { confirm } = useConfirm();
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -838,29 +843,141 @@ export default function PifDetailPage() {
               <p className="mt-3 text-sm text-neutral-400">No procurement requirements for this programme.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Description</th><th>Method</th><th>Estimated Cost</th><th>Vendor</th><th>Delivery Date</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  {procItems.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-sm text-neutral-400">No procurement items.</td></tr>
-                  ) : procItems.map((p) => (
-                    <tr key={p.id}>
-                      <td className="font-medium text-neutral-900">{p.description}</td>
-                      <td><span className="badge badge-muted">{METHOD_LABEL[p.method] ?? p.method}</span></td>
-                      <td className="font-mono text-sm">{programme.primary_currency} {Number(p.estimated_cost).toLocaleString()}</td>
-                      <td className="text-neutral-600">{p.vendor ?? "—"}</td>
-                      <td className="text-xs text-neutral-500">{p.delivery_date ?? "—"}</td>
-                      <td><span className={`badge ${PROC_BADGE[p.status] ?? "badge-muted"} capitalize`}>{p.status}</span></td>
+            <>
+              {["approved", "amended"].includes(programme.status) && procItems.some((p) => !p.procurement_request_id) && (
+                <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3 bg-neutral-50/60">
+                  <p className="text-xs text-neutral-500">
+                    Select items to batch into one procurement request.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
+                    disabled={selectedProcIds.length === 0}
+                    onClick={() => {
+                      setSendProcTitle(`${programme.title} — procurement package`);
+                      setSendProcModal(true);
+                    }}
+                  >
+                    Send to Procurement ({selectedProcIds.length})
+                  </button>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      {["approved", "amended"].includes(programme.status) && <th className="w-10"></th>}
+                      <th>Description</th>
+                      <th>Method</th>
+                      <th>Estimated Cost</th>
+                      <th>Vendor</th>
+                      <th>Delivery Date</th>
+                      <th>Status</th>
+                      <th>Linked</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {procItems.length === 0 ? (
+                      <tr><td colSpan={8} className="py-10 text-center text-sm text-neutral-400">No procurement items.</td></tr>
+                    ) : procItems.map((p) => {
+                      const linked = !!p.procurement_request_id;
+                      const selectable = ["approved", "amended"].includes(programme.status) && !linked;
+                      return (
+                        <tr key={p.id} className={linked ? "opacity-60" : undefined}>
+                          {["approved", "amended"].includes(programme.status) && (
+                            <td>
+                              <input
+                                type="checkbox"
+                                disabled={!selectable}
+                                checked={selectedProcIds.includes(p.id)}
+                                onChange={(e) => {
+                                  setSelectedProcIds((prev) =>
+                                    e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)
+                                  );
+                                }}
+                              />
+                            </td>
+                          )}
+                          <td className="font-medium text-neutral-900">{p.description}</td>
+                          <td><span className="badge badge-muted">{METHOD_LABEL[p.method] ?? p.method}</span></td>
+                          <td className="font-mono text-sm">{programme.primary_currency} {Number(p.estimated_cost).toLocaleString()}</td>
+                          <td className="text-neutral-600">{p.vendor ?? "—"}</td>
+                          <td className="text-xs text-neutral-500">{p.delivery_date ?? "—"}</td>
+                          <td><span className={`badge ${PROC_BADGE[p.status] ?? "badge-muted"} capitalize`}>{p.status}</span></td>
+                          <td className="text-xs">
+                            {linked ? (
+                              <Link href={`/procurement/${p.procurement_request_id}`} className="text-primary hover:underline">
+                                PRQ linked
+                              </Link>
+                            ) : (
+                              <span className="text-neutral-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
+      )}
+
+      {sendProcModal && programme && (
+        <Modal title="Send to Procurement" onClose={() => setSendProcModal(false)}>
+          <p className="text-sm text-neutral-600 mb-4">
+            Creates one draft procurement request for {selectedProcIds.length} selected item(s).
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Request title</label>
+              <input
+                className="form-input w-full"
+                value={sendProcTitle}
+                onChange={(e) => setSendProcTitle(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Category</label>
+              <select className="form-input w-full" value={sendProcCategory} onChange={(e) => setSendProcCategory(e.target.value)}>
+                <option value="goods">Goods</option>
+                <option value="services">Services</option>
+                <option value="works">Works</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-5">
+            <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={() => setSendProcModal(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={sendProcSubmitting || !sendProcTitle.trim()}
+              className="btn-primary py-2 px-4 text-sm disabled:opacity-50"
+              onClick={async () => {
+                setSendProcSubmitting(true);
+                try {
+                  const res = await programmeApi.sendToProcurement(programme.id, {
+                    procurement_item_ids: selectedProcIds,
+                    request_title: sendProcTitle.trim(),
+                    category: sendProcCategory,
+                  });
+                  showToast(res.data.message ?? "Sent to procurement.");
+                  setSendProcModal(false);
+                  setSelectedProcIds([]);
+                  load();
+                } catch {
+                  showToast("Failed to send to procurement.");
+                } finally {
+                  setSendProcSubmitting(false);
+                }
+              }}
+            >
+              {sendProcSubmitting ? "Sending…" : "Send to Procurement"}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* ── ATTACHMENTS TAB ──────────────────────────────────────────────────── */}

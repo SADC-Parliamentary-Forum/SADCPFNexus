@@ -319,6 +319,7 @@ Route::prefix('v1')->group(function () {
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');
             Route::post('requests/{procurementRequest}/submit',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
+            Route::post('requests/{procurementRequest}/coi-declarations', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'storeCoiDeclaration']);
             Route::post('requests/{procurementRequest}/hod-approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodApprove']);
             Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
             Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
@@ -329,12 +330,16 @@ Route::prefix('v1')->group(function () {
             Route::get('requests/{procurementRequest}/certificate',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'certificate']);
             Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
             Route::post('requests/{procurementRequest}/issue-rfq',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'issueRfq']);
+            Route::post('requests/{procurementRequest}/set-method', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'setMethod']);
             Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
+            Route::get('settings', [\App\Http\Controllers\Api\V1\Procurement\ProcurementSettingsController::class, 'show']);
+            Route::put('settings', [\App\Http\Controllers\Api\V1\Procurement\ProcurementSettingsController::class, 'update']);
 
             // Quotes (per request)
             Route::get('requests/{procurementRequest}/quotes',            [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'index']);
             Route::post('requests/{procurementRequest}/quotes',           [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'store']);
             Route::put('requests/{procurementRequest}/quotes/{quote}',    [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'update']);
+            Route::post('requests/{procurementRequest}/quotes/{quote}/assess', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'assess']);
             Route::delete('requests/{procurementRequest}/quotes/{quote}', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'destroy']);
             Route::get('requests/{procurementRequest}/quotes/{quote}/attachments',                       [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'index']);
             Route::post('requests/{procurementRequest}/quotes/{quote}/attachments',                      [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'store']);

@@ -563,30 +563,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const vendor = data;
   const quotes = vendor.recent_quotes ?? [];
   const ratings: VendorRating[] = vendor.ratings ?? [];
-  const avgRating = toNum(vendor.ratings_avg_rating);
-
-  // Pre-populate own rating once data loads
-  const preloadedMyRating = vendor.my_rating?.rating ?? 0;
-  if (myRating === 0 && preloadedMyRating > 0 && myReview === "") {
-    setMyRating(preloadedMyRating);
-    setMyReview(vendor.my_rating?.review ?? "");
-  }
-
-  const handleSubmitRating = async () => {
-    if (!myRating) return;
-    setRatingSubmitting(true);
-    try {
-      await vendorsApi.rate(vendorId, myRating, myReview || undefined);
-      queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-      setRatingToast("Rating saved.");
-      setTimeout(() => setRatingToast(null), 3000);
-    } catch {
-      setRatingToast("Failed to save rating.");
-      setTimeout(() => setRatingToast(null), 3000);
-    } finally {
-      setRatingSubmitting(false);
-    }
-  };
+  const derivedStars = toNum(vendor.derived_star_rating);
+  const avgRating = derivedStars ?? toNum(vendor.ratings_avg_rating);
 
   // Distribution counts
   const dist = [5, 4, 3, 2, 1].map((s) => ({
@@ -989,48 +967,24 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
 
-            {/* Submit / Update own rating */}
-            <div className="card p-6 space-y-4">
+            {/* Derived overall rating (from evaluations) */}
+            <div className="card p-6 space-y-3">
               <div className="flex items-center gap-3">
-                <SectionIcon icon="rate_review" color="text-primary" bg="bg-primary/10" />
+                <SectionIcon icon="verified" color="text-amber-500" bg="bg-amber-50" />
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-800">Your Rating</h3>
-                  <p className="text-xs text-neutral-400">{vendor.my_rating ? "Update your existing rating" : "Share your experience with this vendor"}</p>
+                  <h3 className="text-sm font-semibold text-neutral-800">Overall Vendor Rating</h3>
+                  <p className="text-xs text-neutral-400">
+                    Derived from structured performance evaluations — submit an evaluation below to update.
+                  </p>
                 </div>
               </div>
-              <StarPicker value={myRating} onChange={setMyRating} />
-              <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">
-                  Review <span className="text-neutral-400 font-normal">(optional)</span>
-                </label>
-                <textarea
-                  className="form-input h-20 resize-none"
-                  placeholder="Describe your experience with this vendor…"
-                  value={myReview}
-                  onChange={(e) => setMyReview(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  disabled={!myRating || ratingSubmitting}
-                  onClick={handleSubmitRating}
-                  className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-50"
-                >
-                  {ratingSubmitting && (
-                    <span className="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
-                  )}
-                  {ratingSubmitting ? "Saving…" : vendor.my_rating ? "Update Rating" : "Submit Rating"}
-                </button>
-                {vendor.my_rating && (
-                  <span className="text-xs text-neutral-400">
-                    You rated {vendor.my_rating.rating} ★ previously
-                  </span>
-                )}
-              </div>
+              <StarDisplay avg={derivedStars} count={evaluationsData?.length} />
+              {!derivedStars && (
+                <p className="text-xs text-neutral-400">No evaluations yet. Complete a performance evaluation to generate stars.</p>
+              )}
             </div>
 
-            {/* All ratings list */}
+            {/* Legacy staff reviews (read-only list) */}
             {ratings.length > 0 && (
               <div className="card overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-neutral-100">

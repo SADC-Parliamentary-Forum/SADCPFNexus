@@ -67,6 +67,9 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   const [showAward, setShowAward] = useState(false);
   const [awardQuoteId, setAwardQuoteId] = useState<number | "">("");
   const [awardNotes, setAwardNotes] = useState("");
+  const [coiDeclared, setCoiDeclared] = useState(false);
+  const [coiHasConflict, setCoiHasConflict] = useState(false);
+  const [coiNotes, setCoiNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const requestQuery = useQuery({
@@ -196,7 +199,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
 
   const saveQuoteMutation = useMutation({
     mutationFn: () => {
-      const payload: CreateQuotePayload = {
+      const isAssessing = !!editingQuote;
+      const payload: CreateQuotePayload & { coi_declared?: boolean; coi_has_conflict?: boolean; coi_notes?: string } = {
         vendor_name: quoteForm.vendor_name.trim(),
         quoted_amount: Number(quoteForm.quoted_amount),
         currency: quoteForm.currency || currency,
@@ -206,6 +210,11 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         compliance_notes: quoteForm.compliance_notes.trim() || undefined,
         is_recommended: quoteForm.is_recommended,
       };
+      if (isAssessing) {
+        payload.coi_declared = coiDeclared;
+        payload.coi_has_conflict = coiHasConflict;
+        payload.coi_notes = coiNotes.trim() || undefined;
+      }
       return editingQuote ? quotesApi.update(reqId, editingQuote.id, payload) : quotesApi.create(reqId, payload);
     },
     onSuccess: async (response) => {
@@ -224,13 +233,22 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   });
 
   const awardMutation = useMutation({
-    mutationFn: () => procurementApi.award(reqId, Number(awardQuoteId), awardNotes || undefined),
+    mutationFn: () =>
+      procurementApi.award(reqId, Number(awardQuoteId), {
+        award_notes: awardNotes || undefined,
+        coi_declared: coiDeclared,
+        coi_has_conflict: coiHasConflict,
+        coi_notes: coiNotes.trim() || undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
       setShowAward(false);
       setAwardQuoteId("");
       setAwardNotes("");
+      setCoiDeclared(false);
+      setCoiHasConflict(false);
+      setCoiNotes("");
       setError(null);
     },
     onError: (err: unknown) =>
@@ -554,9 +572,39 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
               <input type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
               Recommend this quote for award
             </label>
+            {editingQuote && (
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
+                <p className="text-xs font-semibold text-neutral-700">Conflict of interest declaration</p>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+                  <span>I confirm my COI status before assessing this quote.</span>
+                </label>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+                  <span>I have a conflict of interest.</span>
+                </label>
+                {coiHasConflict && (
+                  <textarea
+                    className="form-input h-16 resize-none text-sm"
+                    placeholder="Mitigation / recusal notes…"
+                    value={coiNotes}
+                    onChange={(e) => setCoiNotes(e.target.value)}
+                  />
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <button className="btn-secondary flex-1" onClick={resetQuoteModal}>Cancel</button>
-              <button className="btn-primary flex-1" disabled={saveQuoteMutation.isPending || !quoteForm.vendor_name.trim() || !quoteForm.quoted_amount} onClick={() => saveQuoteMutation.mutate()}>
+              <button
+                className="btn-primary flex-1"
+                disabled={
+                  saveQuoteMutation.isPending ||
+                  !quoteForm.vendor_name.trim() ||
+                  !quoteForm.quoted_amount ||
+                  (editingQuote && (!coiDeclared || (coiHasConflict && !coiNotes.trim())))
+                }
+                onClick={() => saveQuoteMutation.mutate()}
+              >
                 {saveQuoteMutation.isPending ? "Saving..." : "Save"}
               </button>
             </div>
@@ -574,9 +622,26 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
               {eligibleQuotes.map((quote) => <option key={quote.id} value={quote.id}>{quote.vendor_name} - {quote.currency ?? currency} {(quote.quoted_amount ?? 0).toLocaleString()}</option>)}
             </select>
             <textarea className="form-input h-24 resize-none" placeholder="Award notes" value={awardNotes} onChange={(e) => setAwardNotes(e.target.value)} />
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+                <span>I confirm my COI declaration before awarding.</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+                <span>I have a conflict of interest.</span>
+              </label>
+              {coiHasConflict && (
+                <textarea className="form-input h-16 resize-none text-sm" placeholder="Mitigation notes…" value={coiNotes} onChange={(e) => setCoiNotes(e.target.value)} />
+              )}
+            </div>
             <div className="flex gap-2">
               <button className="btn-secondary flex-1" onClick={() => setShowAward(false)}>Cancel</button>
-              <button className="btn-primary flex-1" disabled={awardMutation.isPending || !awardQuoteId} onClick={() => awardMutation.mutate()}>
+              <button
+                className="btn-primary flex-1"
+                disabled={awardMutation.isPending || !awardQuoteId || !coiDeclared || (coiHasConflict && !coiNotes.trim())}
+                onClick={() => awardMutation.mutate()}
+              >
                 {awardMutation.isPending ? "Awarding..." : "Confirm Award"}
               </button>
             </div>
