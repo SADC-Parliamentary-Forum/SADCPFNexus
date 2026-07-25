@@ -420,10 +420,14 @@ class SalaryAdvanceService
             ?? ($advance->intended_recovery_payroll_date?->toDateString()
                 ?? $this->intendedRecoveryPayrollDate()->toDateString());
 
+        $schedulePayload = $this->payrollRecoveryAdapter->schedule($advance, [
+            'intended_recovery_payroll_date' => $date,
+        ]);
+
         $advance->update([
             'status'                         => 'recovery_scheduled',
             'recovery_status'                => 'scheduled',
-            'intended_recovery_payroll_date' => $date,
+            'intended_recovery_payroll_date' => $schedulePayload['payroll_date'] ?? $date,
         ]);
 
         return $advance->fresh();
@@ -450,14 +454,17 @@ class SalaryAdvanceService
             throw ValidationException::withMessages(['amount' => ['Recovery amount must be greater than zero.']]);
         }
 
-        $referenceDoc = $this->payrollRecoveryAdapter->prepareRecoveryReference($advance, $data);
+        $recordPayload = $this->payrollRecoveryAdapter->record($advance, $data);
+        $referenceDoc = $recordPayload['reference_doc'];
+        $recoveryNote = $data['notes']
+            ?? ($recordPayload['message'] ?? 'Payroll recovery (manual adapter)');
 
-        return DB::transaction(function () use ($advance, $actor, $data, $register, $amount, $referenceDoc) {
+        return DB::transaction(function () use ($advance, $actor, $register, $amount, $referenceDoc, $recoveryNote) {
             $this->balanceRegisterService->createTransaction($register, [
                 'type'          => 'recovery',
                 'amount'        => $amount,
                 'reference_doc' => $referenceDoc,
-                'notes'         => $data['notes'] ?? 'Payroll recovery (manual adapter)',
+                'notes'         => $recoveryNote,
             ], $actor);
 
             $register->refresh();
@@ -715,6 +722,11 @@ class SalaryAdvanceService
     public function payrollIntegrationStub(): array
     {
         return $this->payrollRecoveryAdapter->status();
+    }
+
+    public function payrollRecoveryStatus(SalaryAdvanceRequest $advance): array
+    {
+        return $this->payrollRecoveryAdapter->queryStatus($advance);
     }
 
     public function close(SalaryAdvanceRequest $advance, User $actor): SalaryAdvanceRequest
