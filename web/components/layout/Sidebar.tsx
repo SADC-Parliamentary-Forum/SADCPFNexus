@@ -61,6 +61,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Budget Confirmation", href: "/procurement/budget",         icon: "account_balance"     },
       { label: "Quotations (RFQ)",  href: "/procurement/rfq",              icon: "request_quote"       },
       { label: "Tenders",           href: "/procurement/tenders",          icon: "gavel"               },
+      { label: "Notice Board",      href: "/procurement/notices",          icon: "campaign"            },
       { label: "Bid Submissions",   href: "/procurement/bid-submissions",  icon: "inbox_customize"     },
       { label: "Evaluations",       href: "/procurement/evaluations",      icon: "fact_check"          },
       { label: "Tender Committee",  href: "/procurement/tender-committee", icon: "groups"              },

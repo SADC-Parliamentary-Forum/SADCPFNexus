@@ -41,4 +41,11 @@ return [
     | Days ahead to warn Procurement Officers of vendor document expiry.
     */
     'document_expiry_days' => env('PROCUREMENT_DOCUMENT_EXPIRY_DAYS', 30),
+
+    /*
+    | Phase 3: AI-assisted comparison summaries (assistive text only).
+    | Never auto-award. Stub provider is deterministic from scores.
+    */
+    'ai_comparison_enabled'  => env('PROCUREMENT_AI_COMPARISON_ENABLED', false),
+    'ai_comparison_provider' => env('PROCUREMENT_AI_COMPARISON_PROVIDER', 'stub'),
 ];

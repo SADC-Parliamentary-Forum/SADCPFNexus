@@ -47,6 +47,8 @@ Route::prefix('v1')->group(function () {
         Route::post('suppliers/register', [\App\Http\Controllers\Api\V1\Procurement\SupplierRegistrationController::class, 'register'])->middleware('throttle:10,1');
         Route::get('external-rfq/{token}', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'show'])->middleware('throttle:20,1');
         Route::post('external-rfq/{token}/quote', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'submit'])->middleware('throttle:20,1');
+        Route::get('notices', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'publicIndex'])
+            ->middleware('throttle:60,1');
     });
 
     // Authenticated routes
@@ -417,8 +419,17 @@ Route::prefix('v1')->group(function () {
             Route::post('tenders/{tender}/close', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'close']);
             Route::post('tenders/{tender}/open-bids', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'openBids']);
             Route::post('tenders/{tender}/start-evaluation', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'startEvaluation']);
+            Route::post('tenders/{tender}/comparison-summary', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'comparisonSummary']);
             Route::get('evaluations', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'evaluations']);
             Route::get('bid-submissions', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'bidSubmissions']);
+            Route::get('notice-board', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'staffIndex']);
+
+            Route::get('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'index']);
+            Route::post('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'store']);
+            Route::get('policy-profiles/{policyProfile}', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'show']);
+            Route::put('policy-profiles/{policyProfile}', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'update']);
+            Route::delete('policy-profiles/{policyProfile}', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'destroy']);
+            Route::post('policy-profiles/{policyProfile}/activate', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'activate']);
 
             Route::get('tender-committees', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'index']);
             Route::post('tender-committees', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'store']);
@@ -507,6 +518,10 @@ Route::prefix('v1')->group(function () {
             Route::get('advances/policies', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'policies']);
             Route::post('advances/policies', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'storePolicy']);
             Route::get('advances/payroll-integration', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'payrollIntegration']);
+            Route::get('advances/policy-exceptions', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'policyExceptions']);
+            Route::post('advances/policy-exceptions', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'storePolicyException']);
+            Route::post('advances/policy-exceptions/{exception}/approve', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approvePolicyException']);
+            Route::post('advances/policy-exceptions/{exception}/revoke', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'revokePolicyException']);
             Route::get('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'index']);
             Route::post('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'store']);
             Route::get('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'show']);
