@@ -27,9 +27,13 @@ import '../../features/finance/presentation/screens/budget_variance_screen.dart'
 import '../../features/finance/presentation/screens/audit_compliance_screen.dart';
 
 // Procurement
+import '../../features/procurement/presentation/screens/procurement_hub_screen.dart';
 import '../../features/procurement/presentation/screens/procurement_requisition_form_screen.dart';
 import '../../features/procurement/presentation/screens/procurement_approval_matrix_screen.dart';
 import '../../features/procurement/presentation/screens/three_quote_compliance_screen.dart';
+import '../../features/procurement/presentation/screens/procurement_tenders_screen.dart';
+import '../../features/procurement/presentation/screens/procurement_tender_detail_screen.dart';
+import '../../features/procurement/presentation/screens/procurement_notices_screen.dart';
 
 // Imprest
 import '../../features/imprest/presentation/screens/imprest_requisition_form_screen.dart';
@@ -287,6 +291,11 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ─── Procurement ───────────────────────────────────────────────────────
       GoRoute(
+        path: '/procurement',
+        name: 'procurement-hub',
+        builder: (context, state) => const ProcurementHubScreen(),
+      ),
+      GoRoute(
         path: '/procurement/vendors',
         name: 'vendor-directory',
         builder: (context, state) => const VendorDirectoryScreen(),
@@ -302,6 +311,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/procurement/form',
         name: 'procurement-form',
         builder: (context, state) => const ProcurementRequisitionFormScreen(),
+      ),
+      GoRoute(
+        path: '/procurement/tenders',
+        name: 'procurement-tenders',
+        builder: (context, state) => const ProcurementTendersScreen(),
+      ),
+      GoRoute(
+        path: '/procurement/tenders/:id',
+        name: 'procurement-tender-detail',
+        builder: (context, state) => ProcurementTenderDetailScreen(
+          tenderId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/procurement/notices',
+        name: 'procurement-notices',
+        builder: (context, state) => const ProcurementNoticesScreen(),
       ),
       GoRoute(
         path: '/procurement/approval-matrix',

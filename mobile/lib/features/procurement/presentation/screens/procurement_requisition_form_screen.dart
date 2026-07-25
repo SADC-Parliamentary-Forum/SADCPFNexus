@@ -1,28 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../data/procurement_api_helpers.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ITEM MODEL
-// ─────────────────────────────────────────────────────────────────────────────
-class _LineItem {
-  String description;
-  int qty;
-  double unitCost;
-
-  _LineItem({
-    this.description = '',
-    this.qty = 1,
-    this.unitCost = 0,
-  });
-
-  double get total => qty * unitCost;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
+/// Create procurement requisition — aligned with web create (title/desc/category/method/budget).
 class ProcurementRequisitionFormScreen extends ConsumerStatefulWidget {
   const ProcurementRequisitionFormScreen({super.key});
 
@@ -33,137 +17,186 @@ class ProcurementRequisitionFormScreen extends ConsumerStatefulWidget {
 
 class _ProcurementRequisitionFormScreenState
     extends ConsumerState<ProcurementRequisitionFormScreen> {
-  bool _submitting = false;
-  String? _selectedVendor;
-  final List<_LineItem> _items = [
-    _LineItem(
-        description: 'MacBook Pro 16-inch M3 Max', qty: 2, unitCost: 3499),
-  ];
+  final _titleCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
   final _justificationCtrl = TextEditingController();
+  final _estimatedCtrl = TextEditingController();
 
-  List<Map<String, dynamic>> _vendorsList = [];
-  bool _vendorsLoading = true;
-
-  double get _estimatedTotal =>
-      _items.fold(0, (sum, item) => sum + item.total);
-
-  static const double _budgetRemaining = 55000;
+  String _category = 'goods';
+  String _method = 'quotation';
+  String? _budgetLine;
+  DateTime? _requiredBy;
+  bool _submitting = false;
+  bool _budgetsLoading = true;
+  List<_BudgetLineOption> _budgetLines = [];
 
   @override
   void initState() {
     super.initState();
-    _loadVendors();
-  }
-
-  Future<void> _loadVendors() async {
-    try {
-      final dio = ref.read(apiClientProvider).dio;
-      final res = await dio.get<Map<String, dynamic>>(
-        '/procurement/vendors',
-        queryParameters: {'status': 'approved'},
-      );
-      final data = res.data?['data'] as List<dynamic>?;
-      if (!mounted) return;
-      setState(() {
-        _vendorsList = (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        _vendorsLoading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _vendorsLoading = false);
-    }
+    _loadBudgetLines();
   }
 
   @override
   void dispose() {
+    _titleCtrl.dispose();
+    _descriptionCtrl.dispose();
     _justificationCtrl.dispose();
+    _estimatedCtrl.dispose();
     super.dispose();
   }
 
-  String _fmtCurrency(double v) {
-    final parts = v.toStringAsFixed(2).split('.');
-    final intPart = parts[0]
-        .replaceAllMapped(
-            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
-    return '\$$intPart.${parts[1]}';
+  Future<void> _loadBudgetLines() async {
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final budgetsRes =
+          await dio.get<Map<String, dynamic>>('/finance/budgets');
+      final budgets = extractListData(budgetsRes.data);
+      final lines = <_BudgetLineOption>[];
+
+      for (final budget in budgets) {
+        final rawLines = budget['lines'] as List<dynamic>? ?? const [];
+        if (rawLines.isEmpty) {
+          // Fetch detail when list payload omits nested lines.
+          try {
+            final detail = await dio
+                .get<Map<String, dynamic>>('/finance/budgets/${budget['id']}');
+            final data = extractObjectData(detail.data) ?? {};
+            final nested = data['lines'] as List<dynamic>? ?? const [];
+            for (final raw in nested) {
+              if (raw is! Map) continue;
+              final line = Map<String, dynamic>.from(raw);
+              lines.add(_BudgetLineOption.from(budget, line));
+            }
+          } catch (_) {
+            // Skip budgets we cannot expand.
+          }
+        } else {
+          for (final raw in rawLines) {
+            if (raw is! Map) continue;
+            lines.add(
+                _BudgetLineOption.from(budget, Map<String, dynamic>.from(raw)));
+          }
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _budgetLines = lines;
+        _budgetsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _budgetsLoading = false);
+    }
   }
 
-  void _addItem() {
-    setState(() => _items.add(_LineItem()));
+  bool get _canSubmit =>
+      _titleCtrl.text.trim().isNotEmpty &&
+      _descriptionCtrl.text.trim().isNotEmpty;
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _requiredBy ?? now.add(const Duration(days: 14)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365 * 3)),
+    );
+    if (picked != null && mounted) {
+      setState(() => _requiredBy = picked);
+    }
   }
 
-  void _removeItem(int index) {
-    if (_items.length > 1) setState(() => _items.removeAt(index));
+  Map<String, dynamic> _buildPayload() {
+    final estimated = double.tryParse(_estimatedCtrl.text.trim());
+    return {
+      'title': _titleCtrl.text.trim(),
+      'description': _descriptionCtrl.text.trim(),
+      'category': _category,
+      'procurement_method': _method,
+      'currency': 'NAD',
+      if (_budgetLine != null && _budgetLine!.isNotEmpty)
+        'budget_line': _budgetLine,
+      if (_justificationCtrl.text.trim().isNotEmpty)
+        'justification': _justificationCtrl.text.trim(),
+      if (_requiredBy != null)
+        'required_by_date':
+            '${_requiredBy!.year.toString().padLeft(4, '0')}-'
+            '${_requiredBy!.month.toString().padLeft(2, '0')}-'
+            '${_requiredBy!.day.toString().padLeft(2, '0')}',
+      if (estimated != null && estimated >= 0) 'estimated_value': estimated,
+    };
   }
 
-  Future<void> _submit() async {
-    final title = _items.isNotEmpty && _items.first.description.isNotEmpty
-        ? _items.first.description
-        : 'Procurement request';
-    final description = _justificationCtrl.text.trim().isNotEmpty
-        ? _justificationCtrl.text.trim()
-        : title;
+  Future<void> _save({required bool submit}) async {
+    if (!_canSubmit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Title and description are required.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final payload = {
-        'title': title,
-        'description': description,
-        'category': 'goods',
-        'estimated_value': _estimatedTotal,
-        'currency': 'NAD',
-        'justification': _justificationCtrl.text.trim().isEmpty ? null : _justificationCtrl.text.trim(),
-        'items': _items.map((i) => {
-          'description': i.description.isEmpty ? 'Item' : i.description,
-          'quantity': i.qty,
-          'estimated_unit_price': i.unitCost,
-        }).toList(),
-      };
-      if (_selectedVendor != null) {
-        payload['quotes'] = [
-          {'vendor_name': _selectedVendor, 'quoted_amount': _estimatedTotal, 'is_recommended': true},
-        ];
-      }
-      final createRes = await dio.post<Map<String, dynamic>>('/procurement/requests', data: payload);
-      final id = createRes.data?['data']?['id'];
-      if (id != null) {
+      final createRes = await dio.post<Map<String, dynamic>>(
+        '/procurement/requests',
+        data: _buildPayload(),
+      );
+      final created = extractObjectData(createRes.data);
+      final id = created?['id'];
+
+      if (submit && id != null) {
         await dio.post('/procurement/requests/$id/submit');
       }
+
       if (!mounted) return;
       setState(() => _submitting = false);
-      Navigator.of(context).pop();
+
+      if (id != null) {
+        context.go('/procurement/detail?id=$id');
+      } else {
+        context.go('/procurement');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Procurement request submitted successfully.'),
+        SnackBar(
+          content: Text(submit
+              ? 'Procurement request submitted.'
+              : 'Draft saved.'),
           backgroundColor: AppColors.success,
         ),
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
+      final msg = e.toString().contains('422')
+          ? 'Validation failed. Check required fields and try again.'
+          : 'Failed to save procurement request.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to submit procurement request. Please try again.'),
-          backgroundColor: AppColors.danger,
-        ),
+        SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final remaining = _budgetRemaining - _estimatedTotal;
-
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
         backgroundColor: AppColors.bgDark,
         elevation: 0,
-        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: AppColors.textPrimary, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/procurement');
+            }
+          },
         ),
         title: const Text(
           'New Requisition',
@@ -175,11 +208,11 @@ class _ProcurementRequisitionFormScreenState
         ),
         actions: [
           TextButton(
-            onPressed: () {},
+            onPressed: _submitting ? null : () => _save(submit: false),
             child: const Text(
               'Save Draft',
               style: TextStyle(
-                color: AppColors.primary,
+                color: AppColors.primaryDark,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -190,235 +223,160 @@ class _ProcurementRequisitionFormScreenState
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
-          // ── Step Indicator ────────────────────────────────────────────
-          const _StepIndicator(currentStep: 1, totalSteps: 4, label: 'Vendor Details'),
-          const SizedBox(height: 20),
-
-          // ── Vendor Details Section ────────────────────────────────────
+          const Text(
+            'Submit the requisition first. Quotes and tender actions happen after approval.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
           _SectionCard(
-            title: 'Vendor Details',
-            icon: Icons.storefront_outlined,
+            title: 'Requisition Details',
+            icon: Icons.description_outlined,
             iconColor: AppColors.primary,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Select Preferred Vendor',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                _label('Title *'),
+                _textField(_titleCtrl, 'e.g. Office furniture for chamber'),
+                const SizedBox(height: 12),
+                _label('Description *'),
+                _textField(_descriptionCtrl,
+                    'Describe what is being procured and why…',
+                    maxLines: 3),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _label('Category *'),
+                          _dropdown(
+                            value: _category,
+                            items: const ['goods', 'services', 'works'],
+                            labels: const {
+                              'goods': 'Goods',
+                              'services': 'Services',
+                              'works': 'Works',
+                            },
+                            onChanged: (v) =>
+                                setState(() => _category = v ?? 'goods'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _label('Method'),
+                          _dropdown(
+                            value: _method,
+                            items: const [
+                              'quotation',
+                              'tender',
+                              'direct',
+                            ],
+                            labels: const {
+                              'quotation': 'RFQ',
+                              'tender': 'Open Tender',
+                              'direct': 'Direct',
+                            },
+                            onChanged: (v) =>
+                                setState(() => _method = v ?? 'quotation'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                _vendorsLoading
+                const SizedBox(height: 12),
+                _label('Budget Line'),
+                _budgetsLoading
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))),
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
                       )
-                    : _AppDropdown<String>(
-                        hint: _vendorsList.isEmpty ? 'No approved vendors found' : 'Select approved vendor…',
-                        value: _selectedVendor,
-                        items: _vendorsList.map((v) => v['name'] as String? ?? '').where((n) => n.isNotEmpty).toList(),
-                        onChanged: (v) => setState(() => _selectedVendor = v),
-                        itemLabel: (v) => v,
+                    : _dropdown(
+                        value: _budgetLine,
+                        hint: _budgetLines.isEmpty
+                            ? 'No budget lines available'
+                            : 'Select budget line…',
+                        items: _budgetLines.map((l) => l.value).toList(),
+                        labels: {
+                          for (final l in _budgetLines) l.value: l.label,
+                        },
+                        onChanged: (v) => setState(() => _budgetLine = v),
                       ),
-                const SizedBox(height: 12),
-                // Warning banner
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                        color: AppColors.warning.withValues(alpha: 0.35)),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded,
-                          color: AppColors.warning, size: 16),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Vendor contract expires in 45 days',
-                          style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Item Specification Section ────────────────────────────────
-          _SectionCard(
-            title: 'Item Specification',
-            icon: Icons.inventory_2_outlined,
-            iconColor: AppColors.info,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ..._items.asMap().entries.map((entry) {
-                  final i = entry.key;
-                  final item = entry.value;
-                  return _ItemRow(
-                    item: item,
-                    index: i,
-                    canRemove: _items.length > 1,
-                    fmtCurrency: _fmtCurrency,
-                    onChanged: () => setState(() {}),
-                    onRemove: () => _removeItem(i),
-                  );
-                }),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: _addItem,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add_circle_outline_rounded,
-                          color: AppColors.primary, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        '+ Add Another Item',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Business Justification ────────────────────────────────────
-          _SectionCard(
-            title: 'Business Justification',
-            icon: Icons.description_outlined,
-            iconColor: AppColors.gold,
-            child: TextField(
-              controller: _justificationCtrl,
-              maxLines: 4,
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 13),
-              decoration: InputDecoration(
-                hintText:
-                    'Describe the business need and expected benefit...',
-                hintStyle: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 12),
-                filled: true,
-                fillColor: AppColors.bgDark,
-                contentPadding: const EdgeInsets.all(12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: AppColors.primary, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Budget Code Bar ───────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.bgSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'IT-FW-2024',
+                if (_budgetLine != null) ...[
+                  const SizedBox(height: 6),
+                  Builder(builder: (_) {
+                    final opt = _budgetLines
+                        .where((l) => l.value == _budgetLine)
+                        .firstOrNull;
+                    if (opt == null || opt.available == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return Text(
+                      'Available on line: NAD ${opt.available!.toStringAsFixed(2)}',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: opt.available! >= 0
+                            ? AppColors.success
+                            : AppColors.danger,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }),
+                ],
+                const SizedBox(height: 12),
+                _label('Required By'),
+                InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgDark,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      _requiredBy == null
+                          ? 'Select date…'
+                          : '${_requiredBy!.year}-'
+                              '${_requiredBy!.month.toString().padLeft(2, '0')}-'
+                              '${_requiredBy!.day.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        color: _requiredBy == null
+                            ? AppColors.textMuted
+                            : AppColors.textPrimary,
                         fontSize: 13,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color:
-                                AppColors.success.withValues(alpha: 0.35)),
-                      ),
-                      child: const Text(
-                        'Approved',
-                        style: TextStyle(
-                          color: AppColors.success,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Estimated Total',
-                            style: TextStyle(
-                                color: AppColors.textMuted, fontSize: 10)),
-                        Text(
-                          _fmtCurrency(_estimatedTotal),
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Budget Remaining',
-                            style: TextStyle(
-                                color: AppColors.textMuted, fontSize: 10)),
-                        Text(
-                          _fmtCurrency(remaining),
-                          style: TextStyle(
-                            color: remaining >= 0
-                                ? AppColors.success
-                                : AppColors.danger,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 12),
+                _label('Estimated Value (NAD)'),
+                _textField(_estimatedCtrl, '0.00',
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true)),
+                const SizedBox(height: 12),
+                _label('Justification'),
+                _textField(_justificationCtrl,
+                    'Business need and expected benefit…',
+                    maxLines: 3),
               ],
             ),
           ),
@@ -430,7 +388,7 @@ class _ProcurementRequisitionFormScreenState
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: _submitting ? null : _submit,
+              onPressed: _submitting ? null : () => _save(submit: true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.bgDark,
@@ -447,17 +405,10 @@ class _ProcurementRequisitionFormScreenState
                         color: AppColors.bgDark,
                       ),
                     )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Proceed to Attachments',
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, size: 18),
-                      ],
+                  : const Text(
+                      'Submit for Approval',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
             ),
           ),
@@ -465,79 +416,138 @@ class _ProcurementRequisitionFormScreenState
       ),
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  STEP INDICATOR
-// ─────────────────────────────────────────────────────────────────────────────
-class _StepIndicator extends StatelessWidget {
-  final int currentStep;
-  final int totalSteps;
-  final String label;
-
-  const _StepIndicator({
-    required this.currentStep,
-    required this.totalSteps,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Step $currentStep of $totalSteps: $label',
-              style: const TextStyle(
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(text,
+            style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              '${((currentStep / totalSteps) * 100).toInt()}%',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+                fontWeight: FontWeight.w600)),
+      );
+
+  Widget _textField(
+    TextEditingController ctrl,
+    String hint, {
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      onChanged: (_) => setState(() {}),
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        filled: true,
+        fillColor: AppColors.bgDark,
+        contentPadding: const EdgeInsets.all(12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: currentStep / totalSteps,
-            minHeight: 5,
-            backgroundColor: AppColors.border,
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide:
+              const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _dropdown({
+    required String? value,
+    required List<String> items,
+    required Map<String, String> labels,
+    required ValueChanged<String?> onChanged,
+    String? hint,
+  }) {
+    final effectiveValue =
+        value != null && items.contains(value) ? value : null;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.bgDark,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: effectiveValue,
+          hint: Text(hint ?? 'Select…',
+              style:
+                  const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          isExpanded: true,
+          dropdownColor: AppColors.bgSurface,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              color: AppColors.textMuted),
+          style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500),
+          onChanged: onChanged,
+          items: items
+              .map((item) => DropdownMenuItem(
+                    value: item,
+                    child: Text(labels[item] ?? item,
+                        overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
+        ),
+      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SECTION CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color iconColor;
-  final Widget child;
+class _BudgetLineOption {
+  const _BudgetLineOption({
+    required this.value,
+    required this.label,
+    this.available,
+  });
 
+  final String value;
+  final String label;
+  final double? available;
+
+  factory _BudgetLineOption.from(
+      Map<String, dynamic> budget, Map<String, dynamic> line) {
+    final code = line['account_code'] as String?;
+    final desc =
+        (line['description'] as String?) ?? (line['category'] as String?) ?? '';
+    final value = (code != null && code.isNotEmpty)
+        ? code
+        : '${budget['id']}-${line['id']}';
+    final allocated = (line['amount_allocated'] as num?)?.toDouble();
+    final spent = (line['amount_spent'] as num?)?.toDouble() ?? 0;
+    final available =
+        allocated == null ? null : (allocated - spent);
+    final budgetName = budget['name'] as String? ?? 'Budget';
+    final year = budget['year'];
+    final label =
+        '${code != null && code.isNotEmpty ? '$code — ' : ''}$desc ($budgetName${year != null ? ' $year' : ''})';
+    return _BudgetLineOption(value: value, label: label, available: available);
+  }
+}
+
+class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
     required this.icon,
     required this.iconColor,
     required this.child,
   });
+
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -574,289 +584,6 @@ class _SectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           child,
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  DROPDOWN
-// ─────────────────────────────────────────────────────────────────────────────
-class _AppDropdown<T> extends StatelessWidget {
-  final String hint;
-  final T? value;
-  final List<T> items;
-  final ValueChanged<T?> onChanged;
-  final String Function(T) itemLabel;
-
-  const _AppDropdown({
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    required this.itemLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.bgDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          hint: Text(hint,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 13)),
-          dropdownColor: AppColors.bgSurface,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: AppColors.textMuted),
-          isExpanded: true,
-          style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500),
-          onChanged: onChanged,
-          items: items
-              .map((item) => DropdownMenuItem<T>(
-                    value: item,
-                    child: Text(itemLabel(item)),
-                  ))
-              .toList(),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  ITEM ROW
-// ─────────────────────────────────────────────────────────────────────────────
-class _ItemRow extends StatefulWidget {
-  final _LineItem item;
-  final int index;
-  final bool canRemove;
-  final String Function(double) fmtCurrency;
-  final VoidCallback onChanged;
-  final VoidCallback onRemove;
-
-  const _ItemRow({
-    required this.item,
-    required this.index,
-    required this.canRemove,
-    required this.fmtCurrency,
-    required this.onChanged,
-    required this.onRemove,
-  });
-
-  @override
-  State<_ItemRow> createState() => _ItemRowState();
-}
-
-class _ItemRowState extends State<_ItemRow> {
-  late final TextEditingController _descCtrl;
-  late final TextEditingController _qtyCtrl;
-  late final TextEditingController _costCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _descCtrl = TextEditingController(text: widget.item.description);
-    _qtyCtrl = TextEditingController(
-        text: widget.item.qty > 0 ? widget.item.qty.toString() : '');
-    _costCtrl = TextEditingController(
-        text: widget.item.unitCost > 0
-            ? widget.item.unitCost.toStringAsFixed(2)
-            : '');
-  }
-
-  @override
-  void dispose() {
-    _descCtrl.dispose();
-    _qtyCtrl.dispose();
-    _costCtrl.dispose();
-    super.dispose();
-  }
-
-  InputDecoration _inputDeco(String hint) => InputDecoration(
-        hintText: hint,
-        hintStyle:
-            const TextStyle(color: AppColors.textMuted, fontSize: 12),
-        filled: true,
-        fillColor: AppColors.bgDark,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.bgDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: Text(
-                    '${widget.index + 1}',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Item Description',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Not in Inventory',
-                  style: TextStyle(
-                    color: AppColors.warning,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (widget.canRemove) ...[
-                const SizedBox(width: 6),
-                GestureDetector(
-                  onTap: widget.onRemove,
-                  child: const Icon(Icons.remove_circle_outline_rounded,
-                      color: AppColors.danger, size: 18),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _descCtrl,
-            onChanged: (v) {
-              widget.item.description = v;
-              widget.onChanged();
-            },
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 13),
-            decoration: _inputDeco('e.g. MacBook Pro 16-inch M3 Max'),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Qty',
-                        style: TextStyle(
-                            color: AppColors.textMuted, fontSize: 10)),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: _qtyCtrl,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) {
-                        widget.item.qty = int.tryParse(v) ?? 0;
-                        widget.onChanged();
-                      },
-                      style: const TextStyle(
-                          color: AppColors.textPrimary, fontSize: 13),
-                      decoration: _inputDeco('1'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Est. Unit Cost',
-                        style: TextStyle(
-                            color: AppColors.textMuted, fontSize: 10)),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: _costCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
-                      onChanged: (v) {
-                        widget.item.unitCost = double.tryParse(v) ?? 0;
-                        widget.onChanged();
-                      },
-                      style: const TextStyle(
-                          color: AppColors.textPrimary, fontSize: 13),
-                      decoration: _inputDeco('0.00'),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const Text(
-                'Total: ',
-                style: TextStyle(
-                    color: AppColors.textMuted, fontSize: 11),
-              ),
-              Text(
-                widget.fmtCurrency(widget.item.total),
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

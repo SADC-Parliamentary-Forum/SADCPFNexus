@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart' show AppDateFormatter;
+import '../../data/procurement_api_helpers.dart';
 
 class ProcurementDetailScreen extends ConsumerStatefulWidget {
   const ProcurementDetailScreen({super.key, this.requestId});
@@ -48,7 +49,7 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
 
   void _safePopOrGoHome() {
     if (context.canPop()) { context.pop(); }
-    else { context.go('/requests'); }
+    else { context.go('/procurement'); }
   }
 
   Future<void> _submit() async {
@@ -179,12 +180,16 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
     final isSubmitted = status == 'submitted';
     final isRejected = status == 'rejected';
 
-    final statusConfig = _statusConfig(status);
+    final statusConfig = procurementStatusConfig(status);
     final items = (r['items'] as List? ?? []).cast<Map<String, dynamic>>();
     final quotes = (r['quotes'] as List? ?? []).cast<Map<String, dynamic>>();
+    final reservations = (r['budget_reservations'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
     final awardedQuoteId = r['awarded_quote_id'];
 
-    final currency = r['currency'] as String? ?? 'N\$';
+    final currency = r['currency'] as String? ?? 'NAD';
     final estimated = (r['estimated_value'] as num?)?.toDouble() ?? 0;
 
     return RefreshIndicator(
@@ -285,6 +290,63 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
             const SizedBox(height: 12),
           ],
 
+          // ── Budget reservations ────────────────────────────────────────────
+          if (reservations.isNotEmpty) ...[
+            _card(children: [
+              _sectionHeader('Budget Reservations', Icons.account_balance_outlined, AppColors.info),
+              ...reservations.map((res) {
+                final amount = (res['reserved_amount'] as num?)?.toDouble() ?? 0;
+                final line = res['budget_line'] as String? ?? r['budget_line'] as String? ?? '—';
+                final resStatus = (res['status'] as String? ?? 'active').toLowerCase();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(line,
+                                style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                            Text(resStatus,
+                                style: const TextStyle(
+                                    color: AppColors.textMuted, fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                      Text('$currency ${amount.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 4),
+            ]),
+            const SizedBox(height: 12),
+          ] else if (r['budget_line'] != null) ...[
+            _card(children: [
+              _sectionHeader('Budget', Icons.account_balance_outlined, AppColors.info),
+              _row('Budget Line', r['budget_line'] as String),
+              if (status == 'hod_approved')
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Text(
+                    'Awaiting finance budget reservation (web).',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                  ),
+                )
+              else
+                const SizedBox(height: 8),
+            ]),
+            const SizedBox(height: 12),
+          ],
+
           // ── Supplier quotes ────────────────────────────────────────────────
           if (quotes.isNotEmpty) ...[
             _card(children: [
@@ -312,8 +374,37 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
             _approvalStep(
               role: 'Head of Department',
               name: r['hod'] != null ? r['hod']['name'] as String? ?? 'Pending' : 'Pending',
-              done: ['hod_approved', 'rfq_issued', 'evaluated', 'awarded', 'po_issued', 'completed']
-                  .contains(status),
+              done: [
+                'hod_approved',
+                'budget_reserved',
+                'rfq_issued',
+                'evaluated',
+                'awarded',
+                'po_issued',
+                'completed',
+              ].contains(status),
+              isLast: false,
+            ),
+            _approvalStep(
+              role: 'Finance (budget)',
+              name: [
+                'budget_reserved',
+                'rfq_issued',
+                'evaluated',
+                'awarded',
+                'po_issued',
+                'completed',
+              ].contains(status)
+                  ? 'Reserved'
+                  : 'Pending',
+              done: [
+                'budget_reserved',
+                'rfq_issued',
+                'evaluated',
+                'awarded',
+                'po_issued',
+                'completed',
+              ].contains(status),
               isLast: false,
             ),
             _approvalStep(
@@ -325,8 +416,8 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
               isLast: false,
             ),
             _approvalStep(
-              role: 'Finance / Director',
-              name: status == 'completed' ? 'Approved' : 'Awaiting',
+              role: 'Completed',
+              name: status == 'completed' ? 'Done' : 'Awaiting',
               done: status == 'completed',
               isLast: true,
             ),
@@ -397,22 +488,6 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
     if (submitted != null) parts.add('Submitted ${AppDateFormatter.short(submitted)}');
     if (quotes > 0) parts.add('$quotes quote${quotes == 1 ? '' : 's'} received');
     return parts.isNotEmpty ? parts.join('  ·  ') : _titleCase(status.replaceAll('_', ' '));
-  }
-
-  _StatusConfig _statusConfig(String status) {
-    switch (status) {
-      case 'draft':       return _StatusConfig(AppColors.textMuted, Icons.edit_outlined, 'Draft');
-      case 'submitted':   return _StatusConfig(AppColors.warning, Icons.hourglass_empty, 'Pending HOD');
-      case 'hod_approved':return _StatusConfig(AppColors.info, Icons.thumb_up_outlined, 'HOD Approved');
-      case 'rfq_issued':  return _StatusConfig(AppColors.info, Icons.send_outlined, 'RFQ Issued');
-      case 'evaluated':   return _StatusConfig(AppColors.primary, Icons.compare_outlined, 'Evaluated');
-      case 'awarded':     return _StatusConfig(AppColors.success, Icons.emoji_events_outlined, 'Awarded');
-      case 'po_issued':   return _StatusConfig(AppColors.success, Icons.receipt_long_outlined, 'PO Issued');
-      case 'completed':   return _StatusConfig(AppColors.success, Icons.check_circle_outlined, 'Completed');
-      case 'rejected':    return _StatusConfig(AppColors.danger, Icons.cancel_outlined, 'Rejected');
-      case 'cancelled':   return _StatusConfig(AppColors.textMuted, Icons.block_outlined, 'Cancelled');
-      default:            return _StatusConfig(AppColors.textMuted, Icons.inventory_2_outlined, _titleCase(status));
-    }
   }
 
   String _titleCase(String s) =>
@@ -540,11 +615,4 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
           const Text('Awaiting', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
       ]),
     );
-}
-
-class _StatusConfig {
-  final Color color;
-  final IconData icon;
-  final String label;
-  const _StatusConfig(this.color, this.icon, this.label);
 }

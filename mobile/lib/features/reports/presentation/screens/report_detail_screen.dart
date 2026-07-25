@@ -44,7 +44,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
       case 'imprest':
         return '/imprest/requests';
       case 'procurement':
-        return '/procurement/requests';
+        return '/procurement';
       case 'finance':
         return '/finance/advances';
       case 'hr':

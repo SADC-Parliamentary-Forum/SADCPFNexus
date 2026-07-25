@@ -402,10 +402,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _ActionButton(icon: Icons.account_balance_wallet, label: 'Finance',
                             onTap: () => context.push('/finance/command-center')),
                         ],
-                        if (canAccessFeature(_permissions, _roles, '/procurement/form')) ...[
+                        if (canAccessFeature(_permissions, _roles, '/procurement')) ...[
                           const SizedBox(width: 10),
                           _ActionButton(icon: Icons.inventory_2_outlined, label: 'Procure',
-                            onTap: () => context.push('/procurement/form')),
+                            onTap: () => context.push('/procurement')),
                         ],
                       ],
                     ),
@@ -437,10 +437,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _ModuleTile(icon: Icons.account_balance_outlined, label: 'Finance',
                             color: c.primary,
                             onTap: () => context.push('/finance/command-center')),
-                        if (canAccessFeature(_permissions, _roles, '/procurement/form'))
+                        if (canAccessFeature(_permissions, _roles, '/procurement'))
                           _ModuleTile(icon: Icons.inventory_2_outlined, label: 'Procurement',
                             color: c.secondary,
-                            onTap: () => context.push('/procurement/form')),
+                            onTap: () => context.push('/procurement')),
                         if (canAccessFeature(_permissions, _roles, '/imprest/form'))
                           _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
                             color: c.primary,

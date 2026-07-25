@@ -39,7 +39,7 @@ const _moduleEntries = [
   _DrawerEntry(path: '/requests/travel/new', label: 'Travel', icon: Icons.flight_takeoff),
   _DrawerEntry(path: '/requests', label: 'Leave', icon: Icons.event_available),
   _DrawerEntry(path: '/finance/command-center', label: 'Finance', icon: Icons.account_balance_outlined),
-  _DrawerEntry(path: '/procurement/form', label: 'Procurement', icon: Icons.inventory_2_outlined),
+  _DrawerEntry(path: '/procurement', label: 'Procurement', icon: Icons.inventory_2_outlined),
   _DrawerEntry(path: '/imprest/form', label: 'Imprest', icon: Icons.account_balance_wallet_outlined),
   _DrawerEntry(path: '/timesheets', label: 'Timesheets', icon: Icons.schedule_outlined),
   _DrawerEntry(path: '/hr/dashboard', label: 'HR', icon: Icons.people_outline),

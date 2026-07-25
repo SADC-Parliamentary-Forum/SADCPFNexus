@@ -123,7 +123,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     for (final entry in const {
       'dsa': '/reports/dsa',
       'finance': '/finance/advances',
-      'procurement': '/procurement/requests',
+      'procurement': '/procurement',
       'hr': '/hr/timesheets',
     }.entries) {
       try {
