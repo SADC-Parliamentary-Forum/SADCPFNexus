@@ -30,10 +30,12 @@ class RequireMfaForPrivileged
         'profile/2fa/confirm',
         'profile/2fa/disable',
         'profile/2fa/verify',
+        'profile/sessions',
+        'profile/sessions/others',
+        'profile/password',
         'auth/logout',
         'auth/me',
         'auth/force-reset-password',
-        'profile/password',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -61,11 +63,14 @@ class RequireMfaForPrivileged
         }
 
         $path = trim($request->path(), '/');
-        // path like api/v1/profile/2fa/enable
+        // path like api/v1/profile/2fa/enable — also allow profile/sessions/{id}
         foreach (self::ALLOWED_PATH_SUFFIXES as $suffix) {
             if (str_ends_with($path, $suffix)) {
                 return $next($request);
             }
+        }
+        if (preg_match('#(^|/)profile/sessions/\d+$#', $path) === 1) {
+            return $next($request);
         }
 
         return response()->json([

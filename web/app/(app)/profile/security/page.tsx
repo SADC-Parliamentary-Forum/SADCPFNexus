@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { readStoredUser, writeStoredUser } from "@/lib/session";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 import { formatDateRelative } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 const NAV = [
   { label: "Profile",     href: "/profile",           icon: "person" },
@@ -16,10 +18,12 @@ const NAV = [
 
 export default function ProfileSecurityPage() {
   const { t } = useI18n();
+  const router = useRouter();
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("60");
   const [forceMfaBanner, setForceMfaBanner] = useState(false);
+  const [mfaJustEnabled, setMfaJustEnabled] = useState(false);
 
   // 2FA state
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -61,12 +65,14 @@ export default function ProfileSecurityPage() {
 
   useEffect(() => { loadSessions(); }, []);
 
-  // Load weekly summary preference
+  // Load weekly summary preference after MFA status is known (avoid 403 noise while gated).
   useEffect(() => {
+    if (mfaLoading) return;
+    if (forceMfaBanner && !mfaEnabled) return;
     weeklySummaryApi.getPreferences()
       .then((res) => setWeeklyPref(res.data.data))
       .catch(() => {});
-  }, []);
+  }, [mfaLoading, forceMfaBanner, mfaEnabled]);
 
   const handleSaveWeeklyPref = async () => {
     if (!weeklyPref) return;
@@ -130,9 +136,14 @@ export default function ProfileSecurityPage() {
       await twoFactorApi.confirm(totpCode);
       setMfaEnabled(true);
       setForceMfaBanner(false);
+      setMfaJustEnabled(true);
       setShowSetupModal(false);
       setMfaSetup(null);
       setTotpCode("");
+      const stored = readStoredUser();
+      if (stored) {
+        writeStoredUser({ ...stored, mfa_enabled: true });
+      }
       showToast("2FA enabled successfully. Your account is now more secure.");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { code?: string[] }; message?: string } } };
@@ -245,7 +256,26 @@ export default function ProfileSecurityPage() {
           <div>
             <p className="font-semibold">{t("mfa.setupTitle")}</p>
             <p className="mt-0.5 text-amber-800/90">{t("mfa.setupRequired")}</p>
+            <p className="mt-2 text-xs text-amber-800/80">
+              Enable authenticator MFA below to unlock dashboards and modules. Background API calls are paused until then so you are not bounced off this page.
+            </p>
           </div>
+        </div>
+      )}
+
+      {mfaJustEnabled && mfaEnabled && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900">
+          <div>
+            <p className="font-semibold">MFA is enabled</p>
+            <p className="text-green-800/90 text-xs mt-0.5">You can continue to the rest of the application.</p>
+          </div>
+          <button
+            type="button"
+            className="btn-primary text-sm"
+            onClick={() => router.push("/dashboard")}
+          >
+            Continue to dashboard
+          </button>
         </div>
       )}
 

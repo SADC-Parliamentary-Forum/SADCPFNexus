@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { clearStoredUser } from "@/lib/session";
-import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import type { AuthUser } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 
@@ -551,11 +551,6 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
 
       {/* ── User footer ───────────────────────────────────────────────── */}
       <div className={cn("border-t border-neutral-700/50 flex-shrink-0", isCollapsed ? "p-2" : "p-3")}>
-        {!isCollapsed && (
-          <div className="mb-2 px-1">
-            <LocaleSwitcher className="w-full [&_select]:w-full [&_select]:bg-neutral-800 [&_select]:border-neutral-600 [&_select]:text-neutral-200" />
-          </div>
-        )}
         <div
           className={cn(
             "rounded-lg transition-colors",

@@ -16,12 +16,15 @@ import {
 import { clearStoredUser, readStoredUser } from "@/lib/session";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { GlobalSearch } from "./GlobalSearch";
+import { LocaleIconSwitcher } from "@/lib/i18n/LocaleProvider";
+import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 
 interface StoredUser {
   name: string;
   email: string;
   roles?: string[];
   classification?: string;
+  mfa_enabled?: boolean;
 }
 
 interface HeaderProps {
@@ -43,7 +46,16 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     if (storedUser) setUser(storedUser);
   }, []);
 
-  // Unread count for bell badge — polls every 15s when tab is active, pauses when hidden
+  const mfaSetupBlocking = Boolean(
+    user &&
+      requiresPrivilegedMfaSetup({
+        roles: user.roles,
+        mfa_enabled: user.mfa_enabled,
+      })
+  );
+
+  // Unread count for bell badge — polls every 15s when tab is active, pauses when hidden.
+  // Skip while privileged MFA setup is required (avoids 403 → redirect loop to /profile/security).
   const { data: countData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => userNotificationsApi.unreadCount().then((r) => r.data.count),
@@ -51,13 +63,14 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     refetchInterval: 15_000,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
+    enabled: !mfaSetupBlocking,
   });
 
   // Recent notifications for dropdown — fetched when panel opens
   const { data: notifPage, isLoading: notifLoading } = useQuery({
     queryKey: ["notifications", "recent"],
     queryFn: () => userNotificationsApi.list({ per_page: 10 }).then((r) => r.data),
-    enabled: showNotifications,
+    enabled: showNotifications && !mfaSetupBlocking,
     staleTime: 20_000,
   });
 
@@ -158,6 +171,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
 
       {/* Right: Actions + User */}
       <div className="flex items-center gap-3 flex-shrink-0">
+        <LocaleIconSwitcher />
+
         {/* Theme toggle */}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

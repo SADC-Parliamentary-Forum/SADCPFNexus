@@ -70,14 +70,21 @@ api.interceptors.response.use(
       const data = error.response?.data as { mfa_setup_required?: boolean; message?: string } | undefined;
 
       // Privileged role without MFA — send user to security setup (API middleware).
+      // Skip background notification polls and any call already on the security page.
       if (
         status === 403 &&
         data?.mfa_setup_required === true &&
         !_redirectingMfaSetup &&
         !window.location.pathname.startsWith(MFA_SETUP_PATH)
       ) {
-        _redirectingMfaSetup = true;
-        window.location.href = MFA_SETUP_PATH;
+        const failedUrl = (error.config?.url ?? "").toString();
+        const isBackgroundNoise =
+          failedUrl.includes("/notifications") ||
+          failedUrl.includes("unread-count");
+        if (!isBackgroundNoise) {
+          _redirectingMfaSetup = true;
+          window.location.href = MFA_SETUP_PATH;
+        }
         return Promise.reject(error);
       }
 
