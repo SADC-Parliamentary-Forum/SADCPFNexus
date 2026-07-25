@@ -6,7 +6,6 @@ use App\Models\Attachment;
 use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Models\Tenant;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -52,7 +51,7 @@ class QuoteAttachmentTest extends TestCase
         [$http] = $this->asProcurementOfficer($tenant);
 
         $response = $http->post('/api/v1/procurement/requests/' . $request->id . '/quotes/' . $quote->id . '/attachments', [
-            'file' => UploadedFile::fake()->create('submitted-quote.pdf', 120, 'application/pdf'),
+            'file' => $this->fakePdf('submitted-quote.pdf'),
             'document_type' => Attachment::DOCUMENT_TYPE_QUOTE_RECEIVED,
         ]);
 
@@ -112,7 +111,7 @@ class QuoteAttachmentTest extends TestCase
         [$http] = $this->asStaff($tenant);
 
         $http->post('/api/v1/procurement/requests/' . $request->id . '/quotes/' . $quote->id . '/attachments', [
-            'file' => UploadedFile::fake()->create('submitted-quote.pdf', 120, 'application/pdf'),
+            'file' => $this->fakePdf('submitted-quote.pdf'),
             'document_type' => Attachment::DOCUMENT_TYPE_QUOTE_RECEIVED,
         ])->assertForbidden();
     }
@@ -130,7 +129,7 @@ class QuoteAttachmentTest extends TestCase
         [$http] = $this->asProcurementOfficer($tenant);
 
         $http->post('/api/v1/procurement/requests/' . $request->id . '/quotes/' . $foreignQuote->id . '/attachments', [
-            'file' => UploadedFile::fake()->create('submitted-quote.pdf', 120, 'application/pdf'),
+            'file' => $this->fakePdf('submitted-quote.pdf'),
             'document_type' => Attachment::DOCUMENT_TYPE_QUOTE_RECEIVED,
         ])->assertNotFound();
     }

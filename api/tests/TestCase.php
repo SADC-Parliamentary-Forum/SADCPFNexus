@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 
 abstract class TestCase extends BaseTestCase
@@ -180,5 +181,28 @@ abstract class TestCase extends BaseTestCase
             'description'  => 'Test supplier category',
             'is_active'    => true,
         ], $overrides));
+    }
+
+    // ── Upload helpers (real magic bytes for UploadContentSniffer) ───────────
+
+    /**
+     * Laravel UploadedFile::fake()->create() writes empty/random bytes that
+     * finfo rejects. Use real minimal PDF/PNG content so content sniffing passes.
+     */
+    protected function fakePdf(string $filename = 'document.pdf'): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent(
+            $filename,
+            "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
+        );
+    }
+
+    protected function fakePng(string $filename = 'image.png'): UploadedFile
+    {
+        // 1x1 transparent PNG
+        return UploadedFile::fake()->createWithContent(
+            $filename,
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+        );
     }
 }

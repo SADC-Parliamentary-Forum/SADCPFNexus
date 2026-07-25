@@ -3,7 +3,6 @@
 namespace Tests\Feature\Procurement;
 
 use App\Models\Tenant;
-use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class SupplierRegistrationTest extends TestCase
@@ -29,7 +28,7 @@ class SupplierRegistrationTest extends TestCase
             'password'              => 'Secret123!',
             'password_confirmation' => 'Secret123!',
             'category_ids'          => [$category->id],
-            'documents'             => [UploadedFile::fake()->create('company-profile.pdf', 20, 'application/pdf')],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
@@ -73,7 +72,7 @@ class SupplierRegistrationTest extends TestCase
             'password'              => 'Secret123!',
             'password_confirmation' => 'Secret123!',
             'category_ids'          => $categories->pluck('id')->all(),
-            'documents'             => [UploadedFile::fake()->create('tax-clearance.pdf', 20, 'application/pdf')],
+            'documents'             => [$this->fakePdf('tax-clearance.pdf')],
         ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['category_ids']);
     }
 
@@ -98,7 +97,7 @@ class SupplierRegistrationTest extends TestCase
             'password'              => 'Secret123!',
             'password_confirmation' => 'Secret123!',
             'category_ids'          => [$category->id],
-            'documents'             => [UploadedFile::fake()->create('company-profile.pdf', 20, 'application/pdf')],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json'])->assertCreated();
 
         [$http] = $this->asProcurementOfficer($tenant);
