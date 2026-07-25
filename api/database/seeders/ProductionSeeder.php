@@ -5,10 +5,12 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 
 /**
- * Production seeder — structural/reference data only. No users.
+ * Production seeder — structural/reference data only. No users. No demo module data.
  *
  * Run with: php artisan db:seed --class=ProductionSeeder
  * Then create the admin:  php artisan app:create-admin
+ *
+ * Do NOT use DatabaseSeeder / DemoDataSeeder in production.
  */
 class ProductionSeeder extends Seeder
 {

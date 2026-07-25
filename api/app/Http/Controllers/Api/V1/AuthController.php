@@ -25,11 +25,8 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $status = Password::sendResetLink(['email' => $data['email']]);
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            return response()->json(['message' => __($status)], 422);
-        }
+        // Always return the same response to prevent account enumeration.
+        Password::sendResetLink(['email' => $data['email']]);
 
         return response()->json([
             'message' => 'If an account with that email exists, a password reset link has been sent.',

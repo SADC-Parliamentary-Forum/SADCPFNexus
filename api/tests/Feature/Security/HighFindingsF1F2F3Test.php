@@ -156,15 +156,16 @@ class HighFindingsF1F2F3Test extends TestCase
         ]);
 
         $imprest = ImprestRequest::create([
-            'tenant_id'        => $tenant->id,
-            'requester_id'     => $owner->id,
-            'reference_number' => 'IMP-CERT-PEER',
-            'budget_line'      => 'OPS-001',
-            'amount_requested' => 500,
-            'currency'         => 'NAD',
-            'purpose'          => 'Cash float',
-            'justification'    => 'Hidden justification',
-            'status'           => 'approved',
+            'tenant_id'                 => $tenant->id,
+            'requester_id'              => $owner->id,
+            'reference_number'          => 'IMP-CERT-PEER',
+            'budget_line'               => 'OPS-001',
+            'amount_requested'          => 500,
+            'currency'                  => 'NAD',
+            'purpose'                   => 'Cash float',
+            'justification'             => 'Hidden justification',
+            'expected_liquidation_date' => now()->addDays(30)->toDateString(),
+            'status'                    => 'approved',
         ]);
 
         $procurement = ProcurementRequest::create([
@@ -173,6 +174,7 @@ class HighFindingsF1F2F3Test extends TestCase
             'reference_number' => 'PRC-CERT-PEER',
             'title'            => 'Sensitive purchase',
             'description'      => 'Should not leak',
+            'category'         => 'goods',
             'justification'    => 'Hidden',
             'estimated_value'  => 10000,
             'currency'         => 'NAD',

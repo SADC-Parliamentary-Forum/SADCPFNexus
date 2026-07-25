@@ -44,4 +44,14 @@ return [
         'private_key'          => env('FCM_PRIVATE_KEY'),
     ],
 
+    // Machine-to-machine token for GET /api/v1/external/workplan
+    'external_workplan' => [
+        'token' => env('EXTERNAL_WORKPLAN_TOKEN'),
+    ],
+
+    // Optional Sentry (install sentry/sentry-laravel when DSN is available)
+    'sentry' => [
+        'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
+    ],
+
 ];

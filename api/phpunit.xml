@@ -25,5 +25,8 @@
         <env name="MAIL_MAILER"      value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER"   value="array"/>
+        <!-- Never require privileged MFA in PHPUnit (middleware also skips APP_ENV=testing). -->
+        <env name="REQUIRE_PRIVILEGED_MFA" value="false"/>
+        <env name="SENTRY_LARAVEL_DSN" value=""/>
     </php>
 </phpunit>

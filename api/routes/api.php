@@ -32,10 +32,13 @@ Route::prefix('v1')->group(function () {
         [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'preview']
     )->middleware('throttle:20,1');
 
-    // Public external integration endpoints (no auth required)
+    // External integration feed — X-External-Token or workplan.external Sanctum
     Route::prefix('external')->group(function () {
         Route::get('workplan', [\App\Http\Controllers\Api\V1\Workplan\WorkplanExternalController::class, 'index'])
-            ->middleware('throttle:30,1');
+            ->middleware([
+                'throttle:30,1',
+                \App\Http\Middleware\AuthenticateExternalWorkplan::class,
+            ]);
     });
 
     Route::prefix('procurement')->group(function () {

@@ -6,12 +6,14 @@ use App\Models\TravelRequest;
 use App\Modules\Travel\Services\TravelService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
+use App\Support\AuthorizesRequestRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TravelController extends Controller
 {
     use AuthorizesCertificates;
+    use AuthorizesRequestRecords;
 
     public function __construct(
         private readonly TravelService $travelService,
@@ -24,8 +26,12 @@ class TravelController extends Controller
         return response()->json($this->travelService->list($filters, $request->user()));
     }
 
-    public function show(TravelRequest $travelRequest): JsonResponse
+    public function show(Request $request, TravelRequest $travelRequest): JsonResponse
     {
+        $this->authorizeRequestView($request->user(), $travelRequest, [
+            'Secretary General', 'HR Manager', 'Finance Controller',
+        ]);
+
         return response()->json([
             'data' => $travelRequest->load(['requester', 'approver', 'itineraries', 'workplanEvent']),
         ]);
@@ -58,6 +64,8 @@ class TravelController extends Controller
 
     public function update(Request $request, TravelRequest $travelRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $travelRequest);
+
         $data = $request->validate([
             'purpose'             => ['sometimes', 'string', 'max:500'],
             'departure_date'      => ['sometimes', 'date'],
@@ -76,6 +84,7 @@ class TravelController extends Controller
 
     public function destroy(Request $request, TravelRequest $travelRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $travelRequest);
         $this->travelService->delete($travelRequest, $request->user());
         return response()->json(['message' => 'Travel request deleted.']);
     }
@@ -102,6 +111,9 @@ class TravelController extends Controller
             ]);
         }
 
+        $this->authorizeLegacyApproval($request->user(), $travelRequest, [
+            'Secretary General', 'HR Manager',
+        ]);
         $travel = $this->travelService->approve($travelRequest, $request->user());
         return response()->json(['message' => 'Travel request approved.', 'data' => $travel]);
     }
@@ -128,6 +140,9 @@ class TravelController extends Controller
             ]);
         }
 
+        $this->authorizeLegacyApproval($request->user(), $travelRequest, [
+            'Secretary General', 'HR Manager',
+        ]);
         $travel = $this->travelService->reject($travelRequest, $reason, $request->user());
         return response()->json(['message' => 'Travel request rejected.', 'data' => $travel]);
     }

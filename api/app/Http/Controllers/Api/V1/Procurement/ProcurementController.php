@@ -6,12 +6,14 @@ use App\Models\ProcurementRequest;
 use App\Modules\Procurement\Services\ProcurementService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
+use App\Support\AuthorizesRequestRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProcurementController extends Controller
 {
     use AuthorizesCertificates;
+    use AuthorizesRequestRecords;
 
     public function __construct(
         private readonly ProcurementService $procurementService,
@@ -24,14 +26,16 @@ class ProcurementController extends Controller
         return response()->json($this->procurementService->list($filters, $request->user()));
     }
 
-    public function show(ProcurementRequest $procurementRequest): JsonResponse
+    public function show(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
+        $this->authorizeRequestView($request->user(), $procurementRequest, [
+            'Procurement Officer', 'Finance Controller', 'Secretary General',
+        ]);
+
         $procurementRequest = ProcurementRequest::where('id', $procurementRequest->id)
-            ->where('tenant_id', request()->user()->tenant_id)
+            ->where('tenant_id', $request->user()->tenant_id)
             ->firstOrFail();
-        if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
-            abort(404);
-        }
+
         return response()->json($procurementRequest->load([
             'requester',
             'approver',
@@ -73,6 +77,9 @@ class ProcurementController extends Controller
 
     public function update(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $procurementRequest, [
+            'Procurement Officer',
+        ]);
         $data = $request->validate([
             'title'            => ['sometimes', 'string', 'max:300'],
             'description'      => ['sometimes', 'string', 'max:2000'],
@@ -87,13 +94,11 @@ class ProcurementController extends Controller
         return response()->json(['message' => 'Procurement request updated.', 'data' => $procurement]);
     }
 
-    public function destroy(ProcurementRequest $procurementRequest): JsonResponse
+    public function destroy(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
+        $this->authorizeRequestMutate($request->user(), $procurementRequest);
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
-        }
-        if ((int) $procurementRequest->requester_id !== (int) request()->user()->id) {
-            abort(403);
         }
         if (!$procurementRequest->isDraft()) {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
@@ -161,6 +166,9 @@ class ProcurementController extends Controller
         if ($request->user()->hasRole('staff')) {
             abort(403);
         }
+        $this->authorizeLegacyApproval($request->user(), $procurementRequest, [
+            'Procurement Officer', 'Finance Controller', 'Secretary General',
+        ]);
         $procurement = $this->procurementService->approve($procurementRequest, $request->user());
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
     }

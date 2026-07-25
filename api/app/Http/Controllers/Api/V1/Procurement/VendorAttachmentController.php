@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Vendor;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,7 @@ class VendorAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('attachments/vendors/' . $vendor->id, ['disk' => 'local']);
         $attachment = $vendor->attachments()->create([
             'tenant_id'         => $vendor->tenant_id,
@@ -34,7 +36,7 @@ class VendorAttachmentController extends Controller
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_COMPANY_PROFILE),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');
@@ -78,8 +80,23 @@ class VendorAttachmentController extends Controller
         if ($vendor->tenant_id !== $request->user()->tenant_id) {
             abort(404);
         }
-        if ($request->user()->isSupplier() && (int) $request->user()->vendor_id !== (int) $vendor->id) {
-            abort(404);
+
+        $user = $request->user();
+        if ($user->isSupplier()) {
+            abort_unless((int) $user->vendor_id === (int) $vendor->id, 404);
+            return;
         }
+
+        abort_unless(
+            $user->isSystemAdmin()
+            || $user->can('procurement.manage_vendors')
+            || $user->hasAnyRole([
+                'Procurement Officer',
+                'Finance Controller',
+                'Secretary General',
+            ]),
+            403,
+            'You are not authorised to access vendor documents.'
+        );
     }
 }

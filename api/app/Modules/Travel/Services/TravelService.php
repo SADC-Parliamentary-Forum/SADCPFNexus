@@ -224,6 +224,19 @@ class TravelService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        if ((int) $travel->requester_id === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot approve your own request.',
+            ]);
+        }
+
+        if (
+            ! $approver->isSystemAdmin()
+            && ! $approver->hasAnyRole(['Secretary General', 'HR Manager'])
+        ) {
+            abort(403, 'You are not authorised to approve travel requests.');
+        }
+
         $travel->update([
             'status'      => 'approved',
             'approved_by' => $approver->id,
@@ -269,6 +282,19 @@ class TravelService
     {
         if (!$travel->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be rejected.']);
+        }
+
+        if ((int) $travel->requester_id === (int) $approver->id) {
+            throw ValidationException::withMessages([
+                'approval' => 'You cannot reject your own request.',
+            ]);
+        }
+
+        if (
+            ! $approver->isSystemAdmin()
+            && ! $approver->hasAnyRole(['Secretary General', 'HR Manager'])
+        ) {
+            abort(403, 'You are not authorised to reject travel requests.');
         }
 
         $travel->update([

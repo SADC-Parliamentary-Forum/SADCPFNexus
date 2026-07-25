@@ -6,12 +6,14 @@ use App\Models\ImprestRequest;
 use App\Modules\Imprest\Services\ImprestService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
+use App\Support\AuthorizesRequestRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ImprestController extends Controller
 {
     use AuthorizesCertificates;
+    use AuthorizesRequestRecords;
 
     public function __construct(
         private readonly ImprestService $imprestService,
@@ -24,8 +26,12 @@ class ImprestController extends Controller
         return response()->json($this->imprestService->list($filters, $request->user()));
     }
 
-    public function show(ImprestRequest $imprestRequest): JsonResponse
+    public function show(Request $request, ImprestRequest $imprestRequest): JsonResponse
     {
+        $this->authorizeRequestView($request->user(), $imprestRequest, [
+            'Finance Controller', 'Secretary General',
+        ]);
+
         return response()->json($imprestRequest->load([
             'requester', 'approver',
             'approvalRequest.workflow.steps',
@@ -50,6 +56,7 @@ class ImprestController extends Controller
 
     public function update(Request $request, ImprestRequest $imprestRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $imprestRequest);
         $data = $request->validate([
             'budget_line'               => ['sometimes', 'string', 'max:200'],
             'amount_requested'          => ['sometimes', 'numeric', 'min:1'],
@@ -62,8 +69,9 @@ class ImprestController extends Controller
         return response()->json(['message' => 'Imprest request updated.', 'data' => $imprest]);
     }
 
-    public function destroy(ImprestRequest $imprestRequest): JsonResponse
+    public function destroy(Request $request, ImprestRequest $imprestRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $imprestRequest);
         if (!$imprestRequest->isDraft()) {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
@@ -94,6 +102,9 @@ class ImprestController extends Controller
         }
 
         $data = $request->validate(['amount_approved' => ['nullable', 'numeric', 'min:0']]);
+        $this->authorizeLegacyApproval($request->user(), $imprestRequest, [
+            'Finance Controller', 'Secretary General',
+        ], 'finance.approve');
         $imprest = $this->imprestService->approve($imprestRequest, $data, $request->user());
         return response()->json(['message' => 'Imprest request approved.', 'data' => $imprest]);
     }
@@ -110,6 +121,9 @@ class ImprestController extends Controller
             ]);
         }
 
+        $this->authorizeLegacyApproval($request->user(), $imprestRequest, [
+            'Finance Controller', 'Secretary General',
+        ], 'finance.approve');
         $imprest = $this->imprestService->reject($imprestRequest, $data['reason'], $request->user());
         return response()->json(['message' => 'Imprest request rejected.', 'data' => $imprest]);
     }

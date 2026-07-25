@@ -27,6 +27,11 @@ use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+/**
+ * Demo / local fixture data only.
+ *
+ * NEVER run this seeder in production. Use ProductionSeeder + app:create-admin instead.
+ */
 class DemoDataSeeder extends Seeder
 {
     public function run(): void

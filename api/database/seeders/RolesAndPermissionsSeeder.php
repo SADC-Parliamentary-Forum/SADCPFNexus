@@ -35,8 +35,8 @@ class RolesAndPermissionsSeeder extends Seeder
             // Programmes / PIF
             'pif.view', 'pif.create', 'pif.approve', 'pif.admin',
             'programme.finance-review',
-            // Workplan
-            'workplan.view', 'workplan.create', 'workplan.approve', 'workplan.admin',
+            // Workplan (workplan.external = machine/integration feed only)
+            'workplan.view', 'workplan.create', 'workplan.approve', 'workplan.admin', 'workplan.external',
             // Assignments (Oversight & Accountability)
             'assignments.view', 'assignments.create', 'assignments.issue', 'assignments.admin',
             // Timesheets

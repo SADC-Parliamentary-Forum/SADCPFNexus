@@ -18,8 +18,9 @@
 # Safety notes:
 #   - Refuses to run outside a git repo whose remote matches SADCPFNexus, to avoid
 #     being copy-pasted onto the wrong host/app by mistake.
-#   - Never runs `db:seed` (full) or `migrate:fresh` — those touch demo/user data
-#     and are explicitly out of scope for a production deploy.
+#   - Never runs `db:seed` (full), DemoDataSeeder, or `migrate:fresh` — those
+#     touch demo/user data and are explicitly out of scope for a production
+#     deploy. First-time structural seed uses ProductionSeeder only (offline).
 #   - Never echoes the contents of .env or any secret.
 #   - Uses `set -euo pipefail` so any failed step aborts the script rather than
 #     silently continuing into a half-deployed state.

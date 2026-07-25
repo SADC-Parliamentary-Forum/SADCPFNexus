@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Leave;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\LeaveRequest;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,7 @@ class LeaveAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::LEAVE_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store(
             'attachments/leave/' . $leaveRequest->id,
             ['disk' => 'local']
@@ -37,7 +39,7 @@ class LeaveAttachmentController extends Controller
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');

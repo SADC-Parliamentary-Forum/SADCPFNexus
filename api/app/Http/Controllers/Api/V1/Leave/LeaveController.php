@@ -7,12 +7,14 @@ use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
 use App\Modules\Leave\Services\LeaveService;
 use App\Support\AuthorizesCertificates;
+use App\Support\AuthorizesRequestRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LeaveController extends Controller
 {
     use AuthorizesCertificates;
+    use AuthorizesRequestRecords;
 
     public function __construct(
         private readonly LeaveService $leaveService,
@@ -89,8 +91,12 @@ class LeaveController extends Controller
         return response()->json($this->leaveService->list($filters, $request->user()));
     }
 
-    public function show(LeaveRequest $leaveRequest): JsonResponse
+    public function show(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
+        $this->authorizeRequestView($request->user(), $leaveRequest, [
+            'HR Manager', 'HR Administrator', 'Secretary General',
+        ]);
+
         return response()->json($leaveRequest->load(['requester', 'approver', 'lilLinkings', 'approvalRequest.workflow.steps', 'approvalRequest.history.user']));
     }
 
@@ -132,6 +138,7 @@ class LeaveController extends Controller
 
     public function update(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $leaveRequest);
         $data = $request->validate([
             'leave_type' => ['sometimes', 'string', 'in:annual,sick,lil,special,maternity,paternity'],
             'start_date' => ['sometimes', 'date'],
@@ -143,8 +150,9 @@ class LeaveController extends Controller
         return response()->json(['message' => 'Leave request updated.', 'data' => $leave]);
     }
 
-    public function destroy(LeaveRequest $leaveRequest): JsonResponse
+    public function destroy(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
+        $this->authorizeRequestMutate($request->user(), $leaveRequest);
         if (!$leaveRequest->isDraft()) {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
@@ -168,6 +176,9 @@ class LeaveController extends Controller
         $overrideReason = $data['override_reason'] ?? null;
 
         if (!$leaveRequest->approvalRequest) {
+            $this->authorizeLegacyApproval($request->user(), $leaveRequest, [
+                'HR Manager', 'HR Administrator', 'Secretary General',
+            ]);
             $leave = $this->leaveService->approve($leaveRequest, $request->user(), $overrideReason);
             return response()->json(['message' => 'Leave request approved.', 'data' => $leave]);
         }
@@ -202,6 +213,9 @@ class LeaveController extends Controller
         }
 
         if (!$leaveRequest->approvalRequest) {
+            $this->authorizeLegacyApproval($request->user(), $leaveRequest, [
+                'HR Manager', 'HR Administrator', 'Secretary General',
+            ]);
             $leave = $this->leaveService->reject($leaveRequest, $reason, $request->user());
             return response()->json(['message' => 'Leave request rejected.', 'data' => $leave]);
         }

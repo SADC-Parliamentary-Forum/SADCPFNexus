@@ -80,6 +80,8 @@ jobs:
           SESSION_DRIVER: array
           MAIL_MAILER: array
           BCRYPT_ROUNDS: '4'
+          REQUIRE_PRIVILEGED_MFA: 'false'
+          SENTRY_LARAVEL_DSN: ''
 
   lint:
     name: Laravel Pint (code style)

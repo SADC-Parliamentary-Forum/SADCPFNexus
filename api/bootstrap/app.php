@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\CorsHelper;
+use App\Support\Observability;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,8 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Use custom AddCorsHeaders (with CorsHelper + config/cors.php) as the single CORS implementation.
         $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);
+        $middleware->prepend(\App\Http\Middleware\AssignRequestId::class);
         // Prepend CORS to api group so it runs before auth/throttle on every API request.
-        $middleware->api(prepend: [\App\Http\Middleware\AddCorsHeaders::class], append: []);
+        $middleware->api(prepend: [
+            \App\Http\Middleware\AddCorsHeaders::class,
+            \App\Http\Middleware\AssignRequestId::class,
+        ], append: [
+            \App\Http\Middleware\RequireMfaForPrivileged::class,
+        ]);
         // Append security headers to all responses.
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([
@@ -35,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'           => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission'     => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'mfa.privileged' => \App\Http\Middleware\RequireMfaForPrivileged::class,
         ]);
 
         // Exclude email-approval POST routes from CSRF: the token in the URL path
@@ -84,6 +92,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'line' => $frame['line'] ?? null,
                     'function' => $frame['function'] ?? null,
                 ])->take(10)->values()->all();
+            }
+
+            // Optional Sentry when SENTRY_LARAVEL_DSN is set and package is installed.
+            if ($status >= 500) {
+                Observability::captureException($e, [
+                    'status'     => $status,
+                    'request_id' => $request->attributes->get('request_id'),
+                ]);
             }
 
             $response = response()->json($payload, $status);

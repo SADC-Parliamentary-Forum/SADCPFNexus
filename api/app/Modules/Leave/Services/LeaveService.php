@@ -123,6 +123,10 @@ class LeaveService
             throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
         }
 
+        if ((int) $leave->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+            abort(403, 'You can only edit your own leave requests.');
+        }
+
         $updates = array_filter([
             'leave_type'  => $data['leave_type'] ?? null,
             'start_date'  => $data['start_date'] ?? null,
