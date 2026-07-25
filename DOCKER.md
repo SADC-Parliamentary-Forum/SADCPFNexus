@@ -96,6 +96,8 @@ showing which expected setup/auth export or import is missing.
 
 Seed data is for **local/dev only** and must not be used in production.
 
+> **Production warning:** Never run `DemoDataSeeder`, full `DatabaseSeeder`, or `migrate:fresh --seed` on production. Those create demo users and wipe data. See **Production bootstrap** below and [LOGIN_CREDENTIALS.md](LOGIN_CREDENTIALS.md).
+
 | Role              | Email              | Password      |
 |-------------------|--------------------|---------------|
 | System Admin      | admin@sadcpf.org   | Admin@2024!   |
@@ -107,6 +109,30 @@ Seed data is for **local/dev only** and must not be used in production.
 | John (Procurement)| john@sadcpf.org    | John@2024!    |
 | Thabo (Governance)| thabo@sadcpf.org   | Thabo@2024!   |
 
+## Production bootstrap
+
+On an empty production database (or after intentional wipe + restore planning):
+
+```bash
+php artisan migrate --force
+php artisan db:seed --class=ProductionSeeder --force
+php artisan app:create-admin
+php artisan db:seed --class=WorkflowSeeder --force   # includes salary_advance
+```
+
+Also set:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+REQUIRE_PRIVILEGED_MFA=true
+EXTERNAL_WORKPLAN_TOKEN=<long-random-secret>
+# Optional:
+# SENTRY_LARAVEL_DSN=
+```
+
+Ops runbooks: [docs/ops/](docs/ops/README.md) (backup/RTO/RPO, incident response, [deploy/rollback](docs/ops/deploy-rollback.md)).
+
 ## Configuration (no hardcoding)
 
 - **Web**: API URL is set via `NEXT_PUBLIC_API_URL` in the root `.env` (default `http://localhost:8000/api/v1`). The browser uses this to call the API.
@@ -115,11 +141,13 @@ Seed data is for **local/dev only** and must not be used in production.
 
 ## Seed database
 
-**Full reseed (drops all tables, re-runs migrations and seeders)** — use for a clean dev/demo state:
+**Full reseed (drops all tables, re-runs migrations and seeders)** — **local/dev only**:
 
 ```bash
 docker-compose exec php php artisan migrate:fresh --seed --force
 ```
+
+Never run `migrate:fresh` or `DemoDataSeeder` against production.
 
 **Seed only** (adds/updates demo data without dropping tables; requires existing schema):
 
