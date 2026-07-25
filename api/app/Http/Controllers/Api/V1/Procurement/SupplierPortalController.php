@@ -117,9 +117,8 @@ class SupplierPortalController extends Controller
             abort(422, 'This RFQ has already been awarded.');
         }
 
-        if ($procurementRequest->rfq_deadline && now()->isAfter($procurementRequest->rfq_deadline->endOfDay())) {
-            abort(422, 'The RFQ deadline has passed.');
-        }
+        app(\App\Modules\Procurement\Services\SealedBidService::class)
+            ->assertSubmissionsOpen($procurementRequest);
 
         $data = $request->validate([
             'quoted_amount' => ['required', 'numeric', 'min:0.01'],
@@ -128,19 +127,19 @@ class SupplierPortalController extends Controller
             'notes'         => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $quote = ProcurementQuote::updateOrCreate(
-            ['rfq_invitation_id' => $invitation->id],
+        $quote = app(\App\Modules\Procurement\Services\SealedBidService::class)->replaceOrCreatePortalQuote(
+            $procurementRequest,
+            (int) $invitation->id,
             [
-                'procurement_request_id' => $procurementRequest->id,
-                'vendor_id'              => $vendor->id,
-                'submitted_by_user_id'   => $request->user()->id,
-                'vendor_name'            => $vendor->name,
-                'quoted_amount'          => $data['quoted_amount'],
-                'currency'               => $data['currency'] ?? $procurementRequest->currency,
-                'submission_channel'     => 'system_portal',
-                'notes'                  => $data['notes'] ?? null,
-                'quote_date'             => $data['quote_date'] ?? now()->toDateString(),
-                'is_recommended'         => false,
+                'vendor_id'            => $vendor->id,
+                'submitted_by_user_id' => $request->user()->id,
+                'vendor_name'          => $vendor->name,
+                'quoted_amount'        => $data['quoted_amount'],
+                'currency'             => $data['currency'] ?? $procurementRequest->currency,
+                'submission_channel'   => 'system_portal',
+                'notes'                => $data['notes'] ?? null,
+                'quote_date'           => $data['quote_date'] ?? now()->toDateString(),
+                'is_recommended'       => false,
             ]
         );
 

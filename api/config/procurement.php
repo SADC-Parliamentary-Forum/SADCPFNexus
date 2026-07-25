@@ -30,4 +30,15 @@ return [
     | Lookback window (days) for anti-split purchase detection on submit.
     */
     'split_lookback_days' => env('PROCUREMENT_SPLIT_LOOKBACK_DAYS', 30),
+
+    /*
+    | Phase 2: soft = justification text only (Phase 1);
+    | hard = justification + Finance/SG authorisation before approve/RFQ/tender publish.
+    */
+    'split_enforcement' => env('PROCUREMENT_SPLIT_ENFORCEMENT', 'hard'),
+
+    /*
+    | Days ahead to warn Procurement Officers of vendor document expiry.
+    */
+    'document_expiry_days' => env('PROCUREMENT_DOCUMENT_EXPIRY_DAYS', 30),
 ];

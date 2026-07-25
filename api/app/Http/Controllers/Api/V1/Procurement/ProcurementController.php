@@ -127,6 +127,22 @@ class ProcurementController extends Controller
         return response()->json(['message' => 'Procurement request submitted.', 'data' => $procurement]);
     }
 
+    public function authoriseSplit(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $procurement = $this->procurementService->authoriseSplit(
+            $procurementRequest,
+            $request->user(),
+            $data['notes'] ?? null
+        );
+        return response()->json(['message' => 'Split purchase authorised.', 'data' => $procurement]);
+    }
+
     public function hodApprove(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
         if (!$request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {

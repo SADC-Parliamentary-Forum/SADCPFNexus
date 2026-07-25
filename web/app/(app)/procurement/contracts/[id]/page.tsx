@@ -33,9 +33,11 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [showTerminateModal, setShowTerminateModal] = useState(false);
   const [terminateReason, setTerminateReason]       = useState("");
   const [terminateError, setTerminateError]         = useState<string | null>(null);
-  const [activeTab, setActiveTab]                   = useState<"details" | "documents">("details");
+  const [activeTab, setActiveTab]                   = useState<"details" | "documents" | "milestones">("details");
   const [attachments, setAttachments]               = useState<ProcurementAttachment[]>([]);
   const [uploading, setUploading]                   = useState(false);
+  const [msTitle, setMsTitle]                       = useState("");
+  const [msAmount, setMsAmount]                     = useState("");
 
   useEffect(() => {
     if (contractId) contractAttachmentsApi.list(contractId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
@@ -47,9 +49,29 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     enabled:  !!contractId,
   });
 
+  const { data: milestones = [] } = useQuery({
+    queryKey: ["contract", contractId, "milestones"],
+    queryFn: () => contractsApi.listMilestones(contractId).then((r) => r.data.data),
+    enabled: !!contractId,
+  });
+
   const activateMutation = useMutation({
     mutationFn: () => contractsApi.activate(contractId),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["contract", contractId] }),
+  });
+
+  const addMilestoneMutation = useMutation({
+    mutationFn: () => contractsApi.createMilestone(contractId, { title: msTitle, amount: msAmount ? Number(msAmount) : undefined }),
+    onSuccess: () => {
+      setMsTitle("");
+      setMsAmount("");
+      queryClient.invalidateQueries({ queryKey: ["contract", contractId, "milestones"] });
+    },
+  });
+
+  const completeMilestoneMutation = useMutation({
+    mutationFn: (milestoneId: number) => contractsApi.completeMilestone(contractId, milestoneId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["contract", contractId, "milestones"] }),
   });
 
   const terminateMutation = useMutation({
@@ -93,12 +115,45 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     <div className="max-w-3xl mx-auto space-y-5">
       {/* Tab Bar */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["details", "documents"] as const).map((tab) => (
+        {(["details", "milestones", "documents"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : "Details"}
+            {tab === "documents" ? `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` : tab === "milestones" ? `Milestones${milestones.length ? ` (${milestones.length})` : ""}` : "Details"}
           </button>
         ))}
       </div>
+
+      {activeTab === "milestones" && (
+        <div className="card p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-neutral-800">Payment / deliverable milestones</h2>
+          {canAct && (
+            <div className="flex flex-wrap gap-2 items-end">
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-xs mb-1">Title</label>
+                <input className="form-input" value={msTitle} onChange={(e) => setMsTitle(e.target.value)} />
+              </div>
+              <div className="w-32">
+                <label className="block text-xs mb-1">Amount</label>
+                <input type="number" className="form-input" value={msAmount} onChange={(e) => setMsAmount(e.target.value)} />
+              </div>
+              <button type="button" className="btn-primary text-sm" disabled={!msTitle || addMilestoneMutation.isPending} onClick={() => addMilestoneMutation.mutate()}>Add</button>
+            </div>
+          )}
+          <div className="space-y-2">
+            {milestones.map((m) => (
+              <div key={m.id} className="flex items-center justify-between border border-neutral-100 rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">{m.title}</p>
+                  <p className="text-xs text-neutral-500">{m.status}{m.amount != null ? ` · ${m.amount}` : ""}</p>
+                </div>
+                {canAct && m.status !== "completed" && (
+                  <button type="button" className="btn-secondary text-xs" onClick={() => completeMilestoneMutation.mutate(m.id)}>Complete</button>
+                )}
+              </div>
+            ))}
+            {milestones.length === 0 && <p className="text-sm text-neutral-400">No milestones yet.</p>}
+          </div>
+        </div>
+      )}
 
       {activeTab === "documents" && (
         <div className="card p-6">

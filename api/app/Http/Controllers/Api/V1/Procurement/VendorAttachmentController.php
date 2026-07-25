@@ -26,6 +26,7 @@ class VendorAttachmentController extends Controller
         $request->validate([
             'file'          => ['required', 'file', 'max:25600'],
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],
+            'expires_at'    => ['nullable', 'date'],
         ]);
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
@@ -34,6 +35,7 @@ class VendorAttachmentController extends Controller
             'tenant_id'         => $vendor->tenant_id,
             'uploaded_by'       => $request->user()->id,
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_COMPANY_PROFILE),
+            'expires_at'        => $request->input('expires_at'),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
             'mime_type'         => $mime,

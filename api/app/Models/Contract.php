@@ -44,6 +44,7 @@ class Contract extends Model
     public function vendor()             { return $this->belongsTo(Vendor::class); }
     public function purchaseOrder()      { return $this->belongsTo(PurchaseOrder::class); }
     public function createdBy()          { return $this->belongsTo(User::class, 'created_by'); }
+    public function milestones()         { return $this->hasMany(ContractMilestone::class)->orderBy('sort_order')->orderBy('id'); }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 

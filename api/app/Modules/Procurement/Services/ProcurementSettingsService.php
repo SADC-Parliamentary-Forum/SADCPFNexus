@@ -14,6 +14,7 @@ class ProcurementSettingsService
         'tender_threshold',
         'minimum_quotes_required',
         'split_lookback_days',
+        'split_enforcement',
     ];
 
     public function effective(Tenant $tenant): array
@@ -26,6 +27,9 @@ class ProcurementSettingsService
             'tender_threshold'        => (float) ($overrides['tender_threshold'] ?? config('procurement.tender_threshold')),
             'minimum_quotes_required' => (int) ($overrides['minimum_quotes_required'] ?? config('procurement.minimum_quotes_required')),
             'split_lookback_days'     => (int) ($overrides['split_lookback_days'] ?? config('procurement.split_lookback_days')),
+            'split_enforcement'       => (string) ($overrides['split_enforcement'] ?? config('procurement.split_enforcement', 'hard')),
+            'policy_profile_key'      => 'sadc_pf_core',
+            'multi_donor_policy_ui'   => 'stub',
             'has_tenant_override'     => !empty($overrides),
         ];
     }
@@ -62,6 +66,7 @@ class ProcurementSettingsService
             'tender_threshold'        => ['sometimes', 'numeric', 'min:0'],
             'minimum_quotes_required' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'split_lookback_days'     => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'split_enforcement'       => ['sometimes', 'string', 'in:soft,hard'],
         ])->validate();
 
         if (isset($validated['direct_purchase_limit'], $validated['quotation_limit'])

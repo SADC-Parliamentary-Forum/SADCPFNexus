@@ -1517,6 +1517,9 @@ export interface ProcurementSettings {
   tender_threshold: number;
   minimum_quotes_required: number;
   split_lookback_days: number;
+  split_enforcement?: "soft" | "hard";
+  policy_profile_key?: string;
+  multi_donor_policy_ui?: string;
   has_tenant_override?: boolean;
 }
 
@@ -2073,6 +2076,80 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/terminate`, { reason }),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/procurement/contracts/${id}`),
+  listMilestones: (contractId: number) =>
+    api.get<{ data: ContractMilestone[] }>(`/procurement/contracts/${contractId}/milestones`),
+  createMilestone: (contractId: number, data: Partial<ContractMilestone>) =>
+    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones`, data),
+  completeMilestone: (contractId: number, milestoneId: number) =>
+    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones/${milestoneId}/complete`),
+};
+
+export interface ContractMilestone {
+  id: number;
+  contract_id: number;
+  title: string;
+  description?: string | null;
+  due_date?: string | null;
+  amount?: number | null;
+  currency?: string;
+  status: string;
+  completed_at?: string | null;
+  notes?: string | null;
+}
+
+export interface ProcurementTender {
+  id: number;
+  reference_number: string;
+  title: string;
+  status: string;
+  sealed_mode: boolean;
+  submission_deadline?: string | null;
+  published_at?: string | null;
+  bids_opened_at?: string | null;
+  notice?: string | null;
+  procurement_request?: { id: number; reference_number: string; title: string; status: string };
+  committee?: { id: number; name: string } | null;
+}
+
+export const tendersApi = {
+  list: (params?: { status?: string }) =>
+    api.get<{ data: ProcurementTender[] }>("/procurement/tenders", { params }),
+  get: (id: number) => api.get<{ data: ProcurementTender }>(`/procurement/tenders/${id}`),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: ProcurementTender; message: string }>("/procurement/tenders", data),
+  publish: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/publish`),
+  close: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/close`),
+  openBids: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/open-bids`),
+  startEvaluation: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/start-evaluation`),
+  evaluations: () => api.get<{ data: ProcurementTender[] }>("/procurement/evaluations"),
+  bidSubmissions: () => api.get<{ data: Record<string, unknown>[] }>("/procurement/bid-submissions"),
+};
+
+export const tenderCommitteesApi = {
+  list: () => api.get<{ data: Record<string, unknown>[] }>("/procurement/tender-committees"),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/procurement/tender-committees", data),
+  storeMeeting: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown> }>(`/procurement/tender-committees/${id}/meetings`, data),
+};
+
+export const procurementPlansApi = {
+  list: () => api.get<{ data: Record<string, unknown>[] }>("/procurement/plans"),
+  get: (id: number) => api.get<{ data: Record<string, unknown> }>(`/procurement/plans/${id}`),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/procurement/plans", data),
+  addItem: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown> }>(`/procurement/plans/${id}/items`, data),
+};
+
+export const catalogueApi = {
+  list: (params?: { vendor_id?: number }) =>
+    api.get<{ data: Record<string, unknown>[] }>("/procurement/catalogue", { params }),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/procurement/catalogue", data),
+  update: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: Record<string, unknown> }>(`/procurement/catalogue/${id}`, data),
+  history: (id: number) => api.get<{ data: Record<string, unknown>[] }>(`/procurement/catalogue/${id}/history`),
 };
 
 // ─── Procurement — Analytics ──────────────────────────────────────────────────

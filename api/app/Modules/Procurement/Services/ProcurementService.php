@@ -176,9 +176,65 @@ class ProcurementService
             'tender_threshold'        => (float) config('procurement.tender_threshold'),
             'minimum_quotes_required' => (int) config('procurement.minimum_quotes_required'),
             'split_lookback_days'     => (int) config('procurement.split_lookback_days'),
+            'split_enforcement'       => (string) config('procurement.split_enforcement', 'hard'),
             'profile_key'             => 'sadc_pf_core',
             'captured_at'             => now()->toIso8601String(),
         ];
+    }
+
+    public function authoriseSplit(ProcurementRequest $request, User $authoriser, ?string $notes = null): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $authoriser->tenant_id) {
+            abort(404);
+        }
+
+        if (!$authoriser->hasAnyRole(['Finance Controller', 'Secretary General', 'System Admin', 'super-admin'])) {
+            abort(403);
+        }
+
+        $warning = $this->detectSplitPurchase($request);
+        if (!$warning && blank($request->split_justification)) {
+            throw ValidationException::withMessages([
+                'split_authorisation' => 'No split purchase warning is present for this request.',
+            ]);
+        }
+
+        $request->update([
+            'split_authorised_by'         => $authoriser->id,
+            'split_authorised_at'         => now(),
+            'split_authorisation_notes'   => $notes,
+        ]);
+
+        AuditLog::record('procurement.split_authorised', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => [
+                'notes'   => $notes,
+                'warning' => $warning,
+            ],
+            'tags' => 'procurement',
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function assertSplitAuthorisedIfRequired(ProcurementRequest $request): void
+    {
+        if ((string) config('procurement.split_enforcement', 'hard') !== 'hard') {
+            return;
+        }
+
+        $warning = $this->detectSplitPurchase($request);
+        $hadSplitFlag = filled($request->split_justification) || $warning !== null;
+        if (!$hadSplitFlag) {
+            return;
+        }
+
+        if (blank($request->split_authorised_at)) {
+            throw ValidationException::withMessages([
+                'split_authorisation' => 'Potential split purchasing requires Finance / SG authorisation before this action.',
+            ]);
+        }
     }
 
     /**
@@ -397,6 +453,7 @@ class ProcurementService
         }
 
         $this->assertBudgetConfirmed($request);
+        $this->assertSplitAuthorisedIfRequired($request);
 
         if ((int) $request->requester_id === (int) $approver->id) {
             throw ValidationException::withMessages([
@@ -440,6 +497,7 @@ class ProcurementService
         }
 
         $this->assertBudgetConfirmed($request);
+        $this->assertSplitAuthorisedIfRequired($request);
 
         if (!$request->rfq_issued_at) {
             throw ValidationException::withMessages(['status' => 'Issue the RFQ before awarding this request.']);
@@ -562,6 +620,7 @@ class ProcurementService
         }
 
         $this->assertBudgetConfirmed($request);
+        $this->assertSplitAuthorisedIfRequired($request);
 
         // Enforce tender-method requirement above the tender threshold.
         $estimatedValue    = (float) ($request->estimated_value ?? 0);

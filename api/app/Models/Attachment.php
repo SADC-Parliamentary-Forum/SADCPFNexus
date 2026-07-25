@@ -253,6 +253,7 @@ class Attachment extends Model
         'attachable_type',
         'attachable_id',
         'document_type',
+        'expires_at',
         'language',
         'original_filename',
         'storage_path',
@@ -267,6 +268,7 @@ class Attachment extends Model
         return [
             'size_bytes'       => 'integer',
             'is_chosen_quote'  => 'boolean',
+            'expires_at'       => 'date',
         ];
     }
 

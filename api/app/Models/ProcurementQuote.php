@@ -13,6 +13,11 @@ class ProcurementQuote extends Model
         'submitted_by_user_id',
         'vendor_name',
         'quoted_amount',
+        'version',
+        'supersedes_quote_id',
+        'technical_score',
+        'envelope',
+        'is_current',
         'currency',
         'submission_channel',
         'is_recommended',
@@ -29,6 +34,9 @@ class ProcurementQuote extends Model
         'is_recommended'     => 'boolean',
         'compliance_passed'  => 'boolean',
         'assessed_at'        => 'datetime',
+        'version'            => 'integer',
+        'technical_score'    => 'float',
+        'is_current'         => 'boolean',
     ];
 
     public function procurementRequest() { return $this->belongsTo(ProcurementRequest::class); }
@@ -36,6 +44,7 @@ class ProcurementQuote extends Model
     public function invitation()         { return $this->belongsTo(RfqInvitation::class, 'rfq_invitation_id'); }
     public function submitter()          { return $this->belongsTo(User::class, 'submitted_by_user_id'); }
     public function assessor()           { return $this->belongsTo(User::class, 'assessed_by'); }
+    public function supersedes()         { return $this->belongsTo(self::class, 'supersedes_quote_id'); }
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable')->latest();

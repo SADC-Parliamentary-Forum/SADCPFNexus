@@ -97,6 +97,29 @@ export default function ProcurementSettingsPage() {
             </div>
           ))}
 
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">Split enforcement</label>
+            <select
+              className="form-input max-w-[240px]"
+              value={form.split_enforcement ?? "hard"}
+              onChange={(e) => setForm({ ...form, split_enforcement: e.target.value as "soft" | "hard" })}
+            >
+              <option value="hard">Hard — require Finance/SG authorisation</option>
+              <option value="soft">Soft — justification text only</option>
+            </select>
+            <p className="text-xs text-neutral-500 mt-1">
+              Hard mode blocks approve / RFQ / tender publish until split authorisation is recorded.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3 text-xs text-neutral-600 space-y-1">
+            <p className="font-semibold text-neutral-800">Multi-donor policy engine</p>
+            <p>
+              Active profile: <code className="font-mono">{form.policy_profile_key ?? "sadc_pf_core"}</code>
+              {" "}(stub). Full multi-donor Policy Engine UI is Phase 3.
+            </p>
+          </div>
+
           <button
             type="button"
             className="btn-primary disabled:opacity-50"
@@ -108,6 +131,7 @@ export default function ProcurementSettingsPage() {
                 tender_threshold: form.tender_threshold,
                 minimum_quotes_required: form.minimum_quotes_required,
                 split_lookback_days: form.split_lookback_days,
+                split_enforcement: form.split_enforcement ?? "hard",
               })
             }
           >

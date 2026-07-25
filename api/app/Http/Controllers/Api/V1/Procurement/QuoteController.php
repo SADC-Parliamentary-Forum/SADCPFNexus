@@ -6,20 +6,35 @@ use App\Models\ProcurementCoiDeclaration;
 use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Modules\Procurement\Services\ProcurementCoiService;
+use App\Modules\Procurement\Services\SealedBidService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuoteController extends Controller
 {
-    public function __construct(private readonly ProcurementCoiService $coiService) {}
+    public function __construct(
+        private readonly ProcurementCoiService $coiService,
+        private readonly SealedBidService $sealedBidService,
+    ) {}
 
     public function index(ProcurementRequest $procurementRequest): JsonResponse
     {
         if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
             abort(404);
         }
-        $quotes = $procurementRequest->quotes()->with(['vendor', 'assessor', 'invitation', 'attachments.uploader:id,name'])->orderBy('quoted_amount')->get();
-        return response()->json(['data' => $quotes]);
+        $quotes = $procurementRequest->quotes()
+            ->where(function ($q) {
+                $q->where('is_current', true)->orWhereNull('is_current');
+            })
+            ->with(['vendor', 'assessor', 'invitation', 'attachments.uploader:id,name'])
+            ->orderBy('quoted_amount')
+            ->get();
+
+        $procurementRequest->loadMissing('tender');
+
+        return response()->json([
+            'data' => $this->sealedBidService->redactQuotes($quotes, $procurementRequest),
+        ]);
     }
 
     public function store(Request $request, ProcurementRequest $procurementRequest): JsonResponse

@@ -319,6 +319,7 @@ Route::prefix('v1')->group(function () {
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');
             Route::post('requests/{procurementRequest}/submit',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
+            Route::post('requests/{procurementRequest}/authorise-split', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'authoriseSplit']);
             Route::post('requests/{procurementRequest}/coi-declarations', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'storeCoiDeclaration']);
             Route::post('requests/{procurementRequest}/hod-approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodApprove']);
             Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
@@ -403,6 +404,39 @@ Route::prefix('v1')->group(function () {
                 ->only(['index', 'show', 'store', 'destroy']);
             Route::post('contracts/{contract}/activate',  [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'activate']);
             Route::post('contracts/{contract}/terminate', [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'terminate']);
+            Route::get('contracts/{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'index']);
+            Route::post('contracts/{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'store']);
+            Route::put('contracts/{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'update']);
+            Route::post('contracts/{contract}/milestones/{milestone}/complete', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'complete']);
+            Route::delete('contracts/{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'destroy']);
+
+            Route::get('tenders', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'index']);
+            Route::post('tenders', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'store']);
+            Route::get('tenders/{tender}', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'show']);
+            Route::post('tenders/{tender}/publish', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'publish']);
+            Route::post('tenders/{tender}/close', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'close']);
+            Route::post('tenders/{tender}/open-bids', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'openBids']);
+            Route::post('tenders/{tender}/start-evaluation', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'startEvaluation']);
+            Route::get('evaluations', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'evaluations']);
+            Route::get('bid-submissions', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'bidSubmissions']);
+
+            Route::get('tender-committees', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'index']);
+            Route::post('tender-committees', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'store']);
+            Route::get('tender-committees/{tenderCommittee}', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'show']);
+            Route::post('tender-committees/{tenderCommittee}/meetings', [\App\Http\Controllers\Api\V1\Procurement\TenderCommitteeController::class, 'storeMeeting']);
+
+            Route::get('plans', [\App\Http\Controllers\Api\V1\Procurement\AnnualProcurementPlanController::class, 'index']);
+            Route::post('plans', [\App\Http\Controllers\Api\V1\Procurement\AnnualProcurementPlanController::class, 'store']);
+            Route::get('plans/{plan}', [\App\Http\Controllers\Api\V1\Procurement\AnnualProcurementPlanController::class, 'show']);
+            Route::post('plans/{plan}/items', [\App\Http\Controllers\Api\V1\Procurement\AnnualProcurementPlanController::class, 'storeItem']);
+            Route::delete('plans/{plan}', [\App\Http\Controllers\Api\V1\Procurement\AnnualProcurementPlanController::class, 'destroy']);
+
+            Route::get('catalogue', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'index']);
+            Route::post('catalogue', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'store']);
+            Route::get('catalogue/{catalogue}', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'show']);
+            Route::put('catalogue/{catalogue}', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'update']);
+            Route::get('catalogue/{catalogue}/history', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'history']);
+            Route::delete('catalogue/{catalogue}', [\App\Http\Controllers\Api\V1\Procurement\VendorCatalogueController::class, 'destroy']);
 
             // Analytics
             Route::prefix('analytics')->group(function () {
