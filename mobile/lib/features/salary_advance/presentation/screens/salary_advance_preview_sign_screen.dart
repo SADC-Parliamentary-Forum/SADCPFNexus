@@ -72,7 +72,10 @@ class _SalaryAdvancePreviewSignScreenState
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      await dio.post('/finance/advances/${widget.requestId}/submit');
+      await dio.post(
+        '/finance/advances/${widget.requestId}/submit',
+        data: {'deduction_authority_confirmed': true},
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -142,13 +145,25 @@ class _SalaryAdvancePreviewSignScreenState
   Widget _buildBody() {
     final a = _advance!;
     final amount = (a['amount'] as num?)?.toDouble() ?? 0;
-    final months = (a['repayment_months'] as int?) ?? 3;
+    final months = (a['repayment_months'] as int?) ?? 1;
     final currency = (a['currency'] as String?) ?? 'NAD';
     final purpose = (a['purpose'] as String?) ?? '';
     final advanceType = (a['advance_type'] as String? ?? '').replaceAll('_', ' ');
     final ref_ = (a['reference_number'] as String?) ?? '';
+    final recoveryDate = a['intended_recovery_payroll_date']?.toString();
+    final isFullEom = months <= 1;
     final monthly = months > 0 ? amount / months : 0.0;
-    final schedule = _buildSchedule(amount, months, monthly, currency);
+    final schedule = isFullEom
+        ? <(String, String, String)>[
+            (
+              recoveryDate != null && recoveryDate.isNotEmpty
+                  ? 'Payroll month ending $recoveryDate'
+                  : 'Next applicable payroll month',
+              '$currency ${amount.toStringAsFixed(2)}',
+              '$currency 0.00',
+            ),
+          ]
+        : _buildSchedule(amount, months, monthly, currency);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
@@ -175,7 +190,9 @@ class _SalaryAdvancePreviewSignScreenState
         ),
         const SizedBox(height: 6),
         Text(
-          'Review the repayment schedule for your $advanceType advance before signing. This action is binding.',
+          isFullEom
+              ? 'Confirm full payroll deduction authority for your $advanceType advance. This consent is digitally logged.'
+              : 'Review the repayment schedule for your $advanceType advance before signing. This action is binding.',
           style: const TextStyle(fontSize: 13, color: Color(0xFF666666), height: 1.5),
         ),
         const SizedBox(height: 16),
@@ -192,8 +209,11 @@ class _SalaryAdvancePreviewSignScreenState
             _row('Reference', ref_),
             _row('Purpose', purpose.isEmpty ? advanceType : purpose),
             _row('Amount Requested', '$currency ${amount.toStringAsFixed(2)}'),
-            _row('Repayment Term', '$months months'),
-            _row('Monthly Deduction', '$currency ${monthly.toStringAsFixed(2)}'),
+            _row('Recovery', isFullEom ? 'Full amount — one payroll month' : '$months months'),
+            _row(
+              isFullEom ? 'Payroll Deduction' : 'Monthly Deduction',
+              '$currency ${(isFullEom ? amount : monthly).toStringAsFixed(2)}',
+            ),
           ]),
         ),
         const SizedBox(height: 20),
@@ -204,7 +224,9 @@ class _SalaryAdvancePreviewSignScreenState
             const Icon(Icons.calendar_today, size: 14, color: Color(0xFF888888)),
             const SizedBox(width: 6),
             Text(
-              'Deduction Schedule · $months Month${months == 1 ? "" : "s"} Term',
+              isFullEom
+                  ? 'Full EOM Recovery'
+                  : 'Deduction Schedule · $months Month${months == 1 ? "" : "s"} Term',
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
             ),
           ],
@@ -309,7 +331,7 @@ class _SalaryAdvancePreviewSignScreenState
         ),
         const SizedBox(height: 16),
 
-        // Acknowledgement Checkbox
+        // Acknowledgement Checkbox — deduction authority
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Checkbox(
             value: _acknowledged,
@@ -320,12 +342,14 @@ class _SalaryAdvancePreviewSignScreenState
             onChanged: (v) => setState(() => _acknowledged = v!),
           ),
           const SizedBox(width: 4),
-          const Expanded(
+          Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
-                'I acknowledge that deductions will be made automatically from my salary for the duration of the repayment term.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF444444), height: 1.4),
+                isFullEom
+                    ? 'I authorise the Finance Department to deduct the full advance of $currency ${amount.toStringAsFixed(2)} from my salary in the applicable payroll month. This consent is digitally logged.'
+                    : 'I acknowledge that deductions will be made automatically from my salary for the duration of the repayment term.',
+                style: const TextStyle(fontSize: 13, color: Color(0xFF444444), height: 1.4),
               ),
             ),
           ),

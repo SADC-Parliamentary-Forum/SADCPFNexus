@@ -18,7 +18,7 @@
 |---|----------|
 | 1 | **Salary basis:** v1 uses **confirmed / applicable monthly net** (`net_confirmed`). Snapshot net on submit. Gross/basic = future policy options only. |
 | 2 | **Workflow:** Finance-first (no Supervisor). |
-| 3 | **Principal:** Retain Principal/Senior Admin review; **ON by default** (`admin_review_required=true`). Finance certify → Director → SG. |
+| 3 | **Principal:** Retain Principal/Senior Admin review; **ON by default** (`admin_review_required=true`). Finance certify → Director → SG. **Locked:** Principal = existing **Director** role (no new Principal Officer role). |
 | 4 | **BCRE:** Create register on **payment**, not approve. |
 | 5 | **Scope:** B Phase 1 — implement now. |
 | 6 | **Permissions:** Separate `salary_advance.*`; seed roles; keep `finance.*` fallbacks for compatibility. |

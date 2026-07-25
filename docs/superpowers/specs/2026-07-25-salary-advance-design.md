@@ -14,7 +14,7 @@
 |---|--------|----------|
 | 1 | **Salary basis (50% calc)** | Production v1 uses **confirmed / applicable monthly net salary** (`salary_basis = net_confirmed`). Snapshot that net value on submit (and confirm on Finance certify). Gross/basic remain **future policy-config options only** — not active in v1. Where docs say “applicable monthly salary,” interpret as **confirmed net** for v1. |
 | 2 | **Workflow first step** | **Finance-first.** Drop Supervisor. Employee submit → Finance certify → … |
-| 3 | **Principal / Senior Admin** | **Retain** Principal/Senior Admin review in production workflow. Configurable via `admin_review_required`, **ON by default**. Path: Finance certify → Principal (Director) review → SG final approval. |
+| 3 | **Principal / Senior Admin** | **Retain** Principal/Senior Admin review in production workflow. Configurable via `admin_review_required`, **ON by default**. Path: Finance certify → Principal (Director) review → SG final approval. **Locked:** Principal maps to the existing **Director** Spatie role — do **not** create a separate Principal Officer role for Phase 1. |
 | 4 | **BCRE register timing** | Create register / financial liability on **payment**, not on approve. |
 | 5 | **Scope** | Implement **Scope B Phase 1** now. |
 | 6 | **Permissions** | Separate **`salary_advance.*`** permissions (do not only reuse `finance.*`). Migrate/seed roles; keep backward-compatible fallbacks to `finance.*` where needed, but new module auth uses `salary_advance.*`. |
@@ -284,7 +284,7 @@ Auth: prefer `salary_advance.*`; fall back to equivalent `finance.*` for backwar
 
 1. Employee submits (deduction authority required).  
 2. Finance certifies (dedicated action — **not** interchangeable with SG approve).  
-3. Principal / Senior Admin review **ON** by default (`admin_review_required=true`) — seeded as **Director** role.  
+3. Principal / Senior Admin review **ON** by default (`admin_review_required=true`) — seeded as existing **Director** role (**no** new Principal Officer role).  
 4. Secretary General final approval.  
 5. Payment → Recovery → Close (Finance permissions: `salary_advance.pay` / `salary_advance.recover`).
 

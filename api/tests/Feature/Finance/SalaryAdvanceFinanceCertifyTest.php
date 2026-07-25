@@ -129,4 +129,40 @@ class SalaryAdvanceFinanceCertifyTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.status', 'submitted');
     }
+
+    public function test_finance_queue_lists_payment_and_recovery(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $advance = $this->submittedAdvance($tenant, $staff);
+
+        [$finHttp] = $this->asFinanceController($tenant);
+
+        $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/finance-certify", [
+            'confirmed_net_salary'           => 10000,
+            'intended_recovery_payroll_date' => '2026-07-31',
+            'eligible'                       => true,
+            'comments'                       => 'Certified',
+        ])->assertOk();
+
+        [$sgHttp] = $this->asSG($tenant);
+        $sgHttp->postJson("/api/v1/finance/advances/{$advance->id}/approve", [
+            'comment' => 'Final approval',
+        ])->assertOk()
+          ->assertJsonPath('data.status', 'approved_for_payment');
+
+        $finHttp->getJson('/api/v1/finance/advances?queue=payment')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $advance->id, 'status' => 'approved_for_payment']);
+
+        $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
+            'payment_reference' => 'PAY-Q-1',
+            'payment_method'    => 'bank_transfer',
+            'payment_date'      => '2026-07-01',
+        ])->assertOk();
+
+        $finHttp->getJson('/api/v1/finance/advances?queue=recovery')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $advance->id, 'status' => 'paid']);
+    }
 }

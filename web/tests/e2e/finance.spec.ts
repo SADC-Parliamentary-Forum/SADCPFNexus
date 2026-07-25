@@ -29,6 +29,26 @@ test.describe("Salary advances", () => {
     const btn = page.locator("a:has-text('New'), a:has-text('Request'), a[href*='/create']").first();
     await expect(btn).toBeVisible();
   });
+
+  test("queue tabs are present for finance users", async ({ page }) => {
+    const tabs = page.getByRole("tablist", { name: /advance queues/i });
+    await expect(tabs).toBeVisible();
+    await expect(page.getByRole("tab", { name: /my requests/i })).toBeVisible();
+
+    // Finance roles see certify/payment/recovery; staff may only see My requests.
+    const certify = page.getByRole("tab", { name: /pending certification/i });
+    if (await certify.isVisible()) {
+      await certify.click();
+      await page.waitForURL("**/finance/advances?queue=certify", { timeout: 10_000 });
+      await expect(page.getByRole("tab", { name: /pending certification/i })).toHaveAttribute("aria-selected", "true");
+
+      await page.getByRole("tab", { name: /approved for payment/i }).click();
+      await page.waitForURL("**/finance/advances?queue=payment", { timeout: 10_000 });
+
+      await page.getByRole("tab", { name: /payroll recovery/i }).click();
+      await page.waitForURL("**/finance/advances?queue=recovery", { timeout: 10_000 });
+    }
+  });
 });
 
 test.describe("Salary advance — create", () => {

@@ -167,6 +167,28 @@ export default function AdvanceDetailPage() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showCertifyModal, setShowCertifyModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [certifyForm, setCertifyForm] = useState({
+    confirmed_net_salary: "",
+    confirmed_gross_salary: "",
+    recommended_amount: "",
+    intended_recovery_payroll_date: "",
+    comments: "",
+  });
+  const [certifyMode, setCertifyMode] = useState<"certify" | "return" | "not_eligible">("certify");
+  const [actionReason, setActionReason] = useState("");
+  const [paymentForm, setPaymentForm] = useState({
+    payment_reference: "",
+    payment_method: "bank_transfer",
+    payment_date: new Date().toISOString().slice(0, 10),
+  });
+  const [recoveryForm, setRecoveryForm] = useState({
+    amount: "",
+    reference_doc: "PAYROLL",
+    notes: "Full EOM recovery",
+  });
   const { confirm } = useConfirm();
 
   useEffect(() => {
@@ -196,53 +218,99 @@ export default function AdvanceDetailPage() {
     finally { setActionLoading(false); }
   };
 
-  const handleFinanceCertify = async () => {
+  const openCertifyModal = () => {
     if (!advance) return;
-    setActionLoading(true);
-    try {
-      const recovery = advance.intended_recovery_payroll_date
-        ?? new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0).toISOString().slice(0, 10);
-      await financeApi.financeCertifyAdvance(advance.id, {
-        confirmed_net_salary: Number(advance.net_salary_at_request ?? 0),
-        confirmed_gross_salary: Number(advance.gross_salary_at_request ?? undefined),
-        intended_recovery_payroll_date: recovery,
-        eligible: true,
-        comments: "Finance certification completed",
-      });
-      await refreshAdvance();
-      showToastMsg("Finance certified.");
-    } catch { setError("Failed to certify advance."); }
-    finally { setActionLoading(false); }
+    const recovery = advance.intended_recovery_payroll_date
+      ?? new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0).toISOString().slice(0, 10);
+    setCertifyForm({
+      confirmed_net_salary: String(advance.net_salary_at_request ?? ""),
+      confirmed_gross_salary: advance.gross_salary_at_request != null ? String(advance.gross_salary_at_request) : "",
+      recommended_amount: String(advance.amount ?? ""),
+      intended_recovery_payroll_date: recovery.slice(0, 10),
+      comments: "",
+    });
+    setCertifyMode("certify");
+    setActionReason("");
+    setShowCertifyModal(true);
   };
 
-  const handleRecordPayment = async () => {
+  const handleFinanceCertifySubmit = async () => {
     if (!advance) return;
-    const ref = window.prompt("Payment reference");
-    if (!ref) return;
     setActionLoading(true);
+    setError(null);
+    try {
+      if (certifyMode === "return") {
+        if (!actionReason.trim()) { setError("Return reason is required."); return; }
+        await financeApi.financeReturnAdvance(advance.id, actionReason.trim());
+        showToastMsg("Returned to requester.");
+      } else if (certifyMode === "not_eligible") {
+        if (!actionReason.trim()) { setError("Not-eligible reason is required."); return; }
+        await financeApi.markAdvanceNotEligible(advance.id, actionReason.trim());
+        showToastMsg("Marked not eligible.");
+      } else {
+        const net = Number(certifyForm.confirmed_net_salary);
+        const recommended = Number(certifyForm.recommended_amount);
+        if (!Number.isFinite(net) || net < 0) { setError("Confirmed net salary is required."); return; }
+        if (!certifyForm.intended_recovery_payroll_date) { setError("Recovery payroll date is required."); return; }
+        if (!Number.isFinite(recommended) || recommended < 1) { setError("Recommended amount is required."); return; }
+        await financeApi.financeCertifyAdvance(advance.id, {
+          confirmed_net_salary: net,
+          confirmed_gross_salary: certifyForm.confirmed_gross_salary
+            ? Number(certifyForm.confirmed_gross_salary)
+            : undefined,
+          recommended_amount: recommended,
+          intended_recovery_payroll_date: certifyForm.intended_recovery_payroll_date,
+          eligible: true,
+          comments: certifyForm.comments || undefined,
+        });
+        showToastMsg("Finance certified (Part B).");
+      }
+      setShowCertifyModal(false);
+      await refreshAdvance();
+    } catch {
+      setError(certifyMode === "certify" ? "Failed to certify advance." : "Failed to complete Finance action.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRecordPaymentSubmit = async () => {
+    if (!advance) return;
+    if (!paymentForm.payment_reference.trim()) {
+      setError("Payment reference is required.");
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
     try {
       await financeApi.recordAdvancePayment(advance.id, {
-        payment_reference: ref,
-        payment_method: "bank_transfer",
-        payment_date: new Date().toISOString().slice(0, 10),
+        payment_reference: paymentForm.payment_reference.trim(),
+        payment_method: paymentForm.payment_method,
+        payment_date: paymentForm.payment_date || undefined,
       });
+      setShowPaymentModal(false);
       await refreshAdvance();
       showToastMsg("Payment recorded.");
     } catch { setError("Failed to record payment."); }
     finally { setActionLoading(false); }
   };
 
-  const handleRecordRecovery = async () => {
+  const handleRecordRecoverySubmit = async () => {
     if (!advance) return;
-    const amount = Number(window.prompt("Recovery amount", String(advance.approved_amount ?? advance.amount)) ?? 0);
-    if (!amount) return;
+    const amount = Number(recoveryForm.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError("Recovery amount must be greater than zero.");
+      return;
+    }
     setActionLoading(true);
+    setError(null);
     try {
       await financeApi.recordAdvanceRecovery(advance.id, {
         amount,
-        reference_doc: "PAYROLL",
-        notes: "Full EOM recovery",
+        reference_doc: recoveryForm.reference_doc || undefined,
+        notes: recoveryForm.notes || undefined,
       });
+      setShowRecoveryModal(false);
       await refreshAdvance();
       showToastMsg("Recovery recorded.");
     } catch { setError("Failed to record recovery."); }
@@ -607,11 +675,12 @@ export default function AdvanceDetailPage() {
             <button
               type="button"
               disabled={actionLoading}
-              onClick={handleFinanceCertify}
+              onClick={openCertifyModal}
               className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+              data-testid="finance-certify-open"
             >
               <span className="material-symbols-outlined text-[18px]">verified</span>
-              Finance Certify
+              Finance Certify (Part B)
             </button>
             <button
               type="button"
@@ -661,8 +730,16 @@ export default function AdvanceDetailPage() {
           <button
             type="button"
             disabled={actionLoading}
-            onClick={handleRecordPayment}
+            onClick={() => {
+              setPaymentForm({
+                payment_reference: "",
+                payment_method: "bank_transfer",
+                payment_date: new Date().toISOString().slice(0, 10),
+              });
+              setShowPaymentModal(true);
+            }}
             className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+            data-testid="record-payment-open"
           >
             <span className="material-symbols-outlined text-[18px]">payments</span>
             Record Payment
@@ -672,8 +749,16 @@ export default function AdvanceDetailPage() {
           <button
             type="button"
             disabled={actionLoading}
-            onClick={handleRecordRecovery}
+            onClick={() => {
+              setRecoveryForm({
+                amount: String(advance.approved_amount ?? advance.amount),
+                reference_doc: "PAYROLL",
+                notes: "Full EOM recovery",
+              });
+              setShowRecoveryModal(true);
+            }}
             className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+            data-testid="record-recovery-open"
           >
             <span className="material-symbols-outlined text-[18px]">account_balance</span>
             Record Recovery
@@ -721,6 +806,234 @@ export default function AdvanceDetailPage() {
                 className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
               >
                 Confirm rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Part B — Finance certify worksheet */}
+      {showCertifyModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto" data-testid="finance-certify-modal">
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900">FORM-002 Part B — Finance Certification</h3>
+                <p className="text-sm text-neutral-500 mt-1">
+                  Confirm salary basis, eligibility, recommended amount, and recovery payroll month.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { key: "certify", label: "Certify" },
+                  { key: "return", label: "Return" },
+                  { key: "not_eligible", label: "Not eligible" },
+                ] as const).map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => setCertifyMode(m.key)}
+                    className={`filter-tab${certifyMode === m.key ? " active" : ""}`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {certifyMode === "certify" ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="block text-xs font-semibold text-neutral-700">
+                      Confirmed net salary <span className="text-red-500">*</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="form-input mt-1 w-full"
+                        value={certifyForm.confirmed_net_salary}
+                        onChange={(e) => setCertifyForm((f) => ({ ...f, confirmed_net_salary: e.target.value }))}
+                        data-testid="certify-net-salary"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-neutral-700">
+                      Confirmed gross (optional)
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="form-input mt-1 w-full"
+                        value={certifyForm.confirmed_gross_salary}
+                        onChange={(e) => setCertifyForm((f) => ({ ...f, confirmed_gross_salary: e.target.value }))}
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-neutral-700">
+                      Recommended amount <span className="text-red-500">*</span>
+                      <input
+                        type="number"
+                        min={1}
+                        step="0.01"
+                        className="form-input mt-1 w-full"
+                        value={certifyForm.recommended_amount}
+                        onChange={(e) => setCertifyForm((f) => ({ ...f, recommended_amount: e.target.value }))}
+                        data-testid="certify-recommended-amount"
+                      />
+                    </label>
+                    <label className="block text-xs font-semibold text-neutral-700">
+                      Recovery payroll date <span className="text-red-500">*</span>
+                      <input
+                        type="date"
+                        className="form-input mt-1 w-full"
+                        value={certifyForm.intended_recovery_payroll_date}
+                        onChange={(e) => setCertifyForm((f) => ({ ...f, intended_recovery_payroll_date: e.target.value }))}
+                        data-testid="certify-recovery-date"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-neutral-500">
+                    Salary basis for v1: <span className="font-semibold">confirmed net</span>. Max eligible is recalculated as 50% of confirmed net on certify.
+                  </p>
+                  <label className="block text-xs font-semibold text-neutral-700">
+                    Comments
+                    <textarea
+                      className="form-input mt-1 w-full h-20 resize-none"
+                      value={certifyForm.comments}
+                      onChange={(e) => setCertifyForm((f) => ({ ...f, comments: e.target.value }))}
+                      placeholder="Certification notes…"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className="block text-xs font-semibold text-neutral-700">
+                  {certifyMode === "return" ? "Return reason" : "Not-eligible reason"} <span className="text-red-500">*</span>
+                  <textarea
+                    className="form-input mt-1 w-full h-28 resize-none"
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                    placeholder={certifyMode === "return" ? "Why is this being returned?" : "Why is the applicant not eligible?"}
+                  />
+                </label>
+              )}
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button type="button" onClick={() => setShowCertifyModal(false)} className="btn-secondary py-2 px-4 text-sm">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={handleFinanceCertifySubmit}
+                className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
+                data-testid="finance-certify-submit"
+              >
+                {certifyMode === "certify" ? "Certify" : certifyMode === "return" ? "Return to requester" : "Mark not eligible"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record payment modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" data-testid="payment-modal">
+            <div className="p-6 space-y-3">
+              <h3 className="text-base font-semibold text-neutral-900">Record payment</h3>
+              <p className="text-sm text-neutral-500">Creates the BCRE liability register on disbursement.</p>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Payment reference <span className="text-red-500">*</span>
+                <input
+                  type="text"
+                  className="form-input mt-1 w-full"
+                  value={paymentForm.payment_reference}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, payment_reference: e.target.value }))}
+                  data-testid="payment-reference"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Method
+                <select
+                  className="form-input mt-1 w-full"
+                  value={paymentForm.payment_method}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, payment_method: e.target.value }))}
+                >
+                  <option value="bank_transfer">Bank transfer</option>
+                  <option value="cash">Cash</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Payment date
+                <input
+                  type="date"
+                  className="form-input mt-1 w-full"
+                  value={paymentForm.payment_date}
+                  onChange={(e) => setPaymentForm((f) => ({ ...f, payment_date: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button type="button" onClick={() => setShowPaymentModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
+              <button
+                type="button"
+                disabled={actionLoading || !paymentForm.payment_reference.trim()}
+                onClick={handleRecordPaymentSubmit}
+                className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
+              >
+                Record payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record recovery modal */}
+      {showRecoveryModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" data-testid="recovery-modal">
+            <div className="p-6 space-y-3">
+              <h3 className="text-base font-semibold text-neutral-900">Record payroll recovery</h3>
+              <p className="text-sm text-neutral-500">Posts a BCRE recovery transaction. Full EOM is the v1 policy default.</p>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Amount <span className="text-red-500">*</span>
+                <input
+                  type="number"
+                  min={0.01}
+                  step="0.01"
+                  className="form-input mt-1 w-full"
+                  value={recoveryForm.amount}
+                  onChange={(e) => setRecoveryForm((f) => ({ ...f, amount: e.target.value }))}
+                  data-testid="recovery-amount"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Reference document
+                <input
+                  type="text"
+                  className="form-input mt-1 w-full"
+                  value={recoveryForm.reference_doc}
+                  onChange={(e) => setRecoveryForm((f) => ({ ...f, reference_doc: e.target.value }))}
+                />
+              </label>
+              <label className="block text-xs font-semibold text-neutral-700">
+                Notes
+                <textarea
+                  className="form-input mt-1 w-full h-20 resize-none"
+                  value={recoveryForm.notes}
+                  onChange={(e) => setRecoveryForm((f) => ({ ...f, notes: e.target.value }))}
+                />
+              </label>
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button type="button" onClick={() => setShowRecoveryModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
+              <button
+                type="button"
+                disabled={actionLoading || !recoveryForm.amount}
+                onClick={handleRecordRecoverySubmit}
+                className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
+              >
+                Record recovery
               </button>
             </div>
           </div>

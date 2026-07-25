@@ -44,9 +44,13 @@ class _SalaryAdvanceRequestScreenState
   bool _savingDraft = false;
   String? _error;
   String _purpose = 'Personal Emergency';
-  int _recoveryMonths = 3;
+  /// v1 policy: full end-of-month recovery (single payroll month).
+  static const int _recoveryMonths = 1;
   double _netSalary = 0;
-  double _activeAdvances = 0;
+  double _maxEligible = 0;
+  bool _eligible = false;
+  String? _blockReason;
+  String? _recoveryDateLabel;
 
   final List<String> _purposes = const [
     'Personal Emergency',
@@ -59,11 +63,11 @@ class _SalaryAdvanceRequestScreenState
   double get _requestedAmount =>
       double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
 
-  double get _cap => _netSalary * 0.5;
+  double get _cap => _maxEligible > 0 ? _maxEligible : _netSalary * 0.5;
 
   bool get _hasError => _cap > 0 && _requestedAmount > _cap;
 
-  bool get _valid => _requestedAmount > 0 && !_hasError;
+  bool get _valid => _eligible && _requestedAmount > 0 && !_hasError;
 
   @override
   void initState() {
@@ -77,7 +81,6 @@ class _SalaryAdvanceRequestScreenState
     if (draft == null) return;
     _amountController.text = '${draft['amount'] ?? ''}';
     _purpose = draft['purpose']?.toString() ?? _purpose;
-    _recoveryMonths = (draft['repayment_months'] as num?)?.toInt() ?? _recoveryMonths;
   }
 
   Future<void> _loadContext() async {
@@ -88,28 +91,57 @@ class _SalaryAdvanceRequestScreenState
 
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final summaryRes = await dio.get<Map<String, dynamic>>('/finance/summary');
-      final advancesRes = await dio.get<Map<String, dynamic>>(
-        '/finance/advances',
-        queryParameters: {'per_page': 20},
+      final eligibilityRes = await dio.get<Map<String, dynamic>>(
+        '/finance/advances/eligibility',
       );
 
-      final summary = summaryRes.data ?? const <String, dynamic>{};
-      final advances = (advancesRes.data?['data'] as List<dynamic>? ?? const []);
+      final data = eligibilityRes.data ?? const <String, dynamic>{};
       if (!mounted) return;
 
+      final exposure = data['exposure'] is Map
+          ? Map<String, dynamic>.from(data['exposure'] as Map)
+          : <String, dynamic>{};
+      final blocked = exposure['blocked'] == true;
+      final eligible = data['eligible'] == true && !blocked;
+      String? reason;
+      if (!eligible) {
+        if (exposure['has_outstanding_balance'] == true) {
+          reason =
+              'Outstanding balance of ${_fmt(_asDouble(exposure['outstanding_balance']))} must be recovered first.';
+        } else if (exposure['has_active_advance'] == true) {
+          final active = exposure['active_advance'];
+          final ref = active is Map ? active['reference_number'] : null;
+          reason =
+              'You already have an active advance${ref != null ? ' ($ref)' : ''}.';
+        } else if (data['reason']?.toString() == 'no_confirmed_payslip') {
+          reason = 'HR must confirm your payslip before you can request an advance.';
+        } else {
+          reason = 'You are not currently eligible to request a salary advance.';
+        }
+      }
+
+      final recoveryRaw = data['intended_recovery_payroll_date']?.toString();
+      String? recoveryLabel;
+      if (recoveryRaw != null && recoveryRaw.isNotEmpty) {
+        final parsed = DateTime.tryParse(recoveryRaw);
+        if (parsed != null) {
+          recoveryLabel =
+              '${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}/${parsed.year}';
+        }
+      }
+
       setState(() {
-        _netSalary = _asDouble(summary['current_net_salary']);
-        _activeAdvances = advances
-            .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
-            .where((item) => item['status']?.toString() != 'rejected')
-            .fold<double>(0, (sum, item) => sum + _asDouble(item['amount']));
+        _netSalary = _asDouble(data['net_salary']);
+        _maxEligible = _asDouble(data['max_eligible']);
+        _eligible = eligible;
+        _blockReason = reason;
+        _recoveryDateLabel = recoveryLabel;
         _loadingContext = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load salary context.';
+        _error = 'Failed to load eligibility.';
         _loadingContext = false;
       });
     }
@@ -177,7 +209,8 @@ class _SalaryAdvanceRequestScreenState
           'repayment_months': _recoveryMonths,
           'purpose': _purpose,
           'justification':
-              'Salary advance request for $_purpose. Requested amount: $_requestedAmount. Recovery period: $_recoveryMonths months.',
+              'Salary advance request for $_purpose. Requested amount: $_requestedAmount. Full recovery in one payroll month.',
+          'deduction_authority_confirmed': false,
         },
       );
       final id = createRes.data?['data']?['id'];
@@ -279,7 +312,7 @@ class _SalaryAdvanceRequestScreenState
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'This request uses your live salary context and current active advance exposure.',
+                      'This request uses confirmed net salary eligibility and blocks outstanding advances.',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF666666),
@@ -287,21 +320,50 @@ class _SalaryAdvanceRequestScreenState
                       ),
                     ),
                     const SizedBox(height: 20),
+                    if (!_eligible && _blockReason != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFDBA74)),
+                        ),
+                        child: Text(
+                          _blockReason!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF9A3412),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0FFF6),
+                        color: _eligible
+                            ? const Color(0xFFF0FFF6)
+                            : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: const Color(0xFF13EC80).withValues(alpha: 0.4),
+                          color: _eligible
+                              ? const Color(0xFF13EC80).withValues(alpha: 0.4)
+                              : const Color(0xFFFDBA74),
                         ),
                       ),
                       child: Column(
                         children: [
-                          _contextRow('Monthly Net Salary', _fmt(_netSalary)),
-                          const Divider(height: 1),
-                          _contextRow('Active Advances', _fmt(_activeAdvances)),
+                          _contextRow('Confirmed Net Salary', _fmt(_netSalary)),
                           const Divider(height: 1),
                           _contextRow('Maximum Allowed', _fmt(_cap)),
+                          const Divider(height: 1),
+                          _contextRow(
+                            'Recovery',
+                            _recoveryDateLabel != null
+                                ? 'Full EOM ($_recoveryDateLabel)'
+                                : 'Full amount — one payroll month',
+                          ),
                         ],
                       ),
                     ),
@@ -362,47 +424,17 @@ class _SalaryAdvanceRequestScreenState
                       },
                     ),
                     const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Recovery Period',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        Text(
-                          '$_recoveryMonths months',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF13EC80),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: _recoveryMonths.toDouble(),
-                      min: 1,
-                      max: 12,
-                      divisions: 11,
-                      onChanged: (value) {
-                        setState(() => _recoveryMonths = value.round());
-                      },
-                    ),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 10,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Text(
-                        'Payments will be deducted automatically from future salaries after approval.',
+                        'Policy v1 recovers the full advance in a single payroll month (full EOM). You will confirm deduction authority on the next screen.',
                         style: TextStyle(
                           fontSize: 11,
                           color: Color(0xFF888888),
