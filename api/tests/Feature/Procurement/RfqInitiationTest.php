@@ -34,6 +34,7 @@ class RfqInitiationTest extends TestCase
             'approved_at'     => now(),
             'submitted_at'    => now()->subDay(),
         ]);
+        $this->reserveBudgetFor($request);
 
         $matchingVendor = Vendor::create([
             'tenant_id'     => $tenant->id,

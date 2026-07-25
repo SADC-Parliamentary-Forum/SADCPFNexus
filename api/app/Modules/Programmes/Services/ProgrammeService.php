@@ -738,12 +738,14 @@ class ProgrammeService
             $procurementRequest = ProcurementRequest::create([
                 'tenant_id'        => $programme->tenant_id,
                 'requester_id'     => $user->id,
+                'programme_id'     => $programme->id,
                 'title'            => $data['request_title'],
                 'description'      => 'Generated from approved PIF ' . $programme->reference_number,
                 'category'         => $data['category'] ?? 'goods',
                 'estimated_value'  => $estimatedValue,
                 'status'           => 'draft',
                 'currency'         => $programme->primary_currency ?? 'USD',
+                'budget_line'      => $programme->reference_number,
             ]);
 
             foreach ($items as $item) {
