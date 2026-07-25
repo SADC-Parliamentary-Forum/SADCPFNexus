@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\ResearcherReport;
 use Illuminate\Http\JsonResponse;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -34,6 +35,7 @@ class ResearcherReportAttachmentController extends Controller
         ]);
 
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store(
             'attachments/researcher-reports/' . $researcherReport->id,
             ['disk' => 'local']
@@ -45,7 +47,7 @@ class ResearcherReportAttachmentController extends Controller
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
 

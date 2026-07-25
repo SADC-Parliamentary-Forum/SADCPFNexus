@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { clearStoredUser, writeStoredUser } from "@/lib/session";
 import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
+import { MFA_SETUP_PATH, requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 import { safeInternalPath } from "@/lib/safeInternalPath";
 
 const IS_DEV = process.env.NODE_ENV === "development";
@@ -98,6 +99,18 @@ export default function LoginPage() {
         return;
       }
       clearMustResetCookie();
+
+      // Privileged roles must enable MFA before using the app (matches API middleware).
+      if (requiresPrivilegedMfaSetup(user)) {
+        if (user.setup_completed) {
+          setSetupCompleteCookie();
+        } else {
+          clearSetupCompleteCookie();
+        }
+        window.location.href = MFA_SETUP_PATH;
+        return;
+      }
+
       if (user.setup_completed) {
         setSetupCompleteCookie();
         const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
@@ -198,7 +211,7 @@ export default function LoginPage() {
           <div className="mb-8 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-neutral-900">{t("login.title")}</h2>
-              <p className="text-sm text-neutral-500 mt-1">Sign in to your account to continue.</p>
+              <p className="text-sm text-neutral-500 mt-1">{t("login.subtitle")}</p>
             </div>
             <LocaleSwitcher />
           </div>
@@ -268,7 +281,7 @@ export default function LoginPage() {
                   autoComplete="one-time-code"
                 />
                 <p className="mt-2 text-xs text-neutral-400">
-                  Enter the 6-digit code from your authenticator app to finish signing in.
+                  {t("login.mfaHint")}
                 </p>
               </div>
             )}
@@ -283,7 +296,7 @@ export default function LoginPage() {
                   <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
                   Signing in…
                 </>
-              ) : mfaRequired ? "Verify & Sign in" : t("login.submit")}
+              ) : mfaRequired ? t("login.verify") : t("login.submit")}
             </button>
           </form>
 
@@ -324,20 +337,20 @@ export default function LoginPage() {
           <div className="mt-6 text-center text-xs text-neutral-500 space-y-1.5">
             <p>
               <Link href="/forgot-password" className="font-medium text-primary hover:underline">
-                Reset password
+                {t("login.resetPassword")}
               </Link>
-              {" "}or{" "}
+              {" "}{t("login.or")}{" "}
               <Link href="/forgot-password" className="font-medium text-primary hover:underline">
-                request a password
+                {t("login.requestPassword")}
               </Link>
-              {" "}for staff and supplier accounts.
+              {" "}{t("login.forAccounts")}
             </p>
-            <p className="text-neutral-400">If you no longer have mailbox access, contact IT Support.</p>
+            <p className="text-neutral-400">{t("login.mailboxHelp")}</p>
           </div>
           <div className="mt-3 text-center text-xs text-neutral-500">
-            Supplier onboarding:{" "}
+            {t("login.supplierOnboarding")}{" "}
             <Link href="/supplier/register" className="font-medium text-primary hover:underline">
-              Register your supplier account
+              {t("login.supplierRegister")}
             </Link>
           </div>
         </div>

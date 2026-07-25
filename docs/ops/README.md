@@ -9,5 +9,6 @@ They do **not** claim a restore drill has been executed — operators must sched
 | [deploy-rollback.md](./deploy-rollback.md) | `scripts/deploy.sh` deploy path + code/DB rollback |
 | [incident-response.md](./incident-response.md) | Severity, communication, containment |
 | [observability.md](./observability.md) | Request IDs, optional Sentry, structured logs |
+| [staging-idor-matrix.md](./staging-idor-matrix.md) | Manual staging IDOR evidence pack |
 
 Related: [DOCKER.md](../../DOCKER.md) (deploy), [REMAINING_WORK.md](../../REMAINING_WORK.md).

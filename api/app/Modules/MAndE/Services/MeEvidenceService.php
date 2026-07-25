@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\MeActivityReport;
 use App\Models\MeEvidence;
 use App\Models\User;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +39,7 @@ class MeEvidenceService
                 'uploaded_by'           => $user->id,
             ]);
 
+            $mime = UploadContentSniffer::assertAllowed($file);
             $path = $file->store('attachments/mande/evidence/' . $report->id, ['disk' => 'local']);
 
             $evidence->attachments()->create([
@@ -46,7 +48,7 @@ class MeEvidenceService
                 'document_type'     => 'me_evidence',
                 'original_filename' => $file->getClientOriginalName(),
                 'storage_path'      => $path,
-                'mime_type'         => $file->getMimeType(),
+                'mime_type'         => $mime,
                 'size_bytes'        => $file->getSize(),
             ]);
 

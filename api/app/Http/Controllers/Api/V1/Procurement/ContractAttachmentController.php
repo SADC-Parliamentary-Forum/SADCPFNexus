@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Contract;
 use Illuminate\Http\JsonResponse;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -27,6 +28,7 @@ class ContractAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::CONTRACT_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('attachments/contracts/' . $contract->id, ['disk' => 'local']);
         $attachment = $contract->attachments()->create([
             'tenant_id'         => $contract->tenant_id,
@@ -34,7 +36,7 @@ class ContractAttachmentController extends Controller
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_SIGNED_CONTRACT),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');

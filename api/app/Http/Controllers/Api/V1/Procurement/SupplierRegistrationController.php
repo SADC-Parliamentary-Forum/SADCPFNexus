@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\NotificationService;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -104,6 +105,7 @@ class SupplierRegistrationController extends Controller
         foreach ($request->file('documents', []) as $index => $file) {
             $documentTypes = $request->input('document_types', []);
             $documentType = $documentTypes[$index] ?? Attachment::DOCUMENT_TYPE_COMPANY_PROFILE;
+            $mime = UploadContentSniffer::assertAllowed($file);
             $path = $file->store('attachments/vendors/' . $vendor->id, ['disk' => 'local']);
             $vendor->attachments()->create([
                 'tenant_id'         => $tenant->id,
@@ -111,7 +113,7 @@ class SupplierRegistrationController extends Controller
                 'document_type'     => $documentType,
                 'original_filename' => $file->getClientOriginalName(),
                 'storage_path'      => $path,
-                'mime_type'         => $file->getMimeType(),
+                'mime_type'         => $mime,
                 'size_bytes'        => $file->getSize(),
             ]);
         }

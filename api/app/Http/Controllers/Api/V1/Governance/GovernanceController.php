@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\GovernanceResolution;
 use App\Models\WorkplanEvent;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -167,6 +168,7 @@ class GovernanceController extends Controller
 
         $file = $request->file('file');
         $lang = $request->input('language');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('governance/resolutions/' . $resolution->id . '/' . $lang, ['disk' => 'local']);
 
         // Replace any existing document for this language
@@ -185,7 +187,7 @@ class GovernanceController extends Controller
             'language'          => $lang,
             'original_filename' => $request->input('title') ?: $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
 

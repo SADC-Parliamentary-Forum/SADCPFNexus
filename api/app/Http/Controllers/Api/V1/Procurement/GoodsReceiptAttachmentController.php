@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\GoodsReceiptNote;
 use Illuminate\Http\JsonResponse;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -27,6 +28,7 @@ class GoodsReceiptAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::GOODS_RECEIPT_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('attachments/receipts/' . $goodsReceiptNote->id, ['disk' => 'local']);
         $attachment = $goodsReceiptNote->attachments()->create([
             'tenant_id'         => $goodsReceiptNote->tenant_id,
@@ -34,7 +36,7 @@ class GoodsReceiptAttachmentController extends Controller
             'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_DELIVERY_NOTE),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');

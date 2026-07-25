@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
-    "scripts/verify-safe-internal-path.mts"
+    "scripts/verify-safe-internal-path.mts",
+    "scripts/verify-privileged-mfa.mts"
   ]
 }

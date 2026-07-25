@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -34,6 +35,7 @@ class ProfileDocumentController extends Controller
 
         $user = $request->user();
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('profile-documents/' . $user->id, ['disk' => 'local']);
 
         $attachment = $user->morphMany(Attachment::class, 'attachable')->create([
@@ -42,7 +44,7 @@ class ProfileDocumentController extends Controller
             'document_type'     => $request->input('document_type'),
             'original_filename' => $request->input('title') ?: $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');
@@ -116,6 +118,7 @@ class ProfileDocumentController extends Controller
         ]);
 
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('profile-documents/' . $user->id, ['disk' => 'local']);
 
         $attachment = $user->morphMany(Attachment::class, 'attachable')->create([
@@ -124,7 +127,7 @@ class ProfileDocumentController extends Controller
             'document_type'     => $request->input('document_type'),
             'original_filename' => $request->input('title') ?: $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');

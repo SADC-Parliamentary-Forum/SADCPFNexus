@@ -38,6 +38,8 @@ SENTRY_AUTH_TOKEN=
 
 Do not invent organisation accounts or commit DSNs. Until packages are installed, env vars are inert documentation hooks.
 
+**Web client hook:** `web/lib/observability.ts` — `captureClientException()` no-ops without `NEXT_PUBLIC_SENTRY_DSN` / window `Sentry`; API axios interceptor calls it on 5xx.
+
 ## Health checks
 
 - API: `/up` (Laravel) and `/api/v1/auth/ping`

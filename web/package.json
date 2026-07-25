@@ -19,6 +19,8 @@
     "test:staff": "playwright test --project=staff",
     "test:admin": "playwright test --project=admin",
     "verify:redirect": "node --experimental-strip-types scripts/verify-safe-internal-path.mts",
+    "verify:mfa": "node --experimental-strip-types scripts/verify-privileged-mfa.mts",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.ts --project=staff",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

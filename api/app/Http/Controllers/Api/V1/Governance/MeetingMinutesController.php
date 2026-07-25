@@ -8,6 +8,7 @@ use App\Models\Attachment;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingMinutes;
 use App\Models\User;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -137,6 +138,7 @@ class MeetingMinutesController extends Controller
         ]);
 
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store("tenants/{$request->user()->tenant_id}/meeting_minutes/{$meetingMinute->id}", 'private');
 
         // Remove previous document with same original name if re-uploading
@@ -151,7 +153,7 @@ class MeetingMinutesController extends Controller
             'uploaded_by'       => $request->user()->id,
             'original_filename' => $request->title ?? $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
 

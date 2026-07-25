@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Programme;
 use Illuminate\Http\JsonResponse;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -27,6 +28,7 @@ class ProgrammeAttachmentController extends Controller
             'document_type' => ['required', 'string', 'in:' . implode(',', Attachment::DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
+        $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store(
             'attachments/programmes/' . $programme->id,
             ['disk' => 'local']
@@ -37,7 +39,7 @@ class ProgrammeAttachmentController extends Controller
             'document_type'     => $request->input('document_type'),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path'      => $path,
-            'mime_type'         => $file->getMimeType(),
+            'mime_type'         => $mime,
             'size_bytes'        => $file->getSize(),
         ]);
         $attachment->load('uploader:id,name');

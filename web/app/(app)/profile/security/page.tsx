@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 import { formatDateRelative } from "@/lib/utils";
 
 const NAV = [
@@ -12,9 +15,11 @@ const NAV = [
 ];
 
 export default function ProfileSecurityPage() {
+  const { t } = useI18n();
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("60");
+  const [forceMfaBanner, setForceMfaBanner] = useState(false);
 
   // 2FA state
   const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -82,9 +87,25 @@ export default function ProfileSecurityPage() {
 
   // Load 2FA status
   useEffect(() => {
+    const stored = getStoredUser();
     twoFactorApi.status()
-      .then((res) => setMfaEnabled(res.data.enabled))
-      .catch(() => {})
+      .then((res) => {
+        setMfaEnabled(res.data.enabled);
+        setForceMfaBanner(
+          requiresPrivilegedMfaSetup({
+            roles: stored?.roles,
+            mfa_enabled: res.data.enabled,
+          })
+        );
+      })
+      .catch(() => {
+        setForceMfaBanner(
+          requiresPrivilegedMfaSetup({
+            roles: stored?.roles,
+            mfa_enabled: stored?.mfa_enabled,
+          })
+        );
+      })
       .finally(() => setMfaLoading(false));
   }, []);
 
@@ -108,6 +129,7 @@ export default function ProfileSecurityPage() {
     try {
       await twoFactorApi.confirm(totpCode);
       setMfaEnabled(true);
+      setForceMfaBanner(false);
       setShowSetupModal(false);
       setMfaSetup(null);
       setTotpCode("");
@@ -216,6 +238,16 @@ export default function ProfileSecurityPage() {
         <h1 className="page-title">Security & Password</h1>
         <p className="page-subtitle">Manage your password, multi-factor authentication, and active sessions.</p>
       </div>
+
+      {forceMfaBanner && !mfaEnabled && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="material-symbols-outlined text-[20px] text-amber-600 mt-0.5">security</span>
+          <div>
+            <p className="font-semibold">{t("mfa.setupTitle")}</p>
+            <p className="mt-0.5 text-amber-800/90">{t("mfa.setupRequired")}</p>
+          </div>
+        </div>
+      )}
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">

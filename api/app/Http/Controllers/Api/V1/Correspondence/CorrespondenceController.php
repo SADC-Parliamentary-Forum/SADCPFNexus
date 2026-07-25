@@ -7,6 +7,7 @@ use App\Jobs\SendCorrespondenceMailJob;
 use App\Models\AuditLog;
 use App\Models\Correspondence;
 use App\Models\CorrespondenceRecipient;
+use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -84,9 +85,9 @@ class CorrespondenceController extends Controller
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
+            $mimeType = UploadContentSniffer::assertAllowed($file);
             $filePath = $file->store('correspondence/' . $user->tenant_id . '/drafts', ['disk' => 'local']);
             $originalFilename = $file->getClientOriginalName();
-            $mimeType = $file->getMimeType();
             $sizeBytes = $file->getSize();
         }
 
@@ -169,12 +170,12 @@ class CorrespondenceController extends Controller
                 Storage::disk('local')->delete($correspondence->file_path);
             }
             $file = $request->file('file');
+            $data['mime_type'] = UploadContentSniffer::assertAllowed($file);
             $data['file_path'] = $file->store(
                 'correspondence/' . $correspondence->tenant_id . '/drafts',
                 ['disk' => 'local']
             );
             $data['original_filename'] = $file->getClientOriginalName();
-            $data['mime_type'] = $file->getMimeType();
             $data['size_bytes'] = $file->getSize();
         }
         unset($data['file']);
