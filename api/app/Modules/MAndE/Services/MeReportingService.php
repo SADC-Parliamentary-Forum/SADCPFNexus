@@ -238,4 +238,44 @@ class MeReportingService
             ],
         ];
     }
+
+    /**
+     * Simple reporting due calendar (MVP).
+     *
+     * @return array{month: string, items: list<array<string,mixed>>, overdue_count: int}
+     */
+    public function calendar(User $user, array $filters = []): array
+    {
+        $month = $filters['month'] ?? now()->format('Y-m');
+        $start = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $items = DB::table('me_activity_reports')
+            ->where('tenant_id', $user->tenant_id)
+            ->whereNull('deleted_at')
+            ->whereNotNull('report_due_at')
+            ->whereBetween('report_due_at', [$start->toDateTimeString(), $end->toDateTimeString()])
+            ->orderBy('report_due_at')
+            ->limit(300)
+            ->get([
+                'id', 'reference_number', 'activity_title', 'review_status',
+                'report_due_at', 'end_date', 'programme_id',
+            ])
+            ->map(fn ($r) => (array) $r)
+            ->toArray();
+
+        $overdue = DB::table('me_activity_reports')
+            ->where('tenant_id', $user->tenant_id)
+            ->whereNull('deleted_at')
+            ->whereNotNull('report_due_at')
+            ->where('report_due_at', '<', now())
+            ->whereIn('review_status', ['not_submitted', 'returned'])
+            ->count();
+
+        return [
+            'month'         => $month,
+            'items'         => $items,
+            'overdue_count' => $overdue,
+        ];
+    }
 }

@@ -671,10 +671,13 @@ Route::prefix('v1')->group(function () {
             // Indicators (§10.6)
             Route::middleware('can:mande.view')->get('indicators', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'index']);
             Route::middleware('can:mande.view')->get('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'show']);
+            Route::middleware('can:mande.view')->get('indicators/{indicator}/versions', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'versions']);
+            Route::middleware('can:mande.view')->get('calendar', [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'calendar']);
             Route::middleware('can:mande.create')->group(function () {
                 Route::post('indicators',               [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'store']);
                 Route::put('indicators/{indicator}',    [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'update']);
                 Route::delete('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'destroy']);
+                Route::post('indicators/{indicator}/versions', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'createVersion']);
             });
 
             // Activity Reports (§10.7 + §10.8)

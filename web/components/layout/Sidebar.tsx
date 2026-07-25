@@ -176,6 +176,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Strategic Plans", href: "/mande/strategic-plan", icon: "flag" },
       { label: "Results Frameworks", href: "/mande/results", icon: "account_tree" },
       { label: "Indicators", href: "/mande/indicators", icon: "speed" },
+      { label: "Calendar", href: "/mande/calendar", icon: "calendar_month" },
       { label: "Reports", href: "/mande/reports", icon: "assessment" },
       { label: "Data Quality", href: "/mande/data-quality", icon: "fact_check" },
       { label: "Import", href: "/mande/import", icon: "upload_file" },

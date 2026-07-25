@@ -4,8 +4,10 @@ namespace App\Modules\MAndE\Services;
 
 use App\Models\AuditLog;
 use App\Models\Indicator;
+use App\Models\MeIndicatorVersion;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class IndicatorService
@@ -81,6 +83,50 @@ class IndicatorService
         ]);
 
         $indicator->delete();
+    }
+
+    /**
+     * @return Collection<int, MeIndicatorVersion>
+     */
+    public function listVersions(Indicator $indicator): Collection
+    {
+        return MeIndicatorVersion::query()
+            ->where('indicator_id', $indicator->id)
+            ->orderByDesc('version_number')
+            ->get();
+    }
+
+    public function createVersion(Indicator $indicator, array $data, User $user): MeIndicatorVersion
+    {
+        $next = (int) MeIndicatorVersion::query()
+            ->where('indicator_id', $indicator->id)
+            ->max('version_number') + 1;
+
+        $snapshot = $indicator->only([
+            'code', 'name', 'result_level', 'unit',
+            'baseline_value', 'baseline_year', 'annual_target', 'cumulative_target',
+            'disaggregation', 'data_source', 'evidence_required', 'frequency',
+            'is_active', 'description', 'results_framework_id', 'programme_id',
+        ]);
+
+        $version = MeIndicatorVersion::create([
+            'tenant_id'      => $indicator->tenant_id,
+            'indicator_id'   => $indicator->id,
+            'version_number' => $next,
+            'label'          => $data['label'] ?? ('v' . $next),
+            'snapshot'       => $snapshot,
+            'change_notes'   => $data['change_notes'] ?? null,
+            'created_by'     => $user->id,
+        ]);
+
+        AuditLog::record('mande.indicator.version_created', [
+            'auditable_type' => Indicator::class,
+            'auditable_id'   => $indicator->id,
+            'new_values'     => ['version_number' => $next],
+            'tags'           => 'mande',
+        ]);
+
+        return $version;
     }
 
     private function fillable(array $data): array

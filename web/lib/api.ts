@@ -5177,6 +5177,30 @@ export interface Indicator {
   pivot?: { planned_value: number | null; actual_value: number | null; notes: string | null };
 }
 
+export interface MeIndicatorVersion {
+  id: number;
+  indicator_id: number;
+  version_number: number;
+  label: string | null;
+  snapshot: Record<string, unknown>;
+  change_notes: string | null;
+  created_at: string;
+}
+
+export interface MeReportingCalendar {
+  month: string;
+  items: Array<{
+    id: number;
+    reference_number: string;
+    activity_title: string;
+    review_status: string;
+    report_due_at: string;
+    end_date: string | null;
+    programme_id: number | null;
+  }>;
+  overdue_count: number;
+}
+
 export interface MeThematicArea {
   id: number; tenant_id: number; code: string; name: string;
   description: string | null; is_active: boolean; sort_order: number;
@@ -5466,6 +5490,12 @@ export const mandeApi = {
     api.put<{ data: Indicator; message: string }>(`/mande/indicators/${id}`, data),
   deleteIndicator: (id: number) =>
     api.delete<{ message: string }>(`/mande/indicators/${id}`),
+  listIndicatorVersions: (id: number) =>
+    api.get<{ data: MeIndicatorVersion[] }>(`/mande/indicators/${id}/versions`),
+  createIndicatorVersion: (id: number, data?: { label?: string; change_notes?: string }) =>
+    api.post<{ data: MeIndicatorVersion; message: string }>(`/mande/indicators/${id}/versions`, data ?? {}),
+  getCalendar: (params?: { month?: string }) =>
+    api.get<{ data: MeReportingCalendar }>("/mande/calendar", { params }),
 
   // Activity reports
   listReports: (params?: Record<string, string | number>) =>

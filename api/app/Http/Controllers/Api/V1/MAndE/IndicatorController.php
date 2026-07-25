@@ -48,6 +48,23 @@ class IndicatorController extends Controller
         return response()->json(['message' => 'Indicator deleted.']);
     }
 
+    public function versions(Request $request, Indicator $indicator): JsonResponse
+    {
+        $this->ensureTenant($request, $indicator);
+        return response()->json(['data' => $this->service->listVersions($indicator)]);
+    }
+
+    public function createVersion(Request $request, Indicator $indicator): JsonResponse
+    {
+        $this->ensureTenant($request, $indicator);
+        $data = $request->validate([
+            'label'        => ['nullable', 'string', 'max:120'],
+            'change_notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+        $version = $this->service->createVersion($indicator, $data, $request->user());
+        return response()->json(['message' => 'Indicator version snapshot created.', 'data' => $version], 201);
+    }
+
     private function ensureTenant(Request $request, Indicator $indicator): void
     {
         if ((int) $indicator->tenant_id !== (int) $request->user()->tenant_id) {

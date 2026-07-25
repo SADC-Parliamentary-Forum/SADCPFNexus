@@ -125,6 +125,17 @@ export default function IndicatorsPage() {
                     <td>{ind.is_active ? <span className="badge badge-success">Active</span> : <span className="badge badge-muted">Inactive</span>}</td>
                     <td className="whitespace-nowrap">
                       <button onClick={() => setModal({ ...ind })} className="text-primary text-xs hover:underline mr-3">Edit</button>
+                      <button
+                        onClick={() => {
+                          if (confirm("Create a version snapshot of this indicator?")) {
+                            mandeApi.createIndicatorVersion(ind.id, { label: `Snapshot ${new Date().toISOString().slice(0, 10)}` })
+                              .then(() => alert("Version snapshot created."));
+                          }
+                        }}
+                        className="text-neutral-600 text-xs hover:underline mr-3"
+                      >
+                        Snapshot
+                      </button>
                       <button onClick={() => { if (confirm("Delete this indicator?")) delMut.mutate(ind.id); }} className="text-red-500 text-xs hover:underline">Delete</button>
                     </td>
                   </tr>

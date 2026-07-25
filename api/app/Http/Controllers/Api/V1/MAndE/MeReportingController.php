@@ -30,4 +30,13 @@ class MeReportingController extends Controller
 
         return response()->json(['data' => $this->service->donor($request->user(), $filters)]);
     }
+
+    public function calendar(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'month' => ['nullable', 'date_format:Y-m'],
+        ]);
+
+        return response()->json(['data' => $this->service->calendar($request->user(), $filters)]);
+    }
 }
