@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
+import '../../../../../core/offline/draft_sync_outcome.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 class OfflineDraftsScreen extends ConsumerStatefulWidget {
@@ -128,17 +129,15 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         _syncing = false;
         _lastSync = DateTime.now();
       });
-      if (synced > 0) {
+      final outcome = DraftSyncOutcome(synced: synced, failed: failed);
+      if (!outcome.nothingToDo) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(failed == 0 ? 'All drafts synced successfully.' : 'Synced $synced draft(s). $failed failed.'),
-            backgroundColor: failed > 0 ? AppColors.warning : AppColors.success,
+            content: Text(outcome.snackbarMessage()),
+            backgroundColor: outcome.allFailed
+                ? AppColors.danger
+                : (outcome.partialSuccess ? AppColors.warning : AppColors.success),
           ),
-        );
-      }
-      if (failed > 0 && synced == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sync failed. Check connection and try again.'), backgroundColor: AppColors.danger),
         );
       }
       _loadDrafts();

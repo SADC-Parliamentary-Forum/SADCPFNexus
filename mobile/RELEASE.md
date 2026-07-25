@@ -1,50 +1,49 @@
 # Android release build and signing
 
-Release signing is configured in [android/app/build.gradle.kts](android/app/build.gradle.kts). The release build uses a keystore when the following are set; otherwise it falls back to the debug keystore (for local builds only).
+Release signing is configured in [android/app/build.gradle.kts](android/app/build.gradle.kts).
 
-## 1. Create a keystore (one-time)
+## Operator-provided keystore (required for store builds)
 
-From a terminal (e.g. in `mobile/` or project root):
+**Production signing material is operator-owned.** This repository does **not** contain:
+
+- upload/release keystores (`.jks` / `.keystore`)
+- keystore passwords, key aliases, or key passwords
+- Play App Signing or App Store certificates
+- sample or placeholder secrets meant to look like real credentials
+
+Operators generate and store the keystore in their own secret store (CI secrets, vault, HSM, etc.) and inject values at build time. Do not commit keystores, `gradle.properties` with passwords, or any fake “example” secret values that could be mistaken for production credentials.
+
+## 1. Create a keystore (operator, one-time)
+
+Run locally on a secure machine (not committed):
 
 ```bash
 keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 ```
 
-- Store the keystore file somewhere safe (e.g. `mobile/android/app/upload-keystore.jks` or a secure path **outside** the repo).
-- Remember the passwords and alias; you will need them for CI and local release builds.
+Store the `.jks` **outside** the repo and record passwords/alias only in the operator secret store.
 
-**Do not commit the keystore or passwords to version control.**
+## 2. Configure the build (inject at build time)
 
-## 2. Configure the build
-
-Set these via environment variables or in `android/gradle.properties` (and add `gradle.properties` to `.gitignore` if it contains secrets):
+Set via environment variables or a **local-only** `android/gradle.properties` that is gitignored:
 
 | Variable / property       | Description                          |
 |---------------------------|--------------------------------------|
-| `SADC_KEYSTORE_PATH`      | Path to the `.jks` file              |
-| `SADC_KEYSTORE_PASSWORD`  | Keystore password                    |
+| `SADC_KEYSTORE_PATH`      | Path to the operator `.jks` file     |
+| `SADC_KEYSTORE_PASSWORD`  | Keystore password (from secrets)     |
 | `SADC_KEY_ALIAS`           | Key alias (e.g. `upload`)            |
-| `SADC_KEY_PASSWORD`       | Key password                         |
+| `SADC_KEY_PASSWORD`       | Key password (from secrets)          |
 
-**Example (env):**
+**Example (env — replace with values from your secret store):**
 
 ```bash
-export SADC_KEYSTORE_PATH=/path/to/upload-keystore.jks
-export SADC_KEYSTORE_PASSWORD=your_keystore_password
+export SADC_KEYSTORE_PATH=/secure/path/upload-keystore.jks
+export SADC_KEYSTORE_PASSWORD= # from operator secret store
 export SADC_KEY_ALIAS=upload
-export SADC_KEY_PASSWORD=your_key_password
+export SADC_KEY_PASSWORD= # from operator secret store
 ```
 
-**Example (gradle.properties):** in `android/gradle.properties`:
-
-```properties
-SADC_KEYSTORE_PATH=../upload-keystore.jks
-SADC_KEYSTORE_PASSWORD=your_keystore_password
-SADC_KEY_ALIAS=upload
-SADC_KEY_PASSWORD=your_key_password
-```
-
-The build script reads `project.findProperty("...")` first, then `System.getenv("...")`, so either method works.
+The build script reads `project.findProperty("...")` first, then `System.getenv("...")`.
 
 ## 3. Build release artifacts
 
@@ -63,4 +62,8 @@ Outputs:
 - AAB: `build/app/outputs/bundle/release/app-release.aab`
 - APK: `build/app/outputs/flutter-apk/app-release.apk`
 
-If the keystore is missing or env vars are not set, the release build uses the **debug** signing config so you can still produce a release build locally; do **not** use that for production distribution.
+If the keystore env vars are **not** set, the release build falls back to the **debug** signing config so local/CI smoke builds still work. **Do not** ship debug-signed binaries to Play Store or production users.
+
+## Store release
+
+Play Store / App Store signing remains operator-owned. CI may produce unsigned or debug-signed artifacts until operators inject `SADC_KEYSTORE_*` (and iOS signing equivalents) via a secure secret store.

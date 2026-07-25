@@ -1,8 +1,11 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'auth_result.dart';
 import 'auth_storage.dart';
 import '../network/api_client.dart';
+
+export 'auth_result.dart';
 
 class AuthRepository {
   AuthRepository({required ApiClient apiClient, required AuthStorage storage})
@@ -185,43 +188,4 @@ String _networkErrorMessage(DioException e) {
         'Ensure the backend is running on port 8000 and try again.';
   }
   return e.message ?? 'Login failed. Please try again.';
-}
-
-class AuthResult {
-  const AuthResult._({this.user, this.error, this.mfaRequired = false});
-  final dynamic user;
-  final String? error;
-  final bool mfaRequired;
-
-  factory AuthResult.success({dynamic user}) => AuthResult._(user: user);
-  factory AuthResult.mfaPending({dynamic user}) => AuthResult._(user: user, mfaRequired: true);
-  factory AuthResult.failure(String message) => AuthResult._(error: message);
-
-  bool get isSuccess => error == null && !mfaRequired;
-}
-
-class AuthBootstrapResult {
-  const AuthBootstrapResult._({
-    required this.isAuthenticated,
-    this.user,
-    this.isStale = false,
-  });
-
-  final bool isAuthenticated;
-  final Map<String, dynamic>? user;
-  final bool isStale;
-
-  const AuthBootstrapResult.unauthenticated()
-      : this._(isAuthenticated: false);
-
-  factory AuthBootstrapResult.authenticated({
-    Map<String, dynamic>? user,
-    bool isStale = false,
-  }) {
-    return AuthBootstrapResult._(
-      isAuthenticated: true,
-      user: user,
-      isStale: isStale,
-    );
-  }
 }
