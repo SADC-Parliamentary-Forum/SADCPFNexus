@@ -16,6 +16,9 @@ LOGIN_CREDENTIALS.md
 .claude/mcp.json
 .cursor/mcp.json
 
+# Local brainstorm / visual companion sessions
+.superpowers/
+
 # Specific local-only documents
 red-team-report.html
 docs/security-assessment-report.txt
