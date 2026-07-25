@@ -5281,6 +5281,69 @@ export interface MeStrategicReport {
   underreported_areas: Array<{ id: number; pif_number: string; title: string }>;
 }
 
+export interface MeDonorReport {
+  framework: { id: number; name: string; type?: string; donor_name?: string | null } | null;
+  activities: Array<{
+    id: number;
+    reference_number: string;
+    activity_title: string;
+    review_status: string;
+    start_date: string | null;
+    end_date: string | null;
+    actual_participants: number | null;
+    pif_number: string | null;
+    programme_title: string | null;
+  }>;
+  indicators: Array<{
+    id: number;
+    code: string | null;
+    name: string;
+    result_level: string | null;
+    unit: string | null;
+    annual_target: number | string | null;
+    linked_activities: number;
+    sum_actual: number | string | null;
+  }>;
+}
+
+export interface MeDataQualityIssue {
+  code: string;
+  severity: "error" | "warning" | string;
+  entity: string;
+  entity_id: number;
+  reference: string | null;
+  title: string | null;
+  message: string;
+  url?: string | null;
+}
+
+export interface MeDataQualityReport {
+  summary: {
+    total: number;
+    error: number;
+    warning: number;
+    by_code: Record<string, number>;
+  };
+  issues: MeDataQualityIssue[];
+}
+
+export interface MeImportPreview {
+  rows: Array<{
+    line: number;
+    data: Record<string, string>;
+    ok: boolean;
+    errors: Record<string, string>;
+  }>;
+  valid: number;
+  invalid: number;
+}
+
+export interface MeImportResult {
+  created: number;
+  skipped: number;
+  errors: Array<{ line: number; errors: Record<string, string> }>;
+}
+
 export const ME_EVIDENCE_TYPES = [
   { value: "attendance",  label: "Attendance Register", icon: "groups"        },
   { value: "photo",       label: "Photographs",         icon: "photo_camera"  },
@@ -5305,6 +5368,24 @@ export const mandeApi = {
     api.get<{ data: MeDashboardData }>("/mande/dashboard", { params }),
   getStrategicReport: (params?: Record<string, string | number>) =>
     api.get<{ data: MeStrategicReport }>("/mande/reports/strategic", { params }),
+  getDonorReport: (params?: Record<string, string | number>) =>
+    api.get<{ data: MeDonorReport }>("/mande/reports/donor", { params }),
+  getDataQuality: () =>
+    api.get<{ data: MeDataQualityReport }>("/mande/data-quality"),
+  previewImport: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{ data: MeImportPreview }>("/mande/import/preview", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  commitImport: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{ data: MeImportResult; message: string }>("/mande/import/commit", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   getPifLinkages: (params?: { unlinked?: boolean }) =>
     api.get<{ data: PifLinkage[] }>("/mande/pif-linkages", {
       params: params?.unlinked ? { unlinked: 1 } : undefined,

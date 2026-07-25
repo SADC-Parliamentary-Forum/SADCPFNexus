@@ -628,8 +628,14 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:mande.view')->group(function () {
                 Route::get('dashboard',        [\App\Http\Controllers\Api\V1\MAndE\MeDashboardController::class, 'summary']);
                 Route::get('reports/strategic',[\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'strategic']);
+                Route::get('reports/donor',    [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'donor']);
+                Route::get('data-quality',     [\App\Http\Controllers\Api\V1\MAndE\MeDataQualityController::class, 'index']);
                 Route::get('pif-linkages',     [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'linkablePifs']);
                 Route::get('settings',         [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'show']);
+            });
+            Route::middleware('can:mande.admin')->group(function () {
+                Route::post('import/preview', [\App\Http\Controllers\Api\V1\MAndE\MeImportController::class, 'preview']);
+                Route::post('import/commit',  [\App\Http\Controllers\Api\V1\MAndE\MeImportController::class, 'commit']);
             });
             Route::middleware('can:mande.admin')->put('settings', [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'update']);
             Route::middleware('can:mande.review')->post(

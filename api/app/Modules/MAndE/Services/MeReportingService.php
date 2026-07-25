@@ -109,4 +109,111 @@ class MeReportingService
             'underreported_areas'   => $underreported,
         ];
     }
+
+    /**
+     * Donor / project activity matrix for a results framework (PRD §26 scaffold).
+     *
+     * @return array{framework: array<string,mixed>|null, activities: list<array<string,mixed>>, indicators: list<array<string,mixed>>}
+     */
+    public function donor(User $user, array $filters = []): array
+    {
+        $tid = $user->tenant_id;
+        $frameworkId = isset($filters['results_framework_id']) ? (int) $filters['results_framework_id'] : null;
+
+        $framework = null;
+        if ($frameworkId) {
+            $framework = DB::table('results_frameworks')
+                ->where('tenant_id', $tid)
+                ->where('id', $frameworkId)
+                ->whereNull('deleted_at')
+                ->first();
+        }
+
+        $indicatorIds = [];
+        if ($frameworkId) {
+            $indicatorIds = DB::table('indicators')
+                ->where('tenant_id', $tid)
+                ->where('results_framework_id', $frameworkId)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->all();
+        }
+
+        $activitiesQuery = DB::table('me_activity_reports')
+            ->leftJoin('programmes', 'programmes.id', '=', 'me_activity_reports.programme_id')
+            ->where('me_activity_reports.tenant_id', $tid)
+            ->whereNull('me_activity_reports.deleted_at')
+            ->when(!empty($filters['date_from']), fn ($q) => $q->whereDate('me_activity_reports.start_date', '>=', $filters['date_from']))
+            ->when(!empty($filters['date_to']), fn ($q) => $q->whereDate('me_activity_reports.end_date', '<=', $filters['date_to']));
+
+        if ($frameworkId && $indicatorIds !== []) {
+            $activitiesQuery->whereExists(function ($q) use ($indicatorIds) {
+                $q->select(DB::raw(1))
+                    ->from('me_activity_report_indicator')
+                    ->whereColumn('me_activity_report_indicator.me_activity_report_id', 'me_activity_reports.id')
+                    ->whereIn('me_activity_report_indicator.indicator_id', $indicatorIds);
+            });
+        } elseif ($frameworkId) {
+            // Framework selected but no indicators — return empty activity set.
+            $activitiesQuery->whereRaw('1 = 0');
+        }
+
+        $activities = $activitiesQuery
+            ->select([
+                'me_activity_reports.id',
+                'me_activity_reports.reference_number',
+                'me_activity_reports.activity_title',
+                'me_activity_reports.review_status',
+                'me_activity_reports.start_date',
+                'me_activity_reports.end_date',
+                'me_activity_reports.actual_participants',
+                'programmes.reference_number as pif_number',
+                'programmes.title as programme_title',
+            ])
+            ->orderByDesc('me_activity_reports.start_date')
+            ->limit(500)
+            ->get()
+            ->map(fn ($r) => (array) $r)
+            ->toArray();
+
+        $indicators = [];
+        if ($frameworkId) {
+            $indicators = DB::table('indicators')
+                ->leftJoin('me_activity_report_indicator', 'me_activity_report_indicator.indicator_id', '=', 'indicators.id')
+                ->leftJoin('me_activity_reports', function ($j) {
+                    $j->on('me_activity_reports.id', '=', 'me_activity_report_indicator.me_activity_report_id')
+                        ->whereNull('me_activity_reports.deleted_at');
+                })
+                ->where('indicators.tenant_id', $tid)
+                ->where('indicators.results_framework_id', $frameworkId)
+                ->whereNull('indicators.deleted_at')
+                ->select([
+                    'indicators.id',
+                    'indicators.code',
+                    'indicators.name',
+                    'indicators.result_level',
+                    'indicators.unit',
+                    'indicators.annual_target',
+                    DB::raw('COUNT(DISTINCT me_activity_reports.id) as linked_activities'),
+                    DB::raw('SUM(me_activity_report_indicator.actual_value) as sum_actual'),
+                ])
+                ->groupBy(
+                    'indicators.id',
+                    'indicators.code',
+                    'indicators.name',
+                    'indicators.result_level',
+                    'indicators.unit',
+                    'indicators.annual_target'
+                )
+                ->get()
+                ->map(fn ($r) => (array) $r)
+                ->toArray();
+        }
+
+        return [
+            'framework'  => $framework ? (array) $framework : null,
+            'activities' => $activities,
+            'indicators' => $indicators,
+        ];
+    }
 }

@@ -16,4 +16,15 @@ class MeReportingController extends Controller
         $filters = $request->only(['strategic_goal_id', 'thematic_area_id', 'date_from', 'date_to']);
         return response()->json(['data' => $this->service->strategic($request->user(), $filters)]);
     }
+
+    public function donor(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'results_framework_id' => ['nullable', 'integer'],
+            'date_from'            => ['nullable', 'date'],
+            'date_to'              => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        return response()->json(['data' => $this->service->donor($request->user(), $filters)]);
+    }
 }

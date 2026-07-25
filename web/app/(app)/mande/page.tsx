@@ -59,6 +59,10 @@ export default function MandeDashboardPage() {
             <span className="material-symbols-outlined text-[16px]">inbox</span>
             Intake
           </Link>
+          <Link href="/mande/data-quality" className="btn-secondary flex items-center gap-1.5 text-sm">
+            <span className="material-symbols-outlined text-[16px]">fact_check</span>
+            Data Quality
+          </Link>
           <Link href="/mande/activity-reports" className="btn-secondary flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">description</span>
             Reports
