@@ -682,7 +682,14 @@ Route::prefix('v1')->group(function () {
                 Route::put('activity-reports/{activityReport}',  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'update']);
                 Route::delete('activity-reports/{activityReport}',[\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'destroy']);
                 Route::post('activity-reports/{activityReport}/submit', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'submit']);
+                Route::post('activity-reports/{activityReport}/follow-ups', [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'store']);
+                Route::put('activity-reports/{activityReport}/follow-ups/{followUp}', [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'update']);
+                Route::delete('activity-reports/{activityReport}/follow-ups/{followUp}', [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'destroy']);
             });
+            Route::middleware('can:mande.view')->get(
+                'activity-reports/{activityReport}/follow-ups',
+                [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'index']
+            );
 
             // Review workflow (§10.10) — reviewer actions gated on mande.review
             Route::middleware('can:mande.review')->group(function () {

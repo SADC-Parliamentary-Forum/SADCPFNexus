@@ -36,7 +36,7 @@ class MeActivityReport extends Model
     ];
 
     protected $fillable = [
-        'tenant_id', 'programme_id', 'reference_number', 'activity_title',
+        'tenant_id', 'programme_id', 'non_pif_reason', 'reference_number', 'activity_title',
         'responsible_officer_id', 'thematic_area_id', 'strategic_goal_id',
         'start_date', 'end_date',
         'planned_output', 'actual_output', 'planned_participants', 'actual_participants',
@@ -122,6 +122,11 @@ class MeActivityReport extends Model
     public function history(): HasMany
     {
         return $this->hasMany(MeReviewHistory::class, 'me_activity_report_id');
+    }
+
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(MeFollowUpAction::class, 'me_activity_report_id');
     }
 
     public function attachments(): MorphMany

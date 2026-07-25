@@ -56,36 +56,49 @@ class MeActivityReportService
             'indicators',
             'evidence.uploader:id,name',
             'history.actor:id,name',
+            'followUps.assignee:id,name',
         ]);
     }
 
     /**
-     * An activity report can only be created against an APPROVED Programme (PIF).
+     * Create an activity report from an approved PIF, or a non-PIF institutional activity.
      */
     public function create(array $data, User $user): MeActivityReport
     {
-        $programme = Programme::where('id', $data['programme_id'])
-            ->where('tenant_id', $user->tenant_id)
-            ->firstOrFail();
+        $programmeId = $data['programme_id'] ?? null;
 
-        if (! $programme->isApprovedOrAmended()) {
-            throw ValidationException::withMessages([
-                'programme_id' => 'Activity reports can only be linked to an approved PIF.',
-            ]);
-        }
+        if ($programmeId) {
+            $programme = Programme::where('id', $programmeId)
+                ->where('tenant_id', $user->tenant_id)
+                ->firstOrFail();
 
-        $existing = MeActivityReport::query()
-            ->where('tenant_id', $user->tenant_id)
-            ->where('programme_id', $programme->id)
-            ->first();
-        if ($existing) {
-            return $existing->load(['programme:id,title,reference_number,status', 'indicators']);
+            if (! $programme->isApprovedOrAmended()) {
+                throw ValidationException::withMessages([
+                    'programme_id' => 'Activity reports can only be linked to an approved PIF.',
+                ]);
+            }
+
+            $existing = MeActivityReport::query()
+                ->where('tenant_id', $user->tenant_id)
+                ->where('programme_id', $programme->id)
+                ->first();
+            if ($existing) {
+                return $existing->load(['programme:id,title,reference_number,status', 'indicators']);
+            }
+        } else {
+            $programme = null;
+            if (empty($data['non_pif_reason']) || strlen(trim((string) $data['non_pif_reason'])) < 5) {
+                throw ValidationException::withMessages([
+                    'non_pif_reason' => 'A reason is required when creating a non-PIF activity report.',
+                ]);
+            }
         }
 
         return DB::transaction(function () use ($data, $user, $programme) {
             $report = MeActivityReport::create([
                 'tenant_id'              => $user->tenant_id,
-                'programme_id'           => $programme->id,
+                'programme_id'           => $programme?->id,
+                'non_pif_reason'         => $programme ? null : trim((string) $data['non_pif_reason']),
                 'activity_title'         => $data['activity_title'],
                 'responsible_officer_id' => $data['responsible_officer_id'] ?? $user->id,
                 'thematic_area_id'       => $data['thematic_area_id'] ?? null,
@@ -104,6 +117,7 @@ class MeActivityReportService
                 'review_status'          => MeActivityReport::STATUS_NOT_SUBMITTED,
                 'closure_status'         => 'open',
                 'created_by'             => $user->id,
+                'intake_confirmed_at'    => $programme ? null : now(),
             ]);
 
             if (!empty($data['indicators'])) {
@@ -115,7 +129,11 @@ class MeActivityReportService
             AuditLog::record('mande.activity_report.created', [
                 'auditable_type' => MeActivityReport::class,
                 'auditable_id'   => $report->id,
-                'new_values'     => ['reference_number' => $report->reference_number, 'programme_id' => $programme->id],
+                'new_values'     => [
+                    'reference_number' => $report->reference_number,
+                    'programme_id'     => $programme?->id,
+                    'non_pif'          => $programme === null,
+                ],
                 'tags'           => 'mande',
             ]);
 

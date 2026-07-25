@@ -3,6 +3,7 @@
 namespace App\Http\Requests\MAndE;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreActivityReportRequest extends FormRequest
 {
@@ -14,7 +15,8 @@ class StoreActivityReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'programme_id'           => ['required', 'integer', 'exists:programmes,id'],
+            'programme_id'           => ['nullable', 'integer', 'exists:programmes,id'],
+            'non_pif_reason'         => ['nullable', 'string', 'max:2000'],
             'activity_title'         => ['required', 'string', 'max:500'],
             'responsible_officer_id' => ['nullable', 'integer', 'exists:users,id'],
             'thematic_area_id'       => ['nullable', 'integer', 'exists:me_thematic_areas,id'],
@@ -36,5 +38,16 @@ class StoreActivityReportRequest extends FormRequest
             'indicators.*.actual_value'  => ['nullable', 'numeric'],
             'indicators.*.notes'         => ['nullable', 'string', 'max:1000'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            $programmeId = $this->input('programme_id');
+            $reason = trim((string) $this->input('non_pif_reason', ''));
+            if (! $programmeId && strlen($reason) < 5) {
+                $v->errors()->add('non_pif_reason', 'A reason is required when creating a non-PIF activity report.');
+            }
+        });
     }
 }
