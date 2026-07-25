@@ -75,6 +75,7 @@ export function AdvanceQueueTable({
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
+  const isRecovery = queue === "recovery";
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
@@ -103,6 +104,11 @@ export function AdvanceQueueTable({
         </div>
         <h1 className="page-title">{title}</h1>
         {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
+        {isRecovery ? (
+          <p className="text-xs text-neutral-500 mt-1">
+            Manual payroll recovery — record each deduction with a payroll transaction reference. Adapter mode remains manual until an authorised binding is configured.
+          </p>
+        ) : null}
       </div>
 
       {error && (
@@ -130,15 +136,19 @@ export function AdvanceQueueTable({
                   {showRequester ? <th>Requester</th> : null}
                   <th>Type</th>
                   <th>Amount</th>
-                  <th>Purpose</th>
+                  {isRecovery ? <th>Payment ref</th> : <th>Purpose</th>}
+                  {isRecovery ? <th>Recovery payroll</th> : null}
+                  {isRecovery ? <th>Recovered</th> : null}
+                  {isRecovery ? <th>Outstanding</th> : null}
                   <th>Status</th>
-                  <th>Submitted</th>
+                  <th>{isRecovery ? "Paid" : "Submitted"}</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {advances.map((adv) => {
                   const sc = SA_STATUS_CONFIG[adv.status] ?? { label: adv.status, badge: "badge-muted" };
+                  const outstanding = Number(adv.balance_register?.balance ?? Math.max(0, Number(adv.amount) - Number(adv.recovered_amount ?? 0)));
                   return (
                     <tr key={adv.id}>
                       <td className="font-mono text-xs text-neutral-600">{adv.reference_number}</td>
@@ -147,17 +157,34 @@ export function AdvanceQueueTable({
                       ) : null}
                       <td>{TYPE_LABELS[adv.advance_type] ?? adv.advance_type}</td>
                       <td className="font-semibold whitespace-nowrap">{formatSaCurrency(adv.amount, adv.currency)}</td>
-                      <td className="text-neutral-600 max-w-[200px] truncate">{adv.purpose}</td>
+                      {isRecovery ? (
+                        <td className="font-mono text-xs text-neutral-600">{adv.payment_reference ?? "—"}</td>
+                      ) : (
+                        <td className="text-neutral-600 max-w-[200px] truncate">{adv.purpose}</td>
+                      )}
+                      {isRecovery ? (
+                        <td className="text-xs text-neutral-600 whitespace-nowrap">
+                          {adv.intended_recovery_payroll_date ? formatDate(adv.intended_recovery_payroll_date) : "—"}
+                        </td>
+                      ) : null}
+                      {isRecovery ? (
+                        <td className="text-xs whitespace-nowrap">{formatSaCurrency(Number(adv.recovered_amount ?? 0), adv.currency)}</td>
+                      ) : null}
+                      {isRecovery ? (
+                        <td className="text-xs font-semibold whitespace-nowrap">{formatSaCurrency(outstanding, adv.currency)}</td>
+                      ) : null}
                       <td><span className={`badge text-xs ${sc.badge}`}>{sc.label}</span></td>
                       <td className="text-xs text-neutral-500 whitespace-nowrap">
-                        {adv.submitted_at ? formatDate(adv.submitted_at) : "—"}
+                        {isRecovery
+                          ? (adv.paid_at ? formatDate(adv.paid_at) : "—")
+                          : (adv.submitted_at ? formatDate(adv.submitted_at) : "—")}
                       </td>
                       <td>
                         <Link
                           href={`/salary-advances/${adv.id}`}
                           className="text-xs font-medium text-primary hover:underline"
                         >
-                          View
+                          {isRecovery ? "Record recovery" : "View"}
                         </Link>
                       </td>
                     </tr>

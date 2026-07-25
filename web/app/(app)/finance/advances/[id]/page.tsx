@@ -302,12 +302,16 @@ export default function AdvanceDetailPage() {
       setError("Recovery amount must be greater than zero.");
       return;
     }
+    if (!recoveryForm.reference_doc.trim()) {
+      setError("Payroll transaction reference is required.");
+      return;
+    }
     setActionLoading(true);
     setError(null);
     try {
       await financeApi.recordAdvanceRecovery(advance.id, {
         amount,
-        reference_doc: recoveryForm.reference_doc || undefined,
+        reference_doc: recoveryForm.reference_doc.trim(),
         notes: recoveryForm.notes || undefined,
       });
       setShowRecoveryModal(false);
@@ -601,7 +605,9 @@ export default function AdvanceDetailPage() {
             <div>
               <h3 className="text-sm font-semibold text-neutral-900">Personnel file reference</h3>
               <p className="text-xs text-neutral-500 mt-1">
-                FORM-002 PDF is available for filing. Deep link into the HR personnel file module is coming soon.
+                {advance.personnel_file_document_id
+                  ? "FORM-002 PDF has been filed to the employee’s confidential personnel documents."
+                  : "FORM-002 PDF is available for filing. Personnel file link appears after automatic filing on closure."}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -623,7 +629,17 @@ export default function AdvanceDetailPage() {
                 >
                   Download FORM-002 PDF
                 </button>
-                <span className="badge badge-muted text-xs self-center">Personnel file link — Coming soon</span>
+                {advance.personnel_file_url ? (
+                  <Link
+                    href={advance.personnel_file_url}
+                    className="btn-primary py-1.5 px-3 text-xs"
+                    data-testid="personnel-file-link"
+                  >
+                    Open personnel file
+                  </Link>
+                ) : (
+                  <span className="badge badge-muted text-xs self-center">Awaiting personnel file filing</span>
+                )}
               </div>
             </div>
           </div>
@@ -1095,12 +1111,15 @@ export default function AdvanceDetailPage() {
                 />
               </label>
               <label className="block text-xs font-semibold text-neutral-700">
-                Reference document
+                Payroll transaction reference <span className="text-red-500">*</span>
                 <input
                   type="text"
+                  required
                   className="form-input mt-1 w-full"
+                  placeholder="e.g. PAYROLL-JUL-2026-001"
                   value={recoveryForm.reference_doc}
                   onChange={(e) => setRecoveryForm((f) => ({ ...f, reference_doc: e.target.value }))}
+                  data-testid="recovery-reference"
                 />
               </label>
               <label className="block text-xs font-semibold text-neutral-700">
@@ -1116,7 +1135,7 @@ export default function AdvanceDetailPage() {
               <button type="button" onClick={() => setShowRecoveryModal(false)} className="btn-secondary py-2 px-4 text-sm">Cancel</button>
               <button
                 type="button"
-                disabled={actionLoading || !recoveryForm.amount}
+                disabled={actionLoading || !recoveryForm.amount || !recoveryForm.reference_doc.trim()}
                 onClick={handleRecordRecoverySubmit}
                 className="btn-primary py-2 px-4 text-sm disabled:opacity-60"
               >

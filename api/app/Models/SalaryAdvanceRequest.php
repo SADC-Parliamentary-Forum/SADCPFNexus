@@ -42,12 +42,17 @@ class SalaryAdvanceRequest extends Model
         'finance_certified_at', 'finance_certified_by', 'not_eligible_reason',
         'payment_status', 'paid_at', 'payment_reference', 'payment_method',
         'recovery_status', 'recovered_amount', 'closed_at',
+        'personnel_file_id', 'personnel_file_document_id', 'personnel_file_filed_at',
         'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
         // WS2 — consolidation / exception fields (unused in Phase 1)
         'parent_advance_id', 'is_consolidation', 'consolidated_outstanding',
         'new_cash_requested', 'policy_mode', 'is_exception', 'exception_reason',
         'repayment_plan', 'finance_recommendation', 'finance_recommended_by',
         'finance_recommended_at',
+    ];
+
+    protected $appends = [
+        'personnel_file_url',
     ];
 
     protected $casts = [
@@ -65,6 +70,7 @@ class SalaryAdvanceRequest extends Model
         'paid_at'                            => 'datetime',
         'recovered_amount'                   => 'float',
         'closed_at'                          => 'datetime',
+        'personnel_file_filed_at'            => 'datetime',
     ];
 
     public function requester(): BelongsTo
@@ -100,6 +106,25 @@ class SalaryAdvanceRequest extends Model
     public function reconciliations(): HasMany
     {
         return $this->hasMany(SalaryAdvanceReconciliation::class);
+    }
+
+    public function personnelFile(): BelongsTo
+    {
+        return $this->belongsTo(HrPersonalFile::class, 'personnel_file_id');
+    }
+
+    public function personnelFileDocument(): BelongsTo
+    {
+        return $this->belongsTo(HrFileDocument::class, 'personnel_file_document_id');
+    }
+
+    public function getPersonnelFileUrlAttribute(): ?string
+    {
+        if (! $this->personnel_file_id) {
+            return null;
+        }
+
+        return '/hr/files/' . $this->personnel_file_id;
     }
 
     public function balanceRegister(): MorphOne

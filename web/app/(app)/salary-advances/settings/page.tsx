@@ -2,12 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { financeApi, type SalaryAdvancePolicyVersion } from "@/lib/api";
+import {
+  financeApi,
+  type SalaryAdvancePolicyException,
+  type SalaryAdvancePolicyVersion,
+} from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 
 export default function SalaryAdvanceSettingsPage() {
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
-  const [payroll, setPayroll] = useState<{ mode: string; enabled: boolean; message: string } | null>(null);
+  const [exceptions, setExceptions] = useState<SalaryAdvancePolicyException[]>([]);
+  const [payroll, setPayroll] = useState<{
+    mode: string;
+    adapter?: string;
+    enabled: boolean;
+    message: string;
+    coming_soon?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -16,6 +27,14 @@ export default function SalaryAdvanceSettingsPage() {
     effective_from: "",
     max_salary_percentage: 50,
     change_reason: "",
+  });
+  const [exceptionForm, setExceptionForm] = useState({
+    employee_id: "",
+    exception_type: "outstanding_balance",
+    reason: "",
+    justification: "",
+    effective_from: "",
+    effective_to: "",
   });
 
   const load = async () => {
@@ -28,6 +47,12 @@ export default function SalaryAdvanceSettingsPage() {
       ]);
       setPolicies(pol.data.data ?? []);
       setPayroll(pay.data.data);
+      try {
+        const ex = await financeApi.listSalaryAdvancePolicyExceptions({ per_page: 20 });
+        setExceptions(ex.data.data ?? []);
+      } catch {
+        setExceptions([]);
+      }
     } catch {
       setError("Failed to load salary advance settings.");
     } finally {
@@ -56,6 +81,49 @@ export default function SalaryAdvanceSettingsPage() {
       await load();
     } catch {
       setError("Could not create policy version. Ensure you have salary_advance.admin and provide a change reason.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const createException = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await financeApi.createSalaryAdvancePolicyException({
+        employee_id: Number(exceptionForm.employee_id),
+        exception_type: exceptionForm.exception_type,
+        reason: exceptionForm.reason,
+        justification: exceptionForm.justification,
+        effective_from: exceptionForm.effective_from,
+        effective_to: exceptionForm.effective_to || undefined,
+      });
+      setExceptionForm({
+        employee_id: "",
+        exception_type: "outstanding_balance",
+        reason: "",
+        justification: "",
+        effective_from: "",
+        effective_to: "",
+      });
+      await load();
+    } catch {
+      setError("Could not create policy exception. Admin permission required. Exceptions never silently override eligibility.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const approveException = async (id: number) => {
+    setSaving(true);
+    try {
+      await financeApi.approveSalaryAdvancePolicyException(id, {
+        decision_notes: "Approved via Salary Advance Settings",
+      });
+      await load();
+    } catch {
+      setError("Could not approve exception.");
     } finally {
       setSaving(false);
     }
@@ -120,9 +188,74 @@ export default function SalaryAdvanceSettingsPage() {
           </form>
 
           <div className="card p-5 space-y-2">
-            <h2 className="text-sm font-semibold text-neutral-900">Payroll integration</h2>
+            <h2 className="text-sm font-semibold text-neutral-900">Payroll recovery adapter</h2>
             <p className="text-sm text-neutral-600">{payroll?.message ?? "Manual recovery is the default."}</p>
-            <span className="badge badge-muted text-xs">Mode: {payroll?.mode ?? "manual"} · {payroll?.enabled ? "Enabled" : "Coming soon"}</span>
+            <div className="flex flex-wrap gap-2">
+              <span className="badge badge-muted text-xs">Mode: {payroll?.mode ?? "manual"}</span>
+              <span className="badge badge-muted text-xs">Adapter: {payroll?.adapter ?? "manual"}</span>
+              <span className="badge badge-muted text-xs">{payroll?.enabled ? "Vendor enabled" : "Manual recording only"}</span>
+            </div>
+          </div>
+
+          <div className="card p-5 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-neutral-900">Controlled policy exceptions</h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Documented exceptions with audit trail. Approved exceptions are visible on eligibility but never silently bypass outstanding-balance or 50% rules.
+              </p>
+            </div>
+            <form onSubmit={createException} className="grid sm:grid-cols-2 gap-3">
+              <label className="text-xs font-medium text-neutral-700">Employee user ID
+                <input required type="number" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
+              </label>
+              <label className="text-xs font-medium text-neutral-700">Exception type
+                <select className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>
+                  <option value="outstanding_balance">Outstanding balance</option>
+                  <option value="max_percentage">Max percentage</option>
+                  <option value="concurrent">Concurrent advances</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label className="text-xs font-medium text-neutral-700">Effective from
+                <input required type="date" className="mt-1 input w-full" value={exceptionForm.effective_from} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_from: e.target.value })} />
+              </label>
+              <label className="text-xs font-medium text-neutral-700">Effective to
+                <input type="date" className="mt-1 input w-full" value={exceptionForm.effective_to} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_to: e.target.value })} />
+              </label>
+              <label className="text-xs font-medium text-neutral-700 sm:col-span-2">Reason
+                <input required className="mt-1 input w-full" value={exceptionForm.reason} onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })} />
+              </label>
+              <label className="text-xs font-medium text-neutral-700 sm:col-span-2">Justification (audit)
+                <textarea required className="mt-1 input w-full min-h-[70px]" value={exceptionForm.justification} onChange={(e) => setExceptionForm({ ...exceptionForm, justification: e.target.value })} />
+              </label>
+              <div className="sm:col-span-2">
+                <button type="submit" disabled={saving} className="btn-secondary py-2 px-4 text-sm disabled:opacity-40">
+                  Record exception (pending)
+                </button>
+              </div>
+            </form>
+            <ul className="divide-y divide-neutral-100">
+              {exceptions.length === 0 ? (
+                <li className="py-3 text-sm text-neutral-500">No policy exceptions recorded.</li>
+              ) : exceptions.map((ex) => (
+                <li key={ex.id} className="py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                  <div>
+                    <p className="font-medium">{ex.employee?.name ?? `User #${ex.employee_id}`} · {ex.exception_type}</p>
+                    <p className="text-xs text-neutral-500">{ex.reason}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`badge text-xs ${ex.status === "approved" ? "badge-success" : ex.status === "pending" ? "badge-warning" : "badge-muted"}`}>
+                      {ex.status}
+                    </span>
+                    {ex.status === "pending" ? (
+                      <button type="button" disabled={saving} onClick={() => approveException(ex.id)} className="btn-primary py-1 px-2 text-xs disabled:opacity-40">
+                        Approve
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="card p-5">

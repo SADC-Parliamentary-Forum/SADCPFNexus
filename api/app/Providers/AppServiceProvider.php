@@ -32,6 +32,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
+use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
+use App\Modules\Finance\Services\ManualPayrollRecoveryAdapter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,7 +42,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PayrollRecoveryAdapterInterface::class, ManualPayrollRecoveryAdapter::class);
     }
 
     /**

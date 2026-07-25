@@ -173,6 +173,67 @@ class SalaryAdvanceController extends Controller
         ]);
     }
 
+    public function policyExceptions(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->salaryAdvanceService->listPolicyExceptions(
+                $request->user(),
+                $request->only(['status', 'employee_id', 'per_page'])
+            )
+        );
+    }
+
+    public function storePolicyException(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'employee_id'       => ['required', 'integer', 'exists:users,id'],
+            'exception_type'    => ['required', 'string', 'in:outstanding_balance,max_percentage,concurrent,other'],
+            'reason'            => ['required', 'string', 'max:500'],
+            'justification'     => ['required', 'string', 'max:5000'],
+            'effective_from'    => ['required', 'date'],
+            'effective_to'      => ['nullable', 'date', 'after_or_equal:effective_from'],
+            'linked_advance_id' => ['nullable', 'integer', 'exists:salary_advance_requests,id'],
+            'policy_version_id' => ['nullable', 'integer', 'exists:salary_advance_policy_versions,id'],
+        ]);
+
+        $exception = $this->salaryAdvanceService->createPolicyException($request->user(), $data);
+
+        return response()->json([
+            'message' => 'Policy exception recorded (pending approval). Does not silently override eligibility.',
+            'data'    => $exception,
+        ], 201);
+    }
+
+    public function approvePolicyException(Request $request, int $exception): JsonResponse
+    {
+        $model = \App\Models\SalaryAdvancePolicyException::findOrFail($exception);
+        $data = $request->validate([
+            'decision_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $approved = $this->salaryAdvanceService->approvePolicyException($model, $request->user(), $data);
+
+        return response()->json([
+            'message' => 'Policy exception approved. Eligibility rules remain enforced unless a future controlled apply path is used.',
+            'data'    => $approved,
+        ]);
+    }
+
+    public function revokePolicyException(Request $request, int $exception): JsonResponse
+    {
+        $model = \App\Models\SalaryAdvancePolicyException::findOrFail($exception);
+        $data = $request->validate([
+            'decision_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $revoked = $this->salaryAdvanceService->revokePolicyException($model, $request->user(), $data);
+
+        return response()->json([
+            'message' => 'Policy exception revoked.',
+            'data'    => $revoked,
+        ]);
+    }
+
     public function eligibility(Request $request): JsonResponse
     {
         return response()->json($this->salaryAdvanceService->eligibility($request->user()));
@@ -191,6 +252,7 @@ class SalaryAdvanceController extends Controller
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
             'balanceRegister.transactions',
+            'personnelFile', 'personnelFileDocument',
         ])]);
     }
 
@@ -519,7 +581,7 @@ class SalaryAdvanceController extends Controller
     {
         $data = $request->validate([
             'amount'        => ['required', 'numeric', 'min:0.01'],
-            'reference_doc' => ['nullable', 'string', 'max:100'],
+            'reference_doc' => ['required', 'string', 'max:120'],
             'notes'         => ['nullable', 'string', 'max:2000'],
         ]);
 

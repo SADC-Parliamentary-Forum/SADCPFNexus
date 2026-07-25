@@ -4,16 +4,22 @@ namespace App\Modules\Finance\Services;
 
 use App\Models\AuditLog;
 use App\Models\BalanceRegister;
+use App\Models\HrFileDocument;
+use App\Models\HrFileTimelineEvent;
+use App\Models\HrPersonalFile;
 use App\Models\Payslip;
 use App\Models\SalaryAdvanceFinanceReview;
+use App\Models\SalaryAdvancePolicyException;
 use App\Models\SalaryAdvancePolicyVersion;
 use App\Models\SalaryAdvanceReconciliation;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
+use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Services\WorkflowService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class SalaryAdvanceService
@@ -21,6 +27,7 @@ class SalaryAdvanceService
     public function __construct(
         protected BalanceRegisterService $balanceRegisterService,
         protected WorkflowService $workflowService,
+        protected PayrollRecoveryAdapterInterface $payrollRecoveryAdapter,
     ) {}
 
     public function activePolicy(?int $tenantId = null): SalaryAdvancePolicyVersion
@@ -126,6 +133,8 @@ class SalaryAdvanceService
         $payslip = $this->latestConfirmedPayslip($user);
         $exposure = $this->exposureSummary($user);
 
+        $policyExceptions = $this->activePolicyExceptionsFor($user);
+
         if (!$payslip) {
             return [
                 'eligible'     => false,
@@ -137,11 +146,13 @@ class SalaryAdvanceService
                 'payslip'      => null,
                 'exposure'     => $exposure,
                 'policy'       => $this->policyPayload($policy),
+                'policy_exceptions' => $policyExceptions,
                 'intended_recovery_payroll_date' => $this->intendedRecoveryPayrollDate()->toDateString(),
             ];
         }
 
         $maxEligible = $this->maxEligible($policy, $payslip);
+        // Approved exceptions are informational only — never silent eligibility bypass.
         $eligible = !$exposure['blocked'];
 
         return [
@@ -159,6 +170,7 @@ class SalaryAdvanceService
             ],
             'exposure'     => $exposure,
             'policy'       => $this->policyPayload($policy),
+            'policy_exceptions' => $policyExceptions,
             'intended_recovery_payroll_date' => $this->intendedRecoveryPayrollDate()->toDateString(),
         ];
     }
@@ -438,12 +450,14 @@ class SalaryAdvanceService
             throw ValidationException::withMessages(['amount' => ['Recovery amount must be greater than zero.']]);
         }
 
-        return DB::transaction(function () use ($advance, $actor, $data, $register, $amount) {
+        $referenceDoc = $this->payrollRecoveryAdapter->prepareRecoveryReference($advance, $data);
+
+        return DB::transaction(function () use ($advance, $actor, $data, $register, $amount, $referenceDoc) {
             $this->balanceRegisterService->createTransaction($register, [
                 'type'          => 'recovery',
                 'amount'        => $amount,
-                'reference_doc' => $data['reference_doc'] ?? null,
-                'notes'         => $data['notes'] ?? 'Payroll recovery',
+                'reference_doc' => $referenceDoc,
+                'notes'         => $data['notes'] ?? 'Payroll recovery (manual adapter)',
             ], $actor);
 
             $register->refresh();
@@ -458,6 +472,7 @@ class SalaryAdvanceService
                     'closed_at'        => now(),
                 ]);
                 $register->update(['status' => 'closed', 'balance' => 0]);
+                $this->fileClosedAdvanceToPersonnelFile($advance->fresh(), $actor);
             } else {
                 $advance->update([
                     'status'           => 'reconciliation_required',
@@ -484,7 +499,7 @@ class SalaryAdvanceService
                 ]);
             }
 
-            return $advance->fresh(['requester', 'balanceRegister']);
+            return $advance->fresh(['requester', 'balanceRegister', 'personnelFile', 'personnelFileDocument']);
         });
     }
 
@@ -699,13 +714,7 @@ class SalaryAdvanceService
 
     public function payrollIntegrationStub(): array
     {
-        return [
-            'mode'        => 'manual',
-            'enabled'     => false,
-            'provider'    => null,
-            'message'     => 'Payroll recovery remains manual until an authorised payroll adapter is configured.',
-            'coming_soon' => true,
-        ];
+        return $this->payrollRecoveryAdapter->status();
     }
 
     public function close(SalaryAdvanceRequest $advance, User $actor): SalaryAdvanceRequest
@@ -732,7 +741,263 @@ class SalaryAdvanceService
             $register->update(['status' => 'closed']);
         }
 
-        return $advance->fresh();
+        $this->fileClosedAdvanceToPersonnelFile($advance->fresh(), $actor);
+
+        return $advance->fresh(['requester', 'balanceRegister', 'personnelFile', 'personnelFileDocument']);
+    }
+
+    /**
+     * Persist FORM-002 PDF into the employee's confidential personnel file when an advance closes.
+     */
+    public function fileClosedAdvanceToPersonnelFile(SalaryAdvanceRequest $advance, User $actor): ?HrFileDocument
+    {
+        if ($advance->status !== 'closed') {
+            return null;
+        }
+
+        if ($advance->personnel_file_document_id) {
+            return HrFileDocument::find($advance->personnel_file_document_id);
+        }
+
+        $advance->loadMissing('requester');
+        $requester = $advance->requester;
+        if (! $requester) {
+            return null;
+        }
+
+        $personalFile = HrPersonalFile::firstOrCreate(
+            [
+                'tenant_id'   => $advance->tenant_id,
+                'employee_id' => $requester->id,
+            ],
+            [
+                'created_by'                     => $actor->id,
+                'file_status'                    => 'active',
+                'confidentiality_classification' => 'confidential',
+                'department_id'                  => $requester->department_id ?? null,
+            ]
+        );
+
+        $pdf = $this->form002Pdf($advance);
+        $binary = $pdf->output();
+        $fileName = 'FORM-002-' . $advance->reference_number . '.pdf';
+        $path = sprintf(
+            'hr/personnel-files/%d/salary-advances/%s',
+            $personalFile->id,
+            $fileName
+        );
+        Storage::disk('local')->put($path, $binary);
+
+        $doc = HrFileDocument::create([
+            'tenant_id'             => $advance->tenant_id,
+            'hr_file_id'            => $personalFile->id,
+            'uploaded_by'           => $actor->id,
+            'document_type'         => 'salary_advance_form_002',
+            'title'                 => 'Salary Advance FORM-002 — ' . $advance->reference_number,
+            'description'           => 'Closed salary advance FORM-002 filed from Finance recovery workflow.',
+            'file_path'             => $path,
+            'file_name'             => $fileName,
+            'file_size'             => strlen($binary),
+            'confidentiality_level' => 'confidential',
+            'issue_date'            => now()->toDateString(),
+            'effective_date'        => optional($advance->closed_at)->toDateString() ?? now()->toDateString(),
+            'source_module'         => 'salary_advance',
+            'tags'                  => ['salary_advance', 'form_002', $advance->reference_number],
+            'remarks'               => 'Auto-filed on advance closure. Reference: ' . $advance->reference_number,
+        ]);
+
+        HrFileTimelineEvent::create([
+            'tenant_id'          => $advance->tenant_id,
+            'hr_file_id'         => $personalFile->id,
+            'recorded_by'        => $actor->id,
+            'event_type'         => 'salary_advance_closed',
+            'title'              => 'Salary advance closed — ' . $advance->reference_number,
+            'description'        => 'FORM-002 filed to confidential personnel documents after full recovery.',
+            'event_date'         => now()->toDateString(),
+            'source_module'      => 'salary_advance',
+            'linked_document_id' => $doc->id,
+        ]);
+
+        $advance->update([
+            'personnel_file_id'          => $personalFile->id,
+            'personnel_file_document_id' => $doc->id,
+            'personnel_file_filed_at'    => now(),
+        ]);
+
+        AuditLog::record('salary_advance.personnel_file_filed', [
+            'auditable_type' => SalaryAdvanceRequest::class,
+            'auditable_id'   => $advance->id,
+            'new_values'     => [
+                'personnel_file_id'          => $personalFile->id,
+                'personnel_file_document_id' => $doc->id,
+                'reference_number'           => $advance->reference_number,
+            ],
+            'tags'           => ['salary_advance', 'personnel_file'],
+        ]);
+
+        return $doc;
+    }
+
+    public function listPolicyExceptions(User $actor, array $filters = [])
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $actor->isSystemAdmin(),
+            403
+        );
+
+        $query = SalaryAdvancePolicyException::with(['employee:id,name,email', 'requestedBy:id,name', 'approvedBy:id,name'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('created_at');
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (! empty($filters['employee_id'])) {
+            $query->where('employee_id', (int) $filters['employee_id']);
+        }
+
+        return $query->paginate($filters['per_page'] ?? 20);
+    }
+
+    public function createPolicyException(User $actor, array $data): SalaryAdvancePolicyException
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $actor->isSystemAdmin(),
+            403,
+            'Only salary advance administrators may create policy exceptions.'
+        );
+
+        $exception = SalaryAdvancePolicyException::create([
+            'tenant_id'             => $actor->tenant_id,
+            'employee_id'           => $data['employee_id'],
+            'exception_type'        => $data['exception_type'],
+            'status'                => 'pending',
+            'reason'                => $data['reason'],
+            'justification'         => $data['justification'],
+            'effective_from'        => $data['effective_from'],
+            'effective_to'          => $data['effective_to'] ?? null,
+            'policy_version_id'     => $data['policy_version_id'] ?? $this->activePolicy($actor->tenant_id)->id,
+            'linked_advance_id'     => $data['linked_advance_id'] ?? null,
+            'requested_by'          => $actor->id,
+            'applies_automatically' => false,
+        ]);
+
+        AuditLog::record('salary_advance.policy_exception_created', [
+            'auditable_type' => SalaryAdvancePolicyException::class,
+            'auditable_id'   => $exception->id,
+            'new_values'     => [
+                'employee_id'    => $exception->employee_id,
+                'exception_type' => $exception->exception_type,
+                'reason'         => $exception->reason,
+                'status'         => $exception->status,
+            ],
+            'tags'           => ['salary_advance', 'policy_exception'],
+        ]);
+
+        return $exception->fresh(['employee', 'requestedBy']);
+    }
+
+    public function approvePolicyException(
+        SalaryAdvancePolicyException $exception,
+        User $actor,
+        array $data
+    ): SalaryAdvancePolicyException {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $actor->isSystemAdmin(),
+            403
+        );
+        abort_unless((int) $exception->tenant_id === (int) $actor->tenant_id, 403);
+
+        if ($exception->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'status' => ['Only pending exceptions can be approved.'],
+            ]);
+        }
+
+        $exception->update([
+            'status'                => 'approved',
+            'decision_notes'        => $data['decision_notes'] ?? null,
+            'approved_by'           => $actor->id,
+            'approved_at'           => now(),
+            'applies_automatically' => false,
+        ]);
+
+        AuditLog::record('salary_advance.policy_exception_approved', [
+            'auditable_type' => SalaryAdvancePolicyException::class,
+            'auditable_id'   => $exception->id,
+            'new_values'     => [
+                'status'                => 'approved',
+                'decision_notes'        => $exception->decision_notes,
+                'applies_automatically' => false,
+            ],
+            'tags'           => ['salary_advance', 'policy_exception'],
+        ]);
+
+        return $exception->fresh(['employee', 'approvedBy', 'requestedBy']);
+    }
+
+    public function revokePolicyException(
+        SalaryAdvancePolicyException $exception,
+        User $actor,
+        array $data
+    ): SalaryAdvancePolicyException {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $actor->isSystemAdmin(),
+            403
+        );
+        abort_unless((int) $exception->tenant_id === (int) $actor->tenant_id, 403);
+
+        if (! in_array($exception->status, ['pending', 'approved'], true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Exception cannot be revoked in its current status.'],
+            ]);
+        }
+
+        $exception->update([
+            'status'         => 'revoked',
+            'decision_notes' => $data['decision_notes'] ?? $exception->decision_notes,
+            'revoked_by'     => $actor->id,
+            'revoked_at'     => now(),
+        ]);
+
+        AuditLog::record('salary_advance.policy_exception_revoked', [
+            'auditable_type' => SalaryAdvancePolicyException::class,
+            'auditable_id'   => $exception->id,
+            'new_values'     => ['status' => 'revoked'],
+            'tags'           => ['salary_advance', 'policy_exception'],
+        ]);
+
+        return $exception->fresh(['employee', 'revokedBy']);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function activePolicyExceptionsFor(User $user): array
+    {
+        return SalaryAdvancePolicyException::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('employee_id', $user->id)
+            ->where('status', 'approved')
+            ->orderByDesc('effective_from')
+            ->get()
+            ->filter(fn (SalaryAdvancePolicyException $e) => $e->isActiveOn())
+            ->map(fn (SalaryAdvancePolicyException $e) => [
+                'id'                    => $e->id,
+                'exception_type'        => $e->exception_type,
+                'status'                => $e->status,
+                'reason'                => $e->reason,
+                'effective_from'        => $e->effective_from?->toDateString(),
+                'effective_to'          => $e->effective_to?->toDateString(),
+                'applies_automatically' => false,
+                'note'                  => 'Documented exception only — does not silently override eligibility.',
+            ])
+            ->values()
+            ->all();
     }
 
     public function ledger(SalaryAdvanceRequest $advance): array
