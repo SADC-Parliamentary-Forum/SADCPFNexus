@@ -46,7 +46,15 @@ class MeReviewController extends Controller
     public function requestCorrection(Request $request, MeActivityReport $activityReport): JsonResponse
     {
         $this->ensureReviewer($request, $activityReport);
-        $data = $request->validate(['review_notes' => ['required', 'string', 'max:5000']]);
+        $data = $request->validate([
+            'review_notes'     => ['required', 'string', 'max:5000'],
+            'section'          => ['nullable', 'string', 'max:100'],
+            'return_section'   => ['nullable', 'string', 'max:100'],
+            'required_action'  => ['nullable', 'string', 'max:2000'],
+            'return_required_action' => ['nullable', 'string', 'max:2000'],
+            'correction_due_at'=> ['nullable', 'date'],
+            'due_date'         => ['nullable', 'date'],
+        ]);
         $report = $this->service->requestCorrection($activityReport, $data, $request->user());
         return response()->json(['message' => 'Report returned for correction.', 'data' => $report]);
     }

@@ -62,10 +62,18 @@ class MeActivityReportService
             ->where('tenant_id', $user->tenant_id)
             ->firstOrFail();
 
-        if ($programme->status !== 'approved') {
+        if (! $programme->isApprovedOrAmended()) {
             throw ValidationException::withMessages([
                 'programme_id' => 'Activity reports can only be linked to an approved PIF.',
             ]);
+        }
+
+        $existing = MeActivityReport::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('programme_id', $programme->id)
+            ->first();
+        if ($existing) {
+            return $existing->load(['programme:id,title,reference_number,status', 'indicators']);
         }
 
         return DB::transaction(function () use ($data, $user, $programme) {

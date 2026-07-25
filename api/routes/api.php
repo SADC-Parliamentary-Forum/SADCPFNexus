@@ -629,7 +629,13 @@ Route::prefix('v1')->group(function () {
                 Route::get('dashboard',        [\App\Http\Controllers\Api\V1\MAndE\MeDashboardController::class, 'summary']);
                 Route::get('reports/strategic',[\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'strategic']);
                 Route::get('pif-linkages',     [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'linkablePifs']);
+                Route::get('settings',         [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'show']);
             });
+            Route::middleware('can:mande.admin')->put('settings', [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'update']);
+            Route::middleware('can:mande.review')->post(
+                'intake/{programme}/not-reportable',
+                [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'markNotReportable']
+            );
 
             // Strategic Plans + nested configuration (§10.4) — admin-configurable
             Route::middleware('can:mande.view')->get('strategic-plans', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'index']);

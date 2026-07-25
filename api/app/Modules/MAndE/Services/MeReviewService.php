@@ -32,9 +32,10 @@ class MeReviewService
 
         $from = $report->review_status;
         $report->update([
-            'review_status' => MeActivityReport::STATUS_SUBMITTED,
-            'submitted_by'  => $user->id,
-            'submitted_at'  => now(),
+            'review_status'       => MeActivityReport::STATUS_SUBMITTED,
+            'submitted_by'        => $user->id,
+            'submitted_at'        => now(),
+            'intake_confirmed_at' => $report->intake_confirmed_at ?? now(),
         ]);
 
         $this->transition($report, 'submitted', $user, $from, MeActivityReport::STATUS_SUBMITTED);
@@ -69,8 +70,11 @@ class MeReviewService
 
         $from = $report->review_status;
         $report->update([
-            'review_status' => MeActivityReport::STATUS_RETURNED,
-            'review_notes'  => $data['review_notes'],
+            'review_status'           => MeActivityReport::STATUS_RETURNED,
+            'review_notes'            => $data['review_notes'],
+            'return_section'          => $data['section'] ?? $data['return_section'] ?? null,
+            'return_required_action'  => $data['required_action'] ?? $data['return_required_action'] ?? null,
+            'correction_due_at'       => $data['correction_due_at'] ?? $data['due_date'] ?? null,
         ]);
 
         $this->transition($report, 'returned', $reviewer, $from, MeActivityReport::STATUS_RETURNED, $data['review_notes']);
@@ -83,6 +87,13 @@ class MeReviewService
     {
         if ($report->review_status !== MeActivityReport::STATUS_REVIEWED) {
             throw ValidationException::withMessages(['review_status' => 'Only reviewed reports can be accepted.']);
+        }
+
+        if ((int) $report->responsible_officer_id === (int) $reviewer->id
+            || (int) ($report->submitted_by ?? 0) === (int) $reviewer->id) {
+            throw ValidationException::withMessages([
+                'accept' => 'Separation of duties: the reporting officer cannot accept their own report.',
+            ]);
         }
 
         $report->update([

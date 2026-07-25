@@ -237,11 +237,15 @@ class Programme extends Model
                 return 'closed';
             }
             return match ($report->review_status) {
-                MeActivityReport::STATUS_NOT_SUBMITTED => 'report_pending',
+                MeActivityReport::STATUS_NOT_SUBMITTED => $report->intake_confirmed_at
+                    ? 'report_pending'
+                    : 'intake_pending',
                 MeActivityReport::STATUS_SUBMITTED     => 'report_submitted',
                 MeActivityReport::STATUS_RETURNED      => 'returned_for_correction',
                 MeActivityReport::STATUS_REVIEWED      => 'me_reviewed',
                 MeActivityReport::STATUS_ACCEPTED      => 'accepted',
+                MeActivityReport::STATUS_NOT_REPORTABLE => 'not_reportable',
+                MeActivityReport::STATUS_CANCELLED      => 'cancelled_activity',
                 default => 'link_unavailable',
             };
         }

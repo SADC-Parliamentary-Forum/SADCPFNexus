@@ -25,6 +25,9 @@ Schedule::command('app:send-alert-digest')->weekdays()->at('07:00');
 // Send imprest retirement reminders to staff whose imprests are due within 7 days.
 Schedule::command('app:send-imprest-reminders')->dailyAt('08:00');
 
+// Remind M&E report owners of overdue activity reports.
+Schedule::command('mande:send-overdue-reminders')->dailyAt('08:30');
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()

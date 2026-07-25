@@ -418,6 +418,18 @@ class ProgrammeService
 
         $this->notifyMeOfPifApproval($programme);
 
+        try {
+            $settings = app(\App\Modules\MAndE\Services\MeSettingsService::class)
+                ->forTenant((int) $programme->tenant_id);
+            if ($settings->auto_intake) {
+                app(\App\Modules\MAndE\Services\MeIntakeService::class)
+                    ->ensureForProgramme($programme->fresh(), $approver);
+            }
+        } catch (\Throwable $e) {
+            // Intake must not roll back PIF approval; log and continue.
+            report($e);
+        }
+
         return $programme->fresh(['creator', 'approver']);
     }
 

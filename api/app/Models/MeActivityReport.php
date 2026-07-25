@@ -21,6 +21,8 @@ class MeActivityReport extends Model
     public const STATUS_REVIEWED      = 'reviewed';
     public const STATUS_ACCEPTED      = 'accepted';
     public const STATUS_CLOSED        = 'closed';
+    public const STATUS_NOT_REPORTABLE = 'not_reportable';
+    public const STATUS_CANCELLED      = 'cancelled';
 
     public const STATUSES = [
         self::STATUS_NOT_SUBMITTED,
@@ -29,6 +31,8 @@ class MeActivityReport extends Model
         self::STATUS_REVIEWED,
         self::STATUS_ACCEPTED,
         self::STATUS_CLOSED,
+        self::STATUS_NOT_REPORTABLE,
+        self::STATUS_CANCELLED,
     ];
 
     protected $fillable = [
@@ -38,6 +42,9 @@ class MeActivityReport extends Model
         'planned_output', 'actual_output', 'planned_participants', 'actual_participants',
         'narrative', 'challenges', 'lessons_learned', 'recommendations', 'follow_up_actions',
         'review_status', 'closure_status', 'review_notes',
+        'return_section', 'return_required_action', 'correction_due_at',
+        'not_reportable_reason', 'not_reportable_by', 'not_reportable_at',
+        'cancelled_reason', 'archived_at', 'intake_confirmed_at', 'report_due_at',
         'created_by', 'submitted_by', 'submitted_at',
         'reviewed_by', 'reviewed_at', 'accepted_by', 'accepted_at',
         'closed_by', 'closed_at',
@@ -50,6 +57,11 @@ class MeActivityReport extends Model
         'reviewed_at'          => 'datetime',
         'accepted_at'          => 'datetime',
         'closed_at'            => 'datetime',
+        'correction_due_at'    => 'datetime',
+        'not_reportable_at'    => 'datetime',
+        'archived_at'          => 'datetime',
+        'intake_confirmed_at'  => 'datetime',
+        'report_due_at'        => 'datetime',
         'planned_participants' => 'integer',
         'actual_participants'  => 'integer',
     ];

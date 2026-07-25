@@ -64,7 +64,7 @@ class MeActivityReportController extends Controller
 
         $query = Programme::query()
             ->where('tenant_id', $tenantId)
-            ->where('status', 'approved');
+            ->whereIn('status', ['approved', 'amended']);
 
         if ($request->boolean('unlinked')) {
             $query->whereNotIn('id', $reportedIds);
@@ -95,6 +95,23 @@ class MeActivityReportController extends Controller
         $this->ensureTenant($request, $activityReport);
         $history = $activityReport->history()->with('actor:id,name')->orderBy('created_at')->get();
         return response()->json(['data' => $history]);
+    }
+
+    public function markNotReportable(Request $request, Programme $programme): JsonResponse
+    {
+        abort_unless((int) $programme->tenant_id === (int) $request->user()->tenant_id, 404);
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+
+        $report = app(\App\Modules\MAndE\Services\MeIntakeService::class)
+            ->markNotReportable($programme, $request->user(), $data['reason']);
+
+        return response()->json([
+            'message' => 'PIF marked not reportable for M&E.',
+            'data'    => $report,
+        ]);
     }
 
     private function ensureTenant(Request $request, MeActivityReport $report): void

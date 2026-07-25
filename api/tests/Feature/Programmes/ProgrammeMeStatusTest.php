@@ -52,13 +52,33 @@ class ProgrammeMeStatusTest extends TestCase
     public static function reviewStatusProvider(): array
     {
         return [
-            'not submitted' => [MeActivityReport::STATUS_NOT_SUBMITTED, 'report_pending'],
+            'not submitted' => [MeActivityReport::STATUS_NOT_SUBMITTED, 'intake_pending'],
             'submitted'     => [MeActivityReport::STATUS_SUBMITTED, 'report_submitted'],
             'returned'      => [MeActivityReport::STATUS_RETURNED, 'returned_for_correction'],
             'reviewed'      => [MeActivityReport::STATUS_REVIEWED, 'me_reviewed'],
             'accepted'      => [MeActivityReport::STATUS_ACCEPTED, 'accepted'],
             'closed'        => [MeActivityReport::STATUS_CLOSED, 'closed'],
+            'not reportable'=> [MeActivityReport::STATUS_NOT_REPORTABLE, 'not_reportable'],
+            'cancelled'     => [MeActivityReport::STATUS_CANCELLED, 'cancelled_activity'],
         ];
+    }
+
+    public function test_me_status_is_report_pending_when_intake_confirmed(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [, $user] = $this->asStaff($tenant);
+        $programme = $this->approvedProgramme($tenant, $user->id);
+
+        MeActivityReport::create([
+            'tenant_id'           => $tenant->id,
+            'programme_id'        => $programme->id,
+            'activity_title'      => 'ME Status Test',
+            'review_status'       => MeActivityReport::STATUS_NOT_SUBMITTED,
+            'intake_confirmed_at' => now(),
+            'created_by'          => $user->id,
+        ]);
+
+        $this->assertSame('report_pending', $programme->fresh()->me_status);
     }
 
     public function test_me_status_is_archived_when_linked_report_was_soft_deleted(): void
