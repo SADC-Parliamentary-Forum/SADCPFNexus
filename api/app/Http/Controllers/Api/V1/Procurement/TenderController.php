@@ -3,19 +3,18 @@
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\Tender;
-use App\Models\TenderCommittee;
-use App\Models\TenderCommitteeMeeting;
-use App\Models\TenderCommitteeMember;
+use App\Modules\Procurement\Services\ComparisonSummaryService;
 use App\Modules\Procurement\Services\TenderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class TenderController extends Controller
 {
-    public function __construct(private readonly TenderService $tenderService) {}
+    public function __construct(
+        private readonly TenderService $tenderService,
+        private readonly ComparisonSummaryService $comparisonSummaryService,
+    ) {}
 
     private function gate(Request $request): void
     {
@@ -47,7 +46,37 @@ class TenderController extends Controller
             ->whereIn('status', [Tender::STATUS_OPENED, Tender::STATUS_EVALUATING])
             ->with(['procurementRequest.quotes' => fn ($q) => $q->where('is_current', true), 'committee'])
             ->orderByDesc('bids_opened_at')
-            ->get();
+            ->get()
+            ->map(function (Tender $tender) {
+                $payload = $tender->toArray();
+                $techW = (float) ($tender->technical_weight ?? 80);
+                $finW = (float) ($tender->financial_weight ?? 20);
+                $sealed = $tender->isSealed();
+                $scoring = [];
+                foreach ($tender->procurementRequest?->quotes ?? [] as $quote) {
+                    $tech = $quote->technical_score !== null ? (float) $quote->technical_score : null;
+                    $fin = (!$sealed && $quote->financial_score !== null) ? (float) $quote->financial_score : null;
+                    $combined = null;
+                    if (!$sealed && $tech !== null && $fin !== null) {
+                        $combined = round(($tech * $techW / 100) + ($fin * $finW / 100), 2);
+                    }
+                    $scoring[] = [
+                        'quote_id'          => $quote->id,
+                        'vendor_name'       => $quote->vendor_name,
+                        'technical_score'   => $tech,
+                        'financial_score'   => $sealed ? null : $fin,
+                        'financials_sealed' => $sealed,
+                        'quoted_amount'     => $sealed ? null : $quote->quoted_amount,
+                        'combined_score'    => $combined,
+                        'meets_min_tech'    => $tech !== null
+                            ? $tech >= (float) ($tender->min_technical_score ?? 70)
+                            : null,
+                    ];
+                }
+                $payload['scoring'] = $scoring;
+
+                return $payload;
+            });
 
         return response()->json(['data' => $rows]);
     }
@@ -66,13 +95,13 @@ class TenderController extends Controller
             $sealed = $tender->isSealed();
             foreach ($tender->procurementRequest?->quotes ?? [] as $quote) {
                 $row = [
-                    'tender_id'        => $tender->id,
-                    'tender_reference' => $tender->reference_number,
-                    'quote_id'         => $quote->id,
-                    'vendor_name'      => $quote->vendor_name,
-                    'version'          => $quote->version,
-                    'status'           => $tender->status,
-                    'financials_sealed'=> $sealed,
+                    'tender_id'         => $tender->id,
+                    'tender_reference'  => $tender->reference_number,
+                    'quote_id'          => $quote->id,
+                    'vendor_name'       => $quote->vendor_name,
+                    'version'           => $quote->version,
+                    'status'            => $tender->status,
+                    'financials_sealed' => $sealed,
                 ];
                 if (!$sealed) {
                     $row['quoted_amount'] = $quote->quoted_amount;
@@ -119,6 +148,7 @@ class TenderController extends Controller
     public function publish(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);
+
         return response()->json([
             'message' => 'Tender published.',
             'data'    => $this->tenderService->publish($tender, $request->user()),
@@ -128,6 +158,7 @@ class TenderController extends Controller
     public function close(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);
+
         return response()->json([
             'message' => 'Tender closed.',
             'data'    => $this->tenderService->close($tender, $request->user()),
@@ -137,6 +168,7 @@ class TenderController extends Controller
     public function openBids(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);
+
         return response()->json([
             'message' => 'Bids opened.',
             'data'    => $this->tenderService->openBids($tender, $request->user()),
@@ -146,9 +178,23 @@ class TenderController extends Controller
     public function startEvaluation(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);
+
         return response()->json([
             'message' => 'Evaluation started.',
             'data'    => $this->tenderService->startEvaluation($tender, $request->user()),
+        ]);
+    }
+
+    public function comparisonSummary(Request $request, Tender $tender): JsonResponse
+    {
+        $this->gate($request);
+        if ((int) $tender->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        return response()->json([
+            'message' => 'Comparison summary generated (assistive only).',
+            'data'    => $this->comparisonSummaryService->summarize($tender, $request->user()),
         ]);
     }
 }

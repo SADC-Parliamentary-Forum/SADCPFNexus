@@ -16,6 +16,7 @@ class ProcurementQuote extends Model
         'version',
         'supersedes_quote_id',
         'technical_score',
+        'financial_score',
         'envelope',
         'is_current',
         'currency',
@@ -36,6 +37,7 @@ class ProcurementQuote extends Model
         'assessed_at'        => 'datetime',
         'version'            => 'integer',
         'technical_score'    => 'float',
+        'financial_score'    => 'float',
         'is_current'         => 'boolean',
     ];
 

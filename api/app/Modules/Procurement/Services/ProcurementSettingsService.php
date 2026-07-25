@@ -15,21 +15,31 @@ class ProcurementSettingsService
         'minimum_quotes_required',
         'split_lookback_days',
         'split_enforcement',
+        'policy_profile_key',
+        'ai_comparison_enabled',
     ];
 
     public function effective(Tenant $tenant): array
     {
         $overrides = $tenant->settings['procurement'] ?? [];
+        $profileService = app(ProcurementPolicyProfileService::class);
+        $profileService->ensureDefaults($tenant);
+        $profile = $profileService->resolveActive($tenant);
+        $fromProfile = $profile->toThresholdArray();
+        $profileKey = (string) ($overrides['policy_profile_key'] ?? $profile->key ?? 'sadc_pf_core');
 
         return [
-            'direct_purchase_limit'   => (float) ($overrides['direct_purchase_limit'] ?? config('procurement.direct_purchase_limit')),
-            'quotation_limit'         => (float) ($overrides['quotation_limit'] ?? config('procurement.quotation_limit')),
-            'tender_threshold'        => (float) ($overrides['tender_threshold'] ?? config('procurement.tender_threshold')),
-            'minimum_quotes_required' => (int) ($overrides['minimum_quotes_required'] ?? config('procurement.minimum_quotes_required')),
-            'split_lookback_days'     => (int) ($overrides['split_lookback_days'] ?? config('procurement.split_lookback_days')),
-            'split_enforcement'       => (string) ($overrides['split_enforcement'] ?? config('procurement.split_enforcement', 'hard')),
-            'policy_profile_key'      => 'sadc_pf_core',
-            'multi_donor_policy_ui'   => 'stub',
+            'direct_purchase_limit'   => (float) ($overrides['direct_purchase_limit'] ?? $fromProfile['direct_purchase_limit']),
+            'quotation_limit'         => (float) ($overrides['quotation_limit'] ?? $fromProfile['quotation_limit']),
+            'tender_threshold'        => (float) ($overrides['tender_threshold'] ?? $fromProfile['tender_threshold']),
+            'minimum_quotes_required' => (int) ($overrides['minimum_quotes_required'] ?? $fromProfile['minimum_quotes_required']),
+            'split_lookback_days'     => (int) ($overrides['split_lookback_days'] ?? $fromProfile['split_lookback_days']),
+            'split_enforcement'       => (string) ($overrides['split_enforcement'] ?? $fromProfile['split_enforcement']),
+            'policy_profile_key'      => $profileKey,
+            'donor_codes'             => $fromProfile['donor_codes'] ?? [],
+            'multi_donor_policy_ui'   => 'enabled',
+            'ai_comparison_enabled'   => (bool) ($overrides['ai_comparison_enabled'] ?? config('procurement.ai_comparison_enabled', false)),
+            'ai_comparison_provider'  => (string) config('procurement.ai_comparison_provider', 'stub'),
             'has_tenant_override'     => !empty($overrides),
         ];
     }
@@ -67,6 +77,8 @@ class ProcurementSettingsService
             'minimum_quotes_required' => ['sometimes', 'integer', 'min:1', 'max:10'],
             'split_lookback_days'     => ['sometimes', 'integer', 'min:1', 'max:365'],
             'split_enforcement'       => ['sometimes', 'string', 'in:soft,hard'],
+            'policy_profile_key'      => ['sometimes', 'string', 'max:64'],
+            'ai_comparison_enabled'   => ['sometimes', 'boolean'],
         ])->validate();
 
         if (isset($validated['direct_purchase_limit'], $validated['quotation_limit'])

@@ -1519,7 +1519,10 @@ export interface ProcurementSettings {
   split_lookback_days: number;
   split_enforcement?: "soft" | "hard";
   policy_profile_key?: string;
+  donor_codes?: string[];
   multi_donor_policy_ui?: string;
+  ai_comparison_enabled?: boolean;
+  ai_comparison_provider?: string;
   has_tenant_override?: boolean;
 }
 
@@ -2107,8 +2110,47 @@ export interface ProcurementTender {
   published_at?: string | null;
   bids_opened_at?: string | null;
   notice?: string | null;
+  technical_weight?: number;
+  financial_weight?: number;
+  min_technical_score?: number;
+  scoring?: Array<{
+    quote_id: number;
+    vendor_name: string;
+    technical_score: number | null;
+    financial_score: number | null;
+    financials_sealed?: boolean;
+    quoted_amount?: number | null;
+    combined_score?: number | null;
+    meets_min_tech?: boolean | null;
+  }>;
   procurement_request?: { id: number; reference_number: string; title: string; status: string };
   committee?: { id: number; name: string } | null;
+}
+
+export interface ProcurementPolicyProfile {
+  id: number;
+  key: string;
+  name: string;
+  description?: string | null;
+  donor_codes?: string[];
+  direct_purchase_limit: number;
+  quotation_limit: number;
+  tender_threshold: number;
+  minimum_quotes_required: number;
+  split_lookback_days: number;
+  split_enforcement: string;
+  is_active: boolean;
+  is_default: boolean;
+}
+
+export interface TenderNotice {
+  reference_number: string;
+  title: string;
+  notice?: string | null;
+  status: string;
+  published_at?: string | null;
+  submission_deadline?: string | null;
+  sealed_mode?: boolean;
 }
 
 export const tendersApi = {
@@ -2121,8 +2163,26 @@ export const tendersApi = {
   close: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/close`),
   openBids: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/open-bids`),
   startEvaluation: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/start-evaluation`),
+  comparisonSummary: (id: number) =>
+    api.post<{ data: Record<string, unknown>; message: string }>(`/procurement/tenders/${id}/comparison-summary`),
   evaluations: () => api.get<{ data: ProcurementTender[] }>("/procurement/evaluations"),
   bidSubmissions: () => api.get<{ data: Record<string, unknown>[] }>("/procurement/bid-submissions"),
+};
+
+export const policyProfilesApi = {
+  list: () => api.get<{ data: ProcurementPolicyProfile[] }>("/procurement/policy-profiles"),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: ProcurementPolicyProfile; message: string }>("/procurement/policy-profiles", data),
+  update: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: ProcurementPolicyProfile; message: string }>(`/procurement/policy-profiles/${id}`, data),
+  activate: (id: number) =>
+    api.post<{ data: ProcurementSettings; message: string }>(`/procurement/policy-profiles/${id}/activate`),
+  remove: (id: number) => api.delete(`/procurement/policy-profiles/${id}`),
+};
+
+export const noticeBoardApi = {
+  public: () => api.get<{ data: TenderNotice[] }>("/procurement/notices"),
+  staff: () => api.get<{ data: TenderNotice[] }>("/procurement/notice-board"),
 };
 
 export const tenderCommitteesApi = {
@@ -2215,6 +2275,10 @@ export interface SalaryAdvanceRequest {
   not_eligible_reason?: string | null;
   paid_at?: string | null;
   closed_at?: string | null;
+  personnel_file_id?: number | null;
+  personnel_file_document_id?: number | null;
+  personnel_file_filed_at?: string | null;
+  personnel_file_url?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   payslip?: Payslip | null;
@@ -2343,7 +2407,7 @@ export const financeApi = {
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/record-payment`, data),
   scheduleAdvanceRecovery: (id: number, data?: { intended_recovery_payroll_date?: string }) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/schedule-recovery`, data ?? {}),
-  recordAdvanceRecovery: (id: number, data: { amount: number; reference_doc?: string; notes?: string }) =>
+  recordAdvanceRecovery: (id: number, data: { amount: number; reference_doc: string; notes?: string }) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/record-recovery`, data),
   closeAdvance: (id: number) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/close`),
@@ -2380,6 +2444,7 @@ export const financeApi = {
         salary_basis: string;
         admin_review_required: boolean;
       };
+      policy_exceptions?: SalaryAdvancePolicyException[];
       intended_recovery_payroll_date?: string;
     }>("/finance/advances/eligibility"),
   getSalaryAdvanceDashboard: () =>
@@ -2433,10 +2498,59 @@ export const financeApi = {
   createSalaryAdvancePolicy: (data: Record<string, unknown>) =>
     api.post<{ data: SalaryAdvancePolicyVersion; message: string }>("/finance/advances/policies", data),
   getSalaryAdvancePayrollIntegration: () =>
-    api.get<{ data: { mode: string; enabled: boolean; message: string; coming_soon: boolean } }>(
-      "/finance/advances/payroll-integration"
+    api.get<{
+      data: {
+        mode: string;
+        adapter: string;
+        enabled: boolean;
+        provider: string | null;
+        message: string;
+        coming_soon: boolean;
+        supports_auto_push: boolean;
+        supports_auto_pull: boolean;
+      };
+    }>("/finance/advances/payroll-integration"),
+  listSalaryAdvancePolicyExceptions: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<SalaryAdvancePolicyException>>("/finance/advances/policy-exceptions", { params }),
+  createSalaryAdvancePolicyException: (data: {
+    employee_id: number;
+    exception_type: string;
+    reason: string;
+    justification: string;
+    effective_from: string;
+    effective_to?: string;
+    linked_advance_id?: number;
+  }) =>
+    api.post<{ data: SalaryAdvancePolicyException; message: string }>(
+      "/finance/advances/policy-exceptions",
+      data
+    ),
+  approveSalaryAdvancePolicyException: (id: number, data?: { decision_notes?: string }) =>
+    api.post<{ data: SalaryAdvancePolicyException; message: string }>(
+      `/finance/advances/policy-exceptions/${id}/approve`,
+      data ?? {}
+    ),
+  revokeSalaryAdvancePolicyException: (id: number, data?: { decision_notes?: string }) =>
+    api.post<{ data: SalaryAdvancePolicyException; message: string }>(
+      `/finance/advances/policy-exceptions/${id}/revoke`,
+      data ?? {}
     ),
 };
+
+export interface SalaryAdvancePolicyException {
+  id: number;
+  employee_id: number;
+  exception_type: string;
+  status: string;
+  reason: string;
+  justification?: string;
+  decision_notes?: string | null;
+  effective_from: string;
+  effective_to?: string | null;
+  applies_automatically?: boolean;
+  employee?: { id: number; name: string; email?: string };
+  note?: string;
+}
 
 export interface SalaryAdvanceReconciliation {
   id: number;

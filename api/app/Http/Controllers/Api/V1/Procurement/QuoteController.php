@@ -9,6 +9,7 @@ use App\Modules\Procurement\Services\ProcurementCoiService;
 use App\Modules\Procurement\Services\SealedBidService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class QuoteController extends Controller
 {
@@ -148,12 +149,28 @@ class QuoteController extends Controller
             'compliance_passed' => ['required', 'boolean'],
             'compliance_notes'  => ['nullable', 'string', 'max:1000'],
             'is_recommended'    => ['nullable', 'boolean'],
+            'technical_score'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'financial_score'   => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'envelope'          => ['nullable', 'string', 'in:technical,financial,combined'],
         ]);
+
+        $procurementRequest->loadMissing('tender');
+        $tender = $procurementRequest->tender;
+        if (array_key_exists('financial_score', $data) && $data['financial_score'] !== null) {
+            if ($tender && $tender->isSealed()) {
+                throw ValidationException::withMessages([
+                    'financial_score' => 'Financial scores cannot be recorded while bids remain sealed.',
+                ]);
+            }
+        }
 
         $quote->update([
             'compliance_passed' => $data['compliance_passed'],
             'compliance_notes'  => $data['compliance_notes'] ?? null,
             'is_recommended'    => $data['is_recommended'] ?? $quote->is_recommended,
+            'technical_score'   => array_key_exists('technical_score', $data) ? $data['technical_score'] : $quote->technical_score,
+            'financial_score'   => array_key_exists('financial_score', $data) ? $data['financial_score'] : $quote->financial_score,
+            'envelope'          => $data['envelope'] ?? $quote->envelope,
             'assessed_by'       => $request->user()->id,
             'assessed_at'       => now(),
         ]);

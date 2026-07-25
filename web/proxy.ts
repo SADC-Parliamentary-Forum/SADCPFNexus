@@ -17,6 +17,7 @@ const PUBLIC_PATH_PREFIXES = [
 const PUBLIC_PATHS = [
   LOGIN_PATH,
   "/supplier/register",
+  "/tender-notices",
 ];
 
 const PROTECTED_PREFIXES = [
