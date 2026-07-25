@@ -135,6 +135,9 @@ class HodApprovalTest extends TestCase
              ->postJson("/api/v1/procurement/requests/{$req->id}/hod-approve")
              ->assertOk();
 
+        $this->reserveBudgetFor($req->fresh(), $this->makeUser('Finance Controller', $tenant));
+        $req->update(['status' => 'budget_reserved']);
+
         $this->asUser($officer)
              ->postJson("/api/v1/procurement/requests/{$req->id}/approve")
              ->assertOk();

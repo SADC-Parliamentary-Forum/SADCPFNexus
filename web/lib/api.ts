@@ -1505,6 +1505,28 @@ export interface RfqInvitation {
   quote?: ProcurementQuote | null;
 }
 
+export interface ProcurementCoiPayload {
+  coi_declared: boolean;
+  coi_has_conflict: boolean;
+  coi_notes?: string;
+}
+
+export interface ProcurementSettings {
+  direct_purchase_limit: number;
+  quotation_limit: number;
+  tender_threshold: number;
+  minimum_quotes_required: number;
+  split_lookback_days: number;
+  has_tenant_override?: boolean;
+}
+
+export interface SplitPurchaseWarning {
+  message: string;
+  related_count: number;
+  combined_value: number;
+  quotation_limit: number;
+}
+
 export interface ProcurementRequest {
   id: number;
   reference_number: string;
@@ -1516,6 +1538,9 @@ export interface ProcurementRequest {
   procurement_method: string;
   budget_line: string | null;
   justification: string | null;
+  split_justification?: string | null;
+  programme_id?: number | null;
+  programme?: { id: number; reference_number: string; title: string } | null;
   required_by_date: string;
   status: "draft" | "submitted" | "hod_approved" | "hod_rejected" | "budget_reserved" | "approved" | "rejected" | "cancelled" | "awarded" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
@@ -1538,10 +1563,17 @@ export interface ProcurementRequest {
   supplierCategories?: SupplierCategory[];
   rfqInvitations?: RfqInvitation[];
   purchaseOrder?: PurchaseOrder | null;
+  budgetReservations?: BudgetReservation[];
 }
 
+export const procurementSettingsApi = {
+  get: () => api.get<{ data: ProcurementSettings }>("/procurement/settings"),
+  update: (data: Partial<ProcurementSettings>) =>
+    api.put<{ data: ProcurementSettings; message: string }>("/procurement/settings", data),
+};
+
 export const procurementApi = {
-  list: (params?: Record<string, string | number>) =>
+  list: (params?: Record<string, string | number | boolean>) =>
     api.get<PaginatedResponse<ProcurementRequest>>("/procurement/requests", { params }),
   get: (id: number) => api.get<ProcurementRequest>(`/procurement/requests/${id}`),
   create: (data: Partial<ProcurementRequest>) =>
@@ -1549,8 +1581,8 @@ export const procurementApi = {
   update: (id: number, data: Partial<ProcurementRequest>) =>
     api.put<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}`, data),
   delete: (id: number) => api.delete(`/procurement/requests/${id}`),
-  submit: (id: number) =>
-    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/submit`),
+  submit: (id: number, data?: { split_justification?: string }) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/submit`, data ?? {}),
   approve: (id: number, comment?: string) =>
     api.post<{ data: ProcurementRequest; message: string; notified_approvers: string[] }>(`/procurement/requests/${id}/approve`, comment ? { comment } : {}),
   reject: (id: number, reason: string) =>
@@ -1563,8 +1595,16 @@ export const procurementApi = {
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/resubmit`),
   certificate: (id: number) =>
     api.get<{ data: ProcurementRequest }>(`/procurement/requests/${id}/certificate`),
-  award: (id: number, quoteId: number, awardNotes?: string) =>
-    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, { quote_id: quoteId, award_notes: awardNotes }),
+  award: (id: number, quoteId: number, payload?: { award_notes?: string } & ProcurementCoiPayload) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/award`, {
+      quote_id: quoteId,
+      award_notes: payload?.award_notes,
+      coi_declared: payload?.coi_declared ?? true,
+      coi_has_conflict: payload?.coi_has_conflict ?? false,
+      coi_notes: payload?.coi_notes,
+    }),
+  setMethod: (id: number, data: { procurement_method: string; method_override_reason?: string }) =>
+    api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/set-method`, data),
   hodApprove: (id: number) =>
     api.post<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}/hod-approve`),
   hodReject: (id: number, reason: string) =>
@@ -1590,7 +1630,7 @@ export const quotesApi = {
     api.get<{ data: ProcurementQuote[] }>(`/procurement/requests/${requestId}/quotes`),
   create: (requestId: number, data: CreateQuotePayload) =>
     api.post<{ data: ProcurementQuote; message: string }>(`/procurement/requests/${requestId}/quotes`, data),
-  update: (requestId: number, quoteId: number, data: Partial<CreateQuotePayload>) =>
+  update: (requestId: number, quoteId: number, data: Partial<CreateQuotePayload> & Partial<ProcurementCoiPayload>) =>
     api.put<{ data: ProcurementQuote; message: string }>(`/procurement/requests/${requestId}/quotes/${quoteId}`, data),
   delete: (requestId: number, quoteId: number) =>
     api.delete(`/procurement/requests/${requestId}/quotes/${quoteId}`),
@@ -1653,6 +1693,7 @@ export interface Vendor {
   portal_users?: Pick<User, "id" | "name" | "email" | "is_active">[];
   quotes_count?: number;
   ratings_avg_rating?: number | null;
+  derived_star_rating?: number | null;
   ratings_count?: number;
   created_at?: string;
   recent_quotes?: VendorQuote[];
@@ -2704,6 +2745,7 @@ export interface ProgrammeBudgetLine {
 export interface ProgrammeProcurementItem {
   id: number;
   programme_id: number;
+  procurement_request_id?: number | null;
   description: string;
   estimated_cost: number;
   method: "direct_purchase" | "three_quotations" | "tender";

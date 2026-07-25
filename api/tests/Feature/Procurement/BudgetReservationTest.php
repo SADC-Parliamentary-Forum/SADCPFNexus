@@ -185,4 +185,63 @@ class BudgetReservationTest extends TestCase
 
         $this->assertCount(0, $response->json('data'));
     }
+
+    public function test_procurement_approve_requires_active_budget_reservation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $requester = $this->makeUser('staff', $tenant);
+        $hod = $this->makeUser('HOD', $tenant);
+        $officer = $this->makeUser('Procurement Officer', $tenant);
+
+        $req = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $requester->id,
+            'title' => 'No Budget Gate',
+            'description' => 'Must fail without reservation',
+            'category' => 'goods',
+            'estimated_value' => 25_000,
+            'currency' => 'NAD',
+            'status' => 'submitted',
+        ]);
+
+        $this->asUser($hod)->postJson("/api/v1/procurement/requests/{$req->id}/hod-approve")->assertOk();
+
+        $this->asUser($officer)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/approve")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['budget']);
+
+        $this->reserveBudgetFor($req->fresh(), $this->makeUser('Finance Controller', $tenant));
+        $req->update(['status' => 'budget_reserved']);
+
+        $this->asUser($officer)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+    }
+
+    public function test_issue_rfq_requires_active_budget_reservation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $category = $this->makeSupplierCategory($tenant);
+
+        $req = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $officer->id,
+            'title' => 'RFQ Without Budget',
+            'description' => 'Gate check',
+            'category' => 'goods',
+            'estimated_value' => 45_000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/issue-rfq", [
+            'category_ids' => [$category->id],
+            'rfq_deadline' => now()->addDays(5)->toDateString(),
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['budget']);
+    }
 }

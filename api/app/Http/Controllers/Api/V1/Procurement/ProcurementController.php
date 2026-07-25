@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProcurementCoiDeclaration;
 use App\Models\ProcurementRequest;
 use App\Modules\Procurement\Services\ProcurementService;
 use App\Services\WorkflowService;
@@ -18,23 +19,24 @@ class ProcurementController extends Controller
     public function __construct(
         private readonly ProcurementService $procurementService,
         private readonly WorkflowService    $workflowService,
+        private readonly \App\Modules\Procurement\Services\ProcurementCoiService $coiService,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'category', 'search', 'per_page']);
+        $filters = $request->only(['status', 'category', 'search', 'per_page', 'has_programme']);
         return response()->json($this->procurementService->list($filters, $request->user()));
     }
 
     public function show(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
         $this->authorizeRequestView($request->user(), $procurementRequest, [
             'Procurement Officer', 'Finance Controller', 'Secretary General',
         ]);
-
-        $procurementRequest = ProcurementRequest::where('id', $procurementRequest->id)
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->firstOrFail();
 
         return response()->json($procurementRequest->load([
             'requester',
@@ -49,6 +51,8 @@ class ProcurementController extends Controller
             'rfqInvitations.quote',
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
+            'budgetReservations',
+            'programme',
         ]));
     }
 
@@ -112,7 +116,14 @@ class ProcurementController extends Controller
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
-        $procurement = $this->procurementService->submit($procurementRequest, $request->user());
+        $data = $request->validate([
+            'split_justification' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $procurement = $this->procurementService->submit(
+            $procurementRequest,
+            $request->user(),
+            $data['split_justification'] ?? null
+        );
         return response()->json(['message' => 'Procurement request submitted.', 'data' => $procurement]);
     }
 
@@ -149,6 +160,20 @@ class ProcurementController extends Controller
             abort(404);
         }
 
+        if ($request->user()->hasRole('staff') && !$request->user()->hasAnyRole([
+            'Procurement Officer', 'Finance Controller', 'Secretary General', 'System Admin', 'super-admin', 'HOD',
+        ])) {
+            abort(403);
+        }
+
+        // Phase 1 hard gate: Finance budget confirmation required before approve.
+        if (!$procurementRequest->budgetReservations()->whereNull('released_at')->exists()) {
+            return response()->json([
+                'message' => 'Finance budget confirmation is required before this action.',
+                'errors'  => ['budget' => ['Finance budget confirmation is required before this action.']],
+            ], 422);
+        }
+
         if ($procurementRequest->approvalRequest) {
             $data   = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
             $result = $this->workflowService->approve(
@@ -163,14 +188,30 @@ class ProcurementController extends Controller
             ]);
         }
 
-        if ($request->user()->hasRole('staff')) {
-            abort(403);
-        }
         $this->authorizeLegacyApproval($request->user(), $procurementRequest, [
             'Procurement Officer', 'Finance Controller', 'Secretary General',
         ]);
         $procurement = $this->procurementService->approve($procurementRequest, $request->user());
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
+    }
+
+    public function setMethod(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin', 'super-admin'])) {
+            abort(403);
+        }
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'procurement_method'     => ['required', 'string', 'in:quotation,tender,direct,approved_supplier'],
+            'method_override_reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $procurement = $this->procurementService->setMethod($procurementRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Procurement method updated.', 'data' => $procurement]);
     }
 
     public function award(Request $request, ProcurementRequest $procurementRequest): JsonResponse
@@ -187,6 +228,8 @@ class ProcurementController extends Controller
             'award_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $this->coiService->assertDeclared($procurementRequest, $request->user(), ProcurementCoiDeclaration::CONTEXT_AWARD);
+
         $procurement = $this->procurementService->award(
             $procurementRequest,
             $data['quote_id'],
@@ -195,6 +238,26 @@ class ProcurementController extends Controller
         );
 
         return response()->json(['message' => 'Contract awarded successfully.', 'data' => $procurement]);
+    }
+
+    public function storeCoiDeclaration(Request $request, ProcurementRequest $procurementRequest): JsonResponse
+    {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'context'      => ['required', 'string', 'in:assess,award'],
+            'has_conflict' => ['required', 'boolean'],
+            'notes'        => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $declaration = $this->coiService->declare($procurementRequest, $request->user(), $data);
+
+        return response()->json([
+            'message' => 'Conflict of interest declaration recorded.',
+            'data'    => $declaration,
+        ], 201);
     }
 
     public function issueRfq(Request $request, ProcurementRequest $procurementRequest): JsonResponse

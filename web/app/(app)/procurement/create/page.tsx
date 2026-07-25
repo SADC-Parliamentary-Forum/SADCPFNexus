@@ -65,6 +65,9 @@ export default function ProcurementCreatePage() {
   const [stagedDocs, setStagedDocs] = useState<StagedDoc[]>([]);
   const [stagedIdSeq, setStagedIdSeq] = useState(1);
   const [dragOver, setDragOver] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [splitWarning, setSplitWarning] = useState<string | null>(null);
+  const [splitJustification, setSplitJustification] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -122,6 +125,7 @@ export default function ProcurementCreatePage() {
 
   const handleSubmit = async (asDraft: boolean) => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const res = await procurementApi.create({
         title: form.title,
@@ -131,7 +135,6 @@ export default function ProcurementCreatePage() {
         budget_line: form.budget_line || undefined,
         required_by_date: form.required_by_date || undefined,
         justification: form.justification || undefined,
-        status: asDraft ? "draft" : "submitted",
       });
 
       const created = res.data?.data;
@@ -141,9 +144,25 @@ export default function ProcurementCreatePage() {
         );
       }
 
-      router.push("/procurement");
+      if (!asDraft && created?.id) {
+        try {
+          await procurementApi.submit(created.id, splitJustification.trim() ? { split_justification: splitJustification.trim() } : undefined);
+        } catch (err: unknown) {
+          const axiosErr = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
+          const splitMsg = axiosErr.response?.data?.errors?.split_justification?.[0];
+          if (splitMsg) {
+            setSplitWarning(splitMsg);
+            setSubmitError("Split purchase detected — provide justification below and submit again from the request detail page, or resubmit here.");
+            router.push(`/procurement/${created.id}`);
+            return;
+          }
+          throw err;
+        }
+      }
+
+      router.push(created?.id ? `/procurement/${created.id}` : "/procurement");
     } catch {
-      router.push("/procurement");
+      setSubmitError("Failed to create procurement request.");
     } finally {
       setSubmitting(false);
     }
@@ -399,6 +418,21 @@ export default function ProcurementCreatePage() {
       {step === 1 && (
         <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900">Review &amp; Submit</h3>
+          {submitError && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{submitError}</div>
+          )}
+          {splitWarning && (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 space-y-2">
+              <p className="text-sm text-amber-800">{splitWarning}</p>
+              <label className="block text-xs font-semibold text-amber-900">Split justification</label>
+              <textarea
+                className="form-input w-full h-20 resize-none text-sm"
+                placeholder="Explain why this should not be treated as a split purchase…"
+                value={splitJustification}
+                onChange={(e) => setSplitJustification(e.target.value)}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             {[
               { label: "Title", value: form.title },

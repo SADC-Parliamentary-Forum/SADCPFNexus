@@ -2,17 +2,19 @@
 
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { procurementApi, quotesApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment, type ProcurementQuote } from "@/lib/api";
+import { procurementApi, quotesApi, budgetReservationsApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment, type ProcurementQuote } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
-import { readStoredUser } from "@/lib/session";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import axios from "axios";
 
-function getStoredUser(): { roles?: string[] } | null {
-  return readStoredUser();
+function canReserveBudget(): boolean {
+  const u = getStoredUser();
+  if (!u) return false;
+  return isSystemAdmin(u) || hasPermission(u, ["finance.approve", "finance.admin", "procurement.admin"]);
 }
 
 function canAward(user: { roles?: string[] } | null): boolean {
@@ -76,8 +78,17 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [showAward, setShowAward]       = useState(false);
   const [awardQuoteId, setAwardQuoteId] = useState<number | "">("");
   const [awardNotes, setAwardNotes]     = useState("");
+  const [awardCoiDeclared, setAwardCoiDeclared] = useState(false);
+  const [awardCoiConflict, setAwardCoiConflict] = useState(false);
+  const [awardCoiNotes, setAwardCoiNotes] = useState("");
   const [awarding, setAwarding]         = useState(false);
   const [awardError, setAwardError]     = useState<string | null>(null);
+
+  const [budgetLineInput, setBudgetLineInput] = useState("");
+  const [reservedAmountInput, setReservedAmountInput] = useState("");
+  const [reserveNotes, setReserveNotes] = useState("");
+  const [reserving, setReserving] = useState(false);
+  const [reserveError, setReserveError] = useState<string | null>(null);
 
   // Add Quote form state
   const [showAddQuote, setShowAddQuote]   = useState(false);
@@ -149,20 +160,49 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   }
 
   async function handleAward() {
-    if (!request || !awardQuoteId) return;
+    if (!request || !awardQuoteId || !awardCoiDeclared) return;
     setAwarding(true);
     setAwardError(null);
     try {
-      const res = await procurementApi.award(request.id, Number(awardQuoteId), awardNotes);
+      const res = await procurementApi.award(request.id, Number(awardQuoteId), {
+        award_notes: awardNotes,
+        coi_declared: awardCoiDeclared,
+        coi_has_conflict: awardCoiConflict,
+        coi_notes: awardCoiNotes || undefined,
+      });
       setRequest(res.data.data);
       setShowAward(false);
       setAwardQuoteId("");
       setAwardNotes("");
+      setAwardCoiDeclared(false);
+      setAwardCoiConflict(false);
+      setAwardCoiNotes("");
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award contract.";
       setAwardError(msg);
     } finally {
       setAwarding(false);
+    }
+  }
+
+  async function handleReserveBudget() {
+    if (!request || !budgetLineInput.trim() || !reservedAmountInput) return;
+    setReserving(true);
+    setReserveError(null);
+    try {
+      await budgetReservationsApi.reserve(request.id, {
+        budget_line: budgetLineInput.trim(),
+        reserved_amount: parseFloat(reservedAmountInput),
+        notes: reserveNotes.trim() || undefined,
+      });
+      const refreshed = await procurementApi.get(request.id);
+      setRequest(refreshed.data);
+      showToastMsg("Budget reserved.");
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to reserve budget." : "Failed to reserve budget.";
+      setReserveError(msg);
+    } finally {
+      setReserving(false);
     }
   }
 
@@ -513,6 +553,57 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
       {/* Approval Timeline */}
       <ApprovalTimeline request={approvalRequest} />
+
+      {/* Finance budget reservation */}
+      {request.status === "hod_approved" && canReserveBudget() && (
+        <div className="card p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <SectionIcon icon="savings" color="text-indigo-600" bg="bg-indigo-50" />
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Budget Confirmation</h3>
+              <p className="text-xs text-neutral-400 mt-0.5">Reserve budget before procurement approval can proceed.</p>
+            </div>
+          </div>
+          {reserveError && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{reserveError}</div>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
+              <input
+                className="form-input w-full"
+                value={budgetLineInput || request.budget_line || ""}
+                onChange={(e) => setBudgetLineInput(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className="form-input w-full"
+                value={reservedAmountInput || String(request.estimated_value ?? "")}
+                onChange={(e) => setReservedAmountInput(e.target.value)}
+              />
+            </div>
+          </div>
+          <textarea
+            className="form-input w-full h-16 resize-none"
+            placeholder="Finance notes (optional)"
+            value={reserveNotes}
+            onChange={(e) => setReserveNotes(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-primary text-sm disabled:opacity-50"
+            disabled={reserving}
+            onClick={handleReserveBudget}
+          >
+            {reserving ? "Reserving…" : "Confirm budget reservation"}
+          </button>
+        </div>
+      )}
 
       {/* Requested By */}
       {request.requester && (
@@ -981,6 +1072,35 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
               />
             </div>
 
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={awardCoiDeclared}
+                  onChange={(e) => setAwardCoiDeclared(e.target.checked)}
+                />
+                <span>I declare that I have no undeclared conflict of interest, or I have disclosed any conflict below.</span>
+              </label>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={awardCoiConflict}
+                  onChange={(e) => setAwardCoiConflict(e.target.checked)}
+                />
+                <span>I have a conflict of interest relevant to this award.</span>
+              </label>
+              {awardCoiConflict && (
+                <textarea
+                  className="form-input w-full h-16 resize-none text-sm"
+                  placeholder="Describe conflict and mitigation / recusal…"
+                  value={awardCoiNotes}
+                  onChange={(e) => setAwardCoiNotes(e.target.value)}
+                />
+              )}
+            </div>
+
             <div className="flex gap-3 pt-1">
               <button
                 className="btn-secondary flex-1"
@@ -992,7 +1112,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
               <button
                 className="btn-primary flex-1 inline-flex items-center justify-center gap-1.5"
                 onClick={handleAward}
-                disabled={awarding || !awardQuoteId}
+                disabled={awarding || !awardQuoteId || !awardCoiDeclared || (awardCoiConflict && !awardCoiNotes.trim())}
               >
                 {awarding ? (
                   <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />

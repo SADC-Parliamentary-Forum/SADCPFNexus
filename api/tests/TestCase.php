@@ -127,6 +127,24 @@ abstract class TestCase extends BaseTestCase
         return [$this->asUser($user), $user];
     }
 
+    /**
+     * Create an active budget reservation for procurement Phase 1 hard-gate tests.
+     */
+    protected function reserveBudgetFor(\App\Models\ProcurementRequest $request, ?\App\Models\User $actor = null): \App\Models\BudgetReservation
+    {
+        $actor ??= $this->makeUser('Finance Controller', \App\Models\Tenant::find($request->tenant_id));
+
+        return \App\Models\BudgetReservation::create([
+            'tenant_id'              => $request->tenant_id,
+            'procurement_request_id' => $request->id,
+            'reserved_by'            => $actor->id,
+            'budget_line'            => $request->budget_line ?? 'TEST-BUDGET-LINE',
+            'reserved_amount'        => (float) ($request->estimated_value ?: 1),
+            'currency'               => $request->currency ?? 'NAD',
+            'notes'                  => 'Test budget confirmation',
+        ]);
+    }
+
     protected function asSG(?Tenant $tenant = null): array
     {
         $user = $this->makeSG($tenant);

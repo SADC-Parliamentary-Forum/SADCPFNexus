@@ -15,7 +15,10 @@ class ProcurementRequest extends Model
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
         'title', 'description', 'category', 'estimated_value', 'currency',
-        'procurement_method', 'status', 'budget_line', 'justification',
+        'procurement_method', 'suggested_method', 'policy_profile_key', 'policy_snapshot',
+        'method_override_reason', 'method_override_by', 'method_override_at',
+        'split_justification', 'programme_id',
+        'status', 'budget_line', 'justification',
         'rejection_reason', 'required_by_date', 'submitted_at', 'approved_at',
         'awarded_quote_id', 'awarded_at', 'award_notes',
         'hod_id', 'hod_reviewed_at',
@@ -25,14 +28,16 @@ class ProcurementRequest extends Model
     ];
 
     protected $casts = [
-        'required_by_date' => 'date',
-        'submitted_at'     => 'datetime',
-        'approved_at'      => 'datetime',
-        'awarded_at'       => 'datetime',
-        'hod_reviewed_at'  => 'datetime',
-        'rfq_issued_at'    => 'datetime',
-        'rfq_deadline'     => 'date',
-        'estimated_value'  => 'float',
+        'required_by_date'    => 'date',
+        'submitted_at'        => 'datetime',
+        'approved_at'         => 'datetime',
+        'awarded_at'          => 'datetime',
+        'hod_reviewed_at'     => 'datetime',
+        'rfq_issued_at'       => 'datetime',
+        'rfq_deadline'        => 'date',
+        'method_override_at'  => 'datetime',
+        'estimated_value'     => 'float',
+        'policy_snapshot'     => 'array',
     ];
 
     protected static function booted(): void
@@ -52,6 +57,9 @@ class ProcurementRequest extends Model
     public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
     public function purchaseOrder()     { return $this->hasOne(PurchaseOrder::class); }
     public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
+    public function budgetReservations(){ return $this->hasMany(BudgetReservation::class); }
+    public function programme()         { return $this->belongsTo(Programme::class); }
+    public function methodOverrideBy()  { return $this->belongsTo(User::class, 'method_override_by'); }
     public function rfqIssuer()         { return $this->belongsTo(User::class, 'rfq_issued_by'); }
     public function supplierCategories(){ return $this->belongsToMany(SupplierCategory::class, 'procurement_request_supplier_category')->withTimestamps(); }
     public function rfqInvitations()    { return $this->hasMany(RfqInvitation::class); }

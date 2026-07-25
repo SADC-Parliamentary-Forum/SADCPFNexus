@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserSession;
 use App\Models\Vendor;
 use App\Models\VendorRating;
+use Illuminate\Validation\ValidationException;
 use App\Modules\Procurement\Services\VendorService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -345,27 +346,13 @@ class VendorController extends Controller
             abort(404);
         }
 
-        $data = $request->validate([
+        $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'review' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $rating = VendorRating::updateOrCreate(
-            ['vendor_id' => $vendor->id, 'rated_by' => $request->user()->id],
-            [
-                'tenant_id' => $request->user()->tenant_id,
-                'rating'    => $data['rating'],
-                'review'    => $data['review'] ?? null,
-            ]
-        );
-        $rating->load('rater:id,name');
-
-        $avg = $vendor->ratings()->avg('rating');
-
-        return response()->json([
-            'message' => 'Rating saved.',
-            'data'    => $rating,
-            'avg'     => $avg,
+        throw ValidationException::withMessages([
+            'rating' => 'Vendor star ratings are derived from structured performance scorecards only.',
         ]);
     }
 

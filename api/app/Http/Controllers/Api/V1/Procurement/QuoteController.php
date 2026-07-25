@@ -2,13 +2,17 @@
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProcurementCoiDeclaration;
 use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
+use App\Modules\Procurement\Services\ProcurementCoiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class QuoteController extends Controller
 {
+    public function __construct(private readonly ProcurementCoiService $coiService) {}
+
     public function index(ProcurementRequest $procurementRequest): JsonResponse
     {
         if ((int) $procurementRequest->tenant_id !== (int) request()->user()->tenant_id) {
@@ -72,12 +76,25 @@ class QuoteController extends Controller
             'compliance_notes'  => ['nullable', 'string', 'max:1000'],
             'notes'          => ['nullable', 'string', 'max:1000'],
             'quote_date'     => ['nullable', 'date'],
+            'coi_declared'     => ['nullable', 'boolean'],
+            'coi_has_conflict' => ['nullable', 'boolean'],
+            'coi_notes'        => ['nullable', 'string', 'max:2000'],
         ]);
 
-        if (array_key_exists('compliance_passed', $data) || array_key_exists('compliance_notes', $data) || array_key_exists('is_recommended', $data)) {
+        $isAssessing = array_key_exists('compliance_passed', $data)
+            || array_key_exists('compliance_notes', $data)
+            || array_key_exists('is_recommended', $data);
+
+        if ($isAssessing) {
+            $this->coiService->record($procurementRequest, $request->user(), $data, 'assess');
+        }
+
+        if ($isAssessing) {
             $data['assessed_by'] = $request->user()->id;
             $data['assessed_at'] = now();
         }
+
+        unset($data['coi_declared'], $data['coi_has_conflict'], $data['coi_notes']);
 
         $quote->update($data);
         return response()->json(['message' => 'Quote updated.', 'data' => $quote->fresh(['vendor', 'assessor', 'attachments.uploader:id,name'])]);
@@ -96,5 +113,39 @@ class QuoteController extends Controller
         }
         $quote->delete();
         return response()->json(['message' => 'Quote removed.']);
+    }
+
+    public function assess(Request $request, ProcurementRequest $procurementRequest, ProcurementQuote $quote): JsonResponse
+    {
+        if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        if ((int) $quote->procurement_request_id !== (int) $procurementRequest->id) {
+            abort(404);
+        }
+        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'super-admin', 'Secretary General'])) {
+            abort(403);
+        }
+
+        $this->coiService->assertDeclared($procurementRequest, $request->user(), ProcurementCoiDeclaration::CONTEXT_ASSESS);
+
+        $data = $request->validate([
+            'compliance_passed' => ['required', 'boolean'],
+            'compliance_notes'  => ['nullable', 'string', 'max:1000'],
+            'is_recommended'    => ['nullable', 'boolean'],
+        ]);
+
+        $quote->update([
+            'compliance_passed' => $data['compliance_passed'],
+            'compliance_notes'  => $data['compliance_notes'] ?? null,
+            'is_recommended'    => $data['is_recommended'] ?? $quote->is_recommended,
+            'assessed_by'       => $request->user()->id,
+            'assessed_at'       => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Quote assessed.',
+            'data'    => $quote->fresh(['vendor', 'assessor', 'attachments.uploader:id,name']),
+        ]);
     }
 }

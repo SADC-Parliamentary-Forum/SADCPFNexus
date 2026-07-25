@@ -25,7 +25,7 @@ class ProcurementService
     ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = ProcurementRequest::with(['requester', 'items', 'quotes', 'supplierCategories'])
+        $query = ProcurementRequest::with(['requester', 'items', 'quotes', 'supplierCategories', 'programme:id,reference_number,title'])
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
@@ -39,6 +39,10 @@ class ProcurementService
 
         if (!empty($filters['category'])) {
             $query->where('category', $filters['category']);
+        }
+
+        if (!empty($filters['has_programme'])) {
+            $query->whereNotNull('programme_id');
         }
 
         if (!empty($filters['search'])) {
@@ -116,7 +120,7 @@ class ProcurementService
         return $request->fresh(['requester', 'items']);
     }
 
-    public function submit(ProcurementRequest $request, User $user): ProcurementRequest
+    public function submit(ProcurementRequest $request, User $user, ?string $splitJustification = null): ProcurementRequest
     {
         if ((int) $request->tenant_id !== (int) $user->tenant_id) {
             abort(404);
@@ -128,7 +132,13 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }
 
-        $request->update(['status' => 'submitted', 'submitted_at' => now()]);
+        $this->assertSplitJustificationIfRequired($request, $splitJustification);
+
+        $payload = ['status' => 'submitted', 'submitted_at' => now()];
+        if ($splitJustification !== null) {
+            $payload['split_justification'] = $splitJustification;
+        }
+        $request->update($payload);
 
         AuditLog::record('procurement.submitted', [
             'auditable_type' => ProcurementRequest::class,
@@ -143,6 +153,115 @@ class ProcurementService
         return $request->fresh();
     }
 
+    public function suggestMethod(float $estimatedValue): string
+    {
+        $direct = (float) config('procurement.direct_purchase_limit');
+        $rfqMax = (float) config('procurement.quotation_limit');
+
+        if ($estimatedValue <= $direct) {
+            return 'approved_supplier';
+        }
+        if ($estimatedValue <= $rfqMax) {
+            return 'quotation';
+        }
+
+        return 'tender';
+    }
+
+    public function policySnapshot(): array
+    {
+        return [
+            'direct_purchase_limit'   => (float) config('procurement.direct_purchase_limit'),
+            'quotation_limit'         => (float) config('procurement.quotation_limit'),
+            'tender_threshold'        => (float) config('procurement.tender_threshold'),
+            'minimum_quotes_required' => (int) config('procurement.minimum_quotes_required'),
+            'split_lookback_days'     => (int) config('procurement.split_lookback_days'),
+            'profile_key'             => 'sadc_pf_core',
+            'captured_at'             => now()->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Detect potential anti-split purchases within the lookback window.
+     *
+     * @return array{message: string, related_count: int, combined_value: float}|null
+     */
+    public function detectSplitPurchase(ProcurementRequest $request): ?array
+    {
+        $lookbackDays = (int) config('procurement.split_lookback_days', 30);
+        $quotationLimit = (float) config('procurement.quotation_limit', 100_000);
+        $currentValue = (float) ($request->estimated_value ?? 0);
+
+        if ($currentValue <= 0 || $currentValue > $quotationLimit) {
+            return null;
+        }
+
+        $titlePrefix = mb_substr(trim($request->title ?? ''), 0, 20);
+
+        $related = ProcurementRequest::query()
+            ->where('tenant_id', $request->tenant_id)
+            ->when($request->exists, fn ($q) => $q->where('id', '!=', $request->id))
+            ->whereNotIn('status', ['cancelled', 'rejected', 'withdrawn'])
+            ->where('created_at', '>=', now()->subDays($lookbackDays))
+            ->where(function ($q) use ($request) {
+                $q->where('requester_id', $request->requester_id);
+                if ($request->programme_id) {
+                    $q->orWhere('programme_id', $request->programme_id);
+                }
+            })
+            ->where(function ($q) use ($request, $titlePrefix) {
+                $q->where('category', $request->category);
+                if ($titlePrefix !== '') {
+                    $q->orWhere('title', 'ilike', $titlePrefix . '%');
+                }
+                if ($request->budget_line) {
+                    $q->orWhere('budget_line', $request->budget_line);
+                }
+            })
+            ->get();
+
+        if ($related->isEmpty()) {
+            return null;
+        }
+
+        $combined = $related->sum(fn ($row) => (float) $row->estimated_value) + $currentValue;
+        if ($combined <= $quotationLimit) {
+            return null;
+        }
+
+        return [
+            'message'         => 'Combined estimated value with similar recent requests exceeds the RFQ threshold. Provide split justification to proceed.',
+            'related_count'   => $related->count(),
+            'combined_value'  => round($combined, 2),
+            'quotation_limit' => $quotationLimit,
+        ];
+    }
+
+    public function assertSplitJustificationIfRequired(ProcurementRequest $request, ?string $splitJustification): void
+    {
+        $warning = $this->detectSplitPurchase($request);
+        if (!$warning) {
+            return;
+        }
+
+        if (blank($splitJustification)) {
+            throw ValidationException::withMessages([
+                'split_justification' => [$warning['message']],
+                'split_warning'         => [$warning],
+            ]);
+        }
+
+        AuditLog::record('procurement.split_justification', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => [
+                'split_justification' => $splitJustification,
+                'warning'             => $warning,
+            ],
+            'tags' => 'procurement',
+        ]);
+    }
+
     public function hodApprove(ProcurementRequest $request, User $hod): ProcurementRequest
     {
         if ((int) $request->tenant_id !== (int) $hod->tenant_id) {
@@ -153,20 +272,84 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be HOD-approved.']);
         }
 
+        $suggested = $this->suggestMethod((float) ($request->estimated_value ?? 0));
+
         $request->update([
-            'status'          => 'hod_approved',
-            'hod_id'          => $hod->id,
-            'hod_reviewed_at' => now(),
+            'status'             => 'hod_approved',
+            'hod_id'             => $hod->id,
+            'hod_reviewed_at'    => now(),
+            'suggested_method'   => $suggested,
+            'policy_profile_key' => 'sadc_pf_core',
+            'policy_snapshot'    => $this->policySnapshot(),
         ]);
 
         AuditLog::record('procurement.hod_approved', [
             'auditable_type' => ProcurementRequest::class,
             'auditable_id'   => $request->id,
-            'new_values'     => ['hod_id' => $hod->id],
+            'new_values'     => [
+                'hod_id'           => $hod->id,
+                'suggested_method' => $suggested,
+            ],
             'tags'           => 'procurement',
         ]);
 
         return $request->fresh();
+    }
+
+    public function setMethod(ProcurementRequest $request, array $data, User $actor): ProcurementRequest
+    {
+        if ((int) $request->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        $method = $data['procurement_method'];
+        $suggested = $request->suggested_method ?: $this->suggestMethod((float) ($request->estimated_value ?? 0));
+        $overrideReason = $data['method_override_reason'] ?? null;
+
+        if ($method !== $suggested && blank($overrideReason)) {
+            throw ValidationException::withMessages([
+                'method_override_reason' => 'A reason is required when overriding the suggested procurement method.',
+            ]);
+        }
+
+        $payload = ['procurement_method' => $method];
+        if ($method !== $suggested) {
+            $payload['method_override_reason'] = $overrideReason;
+            $payload['method_override_by'] = $actor->id;
+            $payload['method_override_at'] = now();
+        } else {
+            $payload['method_override_reason'] = null;
+            $payload['method_override_by'] = null;
+            $payload['method_override_at'] = null;
+        }
+
+        $request->update($payload);
+
+        AuditLog::record('procurement.method_override', [
+            'auditable_type' => ProcurementRequest::class,
+            'auditable_id'   => $request->id,
+            'new_values'     => [
+                'procurement_method'     => $method,
+                'suggested_method'       => $suggested,
+                'method_override_reason' => $overrideReason,
+            ],
+            'tags'           => 'procurement',
+        ]);
+
+        return $request->fresh();
+    }
+
+    protected function assertBudgetConfirmed(ProcurementRequest $request): void
+    {
+        $active = $request->budgetReservations()
+            ->whereNull('released_at')
+            ->exists();
+
+        if (!$active) {
+            throw ValidationException::withMessages([
+                'budget' => 'Finance budget confirmation is required before this action.',
+            ]);
+        }
     }
 
     public function hodReject(ProcurementRequest $request, string $reason, User $hod): ProcurementRequest
@@ -213,6 +396,8 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Request must be HOD-approved before procurement approval.']);
         }
 
+        $this->assertBudgetConfirmed($request);
+
         if ((int) $request->requester_id === (int) $approver->id) {
             throw ValidationException::withMessages([
                 'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
@@ -254,6 +439,8 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only approved requests can be awarded.']);
         }
 
+        $this->assertBudgetConfirmed($request);
+
         if (!$request->rfq_issued_at) {
             throw ValidationException::withMessages(['status' => 'Issue the RFQ before awarding this request.']);
         }
@@ -272,7 +459,7 @@ class ProcurementService
 
         // Enforce minimum quotation count above the direct-purchase threshold.
         $estimatedValue   = (float) ($request->estimated_value ?? 0);
-        $quotationLimit   = (float) config('procurement.quotation_limit', 50_000);
+        $quotationLimit   = (float) config('procurement.quotation_limit', 100_000);
         $minQuotes        = (int)   config('procurement.minimum_quotes_required', 3);
         if ($estimatedValue > $quotationLimit) {
             $receivedQuotes = $request->quotes()->whereNotNull('assessed_at')->count();
@@ -374,9 +561,11 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only approved procurement requests can be issued as RFQs.']);
         }
 
+        $this->assertBudgetConfirmed($request);
+
         // Enforce tender-method requirement above the tender threshold.
         $estimatedValue    = (float) ($request->estimated_value ?? 0);
-        $tenderThreshold   = (float) config('procurement.tender_threshold', 500_000);
+        $tenderThreshold   = (float) config('procurement.tender_threshold', 100_000);
         $procurementMethod = $request->procurement_method ?? 'quotation';
         if ($estimatedValue >= $tenderThreshold && $procurementMethod !== 'tender') {
             throw ValidationException::withMessages([

@@ -15,7 +15,7 @@ class ProcurementAwardTest extends TestCase
 
     private function makeApprovedRequest(Tenant $tenant, int $requesterId): ProcurementRequest
     {
-        return ProcurementRequest::create([
+        $req = ProcurementRequest::create([
             'tenant_id'       => $tenant->id,
             'requester_id'    => $requesterId,
             'title'           => 'IT Equipment Purchase',
@@ -28,6 +28,9 @@ class ProcurementAwardTest extends TestCase
             'approved_at'     => now(),
             'rfq_issued_at'   => now()->subHours(12),
         ]);
+        $this->reserveBudgetFor($req);
+
+        return $req;
     }
 
     private function makeApprovedVendor(Tenant $tenant): Vendor
@@ -57,6 +60,14 @@ class ProcurementAwardTest extends TestCase
         ]);
     }
 
+    private function declareCoiAward($http, ProcurementRequest $req): void
+    {
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/coi-declarations", [
+            'context'      => 'award',
+            'has_conflict' => false,
+        ])->assertCreated();
+    }
+
     // ── Award ─────────────────────────────────────────────────────────────────
 
     public function test_procurement_officer_can_award_approved_request(): void
@@ -68,6 +79,8 @@ class ProcurementAwardTest extends TestCase
         $quote   = $this->makeQuote($req, $vendor);
 
         [$http] = $this->asProcurementOfficer($tenant);
+
+        $this->declareCoiAward($http, $req);
 
         $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
             'quote_id'    => $quote->id,
@@ -167,6 +180,8 @@ class ProcurementAwardTest extends TestCase
 
         [$http] = $this->asProcurementOfficer($tenant);
 
+        $this->declareCoiAward($http, $req);
+
         $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
             'quote_id' => $quote->id,
         ])->assertOk();
@@ -183,6 +198,8 @@ class ProcurementAwardTest extends TestCase
         $quote  = $this->makeQuote($req, $vendor);
 
         [$http] = $this->asProcurementOfficer($tenant);
+
+        $this->declareCoiAward($http, $req);
 
         $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
             'quote_id' => $quote->id,

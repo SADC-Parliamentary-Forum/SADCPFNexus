@@ -183,6 +183,9 @@ class ProcurementTest extends TestCase
         $hod = $this->makeUser('HOD', $tenant);
         $this->asUser($hod)->postJson("/api/v1/procurement/requests/{$id}/hod-approve")->assertOk();
 
+        $this->reserveBudgetFor(ProcurementRequest::findOrFail($id), $this->makeUser('Finance Controller', $tenant));
+        ProcurementRequest::whereKey($id)->update(['status' => 'budget_reserved']);
+
         [$procHttp] = $this->asProcurementOfficer($tenant);
 
         $procHttp->postJson("/api/v1/procurement/requests/{$id}/approve", [
