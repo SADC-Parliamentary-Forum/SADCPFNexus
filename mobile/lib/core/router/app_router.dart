@@ -34,6 +34,7 @@ import '../../features/procurement/presentation/screens/three_quote_compliance_s
 import '../../features/procurement/presentation/screens/procurement_tenders_screen.dart';
 import '../../features/procurement/presentation/screens/procurement_tender_detail_screen.dart';
 import '../../features/procurement/presentation/screens/procurement_notices_screen.dart';
+import '../../features/procurement/presentation/screens/procurement_rfq_screen.dart';
 
 // Imprest
 import '../../features/imprest/presentation/screens/imprest_requisition_form_screen.dart';
@@ -328,6 +329,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/procurement/notices',
         name: 'procurement-notices',
         builder: (context, state) => const ProcurementNoticesScreen(),
+      ),
+      GoRoute(
+        path: '/procurement/rfq/:id',
+        name: 'procurement-rfq',
+        builder: (context, state) => ProcurementRfqScreen(
+          requestId: int.parse(state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/procurement/approval-matrix',

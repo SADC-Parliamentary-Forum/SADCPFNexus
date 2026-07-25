@@ -96,3 +96,93 @@ bool isTenderFinanciallySealed(Map<String, dynamic> tender) {
   final openedAt = tender['bids_opened_at'];
   return sealed && (openedAt == null || '$openedAt'.isEmpty);
 }
+
+/// Mirrors API [SealedBidService::isFinanciallySealed] for request payloads.
+bool isRequestFinanciallySealed(
+  Map<String, dynamic> request, {
+  DateTime? now,
+}) {
+  final tender = request['tender'];
+  if (tender is Map) {
+    return isTenderFinanciallySealed(Map<String, dynamic>.from(tender));
+  }
+
+  final method = (request['procurement_method'] as String? ?? '').toLowerCase();
+  final deadlineRaw = request['rfq_deadline'] as String?;
+  if (method == 'tender' && deadlineRaw != null && deadlineRaw.isNotEmpty) {
+    final deadline = DateTime.tryParse(deadlineRaw);
+    if (deadline != null) {
+      final endOfDay = DateTime(
+        deadline.year,
+        deadline.month,
+        deadline.day,
+        23,
+        59,
+        59,
+      );
+      final clock = now ?? DateTime.now();
+      return !clock.isAfter(endOfDay);
+    }
+  }
+
+  return false;
+}
+
+/// Never returns competitor amounts while sealed (API flag or request sealed).
+num? quoteAmountForDisplay(
+  Map<String, dynamic> quote, {
+  bool requestSealed = false,
+}) {
+  if (requestSealed || quote['financials_sealed'] == true) {
+    return null;
+  }
+  final amount =
+      quote['quoted_amount'] ?? quote['total_amount'] ?? quote['amount'];
+  if (amount is num) return amount;
+  return null;
+}
+
+String budgetReservationStatusLabel(Map<String, dynamic> reservation) {
+  final released = reservation['released_at'];
+  if (released != null && '$released'.isNotEmpty) {
+    return 'Released';
+  }
+  return 'Active';
+}
+
+enum VendorDocExpiryStatus { ok, expiringSoon, expired, unknown }
+
+VendorDocExpiryStatus vendorDocumentExpiryStatus(
+  String? expiresAt, {
+  DateTime? now,
+  int warnDays = 30,
+}) {
+  if (expiresAt == null || expiresAt.isEmpty) {
+    return VendorDocExpiryStatus.unknown;
+  }
+  final parsed = DateTime.tryParse(expiresAt);
+  if (parsed == null) return VendorDocExpiryStatus.unknown;
+
+  final clock = now ?? DateTime.now();
+  final end = DateTime(parsed.year, parsed.month, parsed.day);
+  final today = DateTime(clock.year, clock.month, clock.day);
+  if (end.isBefore(today)) return VendorDocExpiryStatus.expired;
+  final warnUntil = today.add(Duration(days: warnDays));
+  if (!end.isAfter(warnUntil)) return VendorDocExpiryStatus.expiringSoon;
+  return VendorDocExpiryStatus.ok;
+}
+
+/// Matches API issue-rfq permission gate.
+bool canIssueProcurementRfq({
+  required List<String> permissions,
+  required List<String> roles,
+}) {
+  const adminRoles = ['System Admin', 'System Administrator', 'super-admin'];
+  if (roles.any(adminRoles.contains)) return true;
+  const allowed = {
+    'procurement.create',
+    'procurement.approve',
+    'procurement.admin',
+  };
+  return permissions.any(allowed.contains);
+}

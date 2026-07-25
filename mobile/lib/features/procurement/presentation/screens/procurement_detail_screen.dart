@@ -18,6 +18,7 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _request;
+  List<Map<String, dynamic>> _quotes = [];
   bool _actionLoading = false;
 
   @override
@@ -36,8 +37,28 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
     try {
       final dio = ref.read(apiClientProvider).dio;
       final r = await dio.get<Map<String, dynamic>>('/procurement/requests/$id');
+      final request = extractObjectData(r.data) ??
+          Map<String, dynamic>.from(r.data ?? {});
+
+      List<Map<String, dynamic>> quotes = [];
+      try {
+        final q = await dio.get<Map<String, dynamic>>(
+          '/procurement/requests/$id/quotes',
+        );
+        quotes = extractListData(q.data);
+      } catch (_) {
+        quotes = (request['quotes'] as List? ?? [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+
       if (!mounted) return;
-      setState(() { _request = r.data; _loading = false; });
+      setState(() {
+        _request = request;
+        _quotes = quotes;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -179,15 +200,29 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
     final isDraft = status == 'draft';
     final isSubmitted = status == 'submitted';
     final isRejected = status == 'rejected';
+    final sealed = isRequestFinanciallySealed(r);
+    final session = ref.watch(authSessionControllerProvider).state;
+    final canIssue = canIssueProcurementRfq(
+      permissions: session.permissions,
+      roles: session.roles,
+    );
 
     final statusConfig = procurementStatusConfig(status);
     final items = (r['items'] as List? ?? []).cast<Map<String, dynamic>>();
-    final quotes = (r['quotes'] as List? ?? []).cast<Map<String, dynamic>>();
-    final reservations = (r['budget_reservations'] as List? ?? [])
+    final quotes = _quotes.isNotEmpty
+        ? _quotes
+        : (r['quotes'] as List? ?? [])
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+    final reservations = (r['budget_reservations'] as List? ??
+            r['budgetReservations'] as List? ??
+            [])
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
     final awardedQuoteId = r['awarded_quote_id'];
+    final rfqIssuedAt = r['rfq_issued_at'] as String?;
 
     final currency = r['currency'] as String? ?? 'NAD';
     final estimated = (r['estimated_value'] as num?)?.toDouble() ?? 0;
@@ -294,34 +329,60 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
           if (reservations.isNotEmpty) ...[
             _card(children: [
               _sectionHeader('Budget Reservations', Icons.account_balance_outlined, AppColors.info),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                child: Text(
+                  'Pull to refresh for the latest reservation status from Finance.',
+                  style: TextStyle(
+                      color: AppColors.textMuted.withValues(alpha: 0.9),
+                      fontSize: 11),
+                ),
+              ),
               ...reservations.map((res) {
                 final amount = (res['reserved_amount'] as num?)?.toDouble() ?? 0;
                 final line = res['budget_line'] as String? ?? r['budget_line'] as String? ?? '—';
-                final resStatus = (res['status'] as String? ?? 'active').toLowerCase();
+                final resStatus = budgetReservationStatusLabel(res);
+                final notes = res['notes'] as String?;
+                final isReleased = resStatus == 'Released';
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(line,
-                                style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
-                            Text(resStatus,
-                                style: const TextStyle(
-                                    color: AppColors.textMuted, fontSize: 10)),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(line,
+                                    style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600)),
+                                Text(resStatus,
+                                    style: TextStyle(
+                                        color: isReleased
+                                            ? AppColors.textMuted
+                                            : AppColors.success,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                          Text('$currency ${amount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700)),
+                        ],
                       ),
-                      Text('$currency ${amount.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700)),
+                      if (notes != null && notes.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(notes,
+                            style: const TextStyle(
+                                color: AppColors.textMuted, fontSize: 11)),
+                      ],
                     ],
                   ),
                 );
@@ -333,29 +394,86 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
             _card(children: [
               _sectionHeader('Budget', Icons.account_balance_outlined, AppColors.info),
               _row('Budget Line', r['budget_line'] as String),
-              if (status == 'hod_approved')
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(14, 0, 14, 14),
-                  child: Text(
-                    'Awaiting finance budget reservation (web).',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-                  ),
-                )
-              else
-                const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: Text(
+                  status == 'hod_approved'
+                      ? 'No active reservation yet. Awaiting finance budget confirmation (web). Pull to refresh.'
+                      : status == 'budget_reserved' || status == 'approved'
+                          ? 'No reservation rows returned. Pull to refresh status.'
+                          : 'Budget reservation details appear after Finance confirms funds.',
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                ),
+              ),
             ]),
             const SizedBox(height: 12),
           ],
+
+          // ── RFQ ────────────────────────────────────────────────────────────
+          _card(children: [
+            _sectionHeader('RFQ', Icons.send_outlined, AppColors.primary),
+            if (rfqIssuedAt != null) ...[
+              _row('Issued', AppDateFormatter.short(rfqIssuedAt)),
+              if (r['rfq_deadline'] != null)
+                _row('Deadline',
+                    AppDateFormatter.short(r['rfq_deadline'] as String)),
+            ] else
+              const Padding(
+                padding: EdgeInsets.fromLTRB(14, 0, 14, 8),
+                child: Text('RFQ not issued yet.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+              child: OutlinedButton.icon(
+                onPressed: widget.requestId == null
+                    ? null
+                    : () => context
+                        .push('/procurement/rfq/${widget.requestId}')
+                        .then((_) => _load()),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: Icon(
+                  rfqIssuedAt != null
+                      ? Icons.visibility_outlined
+                      : Icons.send_outlined,
+                  size: 16,
+                ),
+                label: Text(
+                  rfqIssuedAt != null
+                      ? 'View RFQ'
+                      : (canIssue ? 'Issue / view RFQ' : 'RFQ details'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ]),
+          const SizedBox(height: 12),
 
           // ── Supplier quotes ────────────────────────────────────────────────
           if (quotes.isNotEmpty) ...[
             _card(children: [
               _sectionHeader('Supplier Quotes', Icons.compare_outlined, AppColors.success),
+              if (sealed)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(14, 0, 14, 8),
+                  child: Text(
+                    'Financial amounts sealed until open.',
+                    style: TextStyle(
+                        color: AppColors.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
               ...quotes.asMap().entries.map((entry) {
                 final q = entry.value;
                 final isAwarded = awardedQuoteId != null && q['id'] == awardedQuoteId;
                 final rank = entry.key + 1;
-                return _quoteRow(q, rank, isAwarded, currency);
+                return _quoteRow(q, rank, isAwarded, currency, sealed: sealed);
               }),
               const SizedBox(height: 4),
             ]),
@@ -377,42 +495,49 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
               done: [
                 'hod_approved',
                 'budget_reserved',
+                'approved',
                 'rfq_issued',
                 'evaluated',
                 'awarded',
                 'po_issued',
                 'completed',
-              ].contains(status),
+              ].contains(status) || rfqIssuedAt != null,
               isLast: false,
             ),
             _approvalStep(
               role: 'Finance (budget)',
               name: [
                 'budget_reserved',
+                'approved',
                 'rfq_issued',
                 'evaluated',
                 'awarded',
                 'po_issued',
                 'completed',
-              ].contains(status)
+              ].contains(status) || reservations.any((res) => budgetReservationStatusLabel(res) == 'Active')
                   ? 'Reserved'
                   : 'Pending',
               done: [
                 'budget_reserved',
+                'approved',
                 'rfq_issued',
                 'evaluated',
                 'awarded',
                 'po_issued',
                 'completed',
-              ].contains(status),
+              ].contains(status) ||
+                  reservations.any((res) => budgetReservationStatusLabel(res) == 'Active'),
               isLast: false,
             ),
             _approvalStep(
               role: 'Procurement Officer',
               name: status == 'awarded' || status == 'po_issued' || status == 'completed'
                   ? (r['approver']?['name'] as String? ?? 'Approved')
-                  : 'Pending',
-              done: ['awarded', 'po_issued', 'completed'].contains(status),
+                  : status == 'approved' || rfqIssuedAt != null
+                      ? 'Approved'
+                      : 'Pending',
+              done: ['approved', 'awarded', 'po_issued', 'completed'].contains(status) ||
+                  rfqIssuedAt != null,
               isLast: false,
             ),
             _approvalStep(
@@ -552,11 +677,13 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
     );
   }
 
-  Widget _quoteRow(Map<String, dynamic> q, int rank, bool isAwarded, String currency) {
+  Widget _quoteRow(Map<String, dynamic> q, int rank, bool isAwarded, String currency, {bool sealed = false}) {
     final vendor = q['vendor'] as Map<String, dynamic>?;
-    final vendorName = vendor?['name'] as String? ?? 'Vendor $rank';
-    final amount = (q['total_amount'] ?? q['amount'] as num? ?? 0).toDouble();
-    final rankLabel = isAwarded ? 'Awarded' : '${rank}${rank == 1 ? 'st' : rank == 2 ? 'nd' : 'rd'}';
+    final vendorName = vendor?['name'] as String? ??
+        q['vendor_name'] as String? ??
+        'Vendor $rank';
+    final amount = quoteAmountForDisplay(q, requestSealed: sealed);
+    final rankLabel = isAwarded ? 'Awarded' : '$rank${rank == 1 ? 'st' : rank == 2 ? 'nd' : 'rd'}';
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
       child: Container(
@@ -573,10 +700,19 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
             Text(rankLabel,
                 style: TextStyle(color: isAwarded ? AppColors.success : AppColors.textMuted, fontSize: 10)),
           ])),
-          if (amount > 0)
-            Text('$currency ${amount.toStringAsFixed(2)}',
-                style: TextStyle(color: isAwarded ? AppColors.success : AppColors.textSecondary,
-                    fontSize: 13, fontWeight: FontWeight.w700)),
+          Text(
+            amount == null
+                ? 'Sealed'
+                : '$currency ${amount.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: amount == null
+                  ? AppColors.warning
+                  : (isAwarded ? AppColors.success : AppColors.textSecondary),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              fontStyle: amount == null ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
           if (isAwarded) ...[
             const SizedBox(width: 6),
             const Icon(Icons.check_circle, color: AppColors.success, size: 16),
