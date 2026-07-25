@@ -5200,10 +5200,32 @@ export interface MeReviewHistoryEntry {
   actor?: { id: number; name: string };
 }
 
+export type MeFollowUpStatus = "open" | "in_progress" | "completed" | "cancelled";
+export type MeFollowUpPriority = "low" | "normal" | "high" | "urgent";
+
+export interface MeFollowUpAction {
+  id: number;
+  tenant_id: number;
+  me_activity_report_id: number;
+  action: string;
+  assigned_to: number | null;
+  due_date: string | null;
+  priority: MeFollowUpPriority;
+  status: MeFollowUpStatus;
+  comments: string | null;
+  completed_at: string | null;
+  created_by: number | null;
+  created_at: string;
+  updated_at: string;
+  assignee?: { id: number; name: string };
+  creator?: { id: number; name: string };
+}
+
 export interface MeActivityReport {
-  id: number; tenant_id: number; programme_id: number; reference_number: string;
+  id: number; tenant_id: number; programme_id: number | null; reference_number: string;
   activity_title: string; responsible_officer_id: number | null;
   created_by?: number | null;
+  non_pif_reason?: string | null;
   thematic_area_id: number | null; strategic_goal_id: number | null;
   start_date: string | null; end_date: string | null;
   planned_output: string | null; actual_output: string | null;
@@ -5225,6 +5247,7 @@ export interface MeActivityReport {
   indicators?: Indicator[];
   evidence?: MeEvidence[];
   history?: MeReviewHistoryEntry[];
+  followUps?: MeFollowUpAction[];
 }
 
 export interface PifLinkage {
@@ -5353,7 +5376,14 @@ export const mandeApi = {
     api.get<PaginatedResponse<MeActivityReport>>("/mande/activity-reports", { params }),
   getReport: (id: number) =>
     api.get<{ data: MeActivityReport }>(`/mande/activity-reports/${id}`),
-  createReport: (data: Record<string, unknown>) =>
+  createReport: (data: Partial<{
+    programme_id: number | null;
+    activity_title: string;
+    non_pif_reason: string;
+    start_date: string | null;
+    end_date: string | null;
+    responsible_officer_id: number | null;
+  }> & Record<string, unknown>) =>
     api.post<{ data: MeActivityReport; message: string }>("/mande/activity-reports", data),
   updateReport: (id: number, data: Record<string, unknown>) =>
     api.put<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}`, data),
@@ -5361,6 +5391,22 @@ export const mandeApi = {
     api.delete<{ message: string }>(`/mande/activity-reports/${id}`),
   getReportHistory: (id: number) =>
     api.get<{ data: MeReviewHistoryEntry[] }>(`/mande/activity-reports/${id}/history`),
+
+  // Follow-up actions
+  listFollowUps: (reportId: number) =>
+    api.get<{ data: MeFollowUpAction[] }>(`/mande/activity-reports/${reportId}/follow-ups`),
+  createFollowUp: (reportId: number, data: Partial<MeFollowUpAction> & { action: string }) =>
+    api.post<{ data: MeFollowUpAction; message: string }>(
+      `/mande/activity-reports/${reportId}/follow-ups`,
+      data
+    ),
+  updateFollowUp: (reportId: number, followUpId: number, data: Partial<MeFollowUpAction>) =>
+    api.put<{ data: MeFollowUpAction; message: string }>(
+      `/mande/activity-reports/${reportId}/follow-ups/${followUpId}`,
+      data
+    ),
+  deleteFollowUp: (reportId: number, followUpId: number) =>
+    api.delete<{ message: string }>(`/mande/activity-reports/${reportId}/follow-ups/${followUpId}`),
 
   // Review workflow
   submitReport: (id: number) =>

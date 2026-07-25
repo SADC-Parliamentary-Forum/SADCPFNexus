@@ -9,6 +9,8 @@ import {
   mandeApi,
   type MeActivityReport,
   type MeEvidence,
+  type MeFollowUpAction,
+  type MeFollowUpPriority,
   type MeReviewHistoryEntry,
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
@@ -75,6 +77,9 @@ export default function ActivityReportDetailPage() {
   const [evidenceType, setEvidenceType] = useState("report");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [followUpAction, setFollowUpAction] = useState("");
+  const [followUpDue, setFollowUpDue] = useState("");
+  const [followUpPriority, setFollowUpPriority] = useState<MeFollowUpPriority>("normal");
 
   const { data: report, isLoading, isError } = useQuery({
     queryKey: ["mande", "activity-report", id],
@@ -94,6 +99,12 @@ export default function ActivityReportDetailPage() {
     enabled: Number.isFinite(id) && id > 0,
   });
 
+  const { data: followUps = [] } = useQuery({
+    queryKey: ["mande", "follow-ups", id],
+    queryFn: () => mandeApi.listFollowUps(id).then((r) => r.data.data as MeFollowUpAction[]),
+    enabled: Number.isFinite(id) && id > 0,
+  });
+
   useEffect(() => {
     if (report) setDraft(toDraft(report));
   }, [report]);
@@ -102,6 +113,7 @@ export default function ActivityReportDetailPage() {
     qc.invalidateQueries({ queryKey: ["mande", "activity-report", id] });
     qc.invalidateQueries({ queryKey: ["mande", "evidence", id] });
     qc.invalidateQueries({ queryKey: ["mande", "history", id] });
+    qc.invalidateQueries({ queryKey: ["mande", "follow-ups", id] });
     qc.invalidateQueries({ queryKey: ["mande", "activity-reports"] });
   };
 
@@ -175,8 +187,39 @@ export default function ActivityReportDetailPage() {
       mandeApi.reviewEvidence(id, evidenceId, { review_status: status }),
     onSuccess: () => invalidate(),
   });
+  const createFollowUpMut = useMutation({
+    mutationFn: () =>
+      mandeApi.createFollowUp(id, {
+        action: followUpAction.trim(),
+        due_date: followUpDue || null,
+        priority: followUpPriority,
+      }),
+    onSuccess: () => {
+      setFollowUpAction("");
+      setFollowUpDue("");
+      setFollowUpPriority("normal");
+      setActionMsg("Follow-up added.");
+      invalidate();
+    },
+  });
+  const completeFollowUpMut = useMutation({
+    mutationFn: (followUpId: number) =>
+      mandeApi.updateFollowUp(id, followUpId, { status: "completed" }),
+    onSuccess: () => {
+      setActionMsg("Follow-up marked complete.");
+      invalidate();
+    },
+  });
+  const deleteFollowUpMut = useMutation({
+    mutationFn: (followUpId: number) => mandeApi.deleteFollowUp(id, followUpId),
+    onSuccess: () => {
+      setActionMsg("Follow-up deleted.");
+      invalidate();
+    },
+  });
 
   const editable = report && ["not_submitted", "returned"].includes(report.review_status);
+  const isNonPif = !report?.programme_id && !report?.programme;
   const setField = (key: keyof Draft, value: string) => {
     if (!draft) return;
     setDraft({ ...draft, [key]: value });
@@ -200,6 +243,7 @@ export default function ActivityReportDetailPage() {
     { id: "participants", label: "Participants" },
     { id: "narrative", label: "Narrative" },
     { id: "learning", label: "Learning" },
+    { id: "followups", label: "Follow-ups" },
     { id: "evidence", label: "Evidence" },
     { id: "review", label: "Review" },
   ];
@@ -212,7 +256,11 @@ export default function ActivityReportDetailPage() {
           <h1 className="page-title mt-1">{report.activity_title}</h1>
           <p className="page-subtitle font-mono text-xs">
             {report.reference_number}
-            {report.programme ? ` · PIF ${report.programme.reference_number}` : ""}
+            {report.programme
+              ? ` · PIF ${report.programme.reference_number}`
+              : isNonPif
+                ? " · Non-PIF"
+                : ""}
           </p>
         </div>
         <span className={`badge ${STATUS_BADGE[report.review_status] ?? "badge-muted"}`}>
@@ -222,6 +270,15 @@ export default function ActivityReportDetailPage() {
 
       {actionMsg && (
         <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">{actionMsg}</div>
+      )}
+
+      {isNonPif && (
+        <div className="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-950">
+          <p className="font-semibold mb-1">Non-PIF activity report</p>
+          <p className="text-sky-900/90">
+            {report.non_pif_reason?.trim() || "No linked programme. Reason not recorded."}
+          </p>
+        </div>
       )}
 
       {report.review_status === "returned" && report.review_notes && (
@@ -280,6 +337,12 @@ export default function ActivityReportDetailPage() {
                 <p className="font-semibold text-neutral-700 mb-1">PIF (read-only)</p>
                 <p>{report.programme.reference_number} — {report.programme.title}</p>
                 {report.programme.strategic_pillar && <p>Pillar: {report.programme.strategic_pillar}</p>}
+              </div>
+            )}
+            {isNonPif && (
+              <div className="rounded-lg bg-sky-50 border border-sky-100 px-3 py-2 text-xs text-sky-900">
+                <p className="font-semibold mb-1">Non-PIF reason</p>
+                <p>{report.non_pif_reason?.trim() || "—"}</p>
               </div>
             )}
           </>
@@ -345,6 +408,109 @@ export default function ActivityReportDetailPage() {
               <textarea className="form-input min-h-[100px]" value={draft.follow_up_actions} disabled={!editable}
                 onChange={(e) => setField("follow_up_actions", e.target.value)} />
             </div>
+          </div>
+        )}
+
+        {section === "followups" && (
+          <div className="space-y-4">
+            {canCreate && (
+              <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
+                <p className="text-sm font-semibold text-neutral-800">Add follow-up</p>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Action *</label>
+                  <textarea
+                    className="form-input min-h-[72px]"
+                    value={followUpAction}
+                    onChange={(e) => setFollowUpAction(e.target.value)}
+                    placeholder="Describe the follow-up action"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Due date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={followUpDue}
+                      onChange={(e) => setFollowUpDue(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
+                    <select
+                      className="form-input"
+                      value={followUpPriority}
+                      onChange={(e) => setFollowUpPriority(e.target.value as MeFollowUpPriority)}
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary disabled:opacity-40"
+                  disabled={followUpAction.trim().length < 2 || createFollowUpMut.isPending}
+                  onClick={() => createFollowUpMut.mutate()}
+                >
+                  {createFollowUpMut.isPending ? "Adding…" : "Add follow-up"}
+                </button>
+              </div>
+            )}
+
+            {followUps.length === 0 ? (
+              <p className="text-sm text-neutral-400">No follow-up actions yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {followUps.map((fu) => (
+                  <li
+                    key={fu.id}
+                    className="rounded-lg border border-neutral-200 px-4 py-3 flex flex-wrap items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm text-neutral-900 ${fu.status === "completed" ? "line-through text-neutral-500" : "font-medium"}`}>
+                        {fu.action}
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        <span className="capitalize">{fu.status.replace(/_/g, " ")}</span>
+                        {" · "}
+                        <span className="capitalize">{fu.priority}</span>
+                        {fu.due_date && <> · Due {formatDateShort(fu.due_date)}</>}
+                        {fu.assignee?.name && <> · {fu.assignee.name}</>}
+                        {fu.completed_at && <> · Done {formatDateShort(fu.completed_at)}</>}
+                      </p>
+                      {fu.comments && <p className="text-xs text-neutral-500 mt-1">{fu.comments}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {fu.status !== "completed" && canCreate && (
+                        <button
+                          type="button"
+                          className="text-green-700 text-xs hover:underline disabled:opacity-40"
+                          disabled={completeFollowUpMut.isPending}
+                          onClick={() => completeFollowUpMut.mutate(fu.id)}
+                        >
+                          Mark complete
+                        </button>
+                      )}
+                      {fu.status !== "completed" && canCreate && (
+                        <button
+                          type="button"
+                          className="text-red-600 text-xs hover:underline disabled:opacity-40"
+                          disabled={deleteFollowUpMut.isPending}
+                          onClick={() => {
+                            if (confirm("Delete this follow-up?")) deleteFollowUpMut.mutate(fu.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -511,7 +677,7 @@ export default function ActivityReportDetailPage() {
         )}
       </div>
 
-      {editable && canCreate && section !== "evidence" && section !== "review" && (
+      {editable && canCreate && section !== "evidence" && section !== "review" && section !== "followups" && (
         <div className="flex flex-wrap gap-2 justify-end">
           <button
             type="button"

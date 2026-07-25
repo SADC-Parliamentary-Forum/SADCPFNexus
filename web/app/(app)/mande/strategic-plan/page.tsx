@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type StrategicPlan } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
@@ -114,6 +115,12 @@ export default function StrategicPlanPage() {
                   </td>
                   <td className="text-xs text-neutral-500">{p.goals_count ?? "—"}</td>
                   <td className="whitespace-nowrap">
+                    <Link
+                      href={`/mande/strategic-plan/${p.id}`}
+                      className="text-primary text-xs hover:underline mr-3"
+                    >
+                      {canAdmin ? "Manage hierarchy" : "Open"}
+                    </Link>
                     {canAdmin && (
                       <>
                         <button type="button" className="text-primary text-xs hover:underline mr-3" onClick={() => setModal({ ...p })}>
