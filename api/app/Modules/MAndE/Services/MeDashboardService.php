@@ -34,8 +34,11 @@ class MeDashboardService
             return $query;
         };
 
+        // Qualify tenant_id / deleted_at — review_queue joins programmes which shares those columns (PG SQLSTATE 42702).
         $reportBase = fn () => $applyFilters(
-            DB::table('me_activity_reports')->where('tenant_id', $tid)->whereNull('deleted_at')
+            DB::table('me_activity_reports')
+                ->where('me_activity_reports.tenant_id', $tid)
+                ->whereNull('me_activity_reports.deleted_at')
         );
 
         // ── KPIs ──────────────────────────────────────────────────────────────
