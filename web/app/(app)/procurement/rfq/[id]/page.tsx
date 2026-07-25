@@ -601,7 +601,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
                   saveQuoteMutation.isPending ||
                   !quoteForm.vendor_name.trim() ||
                   !quoteForm.quoted_amount ||
-                  (editingQuote && (!coiDeclared || (coiHasConflict && !coiNotes.trim())))
+                  Boolean(editingQuote && (!coiDeclared || (coiHasConflict && !coiNotes.trim())))
                 }
                 onClick={() => saveQuoteMutation.mutate()}
               >

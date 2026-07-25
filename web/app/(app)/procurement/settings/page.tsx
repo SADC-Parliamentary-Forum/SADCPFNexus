@@ -71,9 +71,9 @@ export default function ProcurementSettingsPage() {
 
           {(
             [
-              { key: "direct_purchase_limit", label: "Direct purchase limit (NAD)", help: "Up to this value: approved supplier / direct purchase." },
-              { key: "quotation_limit", label: "Quotation / RFQ limit (NAD)", help: "Above direct limit up to this value: RFQ with minimum quotes." },
-              { key: "tender_threshold", label: "Tender threshold (NAD)", help: "At or above this value: open tender required." },
+              { key: "direct_purchase_limit", label: "Direct purchase limit (NAD)", help: "Up to this value: approved supplier / direct purchase.", step: 0.01 },
+              { key: "quotation_limit", label: "Quotation / RFQ limit (NAD)", help: "Above direct limit up to this value: RFQ with minimum quotes.", step: 0.01 },
+              { key: "tender_threshold", label: "Tender threshold (NAD)", help: "At or above this value: open tender required.", step: 0.01 },
               { key: "minimum_quotes_required", label: "Minimum quotes required", help: "For RFQ-method purchases above the direct limit.", step: 1 },
               { key: "split_lookback_days", label: "Split lookback (days)", help: "Window for anti-split purchase detection on submit.", step: 1 },
             ] as const
@@ -83,7 +83,7 @@ export default function ProcurementSettingsPage() {
               <input
                 type="number"
                 min={0}
-                step={field.step ?? 0.01}
+                step={field.step}
                 className="form-input max-w-[200px]"
                 value={form[field.key]}
                 onChange={(e) =>
