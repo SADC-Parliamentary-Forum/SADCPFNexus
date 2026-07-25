@@ -172,6 +172,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "My Reports", href: "/mande/activity-reports/mine", icon: "assignment_ind" },
       { label: "All Reports", href: "/mande/activity-reports", icon: "description" },
       { label: "Review Queue", href: "/mande/review-queue", icon: "rate_review" },
+      { label: "PM Review", href: "/mande/pm-review", icon: "supervisor_account" },
       { label: "Strategic Plans", href: "/mande/strategic-plan", icon: "flag" },
       { label: "Results Frameworks", href: "/mande/results", icon: "account_tree" },
       { label: "Indicators", href: "/mande/indicators", icon: "speed" },

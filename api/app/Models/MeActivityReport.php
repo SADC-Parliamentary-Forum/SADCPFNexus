@@ -45,6 +45,7 @@ class MeActivityReport extends Model
         'return_section', 'return_required_action', 'correction_due_at',
         'not_reportable_reason', 'not_reportable_by', 'not_reportable_at',
         'cancelled_reason', 'archived_at', 'intake_confirmed_at', 'report_due_at',
+        'programme_review_status', 'programme_reviewed_by', 'programme_reviewed_at', 'programme_review_notes',
         'created_by', 'submitted_by', 'submitted_at',
         'reviewed_by', 'reviewed_at', 'accepted_by', 'accepted_at',
         'closed_by', 'closed_at',
@@ -62,6 +63,7 @@ class MeActivityReport extends Model
         'archived_at'          => 'datetime',
         'intake_confirmed_at'  => 'datetime',
         'report_due_at'        => 'datetime',
+        'programme_reviewed_at'=> 'datetime',
         'planned_participants' => 'integer',
         'actual_participants'  => 'integer',
     ];

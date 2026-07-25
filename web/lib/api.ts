@@ -5237,6 +5237,9 @@ export interface MeActivityReport {
   accepted_at: string | null; closed_at: string | null;
   return_section?: string | null; return_required_action?: string | null;
   correction_due_at?: string | null;
+  programme_review_status?: "pending" | "cleared" | "returned" | null;
+  programme_reviewed_at?: string | null;
+  programme_review_notes?: string | null;
   created_at: string; updated_at: string;
   evidence_count?: number;
   programme?: { id: number; title: string; reference_number: string; status: string; strategic_pillar?: string | null };
@@ -5315,6 +5318,7 @@ export interface MeDataQualityIssue {
   title: string | null;
   message: string;
   url?: string | null;
+  remediation?: string | null;
 }
 
 export interface MeDataQualityReport {
@@ -5325,6 +5329,9 @@ export interface MeDataQualityReport {
     by_code: Record<string, number>;
   };
   issues: MeDataQualityIssue[];
+  score: number;
+  grade: string;
+  score_breakdown: Array<{ code: string; count: number; impact: number }>;
 }
 
 export interface MeImportPreview {
@@ -5505,6 +5512,18 @@ export const mandeApi = {
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/accept`, data),
   closeReport: (id: number, data?: { notes?: string }) =>
     api.post<{ data: MeActivityReport; message: string }>(`/mande/activity-reports/${id}/close`, data),
+  listProgrammeReviewQueue: () =>
+    api.get<{ data: MeActivityReport[] }>("/mande/programme-review-queue"),
+  clearProgrammeReview: (id: number, data?: { notes?: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(
+      `/mande/activity-reports/${id}/programme-review/clear`,
+      data
+    ),
+  returnProgrammeReview: (id: number, data: { notes: string }) =>
+    api.post<{ data: MeActivityReport; message: string }>(
+      `/mande/activity-reports/${id}/programme-review/return`,
+      data
+    ),
 
   // Evidence
   listEvidence: (reportId: number) =>

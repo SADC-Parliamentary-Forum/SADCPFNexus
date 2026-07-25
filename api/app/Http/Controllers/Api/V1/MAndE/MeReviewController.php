@@ -75,6 +75,38 @@ class MeReviewController extends Controller
         return response()->json(['message' => 'Report closed.', 'data' => $report]);
     }
 
+    public function programmeReviewQueue(Request $request): JsonResponse
+    {
+        $this->ensureReviewerRole($request);
+        $rows = $this->service->programmeReviewQueue($request->user());
+
+        return response()->json(['data' => $rows]);
+    }
+
+    public function clearProgrammeReview(Request $request, MeActivityReport $activityReport): JsonResponse
+    {
+        $this->ensureReviewer($request, $activityReport);
+        $data = $request->validate([
+            'notes'        => ['nullable', 'string', 'max:5000'],
+            'review_notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+        $report = $this->service->clearProgrammeReview($activityReport, $data, $request->user());
+
+        return response()->json(['message' => 'Programme review cleared.', 'data' => $report]);
+    }
+
+    public function returnProgrammeReview(Request $request, MeActivityReport $activityReport): JsonResponse
+    {
+        $this->ensureReviewer($request, $activityReport);
+        $data = $request->validate([
+            'notes'        => ['required_without:review_notes', 'nullable', 'string', 'max:5000'],
+            'review_notes' => ['required_without:notes', 'nullable', 'string', 'max:5000'],
+        ]);
+        $report = $this->service->returnProgrammeReview($activityReport, $data, $request->user());
+
+        return response()->json(['message' => 'Returned to officer by programme manager.', 'data' => $report]);
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     private function ensureTenant(Request $request, MeActivityReport $report): void
@@ -84,11 +116,17 @@ class MeReviewController extends Controller
         }
     }
 
+    private function ensureReviewerRole(Request $request): void
+    {
+        if (!$request->user()->hasAnyRole(self::REVIEWER_ROLES)
+            && !$request->user()->can('mande.review')) {
+            abort(403, 'You are not allowed to review M&E reports.');
+        }
+    }
+
     private function ensureReviewer(Request $request, MeActivityReport $report): void
     {
         $this->ensureTenant($request, $report);
-        if (!$request->user()->hasAnyRole(self::REVIEWER_ROLES)) {
-            abort(403, 'You are not allowed to review M&E reports.');
-        }
+        $this->ensureReviewerRole($request);
     }
 }

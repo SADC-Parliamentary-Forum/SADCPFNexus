@@ -699,6 +699,9 @@ Route::prefix('v1')->group(function () {
 
             // Review workflow (§10.10) — reviewer actions gated on mande.review
             Route::middleware('can:mande.review')->group(function () {
+                Route::get('programme-review-queue', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'programmeReviewQueue']);
+                Route::post('activity-reports/{activityReport}/programme-review/clear', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'clearProgrammeReview']);
+                Route::post('activity-reports/{activityReport}/programme-review/return', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'returnProgrammeReview']);
                 Route::post('activity-reports/{activityReport}/review',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'review']);
                 Route::post('activity-reports/{activityReport}/return',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'requestCorrection']);
                 Route::post('activity-reports/{activityReport}/accept',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'accept']);

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\MeActivityReport;
 use App\Models\User;
 use App\Services\NotificationService;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -17,12 +18,15 @@ use Illuminate\Validation\ValidationException;
  *   submitted     ─review──▶ reviewed
  *   submitted     ─return──▶ returned
  *   reviewed      ─return──▶ returned
- *   reviewed      ─accept──▶ accepted
+ *   reviewed      ─accept──▶ accepted  (blocked if PM review pending when setting ON)
  *   accepted      ─close───▶ closed
  */
 class MeReviewService
 {
-    public function __construct(private readonly NotificationService $notificationService) {}
+    public function __construct(
+        private readonly NotificationService $notificationService,
+        private readonly MeSettingsService $settings,
+    ) {}
 
     public function submit(MeActivityReport $report, User $user): MeActivityReport
     {
@@ -31,12 +35,25 @@ class MeReviewService
         }
 
         $from = $report->review_status;
-        $report->update([
+        $pmRequired = (bool) $this->settings->forTenant((int) $user->tenant_id)->programme_manager_review;
+
+        $payload = [
             'review_status'       => MeActivityReport::STATUS_SUBMITTED,
             'submitted_by'        => $user->id,
             'submitted_at'        => now(),
             'intake_confirmed_at' => $report->intake_confirmed_at ?? now(),
-        ]);
+        ];
+
+        if ($pmRequired) {
+            $payload['programme_review_status'] = 'pending';
+            $payload['programme_reviewed_by']   = null;
+            $payload['programme_reviewed_at']   = null;
+            $payload['programme_review_notes']  = null;
+        } else {
+            $payload['programme_review_status'] = null;
+        }
+
+        $report->update($payload);
 
         $this->transition($report, 'submitted', $user, $from, MeActivityReport::STATUS_SUBMITTED);
         $this->notifyReviewers($report, $user);
@@ -96,6 +113,18 @@ class MeReviewService
             ]);
         }
 
+        $pmRequired = (bool) $this->settings->forTenant((int) $reviewer->tenant_id)->programme_manager_review;
+        if ($pmRequired && $report->programme_review_status === 'pending') {
+            throw ValidationException::withMessages([
+                'programme_review_status' => 'Programme manager review must be cleared before acceptance.',
+            ]);
+        }
+        if ($pmRequired && $report->programme_review_status === 'returned') {
+            throw ValidationException::withMessages([
+                'programme_review_status' => 'Programme manager returned this report; officer must resubmit.',
+            ]);
+        }
+
         $report->update([
             'review_status' => MeActivityReport::STATUS_ACCEPTED,
             'accepted_by'   => $reviewer->id,
@@ -107,6 +136,86 @@ class MeReviewService
         $this->notifyOwner($report, $reviewer, 'mande.activity_report.accepted');
 
         return $report->fresh();
+    }
+
+    /**
+     * @return Collection<int, MeActivityReport>
+     */
+    public function programmeReviewQueue(User $user): Collection
+    {
+        return MeActivityReport::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('programme_review_status', 'pending')
+            ->whereIn('review_status', [
+                MeActivityReport::STATUS_SUBMITTED,
+                MeActivityReport::STATUS_REVIEWED,
+            ])
+            ->orderByDesc('submitted_at')
+            ->limit(200)
+            ->get();
+    }
+
+    public function clearProgrammeReview(MeActivityReport $report, array $data, User $actor): MeActivityReport
+    {
+        $this->assertCanActAsProgrammeReviewer($report, $actor);
+
+        if ($report->programme_review_status !== 'pending') {
+            throw ValidationException::withMessages([
+                'programme_review_status' => 'Only pending programme reviews can be cleared.',
+            ]);
+        }
+
+        $report->update([
+            'programme_review_status' => 'cleared',
+            'programme_reviewed_by'   => $actor->id,
+            'programme_reviewed_at'   => now(),
+            'programme_review_notes'  => $data['notes'] ?? $data['review_notes'] ?? null,
+        ]);
+
+        $this->transition($report, 'programme_review_cleared', $actor, 'pending', 'cleared', $data['notes'] ?? null);
+
+        return $report->fresh();
+    }
+
+    public function returnProgrammeReview(MeActivityReport $report, array $data, User $actor): MeActivityReport
+    {
+        $this->assertCanActAsProgrammeReviewer($report, $actor);
+
+        if ($report->programme_review_status !== 'pending') {
+            throw ValidationException::withMessages([
+                'programme_review_status' => 'Only pending programme reviews can be returned.',
+            ]);
+        }
+
+        $notes = $data['notes'] ?? $data['review_notes'] ?? null;
+        if (!$notes) {
+            throw ValidationException::withMessages(['notes' => 'A reason is required when returning to the officer.']);
+        }
+
+        $report->update([
+            'programme_review_status' => 'returned',
+            'programme_reviewed_by'   => $actor->id,
+            'programme_reviewed_at'   => now(),
+            'programme_review_notes'  => $notes,
+            'review_status'           => MeActivityReport::STATUS_RETURNED,
+            'review_notes'            => $notes,
+        ]);
+
+        $this->transition($report, 'programme_review_returned', $actor, 'pending', 'returned', $notes);
+        $this->notifyOwner($report, $actor, 'mande.activity_report.returned');
+
+        return $report->fresh();
+    }
+
+    private function assertCanActAsProgrammeReviewer(MeActivityReport $report, User $actor): void
+    {
+        if ((int) $report->responsible_officer_id === (int) $actor->id
+            || (int) ($report->submitted_by ?? 0) === (int) $actor->id
+            || (int) $report->created_by === (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'programme_review' => 'Separation of duties: you cannot clear or return your own report.',
+            ]);
+        }
     }
 
     public function close(MeActivityReport $report, array $data, User $reviewer): MeActivityReport
