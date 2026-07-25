@@ -14,7 +14,7 @@ class MeImportController extends Controller
     public function preview(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:4096'],
         ]);
 
         return response()->json([
@@ -25,7 +25,7 @@ class MeImportController extends Controller
     public function commit(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:4096'],
         ]);
 
         $result = $this->service->commit($request->file('file'), $request->user());

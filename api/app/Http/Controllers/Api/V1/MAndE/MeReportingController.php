@@ -23,6 +23,9 @@ class MeReportingController extends Controller
             'results_framework_id' => ['nullable', 'integer'],
             'date_from'            => ['nullable', 'date'],
             'date_to'              => ['nullable', 'date', 'after_or_equal:date_from'],
+            'review_status'        => ['nullable', 'string', 'max:40'],
+            'thematic_area_id'     => ['nullable', 'integer'],
+            'strategic_goal_id'    => ['nullable', 'integer'],
         ]);
 
         return response()->json(['data' => $this->service->donor($request->user(), $filters)]);

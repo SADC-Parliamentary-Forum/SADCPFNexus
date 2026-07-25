@@ -38,7 +38,7 @@ export default function MandeImportPage() {
       <div>
         <h1 className="page-title">Historical Import</h1>
         <p className="page-subtitle">
-          Upload a CSV with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.
+          Upload a CSV or Excel (.xlsx) file with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.
           Preview first, then commit to create draft activity reports.
         </p>
       </div>
@@ -46,7 +46,7 @@ export default function MandeImportPage() {
       <div className="card p-5 space-y-4">
         <input
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={(e) => {
             const f = e.target.files?.[0] ?? null;
             setFile(f);

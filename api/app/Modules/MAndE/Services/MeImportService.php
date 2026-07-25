@@ -21,7 +21,7 @@ class MeImportService
      */
     public function preview(UploadedFile $file, User $user): array
     {
-        $parsed = $this->parseCsv($file);
+        $parsed = $this->parseFile($file);
 
         $valid = 0;
         $invalid = 0;
@@ -92,6 +92,80 @@ class MeImportService
         });
 
         return compact('created', 'skipped', 'errors');
+    }
+
+    /**
+     * @return list<array{activity_title: string, start_date: string, end_date: string, pif_number: string, non_pif_reason: string}>
+     */
+    private function parseFile(UploadedFile $file): array
+    {
+        $ext = strtolower($file->getClientOriginalExtension() ?: pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION));
+        if (in_array($ext, ['xlsx', 'xls'], true)) {
+            return $this->parseXlsx($file);
+        }
+
+        return $this->parseCsv($file);
+    }
+
+    /**
+     * @return list<array{activity_title: string, start_date: string, end_date: string, pif_number: string, non_pif_reason: string}>
+     */
+    private function parseXlsx(UploadedFile $file): array
+    {
+        $path = $file->getRealPath();
+        if ($path === false) {
+            throw ValidationException::withMessages(['file' => 'Unable to read uploaded file.']);
+        }
+
+        $reader = new \OpenSpout\Reader\XLSX\Reader();
+        $reader->open($path);
+
+        $header = null;
+        $rows = [];
+
+        foreach ($reader->getSheetIterator() as $sheet) {
+            foreach ($sheet->getRowIterator() as $rowIndex => $row) {
+                $cells = $row->toArray();
+                if ($rowIndex === 1) {
+                    $header = array_map(fn ($c) => strtolower(trim((string) $c)), $cells);
+                    if (! in_array('activity_title', $header, true)) {
+                        $reader->close();
+                        throw ValidationException::withMessages([
+                            'file' => 'Missing required column: activity_title. Expected: activity_title, start_date, end_date, pif_number, non_pif_reason',
+                        ]);
+                    }
+                    continue;
+                }
+                if ($header === null) {
+                    continue;
+                }
+                if (count(array_filter($cells, fn ($c) => trim((string) $c) !== '')) === 0) {
+                    continue;
+                }
+                $assoc = [];
+                foreach ($header as $i => $key) {
+                    $val = $cells[$i] ?? '';
+                    if ($val instanceof \DateTimeInterface) {
+                        $val = $val->format('Y-m-d');
+                    }
+                    $assoc[$key] = trim((string) $val);
+                }
+                $rows[] = [
+                    'activity_title' => $assoc['activity_title'] ?? '',
+                    'start_date'     => $assoc['start_date'] ?? '',
+                    'end_date'       => $assoc['end_date'] ?? '',
+                    'pif_number'     => $assoc['pif_number'] ?? '',
+                    'non_pif_reason' => $assoc['non_pif_reason'] ?? '',
+                ];
+                if (count($rows) >= 500) {
+                    break 2;
+                }
+            }
+            break; // first sheet only
+        }
+        $reader->close();
+
+        return $rows;
     }
 
     /**

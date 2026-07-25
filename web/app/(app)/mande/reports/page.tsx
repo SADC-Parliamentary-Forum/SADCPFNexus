@@ -15,6 +15,9 @@ type Tab = "strategic" | "donor";
 export default function MandeReportsPage() {
   const [tab, setTab] = useState<Tab>("strategic");
   const [frameworkId, setFrameworkId] = useState<string>("");
+  const [reviewStatus, setReviewStatus] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const strategic = useQuery({
     queryKey: ["mande", "strategic-report"],
@@ -34,8 +37,11 @@ export default function MandeReportsPage() {
   const donorParams = useMemo(() => {
     const p: Record<string, string | number> = {};
     if (frameworkId) p.results_framework_id = Number(frameworkId);
+    if (reviewStatus) p.review_status = reviewStatus;
+    if (dateFrom) p.date_from = dateFrom;
+    if (dateTo) p.date_to = dateTo;
     return p;
-  }, [frameworkId]);
+  }, [frameworkId, reviewStatus, dateFrom, dateTo]);
 
   const donor = useQuery({
     queryKey: ["mande", "donor-report", donorParams],
@@ -236,20 +242,43 @@ export default function MandeReportsPage() {
 
       {tab === "donor" && (
         <>
-          <div className="card p-4 flex items-center gap-3 flex-wrap">
-            <label className="text-sm text-neutral-600">Results framework</label>
-            <select
-              className="input text-sm max-w-md"
-              value={frameworkId}
-              onChange={(e) => setFrameworkId(e.target.value)}
-            >
-              <option value="">All activities (no framework filter)</option>
-              {(frameworks.data ?? []).map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}{f.donor_name ? ` — ${f.donor_name}` : ""}
-                </option>
-              ))}
-            </select>
+          <div className="card p-4 flex items-end gap-3 flex-wrap">
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Results framework</label>
+              <select
+                className="input text-sm max-w-md"
+                value={frameworkId}
+                onChange={(e) => setFrameworkId(e.target.value)}
+              >
+                <option value="">All activities (no framework filter)</option>
+                {(frameworks.data ?? []).map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}{f.donor_name ? ` — ${f.donor_name}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">Status</label>
+              <select
+                className="input text-sm"
+                value={reviewStatus}
+                onChange={(e) => setReviewStatus(e.target.value)}
+              >
+                <option value="">All</option>
+                {["not_submitted", "submitted", "returned", "reviewed", "accepted", "closed"].map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">From</label>
+              <input type="date" className="input text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 block mb-1">To</label>
+              <input type="date" className="input text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
           </div>
 
           {donor.isError && (
@@ -265,6 +294,28 @@ export default function MandeReportsPage() {
                 <p className="text-sm text-neutral-600">
                   Framework: <strong>{donor.data.framework.name}</strong>
                 </p>
+              )}
+              {donor.data.summary && (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="card px-4 py-3">
+                    <p className="text-xl font-bold">{donor.data.summary.activity_count}</p>
+                    <p className="text-[11px] text-neutral-500">Activities</p>
+                  </div>
+                  <div className="card px-4 py-3">
+                    <p className="text-xl font-bold">{donor.data.summary.indicator_count}</p>
+                    <p className="text-[11px] text-neutral-500">Indicators</p>
+                  </div>
+                  <div className="card px-4 py-3">
+                    <p className="text-xl font-bold">{donor.data.summary.participants_sum}</p>
+                    <p className="text-[11px] text-neutral-500">Participants</p>
+                  </div>
+                  <div className="card px-4 py-3">
+                    <p className="text-xs text-neutral-600">
+                      {Object.entries(donor.data.summary.by_status).map(([k, v]) => `${k}: ${v}`).join(" · ") || "—"}
+                    </p>
+                    <p className="text-[11px] text-neutral-500 mt-1">By status</p>
+                  </div>
+                </div>
               )}
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div className="card overflow-hidden">

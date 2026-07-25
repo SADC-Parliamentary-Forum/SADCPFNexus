@@ -5294,6 +5294,8 @@ export interface MeDonorReport {
     start_date: string | null;
     end_date: string | null;
     actual_participants: number | null;
+    thematic_area_id?: number | null;
+    thematic_area_name?: string | null;
     pif_number: string | null;
     programme_title: string | null;
   }>;
@@ -5307,6 +5309,12 @@ export interface MeDonorReport {
     linked_activities: number;
     sum_actual: number | string | null;
   }>;
+  summary?: {
+    activity_count: number;
+    indicator_count: number;
+    participants_sum: number;
+    by_status: Record<string, number>;
+  };
 }
 
 export interface MeDataQualityIssue {

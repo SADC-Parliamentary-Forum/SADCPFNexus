@@ -111,9 +111,14 @@ class MeReportingService
     }
 
     /**
-     * Donor / project activity matrix for a results framework (PRD §26 scaffold).
+     * Donor / project activity matrix for a results framework (PRD §26).
      *
-     * @return array{framework: array<string,mixed>|null, activities: list<array<string,mixed>>, indicators: list<array<string,mixed>>}
+     * @return array{
+     *   framework: array<string,mixed>|null,
+     *   activities: list<array<string,mixed>>,
+     *   indicators: list<array<string,mixed>>,
+     *   summary: array<string,mixed>
+     * }
      */
     public function donor(User $user, array $filters = []): array
     {
@@ -141,10 +146,14 @@ class MeReportingService
 
         $activitiesQuery = DB::table('me_activity_reports')
             ->leftJoin('programmes', 'programmes.id', '=', 'me_activity_reports.programme_id')
+            ->leftJoin('me_thematic_areas', 'me_thematic_areas.id', '=', 'me_activity_reports.thematic_area_id')
             ->where('me_activity_reports.tenant_id', $tid)
             ->whereNull('me_activity_reports.deleted_at')
             ->when(!empty($filters['date_from']), fn ($q) => $q->whereDate('me_activity_reports.start_date', '>=', $filters['date_from']))
-            ->when(!empty($filters['date_to']), fn ($q) => $q->whereDate('me_activity_reports.end_date', '<=', $filters['date_to']));
+            ->when(!empty($filters['date_to']), fn ($q) => $q->whereDate('me_activity_reports.end_date', '<=', $filters['date_to']))
+            ->when(!empty($filters['review_status']), fn ($q) => $q->where('me_activity_reports.review_status', $filters['review_status']))
+            ->when(!empty($filters['thematic_area_id']), fn ($q) => $q->where('me_activity_reports.thematic_area_id', (int) $filters['thematic_area_id']))
+            ->when(!empty($filters['strategic_goal_id']), fn ($q) => $q->where('me_activity_reports.strategic_goal_id', (int) $filters['strategic_goal_id']));
 
         if ($frameworkId && $indicatorIds !== []) {
             $activitiesQuery->whereExists(function ($q) use ($indicatorIds) {
@@ -154,7 +163,6 @@ class MeReportingService
                     ->whereIn('me_activity_report_indicator.indicator_id', $indicatorIds);
             });
         } elseif ($frameworkId) {
-            // Framework selected but no indicators — return empty activity set.
             $activitiesQuery->whereRaw('1 = 0');
         }
 
@@ -167,6 +175,8 @@ class MeReportingService
                 'me_activity_reports.start_date',
                 'me_activity_reports.end_date',
                 'me_activity_reports.actual_participants',
+                'me_activity_reports.thematic_area_id',
+                'me_thematic_areas.name as thematic_area_name',
                 'programmes.reference_number as pif_number',
                 'programmes.title as programme_title',
             ])
@@ -210,10 +220,22 @@ class MeReportingService
                 ->toArray();
         }
 
+        $byStatus = [];
+        foreach ($activities as $a) {
+            $st = $a['review_status'] ?? 'unknown';
+            $byStatus[$st] = ($byStatus[$st] ?? 0) + 1;
+        }
+
         return [
             'framework'  => $framework ? (array) $framework : null,
             'activities' => $activities,
             'indicators' => $indicators,
+            'summary'    => [
+                'activity_count'   => count($activities),
+                'indicator_count'  => count($indicators),
+                'participants_sum' => array_sum(array_map(fn ($a) => (int) ($a['actual_participants'] ?? 0), $activities)),
+                'by_status'        => $byStatus,
+            ],
         ];
     }
 }
