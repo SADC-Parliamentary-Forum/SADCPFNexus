@@ -80,7 +80,19 @@ class GoodsReceiptController extends Controller
             abort(403);
         }
 
-        $grn = $this->service->accept($receipt, $request->user());
+        $data = $request->validate([
+            'handoff'                              => ['nullable', 'array'],
+            'handoff.*.goods_receipt_item_id'      => ['required_with:handoff', 'integer'],
+            'handoff.*.type'                       => ['required_with:handoff', 'string', 'in:fixed_asset,stock'],
+            'handoff.*.name'                       => ['required_with:handoff', 'string', 'max:255'],
+            'handoff.*.category'                   => ['nullable', 'string', 'max:32'],
+            'handoff.*.quantity'                   => ['nullable', 'integer', 'min:1'],
+            'handoff.*.unit'                       => ['nullable', 'string', 'max:32'],
+            'handoff.*.stock_category_id'          => ['nullable', 'integer', 'exists:stock_categories,id'],
+            'handoff.*.notes'                      => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $grn = $this->service->accept($receipt, $request->user(), $data['handoff'] ?? []);
         return response()->json(['message' => 'Goods receipt accepted.', 'data' => $grn]);
     }
 

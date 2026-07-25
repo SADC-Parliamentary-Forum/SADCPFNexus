@@ -2,16 +2,22 @@
 
 namespace App\Modules\Procurement\Services;
 
+use App\Models\Asset;
 use App\Models\AuditLog;
 use App\Models\GoodsReceiptNote;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Modules\Stock\Services\StockService;
 use App\Services\NotificationService;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class GoodsReceiptService
 {
-    public function __construct(protected NotificationService $notificationService) {}
+    public function __construct(
+        protected NotificationService $notificationService,
+        protected StockService $stockService,
+    ) {}
 
     public function record(PurchaseOrder $po, array $data, User $user): GoodsReceiptNote
     {
@@ -76,7 +82,7 @@ class GoodsReceiptService
         return $grn->load(['items.purchaseOrderItem']);
     }
 
-    public function accept(GoodsReceiptNote $grn, User $user): GoodsReceiptNote
+    public function accept(GoodsReceiptNote $grn, User $user, array $handoff = []): GoodsReceiptNote
     {
         if ((int) $grn->tenant_id !== (int) $user->tenant_id) {
             abort(404);
@@ -90,7 +96,69 @@ class GoodsReceiptService
             'tags'           => 'procurement',
         ]);
 
+        if (!empty($handoff)) {
+            $this->processHandoff($grn, $handoff, $user);
+        }
+
         return $grn->fresh();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $handoff
+     */
+    protected function processHandoff(GoodsReceiptNote $grn, array $handoff, User $user): void
+    {
+        $grn->loadMissing(['items', 'purchaseOrder.procurementRequest']);
+
+        $po = $grn->purchaseOrder;
+        $procurementRequestId = $po?->procurement_request_id;
+
+        foreach ($handoff as $line) {
+            $grnItem = $grn->items->find($line['goods_receipt_item_id'] ?? null);
+            if (!$grnItem) {
+                throw ValidationException::withMessages([
+                    'handoff' => "Goods receipt item #{$line['goods_receipt_item_id']} not found on this GRN.",
+                ]);
+            }
+
+            $type = $line['type'] ?? null;
+
+            if ($type === 'fixed_asset') {
+                Asset::create([
+                    'tenant_id'              => $grn->tenant_id,
+                    'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
+                    'name'                   => $line['name'],
+                    'category'               => $line['category'] ?? 'equipment',
+                    'status'                 => 'pending',
+                    'purchase_order_id'      => $grn->purchase_order_id,
+                    'procurement_request_id' => $procurementRequestId,
+                    'goods_receipt_note_id'  => $grn->id,
+                    'notes'                  => $line['notes'] ?? null,
+                ]);
+            } elseif ($type === 'stock') {
+                $this->stockService->createItem([
+                    'stock_category_id'      => $line['stock_category_id'] ?? null,
+                    'item_code'              => 'STK-' . strtoupper(Str::random(8)),
+                    'name'                   => $line['name'],
+                    'unit'                   => $line['unit'] ?? 'each',
+                    'current_balance'        => (int) ($line['quantity'] ?? 0),
+                    'procurement_request_id' => $procurementRequestId,
+                    'purchase_order_id'      => $grn->purchase_order_id,
+                    'status'                 => 'active',
+                ], $user);
+            } else {
+                throw ValidationException::withMessages([
+                    'handoff' => 'Each handoff line must specify type fixed_asset or stock.',
+                ]);
+            }
+        }
+
+        AuditLog::record('procurement.grn_handoff', [
+            'auditable_type' => GoodsReceiptNote::class,
+            'auditable_id'   => $grn->id,
+            'new_values'     => ['handoff_count' => count($handoff)],
+            'tags'           => 'procurement',
+        ]);
     }
 
     public function reject(GoodsReceiptNote $grn, string $reason, User $user): GoodsReceiptNote

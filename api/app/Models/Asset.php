@@ -10,6 +10,7 @@ class Asset extends Model
 {
     protected $fillable = [
         'tenant_id', 'asset_code', 'name', 'category', 'status',
+        'purchase_order_id', 'procurement_request_id', 'goods_receipt_note_id',
         'assigned_to', 'issued_at', 'value', 'notes',
         'invoice_number', 'invoice_path', 'purchase_date', 'purchase_value',
         'useful_life_years', 'salvage_value', 'depreciation_method', 'qr_path',
