@@ -68,7 +68,7 @@ export default function ProcurementRegisterPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["procurement", "register"],
     queryFn: () =>
-      procurementApi.list({ per_page: 500 }).then((res) => getListData<ProcurementRequest>(res.data)),
+      procurementApi.list({ per_page: 500 }).then((res) => getListData(res.data)),
     staleTime: 30_000,
   });
 
