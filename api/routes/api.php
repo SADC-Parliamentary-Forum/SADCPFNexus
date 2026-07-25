@@ -462,9 +462,15 @@ Route::prefix('v1')->group(function () {
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'show']);
             Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'download']);
             Route::get('advances/eligibility', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'eligibility']);
+            Route::get('advances/dashboard', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'dashboard']);
+            Route::get('advances/employee-summary', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'employeeSummary']);
+            Route::get('advances/reconciliations', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reconciliations']);
+            Route::get('advances/policies', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'policies']);
+            Route::post('advances/policies', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'storePolicy']);
+            Route::get('advances/payroll-integration', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'payrollIntegration']);
             Route::get('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'index']);
-            Route::get('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'show']);
             Route::post('advances', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'store']);
+            Route::get('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'show']);
             Route::put('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'update']);
             Route::delete('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'destroy']);
             Route::post('advances/{salaryAdvanceRequest}/submit',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
@@ -480,6 +486,7 @@ Route::prefix('v1')->group(function () {
             Route::post('advances/{salaryAdvanceRequest}/schedule-recovery', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'scheduleRecovery']);
             Route::post('advances/{salaryAdvanceRequest}/record-recovery', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'recordRecovery']);
             Route::post('advances/{salaryAdvanceRequest}/close', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'close']);
+            Route::post('advances/{salaryAdvanceRequest}/reconciliations/{reconciliation}/resolve', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'resolveReconciliation']);
             Route::get('advances/{salaryAdvanceRequest}/ledger', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'ledger']);
             Route::get('advances/{salaryAdvanceRequest}/pdf', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'pdf']);
             Route::get('advances/{salaryAdvanceRequest}/certificate', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'certificate']);

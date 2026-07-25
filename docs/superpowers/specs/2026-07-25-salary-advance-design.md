@@ -1,7 +1,7 @@
 # Salary Advance Module — Design
 
 **Date:** 2026-07-25  
-**Status:** Approved — Scope B Phase 1 (decisions locked 2026-07-25)  
+**Status:** Approved — Scope B Phase 1 complete; Phase 2 in progress (2026-07-25)  
 **PRD:** Full Updated Product Requirements Document (user-supplied, 2026-07-25)  
 **System:** SADC PF Nexus  
 **Recommended delivery:** **Scope B** (policy-correct MVP closing demo gaps)
@@ -163,28 +163,31 @@ Closes demo gaps + policy-critical path:
 12. **`salary_advance.*` permissions** — seed + migrate roles; controller auth uses them (with finance.* fallback).
 13. **Tests** — calculation, block rules, certify SoD, payment/recovery ledger, PDF auth, IDOR.
 
-### Scope B — Phase 2 (designed now, build next)
+### Scope B — Phase 2 (implementing now — audit close-out)
 
-- Reconciliation queue + records
-- Finance/Management dashboards polish
-- Register/report pack expansion
-- Policy admin UI (version approve + effective date)
-- Controlled policy-exception entity
-- Personnel-file document reference hook
-- Opening-balance / historical migration tooling
+See plan: `docs/superpowers/plans/2026-07-25-salary-advance-phase2.md`
+
+- Top-level Salary Advances nav IA (§5) with `/salary-advances/*` aliases
+- Employee + Finance dashboards
+- Outstanding / Register / Reconciliation queues + recon resolve
+- Policy admin UI (new version only; audit; no silent override)
+- Expanded SA reports (register, outstanding, by status, recovery) + CSV
+- Workflow tracker polish; My Advance History
+- P3 stubs: personnel-file PDF reference, payroll integration interface (manual default)
 
 ### Scope B — Phase 3 / later
 
-- Automated payroll send/receive adapter
+- Automated payroll send/receive adapter (beyond stub)
 - Future policy modes (instalments, consolidation, gross/basic salary basis) behind version flags
 - Termination clearance integration
+- Controlled policy-exception entity
+- Opening-balance / historical migration tooling
 
-### Explicitly not in Scope B Phase 1
+### Explicitly not in Scope B Phase 1–2
 
 - Enabling consolidation / parallel advances / instalment UI
 - Replacing BCRE with a SA-only ledger
-- Renaming all routes to `/salary-advances`
-- Full main-menu IA rename to every PRD submenu (use focused queues under existing Finance nav first)
+- Full payroll vendor API go-live
 
 ---
 

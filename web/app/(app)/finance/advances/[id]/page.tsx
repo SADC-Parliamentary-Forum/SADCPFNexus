@@ -421,6 +421,35 @@ export default function AdvanceDetailPage() {
   const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
   const isReturnedForCorrection = advance.status === "returned_for_correction";
 
+  const timelineStatus = (() => {
+    switch (advance.status) {
+      case "draft":
+      case "finance_returned":
+      case "returned_for_correction":
+        return "draft";
+      case "submitted":
+      case "resubmitted":
+        return "submitted";
+      case "finance_certified":
+        return "finance_certified";
+      case "approved":
+      case "approved_for_payment":
+        return "approved_for_payment";
+      case "paid":
+      case "recovery_scheduled":
+      case "reconciliation_required":
+      case "recovered":
+        return "paid";
+      case "closed":
+        return "closed";
+      case "rejected":
+      case "not_eligible":
+        return "submitted";
+      default:
+        return advance.status;
+    }
+  })();
+
   return (
     <div className="space-y-6 max-w-3xl">
 
@@ -435,9 +464,9 @@ export default function AdvanceDetailPage() {
       {/* Breadcrumb + header */}
       <div>
         <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/finance" className="hover:text-neutral-700 transition-colors">Finance</Link>
+          <Link href="/salary-advances" className="hover:text-neutral-700 transition-colors">Salary Advances</Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/finance/advances" className="hover:text-neutral-700 transition-colors">Advances</Link>
+          <Link href="/salary-advances/applications" className="hover:text-neutral-700 transition-colors">Applications</Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
           <span className="text-neutral-700">{advance.reference_number}</span>
         </div>
@@ -523,25 +552,83 @@ export default function AdvanceDetailPage() {
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px] text-primary">timeline</span>
-            Request Progress
+            Workflow tracker
           </h3>
           <PrintButton className="text-xs" />
         </div>
         <StatusTimeline
           steps={[
-            { key: "draft",     label: "Draft",     icon: "edit_note",    completedAt: advance.submitted_at ? undefined : advance.submitted_at },
-            { key: "submitted", label: "Submitted", icon: "send",         completedAt: advance.submitted_at },
-            { key: "approved",  label: "Approved",  icon: "check_circle", completedAt: advance.approved_at },
-            { key: "paid",      label: "Paid",      icon: "payments",     completedAt: null },
+            { key: "draft", label: "Draft", icon: "edit_note", completedAt: advance.submitted_at ? advance.created_at : undefined },
+            { key: "submitted", label: "Finance certify", icon: "verified", completedAt: advance.finance_certified_at ?? (["finance_certified", "approved", "approved_for_payment", "paid", "recovery_scheduled", "recovered", "closed", "reconciliation_required"].includes(advance.status) ? advance.submitted_at : null) },
+            { key: "finance_certified", label: "Principal / SG", icon: "fact_check", completedAt: advance.approved_at },
+            { key: "approved_for_payment", label: "Payment", icon: "payments", completedAt: advance.paid_at },
+            { key: "paid", label: "Recovery", icon: "event_repeat", completedAt: advance.closed_at ?? (advance.status === "recovered" ? advance.updated_at : null) },
+            { key: "closed", label: "Closed", icon: "lock", completedAt: advance.closed_at },
           ]}
-          currentStatus={advance.status}
-          rejectedAt={advance.status === "rejected" ? advance.approved_at : null}
-          rejectionReason={advance.rejection_reason}
+          currentStatus={timelineStatus}
+          rejectedAt={advance.status === "rejected" || advance.status === "not_eligible" ? (advance.approved_at ?? advance.updated_at) : null}
+          rejectionReason={advance.rejection_reason ?? advance.not_eligible_reason}
         />
+        <div className="mt-4 grid sm:grid-cols-3 gap-3 text-xs">
+          <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
+            <p className="text-neutral-500">Current stage</p>
+            <p className="font-semibold text-neutral-900 mt-0.5">{sc.label}</p>
+          </div>
+          <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
+            <p className="text-neutral-500">Current holder</p>
+            <p className="font-semibold text-neutral-900 mt-0.5">
+              {currentStep?.role_name ?? currentStep?.name ?? (["draft", "finance_returned", "returned_for_correction"].includes(advance.status) ? "Requester" : "—")}
+            </p>
+          </div>
+          <div className="rounded-lg bg-neutral-50 border border-neutral-100 px-3 py-2">
+            <p className="text-neutral-500">Payment / recovery</p>
+            <p className="font-semibold text-neutral-900 mt-0.5">
+              {(advance.payment_status ?? "not_prepared").replaceAll("_", " ")}
+              {" · "}
+              {(advance.recovery_status ?? "not_scheduled").replaceAll("_", " ")}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Approval Timeline */}
       <ApprovalTimeline request={approvalRequest} />
+
+      {advance.status === "closed" && (
+        <div className="card p-5 border-dashed">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-primary">folder_shared</span>
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-900">Personnel file reference</h3>
+              <p className="text-xs text-neutral-500 mt-1">
+                FORM-002 PDF is available for filing. Deep link into the HR personnel file module is coming soon.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary py-1.5 px-3 text-xs"
+                  onClick={async () => {
+                    try {
+                      const res = await financeApi.downloadAdvancePdf(advance.id);
+                      const url = URL.createObjectURL(res.data);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `${advance.reference_number}-FORM-002.pdf`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      setError("Could not download FORM-002 PDF.");
+                    }
+                  }}
+                >
+                  Download FORM-002 PDF
+                </button>
+                <span className="badge badge-muted text-xs self-center">Personnel file link — Coming soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main details card */}
       <div className="card p-6 space-y-5">

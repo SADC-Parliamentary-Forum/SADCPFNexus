@@ -22,7 +22,7 @@ const quickActions = [
   { label: "New Travel Request",   href: "/travel/create",           icon: "flight_takeoff",         color: "text-primary",    bg: "bg-primary/10"  },
   { label: "Apply for Leave",      href: "/leave/create",            icon: "event_available",         color: "text-green-600",  bg: "bg-green-50 dark:bg-green-900/20"    },
   { label: "Request Imprest",      href: "/imprest/create",          icon: "account_balance_wallet",  color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-900/20"    },
-  { label: "Salary Advance",       href: "/finance/advances/create", icon: "payments",                color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20"   },
+  { label: "Salary Advance",       href: "/salary-advances/create", icon: "payments",                color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20"   },
   { label: "Procurement Request",  href: "/procurement/create",      icon: "shopping_cart",           color: "text-rose-600",   bg: "bg-rose-50 dark:bg-rose-900/20"     },
   { label: "Timesheet",            href: "/hr/timesheets",           icon: "schedule",                color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-900/20"     },
 ];

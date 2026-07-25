@@ -94,6 +94,53 @@ export function canViewProcurementRfq(user: AuthUser | null | undefined): boolea
   return hasPermission(user, ["procurement.view", "procurement.approve", "procurement.admin"]);
 }
 
+/** Salary Advance permission with finance.* fallbacks (mirrors API). */
+const SA_PERM_FALLBACKS: Record<string, string[]> = {
+  "salary_advance.view": ["finance.view"],
+  "salary_advance.create": ["finance.create"],
+  "salary_advance.certify": ["finance.approve"],
+  "salary_advance.approve": ["finance.approve"],
+  "salary_advance.pay": ["finance.approve", "finance.admin"],
+  "salary_advance.recover": ["finance.approve", "finance.admin"],
+  "salary_advance.export": ["finance.export"],
+  "salary_advance.admin": ["finance.admin"],
+};
+
+export function hasSalaryAdvancePermission(
+  user: AuthUser | null | undefined,
+  permission: string | string[]
+): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  const list = Array.isArray(permission) ? permission : [permission];
+  return list.some((p) => {
+    if (hasPermission(user, p)) return true;
+    return (SA_PERM_FALLBACKS[p] ?? []).some((legacy) => hasPermission(user, legacy));
+  });
+}
+
+export function canAccessSalaryAdvances(user: AuthUser | null | undefined): boolean {
+  return hasSalaryAdvancePermission(user, [
+    "salary_advance.view",
+    "salary_advance.create",
+    "salary_advance.certify",
+    "salary_advance.approve",
+    "salary_advance.pay",
+    "salary_advance.recover",
+    "salary_advance.admin",
+  ]);
+}
+
+export function canManageSalaryAdvanceFinance(user: AuthUser | null | undefined): boolean {
+  return hasSalaryAdvancePermission(user, [
+    "salary_advance.certify",
+    "salary_advance.pay",
+    "salary_advance.recover",
+    "salary_advance.approve",
+    "salary_advance.admin",
+  ]);
+}
+
 export function canIssueProcurementRfq(user: AuthUser | null | undefined): boolean {
   if (!user) return false;
   if (isSystemAdmin(user)) return true;
@@ -123,6 +170,19 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel", permission: "travel.view" },
   { path: "/leave", permission: "leave.view" },
   { path: "/finance", permission: "finance.view" },
+  // Salary Advances — more specific paths first (finance queues exclude plain employee view)
+  { path: "/salary-advances/settings", permission: ["salary_advance.admin", "finance.admin"] },
+  { path: "/salary-advances/reports", permission: ["salary_advance.export", "salary_advance.certify", "finance.export", "finance.approve", "reports.export"] },
+  { path: "/salary-advances/register", permission: ["salary_advance.certify", "salary_advance.export", "salary_advance.admin", "finance.approve", "finance.export", "finance.admin"] },
+  { path: "/salary-advances/reconciliation", permission: ["salary_advance.recover", "salary_advance.certify", "finance.approve", "finance.admin"] },
+  { path: "/salary-advances/outstanding", permission: ["salary_advance.certify", "salary_advance.pay", "salary_advance.recover", "finance.approve", "finance.admin"] },
+  { path: "/salary-advances/queues", permission: ["salary_advance.certify", "salary_advance.pay", "salary_advance.recover", "salary_advance.approve", "finance.approve", "finance.admin"] },
+  { path: "/salary-advances/finance", permission: ["salary_advance.certify", "salary_advance.pay", "salary_advance.recover", "salary_advance.approve", "salary_advance.admin", "finance.approve", "finance.admin"] },
+  { path: "/salary-advances/pending-approval", permission: ["salary_advance.approve", "finance.approve"] },
+  { path: "/salary-advances/create", permission: ["salary_advance.create", "finance.create"] },
+  { path: "/salary-advances/applications", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
+  { path: "/salary-advances/history", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
+  { path: "/salary-advances", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
   { path: "/imprest", permission: "imprest.view" },
   { path: "/pif", permission: "governance.view" },
   { path: "/workplan" },

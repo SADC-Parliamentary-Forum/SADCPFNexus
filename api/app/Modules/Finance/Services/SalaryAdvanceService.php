@@ -2,10 +2,12 @@
 
 namespace App\Modules\Finance\Services;
 
+use App\Models\AuditLog;
 use App\Models\BalanceRegister;
 use App\Models\Payslip;
 use App\Models\SalaryAdvanceFinanceReview;
 use App\Models\SalaryAdvancePolicyVersion;
+use App\Models\SalaryAdvanceReconciliation;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
 use App\Services\WorkflowService;
@@ -462,10 +464,248 @@ class SalaryAdvanceService
                     'recovery_status'  => 'partial',
                     'recovered_amount' => $recovered,
                 ]);
+
+                $expected = (float) ($advance->approved_amount ?? $advance->amount);
+                SalaryAdvanceReconciliation::query()
+                    ->where('salary_advance_request_id', $advance->id)
+                    ->where('status', 'open')
+                    ->delete();
+
+                SalaryAdvanceReconciliation::create([
+                    'tenant_id'                 => $advance->tenant_id,
+                    'salary_advance_request_id' => $advance->id,
+                    'balance_register_id'       => $register->id,
+                    'status'                    => 'open',
+                    'expected_amount'           => $expected,
+                    'recovered_amount'          => $recovered,
+                    'variance_amount'           => round($expected - $recovered, 2),
+                    'reason'                    => 'partial_recovery',
+                    'opened_by'                 => $actor->id,
+                ]);
             }
 
             return $advance->fresh(['requester', 'balanceRegister']);
         });
+    }
+
+    public function listReconciliations(User $actor, array $filters = [])
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.recover')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.view')
+                || $actor->hasRole('Finance Controller'),
+            403
+        );
+
+        $query = SalaryAdvanceReconciliation::with(['advance.requester', 'openedByUser', 'resolvedByUser'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('created_at');
+
+        $status = $filters['status'] ?? 'open';
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        return $query->paginate($filters['per_page'] ?? 20);
+    }
+
+    public function resolveReconciliation(
+        SalaryAdvanceRequest $advance,
+        SalaryAdvanceReconciliation $reconciliation,
+        User $actor,
+        array $data
+    ): SalaryAdvanceReconciliation {
+        $this->assertCanRecover($actor, $advance);
+
+        if ((int) $reconciliation->salary_advance_request_id !== (int) $advance->id) {
+            abort(404);
+        }
+
+        if (!$reconciliation->isOpen()) {
+            throw ValidationException::withMessages([
+                'status' => ['Reconciliation is already resolved.'],
+            ]);
+        }
+
+        $reconciliation->update([
+            'status'           => 'resolved',
+            'resolution_notes' => $data['resolution_notes'],
+            'outcome'          => $data['outcome'] ?? 'balanced',
+            'resolved_by'      => $actor->id,
+            'resolved_at'      => now(),
+        ]);
+
+        AuditLog::record('salary_advance.reconciliation_resolved', [
+            'auditable_type' => SalaryAdvanceReconciliation::class,
+            'auditable_id'   => $reconciliation->id,
+            'new_values'     => [
+                'advance_id' => $advance->id,
+                'outcome'    => $reconciliation->outcome,
+                'notes'      => $reconciliation->resolution_notes,
+            ],
+            'tags'           => ['salary_advance', 'reconciliation'],
+        ]);
+
+        return $reconciliation->fresh(['advance', 'resolvedByUser']);
+    }
+
+    public function financeDashboard(User $actor): array
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.certify')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.pay')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.recover')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.approve')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $actor->hasAnyRole(['Finance Controller', 'Secretary General', 'Director']),
+            403
+        );
+
+        $tenantId = $actor->tenant_id;
+        $base = SalaryAdvanceRequest::query()->where('tenant_id', $tenantId);
+
+        $outstandingBalance = (float) BalanceRegister::query()
+            ->where('tenant_id', $tenantId)
+            ->where('module_type', 'salary_advance')
+            ->where('status', '!=', 'closed')
+            ->where('balance', '>', 0)
+            ->sum('balance');
+
+        $outstandingCount = (int) BalanceRegister::query()
+            ->where('tenant_id', $tenantId)
+            ->where('module_type', 'salary_advance')
+            ->where('status', '!=', 'closed')
+            ->where('balance', '>', 0)
+            ->count();
+
+        return [
+            'queues' => [
+                'certify'           => (clone $base)->whereIn('status', ['submitted', 'resubmitted'])->count(),
+                'pending_approval'  => (clone $base)->whereIn('status', ['finance_certified'])->count(),
+                'payment'           => (clone $base)->whereIn('status', ['approved_for_payment', 'approved'])->count(),
+                'recovery'          => (clone $base)->whereIn('status', ['paid', 'recovery_scheduled'])->count(),
+                'reconciliation'    => SalaryAdvanceReconciliation::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('status', 'open')
+                    ->count(),
+                'outstanding'       => $outstandingCount,
+            ],
+            'exposure' => [
+                'total_outstanding_balance' => $outstandingBalance,
+                'outstanding_count'         => $outstandingCount,
+            ],
+            'by_status' => (clone $base)
+                ->selectRaw('status, COUNT(*) as total')
+                ->groupBy('status')
+                ->pluck('total', 'status'),
+        ];
+    }
+
+    public function employeeSummary(User $actor): array
+    {
+        $eligibility = $this->eligibility($actor);
+        $exposure = $this->exposureSummary($actor);
+
+        $current = SalaryAdvanceRequest::query()
+            ->where('requester_id', $actor->id)
+            ->whereIn('status', array_merge(SalaryAdvanceRequest::ACTIVE_STATUSES, ['draft']))
+            ->orderByDesc('created_at')
+            ->first();
+
+        $history = SalaryAdvanceRequest::query()
+            ->where('requester_id', $actor->id)
+            ->whereIn('status', ['closed', 'recovered', 'rejected', 'withdrawn', 'cancelled', 'not_eligible'])
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get(['id', 'reference_number', 'amount', 'currency', 'status', 'closed_at', 'created_at']);
+
+        return [
+            'eligibility'     => $eligibility,
+            'current_request' => $current,
+            'active_advance'  => $exposure['active_advance'],
+            'history'         => $history,
+        ];
+    }
+
+    public function listPolicies(User $actor)
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin')
+                || $this->hasSalaryAdvancePermission($actor, 'salary_advance.view'),
+            403
+        );
+
+        return SalaryAdvancePolicyVersion::query()
+            ->where(function ($q) use ($actor) {
+                $q->whereNull('tenant_id')->orWhere('tenant_id', $actor->tenant_id);
+            })
+            ->orderByDesc('effective_from')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    public function createPolicyVersion(User $actor, array $data): SalaryAdvancePolicyVersion
+    {
+        abort_unless(
+            $this->hasSalaryAdvancePermission($actor, 'salary_advance.admin'),
+            403,
+            'Only salary advance administrators may create policy versions.'
+        );
+
+        return DB::transaction(function () use ($actor, $data) {
+            SalaryAdvancePolicyVersion::query()
+                ->where('active', true)
+                ->where('tenant_id', $actor->tenant_id)
+                ->update([
+                    'active'       => false,
+                    'effective_to' => now()->toDateString(),
+                ]);
+
+            $policy = SalaryAdvancePolicyVersion::create([
+                'tenant_id'                      => $actor->tenant_id,
+                'version'                        => $data['version'],
+                'effective_from'                 => $data['effective_from'],
+                'effective_to'                   => $data['effective_to'] ?? null,
+                'max_salary_percentage'          => $data['max_salary_percentage'] ?? 50,
+                'salary_basis'                   => $data['salary_basis'] ?? 'net_confirmed',
+                'max_concurrent_advances'        => $data['max_concurrent_advances'] ?? 1,
+                'full_repayment_required'        => $data['full_repayment_required'] ?? true,
+                'recovery_rule'                  => $data['recovery_rule'] ?? 'full_eom',
+                'final_approver_role'            => $data['final_approver_role'] ?? 'Secretary General',
+                'finance_certification_required' => $data['finance_certification_required'] ?? true,
+                'admin_review_required'          => $data['admin_review_required'] ?? true,
+                'configuration'                  => array_merge($data['configuration'] ?? [], [
+                    'change_reason' => $data['change_reason'] ?? null,
+                ]),
+                'approved_by'                    => $actor->id,
+                'active'                         => true,
+            ]);
+
+            AuditLog::record('salary_advance.policy_version_created', [
+                'auditable_type' => SalaryAdvancePolicyVersion::class,
+                'auditable_id'   => $policy->id,
+                'new_values'     => [
+                    'version'       => $policy->version,
+                    'change_reason' => $data['change_reason'] ?? null,
+                    'max_pct'       => $policy->max_salary_percentage,
+                    'salary_basis'  => $policy->salary_basis,
+                ],
+                'tags'           => ['salary_advance', 'policy'],
+            ]);
+
+            return $policy;
+        });
+    }
+
+    public function payrollIntegrationStub(): array
+    {
+        return [
+            'mode'        => 'manual',
+            'enabled'     => false,
+            'provider'    => null,
+            'message'     => 'Payroll recovery remains manual until an authorised payroll adapter is configured.',
+            'coming_soon' => true,
+        ];
     }
 
     public function close(SalaryAdvanceRequest $advance, User $actor): SalaryAdvanceRequest

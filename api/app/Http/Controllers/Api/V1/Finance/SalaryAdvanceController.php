@@ -29,19 +29,33 @@ class SalaryAdvanceController extends Controller
     {
         $user = $request->user();
         $filters = $request->only(['status', 'per_page', 'queue']);
-        $query = SalaryAdvanceRequest::with(['requester'])->orderByDesc('created_at');
+        $query = SalaryAdvanceRequest::with(['requester', 'balanceRegister'])->orderByDesc('created_at');
 
         $canQueue = $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.view')
             || $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.certify')
             || $user->hasAnyRole(['Finance Controller', 'Secretary General', 'Director']);
 
-        if (!empty($filters['queue']) && $canQueue) {
-            $queue = $filters['queue'];
+        $queue = $filters['queue'] ?? null;
+
+        // Employee history: own closed/recovered/rejected advances
+        if ($queue === 'history') {
+            $query->where('requester_id', $user->id)
+                ->whereIn('status', ['closed', 'recovered', 'rejected', 'withdrawn', 'cancelled', 'not_eligible']);
+        } elseif ($queue === 'mine' || ($queue === null && !$canQueue)) {
+            $query->where('requester_id', $user->id);
+        } elseif (!empty($queue) && $canQueue) {
             match ($queue) {
                 'certify' => $query->whereIn('status', ['submitted', 'resubmitted']),
+                'pending_approval' => $query->whereIn('status', ['finance_certified']),
                 'payment' => $query->whereIn('status', ['approved_for_payment', 'approved']),
                 'recovery' => $query->whereIn('status', ['paid', 'recovery_scheduled', 'reconciliation_required']),
-                'outstanding' => $query->whereIn('status', SalaryAdvanceRequest::ACTIVE_STATUSES),
+                'reconciliation' => $query->where('status', 'reconciliation_required'),
+                'outstanding' => $query->whereHas('balanceRegister', function ($q) {
+                    $q->where('module_type', 'salary_advance')
+                        ->where('status', '!=', 'closed')
+                        ->where('balance', '>', 0);
+                }),
+                'register' => $query, // full tenant register
                 default => null,
             };
             $query->where('tenant_id', $user->tenant_id);
@@ -54,6 +68,109 @@ class SalaryAdvanceController extends Controller
         }
 
         return response()->json($query->paginate($filters['per_page'] ?? 20));
+    }
+
+    public function dashboard(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->salaryAdvanceService->financeDashboard($request->user()),
+        ]);
+    }
+
+    public function employeeSummary(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->salaryAdvanceService->employeeSummary($request->user()),
+        ]);
+    }
+
+    public function reconciliations(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->salaryAdvanceService->listReconciliations(
+                $request->user(),
+                $request->only(['status', 'per_page'])
+            )
+        );
+    }
+
+    public function resolveReconciliation(
+        Request $request,
+        SalaryAdvanceRequest $salaryAdvanceRequest,
+        int $reconciliation
+    ): JsonResponse {
+        abort_unless(
+            $this->salaryAdvanceService->canAccessAdvance($request->user(), $salaryAdvanceRequest),
+            403
+        );
+
+        $data = $request->validate([
+            'resolution_notes' => ['required', 'string', 'max:2000'],
+            'outcome'          => ['nullable', 'string', 'in:balanced,written_off,adjusted,other'],
+        ]);
+
+        $recon = \App\Models\SalaryAdvanceReconciliation::findOrFail($reconciliation);
+        $resolved = $this->salaryAdvanceService->resolveReconciliation(
+            $salaryAdvanceRequest,
+            $recon,
+            $request->user(),
+            $data
+        );
+
+        return response()->json(['message' => 'Reconciliation resolved.', 'data' => $resolved]);
+    }
+
+    public function policies(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->salaryAdvanceService->listPolicies($request->user()),
+        ]);
+    }
+
+    public function storePolicy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'version'                        => ['required', 'string', 'max:32'],
+            'effective_from'                 => ['required', 'date'],
+            'effective_to'                   => ['nullable', 'date', 'after:effective_from'],
+            'max_salary_percentage'          => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'salary_basis'                   => ['nullable', 'string', 'in:net_confirmed,gross,basic'],
+            'max_concurrent_advances'        => ['nullable', 'integer', 'min:1', 'max:1'],
+            'full_repayment_required'        => ['nullable', 'boolean'],
+            'recovery_rule'                  => ['nullable', 'string', 'in:full_eom'],
+            'final_approver_role'            => ['nullable', 'string', 'max:64'],
+            'finance_certification_required' => ['nullable', 'boolean'],
+            'admin_review_required'          => ['nullable', 'boolean'],
+            'change_reason'                  => ['required', 'string', 'max:500'],
+            'configuration'                  => ['nullable', 'array'],
+        ]);
+
+        // v1 lock: do not allow enabling consolidation via policy UI
+        $data['max_concurrent_advances'] = 1;
+        $data['salary_basis'] = $data['salary_basis'] ?? 'net_confirmed';
+        if (($data['salary_basis'] ?? '') !== 'net_confirmed') {
+            // Accept storage of future basis values only when explicitly admin — still lock runtime to net in Phase 2
+            $data['salary_basis'] = 'net_confirmed';
+        }
+        $data['recovery_rule'] = 'full_eom';
+        $data['full_repayment_required'] = true;
+
+        $policy = $this->salaryAdvanceService->createPolicyVersion($request->user(), $data);
+
+        return response()->json(['message' => 'New policy version activated.', 'data' => $policy], 201);
+    }
+
+    public function payrollIntegration(Request $request): JsonResponse
+    {
+        abort_unless(
+            $this->salaryAdvanceService->hasSalaryAdvancePermission($request->user(), 'salary_advance.view')
+                || $request->user()->hasRole('Finance Controller'),
+            403
+        );
+
+        return response()->json([
+            'data' => $this->salaryAdvanceService->payrollIntegrationStub(),
+        ]);
     }
 
     public function eligibility(Request $request): JsonResponse

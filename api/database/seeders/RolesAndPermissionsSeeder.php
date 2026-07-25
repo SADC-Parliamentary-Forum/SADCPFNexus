@@ -97,7 +97,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
                     'salary_advance.view', 'salary_advance.certify', 'salary_advance.pay',
-                    'salary_advance.recover', 'salary_advance.export',
+                    'salary_advance.recover', 'salary_advance.export', 'salary_advance.admin',
                     'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',

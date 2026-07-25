@@ -2094,6 +2094,11 @@ export interface SalaryAdvanceRequest {
   recovery_status?: string | null;
   recovered_amount?: number | null;
   finance_certified_at?: string | null;
+  not_eligible_reason?: string | null;
+  paid_at?: string | null;
+  closed_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   payslip?: Payslip | null;
   balance_register?: BalanceRegister | null;
 }
@@ -2259,7 +2264,96 @@ export const financeApi = {
       };
       intended_recovery_payroll_date?: string;
     }>("/finance/advances/eligibility"),
+  getSalaryAdvanceDashboard: () =>
+    api.get<{
+      data: {
+        queues: Record<string, number>;
+        exposure: { total_outstanding_balance: number; outstanding_count: number };
+        by_status: Record<string, number>;
+      };
+    }>("/finance/advances/dashboard"),
+  getSalaryAdvanceEmployeeSummary: () =>
+    api.get<{
+      data: {
+        eligibility: {
+          eligible: boolean;
+          reason?: string;
+          net_salary: number | null;
+          max_eligible: number | null;
+          salary_basis?: string;
+          exposure?: {
+            has_outstanding_balance: boolean;
+            outstanding_balance: number;
+            blocked: boolean;
+            reasons: string[];
+          };
+          policy?: {
+            version: string;
+            max_salary_percentage: number;
+            recovery_rule: string;
+          };
+          intended_recovery_payroll_date?: string;
+        };
+        current_request: SalaryAdvanceRequest | null;
+        active_advance: { id: number; reference_number: string; status: string; amount: number } | null;
+        history: SalaryAdvanceRequest[];
+      };
+    }>("/finance/advances/employee-summary"),
+  listSalaryAdvanceReconciliations: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<SalaryAdvanceReconciliation>>("/finance/advances/reconciliations", { params }),
+  resolveSalaryAdvanceReconciliation: (
+    advanceId: number,
+    reconciliationId: number,
+    data: { resolution_notes: string; outcome?: string }
+  ) =>
+    api.post<{ data: SalaryAdvanceReconciliation; message: string }>(
+      `/finance/advances/${advanceId}/reconciliations/${reconciliationId}/resolve`,
+      data
+    ),
+  listSalaryAdvancePolicies: () =>
+    api.get<{ data: SalaryAdvancePolicyVersion[] }>("/finance/advances/policies"),
+  createSalaryAdvancePolicy: (data: Record<string, unknown>) =>
+    api.post<{ data: SalaryAdvancePolicyVersion; message: string }>("/finance/advances/policies", data),
+  getSalaryAdvancePayrollIntegration: () =>
+    api.get<{ data: { mode: string; enabled: boolean; message: string; coming_soon: boolean } }>(
+      "/finance/advances/payroll-integration"
+    ),
 };
+
+export interface SalaryAdvanceReconciliation {
+  id: number;
+  tenant_id: number | null;
+  salary_advance_request_id: number;
+  status: string;
+  expected_amount: number | null;
+  recovered_amount: number | null;
+  variance_amount: number | null;
+  reason: string | null;
+  resolution_notes: string | null;
+  outcome: string | null;
+  resolved_at: string | null;
+  created_at?: string;
+  advance?: SalaryAdvanceRequest;
+  opened_by_user?: { id: number; name: string };
+  resolved_by_user?: { id: number; name: string };
+}
+
+export interface SalaryAdvancePolicyVersion {
+  id: number;
+  version: string;
+  effective_from: string;
+  effective_to: string | null;
+  max_salary_percentage: number;
+  salary_basis: string;
+  max_concurrent_advances: number;
+  full_repayment_required: boolean;
+  recovery_rule: string;
+  final_approver_role: string;
+  finance_certification_required: boolean;
+  admin_review_required: boolean;
+  active: boolean;
+  configuration?: Record<string, unknown> | null;
+}
 
 // ─── BCRE: Balance Control & Reconciliation Engine ───────────────────────────
 

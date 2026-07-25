@@ -478,21 +478,39 @@ class ReportsController extends Controller
 
         $user  = $request->user();
         $query = SalaryAdvanceRequest::where('tenant_id', $user->tenant_id)
-            ->with('requester:id,name,department_id')
+            ->with(['requester:id,name,department_id', 'balanceRegister'])
             ->orderByDesc('created_at');
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
+        if ($pack = $request->input('pack')) {
+            match ($pack) {
+                'outstanding' => $query->whereHas('balanceRegister', fn ($q) => $q
+                    ->where('module_type', 'salary_advance')
+                    ->where('status', '!=', 'closed')
+                    ->where('balance', '>', 0)),
+                'recovery' => $query->whereIn('status', ['paid', 'recovery_scheduled', 'reconciliation_required', 'recovered', 'closed']),
+                'register' => null,
+                default => null,
+            };
+        }
+
         if ($request->input('format') === 'csv') {
-            $rows = $query->get()->map(fn($s) => [
+            $rows = $query->get()->map(fn ($s) => [
                 'reference'        => $s->reference_number,
                 'employee'         => $s->requester?->name,
                 'advance_type'     => $s->advance_type,
                 'amount'           => $s->amount,
+                'approved_amount'  => $s->approved_amount,
                 'currency'         => $s->currency ?? 'NAD',
                 'repayment_months' => $s->repayment_months,
                 'purpose'          => $s->purpose,
                 'status'           => $s->status,
+                'payment_status'   => $s->payment_status,
+                'recovery_status'  => $s->recovery_status,
+                'outstanding'      => $s->balanceRegister?->balance,
+                'paid_at'          => $s->paid_at?->toDateString(),
+                'closed_at'        => $s->closed_at?->toDateString(),
                 'created_at'       => $s->created_at?->toDateString(),
             ])->toArray();
             return $this->csvResponse($rows, 'salary-advances-report-' . now()->format('Ymd') . '.csv');

@@ -6,6 +6,7 @@ const STAFF_ROUTES = [
   "/travel",
   "/procurement",
   "/finance/advances",
+  "/salary-advances",
   "/imprest",
   "/timesheets",
   "/notifications",

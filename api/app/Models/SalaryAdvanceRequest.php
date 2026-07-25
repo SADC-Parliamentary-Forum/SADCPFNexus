@@ -97,6 +97,11 @@ class SalaryAdvanceRequest extends Model
         return $this->hasMany(SalaryAdvanceFinanceReview::class);
     }
 
+    public function reconciliations(): HasMany
+    {
+        return $this->hasMany(SalaryAdvanceReconciliation::class);
+    }
+
     public function balanceRegister(): MorphOne
     {
         return $this->morphOne(BalanceRegister::class, 'source_request');

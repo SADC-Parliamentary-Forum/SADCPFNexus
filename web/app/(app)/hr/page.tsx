@@ -67,7 +67,7 @@ function HRPageContent() {
   const quickActions = [
     { label: "Submit Timesheet", desc: "Log this week's hours", icon: "edit_calendar", href: "/hr/timesheets" },
     { label: "Apply for Leave", desc: "Annual, sick, or LIL", icon: "event_available", href: "/leave/create" },
-    { label: "Salary Advance", desc: "Request a pay advance", icon: "account_balance", href: "/finance/advances/create" },
+    { label: "Salary Advance", desc: "Request a pay advance", icon: "account_balance", href: "/salary-advances/create" },
   ];
 
   return (

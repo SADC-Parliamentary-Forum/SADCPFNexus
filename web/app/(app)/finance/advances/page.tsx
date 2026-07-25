@@ -121,16 +121,18 @@ function AdvancesPageInner() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-            <Link href="/finance" className="hover:text-neutral-700 transition-colors">Finance</Link>
+            <Link href="/salary-advances" className="hover:text-neutral-700 transition-colors">Salary Advances</Link>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Advances</span>
+            <span className="text-neutral-700">Legacy list</span>
           </div>
           <h1 className="page-title">Salary &amp; Advances</h1>
           <p className="page-subtitle">
             {activeHint ?? "Track your advance requests and repayment schedule."}
+            {" "}
+            <Link href="/salary-advances" className="text-primary font-medium hover:underline">Open new Salary Advances hub</Link>
           </p>
         </div>
         <Link href="/finance/advances/create" className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
