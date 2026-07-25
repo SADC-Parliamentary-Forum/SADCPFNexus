@@ -29,7 +29,7 @@ class ProcurementService
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff') && !$user->hasAnyPermission(['procurement.view', 'procurement.approve', 'procurement.admin'])) {
+        if ($user->hasRole('staff')) {
             $query->where('requester_id', $user->id);
         }
 

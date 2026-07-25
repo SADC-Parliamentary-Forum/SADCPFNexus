@@ -435,6 +435,26 @@ cd api && php artisan test --filter=ProgrammeProcurement
 
 ---
 
+## Completion note (Locked 2026-07-25 — user Proceed)
+
+**Phase 1 demo items status (verified 2026-07-25):**
+
+| Item | Status |
+|------|--------|
+| Thresholds 10k/100k | Done |
+| Policy snapshot + suggested method | Done |
+| Budget hard-gate + Finance UI | Done |
+| PIF transfer UI + Intake + programme_id | Done |
+| Derived stars from scorecard | Done |
+| COI declaration | Done |
+| Soft anti-split warning | Done |
+| GRN → draft FA/Stock handoff | Done |
+| Nav: Intake, Budget, Register, Settings | Done |
+| Settings API (tenant JSON) | Done |
+| Salary Advance | Untouched |
+
+Do not start Phase 2 tender/committee work in this stream.
+
 ## Dependencies / sequencing
 
 1 → 2 → 3 (thresholds before method/budget gates)  
