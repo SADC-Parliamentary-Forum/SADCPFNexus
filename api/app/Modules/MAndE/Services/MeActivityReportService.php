@@ -21,6 +21,12 @@ class MeActivityReportService
             ->when(!empty($filters['programme_id']), fn ($q) => $q->where('programme_id', $filters['programme_id']))
             ->when(!empty($filters['thematic_area_id']), fn ($q) => $q->where('thematic_area_id', $filters['thematic_area_id']))
             ->when(!empty($filters['strategic_goal_id']), fn ($q) => $q->where('strategic_goal_id', $filters['strategic_goal_id']))
+            ->when(!empty($filters['mine']) || !empty($filters['mine_only']), function ($q) use ($user) {
+                $q->where(function ($qq) use ($user) {
+                    $qq->where('responsible_officer_id', $user->id)
+                        ->orWhere('created_by', $user->id);
+                });
+            })
             ->when(!empty($filters['search']), function ($q) use ($filters) {
                 $q->where(function ($qq) use ($filters) {
                     $qq->where('activity_title', 'ilike', "%{$filters['search']}%")

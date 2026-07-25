@@ -18,8 +18,11 @@ class MeActivityReportController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only([
-            'review_status', 'programme_id', 'thematic_area_id', 'strategic_goal_id', 'search', 'per_page',
+            'review_status', 'programme_id', 'thematic_area_id', 'strategic_goal_id', 'search', 'per_page', 'mine',
         ]);
+        if ($request->boolean('mine')) {
+            $filters['mine'] = true;
+        }
         return response()->json($this->service->list($filters, $request->user()));
     }
 

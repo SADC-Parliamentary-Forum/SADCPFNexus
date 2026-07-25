@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeActivityReport } from "@/lib/api";
@@ -23,7 +23,7 @@ export default function MyActivityReportsPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["mande", "activity-reports", "mine", search],
     queryFn: () => {
-      const params: Record<string, string | number> = { per_page: 100 };
+      const params: Record<string, string | number> = { per_page: 50, mine: 1 };
       if (search.trim()) params.search = search.trim();
       return mandeApi.listReports(params).then((r) => r.data.data as MeActivityReport[]);
     },
@@ -31,15 +31,7 @@ export default function MyActivityReportsPage() {
     enabled: !!user?.id,
   });
 
-  const rows = useMemo(() => {
-    const all = data ?? [];
-    if (!user?.id) return [];
-    return all.filter(
-      (r) =>
-        r.responsible_officer_id === user.id ||
-        r.created_by === user.id
-    );
-  }, [data, user?.id]);
+  const rows = data ?? [];
 
   return (
     <div className="space-y-6 max-w-6xl">

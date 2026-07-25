@@ -152,4 +152,36 @@ class ActivityReportTest extends TestCase
         $http->putJson("/api/v1/mande/activity-reports/{$report->id}", ['activity_title' => 'X'])
              ->assertStatus(422);
     }
+
+    public function test_mine_filter_returns_only_own_reports(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $peer = $this->makeUser('staff', $tenant);
+
+        $ownProgramme = $this->approvedProgramme($tenant, $user->id);
+        $peerProgramme = $this->approvedProgramme($tenant, $peer->id);
+
+        MeActivityReport::create([
+            'tenant_id'              => $tenant->id,
+            'programme_id'           => $ownProgramme->id,
+            'activity_title'         => 'Mine',
+            'responsible_officer_id' => $user->id,
+            'review_status'          => 'not_submitted',
+            'created_by'             => $user->id,
+        ]);
+        MeActivityReport::create([
+            'tenant_id'              => $tenant->id,
+            'programme_id'           => $peerProgramme->id,
+            'activity_title'         => 'Peers',
+            'responsible_officer_id' => $peer->id,
+            'review_status'          => 'not_submitted',
+            'created_by'             => $peer->id,
+        ]);
+
+        $http->getJson('/api/v1/mande/activity-reports?mine=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.activity_title', 'Mine');
+    }
 }
