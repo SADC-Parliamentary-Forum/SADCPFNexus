@@ -20,6 +20,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.view', 'leave.create', 'leave.approve', 'leave.admin',
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
+            // Salary Advance (dedicated module permissions — Phase 1)
+            'salary_advance.view', 'salary_advance.create', 'salary_advance.certify',
+            'salary_advance.approve', 'salary_advance.pay', 'salary_advance.recover',
+            'salary_advance.export', 'salary_advance.admin',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
             'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
             'procurement.receive_goods', 'procurement.approve_invoice',
@@ -92,6 +96,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $financeController->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
+                    'salary_advance.view', 'salary_advance.certify', 'salary_advance.pay',
+                    'salary_advance.recover', 'salary_advance.export',
                     'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',
@@ -123,7 +129,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $externalAuditor = Role::firstOrCreate(['name' => 'External Auditor', 'guard_name' => $guard]);
             $externalAuditor->syncPermissions(
                 Permission::whereIn('name', [
-                    'finance.view', 'governance.view', 'audit.view', 'audit.export',
+                    'finance.view', 'salary_advance.view', 'governance.view', 'audit.view', 'audit.export',
                     'travel.view', 'assets.view', 'hr.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -135,6 +141,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'leave.view', 'leave.create',
                     'imprest.view', 'imprest.create',
                     'finance.view', 'finance.create',
+                    'salary_advance.view', 'salary_advance.create',
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
                     'governance.view', 'reports.view', 'assets.view',
@@ -189,6 +196,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'imprest.view', 'imprest.approve',
                     'procurement.view', 'procurement.approve', 'procurement.award', 'procurement.manage_vendors',
                     'finance.view', 'finance.approve',
+                    'salary_advance.view', 'salary_advance.approve',
                     'governance.view', 'governance.approve',
                     'hr.view', 'hr.approve',
                     'reports.view', 'reports.export',
@@ -274,6 +282,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
                     'travel.view', 'leave.view', 'imprest.view', 'finance.view',
+                    'salary_advance.view', 'salary_advance.approve',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'workplan.view', 'assignments.view',
                     'mande.view', 'mande.create', 'mande.review',

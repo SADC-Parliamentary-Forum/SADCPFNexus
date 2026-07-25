@@ -23,11 +23,17 @@ function getLastPage(payload: unknown): number {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  draft:     { label: "Draft",     badge: "badge-muted" },
-  submitted: { label: "Submitted", badge: "badge-warning" },
-  approved:  { label: "Approved",  badge: "badge-success" },
-  rejected:  { label: "Rejected",  badge: "badge-danger" },
-  paid:      { label: "Paid",      badge: "badge-primary" },
+  draft:                   { label: "Draft",                   badge: "badge-muted" },
+  submitted:               { label: "Pending Finance Certify", badge: "badge-warning" },
+  finance_certified:       { label: "Finance Certified",       badge: "badge-primary" },
+  finance_returned:        { label: "Returned by Finance",     badge: "badge-warning" },
+  approved:                { label: "Approved",                badge: "badge-success" },
+  approved_for_payment:    { label: "Approved for Payment",    badge: "badge-success" },
+  rejected:                { label: "Rejected",                badge: "badge-danger" },
+  paid:                    { label: "Paid",                    badge: "badge-primary" },
+  recovery_scheduled:      { label: "Recovery Scheduled",      badge: "badge-primary" },
+  closed:                  { label: "Closed",                  badge: "badge-muted" },
+  reconciliation_required: { label: "Needs Reconciliation",    badge: "badge-warning" },
 };
 
 const TYPE_LABELS: Record<string, string> = {

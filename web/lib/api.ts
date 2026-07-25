@@ -2069,11 +2069,12 @@ export interface SalaryAdvanceRequest {
   reference_number: string;
   advance_type: string;
   amount: number;
+  approved_amount?: number | null;
   currency: string;
   repayment_months: number;
   purpose: string;
   justification: string | null;
-  status: "draft" | "submitted" | "approved" | "rejected" | "paid" | "returned_for_correction" | "withdrawn";
+  status: string;
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
@@ -2084,7 +2085,17 @@ export interface SalaryAdvanceRequest {
   gross_salary_at_request?: number | null;
   max_eligible_amount?: number | null;
   eligibility_status?: string | null;
+  salary_basis?: string | null;
+  deduction_authority_confirmed?: boolean;
+  intended_recovery_payroll_date?: string | null;
+  payment_status?: string | null;
+  payment_reference?: string | null;
+  payment_method?: string | null;
+  recovery_status?: string | null;
+  recovered_amount?: number | null;
+  finance_certified_at?: string | null;
   payslip?: Payslip | null;
+  balance_register?: BalanceRegister | null;
 }
 
 export interface Payslip {
@@ -2174,10 +2185,16 @@ export const financeApi = {
   updateAdvance: (id: number, data: Partial<SalaryAdvanceRequest>) =>
     api.put<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}`, data),
   deleteAdvance: (id: number) => api.delete(`/finance/advances/${id}`),
-  submitAdvance: (id: number) =>
-    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/submit`),
-  approveAdvance: (id: number, comment?: string) =>
-    api.post<{ data: SalaryAdvanceRequest; message: string; notified_approvers: string[] }>(`/finance/advances/${id}/approve`, comment ? { comment } : {}),
+  submitAdvance: (id: number, data?: { deduction_authority_confirmed?: boolean }) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/submit`, data ?? {}),
+  approveAdvance: (id: number, comment?: string, approvedAmount?: number) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string; notified_approvers: string[] }>(
+      `/finance/advances/${id}/approve`,
+      {
+        ...(comment ? { comment } : {}),
+        ...(approvedAmount != null ? { approved_amount: approvedAmount } : {}),
+      }
+    ),
   rejectAdvance: (id: number, reason: string) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/reject`, { reason }),
   returnAdvanceForCorrection: (id: number, comment: string) =>
@@ -2186,6 +2203,34 @@ export const financeApi = {
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/withdraw`),
   resubmitAdvance: (id: number) =>
     api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/resubmit`),
+  financeCertifyAdvance: (id: number, data: {
+    confirmed_net_salary: number;
+    confirmed_gross_salary?: number;
+    recommended_amount?: number;
+    intended_recovery_payroll_date: string;
+    eligible: boolean;
+    comments?: string;
+  }) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/finance-certify`, data),
+  financeReturnAdvance: (id: number, reason: string) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/finance-return`, { reason }),
+  markAdvanceNotEligible: (id: number, reason: string) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/mark-not-eligible`, { reason }),
+  recordAdvancePayment: (id: number, data: { payment_reference: string; payment_method: string; payment_date?: string }) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/record-payment`, data),
+  scheduleAdvanceRecovery: (id: number, data?: { intended_recovery_payroll_date?: string }) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/schedule-recovery`, data ?? {}),
+  recordAdvanceRecovery: (id: number, data: { amount: number; reference_doc?: string; notes?: string }) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/record-recovery`, data),
+  closeAdvance: (id: number) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}/close`),
+  getAdvanceLedger: (id: number) =>
+    api.get<{ data: { register: BalanceRegister | null; transactions: unknown[]; balance: number } }>(
+      `/finance/advances/${id}/ledger`
+    ),
+  getAdvancePdfUrl: (id: number) => `/finance/advances/${id}/pdf`,
+  downloadAdvancePdf: (id: number) =>
+    api.get<Blob>(`/finance/advances/${id}/pdf`, { responseType: "blob" }),
   getAdvanceCertificate: (id: number) =>
     api.get<{ data: SalaryAdvanceRequest }>(`/finance/advances/${id}/certificate`),
   getSalaryAdvanceEligibility: () =>
@@ -2195,7 +2240,24 @@ export const financeApi = {
       net_salary: number | null;
       gross_salary: number | null;
       max_eligible: number | null;
+      salary_basis?: string;
       payslip: { id: number; period_month: number; period_year: number; currency: string } | null;
+      exposure?: {
+        has_outstanding_balance: boolean;
+        outstanding_balance: number;
+        has_active_advance: boolean;
+        blocked: boolean;
+        reasons: string[];
+        active_advance?: { id: number; reference_number: string; status: string; amount: number } | null;
+      };
+      policy?: {
+        version: string;
+        recovery_rule: string;
+        max_salary_percentage: number;
+        salary_basis: string;
+        admin_review_required: boolean;
+      };
+      intended_recovery_payroll_date?: string;
     }>("/finance/advances/eligibility"),
 };
 

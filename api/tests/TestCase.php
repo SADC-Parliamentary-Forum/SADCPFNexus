@@ -34,6 +34,8 @@ abstract class TestCase extends BaseTestCase
 
         // Seed roles + permissions (required for assignRole / hasPermissionTo).
         $this->seed(RolesAndPermissionsSeeder::class);
+        // Salary advance policy v1 — required for create/submit/eligibility.
+        $this->seed(\Database\Seeders\SalaryAdvancePolicySeeder::class);
     }
 
     // ── User factories ───────────────────────────────────────────────────────

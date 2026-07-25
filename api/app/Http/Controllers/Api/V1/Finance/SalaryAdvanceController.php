@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Api\V1\Finance;
 
 use App\Http\Controllers\Controller;
-use App\Models\EmployeeSalaryAssignment;
-use App\Models\Payslip;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\User;
+use App\Modules\Finance\Services\SalaryAdvanceService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -22,94 +21,96 @@ class SalaryAdvanceController extends Controller
 
     public function __construct(
         protected NotificationService $notificationService,
-        protected WorkflowService     $workflowService,
+        protected WorkflowService $workflowService,
+        protected SalaryAdvanceService $salaryAdvanceService,
     ) {}
+
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'per_page']);
-        $query = SalaryAdvanceRequest::with(['requester'])
-            ->where('requester_id', $request->user()->id)
-            ->orderByDesc('created_at');
+        $user = $request->user();
+        $filters = $request->only(['status', 'per_page', 'queue']);
+        $query = SalaryAdvanceRequest::with(['requester'])->orderByDesc('created_at');
+
+        $canQueue = $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.view')
+            || $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.certify')
+            || $user->hasAnyRole(['Finance Controller', 'Secretary General', 'Director']);
+
+        if (!empty($filters['queue']) && $canQueue) {
+            $queue = $filters['queue'];
+            match ($queue) {
+                'certify' => $query->whereIn('status', ['submitted', 'resubmitted']),
+                'payment' => $query->whereIn('status', ['approved_for_payment', 'approved']),
+                'recovery' => $query->whereIn('status', ['paid', 'recovery_scheduled', 'reconciliation_required']),
+                'outstanding' => $query->whereIn('status', SalaryAdvanceRequest::ACTIVE_STATUSES),
+                default => null,
+            };
+            $query->where('tenant_id', $user->tenant_id);
+        } else {
+            $query->where('requester_id', $user->id);
+        }
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        $paginated = $query->paginate($filters['per_page'] ?? 20);
-        return response()->json($paginated);
+        return response()->json($query->paginate($filters['per_page'] ?? 20));
     }
 
     public function eligibility(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $payslip = Payslip::where('user_id', $user->id)
-            ->where('confirmation_status', 'confirmed')
-            ->orderByDesc('period_year')
-            ->orderByDesc('period_month')
-            ->first();
-
-        if (!$payslip) {
-            return response()->json([
-                'eligible'     => false,
-                'reason'       => 'no_confirmed_payslip',
-                'net_salary'   => null,
-                'gross_salary' => null,
-                'max_eligible' => null,
-                'payslip'      => null,
-            ]);
-        }
-
-        $maxEligible = round((float) $payslip->net_amount * 0.5, 2);
-
-        return response()->json([
-            'eligible'     => true,
-            'net_salary'   => (float) $payslip->net_amount,
-            'gross_salary' => (float) $payslip->gross_amount,
-            'max_eligible' => $maxEligible,
-            'payslip'      => [
-                'id'           => $payslip->id,
-                'period_month' => $payslip->period_month,
-                'period_year'  => $payslip->period_year,
-                'currency'     => $payslip->currency,
-            ],
-        ]);
+        return response()->json($this->salaryAdvanceService->eligibility($request->user()));
     }
 
     public function show(SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
-        if ($salaryAdvanceRequest->requester_id !== request()->user()->id) {
-            abort(403);
-        }
+        abort_unless(
+            $this->salaryAdvanceService->canAccessAdvance(request()->user(), $salaryAdvanceRequest),
+            403
+        );
+
         return response()->json(['data' => $salaryAdvanceRequest->load([
-            'requester', 'approver', 'payslip',
+            'requester', 'approver', 'payslip', 'policyVersion',
+            'financeReviews.reviewer', 'financeCertifiedBy',
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
+            'balanceRegister.transactions',
         ])]);
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'advance_type'      => ['required', 'string', 'in:rental,medical,school,funeral,other'],
-            'amount'            => ['required', 'numeric', 'min:1'],
-            'currency'          => ['nullable', 'string', 'size:3'],
-            'repayment_months'  => ['nullable', 'integer', 'min:1', 'max:24'],
-            'purpose'           => ['required', 'string', 'max:500'],
-            'justification'     => ['required', 'string', 'max:2000'],
+            'advance_type'                  => ['required', 'string', 'in:rental,medical,school,funeral,other'],
+            'amount'                        => ['required', 'numeric', 'min:1'],
+            'currency'                      => ['nullable', 'string', 'size:3'],
+            'repayment_months'              => ['nullable', 'integer', 'min:1', 'max:24'],
+            'purpose'                       => ['required', 'string', 'max:500'],
+            'justification'                 => ['required', 'string', 'max:2000'],
+            'deduction_authority_confirmed' => ['nullable', 'boolean'],
         ]);
 
         $user = $request->user();
+        $policy = $this->salaryAdvanceService->activePolicy($user->tenant_id);
+        $repaymentMonths = $policy->recovery_rule === 'full_eom' ? 1 : ($data['repayment_months'] ?? 1);
+
         $advance = SalaryAdvanceRequest::create([
-            'tenant_id'         => $user->tenant_id,
-            'requester_id'      => $user->id,
-            'reference_number'  => 'ADV-' . strtoupper(Str::random(8)),
-            'advance_type'      => $data['advance_type'],
-            'amount'            => $data['amount'],
-            'currency'          => $data['currency'] ?? 'NAD',
-            'repayment_months'  => $data['repayment_months'] ?? 6,
-            'purpose'           => $data['purpose'],
-            'justification'     => $data['justification'],
-            'status'            => 'draft',
+            'tenant_id'                        => $user->tenant_id,
+            'requester_id'                     => $user->id,
+            'reference_number'                 => 'ADV-' . strtoupper(Str::random(8)),
+            'advance_type'                     => $data['advance_type'],
+            'amount'                           => $data['amount'],
+            'currency'                         => $data['currency'] ?? 'NAD',
+            'repayment_months'                 => $repaymentMonths,
+            'purpose'                          => $data['purpose'],
+            'justification'                    => $data['justification'],
+            'status'                           => 'draft',
+            'deduction_authority_confirmed'    => (bool) ($data['deduction_authority_confirmed'] ?? false),
+            'deduction_authority_version'      => !empty($data['deduction_authority_confirmed'])
+                ? SalaryAdvanceRequest::DEDUCTION_AUTHORITY_VERSION
+                : null,
+            'deduction_authority_confirmed_at' => !empty($data['deduction_authority_confirmed']) ? now() : null,
+            'policy_version_id'                => $policy->id,
+            'salary_basis'                     => $policy->salary_basis,
         ]);
 
         return response()->json(['message' => 'Salary advance request created.', 'data' => $advance->load('requester')], 201);
@@ -120,19 +121,31 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->requester_id !== $request->user()->id) {
             abort(403);
         }
-        if ($salaryAdvanceRequest->status !== 'draft') {
-            throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
+        if (!in_array($salaryAdvanceRequest->status, ['draft', 'finance_returned', 'returned_for_correction'], true)) {
+            throw ValidationException::withMessages(['status' => 'Only draft or returned requests can be edited.']);
         }
 
         $data = $request->validate([
-            'advance_type'     => ['sometimes', 'string', 'in:rental,medical,school,funeral,other'],
-            'amount'           => ['sometimes', 'numeric', 'min:1'],
-            'repayment_months'  => ['sometimes', 'integer', 'min:1', 'max:24'],
-            'purpose'           => ['sometimes', 'string', 'max:500'],
-            'justification'     => ['sometimes', 'string', 'max:2000'],
+            'advance_type'                  => ['sometimes', 'string', 'in:rental,medical,school,funeral,other'],
+            'amount'                        => ['sometimes', 'numeric', 'min:1'],
+            'repayment_months'              => ['sometimes', 'integer', 'min:1', 'max:24'],
+            'purpose'                       => ['sometimes', 'string', 'max:500'],
+            'justification'                 => ['sometimes', 'string', 'max:2000'],
+            'deduction_authority_confirmed' => ['sometimes', 'boolean'],
         ]);
 
-        $salaryAdvanceRequest->update(array_filter($data, fn($v) => $v !== null));
+        $policy = $this->salaryAdvanceService->activePolicy($request->user()->tenant_id);
+        if ($policy->recovery_rule === 'full_eom') {
+            $data['repayment_months'] = 1;
+        }
+
+        if (array_key_exists('deduction_authority_confirmed', $data) && $data['deduction_authority_confirmed']) {
+            $data['deduction_authority_version'] = SalaryAdvanceRequest::DEDUCTION_AUTHORITY_VERSION;
+            $data['deduction_authority_confirmed_at'] = now();
+        }
+
+        $salaryAdvanceRequest->update(array_filter($data, fn ($v) => $v !== null));
+
         return response()->json(['message' => 'Updated.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
     }
 
@@ -145,81 +158,96 @@ class SalaryAdvanceController extends Controller
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
         $salaryAdvanceRequest->forceDelete();
+
         return response()->json(['message' => 'Deleted.']);
     }
 
     public function submit(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
-        if ($salaryAdvanceRequest->requester_id !== $request->user()->id) {
-            abort(403);
-        }
-        if ($salaryAdvanceRequest->status !== 'draft') {
-            throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
-        }
-
-        $user = $request->user();
-
-        // Block submission when an approved (outstanding) advance already exists.
-        $hasOutstanding = SalaryAdvanceRequest::where('requester_id', $user->id)
-            ->where('status', 'approved')
-            ->where('id', '!=', $salaryAdvanceRequest->id)
-            ->exists();
-        if ($hasOutstanding) {
-            throw ValidationException::withMessages([
-                'advance' => ['You have an outstanding salary advance that must be fully repaid before submitting a new request.'],
-            ]);
-        }
-
-        // Enforce 50% of confirmed net salary cap.
-        $payslip = Payslip::where('user_id', $user->id)
-            ->where('confirmation_status', 'confirmed')
-            ->orderByDesc('period_year')
-            ->orderByDesc('period_month')
-            ->first();
-
-        if (!$payslip) {
-            throw ValidationException::withMessages([
-                'amount' => ['No confirmed payslip on file. Please contact HR to confirm your salary before submitting an advance request.'],
-            ]);
-        }
-
-        $maxEligible = round((float) $payslip->net_amount * 0.5, 2);
-
-        if ((float) $salaryAdvanceRequest->amount > $maxEligible) {
-            throw ValidationException::withMessages([
-                'amount' => [
-                    'The advance amount exceeds 50% of your confirmed net salary. Maximum eligible: '
-                    . $salaryAdvanceRequest->currency . ' ' . number_format($maxEligible, 2) . '.',
-                ],
-            ]);
-        }
-
-        // Store salary snapshot for audit.
-        $salaryAdvanceRequest->update([
-            'payslip_id'             => $payslip->id,
-            'net_salary_at_request'  => (float) $payslip->net_amount,
-            'gross_salary_at_request'=> (float) $payslip->gross_amount,
-            'max_eligible_amount'    => $maxEligible,
-            'eligibility_status'     => 'eligible',
-            'status'                 => 'submitted',
-            'submitted_at'           => now(),
+        $data = $request->validate([
+            'deduction_authority_confirmed' => ['nullable', 'boolean'],
         ]);
 
-        // Initiate workflow — will notify first-step approvers with email action buttons.
-        $this->workflowService->initiate($salaryAdvanceRequest, 'salary_advance', $request->user());
+        $advance = $this->salaryAdvanceService->submit(
+            $salaryAdvanceRequest,
+            $request->user(),
+            (bool) ($data['deduction_authority_confirmed'] ?? false)
+        );
 
-        return response()->json(['message' => 'Submitted.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
+        return response()->json(['message' => 'Submitted.', 'data' => $advance]);
+    }
+
+    public function financeCertify(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'confirmed_net_salary'           => ['required', 'numeric', 'min:0'],
+            'confirmed_gross_salary'         => ['nullable', 'numeric', 'min:0'],
+            'recommended_amount'             => ['nullable', 'numeric', 'min:1'],
+            'intended_recovery_payroll_date' => ['required', 'date'],
+            'eligible'                       => ['required', 'boolean'],
+            'comments'                       => ['nullable', 'string', 'max:2000'],
+            'worksheet'                      => ['nullable', 'array'],
+        ]);
+
+        if (!$data['eligible']) {
+            throw ValidationException::withMessages([
+                'eligible' => ['Use mark-not-eligible when the applicant is not eligible.'],
+            ]);
+        }
+
+        $advance = $this->salaryAdvanceService->financeCertify($salaryAdvanceRequest, $request->user(), $data);
+
+        return response()->json(['message' => 'Finance certified.', 'data' => $advance]);
+    }
+
+    public function financeReturn(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'reason'  => ['required', 'string', 'max:2000'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $advance = $this->salaryAdvanceService->financeReturn(
+            $salaryAdvanceRequest,
+            $request->user(),
+            $data['reason'] ?? $data['comment']
+        );
+
+        return response()->json(['message' => 'Returned to requester.', 'data' => $advance]);
+    }
+
+    public function markNotEligible(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $advance = $this->salaryAdvanceService->markNotEligible(
+            $salaryAdvanceRequest,
+            $request->user(),
+            $data['reason']
+        );
+
+        return response()->json(['message' => 'Marked not eligible.', 'data' => $advance]);
     }
 
     public function approve(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
+        $data = $request->validate([
+            'comment'          => ['nullable', 'string', 'max:1000'],
+            'approved_amount'  => ['nullable', 'numeric', 'min:0'],
+        ]);
+
         if ($salaryAdvanceRequest->approvalRequest) {
-            $data   = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+            if (isset($data['approved_amount'])) {
+                $this->applyApprovedAmount($salaryAdvanceRequest, (float) $data['approved_amount']);
+            }
             $result = $this->workflowService->approve(
                 $salaryAdvanceRequest->approvalRequest,
                 $request->user(),
                 $data['comment'] ?? null
             );
+
             return response()->json([
                 'message'            => 'Approved.',
                 'data'               => $salaryAdvanceRequest->fresh(['requester', 'approver', 'approvalRequest']),
@@ -228,19 +256,35 @@ class SalaryAdvanceController extends Controller
         }
 
         // Legacy direct-approval path when no workflow is configured.
-        // Must require finance.approve — never "anyone who is not staff".
         $this->authorizeLegacySalaryAdvanceAction($request->user(), $salaryAdvanceRequest);
 
-        if ($salaryAdvanceRequest->status !== 'submitted') {
-            throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
+        $policy = $this->salaryAdvanceService->activePolicy($salaryAdvanceRequest->tenant_id);
+        if ($policy->finance_certification_required
+            && !in_array($salaryAdvanceRequest->status, ['finance_certified'], true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Finance certification is required before final approval.'],
+            ]);
+        }
+
+        if (!in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
+            throw ValidationException::withMessages(['status' => 'Request cannot be approved in its current status.']);
         }
         if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
             throw ValidationException::withMessages([
                 'approval' => 'You cannot approve your own request.',
             ]);
         }
+
+        if (isset($data['approved_amount'])) {
+            $this->applyApprovedAmount($salaryAdvanceRequest, (float) $data['approved_amount']);
+        }
+
         $salaryAdvanceRequest->onWorkflowApproved($request->user());
-        return response()->json(['message' => 'Approved.', 'data' => $salaryAdvanceRequest->fresh(['requester', 'approver'])]);
+
+        return response()->json([
+            'message' => 'Approved.',
+            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approver']),
+        ]);
     }
 
     public function reject(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
@@ -256,6 +300,7 @@ class SalaryAdvanceController extends Controller
 
         if ($salaryAdvanceRequest->approvalRequest) {
             $this->workflowService->reject($salaryAdvanceRequest->approvalRequest, $request->user(), $reason);
+
             return response()->json([
                 'message' => 'Rejected.',
                 'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
@@ -264,8 +309,8 @@ class SalaryAdvanceController extends Controller
 
         $this->authorizeLegacySalaryAdvanceAction($request->user(), $salaryAdvanceRequest);
 
-        if ($salaryAdvanceRequest->status !== 'submitted') {
-            throw ValidationException::withMessages(['status' => 'Only submitted requests can be rejected.']);
+        if (!in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
+            throw ValidationException::withMessages(['status' => 'Only submitted or certified requests can be rejected.']);
         }
         if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
             throw ValidationException::withMessages([
@@ -273,6 +318,7 @@ class SalaryAdvanceController extends Controller
             ]);
         }
         $salaryAdvanceRequest->onWorkflowRejected($request->user(), $reason);
+
         return response()->json(['message' => 'Rejected.', 'data' => $salaryAdvanceRequest->fresh('requester')]);
     }
 
@@ -285,6 +331,7 @@ class SalaryAdvanceController extends Controller
             $request->user(),
             $data['comment']
         );
+
         return response()->json([
             'message' => 'Request returned to requester for correction.',
             'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
@@ -295,6 +342,7 @@ class SalaryAdvanceController extends Controller
     {
         abort_unless($salaryAdvanceRequest->approvalRequest, 422, 'No active workflow on this request.');
         $this->workflowService->withdraw($salaryAdvanceRequest->approvalRequest, $request->user());
+
         return response()->json([
             'message' => 'Salary advance request withdrawn.',
             'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
@@ -303,12 +351,93 @@ class SalaryAdvanceController extends Controller
 
     public function resubmit(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
+        if (in_array($salaryAdvanceRequest->status, ['finance_returned', 'returned_for_correction'], true)
+            && !$salaryAdvanceRequest->approvalRequest) {
+            $data = $request->validate([
+                'deduction_authority_confirmed' => ['nullable', 'boolean'],
+            ]);
+            $advance = $this->salaryAdvanceService->submit(
+                $salaryAdvanceRequest,
+                $request->user(),
+                (bool) ($data['deduction_authority_confirmed'] ?? $salaryAdvanceRequest->deduction_authority_confirmed)
+            );
+
+            return response()->json(['message' => 'Salary advance request resubmitted.', 'data' => $advance]);
+        }
+
         abort_unless($salaryAdvanceRequest->approvalRequest, 422, 'No active workflow on this request.');
         $this->workflowService->resubmit($salaryAdvanceRequest->approvalRequest, $request->user());
+
         return response()->json([
             'message' => 'Salary advance request resubmitted.',
             'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
         ]);
+    }
+
+    public function recordPayment(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'payment_reference' => ['required', 'string', 'max:100'],
+            'payment_method'    => ['required', 'string', 'max:64'],
+            'payment_date'      => ['nullable', 'date'],
+        ]);
+
+        $advance = $this->salaryAdvanceService->recordPayment($salaryAdvanceRequest, $request->user(), $data);
+
+        return response()->json(['message' => 'Payment recorded.', 'data' => $advance]);
+    }
+
+    public function scheduleRecovery(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'intended_recovery_payroll_date' => ['nullable', 'date'],
+        ]);
+
+        $advance = $this->salaryAdvanceService->scheduleRecovery($salaryAdvanceRequest, $request->user(), $data);
+
+        return response()->json(['message' => 'Recovery scheduled.', 'data' => $advance]);
+    }
+
+    public function recordRecovery(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'amount'        => ['required', 'numeric', 'min:0.01'],
+            'reference_doc' => ['nullable', 'string', 'max:100'],
+            'notes'         => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $advance = $this->salaryAdvanceService->recordRecovery($salaryAdvanceRequest, $request->user(), $data);
+
+        return response()->json(['message' => 'Recovery recorded.', 'data' => $advance]);
+    }
+
+    public function close(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        $advance = $this->salaryAdvanceService->close($salaryAdvanceRequest, $request->user());
+
+        return response()->json(['message' => 'Advance closed.', 'data' => $advance]);
+    }
+
+    public function ledger(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
+    {
+        abort_unless(
+            $this->salaryAdvanceService->canAccessAdvance($request->user(), $salaryAdvanceRequest),
+            403
+        );
+
+        return response()->json(['data' => $this->salaryAdvanceService->ledger($salaryAdvanceRequest)]);
+    }
+
+    public function pdf(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): Response
+    {
+        abort_unless(
+            $this->salaryAdvanceService->canAccessAdvance($request->user(), $salaryAdvanceRequest),
+            403
+        );
+
+        $pdf = $this->salaryAdvanceService->form002Pdf($salaryAdvanceRequest);
+
+        return $pdf->download('FORM-002-' . $salaryAdvanceRequest->reference_number . '.pdf');
     }
 
     public function certificate(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
@@ -316,6 +445,7 @@ class SalaryAdvanceController extends Controller
         $this->authorizeCertificateView($request->user(), $salaryAdvanceRequest, [
             'Finance Controller',
             'Secretary General',
+            'Director',
             'System Admin',
             'System Administrator',
         ]);
@@ -329,9 +459,17 @@ class SalaryAdvanceController extends Controller
         ]);
     }
 
-    /**
-     * Gate the no-workflow approve/reject path to finance approvers only.
-     */
+    private function applyApprovedAmount(SalaryAdvanceRequest $advance, float $approvedAmount): void
+    {
+        $max = (float) ($advance->max_eligible_amount ?? $advance->amount);
+        if ($approvedAmount > $max + 0.00001) {
+            throw ValidationException::withMessages([
+                'approved_amount' => ['Approved amount cannot exceed policy maximum of ' . number_format($max, 2) . '.'],
+            ]);
+        }
+        $advance->update(['approved_amount' => $approvedAmount, 'amount' => $approvedAmount]);
+    }
+
     private function authorizeLegacySalaryAdvanceAction(User $actor, SalaryAdvanceRequest $advance): void
     {
         if ((int) $advance->requester_id === (int) $actor->id) {
@@ -339,9 +477,9 @@ class SalaryAdvanceController extends Controller
         }
 
         $allowed = $actor->isSystemAdmin()
-            || $actor->can('finance.approve')
-            || $actor->hasAnyRole(['Finance Controller', 'Secretary General']);
+            || $this->salaryAdvanceService->hasSalaryAdvancePermission($actor, 'salary_advance.approve')
+            || $actor->hasAnyRole(['Finance Controller', 'Secretary General', 'Director']);
 
-        abort_unless($allowed, 403, 'Only finance approvers may approve salary advances when no workflow is configured.');
+        abort_unless($allowed, 403, 'Only authorised approvers may approve salary advances when no workflow is configured.');
     }
 }

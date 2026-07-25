@@ -14,12 +14,21 @@ import { ReturnModal } from "@/components/workflow/ReturnModal";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
   draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
-  submitted:               { label: "Submitted",              badge: "badge-warning",  icon: "pending" },
+  submitted:               { label: "Pending Finance Certify", badge: "badge-warning",  icon: "pending" },
+  finance_certified:       { label: "Finance Certified",      badge: "badge-primary",  icon: "verified" },
+  finance_returned:        { label: "Returned by Finance",    badge: "badge-warning",  icon: "undo" },
+  not_eligible:            { label: "Not Eligible",           badge: "badge-danger",   icon: "block" },
   approved:                { label: "Approved",               badge: "badge-success",  icon: "check_circle" },
+  approved_for_payment:    { label: "Approved for Payment",   badge: "badge-success",  icon: "payments" },
   rejected:                { label: "Rejected",               badge: "badge-danger",   icon: "cancel" },
   paid:                    { label: "Paid",                   badge: "badge-primary",  icon: "payments" },
+  recovery_scheduled:      { label: "Recovery Scheduled",     badge: "badge-primary",  icon: "event" },
+  recovered:               { label: "Recovered",              badge: "badge-success",  icon: "check_circle" },
+  reconciliation_required: { label: "Reconciliation Required", badge: "badge-warning", icon: "warning" },
+  closed:                  { label: "Closed",                 badge: "badge-muted",    icon: "lock" },
   returned_for_correction: { label: "Returned for Correction", badge: "badge-warning", icon: "undo" },
   withdrawn:               { label: "Withdrawn",              badge: "badge-muted",    icon: "block" },
+  resubmitted:             { label: "Resubmitted",            badge: "badge-warning",  icon: "refresh" },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -162,7 +171,10 @@ export default function AdvanceDetailPage() {
 
   useEffect(() => {
     const user = getStoredUser();
-    setIsAdmin(user?.roles?.some((r) => ["System Admin", "System Administrator", "super-admin", "Finance Officer"].includes(r)) ?? false);
+    setIsAdmin(user?.roles?.some((r) => [
+      "System Admin", "System Administrator", "super-admin",
+      "Finance Controller", "Finance Officer", "Secretary General", "Director",
+    ].includes(r)) ?? false);
   }, []);
 
   useEffect(() => {
@@ -178,9 +190,62 @@ export default function AdvanceDetailPage() {
     if (!advance) return;
     setActionLoading(true);
     try {
-      const res = await financeApi.submitAdvance(advance.id);
+      const res = await financeApi.submitAdvance(advance.id, { deduction_authority_confirmed: true });
       setAdvance(res.data.data);
     } catch { setError("Failed to submit request."); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleFinanceCertify = async () => {
+    if (!advance) return;
+    setActionLoading(true);
+    try {
+      const recovery = advance.intended_recovery_payroll_date
+        ?? new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0).toISOString().slice(0, 10);
+      await financeApi.financeCertifyAdvance(advance.id, {
+        confirmed_net_salary: Number(advance.net_salary_at_request ?? 0),
+        confirmed_gross_salary: Number(advance.gross_salary_at_request ?? undefined),
+        intended_recovery_payroll_date: recovery,
+        eligible: true,
+        comments: "Finance certification completed",
+      });
+      await refreshAdvance();
+      showToastMsg("Finance certified.");
+    } catch { setError("Failed to certify advance."); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleRecordPayment = async () => {
+    if (!advance) return;
+    const ref = window.prompt("Payment reference");
+    if (!ref) return;
+    setActionLoading(true);
+    try {
+      await financeApi.recordAdvancePayment(advance.id, {
+        payment_reference: ref,
+        payment_method: "bank_transfer",
+        payment_date: new Date().toISOString().slice(0, 10),
+      });
+      await refreshAdvance();
+      showToastMsg("Payment recorded.");
+    } catch { setError("Failed to record payment."); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleRecordRecovery = async () => {
+    if (!advance) return;
+    const amount = Number(window.prompt("Recovery amount", String(advance.approved_amount ?? advance.amount)) ?? 0);
+    if (!amount) return;
+    setActionLoading(true);
+    try {
+      await financeApi.recordAdvanceRecovery(advance.id, {
+        amount,
+        reference_doc: "PAYROLL",
+        notes: "Full EOM recovery",
+      });
+      await refreshAdvance();
+      showToastMsg("Recovery recorded.");
+    } catch { setError("Failed to record recovery."); }
     finally { setActionLoading(false); }
   };
 
@@ -314,14 +379,36 @@ export default function AdvanceDetailPage() {
             <span className="material-symbols-outlined text-[13px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{sc.icon}</span>
             {sc.label}
           </span>
-          {advance.status === "approved" && (
-            <Link
-              href={`/finance/advances/${advance.id}/certificate`}
-              className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-              Certificate
-            </Link>
+          {(advance.status === "approved" || advance.status === "approved_for_payment" || advance.status === "paid" || advance.status === "closed" || advance.status === "recovery_scheduled" || advance.status === "recovered") && (
+            <>
+              <Link
+                href={`/finance/advances/${advance.id}/certificate`}
+                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+                Certificate
+              </Link>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                onClick={async () => {
+                  try {
+                    const res = await financeApi.downloadAdvancePdf(advance.id);
+                    const url = URL.createObjectURL(res.data);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `FORM-002-${advance.reference_number}.pdf`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch {
+                    setError("Failed to download FORM-002 PDF.");
+                  }
+                }}
+              >
+                <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+                FORM-002 PDF
+              </button>
+            </>
           )}
           {advance.status === "submitted" && approvalRequest?.status === "pending" && (
             <button
@@ -407,11 +494,15 @@ export default function AdvanceDetailPage() {
             <p className="font-semibold text-neutral-900 text-lg">{formatCurrency(advance.amount, advance.currency)}</p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Repayment period</p>
-            <p className="font-semibold text-neutral-900">{advance.repayment_months} {advance.repayment_months === 1 ? "month" : "months"}</p>
+            <p className="text-xs text-neutral-400 mb-0.5">Recovery</p>
+            <p className="font-semibold text-neutral-900">
+              {advance.repayment_months <= 1 ? "Full amount — one payroll month" : `${advance.repayment_months} months`}
+            </p>
           </div>
           <div>
-            <p className="text-xs text-neutral-400 mb-0.5">Monthly deduction</p>
+            <p className="text-xs text-neutral-400 mb-0.5">
+              {advance.repayment_months <= 1 ? "Payroll deduction" : "Monthly deduction"}
+            </p>
             <p className="font-semibold text-neutral-900">{monthlyRepayment}</p>
           </div>
           <div className="col-span-2">
@@ -511,7 +602,29 @@ export default function AdvanceDetailPage() {
             Submit for approval
           </button>
         )}
-        {isAdmin && advance.status === "submitted" && (
+        {isAdmin && (advance.status === "submitted" || advance.status === "resubmitted") && (
+          <>
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={handleFinanceCertify}
+              className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined text-[18px]">verified</span>
+              Finance Certify
+            </button>
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => setShowRejectDialog(true)}
+              className="flex items-center gap-2 py-2 px-4 text-sm font-semibold rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined text-[18px]">cancel</span>
+              Reject
+            </button>
+          </>
+        )}
+        {isAdmin && advance.status === "finance_certified" && (
           <>
             <button
               type="button"
@@ -543,6 +656,28 @@ export default function AdvanceDetailPage() {
               Reject
             </button>
           </>
+        )}
+        {isAdmin && (advance.status === "approved_for_payment" || advance.status === "approved") && (
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={handleRecordPayment}
+            className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-[18px]">payments</span>
+            Record Payment
+          </button>
+        )}
+        {isAdmin && (advance.status === "paid" || advance.status === "recovery_scheduled" || advance.status === "reconciliation_required") && (
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={handleRecordRecovery}
+            className="btn-primary flex items-center gap-2 py-2 px-4 text-sm disabled:opacity-60"
+          >
+            <span className="material-symbols-outlined text-[18px]">account_balance</span>
+            Record Recovery
+          </button>
         )}
         <Link href="/finance/advances" className="btn-secondary flex items-center gap-2 py-2 px-4 text-sm">
           Back to list

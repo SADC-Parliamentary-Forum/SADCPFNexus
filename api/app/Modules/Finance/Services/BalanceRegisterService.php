@@ -30,12 +30,14 @@ class BalanceRegisterService
             throw ValidationException::withMessages(['register' => 'A balance register already exists for this advance.']);
         }
 
-        $recoveryStart    = Carbon::now()->addMonthNoOverflow()->startOfMonth();
-        $repaymentMonths  = (int) ($advance->repayment_months ?: 6);
-        $installment      = $repaymentMonths > 0
-            ? round((float) $advance->amount / $repaymentMonths, 2)
-            : 0;
-        $payoffDate       = $recoveryStart->copy()->addMonths($repaymentMonths);
+        $amount           = (float) ($advance->approved_amount ?? $advance->amount);
+        $recoveryStart    = $advance->intended_recovery_payroll_date
+            ? Carbon::parse($advance->intended_recovery_payroll_date)->startOfMonth()
+            : Carbon::now()->addMonthNoOverflow()->startOfMonth();
+        // Policy v1: full EOM recovery — one installment equal to the full principal.
+        $repaymentMonths  = max(1, (int) ($advance->repayment_months ?: 1));
+        $installment      = round($amount / $repaymentMonths, 2);
+        $payoffDate       = $recoveryStart->copy()->addMonths($repaymentMonths - 1)->endOfMonth();
 
         $register = BalanceRegister::create([
             'tenant_id'            => $advance->tenant_id,
@@ -44,9 +46,9 @@ class BalanceRegisterService
             'source_request_type'  => SalaryAdvanceRequest::class,
             'source_request_id'    => $advance->id,
             'reference_number'     => 'BCR-' . strtoupper(Str::random(8)),
-            'approved_amount'      => $advance->amount,
+            'approved_amount'      => $amount,
             'total_processed'      => 0,
-            'balance'              => $advance->amount,
+            'balance'              => $amount,
             'installment_amount'   => $installment,
             'recovery_start_date'  => $recoveryStart->toDateString(),
             'estimated_payoff_date'=> $payoffDate->toDateString(),
@@ -70,7 +72,7 @@ class BalanceRegisterService
                     'name'         => $advance->requester->name,
                     'reference'    => $register->reference_number,
                     'module_label' => 'Salary Advance',
-                    'amount'       => number_format((float) $advance->amount, 2) . ' ' . $advance->currency,
+                    'amount'       => number_format($amount, 2) . ' ' . $advance->currency,
                 ],
                 ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
             );
@@ -252,7 +254,13 @@ class BalanceRegisterService
             );
         }
 
-        $checkers = User::role(['Finance Controller', 'Finance Officer'])
+        // Only query roles that exist (Finance Officer is optional / not always seeded).
+        $checkerRoleNames = ['Finance Controller'];
+        if (\Spatie\Permission\Models\Role::where('name', 'Finance Officer')->exists()) {
+            $checkerRoleNames[] = 'Finance Officer';
+        }
+
+        $checkers = User::role($checkerRoleNames)
             ->where('tenant_id', $register->tenant_id)
             ->where('id', '!=', $maker->id)
             ->get();

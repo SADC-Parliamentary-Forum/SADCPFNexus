@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Finance;
 
+use App\Models\Payslip;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;
+use App\Models\User;
 use Tests\TestCase;
 
 class SalaryAdvanceTest extends TestCase
@@ -11,13 +13,30 @@ class SalaryAdvanceTest extends TestCase
     private function advancePayload(array $overrides = []): array
     {
         return array_merge([
-            'advance_type'     => 'medical',
-            'amount'           => 5000.00,
-            'currency'         => 'NAD',
-            'purpose'          => 'Medical emergency for family member',
-            'justification'    => 'Hospitalization expenses for wife requiring urgent surgery',
-            'repayment_months' => 3,
+            'advance_type'                  => 'medical',
+            'amount'                        => 5000.00,
+            'currency'                      => 'NAD',
+            'purpose'                       => 'Medical emergency for family member',
+            'justification'                 => 'Hospitalization expenses for wife requiring urgent surgery',
+            'repayment_months'              => 1,
+            'deduction_authority_confirmed' => true,
         ], $overrides);
+    }
+
+    private function confirmedPayslip(User $user, float $net = 20000): Payslip
+    {
+        return Payslip::create([
+            'tenant_id'           => $user->tenant_id,
+            'user_id'             => $user->id,
+            'period_month'        => 6,
+            'period_year'         => 2026,
+            'gross_amount'        => $net * 1.5,
+            'net_amount'          => $net,
+            'currency'            => 'NAD',
+            'confirmation_status' => 'confirmed',
+            'confirmed_at'        => now(),
+            'confirmed_by'        => $user->id,
+        ]);
     }
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -70,7 +89,6 @@ class SalaryAdvanceTest extends TestCase
         [$http, $myUser] = $this->asStaff($tenant);
         $otherUser = $this->makeUser('staff', $tenant);
 
-        // Create for other user directly
         SalaryAdvanceRequest::create([
             'tenant_id'        => $tenant->id,
             'requester_id'     => $otherUser->id,
@@ -80,11 +98,10 @@ class SalaryAdvanceTest extends TestCase
             'currency'         => 'NAD',
             'purpose'          => 'Other user advance',
             'justification'    => 'Other user justification',
-            'repayment_months' => 6,
+            'repayment_months' => 1,
             'status'           => 'draft',
         ]);
 
-        // Create for self via API
         $http->postJson('/api/v1/finance/advances', $this->advancePayload());
 
         $response = $http->getJson('/api/v1/finance/advances');
@@ -135,12 +152,15 @@ class SalaryAdvanceTest extends TestCase
 
     public function test_staff_can_submit_draft_advance(): void
     {
-        [$http] = $this->asStaff();
+        [$http, $user] = $this->asStaff();
+        $this->confirmedPayslip($user);
 
         $create = $http->postJson('/api/v1/finance/advances', $this->advancePayload());
         $id = $create->json('data.id');
 
-        $submit = $http->postJson("/api/v1/finance/advances/{$id}/submit");
+        $submit = $http->postJson("/api/v1/finance/advances/{$id}/submit", [
+            'deduction_authority_confirmed' => true,
+        ]);
         $submit->assertOk()
                ->assertJsonPath('data.status', 'submitted');
     }
@@ -160,42 +180,57 @@ class SalaryAdvanceTest extends TestCase
             'currency'         => 'NAD',
             'purpose'          => 'Owner advance',
             'justification'    => 'Owner justification',
-            'repayment_months' => 6,
+            'repayment_months' => 1,
             'status'           => 'draft',
         ]);
 
         $this->asUser($other)
-             ->postJson("/api/v1/finance/advances/{$advance->id}/submit")
+             ->postJson("/api/v1/finance/advances/{$advance->id}/submit", [
+                 'deduction_authority_confirmed' => true,
+             ])
              ->assertForbidden();
     }
 
-    // ── Finance Controller: Approve / Reject ──────────────────────────────────
+    // ── Finance certify → SG approve / reject ─────────────────────────────────
 
-    public function test_finance_controller_can_approve_submitted_advance(): void
+    public function test_finance_controller_can_approve_after_certify(): void
     {
         $tenant = Tenant::factory()->create();
         [$staffHttp, $staff] = $this->asStaff($tenant);
+        $this->confirmedPayslip($staff);
 
         $create = $staffHttp->postJson('/api/v1/finance/advances', $this->advancePayload());
         $id = $create->json('data.id');
-        $staffHttp->postJson("/api/v1/finance/advances/{$id}/submit");
+        $staffHttp->postJson("/api/v1/finance/advances/{$id}/submit", [
+            'deduction_authority_confirmed' => true,
+        ]);
 
         [$finHttp] = $this->asFinanceController($tenant);
+        $finHttp->postJson("/api/v1/finance/advances/{$id}/finance-certify", [
+            'confirmed_net_salary'           => 20000,
+            'intended_recovery_payroll_date' => '2026-07-31',
+            'eligible'                       => true,
+            'comments'                       => 'Certified',
+        ])->assertOk();
 
-        $finHttp->postJson("/api/v1/finance/advances/{$id}/approve", [
+        [$sgHttp] = $this->asSG($tenant);
+        $sgHttp->postJson("/api/v1/finance/advances/{$id}/approve", [
             'comment' => 'Approved — medical grounds',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'approved');
+          ->assertJsonPath('data.status', 'approved_for_payment');
     }
 
     public function test_finance_controller_can_reject_submitted_advance(): void
     {
         $tenant = Tenant::factory()->create();
-        [$staffHttp] = $this->asStaff($tenant);
+        [$staffHttp, $staff] = $this->asStaff($tenant);
+        $this->confirmedPayslip($staff);
 
         $create = $staffHttp->postJson('/api/v1/finance/advances', $this->advancePayload());
         $id = $create->json('data.id');
-        $staffHttp->postJson("/api/v1/finance/advances/{$id}/submit");
+        $staffHttp->postJson("/api/v1/finance/advances/{$id}/submit", [
+            'deduction_authority_confirmed' => true,
+        ]);
 
         [$finHttp] = $this->asFinanceController($tenant);
 
@@ -208,12 +243,15 @@ class SalaryAdvanceTest extends TestCase
     public function test_staff_cannot_approve_advance(): void
     {
         $tenant = Tenant::factory()->create();
-        [$staffHttpA] = $this->asStaff($tenant);
+        [$staffHttpA, $staffA] = $this->asStaff($tenant);
+        $this->confirmedPayslip($staffA);
         [$staffHttpB] = $this->asStaff($tenant);
 
         $create = $staffHttpA->postJson('/api/v1/finance/advances', $this->advancePayload());
         $id = $create->json('data.id');
-        $staffHttpA->postJson("/api/v1/finance/advances/{$id}/submit");
+        $staffHttpA->postJson("/api/v1/finance/advances/{$id}/submit", [
+            'deduction_authority_confirmed' => true,
+        ]);
 
         $staffHttpB->postJson("/api/v1/finance/advances/{$id}/approve")
                    ->assertForbidden();

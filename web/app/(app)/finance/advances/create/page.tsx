@@ -14,14 +14,25 @@ type EligibilityResult = {
   net_salary: number | null;
   gross_salary: number | null;
   max_eligible: number | null;
+  salary_basis?: string;
   payslip: { id: number; period_month: number; period_year: number; currency: string } | null;
+  exposure?: {
+    has_outstanding_balance: boolean;
+    outstanding_balance: number;
+    has_active_advance: boolean;
+    blocked: boolean;
+    reasons: string[];
+    active_advance?: { id: number; reference_number: string; status: string; amount: number } | null;
+  };
+  policy?: { recovery_rule: string; max_salary_percentage: number; salary_basis: string };
+  intended_recovery_payroll_date?: string;
 };
 
 const MONTH_NAMES = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const STEPS = [
   { id: 0, label: "Eligibility",  icon: "assignment_turned_in" },
-  { id: 1, label: "Schedule",     icon: "calendar_month" },
+  { id: 1, label: "Amount",       icon: "payments" },
   { id: 2, label: "Review & Sign", icon: "draw" },
 ];
 
@@ -37,7 +48,7 @@ export default function SalaryAdvanceCreatePage() {
   // Form fields
   const [advanceType, setAdvanceType]         = useState("");
   const [amount, setAmount]                   = useState("");
-  const [repaymentMonths, setRepaymentMonths] = useState("12");
+  const [repaymentMonths] = useState("1");
   const [purpose, setPurpose]                 = useState("");
   const [justification, setJustification]     = useState("");
   const [consented, setConsented]             = useState(false);
@@ -57,9 +68,10 @@ export default function SalaryAdvanceCreatePage() {
       .finally(() => setEligibilityLoading(false));
   }, []);
 
-  // Derived computations
+  // Derived computations — v1 policy is full EOM recovery (single payroll month)
   const amountNum        = parseFloat(amount) || 0;
-  const monthsNum        = parseInt(repaymentMonths) || 12;
+  const isFullEom        = (eligibility?.policy?.recovery_rule ?? "full_eom") === "full_eom";
+  const monthsNum        = isFullEom ? 1 : (parseInt(repaymentMonths) || 1);
   const netSalary        = eligibility?.net_salary ?? null;
   const maxEligible      = eligibility?.max_eligible ?? null;
   const monthlyDeduction = monthsNum > 0 && amountNum > 0 ? amountNum / monthsNum : 0;
@@ -68,13 +80,16 @@ export default function SalaryAdvanceCreatePage() {
   const payslipLabel     = eligibility?.payslip
     ? `${MONTH_NAMES[eligibility.payslip.period_month] ?? eligibility.payslip.period_month} ${eligibility.payslip.period_year}`
     : null;
-
-  const nextPayDate = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setDate(25);
-    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  })();
+  const recoveryLabel = eligibility?.intended_recovery_payroll_date
+    ? new Date(eligibility.intended_recovery_payroll_date).toLocaleDateString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric",
+      })
+    : (() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 1);
+        d.setDate(0);
+        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      })();
 
   // Validation per step
   const canProceed = () => {
@@ -92,17 +107,20 @@ export default function SalaryAdvanceCreatePage() {
     setError(null);
     try {
       const payload = {
-        advance_type:     advanceType,
-        amount:           amountNum,
-        currency:         defaultCurrency,
-        repayment_months: monthsNum,
+        advance_type:                   advanceType,
+        amount:                         amountNum,
+        currency:                       defaultCurrency,
+        repayment_months:               monthsNum,
         purpose,
         justification,
+        deduction_authority_confirmed:  consented,
       };
       const { data } = await financeApi.createAdvance(payload);
       const id = data.data?.id ?? (data as { id?: number }).id;
-      if (!asDraft && id) await financeApi.submitAdvance(id);
-      router.push("/finance");
+      if (!asDraft && id) {
+        await financeApi.submitAdvance(id, { deduction_authority_confirmed: true });
+      }
+      router.push(id ? `/finance/advances/${id}` : "/finance/advances");
     } catch {
       setError("Failed to submit. Please try again.");
     } finally {
@@ -129,10 +147,17 @@ export default function SalaryAdvanceCreatePage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-amber-600 text-[20px] mt-0.5">warning</span>
           <div>
-            <p className="text-sm font-semibold text-amber-900">Salary Not Yet Confirmed</p>
+            <p className="text-sm font-semibold text-amber-900">
+              {eligibility?.exposure?.blocked ? "Outstanding Advance Blocks New Request" : "Not Eligible Yet"}
+            </p>
             <p className="text-xs text-amber-700 mt-1">
-              Your payslip has not been confirmed by HR. You will not be able to proceed until HR confirms your net salary.
-              Please contact HR to confirm your latest payslip.
+              {eligibility?.exposure?.has_outstanding_balance
+                ? `You have an outstanding balance of ${currencySymbol} ${Number(eligibility.exposure.outstanding_balance).toLocaleString()}. Full recovery is required before a new advance.`
+                : eligibility?.exposure?.has_active_advance
+                  ? `You already have an active advance (${eligibility.exposure.active_advance?.reference_number ?? "in progress"}).`
+                  : eligibility?.reason === "no_confirmed_payslip"
+                    ? "Your payslip has not been confirmed by HR. You cannot proceed until HR confirms your net salary."
+                    : "You are not currently eligible to request a salary advance."}
             </p>
           </div>
         </div>
@@ -224,7 +249,7 @@ export default function SalaryAdvanceCreatePage() {
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Maximum repayment: 24 months
+            Full recovery in the next applicable payroll month
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
@@ -232,20 +257,20 @@ export default function SalaryAdvanceCreatePage() {
           </li>
           <li className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[14px]">arrow_right</span>
-            Subject to Secretary General approval
+            Finance certify → Principal review → SG approval
           </li>
         </ul>
       </div>
     </div>
   );
 
-  // ─── Step 1: Amount & Payback Schedule ──────────────────────────────────────
+  // ─── Step 1: Amount & full EOM recovery ─────────────────────────────────────
   const renderStep1 = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">Amount & Repayment Schedule</h3>
+        <h3 className="text-base font-semibold text-neutral-900">Amount &amp; Recovery</h3>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Specify the advance amount and choose a repayment period. The deduction starts from your next pay cycle.
+          Specify the advance amount. Under current policy the full amount is recovered in a single payroll month.
         </p>
       </div>
 
@@ -283,14 +308,20 @@ export default function SalaryAdvanceCreatePage() {
           )}
         </div>
 
-        {/* Repayment period */}
+        {/* Full EOM recovery */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-neutral-700">Repayment Period</label>
-          <select className="form-input" value={repaymentMonths} onChange={(e) => setRepaymentMonths(e.target.value)}>
-            {[3, 6, 9, 12, 18, 24].map((m) => (
-              <option key={m} value={m}>{m} months</option>
-            ))}
-          </select>
+          <label className="block text-xs font-semibold text-neutral-700">Recovery</label>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+            <p className="text-sm font-semibold text-neutral-900">Full amount — one payroll month</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              Intended recovery: <span className="font-medium text-neutral-800">{recoveryLabel}</span>
+            </p>
+            {amountNum > 0 && (
+              <p className="text-xs text-neutral-500 mt-1">
+                Deduction: <span className="font-semibold text-neutral-800">{currencySymbol} {monthlyDeduction.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -348,18 +379,18 @@ export default function SalaryAdvanceCreatePage() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Repayment Period</span>
-                <span className="font-medium text-neutral-800">{monthsNum} months</span>
+                <span className="text-neutral-500">Recovery</span>
+                <span className="font-medium text-neutral-800">Full amount — one payroll month</span>
               </div>
               <div className="flex justify-between text-sm border-t border-primary/10 pt-2 mt-1">
-                <span className="text-neutral-600 font-medium">Monthly Deduction</span>
+                <span className="text-neutral-600 font-medium">Payroll Deduction</span>
                 <span className="font-bold text-primary font-mono">
                   {monthlyDeduction > 0 ? `${currencySymbol} ${monthlyDeduction.toFixed(2)}` : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">First Deduction Date</span>
-                <span className="font-medium text-neutral-800">{nextPayDate}</span>
+                <span className="text-neutral-500">Intended Recovery Date</span>
+                <span className="font-medium text-neutral-800">{recoveryLabel}</span>
               </div>
             </div>
           </div>
@@ -393,9 +424,9 @@ export default function SalaryAdvanceCreatePage() {
         <div className="divide-y divide-neutral-100">
           {[
             { label: "Amount Requested", value: `${currencySymbol} ${amountNum.toLocaleString()}` },
-            { label: "Repayment Period", value: `${monthsNum} months` },
-            { label: "Monthly Deduction", value: `${currencySymbol} ${monthlyDeduction.toFixed(2)}`, highlight: true },
-            { label: "First Deduction", value: nextPayDate },
+            { label: "Recovery", value: "Full amount — one payroll month" },
+            { label: "Payroll Deduction", value: `${currencySymbol} ${monthlyDeduction.toFixed(2)}`, highlight: true },
+            { label: "Intended Recovery", value: recoveryLabel },
             { label: "Purpose", value: purpose },
           ].map(({ label, value, highlight }) => (
             <div key={label} className="flex justify-between py-2.5 text-sm">
@@ -425,12 +456,11 @@ export default function SalaryAdvanceCreatePage() {
             onChange={(e) => setConsented(e.target.checked)}
           />
           <div>
-            <p className="text-sm font-semibold text-amber-900">I authorise the deduction of monthly instalments</p>
+            <p className="text-sm font-semibold text-amber-900">I authorise full payroll deduction</p>
             <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-              By checking this box, I authorise the Finance Department to deduct {currencySymbol} {monthlyDeduction.toFixed(2)}{" "}
-              from my salary each month beginning {nextPayDate}, for {monthsNum} consecutive pay cycles,
-              until the full advance of {currencySymbol} {amountNum.toLocaleString()} is repaid.
-              I understand this consent is digitally logged and irrevocable after final approval.
+              By checking this box, I authorise the Finance Department to deduct the full advance of{" "}
+              {currencySymbol} {amountNum.toLocaleString()} from my salary in the applicable payroll month
+              ending {recoveryLabel}. I understand this consent is digitally logged and irrevocable after final approval.
             </p>
           </div>
         </label>

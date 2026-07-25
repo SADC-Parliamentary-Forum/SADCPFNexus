@@ -468,11 +468,20 @@ Route::prefix('v1')->group(function () {
             Route::put('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'update']);
             Route::delete('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'destroy']);
             Route::post('advances/{salaryAdvanceRequest}/submit',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
+            Route::post('advances/{salaryAdvanceRequest}/finance-certify', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'financeCertify']);
+            Route::post('advances/{salaryAdvanceRequest}/finance-return', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'financeReturn']);
+            Route::post('advances/{salaryAdvanceRequest}/mark-not-eligible', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'markNotEligible']);
             Route::post('advances/{salaryAdvanceRequest}/approve',  [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
             Route::post('advances/{salaryAdvanceRequest}/reject',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
             Route::post('advances/{salaryAdvanceRequest}/return',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'returnForCorrection']);
             Route::post('advances/{salaryAdvanceRequest}/withdraw', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'withdraw']);
             Route::post('advances/{salaryAdvanceRequest}/resubmit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'resubmit']);
+            Route::post('advances/{salaryAdvanceRequest}/record-payment', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'recordPayment']);
+            Route::post('advances/{salaryAdvanceRequest}/schedule-recovery', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'scheduleRecovery']);
+            Route::post('advances/{salaryAdvanceRequest}/record-recovery', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'recordRecovery']);
+            Route::post('advances/{salaryAdvanceRequest}/close', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'close']);
+            Route::get('advances/{salaryAdvanceRequest}/ledger', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'ledger']);
+            Route::get('advances/{salaryAdvanceRequest}/pdf', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'pdf']);
             Route::get('advances/{salaryAdvanceRequest}/certificate', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'certificate']);
 
             // Balance Control & Reconciliation Engine (BCRE)

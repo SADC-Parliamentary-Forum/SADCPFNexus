@@ -69,11 +69,12 @@ class WorkflowSeeder extends Seeder
             ...($sgRole  ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
         ]);
 
-        // Dedicated salary-advance module (must not fall back to unscoped legacy approve).
-        $this->makeWorkflow($tenant, 'Salary Advance Approval',           'salary_advance', [
-            ['approver_type' => 'supervisor'],
-            ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id]] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
+        // Salary Advance: Finance certify is outside this workflow.
+        // Locked production path: Principal/Director review (ON by default) → SG final.
+        $directorRole = Role::where('name', 'Director')->where('guard_name', 'sanctum')->first();
+        $this->makeWorkflow($tenant, 'Salary Advance Approval', 'salary_advance', [
+            ...($directorRole ? [['approver_type' => 'specific_role', 'role_id' => $directorRole->id]] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'HR Request Approval',               'hr', [
