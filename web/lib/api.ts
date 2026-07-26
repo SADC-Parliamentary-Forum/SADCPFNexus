@@ -905,6 +905,8 @@ export interface TravelRequest {
   funding_lines?: { id: number; item: string; forum_amount: number; host_amount: number }[];
   dsa_lines?: TravelDsaLine[];
   amendments?: TravelAmendment[];
+  imprest_requests?: Array<{ id: number; reference_number?: string; status?: string }>;
+  vehicle_asset_id?: number | null;
   returned_at?: string | null;
   director_finance_confirmed_at?: string | null;
   visa_required?: boolean;

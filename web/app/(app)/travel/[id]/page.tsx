@@ -1472,7 +1472,7 @@ export default function TravelDetailPage() {
             {(request.imprest_requests?.length ?? 0) > 0 && (
               <div className="w-full text-xs text-neutral-600 mt-1">
                 Linked imprests:{" "}
-                {(request.imprest_requests ?? []).map((imp: any) => (
+                {(request.imprest_requests ?? []).map((imp) => (
                   <a key={imp.id} href={`/imprest/${imp.id}`} className="text-primary mr-2 underline">
                     {imp.reference_number ?? `#${imp.id}`}
                   </a>
