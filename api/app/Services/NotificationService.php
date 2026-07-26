@@ -153,7 +153,19 @@ class NotificationService
             ],
             'travel.toil_candidate' => [
                 'subject' => 'Potential TOIL from travel',
-                'body'    => "Dear {{name}},\n\nTOIL candidates were generated for travel {{reference}}. Travel date is not automatic TOIL — OT authorisation and HR validation are required.\n\nRegards,\nSADC-PF HR",
+                'body'    => "Dear {{name}},\n\nTOIL candidates were calculated for travel {{reference}} ({{count}} day(s)). Leave credit is applied only after your supervisor confirms duty and HR validates entitlement. Use within 30 days unless the Secretary General extends.\n\nRegards,\nSADC-PF HR",
+            ],
+            'travel.toil_approval_required' => [
+                'subject' => 'TOIL approval required — {{reference}}',
+                'body'    => "Dear {{name}},\n\n{{count}} TOIL candidate day(s) were auto-calculated for {{traveller}} on travel {{reference}}. Please confirm actual duty (supervisor) and validate entitlement/OT rules (HR) in Nexus. Leave is NOT credited until both approvals complete.\n\nOpen: /travel/toil\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.toil_hr_validation_required' => [
+                'subject' => 'TOIL HR validation required — {{reference}}',
+                'body'    => "Dear {{name}},\n\nSupervisor confirmed duty for TOIL on {{date}} ({{hours}}h) for {{traveller}} (travel {{reference}}). Please validate entitlement / OT rules. Leave credit is applied only after your approval.\n\nOpen: /travel/toil\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.toil_credited' => [
+                'subject' => 'TOIL credited — {{reference}}',
+                'body'    => "Dear {{name}},\n\nHR has credited {{hours}}h TOIL from travel {{reference}}. Expiry: {{expires_at}} (normally 30 days from accrual date unless SG extends).\n\nRegards,\nSADC-PF HR",
             ],
             'travel.visa_reminder' => [
                 'subject' => 'Travel visa reminder — {{reference}}',

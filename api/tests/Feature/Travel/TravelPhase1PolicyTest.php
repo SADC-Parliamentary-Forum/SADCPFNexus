@@ -13,5 +13,6 @@ class TravelPhase1PolicyTest extends TestCase
         $this->assertSame(8.0, (float) config('travel.toil_hours_per_day'));
         $this->assertSame(30, config('travel.toil_expiry_days'));
         $this->assertFalse(config('travel.auto_create_leave_from_travel'));
+        $this->assertTrue(config('travel.auto_generate_candidates'));
     }
 }

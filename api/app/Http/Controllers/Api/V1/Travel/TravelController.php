@@ -484,10 +484,18 @@ class TravelController extends Controller
 
     public function toilExtend(Request $request, TravelToilCandidate $candidate): JsonResponse
     {
-        $data = $request->validate(['expires_at' => ['nullable', 'date']]);
+        $data = $request->validate([
+            'expires_at' => ['nullable', 'date', 'after:today'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
         return response()->json([
             'message' => 'TOIL expiry extended by SG.',
-            'data' => $this->toilService->extendExpiry($candidate, $request->user(), $data['expires_at'] ?? null),
+            'data' => $this->toilService->extendExpiry(
+                $candidate,
+                $request->user(),
+                $data['expires_at'] ?? null,
+                $data['reason'],
+            ),
         ]);
     }
 

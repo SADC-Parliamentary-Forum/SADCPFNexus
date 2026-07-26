@@ -6,7 +6,8 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 
-/// Mobile TOIL candidates — confirm/reject paths only. Never auto-creates leave.
+/// Mobile TOIL queue — supervisor confirm / HR validate / reject.
+/// Never auto-creates leave; credit only after HR validate on API.
 class TravelToilQueueScreen extends ConsumerStatefulWidget {
   const TravelToilQueueScreen({super.key});
 
@@ -94,6 +95,14 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
     await _action(id, 'reject', body: {'reason': reason});
   }
 
+  bool _awaitsSupervisor(String status) =>
+      status == 'pending_supervisor' ||
+      status == 'candidate' ||
+      status == 'ot_authorised';
+
+  bool _awaitsHr(String status) =>
+      status == 'pending_hr' || status == 'duty_confirmed';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,7 +121,7 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   const Text(
-                    'Candidates only — OT authorise → duty confirm → HR validate. Never auto-creates leave.',
+                    'Auto-calculated candidates. Supervisor confirms duty → HR validates → Leave credit. Never auto-creates leave. Use within 30 days unless SG extends.',
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                   if (_toast != null) ...[
@@ -132,9 +141,10 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                   else
                     ..._rows.map((row) {
                       final id = row['id'] is int ? row['id'] as int : int.tryParse('${row['id']}') ?? 0;
-                      final status = row['status']?.toString() ?? 'candidate';
+                      final status = row['status']?.toString() ?? 'pending_supervisor';
                       final travel = row['travel_request'];
                       final refNo = travel is Map ? travel['reference_number'] : null;
+                      final expires = row['expires_at']?.toString();
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: Padding(
@@ -147,7 +157,8 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                                 style: const TextStyle(fontWeight: FontWeight.w600),
                               ),
                               Text(
-                                'Travel: ${refNo ?? row['travel_request_id'] ?? '—'} · ${row['reason'] ?? ''}',
+                                'Travel: ${refNo ?? row['travel_request_id'] ?? '—'} · ${row['reason'] ?? ''}'
+                                '${expires != null ? ' · expires $expires' : ''}',
                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                               ),
                               const SizedBox(height: 8),
@@ -155,22 +166,17 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: [
-                                  if (status == 'candidate')
-                                    OutlinedButton(
-                                      onPressed: id == 0 ? null : () => _action(id, 'authorise-ot'),
-                                      child: const Text('Authorise OT'),
-                                    ),
-                                  if (status == 'ot_authorised')
+                                  if (_awaitsSupervisor(status))
                                     OutlinedButton(
                                       onPressed: id == 0 ? null : () => _action(id, 'confirm-duty'),
                                       child: const Text('Confirm duty'),
                                     ),
-                                  if (status == 'duty_confirmed')
+                                  if (_awaitsHr(status))
                                     FilledButton(
                                       onPressed: id == 0 ? null : () => _action(id, 'hr-validate'),
                                       child: const Text('HR validate'),
                                     ),
-                                  if (status != 'credited' && status != 'rejected')
+                                  if (_awaitsSupervisor(status) || _awaitsHr(status))
                                     TextButton(
                                       onPressed: id == 0 ? null : () => _reject(id),
                                       child: const Text('Reject'),
