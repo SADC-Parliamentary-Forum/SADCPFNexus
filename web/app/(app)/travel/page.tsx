@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
@@ -30,7 +30,7 @@ function StatCard({ label, value, href }: { label: string; value: number | strin
   return href ? <Link href={href}>{inner}</Link> : inner;
 }
 
-export default function TravelPage() {
+function TravelPageInner() {
   const searchParams = useSearchParams();
   const scope = searchParams.get("scope") || undefined;
   const view = searchParams.get("view") || undefined;
@@ -170,5 +170,13 @@ export default function TravelPage() {
         <div className="card p-12 text-center text-neutral-400 text-sm">No travel requests found.</div>
       )}
     </div>
+  );
+}
+
+export default function TravelPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading travel…</div>}>
+      <TravelPageInner />
+    </Suspense>
   );
 }
