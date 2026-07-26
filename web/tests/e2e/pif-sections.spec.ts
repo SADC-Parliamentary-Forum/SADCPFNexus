@@ -1,23 +1,17 @@
 /**
  * PIF (Programme Implementation Form) module E2E tests.
  *
- * Exercises the full section-completion happy path introduced across the
- * "PIF Module Completion" plan: create a draft, fill in the Venue, Budget
- * variance, Personnel, Interpretation, Support services and Conflict of
- * interest sections on /pif/[id]/edit, add one Document row and one
- * Arrival/Departure row (each persisted immediately via its own API call,
- * not held for the main form submit), save the main form, then declare and
- * submit for approval from the view page (/pif/[id]) — the declaration
- * checkbox and Submit button live there, not on the edit page.
+ * Exercises the multi-page edit wizard: create a draft, fill Overview → Venue →
+ * Budget → Personnel → Language → Support → Attachments (documents + arrival
+ * rows persist immediately), finish, then declare and submit from the view page.
  */
 import { test, expect, type Page } from "@playwright/test";
 
 const UNIQUE = `E2E-PIF-${Date.now()}`;
 
 /** Scopes a locator to the section whose <h2> heading matches `heading`
- * exactly. Several field labels (e.g. "Accommodation required", "Title *")
- * repeat verbatim across sections, so section-scoping avoids strict-mode
- * ambiguity instead of relying on page-wide label lookups. */
+ * exactly. Several field labels repeat across sections, so section-scoping
+ * avoids strict-mode ambiguity. */
 function sectionByHeading(page: Page, heading: string) {
   return page.getByRole("heading", { name: heading, exact: true }).locator("xpath=..");
 }
@@ -28,19 +22,15 @@ function isoDate(daysFromNow: number): string {
   return d.toISOString().split("T")[0];
 }
 
+async function saveAndContinue(page: Page) {
+  await page.getByRole("button", { name: "Save & continue" }).click();
+  await expect(page.getByText(/saved\./i).first()).toBeVisible({ timeout: 10_000 });
+}
+
 test.describe("PIF — full section-completion happy path", () => {
-  test("create draft, fill all sections, add rows, declare and submit", async ({ page }) => {
+  test("create draft, fill all wizard pages, add rows, declare and submit", async ({ page }) => {
     test.setTimeout(120_000);
 
-    // ── Step 1: create a draft PIF ──────────────────────────────────────────
-    // A cold `storageState`-restored context has cookies but no sessionStorage
-    // (Playwright's storageState snapshot does not capture sessionStorage, and
-    // this app caches the authenticated user there). Landing directly on a
-    // permission-gated route before AuthProvider's /auth/me rehydration
-    // resolves races AppShell's route guard into bouncing through /login (which
-    // clears the session) to /dashboard. Warming up on /dashboard first — an
-    // unrestricted route — lets that rehydration complete before we navigate
-    // to a gated route.
     await page.goto("/dashboard");
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
@@ -56,23 +46,21 @@ test.describe("PIF — full section-completion happy path", () => {
     await expect(createBtn).toBeEnabled({ timeout: 10_000 });
     await createBtn.click();
 
-    // Confirm redirect to /pif/{id}/edit
     await page.waitForURL(/\/pif\/\d+\/edit\/?$/, { timeout: 15_000 });
     const pifId = page.url().match(/\/pif\/(\d+)\/edit/)?.[1];
     expect(pifId, "expected a numeric programme id in the redirect URL").toBeTruthy();
     await page.waitForLoadState("networkidle");
 
-    // ── Step 2: fill top-level fields ───────────────────────────────────────
+    // ── Overview ────────────────────────────────────────────────────────────
     await page.locator('label:text-is("Background") + textarea').fill(
       `${UNIQUE} background: a regional coordination workshop for member parliaments.`
     );
     await page.locator('label:text-is("Overall objective") + textarea').fill(
       "Improve regional coordination and information-sharing among member parliaments."
     );
-    await page.locator('label:text-is("Total budget") + input').fill("10000");
-    await page.locator('label:text-is("Funding source") + input').fill("SADC Core Fund");
     await page.locator('label:text-is("Start date") + input').fill(isoDate(30));
     await page.locator('label:text-is("End date") + input').fill(isoDate(33));
+    await saveAndContinue(page);
 
     // ── Venue ────────────────────────────────────────────────────────────────
     const venue = sectionByHeading(page, "Venue");
@@ -84,15 +72,17 @@ test.describe("PIF — full section-completion happy path", () => {
     await venue.locator('label:text-is("Venue comments") + textarea').fill(
       "Venue confirmed pending signed contract."
     );
+    await saveAndContinue(page);
 
-    // ── Budget variance ─────────────────────────────────────────────────────
+    // ── Budget (+ variance) ──────────────────────────────────────────────────
+    await page.locator('label:text-is("Total budget") + input').fill("10000");
+    await page.locator('label:text-is("Funding source") + input').fill("SADC Core Fund");
     const budget = sectionByHeading(page, "Budget variance");
-    // Equal proposed/original values so the conditional "variance reason" field
-    // (only required when the two differ) does not need to be filled.
     await budget.locator('label:text-is("Proposed DSA rate") + input').fill("150");
     await budget.locator('label:text-is("Original budget rate") + input').fill("150");
     await budget.locator('label:text-is("Proposed participants") + input').fill("20");
     await budget.locator('label:text-is("Budgeted participants") + input').fill("20");
+    await saveAndContinue(page);
 
     // ── Personnel & consultants ─────────────────────────────────────────────
     const personnel = sectionByHeading(page, "Personnel & consultants");
@@ -101,6 +91,7 @@ test.describe("PIF — full section-completion happy path", () => {
     await personnel.locator('label:text-is("Personnel comments") + textarea').fill(
       "3 secretariat staff required for registration and delegate support."
     );
+    await saveAndContinue(page);
 
     // ── Interpretation & translation ────────────────────────────────────────
     const interpretation = sectionByHeading(page, "Interpretation & translation");
@@ -110,12 +101,11 @@ test.describe("PIF — full section-completion happy path", () => {
     await interpretation.locator('label:text-is("Interpretation comments") + textarea').fill(
       "Simultaneous EN/FR interpretation required in plenary sessions."
     );
+    await saveAndContinue(page);
 
-    // ── Support services ─────────────────────────────────────────────────────
+    // ── Support services + Conflict ─────────────────────────────────────────
     const support = sectionByHeading(page, "Support services");
     await support.getByLabel("Ground Transport").check();
-
-    // ── Conflict of interest ─────────────────────────────────────────────────
     const conflict = sectionByHeading(page, "Conflict of interest");
     await conflict.getByLabel("A conflict of interest is declared for this programme").check();
     await conflict.locator('label:text-is("Conflict details") + textarea').fill(
@@ -124,8 +114,9 @@ test.describe("PIF — full section-completion happy path", () => {
     await conflict.locator('label:text-is("Mitigation measures") + textarea').fill(
       "Selection of the resource person will be independently reviewed by a second officer."
     );
+    await saveAndContinue(page);
 
-    // ── Documents: add one row (persisted immediately via its own API call) ─
+    // ── Attachments: Documents + Arrival/Departure ──────────────────────────
     const documentsSection = sectionByHeading(page, "Documents");
     await documentsSection.getByRole("button", { name: "Add document" }).click();
     const docPanel = page
@@ -137,7 +128,6 @@ test.describe("PIF — full section-completion happy path", () => {
     await docPanel.getByRole("button", { name: "Save document" }).click();
     await expect(page.getByText("Document added.")).toBeVisible({ timeout: 10_000 });
 
-    // ── Arrival / Departure: add one row (also persisted immediately) ───────
     const arrivalDepartureSection = sectionByHeading(page, "Arrival / Departure");
     await arrivalDepartureSection.getByRole("button", { name: "Add arrival/departure row" }).click();
     const rowPanel = page
@@ -150,21 +140,15 @@ test.describe("PIF — full section-completion happy path", () => {
     await rowPanel.getByRole("button", { name: "Save row" }).click();
     await expect(page.getByText("Arrival/departure row added.")).toBeVisible({ timeout: 10_000 });
 
-    // ── Step 3: save the main form ──────────────────────────────────────────
-    await page.getByRole("button", { name: "Save changes" }).click();
+    await page.getByRole("button", { name: "Save & finish" }).click();
 
-    // Save redirects from /pif/{id}/edit to the view page /pif/{id}.
     await page.waitForURL(new RegExp(`/pif/${pifId}$`), { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
 
-    // M&E status starts out "Not Yet Linked" — visible in the header regardless of tab.
     await expect(page.locator('[title="Monitoring & Evaluation status"]')).toHaveText(
       /Not Yet Linked/
     );
 
-    // ── Step 4: declaration gates Submit, then submit for approval ─────────
-    // The declaration checkbox and Submit button live on the VIEW page's
-    // Approval tab (not the edit page) — confirmed during Task 20 review.
     await page.getByRole("button", { name: "Approval" }).click();
 
     const submitBtn = page.getByRole("button", { name: "Submit for Approval" });
@@ -176,10 +160,8 @@ test.describe("PIF — full section-completion happy path", () => {
     await submitBtn.click();
     await expect(page.getByText("Programme submitted for approval.")).toBeVisible({ timeout: 10_000 });
 
-    // Status badge in the header updates to "Submitted".
     await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
 
-    // ── Step 5: verify entered values render on the Logistics & Compliance tab ─
     await page.getByRole("button", { name: "Logistics & Compliance" }).click();
 
     await expect(page.getByText("South Africa")).toBeVisible();
@@ -195,9 +177,6 @@ test.describe("PIF — full section-completion happy path", () => {
     await expect(page.getByRole("cell", { name: "Delegate" })).toBeVisible();
     await expect(page.getByText("Cape Town International")).toBeVisible();
 
-    // M&E status remains "Not Yet Linked" after submission — it is only
-    // updated once M&E links a record to this programme, which is out of
-    // scope for the PIF submission flow itself.
     await expect(page.locator('[title="Monitoring & Evaluation status"]')).toHaveText(
       /Not Yet Linked/
     );

@@ -1,15 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { programmeApi, tenantUsersApi, SUPPORT_SERVICE_OPTIONS, type Programme } from "@/lib/api";
 import DocumentsSection from "./DocumentsSection";
 import ArrivalDepartureSection from "./ArrivalDepartureSection";
 
+const STEPS = [
+  "Overview",
+  "Venue",
+  "Budget",
+  "Personnel",
+  "Language",
+  "Support",
+  "Attachments",
+] as const;
+
+type StepIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export default function PifEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [step, setStep] = useState<StepIndex>(0);
   const [programme, setProgramme] = useState<Programme | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,13 +119,6 @@ export default function PifEditPage() {
 
   useEffect(() => {
     if (!id) return;
-    // Guards against a stale response clobbering in-progress edits: React
-    // Strict Mode's dev-only double-invoke of effects (and, more generally,
-    // any slow re-fetch that resolves after the user has already started
-    // typing) can otherwise let an old GET's `.then()` overwrite Venue/
-    // Budget/Personnel/etc. state with the pre-edit values, silently
-    // discarding what the user just entered. Only the most recently fired
-    // fetch for this `id` is allowed to hydrate state.
     let cancelled = false;
     setLoading(true);
     programmeApi
@@ -217,97 +223,212 @@ export default function PifEditPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!programme) return;
+  const payloadForStep = useCallback((s: StepIndex): Record<string, unknown> => {
+    switch (s) {
+      case 0:
+        return {
+          title: title || undefined,
+          strategic_pillar: strategicPillar || undefined,
+          implementing_department: implementingDepartment || undefined,
+          background: background || undefined,
+          overall_objective: overallObjective || undefined,
+          responsible_officer_id: responsibleOfficerId === "" ? null : responsibleOfficerId,
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          travel_required: travelRequired,
+          delegates_count: delegatesCount ? parseInt(delegatesCount, 10) : undefined,
+          procurement_required: procurementRequired,
+        };
+      case 1:
+        return {
+          venue_country: venueCountry || undefined,
+          venue_city: venueCity || undefined,
+          venue_proposed_hotel: venueProposedHotel || undefined,
+          venue_accommodation_required: venueAccommodationRequired,
+          venue_accommodation_count: venueAccommodationCount ? parseInt(venueAccommodationCount, 10) : undefined,
+          venue_conferencing_required: venueConferencingRequired,
+          venue_conferencing_participants: venueConferencingParticipants ? parseInt(venueConferencingParticipants, 10) : undefined,
+          venue_quotation_attached: venueQuotationAttached,
+          venue_hotel_quotation_attached: venueHotelQuotationAttached,
+          venue_accessibility_requirements: venueAccessibilityRequirements || undefined,
+          venue_security_considerations: venueSecurityConsiderations || undefined,
+          venue_comments: venueComments || undefined,
+        };
+      case 2:
+        return {
+          primary_currency: primaryCurrency || undefined,
+          total_budget: totalBudget ? parseFloat(totalBudget) : undefined,
+          funding_source: fundingSource || undefined,
+          proposed_dsa_rate: proposedDsaRate ? parseFloat(proposedDsaRate) : undefined,
+          original_budget_rate: originalBudgetRate ? parseFloat(originalBudgetRate) : undefined,
+          dsa_variance_reason: dsaVarianceReason || undefined,
+          proposed_participants: proposedParticipants ? parseInt(proposedParticipants, 10) : undefined,
+          budgeted_participants: budgetedParticipants ? parseInt(budgetedParticipants, 10) : undefined,
+          participants_variance_reason: participantsVarianceReason || undefined,
+          proposed_funding_difference: proposedFundingDifference ? parseFloat(proposedFundingDifference) : undefined,
+          estimated_activity_amount: estimatedActivityAmount ? parseFloat(estimatedActivityAmount) : undefined,
+        };
+      case 3:
+        return {
+          secretariat_staff_required: secretariatStaffRequired,
+          secretariat_staff_count: secretariatStaffCount ? parseInt(secretariatStaffCount, 10) : undefined,
+          consultants_required: consultantsRequired,
+          consultants_count: consultantsCount ? parseInt(consultantsCount, 10) : undefined,
+          consultants_rate: consultantsRate ? parseFloat(consultantsRate) : undefined,
+          resource_persons_required: resourcePersonsRequired,
+          resource_persons_count: resourcePersonsCount ? parseInt(resourcePersonsCount, 10) : undefined,
+          resource_persons_rate: resourcePersonsRate ? parseFloat(resourcePersonsRate) : undefined,
+          rapporteurs_required: rapporteursRequired,
+          rapporteurs_count: rapporteursCount ? parseInt(rapporteursCount, 10) : undefined,
+          rapporteurs_rate: rapporteursRate ? parseFloat(rapporteursRate) : undefined,
+          media_liaison_required: mediaLiaisonRequired,
+          media_liaison_count: mediaLiaisonCount ? parseInt(mediaLiaisonCount, 10) : undefined,
+          local_support_required: localSupportRequired,
+          local_support_count: localSupportCount ? parseInt(localSupportCount, 10) : undefined,
+          local_support_rate: localSupportRate ? parseFloat(localSupportRate) : undefined,
+          personnel_comments: personnelComments || undefined,
+        };
+      case 4:
+        return {
+          interpretation_required: interpretationRequired,
+          en_fr_required: enFrRequired,
+          en_fr_interpreters_count: enFrInterpretersCount ? parseInt(enFrInterpretersCount, 10) : undefined,
+          en_pt_required: enPtRequired,
+          en_pt_interpreters_count: enPtInterpretersCount ? parseInt(enPtInterpretersCount, 10) : undefined,
+          fr_pt_required: frPtRequired,
+          fr_pt_interpreters_count: frPtInterpretersCount ? parseInt(frPtInterpretersCount, 10) : undefined,
+          interpreter_rate: interpreterRate ? parseFloat(interpreterRate) : undefined,
+          interpreter_source: interpreterSource || undefined,
+          interpreter_source_other_note: interpreterSourceOtherNote || undefined,
+          interpretation_equipment_required: interpretationEquipmentRequired,
+          translation_required: translationRequired,
+          languages_required: languagesRequired
+            ? languagesRequired.split(",").map((x) => x.trim()).filter(Boolean)
+            : undefined,
+          interpretation_comments: interpretationComments || undefined,
+        };
+      case 5:
+        return {
+          support_services: supportServices,
+          support_services_other_note: supportServicesOtherNote || undefined,
+          conflict_declared: conflictDeclared,
+          conflict_details: conflictDetails || undefined,
+          conflict_mitigation: conflictMitigation || undefined,
+        };
+      case 6:
+        return {};
+      default:
+        return {};
+    }
+  }, [
+    title, strategicPillar, implementingDepartment, background, overallObjective, responsibleOfficerId,
+    startDate, endDate, travelRequired, delegatesCount, procurementRequired,
+    venueCountry, venueCity, venueProposedHotel, venueAccommodationRequired, venueAccommodationCount,
+    venueConferencingRequired, venueConferencingParticipants, venueQuotationAttached, venueHotelQuotationAttached,
+    venueAccessibilityRequirements, venueSecurityConsiderations, venueComments,
+    primaryCurrency, totalBudget, fundingSource, proposedDsaRate, originalBudgetRate, dsaVarianceReason,
+    proposedParticipants, budgetedParticipants, participantsVarianceReason, proposedFundingDifference, estimatedActivityAmount,
+    secretariatStaffRequired, secretariatStaffCount, consultantsRequired, consultantsCount, consultantsRate,
+    resourcePersonsRequired, resourcePersonsCount, resourcePersonsRate, rapporteursRequired, rapporteursCount, rapporteursRate,
+    mediaLiaisonRequired, mediaLiaisonCount, localSupportRequired, localSupportCount, localSupportRate, personnelComments,
+    interpretationRequired, enFrRequired, enFrInterpretersCount, enPtRequired, enPtInterpretersCount,
+    frPtRequired, frPtInterpretersCount, interpreterRate, interpreterSource, interpreterSourceOtherNote,
+    interpretationEquipmentRequired, translationRequired, languagesRequired, interpretationComments,
+    supportServices, supportServicesOtherNote, conflictDeclared, conflictDetails, conflictMitigation,
+  ]);
+
+  const validateStep = (s: StepIndex): string | null => {
+    if (s === 0 && !title.trim()) return "Programme title is required.";
+    if (s === 2) {
+      if (
+        proposedDsaRate !== "" && originalBudgetRate !== ""
+        && parseFloat(proposedDsaRate) !== parseFloat(originalBudgetRate)
+        && !dsaVarianceReason.trim()
+      ) {
+        return "Reason for DSA rate variance is required when rates differ.";
+      }
+      if (
+        proposedParticipants !== "" && budgetedParticipants !== ""
+        && parseInt(proposedParticipants, 10) !== parseInt(budgetedParticipants, 10)
+        && !participantsVarianceReason.trim()
+      ) {
+        return "Reason for participants variance is required when counts differ.";
+      }
+    }
+    if (s === 4) {
+      if (interpreterSource === "other" && !interpreterSourceOtherNote.trim()) {
+        return "Please describe the interpreter source.";
+      }
+      if (translationRequired && !languagesRequired.trim()) {
+        return "Languages required is required when translation is selected.";
+      }
+    }
+    if (s === 5) {
+      if (supportServices.includes("other") && !supportServicesOtherNote.trim()) {
+        return "Please describe other support services.";
+      }
+      if (conflictDeclared && (!conflictDetails.trim() || !conflictMitigation.trim())) {
+        return "Conflict details and mitigation are required when a conflict is declared.";
+      }
+    }
+    return null;
+  };
+
+  const saveStep = async (s: StepIndex): Promise<boolean> => {
+    if (!programme) return false;
+    const validationError = validateStep(s);
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
+    const payload = payloadForStep(s);
+    if (Object.keys(payload).length === 0) return true;
     setSubmitting(true);
+    setError(null);
     try {
-      await programmeApi.update(programme.id, {
-        title: title || undefined,
-        strategic_pillar: strategicPillar || undefined,
-        implementing_department: implementingDepartment || undefined,
-        background: background || undefined,
-        overall_objective: overallObjective || undefined,
-        primary_currency: primaryCurrency || undefined,
-        total_budget: totalBudget ? parseFloat(totalBudget) : undefined,
-        funding_source: fundingSource || undefined,
-        responsible_officer_id: responsibleOfficerId === "" ? null : responsibleOfficerId,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        travel_required: travelRequired,
-        delegates_count: delegatesCount ? parseInt(delegatesCount, 10) : undefined,
-        procurement_required: procurementRequired,
-
-        venue_country: venueCountry || undefined,
-        venue_city: venueCity || undefined,
-        venue_proposed_hotel: venueProposedHotel || undefined,
-        venue_accommodation_required: venueAccommodationRequired,
-        venue_accommodation_count: venueAccommodationCount ? parseInt(venueAccommodationCount, 10) : undefined,
-        venue_conferencing_required: venueConferencingRequired,
-        venue_conferencing_participants: venueConferencingParticipants ? parseInt(venueConferencingParticipants, 10) : undefined,
-        venue_quotation_attached: venueQuotationAttached,
-        venue_hotel_quotation_attached: venueHotelQuotationAttached,
-        venue_accessibility_requirements: venueAccessibilityRequirements || undefined,
-        venue_security_considerations: venueSecurityConsiderations || undefined,
-        venue_comments: venueComments || undefined,
-
-        proposed_dsa_rate: proposedDsaRate ? parseFloat(proposedDsaRate) : undefined,
-        original_budget_rate: originalBudgetRate ? parseFloat(originalBudgetRate) : undefined,
-        dsa_variance_reason: dsaVarianceReason || undefined,
-        proposed_participants: proposedParticipants ? parseInt(proposedParticipants, 10) : undefined,
-        budgeted_participants: budgetedParticipants ? parseInt(budgetedParticipants, 10) : undefined,
-        participants_variance_reason: participantsVarianceReason || undefined,
-        proposed_funding_difference: proposedFundingDifference ? parseFloat(proposedFundingDifference) : undefined,
-        estimated_activity_amount: estimatedActivityAmount ? parseFloat(estimatedActivityAmount) : undefined,
-
-        secretariat_staff_required: secretariatStaffRequired,
-        secretariat_staff_count: secretariatStaffCount ? parseInt(secretariatStaffCount, 10) : undefined,
-        consultants_required: consultantsRequired,
-        consultants_count: consultantsCount ? parseInt(consultantsCount, 10) : undefined,
-        consultants_rate: consultantsRate ? parseFloat(consultantsRate) : undefined,
-        resource_persons_required: resourcePersonsRequired,
-        resource_persons_count: resourcePersonsCount ? parseInt(resourcePersonsCount, 10) : undefined,
-        resource_persons_rate: resourcePersonsRate ? parseFloat(resourcePersonsRate) : undefined,
-        rapporteurs_required: rapporteursRequired,
-        rapporteurs_count: rapporteursCount ? parseInt(rapporteursCount, 10) : undefined,
-        rapporteurs_rate: rapporteursRate ? parseFloat(rapporteursRate) : undefined,
-        media_liaison_required: mediaLiaisonRequired,
-        media_liaison_count: mediaLiaisonCount ? parseInt(mediaLiaisonCount, 10) : undefined,
-        local_support_required: localSupportRequired,
-        local_support_count: localSupportCount ? parseInt(localSupportCount, 10) : undefined,
-        local_support_rate: localSupportRate ? parseFloat(localSupportRate) : undefined,
-        personnel_comments: personnelComments || undefined,
-
-        interpretation_required: interpretationRequired,
-        en_fr_required: enFrRequired,
-        en_fr_interpreters_count: enFrInterpretersCount ? parseInt(enFrInterpretersCount, 10) : undefined,
-        en_pt_required: enPtRequired,
-        en_pt_interpreters_count: enPtInterpretersCount ? parseInt(enPtInterpretersCount, 10) : undefined,
-        fr_pt_required: frPtRequired,
-        fr_pt_interpreters_count: frPtInterpretersCount ? parseInt(frPtInterpretersCount, 10) : undefined,
-        interpreter_rate: interpreterRate ? parseFloat(interpreterRate) : undefined,
-        interpreter_source: interpreterSource || undefined,
-        interpreter_source_other_note: interpreterSourceOtherNote || undefined,
-        interpretation_equipment_required: interpretationEquipmentRequired,
-        translation_required: translationRequired,
-        languages_required: languagesRequired
-          ? languagesRequired.split(",").map((s) => s.trim()).filter(Boolean)
-          : undefined,
-        interpretation_comments: interpretationComments || undefined,
-
-        support_services: supportServices,
-        support_services_other_note: supportServicesOtherNote || undefined,
-
-        conflict_declared: conflictDeclared,
-        conflict_details: conflictDetails || undefined,
-        conflict_mitigation: conflictMitigation || undefined,
-      });
-      showToast("Programme updated.");
-      router.push(`/pif/${programme.id}`);
-    } catch {
-      showToast("Failed to update programme.");
+      await programmeApi.update(programme.id, payload);
+      return true;
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const msg = ax.response?.data?.message
+        ?? (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0])
+        ?? "Failed to save this page. Please try again.";
+      setError(msg);
+      return false;
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const goNext = async () => {
+    const ok = await saveStep(step);
+    if (!ok) return;
+    if (step < STEPS.length - 1) {
+      showToast(`${STEPS[step]} saved.`);
+      setStep((step + 1) as StepIndex);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const goBack = () => {
+    if (step === 0) return;
+    setError(null);
+    setStep((step - 1) as StepIndex);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const finish = async () => {
+    const ok = await saveStep(step);
+    if (!ok || !programme) return;
+    showToast("Programme updated.");
+    router.push(`/pif/${programme.id}`);
+  };
+
+  const jumpToStep = (i: StepIndex) => {
+    if (i <= step) {
+      setError(null);
+      setStep(i);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -319,12 +440,26 @@ export default function PifEditPage() {
       </div>
     );
   }
-  if (error || !programme) {
+  if (error && !programme) {
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error ?? "Programme not found."}
+          {error}
+        </div>
+        <Link href="/pif" className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Back to Programmes
+        </Link>
+      </div>
+    );
+  }
+  if (!programme) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">error_outline</span>
+          Programme not found.
         </div>
         <Link href="/pif" className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
@@ -347,14 +482,17 @@ export default function PifEditPage() {
     );
   }
 
+  const isLast = step === STEPS.length - 1;
+
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-3xl">
       {toast && (
         <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
           <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
           {toast}
         </div>
       )}
+
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/pif" className="hover:text-primary transition-colors">Programmes</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -362,496 +500,620 @@ export default function PifEditPage() {
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="text-neutral-900 font-medium">Edit</span>
       </div>
-      <h1 className="text-xl font-bold text-neutral-900">Edit programme</h1>
-      <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Title <span className="text-red-500">*</span></label>
-          <input
-            required
-            className="form-input w-full"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Programme title"
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Strategic pillar</label>
-            <input className="form-input w-full" value={strategicPillar} onChange={(e) => setStrategicPillar(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Implementing department</label>
-            <input className="form-input w-full" value={implementingDepartment} onChange={(e) => setImplementingDepartment(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Background</label>
-          <textarea rows={4} className="form-input w-full resize-none" value={background} onChange={(e) => setBackground(e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Overall objective</label>
-          <textarea rows={3} className="form-input w-full resize-none" value={overallObjective} onChange={(e) => setOverallObjective(e.target.value)} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Primary currency</label>
-            <input className="form-input w-full" value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)} placeholder="e.g. USD" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Total budget</label>
-            <input type="number" min="0" step="any" className="form-input w-full" value={totalBudget} onChange={(e) => setTotalBudget(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Funding source</label>
-            <input className="form-input w-full" value={fundingSource} onChange={(e) => setFundingSource(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Responsible officer</label>
-            <p className="text-xs text-neutral-400 mb-1">Must be a user registered in the system</p>
-            <select
-              className="form-input w-full"
-              value={responsibleOfficerId === "" ? "" : String(responsibleOfficerId)}
-              onChange={(e) => setResponsibleOfficerId(e.target.value === "" ? "" : Number(e.target.value))}
-            >
-              <option value="">Select responsible officer…</option>
-              {tenantUsers.map((u) => (
-                <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ""}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Start date</label>
-            <input type="date" className="form-input w-full" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">End date</label>
-            <input type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={travelRequired} onChange={(e) => setTravelRequired(e.target.checked)} className="rounded border-neutral-300" />
-            <span className="text-sm text-neutral-700">Travel required</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={procurementRequired} onChange={(e) => setProcurementRequired(e.target.checked)} className="rounded border-neutral-300" />
-            <span className="text-sm text-neutral-700">Procurement required</span>
-          </label>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Delegates count</label>
-          <input type="number" min="0" className="form-input w-full max-w-[120px]" value={delegatesCount} onChange={(e) => setDelegatesCount(e.target.value)} />
-        </div>
 
-        {/* Venue */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Venue</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue country</label>
-              <input className="form-input w-full" value={venueCountry} onChange={(e) => setVenueCountry(e.target.value)} />
+      <div>
+        <h1 className="page-title">Edit Programme Implementation Form</h1>
+        <p className="page-subtitle">
+          Complete each page in turn. Progress is saved when you continue — you can leave and return anytime.
+        </p>
+      </div>
+
+      {/* Step indicator */}
+      <div className="card p-4 sm:p-5 overflow-x-auto">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-[640px] sm:min-w-0">
+          {STEPS.map((label, i) => (
+            <div key={label} className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => jumpToStep(i as StepIndex)}
+                disabled={i > step}
+                className="flex items-center gap-2 min-w-0 disabled:cursor-default"
+                aria-current={i === step ? "step" : undefined}
+              >
+                <div
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-colors ${
+                    i < step
+                      ? "bg-green-500 text-white"
+                      : i === step
+                        ? "bg-primary text-white"
+                        : "bg-neutral-100 text-neutral-400"
+                  }`}
+                >
+                  {i < step ? (
+                    <span className="material-symbols-outlined text-[14px]">check</span>
+                  ) : (
+                    i + 1
+                  )}
+                </div>
+                <span
+                  className={`text-xs font-medium hidden md:block truncate ${
+                    i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+              {i < STEPS.length - 1 && (
+                <div className={`flex-1 h-px mx-1 ${i < step ? "bg-green-400" : "bg-neutral-200"}`} />
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-neutral-500 md:hidden">
+          Page {step + 1} of {STEPS.length}: <span className="font-semibold text-neutral-800">{STEPS[step]}</span>
+        </p>
+      </div>
+
+      {error && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="card p-6 space-y-4">
+        {/* ── 0 Overview ─────────────────────────────────────────────────── */}
+        {step === 0 && (
+          <>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <span className="material-symbols-outlined text-primary text-[18px]">description</span>
+              </div>
+              <h2 className="text-sm font-bold text-neutral-900">Overview</h2>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue city</label>
-              <input className="form-input w-full" value={venueCity} onChange={(e) => setVenueCity(e.target.value)} />
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Title <span className="text-red-500">*</span></label>
+              <input
+                required
+                className="form-input w-full"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Programme title"
+              />
             </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed hotel</label>
-            <input className="form-input w-full" value={venueProposedHotel} onChange={(e) => setVenueProposedHotel(e.target.value)} />
-          </div>
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={venueAccommodationRequired} onChange={(e) => setVenueAccommodationRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Accommodation required</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={venueConferencingRequired} onChange={(e) => setVenueConferencingRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Conferencing required</span>
-            </label>
-          </div>
-          {(venueAccommodationRequired || venueConferencingRequired) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {venueAccommodationRequired && (
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Accommodation count</label>
-                  <input type="number" min="0" className="form-input w-full" value={venueAccommodationCount} onChange={(e) => setVenueAccommodationCount(e.target.value)} />
-                </div>
-              )}
-              {venueConferencingRequired && (
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Conferencing participants</label>
-                  <input type="number" min="0" className="form-input w-full" value={venueConferencingParticipants} onChange={(e) => setVenueConferencingParticipants(e.target.value)} />
-                </div>
-              )}
-            </div>
-          )}
-          <div className="flex flex-wrap gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={venueQuotationAttached} onChange={(e) => setVenueQuotationAttached(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Venue quotation attached</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={venueHotelQuotationAttached} onChange={(e) => setVenueHotelQuotationAttached(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Hotel quotation attached</span>
-            </label>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Accessibility requirements</label>
-            <textarea rows={2} className="form-input w-full resize-none" value={venueAccessibilityRequirements} onChange={(e) => setVenueAccessibilityRequirements(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Security considerations</label>
-            <textarea rows={2} className="form-input w-full resize-none" value={venueSecurityConsiderations} onChange={(e) => setVenueSecurityConsiderations(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue comments</label>
-            <textarea rows={2} className="form-input w-full resize-none" value={venueComments} onChange={(e) => setVenueComments(e.target.value)} />
-          </div>
-        </div>
-
-        {/* Budget variance */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Budget variance</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed DSA rate</label>
-              <input type="number" min="0" step="any" className="form-input w-full" value={proposedDsaRate} onChange={(e) => setProposedDsaRate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Original budget rate</label>
-              <input type="number" min="0" step="any" className="form-input w-full" value={originalBudgetRate} onChange={(e) => setOriginalBudgetRate(e.target.value)} />
-            </div>
-          </div>
-          {proposedDsaRate !== "" && originalBudgetRate !== "" && parseFloat(proposedDsaRate) !== parseFloat(originalBudgetRate) && (
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for DSA rate variance <span className="text-red-500">*</span></label>
-              <textarea rows={2} className="form-input w-full resize-none" value={dsaVarianceReason} onChange={(e) => setDsaVarianceReason(e.target.value)} />
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed participants</label>
-              <input type="number" min="0" className="form-input w-full" value={proposedParticipants} onChange={(e) => setProposedParticipants(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Budgeted participants</label>
-              <input type="number" min="0" className="form-input w-full" value={budgetedParticipants} onChange={(e) => setBudgetedParticipants(e.target.value)} />
-            </div>
-          </div>
-          {proposedParticipants !== "" && budgetedParticipants !== "" && parseInt(proposedParticipants, 10) !== parseInt(budgetedParticipants, 10) && (
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for participants variance <span className="text-red-500">*</span></label>
-              <textarea rows={2} className="form-input w-full resize-none" value={participantsVarianceReason} onChange={(e) => setParticipantsVarianceReason(e.target.value)} />
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed funding difference</label>
-              <input type="number" min="0" step="any" className="form-input w-full" value={proposedFundingDifference} onChange={(e) => setProposedFundingDifference(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Estimated activity amount</label>
-              <input type="number" min="0" step="any" className="form-input w-full" value={estimatedActivityAmount} onChange={(e) => setEstimatedActivityAmount(e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        {/* Personnel / consultants */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Personnel &amp; consultants</h2>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={secretariatStaffRequired} onChange={(e) => setSecretariatStaffRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Secretariat staff required</span>
-            </label>
-            {secretariatStaffRequired && (
-              <div className="max-w-[200px]">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Staff count</label>
-                <input type="number" min="0" className="form-input w-full" value={secretariatStaffCount} onChange={(e) => setSecretariatStaffCount(e.target.value)} />
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Strategic pillar</label>
+                <input className="form-input w-full" value={strategicPillar} onChange={(e) => setStrategicPillar(e.target.value)} />
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={consultantsRequired} onChange={(e) => setConsultantsRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Consultants required</span>
-            </label>
-            {consultantsRequired && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consultants count</label>
-                  <input type="number" min="0" className="form-input w-full" value={consultantsCount} onChange={(e) => setConsultantsCount(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consultant rate</label>
-                  <input type="number" min="0" step="any" className="form-input w-full" value={consultantsRate} onChange={(e) => setConsultantsRate(e.target.value)} />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Implementing department</label>
+                <input className="form-input w-full" value={implementingDepartment} onChange={(e) => setImplementingDepartment(e.target.value)} />
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={resourcePersonsRequired} onChange={(e) => setResourcePersonsRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Resource persons required</span>
-            </label>
-            {resourcePersonsRequired && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Resource persons count</label>
-                  <input type="number" min="0" className="form-input w-full" value={resourcePersonsCount} onChange={(e) => setResourcePersonsCount(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Resource person rate</label>
-                  <input type="number" min="0" step="any" className="form-input w-full" value={resourcePersonsRate} onChange={(e) => setResourcePersonsRate(e.target.value)} />
-                </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Background</label>
+              <textarea rows={4} className="form-input w-full resize-none" value={background} onChange={(e) => setBackground(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Overall objective</label>
+              <textarea rows={3} className="form-input w-full resize-none" value={overallObjective} onChange={(e) => setOverallObjective(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Responsible officer</label>
+              <p className="text-xs text-neutral-400 mb-1">Must be a user registered in the system</p>
+              <select
+                className="form-input w-full"
+                value={responsibleOfficerId === "" ? "" : String(responsibleOfficerId)}
+                onChange={(e) => setResponsibleOfficerId(e.target.value === "" ? "" : Number(e.target.value))}
+              >
+                <option value="">Select responsible officer…</option>
+                {tenantUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name} {u.email ? `(${u.email})` : ""}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Start date</label>
+                <input type="date" className="form-input w-full" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={rapporteursRequired} onChange={(e) => setRapporteursRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Rapporteurs required</span>
-            </label>
-            {rapporteursRequired && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Rapporteurs count</label>
-                  <input type="number" min="0" className="form-input w-full" value={rapporteursCount} onChange={(e) => setRapporteursCount(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Rapporteur rate</label>
-                  <input type="number" min="0" step="any" className="form-input w-full" value={rapporteursRate} onChange={(e) => setRapporteursRate(e.target.value)} />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">End date</label>
+                <input type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
-            )}
-          </div>
+            </div>
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={travelRequired} onChange={(e) => setTravelRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Travel required</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={procurementRequired} onChange={(e) => setProcurementRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Procurement required</span>
+              </label>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Delegates count</label>
+              <input type="number" min="0" className="form-input w-full max-w-[120px]" value={delegatesCount} onChange={(e) => setDelegatesCount(e.target.value)} />
+            </div>
+          </>
+        )}
 
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={mediaLiaisonRequired} onChange={(e) => setMediaLiaisonRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Media liaison required</span>
-            </label>
-            {mediaLiaisonRequired && (
-              <div className="max-w-[200px]">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Media liaison count</label>
-                <input type="number" min="0" className="form-input w-full" value={mediaLiaisonCount} onChange={(e) => setMediaLiaisonCount(e.target.value)} />
+        {/* ── 1 Venue ────────────────────────────────────────────────────── */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-neutral-900">Venue</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue country</label>
+                <input className="form-input w-full" value={venueCountry} onChange={(e) => setVenueCountry(e.target.value)} />
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={localSupportRequired} onChange={(e) => setLocalSupportRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Local support required</span>
-            </label>
-            {localSupportRequired && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Local support count</label>
-                  <input type="number" min="0" className="form-input w-full" value={localSupportCount} onChange={(e) => setLocalSupportCount(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Local support rate</label>
-                  <input type="number" min="0" step="any" className="form-input w-full" value={localSupportRate} onChange={(e) => setLocalSupportRate(e.target.value)} />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue city</label>
+                <input className="form-input w-full" value={venueCity} onChange={(e) => setVenueCity(e.target.value)} />
               </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Personnel comments</label>
-            <textarea rows={2} className="form-input w-full resize-none" value={personnelComments} onChange={(e) => setPersonnelComments(e.target.value)} />
-          </div>
-        </div>
-
-        {/* Interpretation & translation */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Interpretation &amp; translation</h2>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={interpretationRequired} onChange={(e) => setInterpretationRequired(e.target.checked)} className="rounded border-neutral-300" />
-            <span className="text-sm text-neutral-700">Interpretation required</span>
-          </label>
-
-          {interpretationRequired && (
-            <div className="space-y-4 pl-1">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={enFrRequired} onChange={(e) => setEnFrRequired(e.target.checked)} className="rounded border-neutral-300" />
-                  <span className="text-sm text-neutral-700">English ↔ French interpreters required</span>
-                </label>
-                {enFrRequired && (
-                  <div className="max-w-[200px]">
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">EN/FR interpreters count</label>
-                    <input type="number" min="0" className="form-input w-full" value={enFrInterpretersCount} onChange={(e) => setEnFrInterpretersCount(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed hotel</label>
+              <input className="form-input w-full" value={venueProposedHotel} onChange={(e) => setVenueProposedHotel(e.target.value)} />
+            </div>
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={venueAccommodationRequired} onChange={(e) => setVenueAccommodationRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Accommodation required</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={venueConferencingRequired} onChange={(e) => setVenueConferencingRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Conferencing required</span>
+              </label>
+            </div>
+            {(venueAccommodationRequired || venueConferencingRequired) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {venueAccommodationRequired && (
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Accommodation count</label>
+                    <input type="number" min="0" className="form-input w-full" value={venueAccommodationCount} onChange={(e) => setVenueAccommodationCount(e.target.value)} />
+                  </div>
+                )}
+                {venueConferencingRequired && (
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Conferencing participants</label>
+                    <input type="number" min="0" className="form-input w-full" value={venueConferencingParticipants} onChange={(e) => setVenueConferencingParticipants(e.target.value)} />
                   </div>
                 )}
               </div>
+            )}
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={venueQuotationAttached} onChange={(e) => setVenueQuotationAttached(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Venue quotation attached</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={venueHotelQuotationAttached} onChange={(e) => setVenueHotelQuotationAttached(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Hotel quotation attached</span>
+              </label>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Accessibility requirements</label>
+              <textarea rows={2} className="form-input w-full resize-none" value={venueAccessibilityRequirements} onChange={(e) => setVenueAccessibilityRequirements(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Security considerations</label>
+              <textarea rows={2} className="form-input w-full resize-none" value={venueSecurityConsiderations} onChange={(e) => setVenueSecurityConsiderations(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Venue comments</label>
+              <textarea rows={2} className="form-input w-full resize-none" value={venueComments} onChange={(e) => setVenueComments(e.target.value)} />
+            </div>
+          </div>
+        )}
 
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={enPtRequired} onChange={(e) => setEnPtRequired(e.target.checked)} className="rounded border-neutral-300" />
-                  <span className="text-sm text-neutral-700">English ↔ Portuguese interpreters required</span>
-                </label>
-                {enPtRequired && (
-                  <div className="max-w-[200px]">
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">EN/PT interpreters count</label>
-                    <input type="number" min="0" className="form-input w-full" value={enPtInterpretersCount} onChange={(e) => setEnPtInterpretersCount(e.target.value)} />
-                  </div>
-                )}
+        {/* ── 2 Budget ───────────────────────────────────────────────────── */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-neutral-900">Budget</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Primary currency</label>
+                <input className="form-input w-full" value={primaryCurrency} onChange={(e) => setPrimaryCurrency(e.target.value)} placeholder="e.g. USD" />
               </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={frPtRequired} onChange={(e) => setFrPtRequired(e.target.checked)} className="rounded border-neutral-300" />
-                  <span className="text-sm text-neutral-700">French ↔ Portuguese interpreters required</span>
-                </label>
-                {frPtRequired && (
-                  <div className="max-w-[200px]">
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">FR/PT interpreters count</label>
-                    <input type="number" min="0" className="form-input w-full" value={frPtInterpretersCount} onChange={(e) => setFrPtInterpretersCount(e.target.value)} />
-                  </div>
-                )}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Total budget</label>
+                <input type="number" min="0" step="any" className="form-input w-full" value={totalBudget} onChange={(e) => setTotalBudget(e.target.value)} />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Funding source</label>
+              <input className="form-input w-full" value={fundingSource} onChange={(e) => setFundingSource(e.target.value)} />
+            </div>
 
+            <div className="pt-2 border-t border-neutral-100 space-y-4">
+              <h2 className="text-sm font-bold text-neutral-900">Budget variance</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter rate</label>
-                  <input type="number" min="0" step="any" className="form-input w-full" value={interpreterRate} onChange={(e) => setInterpreterRate(e.target.value)} />
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed DSA rate</label>
+                  <input type="number" min="0" step="any" className="form-input w-full" value={proposedDsaRate} onChange={(e) => setProposedDsaRate(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter source</label>
-                  <select className="form-input w-full" value={interpreterSource} onChange={(e) => setInterpreterSource(e.target.value)}>
-                    <option value="">Select source…</option>
-                    <option value="internal">Internal</option>
-                    <option value="supplier">Supplier</option>
-                    <option value="partner">Partner</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Original budget rate</label>
+                  <input type="number" min="0" step="any" className="form-input w-full" value={originalBudgetRate} onChange={(e) => setOriginalBudgetRate(e.target.value)} />
                 </div>
               </div>
-              {interpreterSource === "other" && (
+              {proposedDsaRate !== "" && originalBudgetRate !== "" && parseFloat(proposedDsaRate) !== parseFloat(originalBudgetRate) && (
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter source (other) <span className="text-red-500">*</span></label>
-                  <input className="form-input w-full" value={interpreterSourceOtherNote} onChange={(e) => setInterpreterSourceOtherNote(e.target.value)} />
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for DSA rate variance <span className="text-red-500">*</span></label>
+                  <textarea rows={2} className="form-input w-full resize-none" value={dsaVarianceReason} onChange={(e) => setDsaVarianceReason(e.target.value)} />
                 </div>
               )}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={interpretationEquipmentRequired} onChange={(e) => setInterpretationEquipmentRequired(e.target.checked)} className="rounded border-neutral-300" />
-                <span className="text-sm text-neutral-700">Interpretation equipment required</span>
-              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed participants</label>
+                  <input type="number" min="0" className="form-input w-full" value={proposedParticipants} onChange={(e) => setProposedParticipants(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Budgeted participants</label>
+                  <input type="number" min="0" className="form-input w-full" value={budgetedParticipants} onChange={(e) => setBudgetedParticipants(e.target.value)} />
+                </div>
+              </div>
+              {proposedParticipants !== "" && budgetedParticipants !== "" && parseInt(proposedParticipants, 10) !== parseInt(budgetedParticipants, 10) && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for participants variance <span className="text-red-500">*</span></label>
+                  <textarea rows={2} className="form-input w-full resize-none" value={participantsVarianceReason} onChange={(e) => setParticipantsVarianceReason(e.target.value)} />
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Proposed funding difference</label>
+                  <input type="number" min="0" step="any" className="form-input w-full" value={proposedFundingDifference} onChange={(e) => setProposedFundingDifference(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Estimated activity amount</label>
+                  <input type="number" min="0" step="any" className="form-input w-full" value={estimatedActivityAmount} onChange={(e) => setEstimatedActivityAmount(e.target.value)} />
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+        )}
 
-          <div className="space-y-2">
+        {/* ── 3 Personnel ────────────────────────────────────────────────── */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-neutral-900">Personnel &amp; consultants</h2>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={secretariatStaffRequired} onChange={(e) => setSecretariatStaffRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Secretariat staff required</span>
+              </label>
+              {secretariatStaffRequired && (
+                <div className="max-w-[200px]">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Staff count</label>
+                  <input type="number" min="0" className="form-input w-full" value={secretariatStaffCount} onChange={(e) => setSecretariatStaffCount(e.target.value)} />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={consultantsRequired} onChange={(e) => setConsultantsRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Consultants required</span>
+              </label>
+              {consultantsRequired && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consultants count</label>
+                    <input type="number" min="0" className="form-input w-full" value={consultantsCount} onChange={(e) => setConsultantsCount(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consultant rate</label>
+                    <input type="number" min="0" step="any" className="form-input w-full" value={consultantsRate} onChange={(e) => setConsultantsRate(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={resourcePersonsRequired} onChange={(e) => setResourcePersonsRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Resource persons required</span>
+              </label>
+              {resourcePersonsRequired && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Resource persons count</label>
+                    <input type="number" min="0" className="form-input w-full" value={resourcePersonsCount} onChange={(e) => setResourcePersonsCount(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Resource person rate</label>
+                    <input type="number" min="0" step="any" className="form-input w-full" value={resourcePersonsRate} onChange={(e) => setResourcePersonsRate(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={rapporteursRequired} onChange={(e) => setRapporteursRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Rapporteurs required</span>
+              </label>
+              {rapporteursRequired && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Rapporteurs count</label>
+                    <input type="number" min="0" className="form-input w-full" value={rapporteursCount} onChange={(e) => setRapporteursCount(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Rapporteur rate</label>
+                    <input type="number" min="0" step="any" className="form-input w-full" value={rapporteursRate} onChange={(e) => setRapporteursRate(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={mediaLiaisonRequired} onChange={(e) => setMediaLiaisonRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Media liaison required</span>
+              </label>
+              {mediaLiaisonRequired && (
+                <div className="max-w-[200px]">
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Media liaison count</label>
+                  <input type="number" min="0" className="form-input w-full" value={mediaLiaisonCount} onChange={(e) => setMediaLiaisonCount(e.target.value)} />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={localSupportRequired} onChange={(e) => setLocalSupportRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Local support required</span>
+              </label>
+              {localSupportRequired && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Local support count</label>
+                    <input type="number" min="0" className="form-input w-full" value={localSupportCount} onChange={(e) => setLocalSupportCount(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Local support rate</label>
+                    <input type="number" min="0" step="any" className="form-input w-full" value={localSupportRate} onChange={(e) => setLocalSupportRate(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Personnel comments</label>
+              <textarea rows={2} className="form-input w-full resize-none" value={personnelComments} onChange={(e) => setPersonnelComments(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {/* ── 4 Language ─────────────────────────────────────────────────── */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-neutral-900">Interpretation &amp; translation</h2>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={translationRequired} onChange={(e) => setTranslationRequired(e.target.checked)} className="rounded border-neutral-300" />
-              <span className="text-sm text-neutral-700">Translation required</span>
+              <input type="checkbox" checked={interpretationRequired} onChange={(e) => setInterpretationRequired(e.target.checked)} className="rounded border-neutral-300" />
+              <span className="text-sm text-neutral-700">Interpretation required</span>
             </label>
-            {translationRequired && (
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Languages required <span className="text-red-500">*</span></label>
-                <p className="text-xs text-neutral-400 mb-1">Comma-separated list, e.g. English, French, Portuguese</p>
-                <input className="form-input w-full" value={languagesRequired} onChange={(e) => setLanguagesRequired(e.target.value)} />
+
+            {interpretationRequired && (
+              <div className="space-y-4 pl-1">
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={enFrRequired} onChange={(e) => setEnFrRequired(e.target.checked)} className="rounded border-neutral-300" />
+                    <span className="text-sm text-neutral-700">English ↔ French interpreters required</span>
+                  </label>
+                  {enFrRequired && (
+                    <div className="max-w-[200px]">
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">EN/FR interpreters count</label>
+                      <input type="number" min="0" className="form-input w-full" value={enFrInterpretersCount} onChange={(e) => setEnFrInterpretersCount(e.target.value)} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={enPtRequired} onChange={(e) => setEnPtRequired(e.target.checked)} className="rounded border-neutral-300" />
+                    <span className="text-sm text-neutral-700">English ↔ Portuguese interpreters required</span>
+                  </label>
+                  {enPtRequired && (
+                    <div className="max-w-[200px]">
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">EN/PT interpreters count</label>
+                      <input type="number" min="0" className="form-input w-full" value={enPtInterpretersCount} onChange={(e) => setEnPtInterpretersCount(e.target.value)} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={frPtRequired} onChange={(e) => setFrPtRequired(e.target.checked)} className="rounded border-neutral-300" />
+                    <span className="text-sm text-neutral-700">French ↔ Portuguese interpreters required</span>
+                  </label>
+                  {frPtRequired && (
+                    <div className="max-w-[200px]">
+                      <label className="block text-xs font-semibold text-neutral-700 mb-1.5">FR/PT interpreters count</label>
+                      <input type="number" min="0" className="form-input w-full" value={frPtInterpretersCount} onChange={(e) => setFrPtInterpretersCount(e.target.value)} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter rate</label>
+                    <input type="number" min="0" step="any" className="form-input w-full" value={interpreterRate} onChange={(e) => setInterpreterRate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter source</label>
+                    <select className="form-input w-full" value={interpreterSource} onChange={(e) => setInterpreterSource(e.target.value)}>
+                      <option value="">Select source…</option>
+                      <option value="internal">Internal</option>
+                      <option value="supplier">Supplier</option>
+                      <option value="partner">Partner</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                {interpreterSource === "other" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpreter source (other) <span className="text-red-500">*</span></label>
+                    <input className="form-input w-full" value={interpreterSourceOtherNote} onChange={(e) => setInterpreterSourceOtherNote(e.target.value)} />
+                  </div>
+                )}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={interpretationEquipmentRequired} onChange={(e) => setInterpretationEquipmentRequired(e.target.checked)} className="rounded border-neutral-300" />
+                  <span className="text-sm text-neutral-700">Interpretation equipment required</span>
+                </label>
               </div>
             )}
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpretation comments</label>
-            <textarea rows={2} className="form-input w-full resize-none" value={interpretationComments} onChange={(e) => setInterpretationComments(e.target.value)} />
-          </div>
-        </div>
-
-        {/* Support services */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Support services</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {SUPPORT_SERVICE_OPTIONS.map((opt) => (
-              <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded border-neutral-300"
-                  checked={supportServices.includes(opt.key)}
-                  onChange={(e) =>
-                    setSupportServices((prev) =>
-                      e.target.checked ? [...prev, opt.key] : prev.filter((k) => k !== opt.key)
-                    )
-                  }
-                />
-                <span className="text-sm text-neutral-700">{opt.label}</span>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={translationRequired} onChange={(e) => setTranslationRequired(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">Translation required</span>
               </label>
-            ))}
-          </div>
-          {supportServices.includes("other") && (
+              {translationRequired && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Languages required <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-neutral-400 mb-1">Comma-separated list, e.g. English, French, Portuguese</p>
+                  <input className="form-input w-full" value={languagesRequired} onChange={(e) => setLanguagesRequired(e.target.value)} />
+                </div>
+              )}
+            </div>
+
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Other support services <span className="text-red-500">*</span></label>
-              <input required className="form-input w-full" value={supportServicesOtherNote} onChange={(e) => setSupportServicesOtherNote(e.target.value)} />
+              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Interpretation comments</label>
+              <textarea rows={2} className="form-input w-full resize-none" value={interpretationComments} onChange={(e) => setInterpretationComments(e.target.value)} />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Conflict of interest */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Conflict of interest</h2>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={conflictDeclared} onChange={(e) => setConflictDeclared(e.target.checked)} className="rounded border-neutral-300" />
-            <span className="text-sm text-neutral-700">A conflict of interest is declared for this programme</span>
-          </label>
-          {conflictDeclared && (
-            <div className="space-y-4 pl-1">
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Conflict details <span className="text-red-500">*</span></label>
-                <textarea required rows={3} className="form-input w-full resize-none" value={conflictDetails} onChange={(e) => setConflictDetails(e.target.value)} />
+        {/* ── 5 Support & conflict ───────────────────────────────────────── */}
+        {step === 5 && (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold text-neutral-900">Support services</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {SUPPORT_SERVICE_OPTIONS.map((opt) => (
+                  <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-neutral-300"
+                      checked={supportServices.includes(opt.key)}
+                      onChange={(e) =>
+                        setSupportServices((prev) =>
+                          e.target.checked ? [...prev, opt.key] : prev.filter((k) => k !== opt.key)
+                        )
+                      }
+                    />
+                    <span className="text-sm text-neutral-700">{opt.label}</span>
+                  </label>
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Mitigation measures <span className="text-red-500">*</span></label>
-                <textarea required rows={3} className="form-input w-full resize-none" value={conflictMitigation} onChange={(e) => setConflictMitigation(e.target.value)} />
-              </div>
+              {supportServices.includes("other") && (
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Other support services <span className="text-red-500">*</span></label>
+                  <input required className="form-input w-full" value={supportServicesOtherNote} onChange={(e) => setSupportServicesOtherNote(e.target.value)} />
+                </div>
+              )}
             </div>
+
+            <div className="pt-4 border-t border-neutral-100 space-y-4">
+              <h2 className="text-sm font-bold text-neutral-900">Conflict of interest</h2>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={conflictDeclared} onChange={(e) => setConflictDeclared(e.target.checked)} className="rounded border-neutral-300" />
+                <span className="text-sm text-neutral-700">A conflict of interest is declared for this programme</span>
+              </label>
+              {conflictDeclared && (
+                <div className="space-y-4 pl-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Conflict details <span className="text-red-500">*</span></label>
+                    <textarea required rows={3} className="form-input w-full resize-none" value={conflictDetails} onChange={(e) => setConflictDetails(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Mitigation measures <span className="text-red-500">*</span></label>
+                    <textarea required rows={3} className="form-input w-full resize-none" value={conflictMitigation} onChange={(e) => setConflictMitigation(e.target.value)} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 6 Attachments ──────────────────────────────────────────────── */}
+        {step === 6 && (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold text-neutral-900">Documents</h2>
+              <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it&apos;s added — it is not held until you finish.</p>
+              <DocumentsSection
+                programmeId={programme.id}
+                initialRows={programme.documents ?? []}
+                tenantUsers={tenantUsers}
+                onToast={showToast}
+              />
+            </div>
+
+            <div className="pt-4 border-t border-neutral-100 space-y-4">
+              <h2 className="text-sm font-bold text-neutral-900">Arrival / Departure</h2>
+              <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it&apos;s added — it is not held until you finish.</p>
+              <ArrivalDepartureSection
+                programmeId={programme.id}
+                initialRows={programme.arrival_departures ?? []}
+                onToast={showToast}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-neutral-100">
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={submitting}
+              className="btn-secondary px-5 py-2.5 text-sm disabled:opacity-50 inline-flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+              Back
+            </button>
           )}
-        </div>
-
-        {/* Documents */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Documents</h2>
-          <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it's added — it is not held until the form is submitted.</p>
-          <DocumentsSection
-            programmeId={programme.id}
-            initialRows={programme.documents ?? []}
-            tenantUsers={tenantUsers}
-            onToast={showToast}
-          />
-        </div>
-
-        {/* Arrival / Departure */}
-        <div className="pt-4 border-t border-neutral-100 space-y-4">
-          <h2 className="text-sm font-bold text-neutral-900">Arrival / Departure</h2>
-          <p className="text-xs text-neutral-400">Each row is saved to the server as soon as it's added — it is not held until the form is submitted.</p>
-          <ArrivalDepartureSection
-            programmeId={programme.id}
-            initialRows={programme.arrival_departures ?? []}
-            onToast={showToast}
-          />
-        </div>
-
-        <div className="flex items-center gap-3 pt-4 border-t border-neutral-100">
-          <button type="submit" disabled={submitting} className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50">
-            {submitting ? "Saving…" : "Save changes"}
-          </button>
+          <div className="flex-1" />
           <Link href={`/pif/${programme.id}`} className="btn-secondary px-5 py-2.5 text-sm">
             Cancel
           </Link>
+          {!isLast ? (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={submitting}
+              className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {submitting ? (
+                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              ) : (
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              )}
+              {submitting ? "Saving…" : "Save & continue"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={finish}
+              disabled={submitting}
+              className="btn-primary px-5 py-2.5 text-sm disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {submitting ? (
+                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+              ) : (
+                <span className="material-symbols-outlined text-[18px]">check</span>
+              )}
+              {submitting ? "Saving…" : "Save & finish"}
+            </button>
+          )}
         </div>
-      </form>
+      </div>
     </div>
   );
 }
