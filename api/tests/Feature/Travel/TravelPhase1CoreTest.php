@@ -318,6 +318,10 @@ class TravelPhase1CoreTest extends TestCase
             'user_id' => $staff->id,
             'is_verified' => true,
         ]);
+        $expectedExpiry = Carbon::parse($candidate->candidate_date)
+            ->addDays((int) config('travel.toil_expiry_days', 30))
+            ->toDateString();
+        $this->assertSame($expectedExpiry, Carbon::parse($res->json('data.expires_at'))->toDateString());
         $this->assertSame(0, LeaveRequest::where('requester_id', $staff->id)->where('leave_type', 'lil')->count());
     }
 

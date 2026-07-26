@@ -1126,8 +1126,8 @@ export const travelApi = {
   toilConfirmDuty: (id: number) => api.post(`/travel/toil/${id}/confirm-duty`),
   toilHrValidate: (id: number) => api.post(`/travel/toil/${id}/hr-validate`),
   toilReject: (id: number, reason: string) => api.post(`/travel/toil/${id}/reject`, { reason }),
-  toilExtend: (id: number, expires_at?: string) =>
-    api.post(`/travel/toil/${id}/extend`, expires_at ? { expires_at } : {}),
+  toilExtend: (id: number, payload?: { expires_at?: string; reason: string }) =>
+    api.post(`/travel/toil/${id}/extend`, payload ?? { reason: "SG extension" }),
   listMissions: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<TravelMission>>("/travel/missions", { params }),
   getMission: (id: number) =>

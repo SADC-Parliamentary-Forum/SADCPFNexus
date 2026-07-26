@@ -44,11 +44,7 @@ class TravelDashboardService
             'toil_pending' => TravelToilCandidate::query()
                 ->where('tenant_id', $user->tenant_id)
                 ->where('user_id', $user->id)
-                ->whereNotIn('status', [
-                    TravelToilCandidate::STATUS_CREDITED,
-                    TravelToilCandidate::STATUS_REJECTED,
-                    TravelToilCandidate::STATUS_LAPSED,
-                ])->count(),
+                ->whereNotIn('status', TravelToilCandidate::TERMINAL_STATUSES)->count(),
             'documents_pending' => (clone $base)->where('status', 'approved')
                 ->whereNull('booking_committed_at')->count(),
         ];
