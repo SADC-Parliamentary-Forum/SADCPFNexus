@@ -644,11 +644,13 @@ export default function PifDetailPage() {
 
       {/* ── LOGISTICS & COMPLIANCE TAB ───────────────────────────────────────── */}
       {tab === "logistics" && (
-        <PifFinanceBudgetCertify
-          programme={programme}
-          onUpdated={(updated) => setProgramme(updated)}
-        />
-        <ReadOnlySections programme={programme} tenantUsers={tenantUsers} />
+        <div className="space-y-6">
+          <PifFinanceBudgetCertify
+            programme={programme}
+            onUpdated={(updated) => setProgramme(updated)}
+          />
+          <ReadOnlySections programme={programme} tenantUsers={tenantUsers} />
+        </div>
       )}
 
       {/* ── ACTIVITIES TAB ───────────────────────────────────────────────────── */}
