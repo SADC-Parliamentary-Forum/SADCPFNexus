@@ -1,7 +1,11 @@
 /**
  * Procurement module E2E tests.
+ *
+ * Auth fixture skips: see helpers/auth.ts and tests/e2e/README.md.
+ * Public tender board coverage also lives in sa-procurement-smokes.spec.ts.
  */
 import { test, expect } from "@playwright/test";
+import { landedOnLogin, skipWithoutAuth } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -19,9 +23,13 @@ async function openFirstDetail(page: import("@playwright/test").Page, listPath: 
 
 test.describe("Procurement — list page", () => {
   test.beforeEach(async ({ page }) => {
+    skipWithoutAuth("staff");
     await page.goto("/procurement");
     await page.waitForURL("**/procurement", { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for /procurement");
+    }
   });
 
   test("procurement list page loads", async ({ page }) => {
@@ -35,15 +43,26 @@ test.describe("Procurement — list page", () => {
 });
 
 test.describe("Procurement — create request", () => {
+  test.beforeEach(() => {
+    skipWithoutAuth("staff");
+  });
+
   test("create form is accessible", async ({ page }) => {
     await page.goto("/procurement/create");
     await page.waitForURL("**/procurement/create", { timeout: 15_000 });
+    await page.waitForLoadState("networkidle");
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for /procurement/create");
+    }
     await expect(page.locator("input, textarea").first()).toBeVisible();
   });
 
   test("form validation on empty submit", async ({ page }) => {
     await page.goto("/procurement/create");
     await page.waitForLoadState("networkidle");
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for /procurement/create");
+    }
 
     const nextStep = page.locator('button:has-text("Next Step")').first();
     await expect(nextStep).toBeDisabled();
@@ -52,14 +71,15 @@ test.describe("Procurement — create request", () => {
   test("can create a procurement request as draft", async ({ page }) => {
     await page.goto("/procurement/create");
     await page.waitForLoadState("networkidle");
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for /procurement/create");
+    }
 
-    // Title
     const title = page.locator('input[name="title"], [placeholder*="title" i]').first();
     if (await title.isVisible()) {
       await title.fill(`${UNIQUE} - Office Equipment`);
     }
 
-    // Description
     const desc = page.locator('textarea[name="description"], textarea').first();
     if (await desc.isVisible()) {
       await desc.fill("Laptops and monitors for the new programme team");
@@ -76,11 +96,29 @@ test.describe("Procurement — create request", () => {
   });
 });
 
+test.describe("Public tender notices", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("/tender-notices page loads", async ({ page }) => {
+    const response = await page.goto("/tender-notices", { waitUntil: "domcontentloaded" });
+    expect(response).not.toBeNull();
+    expect(response!.status()).toBeLessThan(500);
+    expect(response!.status()).not.toBe(404);
+    await expect(page.getByRole("heading", { name: /public tender notices/i })).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+});
+
 test.describe("Vendors", () => {
   test.beforeEach(async ({ page }) => {
+    skipWithoutAuth("staff");
     await page.goto("/procurement/vendors");
     await page.waitForURL("**/procurement/vendors", { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for /procurement/vendors");
+    }
   });
 
   test("vendors page loads", async ({ page }) => {
@@ -88,11 +126,8 @@ test.describe("Vendors", () => {
   });
 
   test("vendor list shows existing vendors", async ({ page }) => {
-    // The seeded database has vendor records
     const vendorEl = page.locator("table tbody tr, [class*='vendor-card'], [class*='list-item']");
-    const count = await vendorEl.count();
-    // Vendors are seeded — at least a few should exist
-    // Just check no critical error
+    await vendorEl.count();
     await expect(page.locator("text=Error, text=Failed")).not.toBeVisible({ timeout: 3_000 }).catch(() => {});
   });
 
@@ -110,6 +145,10 @@ test.describe("Vendors", () => {
 
 test.describe("Procurement — detail pages", () => {
   test.use({ storageState: "playwright/.auth/admin.json" });
+
+  test.beforeEach(() => {
+    skipWithoutAuth("admin");
+  });
 
   test("rfq detail page loads", async ({ page }) => {
     await openFirstDetail(page, "/procurement/rfq", "/procurement/rfq/");
