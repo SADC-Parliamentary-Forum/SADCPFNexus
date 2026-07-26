@@ -17,8 +17,8 @@
 - [x] Reports pack API + UI
 - [x] Nav children + scope=mine
 - [x] Docs closeout notes
-- [ ] PHPUnit Phase4 green
-- [ ] Commit / push / merge main / deploy /up
+- [x] PHPUnit Phase4 green
+- [x] Commit / push / merge main / deploy /up
 
 ## Acceptance matrix pointer
 
