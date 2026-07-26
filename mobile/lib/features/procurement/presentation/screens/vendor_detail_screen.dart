@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../core/utils/date_format.dart';
+import '../../data/procurement_api_helpers.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -16,6 +18,8 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _vendor;
+  List<Map<String, dynamic>> _documents = [];
+  String? _documentsNote;
 
   // Star rating bottom sheet state
   int _myRating = 0;
@@ -38,8 +42,24 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
       if (!mounted) return;
       final v = Map<String, dynamic>.from(res.data?['data'] as Map? ?? {});
       final myR = v['my_rating'] as Map?;
+
+      List<Map<String, dynamic>> docs = [];
+      String? docsNote;
+      try {
+        final docRes = await dio.get<Map<String, dynamic>>(
+          '/procurement/vendors/${widget.vendorId}/attachments',
+        );
+        docs = extractListData(docRes.data);
+      } catch (e) {
+        if (e.toString().contains('403')) {
+          docsNote = 'Vendor documents require procurement officer access.';
+        }
+      }
+
       setState(() {
         _vendor = v;
+        _documents = docs;
+        _documentsNote = docsNote;
         _loading = false;
         _myRating = (myR?['rating'] as int?) ?? 0;
         _myReview = (myR?['review'] as String?) ?? '';
@@ -380,6 +400,93 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
             Expanded(child: _statBox('Quotes', '${v['quotes_count'] ?? 0}', Icons.request_quote_outlined, AppColors.primary)),
             const SizedBox(width: 10),
             Expanded(child: _statBox('Contracts', '$activeContracts', Icons.description_outlined, AppColors.success)),
+          ]),
+
+          const SizedBox(height: 12),
+
+          // Compliance documents (expiry indicators when API returns expires_at)
+          _card(children: [
+            _sectionHeader('Compliance Documents', Icons.folder_outlined, AppColors.warning),
+            if (_documentsNote != null)
+              Text(_documentsNote!,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12))
+            else if (_documents.isEmpty)
+              const Text('No documents on file.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12))
+            else
+              ..._documents.map((doc) {
+                final name = doc['original_filename'] as String? ??
+                    doc['document_type'] as String? ??
+                    'Document';
+                final type = (doc['document_type'] as String? ?? '')
+                    .replaceAll('_', ' ');
+                final expires = doc['expires_at'] as String?;
+                final status = vendorDocumentExpiryStatus(expires);
+                final Color statusColor;
+                final String statusLabel;
+                switch (status) {
+                  case VendorDocExpiryStatus.expired:
+                    statusColor = AppColors.danger;
+                    statusLabel = 'Expired';
+                    break;
+                  case VendorDocExpiryStatus.expiringSoon:
+                    statusColor = AppColors.warning;
+                    statusLabel = 'Expiring soon';
+                    break;
+                  case VendorDocExpiryStatus.ok:
+                    statusColor = AppColors.success;
+                    statusLabel = 'Valid';
+                    break;
+                  case VendorDocExpiryStatus.unknown:
+                    statusColor = AppColors.textMuted;
+                    statusLabel = 'No expiry';
+                    break;
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.insert_drive_file_outlined,
+                          size: 16, color: statusColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(name,
+                                style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                            if (type.isNotEmpty)
+                              Text(type,
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted, fontSize: 10)),
+                            if (expires != null)
+                              Text('Expires ${AppDateFormatter.short(expires)}',
+                                  style: TextStyle(
+                                      color: statusColor, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(statusLabel,
+                            style: TextStyle(
+                                color: statusColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                );
+              }),
           ]),
         ],
       ),

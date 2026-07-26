@@ -197,7 +197,7 @@ class _ProcurementTenderDetailScreenState
             ],
           ),
         ),
-        if (!sealed && quotes.isNotEmpty) ...[
+        if (quotes.isNotEmpty) ...[
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(16),
@@ -209,20 +209,32 @@ class _ProcurementTenderDetailScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Opened quotes',
+                Text(
+                  sealed ? 'Submissions (${quotes.length})' : 'Opened quotes',
+                  style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700),
+                ),
+                if (sealed) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Vendor names only — amounts remain sealed until open.',
                     style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700)),
+                        color: AppColors.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 ...quotes.map((q) {
                   final map = Map<String, dynamic>.from(q);
                   final vendor = map['vendor'] as Map<String, dynamic>?;
                   final name =
-                      vendor?['name'] as String? ?? 'Vendor';
-                  final amount = (map['quoted_amount'] ??
-                          map['total_amount'] ??
-                          map['amount']) as num?;
+                      vendor?['name'] as String? ??
+                          map['vendor_name'] as String? ??
+                          'Vendor';
+                  final amount = quoteAmountForDisplay(map, requestSealed: sealed);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
@@ -233,18 +245,39 @@ class _ProcurementTenderDetailScreenState
                                   color: AppColors.textPrimary,
                                   fontSize: 13)),
                         ),
-                        if (amount != null)
-                          Text(amount.toStringAsFixed(2),
-                              style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13)),
+                        Text(
+                          amount == null
+                              ? 'Sealed'
+                              : amount.toStringAsFixed(2),
+                          style: TextStyle(
+                              color: amount == null
+                                  ? AppColors.warning
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              fontStyle: amount == null
+                                  ? FontStyle.italic
+                                  : FontStyle.normal),
+                        ),
                       ],
                     ),
                   );
                 }),
               ],
             ),
+          ),
+        ],
+        if (pr != null) ...[
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () {
+              final reqId = pr['id'];
+              if (reqId != null) {
+                context.push('/procurement/detail?id=$reqId');
+              }
+            },
+            child: const Text('Open linked request',
+                style: TextStyle(color: AppColors.primary)),
           ),
         ],
         const SizedBox(height: 24),
