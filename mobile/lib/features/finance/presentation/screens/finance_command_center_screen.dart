@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
@@ -523,9 +524,15 @@ class _FinanceCommandCenterScreenState
           : Column(
               children: _advances.take(5).map((advance) {
                 final createdAt = advance['created_at']?.toString();
+                final advanceId = advance['id'];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
+                  child: InkWell(
+                    onTap: advanceId == null
+                        ? null
+                        : () => context.push('/salary/advances/$advanceId'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
@@ -609,6 +616,7 @@ class _FinanceCommandCenterScreenState
                         ],
                       ),
                     ],
+                  ),
                   ),
                 );
               }).toList(),

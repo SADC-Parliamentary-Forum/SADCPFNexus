@@ -43,6 +43,9 @@ import '../../features/imprest/presentation/screens/expense_retirement_audit_scr
 // Salary Advance
 import '../../features/salary_advance/presentation/screens/salary_advance_request_screen.dart';
 import '../../features/salary_advance/presentation/screens/salary_advance_preview_sign_screen.dart';
+import '../../features/salary_advance/presentation/screens/salary_advance_hub_screen.dart';
+import '../../features/salary_advance/presentation/screens/salary_advance_list_screen.dart';
+import '../../features/salary_advance/presentation/screens/salary_advance_detail_screen.dart';
 
 // HR
 import '../../features/hr/presentation/screens/hr_governance_dashboard_screen.dart';
@@ -375,6 +378,38 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ─── Salary Advance ────────────────────────────────────────────────────
+      GoRoute(
+        path: '/salary/advances',
+        name: 'salary-advances-hub',
+        builder: (context, state) => const SalaryAdvanceHubScreen(),
+      ),
+      GoRoute(
+        path: '/salary/advances/applications',
+        name: 'salary-advances-applications',
+        builder: (context, state) => const SalaryAdvanceListScreen(
+          queue: 'mine',
+          title: 'My applications',
+          subtitle: 'Your salary advance applications (open and in progress).',
+          emptyHint: 'You have not created any salary advance applications yet.',
+        ),
+      ),
+      GoRoute(
+        path: '/salary/advances/history',
+        name: 'salary-advances-history',
+        builder: (context, state) => const SalaryAdvanceListScreen(
+          queue: 'history',
+          title: 'My advance history',
+          subtitle: 'Closed, recovered, rejected, and withdrawn advances.',
+          emptyHint: 'No historical advances yet.',
+        ),
+      ),
+      GoRoute(
+        path: '/salary/advances/:id',
+        name: 'salary-advance-detail',
+        builder: (context, state) => SalaryAdvanceDetailScreen(
+          requestId: state.pathParameters['id'],
+        ),
+      ),
       GoRoute(
         path: '/salary/advance/new',
         name: 'salary-advance-new',

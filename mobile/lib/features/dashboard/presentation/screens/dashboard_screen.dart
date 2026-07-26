@@ -445,10 +445,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
                             color: c.primary,
                             onTap: () => context.push('/imprest/form')),
-                        if (canAccessFeature(_permissions, _roles, '/salary/advance/new'))
+                        if (canAccessFeature(_permissions, _roles, '/salary/advances'))
                           _ModuleTile(icon: Icons.savings_outlined, label: 'Salary Adv.',
                             color: c.primary,
-                            onTap: () => context.push('/salary/advance/new')),
+                            onTap: () => context.push('/salary/advances')),
                         if (canAccessFeature(_permissions, _roles, '/hr/dashboard'))
                           _ModuleTile(icon: Icons.people_outline, label: 'HR',
                             color: c.primary,

@@ -84,7 +84,12 @@ class _SalaryAdvancePreviewSignScreenState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      if (context.canPop()) context.pop();
+      final id = widget.requestId;
+      if (id != null) {
+        context.go('/salary/advances/$id');
+      } else if (context.canPop()) {
+        context.pop();
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
