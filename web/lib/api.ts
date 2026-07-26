@@ -901,6 +901,9 @@ export interface TravelRequest {
   approver?: User;
   itineraries?: TravelItinerary[];
   funding_lines?: { id: number; item: string; forum_amount: number; host_amount: number }[];
+  amendments?: TravelAmendment[];
+  returned_at?: string | null;
+  director_finance_confirmed_at?: string | null;
 }
 
 export interface TravelItinerary {
@@ -912,6 +915,18 @@ export interface TravelItinerary {
   dsa_rate: number;
   days_count: number;
   calculated_dsa: number;
+}
+
+export interface TravelAmendment {
+  id: number;
+  travel_request_id: number;
+  created_by: number;
+  status: string;
+  proposed_changes: Record<string, unknown>;
+  original_snapshot?: Record<string, unknown> | null;
+  reason?: string | null;
+  creator?: User;
+  created_at?: string;
 }
 
 // ─── Generic Attachment ────────────────────────────────────────────────────
@@ -999,7 +1014,9 @@ export const travelApi = {
   completeRetirement: (id: number) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/complete-retirement`),
   requestAmendment: (id: number, data: { changes: Record<string, unknown>; reason?: string }) =>
-    api.post<{ data: unknown; message: string }>(`/travel/requests/${id}/amendments`, data),
+    api.post<{ data: TravelAmendment; message: string }>(`/travel/requests/${id}/amendments`, data),
+  approveAmendment: (amendmentId: number) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/amendments/${amendmentId}/approve`),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<{ data: Record<string, unknown>[] }>("/travel/register/export", { params }),
   listDsaRates: (params?: Record<string, string | number>) =>

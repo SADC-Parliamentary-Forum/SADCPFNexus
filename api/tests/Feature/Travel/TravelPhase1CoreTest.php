@@ -345,24 +345,55 @@ class TravelPhase1CoreTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asStaff($tenant);
+        $originalDeparture = now()->addDays(5)->toDateString();
+        $newDeparture = now()->addDays(20)->toDateString();
         $travel = TravelRequest::factory()->approved()->create([
             'tenant_id' => $tenant->id,
             'requester_id' => $user->id,
+            'departure_date' => $originalDeparture,
         ]);
 
         $http->putJson("/api/v1/travel/requests/{$travel->id}", [
-            'departure_date' => now()->addDays(20)->toDateString(),
+            'departure_date' => $newDeparture,
         ])->assertUnprocessable();
 
-        $http->postJson("/api/v1/travel/requests/{$travel->id}/amendments", [
-            'changes' => ['departure_date' => now()->addDays(20)->toDateString()],
+        $create = $http->postJson("/api/v1/travel/requests/{$travel->id}/amendments", [
+            'changes' => ['departure_date' => $newDeparture],
             'reason' => 'Meeting postponed',
         ])->assertCreated()
           ->assertJsonPath('data.status', 'submitted');
 
+        $amendmentId = $create->json('data.id');
+        $this->assertNotNull($amendmentId);
+        $this->assertSame(
+            $originalDeparture,
+            $create->json('data.original_snapshot.departure_date')
+        );
+
         $this->assertDatabaseHas('travel_requests', [
             'id' => $travel->id,
             'status' => 'amendment_pending',
+        ]);
+
+        $approver = $this->makeUser('Secretary General', $tenant);
+        $approved = $this->asUser($approver)
+            ->postJson("/api/v1/travel/amendments/{$amendmentId}/approve")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'approved');
+
+        $this->assertSame(
+            $newDeparture,
+            Carbon::parse($approved->json('data.departure_date'))->toDateString()
+        );
+
+        $this->assertDatabaseHas('travel_amendments', [
+            'id' => $amendmentId,
+            'status' => 'approved',
+        ]);
+        $this->assertDatabaseHas('travel_requests', [
+            'id' => $travel->id,
+            'status' => 'approved',
+            'departure_date' => $newDeparture,
         ]);
     }
 

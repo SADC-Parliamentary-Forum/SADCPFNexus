@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { travelApi, type TravelRequest, type ModuleAttachment, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
+import { travelApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
 import { formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
@@ -19,6 +19,7 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
   cancelled:               { label: "Cancelled",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
   returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
   withdrawn:               { label: "Withdrawn",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
+  amendment_pending:       { label: "Amendment Pending",     cls: "text-blue-700 bg-blue-50 border-blue-200",     icon: "edit_document" },
 };
 
 function SkeletonCard() {
@@ -61,6 +62,13 @@ export default function TravelDetailPage() {
   const [uploadDocType, setUploadDocType] = useState("invitation");
   const [uploadLoading, setUploadLoading] = useState(false);
   const [attachToast, setAttachToast] = useState<string | null>(null);
+  const [showAmendmentModal, setShowAmendmentModal] = useState(false);
+  const [amendDeparture, setAmendDeparture] = useState("");
+  const [amendReturn, setAmendReturn] = useState("");
+  const [amendDestination, setAmendDestination] = useState("");
+  const [amendPurpose, setAmendPurpose] = useState("");
+  const [amendReason, setAmendReason] = useState("");
+  const [amendError, setAmendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
@@ -166,6 +174,86 @@ export default function TravelDetailPage() {
       showToast("Request resubmitted for approval.");
     } catch {
       setError("Failed to resubmit request.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openAmendmentModal = () => {
+    if (!request) return;
+    setAmendDeparture(request.departure_date?.slice(0, 10) ?? "");
+    setAmendReturn(request.return_date?.slice(0, 10) ?? "");
+    setAmendDestination(request.destination_country ?? "");
+    setAmendPurpose(request.purpose ?? "");
+    setAmendReason("");
+    setAmendError(null);
+    setShowAmendmentModal(true);
+  };
+
+  const handleRequestAmendment = async () => {
+    if (!request) return;
+    const changes: Record<string, unknown> = {};
+    if (amendDeparture && amendDeparture !== request.departure_date?.slice(0, 10)) {
+      changes.departure_date = amendDeparture;
+    }
+    if (amendReturn && amendReturn !== request.return_date?.slice(0, 10)) {
+      changes.return_date = amendReturn;
+    }
+    if (amendDestination && amendDestination !== request.destination_country) {
+      changes.destination_country = amendDestination;
+    }
+    if (amendPurpose && amendPurpose !== request.purpose) {
+      changes.purpose = amendPurpose;
+    }
+    if (Object.keys(changes).length === 0) {
+      setAmendError("Change at least one field before submitting an amendment.");
+      return;
+    }
+    setActionLoading(true);
+    setAmendError(null);
+    try {
+      await travelApi.requestAmendment(request.id, {
+        changes,
+        reason: amendReason.trim() || undefined,
+      });
+      setShowAmendmentModal(false);
+      await refreshRequest();
+      showToast("Amendment submitted for approval.");
+    } catch {
+      setAmendError("Failed to submit amendment. Approved requests cannot be edited silently.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveAmendment = async (amendment: TravelAmendment) => {
+    if (!(await confirm({
+      title: "Approve Amendment",
+      message: "Apply the proposed changes to this approved travel request?",
+      variant: "primary",
+    }))) return;
+    setActionLoading(true);
+    try {
+      await travelApi.approveAmendment(amendment.id);
+      await refreshRequest();
+      showToast("Amendment approved and applied.");
+    } catch {
+      setError("Failed to approve amendment.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const runPostApproval = async (label: string, fn: () => Promise<unknown>) => {
+    if (!request) return;
+    if (!(await confirm({ title: label, message: `Confirm: ${label}?`, variant: "primary" }))) return;
+    setActionLoading(true);
+    try {
+      await fn();
+      await refreshRequest();
+      showToast(`${label} completed.`);
+    } catch {
+      setError(`Failed: ${label}. Check required documents and approval status.`);
     } finally {
       setActionLoading(false);
     }
@@ -284,13 +372,25 @@ export default function TravelDetailPage() {
               {s.label}
             </span>
             {request.status === "approved" && (
-              <Link
-                href={`/travel/${request.id}/certificate`}
-                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-                Certificate
-              </Link>
+              <>
+                <Link
+                  href={`/travel/${request.id}/certificate`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+                  Certificate
+                </Link>
+                <button
+                  type="button"
+                  onClick={openAmendmentModal}
+                  disabled={actionLoading}
+                  data-testid="travel-request-amendment"
+                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[14px]">edit_document</span>
+                  Request amendment
+                </button>
+              </>
             )}
             {request.status === "draft" && (
               <>
@@ -358,6 +458,18 @@ export default function TravelDetailPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-800">Returned for Correction</p>
             <p className="text-xs text-amber-700 mt-0.5">This request was returned. Make the required corrections and resubmit.</p>
+          </div>
+        </div>
+      )}
+
+      {request.status === "amendment_pending" && (
+        <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3" data-testid="travel-amendment-pending-banner">
+          <span className="material-symbols-outlined text-[18px] text-blue-600 flex-shrink-0 mt-0.5">edit_document</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-blue-800">Amendment pending approval</p>
+            <p className="text-xs text-blue-700 mt-0.5">
+              Controlled post-approval changes are awaiting review. Silent edits remain blocked.
+            </p>
           </div>
         </div>
       )}
@@ -528,6 +640,133 @@ export default function TravelDetailPage() {
         </div>
       )}
 
+      {/* Controlled amendments */}
+      {((request.amendments?.length ?? 0) > 0 || request.status === "amendment_pending") && (
+        <div className="card p-5" data-testid="travel-amendments-panel">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="edit_document" color="text-blue-600" bg="bg-blue-50" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Amendments</h3>
+          </div>
+          <div className="space-y-3">
+            {(request.amendments ?? []).slice().reverse().map((a) => (
+              <div key={a.id} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3.5 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-neutral-900 capitalize">{a.status.replace(/_/g, " ")}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      {a.reason || "No reason provided"}
+                      {a.creator?.name ? ` · by ${a.creator.name}` : ""}
+                    </p>
+                    <p className="text-xs text-neutral-600 mt-2 font-mono break-all">
+                      {JSON.stringify(a.proposed_changes)}
+                    </p>
+                    {a.original_snapshot && (
+                      <p className="text-[11px] text-neutral-400 mt-1">
+                        Original snapshot preserved
+                      </p>
+                    )}
+                  </div>
+                  {a.status === "submitted" && (
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => handleApproveAmendment(a)}
+                      data-testid={`travel-approve-amendment-${a.id}`}
+                      className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Approve
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Post-approval lifecycle (booking gate, return, retirement) */}
+      {(request.status === "approved" || request.status === "amendment_pending" || request.returned_at || request.booking_committed_at) && (
+        <div className="card p-5" data-testid="travel-post-approval-actions">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="flight_land" color="text-teal-600" bg="bg-teal-50" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Post-approval actions</h3>
+          </div>
+          <p className="text-xs text-neutral-500 mb-3">
+            Booking requires SG approval (or audited emergency). Retirement needs a mission report attachment.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {!request.director_finance_confirmed_at && request.status === "approved" && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runPostApproval("Confirm funds", () => travelApi.confirmFunds(request.id))}
+                className="btn-secondary py-2 px-3 text-xs"
+              >
+                Confirm funds
+              </button>
+            )}
+            {!request.booking_committed_at && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runPostApproval("Mark booked", () => travelApi.markBooked(request.id))}
+                className="btn-secondary py-2 px-3 text-xs"
+              >
+                Mark booked
+              </button>
+            )}
+            {request.status === "approved" && !request.returned_at && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runPostApproval("Mark returned", () => travelApi.markReturned(request.id))}
+                className="btn-secondary py-2 px-3 text-xs"
+              >
+                Mark returned
+              </button>
+            )}
+            {request.returned_at && request.retirement_status !== "completed" && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runPostApproval("Complete retirement", () => travelApi.completeRetirement(request.id))}
+                className="btn-primary py-2 px-3 text-xs"
+              >
+                Complete retirement
+              </button>
+            )}
+          </div>
+          {(request.booking_committed_at || request.returned_at || request.retirement_due_at) && (
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-xs text-neutral-600">
+              {request.booking_committed_at && (
+                <div>
+                  <dt className="text-neutral-400">Booked</dt>
+                  <dd className="font-medium">{formatDateShort(request.booking_committed_at)}</dd>
+                </div>
+              )}
+              {request.returned_at && (
+                <div>
+                  <dt className="text-neutral-400">Returned</dt>
+                  <dd className="font-medium">{formatDateShort(request.returned_at)}</dd>
+                </div>
+              )}
+              {request.retirement_due_at && (
+                <div>
+                  <dt className="text-neutral-400">Retirement due</dt>
+                  <dd className="font-medium">{formatDateShort(request.retirement_due_at)}</dd>
+                </div>
+              )}
+              {request.retirement_status && (
+                <div>
+                  <dt className="text-neutral-400">Retirement status</dt>
+                  <dd className="font-medium capitalize">{request.retirement_status}</dd>
+                </div>
+              )}
+            </dl>
+          )}
+        </div>
+      )}
+
       {/* Attachments */}
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
@@ -670,6 +909,71 @@ export default function TravelDetailPage() {
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {actionLoading ? "Rejecting…" : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Amendment Modal */}
+      {showAmendmentModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" data-testid="travel-amendment-modal">
+          <div className="rounded-2xl bg-white p-6 max-w-lg w-full shadow-2xl border border-neutral-100 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
+                <span className="material-symbols-outlined text-blue-600 text-[20px]">edit_document</span>
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">Request amendment</h3>
+                <p className="text-xs text-neutral-400">Controlled post-approval change — original values are snapshotted</p>
+              </div>
+            </div>
+            {amendError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{amendError}</p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-xs text-neutral-500 space-y-1">
+                <span>Departure date</span>
+                <input type="date" className="form-input" value={amendDeparture} onChange={(e) => setAmendDeparture(e.target.value)} />
+              </label>
+              <label className="text-xs text-neutral-500 space-y-1">
+                <span>Return date</span>
+                <input type="date" className="form-input" value={amendReturn} onChange={(e) => setAmendReturn(e.target.value)} />
+              </label>
+            </div>
+            <label className="block text-xs text-neutral-500 space-y-1">
+              <span>Destination country</span>
+              <input className="form-input" value={amendDestination} onChange={(e) => setAmendDestination(e.target.value)} />
+            </label>
+            <label className="block text-xs text-neutral-500 space-y-1">
+              <span>Purpose</span>
+              <input className="form-input" value={amendPurpose} onChange={(e) => setAmendPurpose(e.target.value)} />
+            </label>
+            <label className="block text-xs text-neutral-500 space-y-1">
+              <span>Reason for amendment</span>
+              <textarea
+                className="form-input resize-none"
+                rows={2}
+                value={amendReason}
+                onChange={(e) => setAmendReason(e.target.value)}
+                placeholder="Why is this change needed?"
+              />
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAmendmentModal(false)}
+                className="btn-secondary flex-1 justify-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestAmendment}
+                disabled={actionLoading}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50"
+              >
+                {actionLoading ? "Submitting…" : "Submit amendment"}
               </button>
             </div>
           </div>

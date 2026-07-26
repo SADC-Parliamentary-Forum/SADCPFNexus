@@ -41,7 +41,7 @@ class TravelController extends Controller
         $travelRequest->load([
             'requester', 'approver', 'itineraries', 'workplanEvent',
             'fundingLines', 'programme', 'mission', 'dsaLines',
-            'attachments', 'toilCandidates',
+            'attachments', 'toilCandidates', 'amendments.creator',
             'preparedBy', 'preparedOnBehalfOf',
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
@@ -337,7 +337,15 @@ class TravelController extends Controller
 
     public function approveAmendment(Request $request, TravelAmendment $amendment): JsonResponse
     {
-        $travel = $this->travelService->approveAmendment($amendment, $request->user());
+        $user = $request->user();
+        abort_unless(
+            $user->can('travel.approve')
+                || $user->can('travel.final-approve')
+                || $user->isSystemAdmin()
+                || $user->hasAnyRole(['Secretary General', 'Director', 'Finance Controller', 'System Admin', 'super-admin']),
+            403
+        );
+        $travel = $this->travelService->approveAmendment($amendment, $user);
         return response()->json(['message' => 'Amendment approved.', 'data' => $travel]);
     }
 
