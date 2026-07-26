@@ -68,14 +68,10 @@ class ProgrammeService
         $this->ensureResponsibleOfficersInTenant($officerIds, $user->tenant_id);
         $firstOfficerId = !empty($officerIds) ? (int) $officerIds[0] : null;
 
-        $year = now()->year;
-        $count = Programme::whereYear('created_at', $year)->count() + 1;
-        $ref = 'PIF-' . $year . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-
         $programme = Programme::create([
             'tenant_id'                => $user->tenant_id,
             'created_by'               => $user->id,
-            'reference_number'         => $ref,
+            'reference_number'         => Programme::generateReferenceNumber(),
             'status'                   => 'draft',
             'title'                    => $data['title'],
             'strategic_alignment'      => $data['strategic_alignment'] ?? null,

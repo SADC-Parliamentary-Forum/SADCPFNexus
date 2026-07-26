@@ -262,6 +262,33 @@ class Programme extends Model
     public function isApproved(): bool { return $this->status === 'approved'; }
 
     /**
+     * Next PIF reference for the current year, e.g. PIF-2026-006.
+     *
+     * Must include soft-deleted rows: SoftDeletes excludes them from count()
+     * queries, but the unique index on reference_number still covers them.
+     * Sequence is taken from the highest numeric suffix among base refs
+     * (PIF-YYYY-NNN), ignoring amendment suffixes (PIF-YYYY-NNN-A1).
+     */
+    public static function generateReferenceNumber(?\DateTimeInterface $at = null): string
+    {
+        $year = ($at ? \Carbon\Carbon::instance($at) : now())->year;
+        $prefix = "PIF-{$year}-";
+
+        $refs = static::withTrashed()
+            ->where('reference_number', 'like', $prefix . '%')
+            ->pluck('reference_number');
+
+        $max = 0;
+        foreach ($refs as $ref) {
+            if (preg_match('/^PIF-' . preg_quote((string) $year, '/') . '-(\d+)$/', (string) $ref, $m)) {
+                $max = max($max, (int) $m[1]);
+            }
+        }
+
+        return $prefix . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * An amended PIF (status = 'amended') is the current, approved version of
      * its activity after an amendment cycle completed. It should support the
      * same downstream actions as a normally-approved PIF (further amendment,

@@ -38,6 +38,37 @@ class ProgrammesTest extends TestCase
         ]);
     }
 
+    public function test_create_skips_soft_deleted_reference_numbers(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+        $year = now()->year;
+
+        // Active count would suggest next = 005, but 005 already exists (trashed gap).
+        foreach (['001', '002', '004', '005'] as $seq) {
+            Programme::create([
+                'tenant_id'        => $tenant->id,
+                'created_by'       => $user->id,
+                'reference_number' => "PIF-{$year}-{$seq}",
+                'title'            => "Existing {$seq}",
+                'status'           => 'draft',
+            ]);
+        }
+
+        Programme::create([
+            'tenant_id'        => $tenant->id,
+            'created_by'       => $user->id,
+            'reference_number' => "PIF-{$year}-003",
+            'title'            => 'Soft-deleted 003',
+            'status'           => 'draft',
+        ])->delete();
+
+        $response = $http->postJson('/api/v1/programmes', ['title' => 'Next After Gap']);
+
+        $response->assertCreated();
+        $this->assertSame("PIF-{$year}-006", $response->json('data.reference_number'));
+    }
+
     public function test_programme_requires_title(): void
     {
         [$http] = $this->asStaff();
