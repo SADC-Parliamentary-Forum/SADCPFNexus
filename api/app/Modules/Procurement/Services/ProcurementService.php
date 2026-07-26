@@ -2,6 +2,7 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\AuditLog;
+use App\Models\BudgetReservation;
 use App\Models\RfqInvitation;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
@@ -9,6 +10,7 @@ use App\Models\SupplierCategory;
 use App\Models\Vendor;
 use App\Models\User;
 use App\Mail\ModuleNotificationMail;
+use App\Modules\Budget\Services\BudgetCommitmentService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use Illuminate\Support\Facades\Mail;
@@ -21,7 +23,8 @@ class ProcurementService
 {
     public function __construct(
         protected NotificationService $notificationService,
-        protected WorkflowService     $workflowService,
+        protected WorkflowService $workflowService,
+        protected BudgetCommitmentService $commitments,
     ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
@@ -399,13 +402,55 @@ class ProcurementService
     {
         $active = $request->budgetReservations()
             ->whereNull('released_at')
+            ->where(function ($q) {
+                $q->whereNull('status')
+                    ->orWhereIn('status', BudgetReservation::ACTIVE_STATUSES);
+            })
             ->exists();
 
-        if (!$active) {
+        if (! $active) {
             throw ValidationException::withMessages([
                 'budget' => 'Finance budget confirmation is required before this action.',
             ]);
         }
+    }
+
+    /**
+     * Align the procurement commitment to the awarded quote amount.
+     * Savings (award < reserved) are released back to available budget.
+     * Increases require remaining available funds.
+     */
+    protected function adjustCommitmentToAwardAmount(ProcurementRequest $request, float $awardAmount, User $actor): void
+    {
+        $awardAmount = round($awardAmount, 2);
+        if ($awardAmount <= 0) {
+            return;
+        }
+
+        $commitment = $this->commitments->findBySourceKey((int) $request->tenant_id, 'PROCUREMENT:'.$request->id)
+            ?? BudgetReservation::query()
+                ->where('procurement_request_id', $request->id)
+                ->whereNull('released_at')
+                ->latest('id')
+                ->first();
+
+        if (! $commitment || ! $commitment->isActive()) {
+            return;
+        }
+
+        $current = round((float) $commitment->current_amount, 2);
+        if (abs($current - $awardAmount) < 0.01) {
+            return;
+        }
+
+        $this->commitments->adjust(
+            $commitment,
+            $awardAmount,
+            $actor,
+            $awardAmount < $current
+                ? 'Procurement award savings release'
+                : 'Procurement award amount increase',
+        );
     }
 
     public function hodReject(ProcurementRequest $request, string $reason, User $hod): ProcurementRequest
@@ -555,6 +600,8 @@ class ProcurementService
             ],
             'tags' => 'procurement',
         ]);
+
+        $this->adjustCommitmentToAwardAmount($request, (float) $quote->quoted_amount, $awarder);
 
         // Notify requester
         $request->loadMissing('requester');

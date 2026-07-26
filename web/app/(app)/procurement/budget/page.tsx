@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -29,7 +30,7 @@ export default function ProcurementBudgetPage() {
     hasPermission(user, ["finance.approve", "finance.admin", "procurement.admin"]);
 
   const [reserveFor, setReserveFor] = useState<ProcurementRequest | null>(null);
-  const [budgetLine, setBudgetLine] = useState("");
+  const [budgetLineId, setBudgetLineId] = useState<number | null>(null);
   const [reservedAmount, setReservedAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -56,9 +57,14 @@ export default function ProcurementBudgetPage() {
   });
 
   const reserveMut = useMutation({
-    mutationFn: (payload: { requestId: number; budget_line: string; reserved_amount: number; notes?: string }) =>
+    mutationFn: (payload: {
+      requestId: number;
+      budget_line_id: number;
+      reserved_amount: number;
+      notes?: string;
+    }) =>
       budgetReservationsApi.reserve(payload.requestId, {
-        budget_line: payload.budget_line,
+        budget_line_id: payload.budget_line_id,
         reserved_amount: payload.reserved_amount,
         notes: payload.notes,
       }),
@@ -66,14 +72,18 @@ export default function ProcurementBudgetPage() {
       qc.invalidateQueries({ queryKey: ["procurement", "budget"] });
       qc.invalidateQueries({ queryKey: ["procurement", "budget-reservations"] });
       setReserveFor(null);
-      setBudgetLine("");
+      setBudgetLineId(null);
       setReservedAmount("");
       setNotes("");
       setFormError(null);
     },
     onError: (err: unknown) => {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
+          ?.message ??
+        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors
+          ?.budget_line_id?.[0] ??
+        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors?.amount?.[0] ??
         "Failed to reserve budget.";
       setFormError(msg);
     },
@@ -92,7 +102,7 @@ export default function ProcurementBudgetPage() {
 
   const openReserve = (req: ProcurementRequest) => {
     setReserveFor(req);
-    setBudgetLine(req.budget_line ?? "");
+    setBudgetLineId(null);
     setReservedAmount(String(req.estimated_value ?? ""));
     setNotes("");
     setFormError(null);
@@ -224,8 +234,12 @@ export default function ProcurementBudgetPage() {
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
-              <input className="form-input" value={budgetLine} onChange={(e) => setBudgetLine(e.target.value)} />
+              <BudgetLinePicker
+                value={budgetLineId}
+                amount={reservedAmount ? parseFloat(reservedAmount) : null}
+                required
+                onChange={(id) => setBudgetLineId(id)}
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
@@ -249,11 +263,11 @@ export default function ProcurementBudgetPage() {
               <button
                 type="button"
                 className="btn-primary flex-1 disabled:opacity-50"
-                disabled={reserveMut.isPending || !budgetLine.trim() || !reservedAmount}
+                disabled={reserveMut.isPending || !budgetLineId || !reservedAmount}
                 onClick={() =>
                   reserveMut.mutate({
                     requestId: reserveFor.id,
-                    budget_line: budgetLine.trim(),
+                    budget_line_id: budgetLineId!,
                     reserved_amount: parseFloat(reservedAmount),
                     notes: notes.trim() || undefined,
                   })

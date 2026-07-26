@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { travelApi, programmeApi } from "@/lib/api";
 import type { Programme } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 
 // ─── Country lists ────────────────────────────────────────────────────────────
 const SADC_COUNTRIES = [
@@ -82,6 +83,7 @@ interface FormData {
   pif_type: "linked" | "justification" | "";
   programme_id: string;
   justification: string;
+  budget_line_id: number | null;
   legs: Leg[];
   funding_rows: FundingRow[];
   vehicle_type: "sadcpf" | "private" | "";
@@ -284,6 +286,7 @@ export default function TravelCreatePage() {
     pif_type: "",
     programme_id: "",
     justification: "",
+    budget_line_id: null,
     legs: [{ from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 }],
     funding_rows: FUNDING_ITEMS.map(({ item, icon }) => ({
       item,
@@ -386,6 +389,7 @@ export default function TravelCreatePage() {
         justification: form.justification || undefined,
         host_organization: form.host_organization || undefined,
         programme_id: form.programme_id ? parseInt(form.programme_id) : undefined,
+        budget_line_id: form.budget_line_id ?? undefined,
         vehicle_type: form.vehicle_type || undefined,
         driver_required: form.driver_required || undefined,
         driver_name: form.driver_name || undefined,
@@ -823,6 +827,23 @@ export default function TravelCreatePage() {
             </p>
           </div>
 
+          <BudgetLinePicker
+            value={form.budget_line_id}
+            amount={grandTotal > 0 ? grandTotal : null}
+            label="Institutional budget line"
+            onChange={(id, line) => {
+              setForm((prev) => ({
+                ...prev,
+                budget_line_id: id,
+                funding_rows: prev.funding_rows.map((row, idx) =>
+                  idx === 0 && line
+                    ? { ...row, budget_line: line.code || line.name || row.budget_line }
+                    : row,
+                ),
+              }));
+            }}
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {form.funding_rows.map((row, i) => {
               const rowTotal = (parseFloat(row.forum_amount) || 0) + (parseFloat(row.host_amount) || 0);
@@ -941,10 +962,10 @@ export default function TravelCreatePage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line</label>
+                          <label className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line (text note)</label>
                           <input
                             className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                            placeholder="e.g. 4200-01"
+                            placeholder="Optional note if no institutional line"
                             value={row.budget_line}
                             onChange={(e) => updateFundingRow(i, "budget_line", e.target.value)}
                           />

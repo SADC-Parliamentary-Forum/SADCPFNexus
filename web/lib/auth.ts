@@ -179,6 +179,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel/create", permission: ["travel.create", "travel.prepare-for-others"] },
   { path: "/travel", permission: "travel.view" },
   { path: "/leave", permission: "leave.view" },
+  { path: "/budget", permission: ["finance.view", "finance.approve", "finance.admin", "procurement.manage_budget"] },
   { path: "/finance", permission: "finance.view" },
   // Salary Advances — more specific paths first (finance queues exclude plain employee view)
   { path: "/salary-advances/settings", permission: ["salary_advance.admin", "finance.admin"] },

@@ -23,13 +23,23 @@
 - [x] PIF finance certification creates/releases commitments
 - [x] Travel + Procurement wired to commitment service
 - [x] Web `budgetApi` client + procurement reserve accepts `budget_line_id`
-- [x] Verification: `php artisan test --filter="BudgetPhase1Foundation|BudgetPifIntegration|BudgetReservationTest"` → 19 passed
+- [x] Verification: foundation + PIF + reservation tests green
+
+## Slice B — Web control + pickers + award savings shipped 2026-07-26
+
+- [x] `/budget` control dashboard (approved / actual / committed / available)
+- [x] Nav: Finance → Budget Control; `ROUTE_ACCESS` for `/budget`
+- [x] Shared `BudgetLinePicker` with live availability
+- [x] Procurement reserve UI (queue + detail) uses `budget_line_id`
+- [x] Travel create selects institutional `budget_line_id`
+- [x] PIF detail Finance certification panel (status + line + commitment amount)
+- [x] Procurement award adjusts commitment (savings release)
+- [x] Verification: 20 passed (`Budget*` + `BudgetReservationTest`)
 
 ## Next slices
 
-- [ ] Budget web nav/dashboard pages
-- [ ] PIF/Travel/Procurement UI line pickers
-- [ ] Award/PO commitment adjust + savings release
-- [ ] Variance monitoring
+- [ ] Variance monitoring workflow
 - [ ] Annual preparation / institutional approvals (Phase 2)
 - [ ] Imprest consumer wiring
+- [ ] Richer Budget reports / exports
+- [ ] Fixed Asset Register + Consumables/Stock (after Budget)

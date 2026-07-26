@@ -19,6 +19,7 @@ import {
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
+import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -643,6 +644,10 @@ export default function PifDetailPage() {
 
       {/* ── LOGISTICS & COMPLIANCE TAB ───────────────────────────────────────── */}
       {tab === "logistics" && (
+        <PifFinanceBudgetCertify
+          programme={programme}
+          onUpdated={(updated) => setProgramme(updated)}
+        />
         <ReadOnlySections programme={programme} tenantUsers={tenantUsers} />
       )}
 

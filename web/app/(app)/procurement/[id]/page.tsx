@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { procurementApi, quotesApi, budgetReservationsApi, procurementRequestAttachmentsApi, PROCUREMENT_REQUEST_DOC_TYPES, type ProcurementRequest, type ProcurementAttachment, type ProcurementQuote } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
+import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -84,7 +85,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [awarding, setAwarding]         = useState(false);
   const [awardError, setAwardError]     = useState<string | null>(null);
 
-  const [budgetLineInput, setBudgetLineInput] = useState("");
+  const [budgetLineId, setBudgetLineId] = useState<number | null>(null);
   const [reservedAmountInput, setReservedAmountInput] = useState("");
   const [reserveNotes, setReserveNotes] = useState("");
   const [reserving, setReserving] = useState(false);
@@ -186,12 +187,12 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   }
 
   async function handleReserveBudget() {
-    if (!request || !budgetLineInput.trim() || !reservedAmountInput) return;
+    if (!request || !budgetLineId || !reservedAmountInput) return;
     setReserving(true);
     setReserveError(null);
     try {
       await budgetReservationsApi.reserve(request.id, {
-        budget_line: budgetLineInput.trim(),
+        budget_line_id: budgetLineId,
         reserved_amount: parseFloat(reservedAmountInput),
         notes: reserveNotes.trim() || undefined,
       });
@@ -199,7 +200,12 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       setRequest(refreshed.data);
       showToastMsg("Budget reserved.");
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to reserve budget." : "Failed to reserve budget.";
+      const msg = axios.isAxiosError(e)
+        ? e.response?.data?.message
+          ?? e.response?.data?.errors?.budget_line_id?.[0]
+          ?? e.response?.data?.errors?.amount?.[0]
+          ?? "Failed to reserve budget."
+        : "Failed to reserve budget.";
       setReserveError(msg);
     } finally {
       setReserving(false);
@@ -568,14 +574,12 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{reserveError}</div>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
-              <input
-                className="form-input w-full"
-                value={budgetLineInput || request.budget_line || ""}
-                onChange={(e) => setBudgetLineInput(e.target.value)}
-              />
-            </div>
+            <BudgetLinePicker
+              value={budgetLineId}
+              amount={reservedAmountInput ? parseFloat(reservedAmountInput) : Number(request.estimated_value ?? 0)}
+              required
+              onChange={(id) => setBudgetLineId(id)}
+            />
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
               <input

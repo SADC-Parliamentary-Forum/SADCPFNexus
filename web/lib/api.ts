@@ -3460,8 +3460,15 @@ export const programmeApi = {
     api.delete(`/programmes/${programmeId}/procurement/${itemId}`),
 
   // Finance review
-  updateFinanceReview: (programmeId: number, data: { budget_availability_status: string; finance_comments?: string }) =>
-    api.put<{ data: Programme; message: string }>(`/programmes/${programmeId}/finance-review`, data),
+  updateFinanceReview: (
+    programmeId: number,
+    data: {
+      budget_availability_status: string;
+      finance_comments?: string;
+      budget_line_id?: number;
+      commitment_amount?: number;
+    },
+  ) => api.put<{ data: Programme; message: string }>(`/programmes/${programmeId}/finance-review`, data),
 
   // Documents
   addDocument: (programmeId: number, data: Partial<ProgrammeDocument>) =>
