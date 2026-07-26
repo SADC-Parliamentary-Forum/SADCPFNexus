@@ -9,6 +9,11 @@ import { defineConfig, devices } from "@playwright/test";
  *   3. cd web && npm run dev                 (port 3000)
  *   4. cd web && npx playwright test
  *
+ * SA + Procurement smokes:
+ *   npm run test:smokes:sa-proc
+ *   (or PLAYWRIGHT_BASE_URL=… npx playwright test tests/e2e/sa-procurement-smokes.spec.ts)
+ *
+ * Auth fixture policy / how-to: tests/e2e/README.md
  * To install Playwright browsers first:  npx playwright install --with-deps
  */
 export default defineConfig({
