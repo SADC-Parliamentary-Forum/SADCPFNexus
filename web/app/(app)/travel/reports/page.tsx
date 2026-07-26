@@ -52,22 +52,36 @@ export default function TravelReportsPage() {
       {error && <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       {pack && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="travel-reports-pack">
-          {[
-            ["travel_register", "Register rows"],
-            ["upcoming_travel", "Upcoming"],
-            ["current_travellers", "Away now"],
-            ["outstanding_retirement", "Outstanding retirement"],
-            ["toil_candidates", "TOIL candidates"],
-            ["visa_status", "Visa watchlist"],
-            ["amendments", "Amendments"],
-            ["cost_by_destination", "Destinations"],
-          ].map(([key, label]) => (
-            <div key={key} className="card p-4">
-              <p className="text-[11px] uppercase tracking-wide text-neutral-400">{label}</p>
-              <p className="text-2xl font-semibold mt-1">{packCount(key)}</p>
-            </div>
-          ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="travel-reports-pack">
+            {[
+              ["travel_register", "Register rows"],
+              ["upcoming_travel", "Upcoming"],
+              ["current_travellers", "Away now"],
+              ["by_department", "By department"],
+              ["by_programme", "By programme"],
+              ["by_donor", "By donor"],
+              ["dsa_summary", "DSA summary"],
+              ["cancellations", "Cancellations"],
+              ["outstanding_retirement", "Outstanding retirement"],
+              ["toil_candidates", "TOIL candidates"],
+              ["visa_status", "Visa watchlist"],
+              ["amendments", "Amendments"],
+            ].map(([key, label]) => (
+              <div key={key} className="card p-4">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-400">{label}</p>
+                <p className="text-2xl font-semibold mt-1">{packCount(key)}</p>
+                <a
+                  className="text-xs text-primary mt-2 inline-block"
+                  href={travelApi.reportsPackExportUrl(key)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Download CSV
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

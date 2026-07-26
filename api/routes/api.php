@@ -278,6 +278,11 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboards/finance', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dashboardFinance']);
             Route::get('calendar', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'calendar']);
             Route::get('reports/pack', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reportsPack']);
+            Route::get('reports/pack/export', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reportsPackExport']);
+            Route::get('travellers', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'travellers']);
+            Route::get('fleet-vehicles', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'fleetVehicles']);
+            Route::get('sponsored-deduction-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'sponsoredRatesIndex']);
+            Route::post('sponsored-deduction-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'sponsoredRatesStore']);
 
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
@@ -285,6 +290,7 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/submit',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
             Route::post('requests/{travelRequest}/approve',  [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
             Route::post('requests/{travelRequest}/reject',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
+            Route::post('requests/{travelRequest}/cancel',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'cancel']);
             Route::post('requests/{travelRequest}/return',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'returnForCorrection']);
             Route::post('requests/{travelRequest}/withdraw', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'withdraw']);
             Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
@@ -293,6 +299,9 @@ Route::prefix('v1')->group(function () {
             Route::get('requests/{travelRequest}/travel-pack', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'travelPack']);
             Route::post('requests/{travelRequest}/accommodations', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'storeAccommodation']);
             Route::patch('requests/{travelRequest}/vehicle-mileage', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateVehicleMileage']);
+            Route::post('requests/{travelRequest}/assign-vehicle', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'assignVehicle']);
+            Route::patch('requests/{travelRequest}/personal-days', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updatePersonalDays']);
+            Route::post('requests/{travelRequest}/link-imprest', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'linkImprest']);
             Route::patch('requests/{travelRequest}/visa', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateVisa']);
             Route::patch('requests/{travelRequest}/health', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateHealth']);
             Route::patch('requests/{travelRequest}/procurement-link', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateProcurementLink']);

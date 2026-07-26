@@ -38,6 +38,9 @@ class TravelRequest extends Model
         'mileage_rate_per_km', 'equivalent_airfare', 'mileage_reimbursement_estimate',
         'reimbursement_capped_amount', 'mileage_exceeds_airfare',
         'conflict_resolution_note', 'conflicts_acknowledged_at',
+        'vehicle_asset_id', 'vehicle_assigned_at', 'vehicle_assigned_by', 'vehicle_conflict_note',
+        'sponsored_deduction_rate_id', 'meals_provided_by_host', 'accommodation_provided_by_host',
+        'cancelled_at', 'cancelled_by', 'cancellation_reason',
     ];
 
     protected $casts = [
@@ -77,6 +80,10 @@ class TravelRequest extends Model
         'reimbursement_capped_amount'    => 'decimal:2',
         'mileage_exceeds_airfare'        => 'boolean',
         'conflicts_acknowledged_at'      => 'datetime',
+        'vehicle_assigned_at'            => 'datetime',
+        'meals_provided_by_host'         => 'boolean',
+        'accommodation_provided_by_host' => 'boolean',
+        'cancelled_at'                   => 'datetime',
     ];
 
     public function requester()
@@ -149,6 +156,21 @@ class TravelRequest extends Model
         return $this->belongsTo(ProcurementRequest::class, 'procurement_request_id');
     }
 
+    public function vehicleAsset()
+    {
+        return $this->belongsTo(Asset::class, 'vehicle_asset_id');
+    }
+
+    public function sponsoredDeductionRate()
+    {
+        return $this->belongsTo(TravelSponsoredDeductionRate::class, 'sponsored_deduction_rate_id');
+    }
+
+    public function budgetReservations()
+    {
+        return $this->hasMany(BudgetReservation::class);
+    }
+
     /** Meeting (workplan event) this travel is for — used for LIL “meetings attended”. */
     public function workplanEvent()
     {
@@ -173,6 +195,14 @@ class TravelRequest extends Model
     public function onWorkflowReturned(User $approver, ?string $comment = null): void
     {
         $this->update(['status' => 'returned_for_correction']);
+        $this->loadMissing('requester');
+        if ($this->requester) {
+            app(\App\Services\NotificationService::class)->dispatch($this->requester, 'travel.returned_for_correction', [
+                'name' => $this->requester->name,
+                'reference' => $this->reference_number,
+                'comment' => $comment ?? '',
+            ], ['module' => 'travel', 'record_id' => $this->id, 'url' => '/travel/'.$this->id]);
+        }
     }
 
     public function onWorkflowWithdrawn(): void

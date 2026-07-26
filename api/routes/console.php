@@ -37,6 +37,9 @@ Schedule::command('travel:generate-toil-candidates')->dailyAt('01:30');
 // Travel visa appointment/expiry reminders.
 Schedule::command('travel:send-visa-reminders')->dailyAt('07:45');
 
+// Travel retirement overdue marking + due-soon reminders.
+Schedule::command('travel:mark-overdue-retirements')->dailyAt('08:10');
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()

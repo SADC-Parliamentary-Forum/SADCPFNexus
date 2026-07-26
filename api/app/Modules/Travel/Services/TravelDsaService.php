@@ -93,6 +93,27 @@ class TravelDsaService
             ]);
         });
 
+        $travel->loadMissing('requester');
+        if ($travel->requester) {
+            app(\App\Services\NotificationService::class)->dispatch($travel->requester, 'travel.finance_dsa_calculated', [
+                'name' => $travel->requester->name,
+                'reference' => $travel->reference_number,
+                'amount' => number_format((float) $travel->fresh()->finance_dsa_total, 2).' '.($travel->currency ?? 'NAD'),
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/'.$travel->id]);
+        }
+
+        $financePeers = User::role(['Director', 'Secretary General'])
+            ->where('tenant_id', $travel->tenant_id)
+            ->where('id', '!=', $user->id)
+            ->get();
+        if ($financePeers->isNotEmpty()) {
+            app(\App\Services\NotificationService::class)->dispatchToMany($financePeers, 'travel.finance_dsa_calculated', [
+                'name' => 'Approver',
+                'reference' => $travel->reference_number,
+                'amount' => number_format((float) $travel->fresh()->finance_dsa_total, 2).' '.($travel->currency ?? 'NAD'),
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/'.$travel->id]);
+        }
+
         $officialDays = $this->countOfficialDays($travel);
         $payableLines = $travel->fresh()->dsaLines()->where('is_personal', false)->count();
         if ($officialDays > 0 && $payableLines !== $officialDays) {
@@ -124,6 +145,33 @@ class TravelDsaService
             ->first();
 
         $daily = $rate ? $rate->dailyTotal() : 0.0;
+        $mealComponent = $rate ? (float) ($rate->meal_component ?? 0) : 0.0;
+        $accommodationComponent = $rate ? (float) ($rate->accommodation_component ?? 0) : 0.0;
+
+        $sponsored = null;
+        if ($travel->sponsored_deduction_rate_id) {
+            $sponsored = $travel->sponsoredDeductionRate
+                ?? \App\Models\TravelSponsoredDeductionRate::where('tenant_id', $travel->tenant_id)
+                    ->where('id', $travel->sponsored_deduction_rate_id)
+                    ->where('is_active', true)
+                    ->first();
+        } elseif ($travel->meals_provided_by_host || $travel->accommodation_provided_by_host) {
+            $sponsored = \App\Models\TravelSponsoredDeductionRate::where('tenant_id', $travel->tenant_id)
+                ->where('is_active', true)
+                ->orderBy('id')
+                ->first();
+        }
+
+        $defaultMealDeduction = 0.0;
+        if ($sponsored) {
+            $defaultMealDeduction = $sponsored->mealDeductionFor($mealComponent);
+            // Accommodation deductions are applied as meal_deduction adjustments when host provides lodging
+            // (DSA payable reduces by policy amount); keep as additive meal_deduction for Finance visibility.
+            if ($travel->accommodation_provided_by_host || (float) $sponsored->accommodation_deduction_percent > 0 || $sponsored->accommodation_deduction_fixed !== null) {
+                $defaultMealDeduction += $sponsored->accommodationDeductionFor($accommodationComponent);
+            }
+        }
+
         $lines = [];
         $dep = Carbon::parse($travel->departure_date);
         $ret = Carbon::parse($travel->return_date);
@@ -136,7 +184,7 @@ class TravelDsaService
                 'destination'    => $travel->destination_city,
                 'rate_type'      => $rateType,
                 'daily_rate'     => $isPersonal ? 0 : $daily,
-                'meal_deduction' => 0,
+                'meal_deduction' => $isPersonal ? 0 : $defaultMealDeduction,
                 'adjustments'    => 0,
                 'is_personal'    => $isPersonal,
             ];
@@ -185,6 +233,27 @@ class TravelDsaService
         return DsaRate::create(array_merge($data, [
             'tenant_id' => $user->tenant_id,
             'version'   => $data['version'] ?? 1,
+        ]));
+    }
+
+    public function listSponsoredRates(int $tenantId)
+    {
+        return \App\Models\TravelSponsoredDeductionRate::where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function upsertSponsoredRate(array $data, User $user): \App\Models\TravelSponsoredDeductionRate
+    {
+        if (! empty($data['id'])) {
+            $rate = \App\Models\TravelSponsoredDeductionRate::where('tenant_id', $user->tenant_id)->findOrFail($data['id']);
+            $rate->update(collect($data)->except('id')->all());
+
+            return $rate->fresh();
+        }
+
+        return \App\Models\TravelSponsoredDeductionRate::create(array_merge($data, [
+            'tenant_id' => $user->tenant_id,
         ]));
     }
 }

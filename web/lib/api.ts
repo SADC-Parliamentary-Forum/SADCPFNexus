@@ -1063,6 +1063,22 @@ export const travelApi = {
   calendar: (params?: { from?: string; to?: string }) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/travel/calendar", { params }),
   reportsPack: () => api.get<{ data: Record<string, unknown> }>("/travel/reports/pack"),
+  reportsPackExportUrl: (slice: string) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/reports/pack/export?slice=${encodeURIComponent(slice)}&format=csv`,
+  travellers: () => api.get<{ data: Array<{ id: number; name: string; email?: string }> }>("/travel/travellers"),
+  fleetVehicles: () => api.get<{ data: Array<{ id: number; asset_code: string; name: string; status: string }> }>("/travel/fleet-vehicles"),
+  assignVehicle: (id: number, data: { vehicle_asset_id: number; acknowledge_conflicts?: boolean; conflict_resolution_note?: string }) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/assign-vehicle`, data),
+  updatePersonalDays: (id: number, days: Array<{ date: string; type: "official" | "personal" }>) =>
+    api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/personal-days`, { days }),
+  linkImprest: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: { id: number; travel_request_id?: number; reference_number?: string }; message: string }>(`/travel/requests/${id}/link-imprest`, data ?? {}),
+  cancel: (id: number, reason: string) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/cancel`, { reason }),
+  listSponsoredRates: () =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/travel/sponsored-deduction-rates"),
+  saveSponsoredRate: (data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/travel/sponsored-deduction-rates", data),
   addAccommodation: (id: number, data: Record<string, unknown>) =>
     api.post<{ data: unknown; message: string }>(`/travel/requests/${id}/accommodations`, data),
   updateVehicleMileage: (id: number, data: Record<string, unknown>) =>

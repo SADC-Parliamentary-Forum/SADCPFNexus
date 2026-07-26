@@ -24,6 +24,7 @@ class TravelService
         protected DelegationService $delegationService,
         protected TravelToilService $toilService,
         protected TravelConflictService $conflictService,
+        protected TravelBudgetReservationService $budgetReservationService,
     ) {}
 
     public function list(array $filters, User $user): LengthAwarePaginator
@@ -135,6 +136,9 @@ class TravelService
             'is_emergency'                   => (bool) ($data['is_emergency'] ?? false),
             'emergency_reason'               => $data['emergency_reason'] ?? null,
             'official_personal_days'         => $data['official_personal_days'] ?? null,
+            'sponsored_deduction_rate_id'    => $data['sponsored_deduction_rate_id'] ?? null,
+            'meals_provided_by_host'         => (bool) ($data['meals_provided_by_host'] ?? false),
+            'accommodation_provided_by_host' => (bool) ($data['accommodation_provided_by_host'] ?? false),
         ]);
 
         $this->delegationService->stampPreparation($travel, $user, $onBehalfOf, 'travel', 'draft', $delegation);
@@ -350,6 +354,8 @@ class TravelService
             'tags'           => 'travel',
         ]);
 
+        $this->budgetReservationService->reserveOnApprove($travel->fresh(['fundingLines']), $approver);
+
         $travel->loadMissing('requester');
 
         if ($travel->requester) {
@@ -560,6 +566,12 @@ class TravelService
             'due_date'  => $due->toDateString(),
         ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
 
+        $this->notificationService->dispatch($travel->requester, 'travel.retirement_due', [
+            'name'      => $travel->requester?->name,
+            'reference' => $travel->reference_number,
+            'due_date'  => $due->toDateString(),
+        ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+
         AuditLog::record('travel.returned', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
@@ -568,6 +580,142 @@ class TravelService
         ]);
 
         return $travel->fresh(['toilCandidates']);
+    }
+
+    public function cancel(TravelRequest $travel, User $user, string $reason): TravelRequest
+    {
+        if (in_array($travel->status, ['cancelled', 'withdrawn'], true)) {
+            throw ValidationException::withMessages(['status' => 'Travel is already cancelled.']);
+        }
+        if ($travel->isDraft()) {
+            throw ValidationException::withMessages(['status' => 'Delete draft requests instead of cancelling.']);
+        }
+
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->hasAnyRole(['Secretary General', 'Administration Officer', 'HR Manager', 'Finance Controller'])
+                || $user->can('travel.admin')
+                || $user->can('travel.approve')
+                || (int) $travel->requester_id === (int) $user->id,
+            403
+        );
+
+        $this->budgetReservationService->releaseOnCancel($travel, $user);
+
+        $travel->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancelled_by' => $user->id,
+            'cancellation_reason' => $reason,
+        ]);
+
+        $travel->loadMissing('requester');
+        if ($travel->requester) {
+            $this->notificationService->dispatch($travel->requester, 'travel.cancelled', [
+                'name' => $travel->requester->name,
+                'reference' => $travel->reference_number,
+                'comment' => $reason,
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/'.$travel->id]);
+        }
+
+        AuditLog::record('travel.cancelled', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id' => $travel->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => 'travel',
+        ]);
+
+        return $travel->fresh();
+    }
+
+    public function updatePersonalDays(TravelRequest $travel, array $days, User $user): TravelRequest
+    {
+        $canEdit = (int) $travel->requester_id === (int) $user->id
+            || (int) $travel->prepared_by === (int) $user->id
+            || $user->isSystemAdmin()
+            || $user->can('travel.admin')
+            || $user->can('travel.finance-review');
+        abort_unless($canEdit, 403);
+
+        if (! in_array($travel->status, ['draft', 'returned_for_correction', 'submitted', 'resubmitted', 'approved'], true)) {
+            throw ValidationException::withMessages(['status' => 'Personal days cannot be edited in this status.']);
+        }
+
+        $normalized = [];
+        foreach ($days as $day) {
+            $date = $day['date'] ?? null;
+            $type = $day['type'] ?? 'official';
+            if (! $date) {
+                continue;
+            }
+            $normalized[] = [
+                'date' => Carbon::parse($date)->toDateString(),
+                'type' => in_array($type, ['personal', 'official'], true) ? $type : 'official',
+            ];
+        }
+
+        $travel->update(['official_personal_days' => $normalized]);
+
+        AuditLog::record('travel.personal_days_updated', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id' => $travel->id,
+            'new_values' => ['days' => $normalized],
+            'tags' => 'travel',
+        ]);
+
+        return $travel->fresh();
+    }
+
+    public function linkImprest(TravelRequest $travel, array $data, User $user): \App\Models\ImprestRequest
+    {
+        $canLink = (int) $travel->requester_id === (int) $user->id
+            || $user->isSystemAdmin()
+            || $user->can('travel.finance-review')
+            || $user->hasRole('Finance Controller');
+        abort_unless($canLink, 403);
+
+        $amount = (float) ($data['amount_requested'] ?? $travel->finance_dsa_total ?? $travel->estimated_dsa ?? 0);
+        if ($amount <= 0) {
+            throw ValidationException::withMessages(['amount_requested' => 'Amount is required to create an imprest.']);
+        }
+
+        $imprest = app(\App\Modules\Imprest\Services\ImprestService::class)->create([
+            'budget_line' => $data['budget_line']
+                ?? $travel->fundingLines()->whereNotNull('budget_line')->value('budget_line')
+                ?? 'TRAVEL-'.$travel->reference_number,
+            'amount_requested' => $amount,
+            'currency' => $data['currency'] ?? $travel->currency ?? 'NAD',
+            'expected_liquidation_date' => $data['expected_liquidation_date']
+                ?? ($travel->retirement_due_at?->toDateString() ?? now()->addDays(14)->toDateString()),
+            'purpose' => $data['purpose'] ?? ('Travel retirement — '.$travel->reference_number),
+            'justification' => $data['justification'] ?? ('Linked from travel '.$travel->reference_number),
+            'travel_request_id' => $travel->id,
+        ], $user);
+
+        AuditLog::record('travel.imprest_linked', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id' => $travel->id,
+            'new_values' => ['imprest_id' => $imprest->id, 'reference' => $imprest->reference_number],
+            'tags' => 'travel,imprest',
+        ]);
+
+        return $imprest;
+    }
+
+    public function listTravellers(User $user): \Illuminate\Support\Collection
+    {
+        abort_unless(
+            $user->can('travel.prepare-for-others') || $user->isSystemAdmin(),
+            403
+        );
+
+        return User::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where(function ($q) {
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'department_id']);
     }
 
     public function completeRetirement(TravelRequest $travel, User $user): TravelRequest

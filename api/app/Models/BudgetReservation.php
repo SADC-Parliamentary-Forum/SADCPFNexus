@@ -10,7 +10,7 @@ class BudgetReservation extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'procurement_request_id', 'reserved_by',
+        'tenant_id', 'procurement_request_id', 'travel_request_id', 'reserved_by',
         'budget_line', 'reserved_amount', 'currency', 'notes',
         'released_at', 'released_by',
     ];
@@ -21,6 +21,7 @@ class BudgetReservation extends Model
     ];
 
     public function procurementRequest() { return $this->belongsTo(ProcurementRequest::class); }
+    public function travelRequest()      { return $this->belongsTo(TravelRequest::class); }
     public function reservedBy()         { return $this->belongsTo(User::class, 'reserved_by'); }
     public function releasedBy()         { return $this->belongsTo(User::class, 'released_by'); }
 

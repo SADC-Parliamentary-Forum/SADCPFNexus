@@ -20,6 +20,21 @@
 - [x] PHPUnit Phase4 green
 - [x] Commit / push / merge main / deploy /up
 
+## Module finish 2026-07-26 (residuals)
+
+**Branch:** `feat/travel-module-finish-2026-07-26`  
+**Tests:** `TravelModuleFinishTest` (10)
+
+- [x] Live budget reservation + cancel release
+- [x] Sponsored deduction policy rates + DSA + Settings UI
+- [x] Fleet vehicle assign + conflict warn
+- [x] On-behalf traveller picker UI
+- [x] Overdue retirement cron + notifications
+- [x] Lifecycle notifications polish
+- [x] Reports pack §76 slices + CSV export
+- [x] Personal day editor
+- [x] Imprest deep-link from retirement
+
 ## Acceptance matrix pointer
 
 See parent deliverable + `docs/superpowers/specs/2026-07-26-travel-prd-closeout-design.md`.

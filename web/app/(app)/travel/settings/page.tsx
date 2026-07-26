@@ -29,6 +29,7 @@ type FxRate = {
 export default function TravelSettingsPage() {
   const [rates, setRates] = useState<DsaRate[]>([]);
   const [fxRates, setFxRates] = useState<FxRate[]>([]);
+  const [sponsoredRates, setSponsoredRates] = useState<Array<Record<string, unknown>>>([]);
   const [form, setForm] = useState({
     country: "Namibia",
     city: "",
@@ -46,11 +47,19 @@ export default function TravelSettingsPage() {
     effective_date: new Date().toISOString().slice(0, 10),
     notes: "",
   });
+  const [sponsoredForm, setSponsoredForm] = useState({
+    name: "Host meals provided",
+    code: "host_meals",
+    meal_deduction_percent: 40,
+    accommodation_deduction_percent: 0,
+    is_active: true,
+  });
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = () => {
     travelApi.listDsaRates({ per_page: 100 }).then((r) => setRates((r.data.data as DsaRate[]) ?? []));
     travelApi.listFxRates({ per_page: 100 }).then((r) => setFxRates((r.data.data as FxRate[]) ?? [])).catch(() => setFxRates([]));
+    travelApi.listSponsoredRates().then((r) => setSponsoredRates(r.data.data ?? [])).catch(() => setSponsoredRates([]));
   };
 
   useEffect(() => { load(); }, []);
@@ -183,6 +192,66 @@ export default function TravelSettingsPage() {
                 <td>{r.rate}</td>
                 <td>{String(r.effective_date).slice(0, 10)}</td>
                 <td>{r.source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div data-testid="travel-sponsored-rates">
+        <h2 className="text-lg font-semibold text-neutral-900 mt-8">Sponsored / top-up deduction rates</h2>
+        <p className="text-sm text-neutral-500 mb-3">
+          Policy table for Finance DSA meal/accommodation deductions when host or donor provides support. Percents apply to DSA rate components — not invented ad-hoc %.
+        </p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              await travelApi.saveSponsoredRate(sponsoredForm);
+              setMsg("Sponsored deduction rate saved.");
+              load();
+            } catch {
+              setMsg("Failed to save sponsored rate.");
+            }
+          }}
+          className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4"
+        >
+          <label className="text-xs font-semibold">Name
+            <input className="form-input w-full mt-1" value={sponsoredForm.name} onChange={(e) => setSponsoredForm({ ...sponsoredForm, name: e.target.value })} />
+          </label>
+          <label className="text-xs font-semibold">Code
+            <input className="form-input w-full mt-1" value={sponsoredForm.code} onChange={(e) => setSponsoredForm({ ...sponsoredForm, code: e.target.value })} />
+          </label>
+          <label className="text-xs font-semibold">Meal deduction %
+            <input type="number" className="form-input w-full mt-1" value={sponsoredForm.meal_deduction_percent} onChange={(e) => setSponsoredForm({ ...sponsoredForm, meal_deduction_percent: Number(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold">Accommodation deduction %
+            <input type="number" className="form-input w-full mt-1" value={sponsoredForm.accommodation_deduction_percent} onChange={(e) => setSponsoredForm({ ...sponsoredForm, accommodation_deduction_percent: Number(e.target.value) })} />
+          </label>
+          <div className="col-span-2 flex justify-end">
+            <button type="submit" className="btn-primary py-2 px-4 text-sm">Save policy rate</button>
+          </div>
+        </form>
+        <table className="data-table w-full mt-3">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Meal %</th>
+              <th>Accom %</th>
+              <th>Active</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sponsoredRates.length === 0 ? (
+              <tr><td colSpan={5} className="py-6 text-center text-neutral-400">No sponsored rates yet.</td></tr>
+            ) : sponsoredRates.map((r) => (
+              <tr key={String(r.id)}>
+                <td>{String(r.name)}</td>
+                <td>{String(r.code)}</td>
+                <td>{String(r.meal_deduction_percent ?? 0)}</td>
+                <td>{String(r.accommodation_deduction_percent ?? 0)}</td>
+                <td>{r.is_active ? "Yes" : "No"}</td>
               </tr>
             ))}
           </tbody>

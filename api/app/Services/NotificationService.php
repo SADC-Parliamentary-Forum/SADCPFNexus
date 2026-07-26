@@ -159,6 +159,26 @@ class NotificationService
                 'subject' => 'Travel visa reminder — {{reference}}',
                 'body'    => "Dear {{name}},\n\nVisa follow-up is required for travel {{reference}} to {{destination}}.\n\nStatus: {{visa_status}}\nAppointment: {{appointment_date}}\nExpiry: {{expiry_date}}\nReason: {{reason}}\n\nPlease update visa progress in Nexus.\n\nRegards,\nSADC-PF Administration",
             ],
+            'travel.finance_dsa_calculated' => [
+                'subject' => 'Finance DSA calculated — {{reference}}',
+                'body'    => "Dear {{name}},\n\nFinance has calculated DSA for travel {{reference}}.\n\nPayable: {{amount}}\n\nRegards,\nSADC-PF Finance",
+            ],
+            'travel.retirement_due' => [
+                'subject' => 'Travel retirement due — {{reference}}',
+                'body'    => "Dear {{name}},\n\nRetirement for mission {{reference}} is due by {{due_date}}. Please submit your mission report and complete retirement.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.retirement_overdue' => [
+                'subject' => 'Travel retirement OVERDUE — {{reference}}',
+                'body'    => "Dear {{name}},\n\nRetirement for mission {{reference}} is overdue (due {{due_date}}). Please complete retirement immediately.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.cancelled' => [
+                'subject' => 'Travel request cancelled — {{reference}}',
+                'body'    => "Dear {{name}},\n\nTravel request {{reference}} has been cancelled.\n\nReason: {{comment}}\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.returned_for_correction' => [
+                'subject' => 'Travel request returned for correction — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYour travel request {{reference}} was returned for correction:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Nexus",
+            ],
 
             // Leave
             'leave.submitted' => [

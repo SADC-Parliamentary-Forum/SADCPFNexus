@@ -31,17 +31,34 @@
 
 ## Residual deferred (honest)
 
-- Live budget-reservation / availability engine (§91.13 deep)
-- Fully sponsored / donor top-up rules engine beyond payor flags + amounts
-- Fleet booking workflow (vehicle Admin sub-flow)
-- Push notification UX for every stage event
-- Excel/PDF export of every §76 report (JSON pack + register CSV exist)
-- Paid airline GDS / travel-agent marketplace
-- Live commercial FX terminal SDKs
-- Full medical EHR health pack
-- Create-form on-behalf picker UI (API already supports `prepared_on_behalf_of`)
-- Overdue retirement scheduled reminder job (flag + queue/dashboard counts exist)
+~~Previous residuals closed in Module finish 2026-07-26 (see below).~~
 
-## Holiday calendar (§58)
+## Module finish 2026-07-26
+
+**Branch:** `feat/travel-module-finish-2026-07-26`  
+**Closes residual backlog after PRD closeout (`4a2d1b9` / docs `e80ee2b`).**
+
+| Residual | Delivery |
+|----------|----------|
+| Live budget reservation | `TravelBudgetReservationService` — reserve on SG `onWorkflowApproved`; release on `cancel`; extends `budget_reservations` with `travel_request_id` |
+| Sponsored / top-up rules | `travel_sponsored_deduction_rates` policy table; Finance DSA `buildDefaultLines` applies %/fixed from policy; Settings UI CRUD |
+| Fleet booking sub-flow | Thin Admin assign via Assets (`category=fleet`) + overlap conflict warn (`TravelVehicleService`) |
+| Create on-behalf picker | `/travel/travellers` + create form picker when `travel.prepare-for-others`; Prepared by / Traveller on review |
+| Overdue retirement cron | `travel:mark-overdue-retirements` daily 08:10 — marks `overdue`, notifies traveller + finance; due-soon nudges |
+| Notifications polish | Templates + fires: return-for-correction, finance DSA, retirement due/overdue, cancelled, TOIL candidate |
+| Reports pack completeness | §76 slices + CSV export (`/travel/reports/pack/export?slice=…`) |
+| Personal day editor | PATCH `/personal-days` + detail UI official/personal toggles |
+| Imprest deep-link | POST `/link-imprest` creates draft with `travel_request_id`; detail CTA → `/imprest/{id}` |
+
+### Still deferred / impossible (unchanged locks)
+
+- Paid GDS / airline booking APIs
+- Paid FX vendor SDKs with embedded keys
+- Full medical EHR
+- Travel-agent marketplace
+- Auto-create leave/TOIL (candidates only)
+- Weaken SG booking gate / Finance DSA SoD
+
+### Holiday calendar (§58)
 
 Already provided by platform `/admin/calendar` + `CalendarEntry::TYPE_SADC_HOLIDAY` used by TOIL — not reimplemented.

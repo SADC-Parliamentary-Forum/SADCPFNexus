@@ -106,6 +106,12 @@ export default function TravelDetailPage() {
   const [mileReason, setMileReason] = useState("");
   const [mileRoute, setMileRoute] = useState("");
   const [mileSaving, setMileSaving] = useState(false);
+  const [personalDays, setPersonalDays] = useState<Array<{ date: string; type: "official" | "personal" }>>([]);
+  const [personalSaving, setPersonalSaving] = useState(false);
+  const [fleet, setFleet] = useState<Array<{ id: number; asset_code: string; name: string; status: string }>>([]);
+  const [vehicleId, setVehicleId] = useState("");
+  const [vehicleSaving, setVehicleSaving] = useState(false);
+  const [vehicleAck, setVehicleAck] = useState(false);
 
   const syncPhase3Fields = (data: TravelRequest | null | undefined) => {
     if (!data) return;
@@ -140,11 +146,28 @@ export default function TravelDetailPage() {
         setVisaAppointment(data?.visa_appointment_date ? String(data.visa_appointment_date).slice(0, 10) : "");
         setVisaNotes(data?.visa_notes ?? "");
         syncPhase3Fields(data);
+        const days = Array.isArray(data?.official_personal_days) ? data.official_personal_days : [];
+        if (days.length > 0) {
+          setPersonalDays(days.map((d: any) => ({
+            date: String(d.date ?? d).slice(0, 10),
+            type: (d.type === "personal" ? "personal" : "official") as "official" | "personal",
+          })));
+        } else if (data?.departure_date && data?.return_date) {
+          const out: Array<{ date: string; type: "official" | "personal" }> = [];
+          const start = new Date(String(data.departure_date).slice(0, 10));
+          const end = new Date(String(data.return_date).slice(0, 10));
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            out.push({ date: d.toISOString().slice(0, 10), type: "official" });
+          }
+          setPersonalDays(out);
+        }
+        setVehicleId(data?.vehicle_asset_id != null ? String(data.vehicle_asset_id) : "");
         return travelApi.listAttachments(id);
       })
       .then((res) => setAttachments(res.data.data))
       .catch(() => setError("Failed to load travel request."))
       .finally(() => setLoading(false));
+    travelApi.fleetVehicles().then((r) => setFleet(r.data.data ?? [])).catch(() => setFleet([]));
   }, [id]);
 
   const refreshRequest = async () => {
@@ -1277,6 +1300,101 @@ export default function TravelDetailPage() {
         </button>
       </div>
 
+      {["draft", "returned_for_correction", "submitted", "resubmitted", "approved"].includes(request.status) && personalDays.length > 0 && (
+        <div className="card p-5" data-testid="travel-personal-days-editor">
+          <div className="flex items-center gap-3 mb-3">
+            <SectionIcon icon="event_available" color="text-indigo-600" bg="bg-indigo-50" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Official vs personal days</h3>
+          </div>
+          <p className="text-xs text-neutral-500 mb-3">Mark days that are personal (no DSA). Official days remain payable.</p>
+          <div className="space-y-2 max-h-56 overflow-y-auto">
+            {personalDays.map((day, idx) => (
+              <label key={day.date} className="flex items-center justify-between gap-3 text-sm border-b border-neutral-50 py-1.5">
+                <span className="font-mono text-xs text-neutral-600">{day.date}</span>
+                <select
+                  className="form-input text-xs py-1"
+                  value={day.type}
+                  onChange={(e) => {
+                    const next = [...personalDays];
+                    next[idx] = { ...day, type: e.target.value as "official" | "personal" };
+                    setPersonalDays(next);
+                  }}
+                >
+                  <option value="official">Official</option>
+                  <option value="personal">Personal</option>
+                </select>
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={personalSaving}
+            className="btn-secondary py-2 px-4 text-xs mt-3"
+            onClick={async () => {
+              setPersonalSaving(true);
+              try {
+                await travelApi.updatePersonalDays(request.id, personalDays);
+                await refreshRequest();
+                setToast("Personal / official days saved");
+              } catch {
+                setToast("Failed to save personal days");
+              } finally {
+                setPersonalSaving(false);
+              }
+            }}
+          >
+            {personalSaving ? "Saving…" : "Save day marking"}
+          </button>
+        </div>
+      )}
+
+      {(request.status === "approved" || request.vehicle_type === "sadcpf") && (
+        <div className="card p-5" data-testid="travel-vehicle-assign">
+          <div className="flex items-center gap-3 mb-3">
+            <SectionIcon icon="directions_car" color="text-slate-700" bg="bg-slate-100" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Fleet vehicle assignment</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="text-xs text-neutral-600">Vehicle
+              <select className="form-input mt-1 w-full text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+                <option value="">Select fleet asset…</option>
+                {fleet.map((v) => (
+                  <option key={v.id} value={v.id}>{v.asset_code} — {v.name} ({v.status})</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-end gap-2 text-xs text-neutral-600 pb-2">
+              <input type="checkbox" checked={vehicleAck} onChange={(e) => setVehicleAck(e.target.checked)} />
+              Acknowledge overlapping assignment conflicts
+            </label>
+          </div>
+          <button
+            type="button"
+            disabled={vehicleSaving || !vehicleId}
+            className="btn-secondary py-2 px-4 text-xs mt-3"
+            onClick={async () => {
+              setVehicleSaving(true);
+              try {
+                await travelApi.assignVehicle(request.id, {
+                  vehicle_asset_id: Number(vehicleId),
+                  acknowledge_conflicts: vehicleAck,
+                  conflict_resolution_note: vehicleAck ? "Admin acknowledged vehicle conflict" : undefined,
+                });
+                await refreshRequest();
+                setToast("Vehicle assigned");
+              } catch (e: any) {
+                const conflicts = e?.response?.data?.errors?.vehicle_conflicts;
+                setToast(Array.isArray(conflicts) ? conflicts.join(" ") : "Vehicle assign failed (check conflicts)");
+              } finally {
+                setVehicleSaving(false);
+              }
+            }}
+          >
+            {vehicleSaving ? "Assigning…" : "Assign vehicle"}
+          </button>
+        </div>
+      )}
+
       {/* Post-approval lifecycle (booking gate, return, retirement) */}
       {(request.status === "approved" || request.status === "amendment_pending" || request.returned_at || request.booking_committed_at) && (
         <div className="card p-5" data-testid="travel-post-approval-actions">
@@ -1327,6 +1445,39 @@ export default function TravelDetailPage() {
               >
                 Complete retirement
               </button>
+            )}
+            {request.returned_at && (
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() =>
+                  runPostApproval("Create linked imprest", async () => {
+                    const res = await travelApi.linkImprest(request.id, {
+                      amount_requested: request.finance_dsa_total ?? request.estimated_dsa ?? undefined,
+                      purpose: `Travel retirement — ${request.reference_number}`,
+                    });
+                    const imprestId = res.data.data?.id;
+                    if (imprestId) {
+                      window.location.href = `/imprest/${imprestId}`;
+                    }
+                    return res;
+                  })
+                }
+                className="btn-secondary py-2 px-3 text-xs"
+                data-testid="travel-link-imprest"
+              >
+                Create / link imprest
+              </button>
+            )}
+            {(request.imprest_requests?.length ?? 0) > 0 && (
+              <div className="w-full text-xs text-neutral-600 mt-1">
+                Linked imprests:{" "}
+                {(request.imprest_requests ?? []).map((imp: any) => (
+                  <a key={imp.id} href={`/imprest/${imp.id}`} className="text-primary mr-2 underline">
+                    {imp.reference_number ?? `#${imp.id}`}
+                  </a>
+                ))}
+              </div>
             )}
           </div>
           {(request.booking_committed_at || request.returned_at || request.retirement_due_at) && (

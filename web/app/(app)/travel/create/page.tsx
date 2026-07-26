@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { travelApi, programmeApi } from "@/lib/api";
 import type { Programme } from "@/lib/api";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 
 // ─── Country lists ────────────────────────────────────────────────────────────
 const SADC_COUNTRIES = [
@@ -91,6 +92,7 @@ interface FormData {
   estimated_kilometres: string;
   mileage_rate_per_km: string;
   equivalent_airfare: string;
+  prepared_on_behalf_of: string;
 }
 
 // ─── Country searchable dropdown ─────────────────────────────────────────────
@@ -267,6 +269,9 @@ export default function TravelCreatePage() {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [programmes, setProgrammes] = useState<Programme[]>([]);
+  const [travellers, setTravellers] = useState<Array<{ id: number; name: string; email?: string }>>([]);
+  const user = getStoredUser();
+  const canPrepareForOthers = isSystemAdmin(user) || hasPermission(user, "travel.prepare-for-others");
 
   const [form, setForm] = useState<FormData>({
     purpose: "",
@@ -302,6 +307,7 @@ export default function TravelCreatePage() {
     estimated_kilometres: "",
     mileage_rate_per_km: "",
     equivalent_airfare: "",
+    prepared_on_behalf_of: "",
   });
 
   // Load approved programmes for PIF dropdown
@@ -313,6 +319,11 @@ export default function TravelCreatePage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!canPrepareForOthers) return;
+    travelApi.travellers().then((r) => setTravellers(r.data.data ?? [])).catch(() => setTravellers([]));
+  }, [canPrepareForOthers]);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -383,6 +394,7 @@ export default function TravelCreatePage() {
         estimated_kilometres: form.estimated_kilometres ? Number(form.estimated_kilometres) : undefined,
         mileage_rate_per_km: form.mileage_rate_per_km ? Number(form.mileage_rate_per_km) : undefined,
         equivalent_airfare: form.equivalent_airfare ? Number(form.equivalent_airfare) : undefined,
+        prepared_on_behalf_of: form.prepared_on_behalf_of ? Number(form.prepared_on_behalf_of) : undefined,
         funding_details: form.funding_rows
           .filter((r) => r.forum_amount || r.host_amount || r.payor_sadc_pf || r.payor_host || r.payor_donor || r.payor_self)
           .map((r) => ({
@@ -504,6 +516,31 @@ export default function TravelCreatePage() {
             </span>
             Traveller&apos;s Details
           </h3>
+
+          {canPrepareForOthers && (
+            <div className="space-y-1.5 rounded-lg border border-blue-100 bg-blue-50/60 p-3" data-testid="travel-on-behalf-picker">
+              <label className="block text-xs font-medium text-neutral-700">
+                Traveller (prepare on behalf)
+              </label>
+              <select
+                className="form-input"
+                value={form.prepared_on_behalf_of}
+                onChange={(e) => updateField("prepared_on_behalf_of", e.target.value)}
+              >
+                <option value="">Myself — I am the traveller</option>
+                {travellers
+                  .filter((t) => t.id !== user?.id)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}{t.email ? ` (${t.email})` : ""}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-[11px] text-neutral-500">
+                Prepared by you. Traveller attribution will show on the request.
+              </p>
+            </div>
+          )}
 
           {/* Purpose */}
           <div className="space-y-1.5">
@@ -1061,6 +1098,16 @@ export default function TravelCreatePage() {
             <div className="divide-y divide-neutral-50">
               {[
                 { label: "Purpose", value: form.purpose },
+                {
+                  label: "Traveller",
+                  value: form.prepared_on_behalf_of
+                    ? (travellers.find((t) => String(t.id) === form.prepared_on_behalf_of)?.name ?? "Selected principal")
+                    : (user?.name ?? "Myself"),
+                },
+                {
+                  label: "Prepared by",
+                  value: form.prepared_on_behalf_of ? (user?.name ?? "You") : "— (self)",
+                },
                 {
                   label: "Destination",
                   value: `${form.destination_city ? form.destination_city + ", " : ""}${form.destination_country}`,

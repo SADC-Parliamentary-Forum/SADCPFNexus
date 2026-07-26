@@ -89,6 +89,13 @@ class TravelToilService
             'tags'           => 'travel,toil',
         ]);
 
+        if (count($created) > 0 && $user) {
+            $this->notificationService->dispatch($user, 'travel.toil_candidate', [
+                'name' => $user->name,
+                'reference' => $travel->reference_number,
+            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/'.$travel->id]);
+        }
+
         return $created;
     }
 

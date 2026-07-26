@@ -20,6 +20,7 @@ use App\Modules\Travel\Services\TravelReportsPackService;
 use App\Modules\Travel\Services\TravelService;
 use App\Modules\Travel\Services\TravelToilService;
 use App\Modules\Travel\Services\TravelVisaReminderService;
+use App\Modules\Travel\Services\TravelVehicleService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
 use App\Support\AuthorizesRequestRecords;
@@ -48,6 +49,7 @@ class TravelController extends Controller
         private readonly TravelCalendarService $calendarService,
         private readonly TravelPackService $packService,
         private readonly TravelReportsPackService $reportsPackService,
+        private readonly TravelVehicleService $vehicleService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -71,6 +73,7 @@ class TravelController extends Controller
             'approvalRequest.history.user',
             'directorFinanceConfirmer', 'emergencyAuthoriser',
             'procurementRequest', 'accommodations', 'imprestRequests',
+            'vehicleAsset', 'sponsoredDeductionRate', 'budgetReservations',
         ]);
 
         $approval = $travelRequest->approvalRequest;
@@ -120,6 +123,9 @@ class TravelController extends Controller
             'funding_details'     => ['nullable', 'array'],
             'funding_lines'       => ['nullable', 'array'],
             'prepared_on_behalf_of' => ['nullable', 'integer', 'exists:users,id'],
+            'sponsored_deduction_rate_id' => ['nullable', 'integer', 'exists:travel_sponsored_deduction_rates,id'],
+            'meals_provided_by_host' => ['nullable', 'boolean'],
+            'accommodation_provided_by_host' => ['nullable', 'boolean'],
             'private_vehicle_reason' => ['nullable', 'string', 'max:2000'],
             'private_vehicle_route' => ['nullable', 'string', 'max:500'],
             'estimated_kilometres' => ['nullable', 'numeric', 'min:0'],
@@ -761,5 +767,123 @@ class TravelController extends Controller
         );
 
         return response()->json(['data' => $this->reportsPackService->pack($request->user())]);
+    }
+
+    public function reportsPackExport(Request $request): Response
+    {
+        abort_unless(
+            $request->user()->can('travel.export')
+                || $request->user()->can('travel.view')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'Secretary General', 'Director', 'System Admin', 'Administration Officer']),
+            403
+        );
+
+        $data = $request->validate([
+            'slice' => ['required', 'string'],
+            'format' => ['nullable', 'string', 'in:csv'],
+        ]);
+
+        return $this->reportsPackService->exportCsv($request->user(), $data['slice']);
+    }
+
+    public function cancel(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        $travel = $this->travelService->cancel($travelRequest, $request->user(), $data['reason']);
+
+        return response()->json(['message' => 'Travel request cancelled. Budget reservation released if present.', 'data' => $travel]);
+    }
+
+    public function updatePersonalDays(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'days' => ['required', 'array', 'min:1'],
+            'days.*.date' => ['required', 'date'],
+            'days.*.type' => ['required', 'in:official,personal'],
+        ]);
+        $travel = $this->travelService->updatePersonalDays($travelRequest, $data['days'], $request->user());
+
+        return response()->json(['message' => 'Personal / official days updated.', 'data' => $travel]);
+    }
+
+    public function linkImprest(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'amount_requested' => ['nullable', 'numeric', 'min:0.01'],
+            'purpose' => ['nullable', 'string', 'max:2000'],
+            'budget_line' => ['nullable', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'expected_liquidation_date' => ['nullable', 'date'],
+            'justification' => ['nullable', 'string', 'max:5000'],
+        ]);
+        $imprest = $this->travelService->linkImprest($travelRequest, $data, $request->user());
+
+        return response()->json([
+            'message' => 'Imprest draft created and linked to travel.',
+            'data' => $imprest,
+        ], 201);
+    }
+
+    public function travellers(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->travelService->listTravellers($request->user())]);
+    }
+
+    public function fleetVehicles(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->vehicleService->listFleet($request->user())]);
+    }
+
+    public function assignVehicle(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'vehicle_asset_id' => ['required', 'integer', 'exists:assets,id'],
+            'acknowledge_conflicts' => ['nullable', 'boolean'],
+            'conflict_resolution_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $travel = $this->vehicleService->assign($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Vehicle assigned.', 'data' => $travel]);
+    }
+
+    public function sponsoredRatesIndex(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.finance-review')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'System Admin']),
+            403
+        );
+
+        return response()->json(['data' => $this->dsaService->listSponsoredRates($request->user()->tenant_id)]);
+    }
+
+    public function sponsoredRatesStore(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.finance-review')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'System Admin']),
+            403
+        );
+
+        $data = $request->validate([
+            'id' => ['nullable', 'integer'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:64'],
+            'meal_deduction_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'accommodation_deduction_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'meal_deduction_fixed' => ['nullable', 'numeric', 'min:0'],
+            'accommodation_deduction_fixed' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string'],
+            'is_active' => ['nullable', 'boolean'],
+            'effective_from' => ['nullable', 'date'],
+            'effective_to' => ['nullable', 'date'],
+        ]);
+
+        $rate = $this->dsaService->upsertSponsoredRate($data, $request->user());
+
+        return response()->json(['message' => 'Sponsored deduction rate saved.', 'data' => $rate], empty($data['id']) ? 201 : 200);
     }
 }
