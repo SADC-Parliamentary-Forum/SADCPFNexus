@@ -16,8 +16,19 @@ type DsaRate = {
   is_active: boolean;
 };
 
+type FxRate = {
+  id: number;
+  from_currency: string;
+  to_currency: string;
+  rate: number;
+  effective_date: string;
+  source: string;
+  notes?: string | null;
+};
+
 export default function TravelSettingsPage() {
   const [rates, setRates] = useState<DsaRate[]>([]);
+  const [fxRates, setFxRates] = useState<FxRate[]>([]);
   const [form, setForm] = useState({
     country: "Namibia",
     city: "",
@@ -28,10 +39,18 @@ export default function TravelSettingsPage() {
     meal_component: 30,
     incidentals_component: 10,
   });
+  const [fxForm, setFxForm] = useState({
+    from_currency: "USD",
+    to_currency: "NAD",
+    rate: 18.5,
+    effective_date: new Date().toISOString().slice(0, 10),
+    notes: "",
+  });
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = () => {
     travelApi.listDsaRates({ per_page: 100 }).then((r) => setRates((r.data.data as DsaRate[]) ?? []));
+    travelApi.listFxRates({ per_page: 100 }).then((r) => setFxRates((r.data.data as FxRate[]) ?? [])).catch(() => setFxRates([]));
   };
 
   useEffect(() => { load(); }, []);
@@ -47,12 +66,23 @@ export default function TravelSettingsPage() {
     }
   };
 
+  const onFxSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await travelApi.saveFxRate({ ...fxForm, source: "manual" });
+      setMsg("FX rate saved (manual/admin table). Snapshotted onto DSA lines at calculation time.");
+      load();
+    } catch {
+      setMsg("Failed to save FX rate.");
+    }
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-neutral-900">Travel Settings — DSA Rate Register</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900">Travel Settings — DSA &amp; FX Rates</h1>
         <p className="text-sm text-neutral-500">
-          Finance-owned versioned rates with Types 1/2/3. Workflow: Supervisor → Administration Officer → Finance Controller → Director → SG.
+          Finance-owned versioned DSA rates (Types 1/2/3) and manual FX table. Optional HTTP FX feed via env only — no paid API keys in code.
         </p>
       </div>
       {msg && <p className="text-sm text-primary">{msg}</p>}
@@ -83,7 +113,7 @@ export default function TravelSettingsPage() {
           <input type="number" className="form-input w-full mt-1" value={form.incidentals_component} onChange={(e) => setForm({ ...form, incidentals_component: Number(e.target.value) })} />
         </label>
         <div className="col-span-2 flex justify-end">
-          <button type="submit" className="btn-primary py-2 px-4 text-sm">Save rate</button>
+          <button type="submit" className="btn-primary py-2 px-4 text-sm">Save DSA rate</button>
         </div>
       </form>
       <table className="data-table w-full">
@@ -110,6 +140,54 @@ export default function TravelSettingsPage() {
           ))}
         </tbody>
       </table>
+
+      <div data-testid="travel-fx-settings">
+        <h2 className="text-lg font-semibold text-neutral-900 mt-8">FX rate register</h2>
+        <form onSubmit={onFxSubmit} className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4 mt-3">
+          <label className="text-xs font-semibold">From
+            <input className="form-input w-full mt-1" maxLength={3} value={fxForm.from_currency} onChange={(e) => setFxForm({ ...fxForm, from_currency: e.target.value.toUpperCase() })} />
+          </label>
+          <label className="text-xs font-semibold">To
+            <input className="form-input w-full mt-1" maxLength={3} value={fxForm.to_currency} onChange={(e) => setFxForm({ ...fxForm, to_currency: e.target.value.toUpperCase() })} />
+          </label>
+          <label className="text-xs font-semibold">Rate
+            <input type="number" step="0.000001" className="form-input w-full mt-1" value={fxForm.rate} onChange={(e) => setFxForm({ ...fxForm, rate: Number(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold">Effective date
+            <input type="date" className="form-input w-full mt-1" value={fxForm.effective_date} onChange={(e) => setFxForm({ ...fxForm, effective_date: e.target.value })} />
+          </label>
+          <label className="text-xs font-semibold col-span-2">Notes
+            <input className="form-input w-full mt-1" value={fxForm.notes} onChange={(e) => setFxForm({ ...fxForm, notes: e.target.value })} />
+          </label>
+          <div className="col-span-2 flex justify-end">
+            <button type="submit" className="btn-primary py-2 px-4 text-sm" data-testid="travel-save-fx">Save FX rate</button>
+          </div>
+        </form>
+        <table className="data-table w-full mt-3">
+          <thead>
+            <tr>
+              <th>From</th>
+              <th>To</th>
+              <th>Rate</th>
+              <th>Effective</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fxRates.length === 0 ? (
+              <tr><td colSpan={5} className="py-8 text-center text-neutral-400">No FX rates yet.</td></tr>
+            ) : fxRates.map((r) => (
+              <tr key={r.id}>
+                <td>{r.from_currency}</td>
+                <td>{r.to_currency}</td>
+                <td>{r.rate}</td>
+                <td>{String(r.effective_date).slice(0, 10)}</td>
+                <td>{r.source}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

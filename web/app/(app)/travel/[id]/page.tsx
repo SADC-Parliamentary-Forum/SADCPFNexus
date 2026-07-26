@@ -79,6 +79,33 @@ export default function TravelDetailPage() {
   const [visaAppointment, setVisaAppointment] = useState("");
   const [visaNotes, setVisaNotes] = useState("");
   const [visaSaving, setVisaSaving] = useState(false);
+  const [itineraryPaste, setItineraryPaste] = useState("");
+  const [itineraryPreview, setItineraryPreview] = useState<string | null>(null);
+  const [itineraryBusy, setItineraryBusy] = useState(false);
+  const [healthVaccReq, setHealthVaccReq] = useState(false);
+  const [healthVaccStatus, setHealthVaccStatus] = useState("");
+  const [healthProphReq, setHealthProphReq] = useState(false);
+  const [healthProphStatus, setHealthProphStatus] = useState("");
+  const [healthCost, setHealthCost] = useState("");
+  const [healthNotes, setHealthNotes] = useState("");
+  const [healthSaving, setHealthSaving] = useState(false);
+  const [procId, setProcId] = useState("");
+  const [procReason, setProcReason] = useState("");
+  const [procRequired, setProcRequired] = useState(false);
+  const [procSaving, setProcSaving] = useState(false);
+
+  const syncPhase3Fields = (data: TravelRequest | null | undefined) => {
+    if (!data) return;
+    setHealthVaccReq(Boolean(data.health_vaccination_required));
+    setHealthVaccStatus(data.health_vaccination_status ?? "");
+    setHealthProphReq(Boolean(data.health_prophylaxis_required));
+    setHealthProphStatus(data.health_prophylaxis_status ?? "");
+    setHealthCost(data.health_estimated_cost != null ? String(data.health_estimated_cost) : "");
+    setHealthNotes(data.health_notes ?? "");
+    setProcId(data.procurement_request_id != null ? String(data.procurement_request_id) : "");
+    setProcReason(data.procurement_link_reason ?? "");
+    setProcRequired(Boolean(data.procurement_link_required));
+  };
 
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
@@ -99,6 +126,7 @@ export default function TravelDetailPage() {
         setVisaExpiry(data?.visa_expiry_date ? String(data.visa_expiry_date).slice(0, 10) : "");
         setVisaAppointment(data?.visa_appointment_date ? String(data.visa_appointment_date).slice(0, 10) : "");
         setVisaNotes(data?.visa_notes ?? "");
+        syncPhase3Fields(data);
         return travelApi.listAttachments(id);
       })
       .then((res) => setAttachments(res.data.data))
@@ -119,6 +147,7 @@ export default function TravelDetailPage() {
     setVisaExpiry(data?.visa_expiry_date ? String(data.visa_expiry_date).slice(0, 10) : "");
     setVisaAppointment(data?.visa_appointment_date ? String(data.visa_appointment_date).slice(0, 10) : "");
     setVisaNotes(data?.visa_notes ?? "");
+    syncPhase3Fields(data);
   };
 
   const showToast = (message: string) => {
@@ -326,6 +355,79 @@ export default function TravelDetailPage() {
       setError("Failed to update visa details.");
     } finally {
       setVisaSaving(false);
+    }
+  };
+
+  const handlePreviewItinerary = async () => {
+    if (!request || !itineraryPaste.trim()) return;
+    setItineraryBusy(true);
+    setItineraryPreview(null);
+    try {
+      const res = await travelApi.parseItinerary(request.id, itineraryPaste);
+      const data = res.data.data;
+      if (!data.parseable) {
+        setItineraryPreview(data.message ?? "Could not parse itinerary.");
+      } else {
+        setItineraryPreview(`Parsed ${data.legs.length} leg(s). Apply to replace current itinerary.`);
+      }
+    } catch {
+      setError("Failed to parse itinerary.");
+    } finally {
+      setItineraryBusy(false);
+    }
+  };
+
+  const handleApplyItinerary = async () => {
+    if (!request || !itineraryPaste.trim()) return;
+    setItineraryBusy(true);
+    try {
+      await travelApi.applyItinerary(request.id, itineraryPaste);
+      await refreshRequest();
+      showToast("Itinerary legs applied (versioned).");
+      setItineraryPreview(null);
+    } catch {
+      setError("Failed to apply itinerary. Unparseable text is rejected on apply.");
+    } finally {
+      setItineraryBusy(false);
+    }
+  };
+
+  const handleSaveHealth = async () => {
+    if (!request) return;
+    setHealthSaving(true);
+    try {
+      await travelApi.updateHealth(request.id, {
+        health_vaccination_required: healthVaccReq,
+        health_vaccination_status: healthVaccStatus || null,
+        health_prophylaxis_required: healthProphReq,
+        health_prophylaxis_status: healthProphStatus || null,
+        health_estimated_cost: healthCost ? Number(healthCost) : null,
+        health_notes: healthNotes || null,
+      });
+      await refreshRequest();
+      showToast("Health pack updated.");
+    } catch {
+      setError("Failed to update health pack (restricted to HR/Admin).");
+    } finally {
+      setHealthSaving(false);
+    }
+  };
+
+  const handleSaveProcurementLink = async () => {
+    if (!request) return;
+    setProcSaving(true);
+    try {
+      await travelApi.updateProcurementLink(request.id, {
+        procurement_request_id: procId ? Number(procId) : null,
+        procurement_link_reason: procReason || null,
+        procurement_link_required: procRequired,
+      });
+      await refreshRequest();
+      showToast("Procurement link updated.");
+    } catch {
+      setError("Failed to update procurement link.");
+    } finally {
+      setProcSaving(false);
     }
   };
 
@@ -881,6 +983,109 @@ export default function TravelDetailPage() {
         </div>
         <button type="button" disabled={visaSaving} onClick={handleSaveVisa} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-visa">
           {visaSaving ? "Saving…" : "Save visa details"}
+        </button>
+      </div>
+
+      {/* Itinerary paste / ICS parser */}
+      <div className="card p-5" data-testid="travel-itinerary-parse-panel">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="flight_takeoff" color="text-sky-700" bg="bg-sky-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+            Paste airline itinerary (v{request.itinerary_version ?? 0})
+          </h3>
+        </div>
+        <p className="text-xs text-neutral-500 mb-2">
+          Paste confirmation text, ICS, or lines like <code>Flight BA123 WDH-JNB 2026-08-10</code>. No GDS — fail soft if unparseable.
+        </p>
+        <textarea
+          className="form-input w-full text-sm mb-2 font-mono"
+          rows={4}
+          value={itineraryPaste}
+          onChange={(e) => setItineraryPaste(e.target.value)}
+          placeholder="Flight BA123 WDH-JNB 2026-08-10"
+          data-testid="travel-itinerary-paste"
+        />
+        {itineraryPreview && <p className="text-xs text-neutral-600 mb-2">{itineraryPreview}</p>}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={itineraryBusy} onClick={handlePreviewItinerary} className="btn-secondary py-2 px-4 text-xs">
+            Preview parse
+          </button>
+          <button type="button" disabled={itineraryBusy} onClick={handleApplyItinerary} className="btn-primary py-2 px-4 text-xs" data-testid="travel-apply-itinerary">
+            {itineraryBusy ? "Working…" : "Apply & replace legs"}
+          </button>
+        </div>
+      </div>
+
+      {/* Health pack */}
+      <div className="card p-5" data-testid="travel-health-panel">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="medical_services" color="text-rose-700" bg="bg-rose-50" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Travel health pack</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={healthVaccReq} onChange={(e) => setHealthVaccReq(e.target.checked)} />
+              Vaccination required
+            </label>
+            <label className="text-xs text-neutral-600">
+              Vaccination status
+              <input className="form-input mt-1 w-full text-sm" value={healthVaccStatus} onChange={(e) => setHealthVaccStatus(e.target.value)} />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={healthProphReq} onChange={(e) => setHealthProphReq(e.target.checked)} />
+              Prophylaxis required
+            </label>
+            <label className="text-xs text-neutral-600">
+              Prophylaxis status
+              <input className="form-input mt-1 w-full text-sm" value={healthProphStatus} onChange={(e) => setHealthProphStatus(e.target.value)} />
+            </label>
+            <label className="text-xs text-neutral-600">
+              Estimated cost
+              <input className="form-input mt-1 w-full text-sm" type="number" value={healthCost} onChange={(e) => setHealthCost(e.target.value)} />
+            </label>
+            <label className="text-xs text-neutral-600 sm:col-span-2">
+              Notes
+              <textarea className="form-input mt-1 w-full text-sm" rows={2} value={healthNotes} onChange={(e) => setHealthNotes(e.target.value)} />
+            </label>
+          </div>
+          <button type="button" disabled={healthSaving} onClick={handleSaveHealth} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-health">
+            {healthSaving ? "Saving…" : "Save health pack"}
+          </button>
+        </div>
+
+      {/* Procurement soft link */}
+      <div className="card p-5" data-testid="travel-procurement-link-panel">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="shopping_cart" color="text-amber-700" bg="bg-amber-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Procurement / travel-agent link</h3>
+        </div>
+        {request.procurement_link_suggested && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3">
+            Estimated costs suggest linking a procurement request for booking (soft link — not a marketplace).
+          </p>
+        )}
+        {request.procurement_request && (
+          <p className="text-xs text-neutral-600 mb-2">
+            Linked: <strong>{request.procurement_request.reference_number}</strong>
+            {request.procurement_request.title ? ` — ${request.procurement_request.title}` : ""}
+          </p>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <label className="text-xs text-neutral-600">
+            Procurement request ID
+            <input className="form-input mt-1 w-full text-sm" value={procId} onChange={(e) => setProcId(e.target.value)} placeholder="e.g. 42" data-testid="travel-proc-id" />
+          </label>
+          <label className="flex items-center gap-2 text-sm mt-5">
+            <input type="checkbox" checked={procRequired} onChange={(e) => setProcRequired(e.target.checked)} />
+            Link required by threshold
+          </label>
+          <label className="text-xs text-neutral-600 sm:col-span-2">
+            Reason
+            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={procReason} onChange={(e) => setProcReason(e.target.value)} />
+          </label>
+        </div>
+        <button type="button" disabled={procSaving} onClick={handleSaveProcurementLink} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-procurement-link">
+          {procSaving ? "Saving…" : "Save procurement link"}
         </button>
       </div>
 

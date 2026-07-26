@@ -8,7 +8,11 @@ use App\Models\TravelRequest;
 use App\Models\TravelToilCandidate;
 use App\Modules\Travel\Services\TravelAnalyticsService;
 use App\Modules\Travel\Services\TravelDsaService;
+use App\Modules\Travel\Services\TravelFxRateService;
+use App\Modules\Travel\Services\TravelHealthService;
+use App\Modules\Travel\Services\TravelItineraryParseService;
 use App\Modules\Travel\Services\TravelMissionService;
+use App\Modules\Travel\Services\TravelProcurementLinkService;
 use App\Modules\Travel\Services\TravelService;
 use App\Modules\Travel\Services\TravelToilService;
 use App\Modules\Travel\Services\TravelVisaReminderService;
@@ -32,6 +36,10 @@ class TravelController extends Controller
         private readonly TravelMissionService $missionService,
         private readonly TravelAnalyticsService $analyticsService,
         private readonly TravelVisaReminderService $visaReminderService,
+        private readonly TravelItineraryParseService $itineraryParseService,
+        private readonly TravelFxRateService $fxRateService,
+        private readonly TravelHealthService $healthService,
+        private readonly TravelProcurementLinkService $procurementLinkService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -54,6 +62,7 @@ class TravelController extends Controller
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
             'directorFinanceConfirmer', 'emergencyAuthoriser',
+            'procurementRequest',
         ]);
 
         $approval = $travelRequest->approvalRequest;
@@ -61,8 +70,12 @@ class TravelController extends Controller
             ? $this->workflowService->snapshot($approval)
             : null;
 
+        $payload = $travelRequest->toArray();
+        $payload = $this->healthService->redactForViewer($payload, $request->user(), $travelRequest);
+        $payload['procurement_link_suggested'] = $this->fxRateService->procurementLinkSuggested($travelRequest);
+
         return response()->json([
-            'data' => $travelRequest,
+            'data' => $payload,
             'workflow' => $workflowMeta,
             'retirement_overdue' => $travelRequest->isRetirementOverdue(),
         ]);
@@ -285,6 +298,8 @@ class TravelController extends Controller
             'lines.*.is_personal' => ['nullable', 'boolean'],
             'lines.*.destination' => ['nullable', 'string'],
             'lines.*.notes' => ['nullable', 'string'],
+            'lines.*.fx_from_currency' => ['nullable', 'string', 'size:3'],
+            'lines.*.fx_to_currency' => ['nullable', 'string', 'size:3'],
         ]);
 
         $travel = $this->dsaService->calculateAndSave($travelRequest, $data, $request->user());
@@ -522,10 +537,100 @@ class TravelController extends Controller
             'Director',
             'Administration Officer',
             'HOD',
+            'HR Manager',
+            'HR Administrator',
         ]);
 
         $pdf = $this->travelService->authorisationPdf($travelRequest);
 
         return $pdf->download('TRAVEL-'.$travelRequest->reference_number.'.pdf');
+    }
+
+    public function parseItinerary(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $this->authorizeRequestView($request->user(), $travelRequest, [
+            'Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD',
+        ]);
+
+        $data = $request->validate([
+            'raw_text' => ['required', 'string', 'max:50000'],
+        ]);
+
+        return response()->json([
+            'data' => $this->itineraryParseService->preview($data['raw_text']),
+        ]);
+    }
+
+    public function applyItinerary(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'raw_text' => ['required', 'string', 'max:50000'],
+        ]);
+
+        $travel = $this->itineraryParseService->apply($travelRequest, $data['raw_text'], $request->user());
+
+        return response()->json(['message' => 'Itinerary legs applied.', 'data' => $travel]);
+    }
+
+    public function fxRatesIndex(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.finance-review')
+                || $request->user()->can('travel.admin')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasRole('Finance Controller'),
+            403
+        );
+
+        return response()->json(
+            $this->fxRateService->list($request->user()->tenant_id, $request->only(['from_currency', 'to_currency', 'per_page']))
+        );
+    }
+
+    public function fxRatesStore(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'id' => ['nullable', 'integer'],
+            'from_currency' => ['required', 'string', 'size:3'],
+            'to_currency' => ['required', 'string', 'size:3'],
+            'rate' => ['required', 'numeric', 'gt:0'],
+            'effective_date' => ['required', 'date'],
+            'source' => ['nullable', 'string', 'in:manual,http'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $rate = $this->fxRateService->upsert($data, $request->user());
+
+        return response()->json(['message' => 'FX rate saved.', 'data' => $rate], 201);
+    }
+
+    public function updateHealth(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'health_vaccination_required' => ['nullable', 'boolean'],
+            'health_vaccination_status' => ['nullable', 'string', 'max:50'],
+            'health_prophylaxis_required' => ['nullable', 'boolean'],
+            'health_prophylaxis_status' => ['nullable', 'string', 'max:50'],
+            'health_estimated_cost' => ['nullable', 'numeric', 'min:0'],
+            'health_notes' => ['nullable', 'string', 'max:2000'],
+            'health_cleared_at' => ['nullable', 'date'],
+        ]);
+
+        $travel = $this->healthService->update($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Health pack updated.', 'data' => $travel]);
+    }
+
+    public function updateProcurementLink(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'procurement_request_id' => ['nullable', 'integer', 'exists:procurement_requests,id'],
+            'procurement_link_reason' => ['nullable', 'string', 'max:2000'],
+            'procurement_link_required' => ['nullable', 'boolean'],
+        ]);
+
+        $travel = $this->procurementLinkService->link($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Procurement link updated.', 'data' => $travel]);
     }
 }

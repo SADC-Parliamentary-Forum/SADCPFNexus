@@ -20,6 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'travel.prepare-for-others', 'travel.recommend', 'travel.admin-review',
             'travel.finance-review', 'travel.director-finance-confirm', 'travel.final-approve',
             'travel.review-retirement', 'travel.review-toil', 'travel.export', 'travel.emergency-commit',
+            'travel.health-view',
             'leave.view', 'leave.create', 'leave.approve', 'leave.admin',
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
@@ -89,7 +90,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $hrManager->syncPermissions(
                 Permission::whereIn('name', [
                     'users.view', 'hr.view', 'hr.create', 'hr.edit', 'hr.approve',
-                    'travel.view', 'travel.review-toil', 'travel.prepare-for-others',
+                    'travel.view', 'travel.review-toil', 'travel.prepare-for-others', 'travel.health-view',
                     'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
                     'governance.view',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
@@ -102,7 +103,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
                     'salary_advance.view', 'salary_advance.certify', 'salary_advance.pay',
                     'salary_advance.recover', 'salary_advance.export', 'salary_advance.admin',
-                    'travel.view', 'travel.finance-review', 'travel.export',
+                    'travel.view', 'travel.finance-review', 'travel.export', 'travel.health-view',
                     'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',
@@ -183,7 +184,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                     'users.view',
                     'leave.view', 'leave.approve',
-                    'travel.view', 'travel.review-toil', 'travel.review-retirement',
+                    'travel.view', 'travel.review-toil', 'travel.review-retirement', 'travel.health-view',
                     'timesheets.view', 'timesheets.create', 'timesheets.approve',
                     'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
                     'conduct.view', 'conduct.create', 'conduct.admin',
@@ -298,7 +299,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $adminOfficer = Role::firstOrCreate(['name' => 'Administration Officer', 'guard_name' => $guard]);
             $adminOfficer->syncPermissions(
                 Permission::whereIn('name', [
-                    'travel.view', 'travel.admin-review', 'travel.admin',
+                    'travel.view', 'travel.admin-review', 'travel.admin', 'travel.health-view',
                     'leave.view', 'imprest.view', 'hr.view', 'reports.view',
                 ])->where('guard_name', $guard)->get()
             );

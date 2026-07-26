@@ -10,7 +10,7 @@ use Carbon\CarbonInterface;
  */
 class NullFxRateFeed implements FxRateFeedInterface
 {
-    public function getRate(string $fromCurrency, string $toCurrency, CarbonInterface $asOf): ?float
+    public function getRate(string $fromCurrency, string $toCurrency, CarbonInterface $asOf, ?int $tenantId = null): ?float
     {
         return null;
     }

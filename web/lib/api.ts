@@ -912,6 +912,19 @@ export interface TravelRequest {
   visa_expiry_date?: string | null;
   visa_appointment_date?: string | null;
   visa_notes?: string | null;
+  itinerary_version?: number;
+  health_vaccination_required?: boolean;
+  health_vaccination_status?: string | null;
+  health_prophylaxis_required?: boolean;
+  health_prophylaxis_status?: string | null;
+  health_estimated_cost?: number | null;
+  health_notes?: string | null;
+  health_cleared_at?: string | null;
+  procurement_request_id?: number | null;
+  procurement_link_reason?: string | null;
+  procurement_link_required?: boolean;
+  procurement_link_suggested?: boolean;
+  procurement_request?: { id: number; reference_number: string; title?: string } | null;
   mission?: { id: number; title: string } | null;
 }
 
@@ -1098,6 +1111,21 @@ export const travelApi = {
     } }>("/travel/analytics/summary"),
   visaReminders: () =>
     api.get<{ data: TravelRequest[] }>("/travel/visa-reminders"),
+  parseItinerary: (id: number, raw_text: string) =>
+    api.post<{ data: { parseable: boolean; legs: Record<string, unknown>[]; message?: string | null } }>(
+      `/travel/requests/${id}/parse-itinerary`,
+      { raw_text }
+    ),
+  applyItinerary: (id: number, raw_text: string) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/apply-itinerary`, { raw_text }),
+  updateHealth: (id: number, data: Record<string, unknown>) =>
+    api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/health`, data),
+  updateProcurementLink: (id: number, data: Record<string, unknown>) =>
+    api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/procurement-link`, data),
+  listFxRates: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<unknown>>("/travel/fx-rates", { params }),
+  saveFxRate: (data: Record<string, unknown>) =>
+    api.post<{ data: unknown; message: string }>("/travel/fx-rates", data),
 };
 
 // ─── Imprest ─────────────────────────────────────────────────────────────────

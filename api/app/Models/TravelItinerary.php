@@ -9,9 +9,15 @@ class TravelItinerary extends Model
         'travel_request_id', 'from_location', 'to_location',
         'travel_date', 'transport_mode', 'dsa_rate', 'days_count', 'calculated_dsa',
         'day_type',
+        'flight_number', 'carrier', 'departure_at', 'arrival_at',
+        'parse_source', 'itinerary_version',
     ];
 
-    protected $casts = ['travel_date' => 'date'];
+    protected $casts = [
+        'travel_date' => 'date',
+        'departure_at' => 'datetime',
+        'arrival_at' => 'datetime',
+    ];
 
     public function travelRequest()
     {

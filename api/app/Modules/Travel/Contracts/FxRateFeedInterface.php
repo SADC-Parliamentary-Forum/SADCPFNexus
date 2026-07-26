@@ -8,7 +8,8 @@ interface FxRateFeedInterface
 {
     /**
      * Fetch FX rate for a currency pair on a given date.
-     * Stub implementations return null (no paid external APIs).
+     * Prefer tenant manual table; optional HTTP provider when configured.
+     * Pass $tenantId when Auth context is unavailable (e.g. queued jobs).
      */
-    public function getRate(string $fromCurrency, string $toCurrency, CarbonInterface $asOf): ?float;
+    public function getRate(string $fromCurrency, string $toCurrency, CarbonInterface $asOf, ?int $tenantId = null): ?float;
 }

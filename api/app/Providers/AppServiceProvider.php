@@ -36,8 +36,10 @@ use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Modules\Finance\Services\PayrollRecoveryAdapterFactory;
 use App\Modules\Travel\Contracts\AirlineItineraryParserInterface;
 use App\Modules\Travel\Contracts\FxRateFeedInterface;
-use App\Modules\Travel\Services\NullAirlineItineraryParser;
-use App\Modules\Travel\Services\NullFxRateFeed;
+use App\Modules\Travel\Contracts\HttpFxRateProviderInterface;
+use App\Modules\Travel\Services\ConfigurableFxRateFeed;
+use App\Modules\Travel\Services\OptionalHttpFxRateProvider;
+use App\Modules\Travel\Services\PracticalAirlineItineraryParser;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -54,9 +56,11 @@ class AppServiceProvider extends ServiceProvider
             return $app->make(PayrollRecoveryAdapterFactory::class)->make();
         });
 
-        // Travel Phase 2 stubs — no paid external airline/FX APIs.
-        $this->app->bind(AirlineItineraryParserInterface::class, NullAirlineItineraryParser::class);
-        $this->app->bind(FxRateFeedInterface::class, NullFxRateFeed::class);
+        // Travel Phase 3 — practical local parser + configurable FX (manual table + optional HTTP).
+        // Null stubs retained for tests that bind them explicitly; no paid GDS/FX keys.
+        $this->app->bind(AirlineItineraryParserInterface::class, PracticalAirlineItineraryParser::class);
+        $this->app->bind(HttpFxRateProviderInterface::class, OptionalHttpFxRateProvider::class);
+        $this->app->bind(FxRateFeedInterface::class, ConfigurableFxRateFeed::class);
     }
 
     /**

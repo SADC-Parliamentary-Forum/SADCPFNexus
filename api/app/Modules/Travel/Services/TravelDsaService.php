@@ -7,12 +7,17 @@ use App\Models\DsaRate;
 use App\Models\TravelDsaLine;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Modules\Travel\Contracts\FxRateFeedInterface;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class TravelDsaService
 {
+    public function __construct(
+        private readonly FxRateFeedInterface $fxFeed,
+    ) {}
+
     public function calculateAndSave(TravelRequest $travel, array $payload, User $user): TravelRequest
     {
         if (! $user->can('travel.finance-review') && ! $user->isSystemAdmin() && ! $user->hasRole('Finance Controller')) {
@@ -32,8 +37,9 @@ class TravelDsaService
 
         $mealDeductionTotal = 0.0;
         $payableTotal = 0.0;
+        $asOf = Carbon::today();
 
-        DB::transaction(function () use ($travel, $lines, &$mealDeductionTotal, &$payableTotal, $payload) {
+        DB::transaction(function () use ($travel, $lines, &$mealDeductionTotal, &$payableTotal, $payload, $asOf) {
             $travel->dsaLines()->delete();
 
             foreach ($lines as $line) {
@@ -42,6 +48,17 @@ class TravelDsaService
                 $mealDeduction = (float) ($line['meal_deduction'] ?? 0);
                 $adjustments = (float) ($line['adjustments'] ?? 0);
                 $dailyPayable = $isPersonal ? 0.0 : max(0, $dailyRate - $mealDeduction + $adjustments);
+
+                $fxFrom = isset($line['fx_from_currency']) ? strtoupper((string) $line['fx_from_currency']) : null;
+                $fxTo = isset($line['fx_to_currency'])
+                    ? strtoupper((string) $line['fx_to_currency'])
+                    : ($fxFrom ? strtoupper((string) ($travel->currency ?? 'NAD')) : null);
+                $fxRate = null;
+                $fxAsOf = null;
+                if ($fxFrom && $fxTo) {
+                    $fxRate = $this->fxFeed->getRate($fxFrom, $fxTo, $asOf, (int) $travel->tenant_id);
+                    $fxAsOf = $asOf->toDateString();
+                }
 
                 TravelDsaLine::create([
                     'travel_request_id' => $travel->id,
@@ -54,6 +71,10 @@ class TravelDsaService
                     'daily_payable'     => $dailyPayable,
                     'is_personal'       => $isPersonal,
                     'notes'             => $line['notes'] ?? null,
+                    'fx_from_currency'  => $fxFrom,
+                    'fx_to_currency'    => $fxTo,
+                    'fx_rate'           => $fxRate,
+                    'fx_as_of'          => $fxAsOf,
                 ]);
 
                 if (! $isPersonal) {

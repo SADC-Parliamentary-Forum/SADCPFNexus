@@ -29,6 +29,11 @@ class TravelRequest extends Model
         'terminal_comms_total', 'amendment_of_id', 'original_snapshot',
         'visa_required', 'visa_status', 'visa_expiry_date', 'visa_appointment_date',
         'visa_notes', 'visa_last_reminded_at',
+        'itinerary_version', 'itinerary_raw_source',
+        'health_vaccination_required', 'health_vaccination_status',
+        'health_prophylaxis_required', 'health_prophylaxis_status',
+        'health_estimated_cost', 'health_notes', 'health_cleared_at',
+        'procurement_request_id', 'procurement_link_reason', 'procurement_link_required',
     ];
 
     protected $casts = [
@@ -48,6 +53,11 @@ class TravelRequest extends Model
         'driver_required'                => 'boolean',
         'is_emergency'                   => 'boolean',
         'visa_required'                  => 'boolean',
+        'health_vaccination_required'    => 'boolean',
+        'health_prophylaxis_required'    => 'boolean',
+        'procurement_link_required'      => 'boolean',
+        'health_cleared_at'              => 'datetime',
+        'health_estimated_cost'          => 'decimal:2',
         'official_personal_days'         => 'array',
         'original_snapshot'              => 'array',
         'personal_incremental_cost'      => 'decimal:2',
@@ -116,6 +126,11 @@ class TravelRequest extends Model
     public function imprestRequests()
     {
         return $this->hasMany(ImprestRequest::class);
+    }
+
+    public function procurementRequest()
+    {
+        return $this->belongsTo(ProcurementRequest::class, 'procurement_request_id');
     }
 
     /** Meeting (workplan event) this travel is for — used for LIL “meetings attended”. */

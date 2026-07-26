@@ -198,12 +198,13 @@ class TravelPhase2Test extends TestCase
         $this->assertArrayHasKey('by_status', $res->json('data'));
     }
 
-    public function test_airline_and_fx_stubs_are_bound_and_safe(): void
+    public function test_airline_and_fx_feeds_are_bound_and_fail_soft(): void
     {
         $parser = app(AirlineItineraryParserInterface::class);
         $fx = app(FxRateFeedInterface::class);
 
         $this->assertSame([], $parser->parse(''));
+        $this->assertSame([], $parser->parse('not an itinerary'));
         $this->assertNull($fx->getRate('USD', 'NAD', Carbon::today()));
     }
 

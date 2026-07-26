@@ -160,3 +160,11 @@ test.describe("Travel Phase 2 — missions & reports smoke", () => {
     await expect(page.getByRole("heading", { name: /Finance Review Queue/i })).toBeVisible();
   });
 });
+
+test.describe("Travel Phase 3 — settings FX smoke", () => {
+  test("settings page shows FX register", async ({ page }) => {
+    await page.goto("/travel/settings");
+    await page.waitForURL("**/travel/settings", { timeout: 15_000 });
+    await expect(page.getByTestId("travel-fx-settings")).toBeVisible();
+  });
+});

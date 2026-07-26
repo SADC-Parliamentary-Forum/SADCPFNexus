@@ -93,6 +93,42 @@
         </tbody>
     </table>
 
+    @php
+        $hasHealth = $travel->health_vaccination_required
+            || $travel->health_prophylaxis_required
+            || filled($travel->health_vaccination_status)
+            || filled($travel->health_prophylaxis_status)
+            || $travel->health_estimated_cost !== null
+            || filled($travel->health_notes);
+    @endphp
+    @if($hasHealth)
+    <h2>Health precautions</h2>
+    <table>
+        <tr>
+            <th>Vaccination required</th>
+            <td>{{ $travel->health_vaccination_required ? 'Yes' : 'No' }}</td>
+            <th>Vaccination status</th>
+            <td>{{ $travel->health_vaccination_status ?? '—' }}</td>
+        </tr>
+        <tr>
+            <th>Prophylaxis required</th>
+            <td>{{ $travel->health_prophylaxis_required ? 'Yes' : 'No' }}</td>
+            <th>Prophylaxis status</th>
+            <td>{{ $travel->health_prophylaxis_status ?? '—' }}</td>
+        </tr>
+        <tr>
+            <th>Estimated health cost</th>
+            <td>{{ $travel->health_estimated_cost !== null ? number_format((float) $travel->health_estimated_cost, 2) : '—' }}</td>
+            <th>Cleared at</th>
+            <td>{{ optional($travel->health_cleared_at)->toDateTimeString() ?? '—' }}</td>
+        </tr>
+        <tr>
+            <th>Notes</th>
+            <td colspan="3">{{ $travel->health_notes ?? '—' }}</td>
+        </tr>
+    </table>
+    @endif
+
     <h2>Part C — DSA Calculation</h2>
     <table>
         <thead>
