@@ -876,8 +876,22 @@ export interface TravelRequest {
   departure_date: string;
   return_date: string;
   estimated_dsa: number;
+  actual_dsa?: number | null;
+  finance_dsa_total?: number | null;
+  finance_status?: string | null;
+  retirement_status?: string | null;
+  retirement_due_at?: string | null;
+  cabin_class?: string | null;
+  host_organization?: string | null;
+  vehicle_type?: string | null;
+  programme_id?: number | null;
+  mission_id?: number | null;
+  prepared_by?: number | null;
+  prepared_on_behalf_of?: number | null;
+  is_emergency?: boolean;
+  booking_committed_at?: string | null;
   currency: string;
-  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "returned_for_correction" | "withdrawn";
+  status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "returned_for_correction" | "withdrawn" | "resubmitted" | "amendment_pending";
   justification: string | null;
   rejection_reason: string | null;
   submitted_at: string | null;
@@ -886,6 +900,7 @@ export interface TravelRequest {
   requester?: User;
   approver?: User;
   itineraries?: TravelItinerary[];
+  funding_lines?: { id: number; item: string; forum_amount: number; host_amount: number }[];
 }
 
 export interface TravelItinerary {

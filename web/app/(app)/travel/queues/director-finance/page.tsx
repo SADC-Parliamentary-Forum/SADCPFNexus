@@ -35,7 +35,7 @@ export default function TravelDirectorFinanceQueuePage() {
               <tr key={t.id}>
                 <td><Link className="text-primary font-mono" href={`/travel/${t.id}`}>{t.reference_number}</Link></td>
                 <td>{t.purpose}</td>
-                <td>{(t as TravelRequest & { finance_dsa_total?: number }).finance_dsa_total ?? t.actual_dsa ?? "—"}</td>
+                <td>{t.finance_dsa_total ?? t.actual_dsa ?? "—"}</td>
                 <td>{t.status}</td>
               </tr>
             ))}

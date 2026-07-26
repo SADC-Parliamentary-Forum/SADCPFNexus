@@ -37,8 +37,8 @@ export default function TravelRetirementQueuePage() {
               <tr key={t.id}>
                 <td><Link className="text-primary font-mono" href={`/travel/${t.id}`}>{t.reference_number}</Link></td>
                 <td>{t.purpose}</td>
-                <td>{(t as TravelRequest & { retirement_status?: string }).retirement_status ?? "pending"}</td>
-                <td>{(t as TravelRequest & { retirement_due_at?: string }).retirement_due_at ?? "—"}</td>
+                <td>{t.retirement_status ?? "pending"}</td>
+                <td>{t.retirement_due_at ?? "—"}</td>
               </tr>
             ))}
           </tbody>

@@ -38,7 +38,7 @@ export default function TravelFinanceQueuePage() {
                 <td><Link className="text-primary font-mono" href={`/travel/${t.id}`}>{t.reference_number}</Link></td>
                 <td>{t.purpose}</td>
                 <td>{t.estimated_dsa} {t.currency}</td>
-                <td>{(t as TravelRequest & { finance_status?: string }).finance_status ?? "awaiting"}</td>
+                <td>{t.finance_status ?? "awaiting"}</td>
               </tr>
             ))}
           </tbody>
