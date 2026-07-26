@@ -32,11 +32,21 @@ class BudgetReservationController extends Controller
         }
 
         $data = $request->validate([
-            'budget_line'     => ['required', 'string', 'max:200'],
+            'budget_line_id'  => ['nullable', 'integer', 'exists:budget_lines,id'],
+            'budget_line'     => ['nullable', 'string', 'max:200'],
             'reserved_amount' => ['required', 'numeric', 'min:0.01'],
             'currency'        => ['nullable', 'string', 'size:3'],
             'notes'           => ['nullable', 'string', 'max:1000'],
         ]);
+
+        if (empty($data['budget_line_id']) && empty($data['budget_line'])) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors'  => [
+                    'budget_line_id' => ['A budget line id or code is required.'],
+                ],
+            ], 422);
+        }
 
         // Additional validation: reserved_amount cannot exceed estimated_value
         if ($data['reserved_amount'] > $procurementRequest->estimated_value) {

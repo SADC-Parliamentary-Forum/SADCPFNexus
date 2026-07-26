@@ -332,21 +332,94 @@ class ProgrammeService
         // excluded from Programme::$fillable (see the comment there) — this
         // is the only writer for them, so forceFill() bypasses the mass-
         // assignment guard intentionally, rather than widening $fillable.
+        $status = $data['budget_availability_status'];
+
         $programme->forceFill([
-            'budget_availability_status' => $data['budget_availability_status'],
+            'budget_availability_status' => $status,
             'finance_comments'           => array_key_exists('finance_comments', $data)
                 ? $data['finance_comments']
                 : $programme->finance_comments,
         ])->save();
 
+        $this->syncPifBudgetCommitment($programme, $status, $data);
+
         AuditLog::record('programme.finance_review_updated', [
             'auditable_type' => Programme::class,
             'auditable_id'   => $programme->id,
-            'new_values'     => ['budget_availability_status' => $data['budget_availability_status']],
-            'tags'           => 'programme',
+            'new_values'     => ['budget_availability_status' => $status],
+            'tags'           => 'programme,budget',
         ]);
 
         return $programme->fresh();
+    }
+
+    /**
+     * Finance certification creates/confirms a PIF commitment; insufficient /
+     * unavailable statuses release any open PIF commitment.
+     */
+    private function syncPifBudgetCommitment(Programme $programme, string $status, array $data): void
+    {
+        $actor = auth()->user();
+        if (! $actor) {
+            return;
+        }
+
+        $commitments = app(\App\Modules\Budget\Services\BudgetCommitmentService::class);
+        $sourceKey = 'PIF:'.$programme->id;
+        $existing = $commitments->findBySourceKey((int) $programme->tenant_id, $sourceKey);
+
+        $certified = in_array($status, ['available', 'confirmed_with_conditions'], true);
+        if (! $certified) {
+            if ($existing) {
+                $commitments->release($existing, $actor, 'PIF finance status: '.$status);
+            }
+
+            return;
+        }
+
+        $programme->loadMissing('budgetLines');
+        $lineId = $data['budget_line_id']
+            ?? $programme->budgetLines->first(fn ($l) => $l->org_budget_line_id)?->org_budget_line_id
+            ?? null;
+
+        if (! $lineId) {
+            // Certification without an institutional line remains a status-only review.
+            return;
+        }
+
+        $amount = isset($data['commitment_amount'])
+            ? (float) $data['commitment_amount']
+            : (float) ($programme->total_budget ?: $programme->budgetLines->sum('amount'));
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        if ($existing) {
+            if ((int) $existing->budget_line_id !== (int) $lineId) {
+                $commitments->release($existing, $actor, 'PIF budget line changed');
+                $existing = null;
+            } else {
+                $commitments->adjust($existing, $amount, $actor, 'PIF finance re-certification');
+                $commitments->confirm($existing->fresh(), $actor);
+
+                return;
+            }
+        }
+
+        $commitments->reserve([
+            'tenant_id' => $programme->tenant_id,
+            'budget_line_id' => (int) $lineId,
+            'amount' => $amount,
+            'source_type' => 'pif',
+            'source_id' => $programme->id,
+            'source_key' => $sourceKey,
+            'currency' => 'NAD',
+            'notes' => $data['finance_comments'] ?? 'PIF finance certification',
+            'programme_id' => $programme->id,
+            'idempotency_key' => 'pif-cert-'.$programme->id,
+            'confirm' => true,
+        ], $actor);
     }
 
     public function submit(Programme $programme, User $user): Programme

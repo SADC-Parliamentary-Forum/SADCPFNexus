@@ -10,7 +10,7 @@ class ProgrammeBudgetLine extends Model
 
     protected $fillable = [
         'programme_id', 'category', 'description', 'amount', 'actual_spent',
-        'funding_source', 'account_code',
+        'funding_source', 'account_code', 'org_budget_line_id',
     ];
 
     protected $casts = [
@@ -21,5 +21,10 @@ class ProgrammeBudgetLine extends Model
     public function programme()
     {
         return $this->belongsTo(Programme::class);
+    }
+
+    public function orgBudgetLine()
+    {
+        return $this->belongsTo(BudgetLine::class, 'org_budget_line_id');
     }
 }

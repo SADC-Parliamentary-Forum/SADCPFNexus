@@ -1850,10 +1850,64 @@ export interface BudgetReservation {
 export const budgetReservationsApi = {
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<BudgetReservation>>("/procurement/budget-reservations", { params }),
-  reserve: (requestId: number, data: { budget_line: string; reserved_amount: number; currency?: string; notes?: string }) =>
+  reserve: (
+    requestId: number,
+    data: {
+      budget_line_id?: number;
+      budget_line?: string;
+      reserved_amount: number;
+      currency?: string;
+      notes?: string;
+    },
+  ) =>
     api.post<{ data: BudgetReservation; message: string }>(`/procurement/requests/${requestId}/reserve-budget`, data),
   release: (reservationId: number) =>
     api.delete<{ data: BudgetReservation; message: string }>(`/procurement/budget-reservations/${reservationId}`),
+};
+
+export interface BudgetAvailability {
+  budget_line_id: number;
+  approved: number;
+  actual: number;
+  commitments: number;
+  available: number;
+  requested: number | null;
+  sufficient: boolean;
+  warnings: string[];
+}
+
+export interface OrgBudgetLine {
+  id: number;
+  code: string | null;
+  name: string | null;
+  category: string;
+  amount_allocated: number;
+  is_active: boolean;
+  budget?: { id: number; year: string; name: string; financial_year_id?: number | null };
+  funding_source?: { id: number; code: string; name: string } | null;
+}
+
+export const budgetApi = {
+  financialYears: () => api.get<{ success: boolean; data: unknown[] }>("/budget/financial-years"),
+  fundingSources: (params?: { active_only?: boolean }) =>
+    api.get<{ success: boolean; data: unknown[] }>("/budget/funding-sources", { params }),
+  lines: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: PaginatedResponse<OrgBudgetLine> | OrgBudgetLine[] }>("/budget/lines", { params }),
+  availability: (lineId: number, amount?: number) =>
+    api.get<{ success: boolean; data: BudgetAvailability }>(`/budget/lines/${lineId}/availability`, {
+      params: amount != null ? { amount } : undefined,
+    }),
+  checkAvailability: (data: { budget_line_id: number; amount?: number }) =>
+    api.post<{ success: boolean; data: BudgetAvailability }>("/budget/availability/check", data),
+  reserveCommitment: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: BudgetReservation }>("/budget/commitments/reserve", data),
+  postActual: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: unknown }>("/budget/actuals", data),
+  importActuals: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post<{ success: boolean; data: unknown }>("/budget/actuals/import", form);
+  },
 };
 
 export interface Vendor {

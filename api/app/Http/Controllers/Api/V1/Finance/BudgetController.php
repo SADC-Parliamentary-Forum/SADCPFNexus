@@ -74,8 +74,12 @@ class BudgetController extends Controller
                     'category'         => $line['category'],
                     'description'      => $line['description'] ?? null,
                     'account_code'     => $line['account_code'] ?? null,
+                    'code'             => $line['code'] ?? null,
+                    'name'             => $line['name'] ?? $line['category'],
                     'amount_allocated' => $line['amount_allocated'],
+                    'original_allocation' => $line['amount_allocated'],
                     'amount_spent'     => 0,
+                    'is_active'        => true,
                 ]);
             }
 

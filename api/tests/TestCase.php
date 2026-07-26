@@ -134,16 +134,53 @@ abstract class TestCase extends BaseTestCase
     protected function reserveBudgetFor(\App\Models\ProcurementRequest $request, ?\App\Models\User $actor = null): \App\Models\BudgetReservation
     {
         $actor ??= $this->makeUser('Finance Controller', \App\Models\Tenant::find($request->tenant_id));
+        $tenant = \App\Models\Tenant::find($request->tenant_id);
 
-        return \App\Models\BudgetReservation::create([
-            'tenant_id'              => $request->tenant_id,
+        $fy = \App\Models\FinancialYear::defaultAprilMarch((int) $tenant->id, (int) date('Y'));
+        $budget = \App\Models\Budget::firstOrCreate(
+            [
+                'tenant_id' => $tenant->id,
+                'year' => (string) date('Y'),
+                'name' => 'Test Budget '.date('Y'),
+            ],
+            [
+                'financial_year_id' => $fy->id,
+                'type' => 'core',
+                'status' => 'active',
+                'currency' => $request->currency ?? 'NAD',
+                'total_amount' => 0,
+                'created_by' => $actor->id,
+            ]
+        );
+
+        $line = \App\Models\BudgetLine::firstOrCreate(
+            [
+                'budget_id' => $budget->id,
+                'code' => $request->budget_line ?? 'TEST-BUDGET-LINE',
+            ],
+            [
+                'name' => $request->budget_line ?? 'TEST-BUDGET-LINE',
+                'category' => 'test',
+                'amount_allocated' => max((float) ($request->estimated_value ?: 1), 1_000_000),
+                'original_allocation' => max((float) ($request->estimated_value ?: 1), 1_000_000),
+                'amount_spent' => 0,
+                'is_active' => true,
+            ]
+        );
+
+        return app(\App\Modules\Budget\Services\BudgetCommitmentService::class)->reserve([
+            'tenant_id' => $request->tenant_id,
+            'budget_line_id' => $line->id,
+            'amount' => (float) ($request->estimated_value ?: 1),
+            'source_type' => 'procurement',
+            'source_id' => $request->id,
+            'source_key' => 'PROCUREMENT:'.$request->id,
+            'currency' => $request->currency ?? 'NAD',
+            'notes' => 'Test budget confirmation',
             'procurement_request_id' => $request->id,
-            'reserved_by'            => $actor->id,
-            'budget_line'            => $request->budget_line ?? 'TEST-BUDGET-LINE',
-            'reserved_amount'        => (float) ($request->estimated_value ?: 1),
-            'currency'               => $request->currency ?? 'NAD',
-            'notes'                  => 'Test budget confirmation',
-        ]);
+            'idempotency_key' => 'test-proc-'.$request->id,
+            'confirm' => true,
+        ], $actor);
     }
 
     protected function asSG(?Tenant $tenant = null): array

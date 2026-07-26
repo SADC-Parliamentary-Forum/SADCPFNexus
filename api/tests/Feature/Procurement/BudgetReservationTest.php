@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Procurement;
 
+use App\Models\Budget;
+use App\Models\BudgetLine;
+use App\Models\FinancialYear;
 use App\Models\ProcurementRequest;
 use App\Models\Tenant;
 use App\Models\User;
@@ -9,6 +12,33 @@ use Tests\TestCase;
 
 class BudgetReservationTest extends TestCase
 {
+    private function seedOrgLine(Tenant $tenant, User $actor, string $code = 'IT-2026-Q1', float $allocated = 1_000_000): BudgetLine
+    {
+        $fy = FinancialYear::defaultAprilMarch($tenant->id, 2026);
+        $budget = Budget::create([
+            'tenant_id' => $tenant->id,
+            'financial_year_id' => $fy->id,
+            'year' => '2026',
+            'name' => 'Test Budget',
+            'type' => 'core',
+            'status' => 'active',
+            'currency' => 'NAD',
+            'total_amount' => $allocated,
+            'created_by' => $actor->id,
+        ]);
+
+        return BudgetLine::create([
+            'budget_id' => $budget->id,
+            'code' => $code,
+            'name' => $code,
+            'category' => 'operational',
+            'amount_allocated' => $allocated,
+            'original_allocation' => $allocated,
+            'amount_spent' => 0,
+            'is_active' => true,
+        ]);
+    }
+
     private function makeHodApprovedRequest(Tenant $tenant, User $requester): ProcurementRequest
     {
         return ProcurementRequest::create([
@@ -23,31 +53,31 @@ class BudgetReservationTest extends TestCase
         ]);
     }
 
-    // ── Budget Reservations ───────────────────────────────────────────────────
-
     public function test_finance_can_reserve_budget_for_hod_approved_request(): void
     {
         $tenant    = Tenant::factory()->create();
         $requester = $this->makeUser('staff', $tenant);
         $finance   = $this->makeUser('Finance Controller', $tenant);
+        $line      = $this->seedOrgLine($tenant, $finance);
         $req       = $this->makeHodApprovedRequest($tenant, $requester);
 
         $response = $this->asUser($finance)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
-                 'budget_line'     => 'IT-2026-Q1',
+                 'budget_line_id'  => $line->id,
                  'reserved_amount' => 50000.00,
                  'notes'           => 'Approved in Q1 IT budget allocation.',
              ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('data.budget_line', 'IT-2026-Q1');
+                 ->assertJsonPath('data.budget_line_id', $line->id);
 
-        $this->assertEquals(50000, $response->json('data.reserved_amount'));
+        $this->assertEquals(50000, $response->json('data.current_amount'));
 
         $this->assertDatabaseHas('budget_reservations', [
             'procurement_request_id' => $req->id,
             'reserved_by'            => $finance->id,
-            'budget_line'            => 'IT-2026-Q1',
+            'budget_line_id'         => $line->id,
+            'source_key'             => 'PROCUREMENT:'.$req->id,
         ]);
 
         $this->assertDatabaseHas('procurement_requests', [
@@ -60,11 +90,13 @@ class BudgetReservationTest extends TestCase
     {
         $tenant    = Tenant::factory()->create();
         $requester = $this->makeUser('staff', $tenant);
+        $finance   = $this->makeUser('Finance Controller', $tenant);
+        $line      = $this->seedOrgLine($tenant, $finance);
         $req       = $this->makeHodApprovedRequest($tenant, $requester);
 
         $this->asUser($requester)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
-                 'budget_line'     => 'IT-2026-Q1',
+                 'budget_line_id'  => $line->id,
                  'reserved_amount' => 50000.00,
              ])
              ->assertForbidden();
@@ -75,6 +107,7 @@ class BudgetReservationTest extends TestCase
         $tenant    = Tenant::factory()->create();
         $requester = $this->makeUser('staff', $tenant);
         $finance   = $this->makeUser('Finance Controller', $tenant);
+        $line      = $this->seedOrgLine($tenant, $finance, 'TEST-LINE');
 
         $req = ProcurementRequest::create([
             'tenant_id'       => $tenant->id,
@@ -89,7 +122,7 @@ class BudgetReservationTest extends TestCase
 
         $this->asUser($finance)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
-                 'budget_line'     => 'TEST-LINE',
+                 'budget_line_id'  => $line->id,
                  'reserved_amount' => 5000.00,
              ])
              ->assertUnprocessable();
@@ -105,7 +138,7 @@ class BudgetReservationTest extends TestCase
         $this->asUser($finance)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [])
              ->assertUnprocessable()
-             ->assertJsonValidationErrors(['budget_line', 'reserved_amount']);
+             ->assertJsonValidationErrors(['reserved_amount']);
     }
 
     public function test_reserved_amount_cannot_exceed_estimated_value(): void
@@ -113,11 +146,12 @@ class BudgetReservationTest extends TestCase
         $tenant    = Tenant::factory()->create();
         $requester = $this->makeUser('staff', $tenant);
         $finance   = $this->makeUser('Finance Controller', $tenant);
-        $req       = $this->makeHodApprovedRequest($tenant, $requester); // estimated_value = 50000
+        $line      = $this->seedOrgLine($tenant, $finance);
+        $req       = $this->makeHodApprovedRequest($tenant, $requester);
 
         $this->asUser($finance)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
-                 'budget_line'     => 'IT-2026-Q1',
+                 'budget_line_id'  => $line->id,
                  'reserved_amount' => 99999.00,
              ])
              ->assertUnprocessable()
@@ -140,11 +174,12 @@ class BudgetReservationTest extends TestCase
         $tenant    = Tenant::factory()->create();
         $requester = $this->makeUser('staff', $tenant);
         $finance   = $this->makeUser('Finance Controller', $tenant);
+        $line      = $this->seedOrgLine($tenant, $finance);
         $req       = $this->makeHodApprovedRequest($tenant, $requester);
 
         $response = $this->asUser($finance)
              ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
-                 'budget_line'     => 'IT-2026-Q1',
+                 'budget_line_id'  => $line->id,
                  'reserved_amount' => 50000.00,
              ]);
 
@@ -154,10 +189,6 @@ class BudgetReservationTest extends TestCase
              ->deleteJson("/api/v1/procurement/budget-reservations/{$reservationId}")
              ->assertOk();
 
-        $this->assertDatabaseHas('budget_reservations', [
-            'id'          => $reservationId,
-        ]);
-        // released_at should be set
         $reservation = \App\Models\BudgetReservation::find($reservationId);
         $this->assertNotNull($reservation->released_at);
     }
@@ -170,11 +201,12 @@ class BudgetReservationTest extends TestCase
         $financeA  = $this->makeUser('Finance Controller', $tenantA);
         $financeB  = $this->makeUser('Finance Controller', $tenantB);
         $requesterA = $this->makeUser('staff', $tenantA);
+        $lineA     = $this->seedOrgLine($tenantA, $financeA, 'LINE-A');
         $reqA      = $this->makeHodApprovedRequest($tenantA, $requesterA);
 
         $this->asUser($financeA)
              ->postJson("/api/v1/procurement/requests/{$reqA->id}/reserve-budget", [
-                 'budget_line'     => 'LINE-A',
+                 'budget_line_id'  => $lineA->id,
                  'reserved_amount' => 50000.00,
              ])
              ->assertCreated();

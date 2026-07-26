@@ -317,6 +317,8 @@ class ProgrammeController extends Controller
                 'not_checked', 'available', 'partially_available', 'unavailable', 'confirmed_with_conditions',
             ])],
             'finance_comments' => ['nullable', 'string'],
+            'budget_line_id' => ['nullable', 'integer', 'exists:budget_lines,id'],
+            'commitment_amount' => ['nullable', 'numeric', 'min:0.01'],
         ]);
 
         $programme = $this->service->updateFinanceReview($programme, $data);

@@ -1,37 +1,37 @@
-# SADC PF Nexus — Remaining Work (production readiness)
+# SADC PF Nexus - Remaining Work (production readiness)
 
-**Last updated:** 2026-07-25  
-**Status:** Slice 1–2 + **M&E Phase 1–2 polish A–C** on `main` (deploy pending this stream). Phase 3 AI still deferred.
-
----
-
-## Done — M&E Phase 1–2 (2026-07-25)
-
-- Design/plan: `docs/superpowers/specs/2026-07-25-mande-results-monitoring-design.md`, `docs/superpowers/plans/2026-07-25-mande-phase1.md`
-- Phase 1 API/web: settings, auto-intake, lifecycle, intake/reports/review/strategy/results/settings
-- Phase 2 API/web: non-PIF, follow-ups, hierarchy, data-quality, donor, CSV import
-- Phase 2 polish: DQ scoring + PM review; donor filters + Excel; indicator versions + calendar
-- Slice 2 (`0957aa7`): upload sniffing, MFA setup UX, IDOR evidence pack
-
-**Still later:** Phase 3 AI, Playwright M&E smoke, richer calendar rules.
+**Last updated:** 2026-07-26  
+**Status:** Budget Phase 1 foundation started on `feat/budget-phase1-foundation` (isolated worktree). Leave Phase 1 remains local on `main` WIP.
 
 ---
 
-## Still open (honest)
+## In progress - Budget Phase 1 foundation (2026-07-26)
 
-### P0 / operator evidence
-- [ ] Staging IDOR matrix **sign-off** (pack exists)
-- [ ] Real Sentry DSN + SDKs
+- Design: `docs/superpowers/specs/2026-07-26-budget-phase1-design.md`
+- Plan: `docs/superpowers/plans/2026-07-26-budget-phase1.md`
+- Shipped in this branch:
+  - Financial years (default Apr–Mar), funding sources
+  - Extended `budgets` / `budget_lines` / `budget_reservations` commitment spine
+  - Commitment transaction ledger + actual expenditure (manual + CSV)
+  - `BudgetAvailabilityService` + `BudgetCommitmentService` (lineage transfer, idempotency)
+  - APIs under `/api/v1/budget/*`
+  - PIF finance certification creates/releases commitments
+  - Travel + Procurement use commitment service (no duplicate stacking)
+  - Tests: `BudgetPhase1Foundation`, `BudgetPifIntegration`, updated `BudgetReservationTest`
 
-### P1
-- [ ] Broader EN/FR/PT · axe hard-fail · restore drill · store signing
-- [x] M&E Phase 2 remainder / polish A–C (scoring, PM review, donor, Excel, versions, calendar)
-
-### P2
-- [ ] k6 budgets · blue/green · ClamAV · feature flags · TOTP replay
+**Still next for Budget:**
+- [ ] Full web Budget nav/dashboard (Phase 1 pages)
+- [ ] PIF/Travel/Procurement UI budget-line pickers (replace free-text)
+- [ ] Procurement award savings release UX
+- [ ] Variance monitoring workflow
+- [ ] Annual budget preparation / governance approval path (Phase 2)
+- [ ] Imprest wiring
+- [ ] Fixed Asset Register + Consumables/Stock (after Budget control layer)
 
 ---
 
 ## Reference
 
-- Deploy: `scripts/deploy.sh` · M&E: `/mande`
+- Deploy: `scripts/deploy.sh`
+- Budget API: `/api/v1/budget`
+- Existing Finance budgets UI: `/finance/budget`

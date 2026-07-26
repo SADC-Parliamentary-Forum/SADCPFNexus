@@ -77,6 +77,8 @@ class DatabaseSeeder extends Seeder
             // ── Supplementary Data ─────────────────────────
             MissingModulesSeeder::class,
 
+            DefaultBudgetSeeder::class,
+
             // ── Risk Register — import from Excel source files ──────────────
             RiskRegisterSeeder::class,
 

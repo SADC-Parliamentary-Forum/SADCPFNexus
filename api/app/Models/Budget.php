@@ -13,9 +13,11 @@ class Budget extends Model
 
     protected $fillable = [
         'tenant_id',
+        'financial_year_id',
         'year',
         'name',
         'type',
+        'status',
         'currency',
         'total_amount',
         'description',
@@ -30,5 +32,10 @@ class Budget extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function financialYear()
+    {
+        return $this->belongsTo(FinancialYear::class);
     }
 }

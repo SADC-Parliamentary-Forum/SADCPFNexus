@@ -550,6 +550,25 @@ Route::prefix('v1')->group(function () {
             Route::get('vendors/{vendor}/attachments/{attachment}/download',                   [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'download']);
         });
 
+        // Budget Management — availability, commitments, actuals (Phase 1)
+        Route::prefix('budget')->group(function () {
+            Route::get('financial-years', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'financialYears']);
+            Route::post('financial-years', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'storeFinancialYear']);
+            Route::get('funding-sources', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'fundingSources']);
+            Route::post('funding-sources', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'storeFundingSource']);
+            Route::get('lines', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'lines']);
+            Route::get('lines/{budgetLine}/availability', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'availability']);
+            Route::post('availability/check', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'checkAvailability']);
+            Route::post('commitments/reserve', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'reserve']);
+            Route::post('commitments/{commitment}/confirm', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'confirm']);
+            Route::post('commitments/{commitment}/adjust', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'adjust']);
+            Route::post('commitments/{commitment}/transfer', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'transfer']);
+            Route::post('commitments/{commitment}/release', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'release']);
+            Route::post('commitments/{commitment}/consume', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'consume']);
+            Route::post('actuals', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'postActual']);
+            Route::post('actuals/import', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'importActuals']);
+        });
+
         // Finance - Salary Advances, Payslips, Summary, and Budgets
         Route::prefix('finance')->group(function () {
             Route::apiResource('budgets', \App\Http\Controllers\Api\V1\Finance\BudgetController::class);
