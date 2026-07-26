@@ -915,12 +915,20 @@ export interface ModuleAttachment {
 }
 
 export const TRAVEL_DOCUMENT_TYPES = [
-  { value: "travel_itinerary", label: "Travel Itinerary" },
-  { value: "visa_copy",        label: "Visa Copy" },
-  { value: "flight_ticket",    label: "Flight Ticket" },
-  { value: "hotel_booking",    label: "Hotel Booking" },
-  { value: "travel_insurance", label: "Travel Insurance" },
-  { value: "other",            label: "Other" },
+  { value: "invitation",         label: "Invitation Letter" },
+  { value: "agenda",             label: "Agenda / Programme" },
+  { value: "concept_note",       label: "Concept Note" },
+  { value: "approved_pif",       label: "Approved PIF" },
+  { value: "travel_itinerary",   label: "Travel Itinerary" },
+  { value: "visa_copy",          label: "Visa Copy" },
+  { value: "flight_ticket",      label: "Flight Ticket" },
+  { value: "hotel_booking",      label: "Hotel Booking" },
+  { value: "travel_insurance",   label: "Travel Insurance" },
+  { value: "donor_correspondence", label: "Donor Correspondence" },
+  { value: "funding_confirmation", label: "Funding Confirmation" },
+  { value: "mission_report",     label: "Mission Report" },
+  { value: "receipt",            label: "Receipt" },
+  { value: "other",              label: "Other" },
 ] as const;
 
 export const LEAVE_DOCUMENT_TYPES = [
@@ -965,6 +973,32 @@ export const travelApi = {
     api.delete(`/travel/requests/${id}/attachments/${attachmentId}`),
   downloadAttachmentUrl: (id: number, attachmentId: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/requests/${id}/attachments/${attachmentId}/download`,
+  saveDsa: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: TravelRequest; message: string; warning?: unknown }>(`/travel/requests/${id}/dsa`, data),
+  confirmFunds: (id: number, remarks?: string) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/confirm-funds`, remarks ? { remarks } : {}),
+  markBooked: (id: number, data?: { emergency_commit?: boolean; emergency_reason?: string }) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/mark-booked`, data ?? {}),
+  markReturned: (id: number) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/mark-returned`),
+  completeRetirement: (id: number) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/complete-retirement`),
+  requestAmendment: (id: number, data: { changes: Record<string, unknown>; reason?: string }) =>
+    api.post<{ data: unknown; message: string }>(`/travel/requests/${id}/amendments`, data),
+  registerExport: (params?: Record<string, string | number>) =>
+    api.get<{ data: Record<string, unknown>[] }>("/travel/register/export", { params }),
+  listDsaRates: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<unknown>>("/travel/dsa-rates", { params }),
+  saveDsaRate: (data: Record<string, unknown>) =>
+    api.post<{ data: unknown; message: string }>("/travel/dsa-rates", data),
+  listToil: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<unknown>>("/travel/toil", { params }),
+  toilAuthoriseOt: (id: number) => api.post(`/travel/toil/${id}/authorise-ot`),
+  toilConfirmDuty: (id: number) => api.post(`/travel/toil/${id}/confirm-duty`),
+  toilHrValidate: (id: number) => api.post(`/travel/toil/${id}/hr-validate`),
+  toilReject: (id: number, reason: string) => api.post(`/travel/toil/${id}/reject`, { reason }),
+  toilExtend: (id: number, expires_at?: string) =>
+    api.post(`/travel/toil/${id}/extend`, expires_at ? { expires_at } : {}),
 };
 
 // ─── Imprest ─────────────────────────────────────────────────────────────────
@@ -3237,6 +3271,17 @@ export const programmeApi = {
   // Procurement transfer
   sendToProcurement: (programmeId: number, data: { procurement_item_ids: number[]; request_title: string; category?: string }) =>
     api.post<{ data: any; message: string }>(`/programmes/${programmeId}/send-to-procurement`, data),
+  sendToTravel: (programmeId: number, data: {
+    traveller_ids: number[];
+    purpose?: string;
+    departure_date?: string;
+    return_date?: string;
+    destination_country?: string;
+    destination_city?: string;
+    mission_id?: number;
+    mission_title?: string;
+  }) =>
+    api.post<{ data: TravelRequest[]; message: string }>(`/programmes/${programmeId}/send-to-travel`, data),
 
   // PDF
   pdfUrl: (programmeId: number) => `${api.defaults.baseURL}/programmes/${programmeId}/pdf`,

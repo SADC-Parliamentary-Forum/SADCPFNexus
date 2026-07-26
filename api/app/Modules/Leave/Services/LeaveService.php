@@ -91,7 +91,10 @@ class LeaveService
                             ->first();
                         if ($accrual) {
                             // Admin Rules: LIL lapses after 30 days unless SG has authorised an extension.
-                            if ($accrual->accrual_date->diffInDays(now()) > 30) {
+                            $expired = $accrual->expires_at
+                                ? $accrual->expires_at->lt(now()->startOfDay())
+                                : $accrual->accrual_date->diffInDays(now()) > 30;
+                            if ($expired) {
                                 throw ValidationException::withMessages([
                                     'lil' => [
                                         "Overtime accrual {$accrual->code} has lapsed — it is more than 30 days old. "
@@ -423,69 +426,39 @@ class LeaveService
     }
 
     /**
-     * LIL accruals from approved Travel Requisitions: only days that fell on a weekend
-     * or Namibia public holiday (days the user worked on mission during non-working days).
-     * Deduplicated by date (max 8 hours per calendar day per user).
+     * LIL accruals from travel: only **credited** TOIL candidates (never raw unverified travel days as leave-ready).
+     * Unverified weekend/holiday potentials remain on /travel/toil as candidates.
      *
      * @return array<int, array{id: string, source_type: string, code: string, description: string, hours: float, date: string, approved_by: string|null, is_verified: bool}>
      */
     public function getLilAccrualsFromApprovedTravel(User $user): array
     {
-        $travels = TravelRequest::where('requester_id', $user->id)
-            ->where('status', 'approved')
-            ->where('return_date', '>=', now()->subDays(365))
-            ->orderByDesc('return_date')
+        $credited = \App\Models\TravelToilCandidate::with('overtimeAccrual')
+            ->where('user_id', $user->id)
+            ->where('status', \App\Models\TravelToilCandidate::STATUS_CREDITED)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()->toDateString());
+            })
+            ->orderByDesc('candidate_date')
             ->get();
 
-        if ($travels->isEmpty()) {
-            return [];
-        }
-
-        $minDate = $travels->min('departure_date');
-        $maxDate = $travels->max('return_date');
-        if (!$minDate || !$maxDate) {
-            return [];
-        }
-
-        $naHolidayDates = CalendarEntry::where('tenant_id', $user->tenant_id)
-            ->where('type', CalendarEntry::TYPE_SADC_HOLIDAY)
-            ->where('country_code', 'NA')
-            ->where('date', '>=', $minDate)
-            ->where('date', '<=', $maxDate)
-            ->pluck('date')
-            ->map(fn ($d) => $d->format('Y-m-d'))
-            ->flip()
-            ->all();
-
         $byDate = [];
-        foreach ($travels as $travel) {
-            $dep = Carbon::parse($travel->departure_date);
-            $ret = Carbon::parse($travel->return_date);
-            $destination = trim(($travel->destination_city ?? '') . ', ' . ($travel->destination_country ?? ''), ', ');
-            $ref = $travel->reference_number ?? 'TR-' . $travel->id;
-
-            for ($d = $dep->copy(); $d->lte($ret); $d->addDay()) {
-                $dateStr = $d->format('Y-m-d');
-                if (isset($byDate[$dateStr])) {
-                    continue;
-                }
-                $isWeekend = $d->isWeekend();
-                $isNaHoliday = isset($naHolidayDates[$dateStr]);
-                if (!$isWeekend && !$isNaHoliday) {
-                    continue;
-                }
-                $suffix = $isWeekend && $isNaHoliday ? ' (weekend, public holiday)' : ($isWeekend ? ' (weekend)' : ' (public holiday)');
-                $byDate[$dateStr] = [
-                    'id'          => 'travel-lil-' . $dateStr,
-                    'source_type' => 'travel',
-                    'code'        => $ref,
-                    'description' => ($destination ?: 'Mission') . $suffix,
-                    'hours'       => 8.0,
-                    'date'        => $dateStr,
-                    'approved_by' => null,
-                    'is_verified' => false,
-                ];
+        foreach ($credited as $c) {
+            if ($c->overtimeAccrual?->is_linked) {
+                continue;
             }
+            $dateStr = $c->candidate_date->format('Y-m-d');
+            $byDate[$dateStr] = [
+                'id'          => 'toil-' . $c->id,
+                'source_type' => 'travel_toil',
+                'code'        => $c->overtimeAccrual?->code ?? ('TOIL-' . $c->id),
+                'description' => $c->overtimeAccrual?->description ?? ('Travel TOIL ' . $dateStr),
+                'hours'       => (float) $c->hours,
+                'date'        => $dateStr,
+                'approved_by' => $c->overtimeAccrual?->approved_by_name,
+                'is_verified' => true,
+                'expires_at'  => $c->expires_at?->format('Y-m-d'),
+            ];
         }
 
         return array_values($byDate);

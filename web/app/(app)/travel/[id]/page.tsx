@@ -52,12 +52,13 @@ export default function TravelDetailPage() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [workflowMeta, setWorkflowMeta] = useState<any>(null);
   const { confirm } = useConfirm();
 
   // Attachments
   const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
-  const [uploadDocType, setUploadDocType] = useState("other");
+  const [uploadDocType, setUploadDocType] = useState("invitation");
   const [uploadLoading, setUploadLoading] = useState(false);
   const [attachToast, setAttachToast] = useState<string | null>(null);
 
@@ -69,7 +70,9 @@ export default function TravelDetailPage() {
     }
     travelApi.get(id)
       .then((res) => {
-        setRequest((res.data as any).data ?? res.data);
+        const body = res.data as any;
+        setRequest(body.data ?? body);
+        setWorkflowMeta(body.workflow ?? null);
         return travelApi.listAttachments(id);
       })
       .then((res) => setAttachments(res.data.data))
@@ -79,7 +82,9 @@ export default function TravelDetailPage() {
 
   const refreshRequest = async () => {
     const res = await travelApi.get(id);
-    setRequest((res.data as any).data ?? res.data);
+    const body = res.data as any;
+    setRequest(body.data ?? body);
+    setWorkflowMeta(body.workflow ?? null);
   };
 
   const showToast = (message: string) => {
@@ -202,6 +207,13 @@ export default function TravelDetailPage() {
   const currentStep = approvalRequest?.workflow?.steps?.[approvalRequest?.current_step_index];
   const canReturn = approvalRequest?.status === "pending" && currentStep?.allow_return;
   const isReturnedForCorrection = request.status === "returned_for_correction";
+  const preparedBy = (request as any).prepared_by_user ?? (request as any).prepared_by;
+  const preparedOnBehalf = (request as any).prepared_on_behalf_of_user ?? (request as any).prepared_on_behalf_of;
+  const currentlyWith = workflowMeta?.currently_with
+    ? (Array.isArray(workflowMeta.currently_with)
+        ? workflowMeta.currently_with.map((u: any) => u?.name ?? u).filter(Boolean).join(", ")
+        : String(workflowMeta.currently_with))
+    : null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -211,6 +223,36 @@ export default function TravelDetailPage() {
         <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg animate-in slide-in-from-top-2">
           <span className="material-symbols-outlined text-[18px]">check_circle</span>
           {toast}
+        </div>
+      )}
+
+      {(request as any).prepared_on_behalf_of && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          Prepared on behalf of {(request as any).prepared_on_behalf_of?.name ?? preparedOnBehalf?.name ?? "principal"}
+          {(request as any).prepared_by?.name || preparedBy?.name
+            ? ` by ${(request as any).prepared_by?.name ?? preparedBy?.name}`
+            : ""}
+        </div>
+      )}
+
+      {(workflowMeta || approvalRequest) && (
+        <div className="card p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="travel-workflow-tracker">
+          <div>
+            <p className="text-xs text-neutral-400">Current Stage</p>
+            <p className="font-semibold text-neutral-800">{workflowMeta?.current_stage_label ?? workflowMeta?.current_stage ?? request.status}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-400">Currently With</p>
+            <p className="font-semibold text-neutral-800">{currentlyWith || "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-400">Next Stage</p>
+            <p className="font-semibold text-neutral-800">{workflowMeta?.next_stage_label ?? workflowMeta?.next_stage ?? "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs text-neutral-400">Submitted On</p>
+            <p className="font-semibold text-neutral-800">{request.submitted_at ? formatDateShort(request.submitted_at) : "—"}</p>
+          </div>
         </div>
       )}
 

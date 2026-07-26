@@ -31,6 +31,9 @@ Schedule::command('mande:send-overdue-reminders')->dailyAt('08:30');
 // Vendor compliance document expiry reminders for Procurement Officers.
 Schedule::command('procurement:send-document-expiry-reminders')->dailyAt('08:15');
 
+// Travel TOIL candidates catch-up (mark-returned + nightly; never auto-creates leave).
+Schedule::command('travel:generate-toil-candidates')->dailyAt('01:30');
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()

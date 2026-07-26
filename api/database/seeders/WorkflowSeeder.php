@@ -31,6 +31,9 @@ class WorkflowSeeder extends Seeder
         $hrAdminRole = Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
         $finRole     = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
         $govRole     = Role::where('name', 'Governance Officer')->where('guard_name', 'sanctum')->first();
+        $adminOfficerRole = Role::where('name', 'Administration Officer')->where('guard_name', 'sanctum')->first()
+            ?? Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
+        $directorRole = Role::where('name', 'Director')->where('guard_name', 'sanctum')->first();
 
         $this->makeWorkflow($tenant, 'Standard Leave Approval',           'leave',          [
             ['approver_type' => 'supervisor'],
@@ -41,6 +44,9 @@ class WorkflowSeeder extends Seeder
 
         $this->makeWorkflow($tenant, 'Standard Travel & Mission Approval', 'travel', [
             ['approver_type' => 'supervisor'],
+            ...($adminOfficerRole ? [['approver_type' => 'specific_role', 'role_id' => $adminOfficerRole->id]] : []),
+            ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id]] : []),
+            ...($directorRole ? [['approver_type' => 'specific_role', 'role_id' => $directorRole->id]] : []),
             ...($sgRole ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),
         ]);
 
@@ -71,7 +77,6 @@ class WorkflowSeeder extends Seeder
 
         // Salary Advance: Finance certify is outside this workflow.
         // Locked production path: Principal/Director review (ON by default) → SG final.
-        $directorRole = Role::where('name', 'Director')->where('guard_name', 'sanctum')->first();
         $this->makeWorkflow($tenant, 'Salary Advance Approval', 'salary_advance', [
             ...($directorRole ? [['approver_type' => 'specific_role', 'role_id' => $directorRole->id]] : []),
             ...($sgRole ? [['approver_type' => 'specific_role', 'role_id' => $sgRole->id]] : []),

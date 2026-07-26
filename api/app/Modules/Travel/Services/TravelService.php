@@ -1,12 +1,17 @@
 <?php
 namespace App\Modules\Travel\Services;
 
+use App\Models\Attachment;
 use App\Models\AuditLog;
+use App\Models\TravelAmendment;
+use App\Models\TravelFundingLine;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Services\DelegationService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -16,22 +21,39 @@ class TravelService
     public function __construct(
         protected WorkflowService $workflowService,
         protected NotificationService $notificationService,
+        protected DelegationService $delegationService,
+        protected TravelToilService $toilService,
     ) {}
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = TravelRequest::with(['requester', 'itineraries'])
+        $query = TravelRequest::with(['requester', 'itineraries', 'programme'])
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff')) {
-            $query->where('requester_id', $user->id);
+        $canViewAll = $user->isSystemAdmin()
+            || $user->hasAnyRole(['Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD'])
+            || $user->can('travel.admin')
+            || $user->can('travel.finance-review')
+            || $user->can('travel.approve');
+
+        if (! $canViewAll) {
+            $query->where(function ($q) use ($user) {
+                $q->where('requester_id', $user->id)
+                    ->orWhere('prepared_by', $user->id)
+                    ->orWhere('prepared_on_behalf_of', $user->id);
+            });
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-
-        if (!empty($filters['search'])) {
+        if (! empty($filters['scope']) && $filters['scope'] === 'mine') {
+            $query->where('requester_id', $user->id);
+        }
+        if (! empty($filters['queue'])) {
+            $this->applyQueueFilter($query, $filters['queue'], $user);
+        }
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('reference_number', 'ilike', "%{$filters['search']}%")
                   ->orWhere('purpose', 'ilike', "%{$filters['search']}%")
@@ -42,66 +64,154 @@ class TravelService
         return $query->paginate($filters['per_page'] ?? 20);
     }
 
+    protected function applyQueueFilter($query, string $queue, User $user): void
+    {
+        match ($queue) {
+            'approval' => $query->whereIn('status', ['submitted', 'resubmitted']),
+            'admin' => $query->whereIn('status', ['submitted', 'resubmitted']),
+            'finance' => $query->whereIn('status', ['submitted', 'resubmitted', 'approved'])
+                ->where(function ($q) {
+                    $q->whereNull('finance_status')->orWhere('finance_status', '!=', 'dsa_calculated');
+                }),
+            'director-finance' => $query->whereNotNull('finance_status')
+                ->whereNull('director_finance_confirmed_at'),
+            'retirement' => $query->whereNotNull('returned_at')
+                ->where(function ($q) {
+                    $q->whereNull('retirement_status')
+                        ->orWhereNotIn('retirement_status', ['completed', 'retired']);
+                }),
+            default => null,
+        };
+    }
+
     public function create(array $data, User $user): TravelRequest
     {
+        $onBehalfOf = isset($data['prepared_on_behalf_of']) ? (int) $data['prepared_on_behalf_of'] : null;
+        $delegation = null;
+
+        if ($onBehalfOf && $onBehalfOf !== (int) $user->id) {
+            if ($user->can('travel.prepare-for-others') || $user->isSystemAdmin()) {
+                // permission-based prepare-for-others does not require active delegation
+            } else {
+                $delegation = $this->delegationService->authorise($user, $onBehalfOf, 'travel', 'draft');
+            }
+        }
+
+        $ownerId = $this->delegationService->ownerId($user, $onBehalfOf);
+        $cabin = $data['cabin_class'] ?? config('travel.default_cabin_class', 'economy');
+        if ($cabin !== 'economy' && empty($data['route_justification']) && empty($data['cabin_justification'])) {
+            throw ValidationException::withMessages([
+                'cabin_class' => 'Non-economy cabin class requires a justification.',
+            ]);
+        }
+
         $travel = TravelRequest::create([
-            'tenant_id'           => $user->tenant_id,
-            'requester_id'        => $user->id,
-            'reference_number'    => 'TRV-' . strtoupper(Str::random(8)),
-            'purpose'             => $data['purpose'],
-            'status'              => 'draft',
-            'departure_date'      => $data['departure_date'],
-            'return_date'         => $data['return_date'],
-            'destination_country' => $data['destination_country'],
-            'destination_city'    => $data['destination_city'] ?? null,
-            'estimated_dsa'       => $data['estimated_dsa'] ?? 0,
-            'currency'            => $data['currency'] ?? 'USD',
-            'justification'       => $data['justification'] ?? null,
-            'workplan_event_id'   => $data['workplan_event_id'] ?? null,
+            'tenant_id'                      => $user->tenant_id,
+            'requester_id'                   => $ownerId,
+            'reference_number'               => 'TRV-' . strtoupper(Str::random(8)),
+            'purpose'                        => $data['purpose'],
+            'status'                         => 'draft',
+            'departure_date'                 => $data['departure_date'],
+            'return_date'                    => $data['return_date'],
+            'destination_country'            => $data['destination_country'],
+            'destination_city'               => $data['destination_city'] ?? null,
+            'estimated_dsa'                  => $data['estimated_dsa'] ?? 0,
+            'currency'                       => $data['currency'] ?? 'USD',
+            'justification'                  => $data['justification'] ?? null,
+            'workplan_event_id'              => $data['workplan_event_id'] ?? null,
+            'programme_id'                   => $data['programme_id'] ?? null,
+            'mission_id'                     => $data['mission_id'] ?? null,
+            'host_organization'              => $data['host_organization'] ?? null,
+            'budget_line_id'                 => $data['budget_line_id'] ?? null,
+            'cabin_class'                    => $cabin,
+            'route_is_most_economical'       => $data['route_is_most_economical'] ?? true,
+            'route_justification'            => $data['route_justification'] ?? $data['cabin_justification'] ?? null,
+            'personal_incremental_cost'      => $data['personal_incremental_cost'] ?? null,
+            'personal_cost_acknowledged_at'  => ! empty($data['personal_cost_acknowledged']) ? now() : null,
+            'vehicle_type'                   => $data['vehicle_type'] ?? null,
+            'driver_required'                => (bool) ($data['driver_required'] ?? false),
+            'driver_name'                    => $data['driver_name'] ?? null,
+            'is_emergency'                   => (bool) ($data['is_emergency'] ?? false),
+            'emergency_reason'               => $data['emergency_reason'] ?? null,
+            'official_personal_days'         => $data['official_personal_days'] ?? null,
         ]);
 
-        if (!empty($data['itineraries'])) {
+        $this->delegationService->stampPreparation($travel, $user, $onBehalfOf, 'travel', 'draft', $delegation);
+        $travel->save();
+
+        if (! empty($data['itineraries'])) {
             foreach ($data['itineraries'] as $leg) {
                 $travel->itineraries()->create($leg);
             }
         }
 
+        $this->syncFundingLines($travel, $data['funding_details'] ?? $data['funding_lines'] ?? []);
+
         AuditLog::record('travel.created', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
-            'new_values'     => ['reference' => $travel->reference_number, 'purpose' => $travel->purpose],
+            'new_values'     => [
+                'reference'              => $travel->reference_number,
+                'purpose'                => $travel->purpose,
+                'prepared_on_behalf_of'  => $travel->prepared_on_behalf_of,
+            ],
             'tags'           => 'travel',
         ]);
 
-        return $travel->load(['requester', 'itineraries']);
+        return $travel->load(['requester', 'itineraries', 'fundingLines', 'programme']);
     }
 
     public function update(TravelRequest $travel, array $data, User $user): TravelRequest
     {
-        if (!$travel->isDraft()) {
-            throw ValidationException::withMessages(['status' => 'Only draft requests can be edited.']);
+        if ($travel->isApproved()) {
+            throw ValidationException::withMessages([
+                'status' => 'Approved requests cannot be silently edited. Submit an amendment instead.',
+            ]);
         }
 
-        if ((int) $travel->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+        if (! $travel->isDraft() && $travel->status !== 'returned_for_correction') {
+            throw ValidationException::withMessages(['status' => 'Only draft or returned requests can be edited.']);
+        }
+
+        if ((int) $travel->requester_id !== (int) $user->id
+            && (int) $travel->prepared_by !== (int) $user->id
+            && ! $user->isSystemAdmin()) {
             throw ValidationException::withMessages([
                 'request' => 'You can only edit your own travel requests.',
             ]);
         }
 
         $payload = array_filter([
-            'purpose'             => $data['purpose'] ?? null,
-            'departure_date'      => $data['departure_date'] ?? null,
-            'return_date'         => $data['return_date'] ?? null,
-            'destination_country' => $data['destination_country'] ?? null,
-            'destination_city'    => $data['destination_city'] ?? null,
-            'estimated_dsa'       => $data['estimated_dsa'] ?? null,
-            'currency'            => $data['currency'] ?? null,
-            'justification'       => $data['justification'] ?? null,
+            'purpose'                   => $data['purpose'] ?? null,
+            'departure_date'            => $data['departure_date'] ?? null,
+            'return_date'               => $data['return_date'] ?? null,
+            'destination_country'       => $data['destination_country'] ?? null,
+            'destination_city'          => $data['destination_city'] ?? null,
+            'estimated_dsa'             => $data['estimated_dsa'] ?? null,
+            'currency'                  => $data['currency'] ?? null,
+            'justification'             => $data['justification'] ?? null,
+            'host_organization'         => $data['host_organization'] ?? null,
+            'vehicle_type'              => $data['vehicle_type'] ?? null,
+            'driver_name'               => $data['driver_name'] ?? null,
+            'cabin_class'               => $data['cabin_class'] ?? null,
+            'route_justification'       => $data['route_justification'] ?? null,
+            'personal_incremental_cost' => $data['personal_incremental_cost'] ?? null,
         ], fn ($v) => $v !== null);
-        if (array_key_exists('workplan_event_id', $data)) {
-            $payload['workplan_event_id'] = $data['workplan_event_id'];
+
+        foreach (['workplan_event_id', 'programme_id', 'mission_id', 'budget_line_id', 'route_is_most_economical', 'driver_required', 'official_personal_days', 'is_emergency', 'emergency_reason'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $payload[$key] = $data[$key];
+            }
         }
+        if (! empty($data['personal_cost_acknowledged'])) {
+            $payload['personal_cost_acknowledged_at'] = now();
+        }
+
         $travel->update($payload);
+
+        if (isset($data['funding_details']) || isset($data['funding_lines'])) {
+            $this->syncFundingLines($travel, $data['funding_details'] ?? $data['funding_lines'] ?? []);
+        }
 
         AuditLog::record('travel.updated', [
             'auditable_type' => TravelRequest::class,
@@ -109,24 +219,67 @@ class TravelService
             'tags'           => 'travel',
         ]);
 
-        return $travel->fresh(['requester', 'itineraries']);
+        return $travel->fresh(['requester', 'itineraries', 'fundingLines', 'programme']);
+    }
+
+    protected function syncFundingLines(TravelRequest $travel, array $lines): void
+    {
+        $travel->fundingLines()->delete();
+        foreach (array_values($lines) as $i => $line) {
+            if (empty($line['item']) && empty($line['description'])) {
+                continue;
+            }
+            TravelFundingLine::create([
+                'travel_request_id' => $travel->id,
+                'item'              => $line['item'] ?? $line['description'] ?? 'Funding',
+                'forum_amount'      => $line['forum_amount'] ?? $line['sadc_amount'] ?? 0,
+                'host_amount'       => $line['host_amount'] ?? 0,
+                'funding_agency'    => $line['funding_agency'] ?? $line['agency'] ?? null,
+                'project'           => $line['project'] ?? null,
+                'budget_line'       => $line['budget_line'] ?? null,
+                'sort_order'        => $i,
+            ]);
+        }
+    }
+
+    public function assertAttachmentsForStage(TravelRequest $travel, string $stage): void
+    {
+        $required = config("travel.attachment_requirements.{$stage}", []);
+        if ($stage === 'submit' && $travel->programme_id) {
+            $required = array_values(array_unique(array_merge($required, ['approved_pif'])));
+        }
+        if (empty($required)) {
+            return;
+        }
+
+        $types = $travel->attachments()->pluck('document_type')->filter()->all();
+        $missing = array_values(array_diff($required, $types));
+        if (! empty($missing)) {
+            throw ValidationException::withMessages([
+                'attachments' => 'Missing required documents for this stage: ' . implode(', ', $missing),
+            ]);
+        }
     }
 
     public function submit(TravelRequest $travel, User $user): TravelRequest
     {
-        if ((int) $travel->requester_id !== (int) $user->id && !$user->isSystemAdmin()) {
+        $canSubmit = (int) $travel->requester_id === (int) $user->id
+            || (int) $travel->prepared_by === (int) $user->id
+            || $user->isSystemAdmin();
+        if (! $canSubmit) {
             abort(403);
         }
-        if (!$travel->isDraft()) {
+        if (! $travel->isDraft() && $travel->status !== 'returned_for_correction') {
             throw ValidationException::withMessages(['status' => 'Only draft requests can be submitted.']);
         }
+
+        $this->assertAttachmentsForStage($travel, 'submit');
 
         $travel->update(['status' => 'submitted', 'submitted_at' => now()]);
 
         $this->workflowService->initiate($travel, 'travel', $user);
 
-        // Notify approvers (HR Manager / Secretary General), excluding the requester
-        $approvers = User::role(['HR Manager', 'Secretary General'])
+        $approvers = User::role(['HR Manager', 'Secretary General', 'HOD', 'Administration Officer', 'Finance Controller', 'Director'])
             ->where('tenant_id', $user->tenant_id)
             ->where('id', '!=', $user->id)
             ->get();
@@ -143,18 +296,23 @@ class TravelService
             'tags'           => 'travel',
         ]);
 
-        return $travel->fresh();
+        return $travel->fresh(['approvalRequest.workflow.steps', 'approvalRequest.history.user']);
     }
 
-    /**
-     * Called by WorkflowService when the workflow is fully approved.
-     */
     public function onWorkflowApproved(TravelRequest $travel, User $approver): void
     {
         $travel->update([
             'status'      => 'approved',
             'approved_by' => $approver->id,
             'approved_at' => now(),
+            'original_snapshot' => $travel->original_snapshot ?? [
+                'departure_date' => $travel->departure_date?->toDateString(),
+                'return_date'    => $travel->return_date?->toDateString(),
+                'destination_country' => $travel->destination_country,
+                'destination_city' => $travel->destination_city,
+                'purpose' => $travel->purpose,
+                'finance_dsa_total' => $travel->finance_dsa_total,
+            ],
         ]);
 
         AuditLog::record('travel.approved', [
@@ -165,7 +323,6 @@ class TravelService
 
         $travel->loadMissing('requester');
 
-        // Notify the requester
         if ($travel->requester) {
             $this->notificationService->dispatch($travel->requester, 'travel.approved', [
                 'name'        => $travel->requester->name,
@@ -189,9 +346,6 @@ class TravelService
         );
     }
 
-    /**
-     * Called by WorkflowService when the workflow is rejected.
-     */
     public function onWorkflowRejected(TravelRequest $travel, User $approver, ?string $reason = null): void
     {
         $travel->update([
@@ -233,47 +387,13 @@ class TravelService
         if (
             ! $approver->isSystemAdmin()
             && ! $approver->hasAnyRole(['Secretary General', 'HR Manager'])
+            && ! $approver->can('travel.approve')
+            && ! $approver->can('travel.final-approve')
         ) {
             abort(403, 'You are not authorised to approve travel requests.');
         }
 
-        $travel->update([
-            'status'      => 'approved',
-            'approved_by' => $approver->id,
-            'approved_at' => now(),
-        ]);
-
-        AuditLog::record('travel.approved', [
-            'auditable_type' => TravelRequest::class,
-            'auditable_id'   => $travel->id,
-            'tags'           => 'travel',
-        ]);
-
-        $travel->loadMissing('requester');
-
-        if ($travel->requester) {
-            $this->notificationService->dispatch($travel->requester, 'travel.approved', [
-                'name'        => $travel->requester->name,
-                'reference'   => $travel->reference_number,
-                'destination' => $travel->destination_country,
-                'date'        => $travel->departure_date,
-            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
-        }
-
-        // Add approved mission to the workplan calendar
-        WorkplanEvent::updateOrCreate(
-            ['linked_module' => 'travel', 'linked_id' => $travel->id],
-            [
-                'tenant_id'   => $travel->tenant_id,
-                'created_by'  => $approver->id,
-                'title'       => 'Mission: ' . $travel->purpose . ' — ' . $travel->destination_country,
-                'type'        => 'travel',
-                'date'        => $travel->departure_date,
-                'end_date'    => $travel->return_date,
-                'responsible' => $travel->requester?->name,
-                'description' => $travel->reference_number,
-            ]
-        );
+        $this->onWorkflowApproved($travel, $approver);
 
         return $travel->fresh(['requester', 'approver']);
     }
@@ -293,34 +413,213 @@ class TravelService
         if (
             ! $approver->isSystemAdmin()
             && ! $approver->hasAnyRole(['Secretary General', 'HR Manager'])
+            && ! $approver->can('travel.approve')
         ) {
             abort(403, 'You are not authorised to reject travel requests.');
         }
 
+        $this->onWorkflowRejected($travel, $approver, $reason);
+
+        return $travel->fresh();
+    }
+
+    public function confirmFunds(TravelRequest $travel, User $user, ?string $remarks = null): TravelRequest
+    {
+        if (! $user->can('travel.director-finance-confirm') && ! $user->hasRole('Director') && ! $user->isSystemAdmin()) {
+            abort(403, 'Director Finance confirmation required.');
+        }
+        if ((int) $travel->requester_id === (int) $user->id && ! $user->isSystemAdmin()) {
+            throw ValidationException::withMessages(['funds' => 'You cannot confirm funds on your own request.']);
+        }
+
         $travel->update([
-            'status'           => 'rejected',
-            'approved_by'      => $approver->id,
-            'rejection_reason' => $reason,
+            'director_finance_confirmed_at' => now(),
+            'director_finance_confirmed_by' => $user->id,
+            'director_finance_remarks'      => $remarks,
+            'finance_status'                => 'funds_confirmed',
         ]);
 
-        AuditLog::record('travel.rejected', [
+        $this->notificationService->dispatchToMany(
+            User::role('Secretary General')->where('tenant_id', $travel->tenant_id)->get(),
+            'travel.director_finance_confirmed',
+            [
+                'reference'   => $travel->reference_number,
+                'destination' => $travel->destination_country,
+            ],
+            ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]
+        );
+
+        AuditLog::record('travel.director_finance_confirmed', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
-            'new_values'     => ['reason' => $reason],
             'tags'           => 'travel',
         ]);
 
-        $travel->loadMissing('requester');
-        if ($travel->requester) {
-            $this->notificationService->dispatch($travel->requester, 'travel.rejected', [
-                'name'        => $travel->requester->name,
-                'reference'   => $travel->reference_number,
-                'destination' => $travel->destination_country,
-                'comment'     => $reason,
-            ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+        return $travel->fresh();
+    }
+
+    public function markBooked(TravelRequest $travel, User $user, array $data = []): TravelRequest
+    {
+        $isApproved = $travel->isApproved();
+        $emergencyOk = false;
+
+        if (! $isApproved) {
+            if (! empty($data['emergency_commit']) || $travel->is_emergency) {
+                if (! $user->hasRole('Secretary General') && ! $user->isSystemAdmin()) {
+                    throw ValidationException::withMessages([
+                        'booking' => 'Emergency booking commitment requires Secretary General authorisation.',
+                    ]);
+                }
+                $emergencyOk = true;
+                $travel->update([
+                    'is_emergency'            => true,
+                    'emergency_reason'        => $data['emergency_reason'] ?? $travel->emergency_reason ?? 'SG emergency commit',
+                    'emergency_authorised_by' => $user->id,
+                ]);
+                AuditLog::record('travel.emergency_commit', [
+                    'auditable_type' => TravelRequest::class,
+                    'auditable_id'   => $travel->id,
+                    'new_values'     => ['authorised_by' => $user->id, 'reason' => $travel->emergency_reason],
+                    'tags'           => 'travel,emergency',
+                ]);
+            } else {
+                throw ValidationException::withMessages([
+                    'booking' => 'Bookings and ticket commitments are only allowed after SG approval (or audited SG emergency exception).',
+                ]);
+            }
         }
 
+        $this->assertAttachmentsForStage($travel, 'mark_booked');
+
+        $travel->update(['booking_committed_at' => now()]);
+
+        $this->notificationService->dispatch($travel->requester, 'travel.booked', [
+            'name'      => $travel->requester?->name,
+            'reference' => $travel->reference_number,
+        ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+
+        AuditLog::record('travel.booked', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'new_values'     => ['emergency' => $emergencyOk],
+            'tags'           => 'travel',
+        ]);
+
         return $travel->fresh();
+    }
+
+    public function markReturned(TravelRequest $travel, User $user): TravelRequest
+    {
+        if (! $travel->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Only approved travel can be marked returned.']);
+        }
+
+        $workingDays = (int) config('travel.retirement_working_days', 5);
+        $due = $this->addWorkingDays(Carbon::parse($travel->return_date)->startOfDay(), $workingDays);
+
+        $travel->update([
+            'returned_at'        => now(),
+            'retirement_status'  => 'pending',
+            'retirement_due_at'  => $due->toDateString(),
+        ]);
+
+        $this->toilService->generateForTravel($travel);
+
+        $this->notificationService->dispatch($travel->requester, 'travel.returned', [
+            'name'      => $travel->requester?->name,
+            'reference' => $travel->reference_number,
+            'due_date'  => $due->toDateString(),
+        ], ['module' => 'travel', 'record_id' => $travel->id, 'url' => '/travel/' . $travel->id]);
+
+        AuditLog::record('travel.returned', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'new_values'     => ['retirement_due_at' => $due->toDateString()],
+            'tags'           => 'travel',
+        ]);
+
+        return $travel->fresh(['toilCandidates']);
+    }
+
+    public function completeRetirement(TravelRequest $travel, User $user): TravelRequest
+    {
+        $this->assertAttachmentsForStage($travel, 'retire');
+        $travel->update(['retirement_status' => 'completed']);
+
+        AuditLog::record('travel.retirement_completed', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'tags'           => 'travel',
+        ]);
+
+        return $travel->fresh();
+    }
+
+    public function createAmendment(TravelRequest $travel, array $changes, User $user, ?string $reason = null): TravelAmendment
+    {
+        if (! $travel->isApproved()) {
+            throw ValidationException::withMessages(['status' => 'Amendments are only for approved travel.']);
+        }
+
+        $snapshot = $travel->original_snapshot ?? [
+            'departure_date' => $travel->departure_date?->toDateString(),
+            'return_date'    => $travel->return_date?->toDateString(),
+            'purpose'        => $travel->purpose,
+        ];
+
+        $amendment = TravelAmendment::create([
+            'travel_request_id' => $travel->id,
+            'created_by'        => $user->id,
+            'status'            => 'submitted',
+            'proposed_changes'  => $changes,
+            'original_snapshot' => $snapshot,
+            'reason'            => $reason,
+        ]);
+
+        $travel->update(['status' => 'amendment_pending']);
+
+        AuditLog::record('travel.amendment_created', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'new_values'     => ['amendment_id' => $amendment->id],
+            'tags'           => 'travel',
+        ]);
+
+        return $amendment;
+    }
+
+    public function approveAmendment(TravelAmendment $amendment, User $user): TravelRequest
+    {
+        $travel = $amendment->travelRequest;
+        $changes = $amendment->proposed_changes ?? [];
+        $allowed = collect($changes)->only([
+            'departure_date', 'return_date', 'destination_country', 'destination_city',
+            'purpose', 'justification', 'cabin_class', 'route_justification',
+        ])->all();
+        $travel->update(array_merge($allowed, ['status' => 'approved']));
+        $amendment->update(['status' => 'approved']);
+
+        AuditLog::record('travel.amendment_approved', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id'   => $travel->id,
+            'tags'           => 'travel',
+        ]);
+
+        return $travel->fresh();
+    }
+
+    public function addWorkingDays(Carbon $start, int $days): Carbon
+    {
+        $d = $start->copy();
+        $added = 0;
+        while ($added < $days) {
+            $d->addDay();
+            if (! $d->isWeekend()) {
+                $added++;
+            }
+        }
+
+        return $d;
     }
 
     public function delete(TravelRequest $travel, User $user): void
@@ -332,5 +631,26 @@ class TravelService
             throw ValidationException::withMessages(['request' => 'You can only delete your own travel requests.']);
         }
         $travel->delete();
+    }
+
+    public function exportRegister(User $user, array $filters = []): array
+    {
+        $paginator = $this->list(array_merge($filters, ['per_page' => 500]), $user);
+        $rows = [];
+        foreach ($paginator->items() as $t) {
+            $rows[] = [
+                'reference' => $t->reference_number,
+                'requester' => $t->requester?->name,
+                'purpose'   => $t->purpose,
+                'destination' => trim(($t->destination_city ?? '') . ', ' . $t->destination_country, ', '),
+                'departure' => $t->departure_date?->toDateString(),
+                'return'    => $t->return_date?->toDateString(),
+                'status'    => $t->status,
+                'dsa_total' => $t->finance_dsa_total ?? $t->actual_dsa ?? $t->estimated_dsa,
+                'currency'  => $t->currency,
+            ];
+        }
+
+        return $rows;
     }
 }

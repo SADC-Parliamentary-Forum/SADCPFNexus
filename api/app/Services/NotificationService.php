@@ -139,6 +139,22 @@ class NotificationService
                 'subject' => 'Your travel request has been returned',
                 'body'    => "Dear {{name}},\n\nYour travel request ({{reference}}) to {{destination}} has been returned with the following comment:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF HR",
             ],
+            'travel.director_finance_confirmed' => [
+                'subject' => 'Travel funds confirmed — SG action',
+                'body'    => "Dear {{name}},\n\nDirector Finance has confirmed funds for travel {{reference}} ({{destination}}). Please proceed with final approval.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.booked' => [
+                'subject' => 'Travel bookings committed',
+                'body'    => "Dear {{name}},\n\nBookings have been committed for your travel request {{reference}}.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'travel.returned' => [
+                'subject' => 'Travel marked returned — retirement due',
+                'body'    => "Dear {{name}},\n\nYour mission {{reference}} has been marked returned. Please complete retirement by {{due_date}} (mission report required).\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'travel.toil_candidate' => [
+                'subject' => 'Potential TOIL from travel',
+                'body'    => "Dear {{name}},\n\nTOIL candidates were generated for travel {{reference}}. Travel date is not automatic TOIL — OT authorisation and HR validation are required.\n\nRegards,\nSADC-PF HR",
+            ],
 
             // Leave
             'leave.submitted' => [

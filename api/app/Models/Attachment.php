@@ -33,6 +33,13 @@ class Attachment extends Model
     public const DOCUMENT_TYPE_FLIGHT_TICKET        = 'flight_ticket';
     public const DOCUMENT_TYPE_HOTEL_BOOKING        = 'hotel_booking';
     public const DOCUMENT_TYPE_TRAVEL_INSURANCE     = 'travel_insurance';
+    public const DOCUMENT_TYPE_INVITATION           = 'invitation';
+    public const DOCUMENT_TYPE_AGENDA               = 'agenda';
+    public const DOCUMENT_TYPE_APPROVED_PIF         = 'approved_pif';
+    public const DOCUMENT_TYPE_DONOR_CORRESPONDENCE = 'donor_correspondence';
+    public const DOCUMENT_TYPE_FUNDING_CONFIRMATION = 'funding_confirmation';
+    public const DOCUMENT_TYPE_MISSION_REPORT       = 'mission_report';
+    public const DOCUMENT_TYPE_RECEIPT              = 'receipt';
 
     public const TRAVEL_DOCUMENT_TYPES = [
         self::DOCUMENT_TYPE_TRAVEL_ITINERARY,
@@ -40,6 +47,14 @@ class Attachment extends Model
         self::DOCUMENT_TYPE_FLIGHT_TICKET,
         self::DOCUMENT_TYPE_HOTEL_BOOKING,
         self::DOCUMENT_TYPE_TRAVEL_INSURANCE,
+        self::DOCUMENT_TYPE_INVITATION,
+        self::DOCUMENT_TYPE_AGENDA,
+        self::DOCUMENT_TYPE_CONCEPT_NOTE,
+        self::DOCUMENT_TYPE_APPROVED_PIF,
+        self::DOCUMENT_TYPE_DONOR_CORRESPONDENCE,
+        self::DOCUMENT_TYPE_FUNDING_CONFIRMATION,
+        self::DOCUMENT_TYPE_MISSION_REPORT,
+        self::DOCUMENT_TYPE_RECEIPT,
         self::DOCUMENT_TYPE_OTHER,
     ];
 

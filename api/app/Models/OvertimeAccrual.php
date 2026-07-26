@@ -13,6 +13,7 @@ class OvertimeAccrual extends Model
         'description',
         'hours',
         'accrual_date',
+        'expires_at',
         'approved_by_name',
         'is_verified',
         'is_linked',
@@ -23,6 +24,7 @@ class OvertimeAccrual extends Model
         return [
             'hours'       => 'decimal:1',
             'accrual_date'=> 'date',
+            'expires_at'  => 'date',
             'is_verified' => 'boolean',
             'is_linked'   => 'boolean',
         ];

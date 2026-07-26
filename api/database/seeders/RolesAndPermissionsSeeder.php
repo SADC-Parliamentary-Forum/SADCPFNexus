@@ -17,6 +17,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'users.view', 'users.create', 'users.edit', 'users.deactivate', 'users.delete',
             'roles.view', 'roles.manage',
             'travel.view', 'travel.create', 'travel.approve', 'travel.admin',
+            'travel.prepare-for-others', 'travel.recommend', 'travel.admin-review',
+            'travel.finance-review', 'travel.director-finance-confirm', 'travel.final-approve',
+            'travel.review-retirement', 'travel.review-toil', 'travel.export', 'travel.emergency-commit',
             'leave.view', 'leave.create', 'leave.approve', 'leave.admin',
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
@@ -86,7 +89,8 @@ class RolesAndPermissionsSeeder extends Seeder
             $hrManager->syncPermissions(
                 Permission::whereIn('name', [
                     'users.view', 'hr.view', 'hr.create', 'hr.edit', 'hr.approve',
-                    'travel.view', 'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
+                    'travel.view', 'travel.review-toil', 'travel.prepare-for-others',
+                    'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
                     'governance.view',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                 ])->where('guard_name', $guard)->get()
@@ -98,7 +102,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
                     'salary_advance.view', 'salary_advance.certify', 'salary_advance.pay',
                     'salary_advance.recover', 'salary_advance.export', 'salary_advance.admin',
-                    'travel.view', 'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
+                    'travel.view', 'travel.finance-review', 'travel.export',
+                    'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',
                     'reports.view', 'reports.export',
@@ -178,7 +183,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                     'users.view',
                     'leave.view', 'leave.approve',
-                    'travel.view',
+                    'travel.view', 'travel.review-toil', 'travel.review-retirement',
                     'timesheets.view', 'timesheets.create', 'timesheets.approve',
                     'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
                     'conduct.view', 'conduct.create', 'conduct.admin',
@@ -191,7 +196,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $secretaryGeneral = Role::firstOrCreate(['name' => 'Secretary General', 'guard_name' => $guard]);
             $secretaryGeneral->syncPermissions(
                 Permission::whereIn('name', [
-                    'travel.view', 'travel.approve',
+                    'travel.view', 'travel.approve', 'travel.final-approve', 'travel.emergency-commit',
                     'leave.view', 'leave.approve',
                     'imprest.view', 'imprest.approve',
                     'procurement.view', 'procurement.approve', 'procurement.award', 'procurement.manage_vendors',
@@ -281,11 +286,20 @@ class RolesAndPermissionsSeeder extends Seeder
             $director->syncPermissions(
                 Permission::whereIn('name', [
                     'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
-                    'travel.view', 'leave.view', 'imprest.view', 'finance.view',
+                    'travel.view', 'travel.director-finance-confirm', 'travel.recommend',
+                    'leave.view', 'imprest.view', 'finance.view',
                     'salary_advance.view', 'salary_advance.approve',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'workplan.view', 'assignments.view',
                     'mande.view', 'mande.create', 'mande.review',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $adminOfficer = Role::firstOrCreate(['name' => 'Administration Officer', 'guard_name' => $guard]);
+            $adminOfficer->syncPermissions(
+                Permission::whereIn('name', [
+                    'travel.view', 'travel.admin-review', 'travel.admin',
+                    'leave.view', 'imprest.view', 'hr.view', 'reports.view',
                 ])->where('guard_name', $guard)->get()
             );
 

@@ -391,4 +391,25 @@ class ProgrammeController extends Controller
         $procurementRequest = $this->service->sendToProcurement($programme, $data, $request->user());
         return response()->json(['message' => 'Procurement request created.', 'data' => $procurementRequest]);
     }
+
+    public function sendToTravel(Request $request, Programme $programme): JsonResponse
+    {
+        $data = $request->validate([
+            'traveller_ids'   => ['required', 'array', 'min:1'],
+            'traveller_ids.*' => ['integer', 'exists:users,id'],
+            'purpose'         => ['nullable', 'string', 'max:500'],
+            'departure_date'  => ['nullable', 'date'],
+            'return_date'     => ['nullable', 'date', 'after_or_equal:departure_date'],
+            'destination_country' => ['nullable', 'string', 'max:100'],
+            'destination_city'    => ['nullable', 'string', 'max:100'],
+            'mission_id'      => ['nullable', 'integer', 'exists:travel_missions,id'],
+            'mission_title'   => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $requests = $this->service->sendToTravel($programme, $data, $request->user());
+        return response()->json([
+            'message' => count($requests) . ' draft travel requisition(s) created.',
+            'data'    => $requests,
+        ], 201);
+    }
 }

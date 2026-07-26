@@ -45,6 +45,7 @@ class ImprestService
             'expected_liquidation_date' => $data['expected_liquidation_date'],
             'purpose'                   => $data['purpose'],
             'justification'             => $data['justification'] ?? null,
+            'travel_request_id'         => $data['travel_request_id'] ?? null,
             'status'                    => 'draft',
         ]);
 

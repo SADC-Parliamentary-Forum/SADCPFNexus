@@ -258,6 +258,16 @@ Route::prefix('v1')->group(function () {
 
         // Travel Module
         Route::prefix('travel')->group(function () {
+            Route::get('register/export', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'registerExport']);
+            Route::get('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesIndex']);
+            Route::post('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesStore']);
+            Route::get('toil', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilIndex']);
+            Route::post('toil/{candidate}/authorise-ot', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilAuthoriseOt']);
+            Route::post('toil/{candidate}/confirm-duty', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilConfirmDuty']);
+            Route::post('toil/{candidate}/hr-validate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilHrValidate']);
+            Route::post('toil/{candidate}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilReject']);
+            Route::post('toil/{candidate}/extend', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilExtend']);
+
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
                 ->names('travel.requests');
@@ -268,6 +278,13 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/withdraw', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'withdraw']);
             Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
             Route::get('requests/{travelRequest}/certificate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'certificate']);
+            Route::post('requests/{travelRequest}/dsa', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'saveDsa']);
+            Route::post('requests/{travelRequest}/confirm-funds', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'confirmFunds']);
+            Route::post('requests/{travelRequest}/mark-booked', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'markBooked']);
+            Route::post('requests/{travelRequest}/mark-returned', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'markReturned']);
+            Route::post('requests/{travelRequest}/complete-retirement', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'completeRetirement']);
+            Route::post('requests/{travelRequest}/amendments', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'requestAmendment']);
+            Route::post('amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approveAmendment']);
             // Travel attachments
             Route::get('requests/{travelRequest}/attachments',                        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'index']);
             Route::post('requests/{travelRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'store']);
@@ -666,6 +683,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{programme}/submit-amendment', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submitAmendment']);
             Route::get('{programme}/diff', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'diff']);
             Route::post('{programme}/send-to-procurement', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'sendToProcurement']);
+            Route::post('{programme}/send-to-travel', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'sendToTravel']);
             Route::get('{programme}/pdf', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'pdf']);
             Route::middleware('can:programme.finance-review')
                 ->put('{programme}/finance-review', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'updateFinanceReview']);

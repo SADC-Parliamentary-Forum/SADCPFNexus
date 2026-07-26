@@ -48,6 +48,7 @@ class ImprestController extends Controller
             'expected_liquidation_date' => ['required', 'date', 'after:today'],
             'purpose'                   => ['required', 'string', 'max:2000'],
             'justification'             => ['nullable', 'string', 'max:2000'],
+            'travel_request_id'         => ['nullable', 'integer', 'exists:travel_requests,id'],
         ]);
 
         $imprest = $this->imprestService->create($data, $request->user());

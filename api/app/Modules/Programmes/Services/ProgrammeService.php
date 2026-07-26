@@ -10,9 +10,9 @@ use App\Models\ProgrammeDeliverable;
 use App\Models\ProgrammeDocument;
 use App\Models\ProgrammeMilestone;
 use App\Models\ProgrammeProcurementItem;
-use App\Models\ProcurementItem;
-use App\Models\ProcurementRequest;
-use App\Models\User;
+use App\Models\TravelMission;
+use App\Models\TravelRequest;
+use Illuminate\Support\Str;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -774,6 +774,88 @@ class ProgrammeService
         ]);
 
         return $procurementRequest->fresh();
+    }
+
+    /**
+     * Create one draft TravelRequest per selected traveller, prefilling from the approved PIF.
+     *
+     * @return list<TravelRequest>
+     */
+    public function sendToTravel(Programme $programme, array $data, User $user): array
+    {
+        if (! $programme->isApprovedOrAmended()) {
+            throw ValidationException::withMessages(['status' => 'Only approved programmes can send travellers to travel.']);
+        }
+
+        $travellerIds = array_values(array_unique($data['traveller_ids'] ?? []));
+        if (empty($travellerIds)) {
+            throw ValidationException::withMessages(['traveller_ids' => 'Select at least one traveller.']);
+        }
+
+        $travellers = User::where('tenant_id', $programme->tenant_id)
+            ->whereIn('id', $travellerIds)
+            ->get();
+
+        if ($travellers->count() !== count($travellerIds)) {
+            throw ValidationException::withMessages(['traveller_ids' => 'One or more travellers are invalid for this tenant.']);
+        }
+
+        $missionId = $data['mission_id'] ?? null;
+        if (! $missionId && ! empty($data['mission_title'])) {
+            $mission = TravelMission::create([
+                'tenant_id'           => $programme->tenant_id,
+                'title'               => $data['mission_title'],
+                'programme_id'        => $programme->id,
+                'destination_country' => $data['destination_country'] ?? $programme->venue_country ?? null,
+                'destination_city'    => $data['destination_city'] ?? $programme->venue_city ?? null,
+                'start_date'          => $data['departure_date'] ?? $programme->start_date ?? null,
+                'end_date'            => $data['return_date'] ?? $programme->end_date ?? null,
+                'created_by'          => $user->id,
+            ]);
+            $missionId = $mission->id;
+        }
+
+        $created = [];
+        DB::transaction(function () use ($programme, $data, $user, $travellers, $missionId, &$created) {
+            foreach ($travellers as $traveller) {
+                $travel = TravelRequest::create([
+                    'tenant_id'           => $programme->tenant_id,
+                    'requester_id'        => $traveller->id,
+                    'prepared_by'         => $user->id,
+                    'prepared_on_behalf_of' => (int) $traveller->id !== (int) $user->id ? $traveller->id : null,
+                    'reference_number'    => 'TRV-' . strtoupper(Str::random(8)),
+                    'purpose'             => $data['purpose'] ?? ('Mission travel — ' . ($programme->title ?? $programme->reference_number)),
+                    'status'              => 'draft',
+                    'departure_date'      => $data['departure_date'] ?? ($programme->start_date?->toDateString() ?? now()->addDays(14)->toDateString()),
+                    'return_date'         => $data['return_date'] ?? ($programme->end_date?->toDateString() ?? now()->addDays(17)->toDateString()),
+                    'destination_country' => $data['destination_country'] ?? $programme->venue_country ?? 'Namibia',
+                    'destination_city'    => $data['destination_city'] ?? $programme->venue_city ?? null,
+                    'programme_id'        => $programme->id,
+                    'mission_id'          => $missionId,
+                    'host_organization'   => $programme->funding_source ?? null,
+                    'budget_line_id'      => $programme->budgetLines()->value('id'),
+                    'justification'       => 'Prefill from approved PIF ' . $programme->reference_number,
+                    'currency'            => $programme->primary_currency ?? 'USD',
+                    'cabin_class'         => config('travel.default_cabin_class', 'economy'),
+                    'estimated_dsa'       => $programme->proposed_dsa_rate ?? 0,
+                ]);
+
+                $created[] = $travel->load(['requester', 'programme', 'mission']);
+            }
+        });
+
+        AuditLog::record('programme.travel_sent', [
+            'auditable_type' => Programme::class,
+            'auditable_id'   => $programme->id,
+            'new_values'     => [
+                'traveller_ids' => $travellerIds,
+                'travel_ids'    => collect($created)->pluck('id')->all(),
+                'mission_id'    => $missionId,
+            ],
+            'tags' => 'programme,travel',
+        ]);
+
+        return $created;
     }
 
     // --- Sub-resource: Documents ---

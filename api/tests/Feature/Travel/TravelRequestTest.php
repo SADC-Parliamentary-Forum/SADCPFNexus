@@ -131,6 +131,18 @@ class TravelRequestTest extends TestCase
         $create = $http->postJson('/api/v1/travel/requests', $this->travelPayload());
         $create->assertCreated();
         $id = $create->json('data.id');
+        $travel = TravelRequest::findOrFail($id);
+        foreach (['invitation', 'agenda'] as $type) {
+            $travel->attachments()->create([
+                'tenant_id' => $user->tenant_id,
+                'uploaded_by' => $user->id,
+                'original_filename' => "{$type}.pdf",
+                'storage_path' => "travel/{$id}/{$type}.pdf",
+                'mime_type' => 'application/pdf',
+                'size_bytes' => 100,
+                'document_type' => $type,
+            ]);
+        }
 
         // Submit it
         $submit = $http->postJson("/api/v1/travel/requests/{$id}/submit");

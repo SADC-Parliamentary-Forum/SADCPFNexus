@@ -16,6 +16,7 @@ class ImprestRequest extends Model
         'budget_line', 'amount_requested', 'amount_approved', 'amount_liquidated',
         'currency', 'expected_liquidation_date', 'purpose', 'justification',
         'status', 'rejection_reason', 'submitted_at', 'approved_at', 'liquidated_at',
+        'travel_request_id',
     ];
 
     protected $casts = [
@@ -33,6 +34,11 @@ class ImprestRequest extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function travelRequest()
+    {
+        return $this->belongsTo(TravelRequest::class);
     }
 
     public function approvalRequest()
