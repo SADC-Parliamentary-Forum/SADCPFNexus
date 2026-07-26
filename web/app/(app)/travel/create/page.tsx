@@ -64,6 +64,10 @@ interface FundingRow {
   project: string;
   budget_line: string;
   expanded: boolean;
+  payor_sadc_pf: boolean;
+  payor_host: boolean;
+  payor_donor: boolean;
+  payor_self: boolean;
 }
 
 interface FormData {
@@ -82,6 +86,11 @@ interface FormData {
   vehicle_type: "sadcpf" | "private" | "";
   driver_required: boolean;
   driver_name: string;
+  private_vehicle_reason: string;
+  private_vehicle_route: string;
+  estimated_kilometres: string;
+  mileage_rate_per_km: string;
+  equivalent_airfare: string;
 }
 
 // ─── Country searchable dropdown ─────────────────────────────────────────────
@@ -280,10 +289,19 @@ export default function TravelCreatePage() {
       project: "",
       budget_line: "",
       expanded: false,
+      payor_sadc_pf: false,
+      payor_host: false,
+      payor_donor: false,
+      payor_self: false,
     })),
     vehicle_type: "",
     driver_required: false,
     driver_name: "",
+    private_vehicle_reason: "",
+    private_vehicle_route: "",
+    estimated_kilometres: "",
+    mileage_rate_per_km: "",
+    equivalent_airfare: "",
   });
 
   // Load approved programmes for PIF dropdown
@@ -360,7 +378,25 @@ export default function TravelCreatePage() {
         vehicle_type: form.vehicle_type || undefined,
         driver_required: form.driver_required || undefined,
         driver_name: form.driver_name || undefined,
-        funding_details: form.funding_rows.filter((r) => r.forum_amount || r.host_amount),
+        private_vehicle_reason: form.private_vehicle_reason || undefined,
+        private_vehicle_route: form.private_vehicle_route || undefined,
+        estimated_kilometres: form.estimated_kilometres ? Number(form.estimated_kilometres) : undefined,
+        mileage_rate_per_km: form.mileage_rate_per_km ? Number(form.mileage_rate_per_km) : undefined,
+        equivalent_airfare: form.equivalent_airfare ? Number(form.equivalent_airfare) : undefined,
+        funding_details: form.funding_rows
+          .filter((r) => r.forum_amount || r.host_amount || r.payor_sadc_pf || r.payor_host || r.payor_donor || r.payor_self)
+          .map((r) => ({
+            item: r.item,
+            forum_amount: r.forum_amount || 0,
+            host_amount: r.host_amount || 0,
+            payor_sadc_pf: r.payor_sadc_pf || Number(r.forum_amount) > 0,
+            payor_host: r.payor_host || Number(r.host_amount) > 0,
+            payor_donor: r.payor_donor,
+            payor_self: r.payor_self,
+            funding_agency: r.funding_agency || undefined,
+            project: r.project || undefined,
+            budget_line: r.budget_line || undefined,
+          })),
         itineraries: form.legs
           .filter((l) => l.from_location && l.to_location && l.travel_date)
           .map((l) => ({
@@ -375,7 +411,25 @@ export default function TravelCreatePage() {
       const { data } = await travelApi.create(payload);
       const createdId = data.data?.id ?? (data as { id?: number }).id;
       if (!asDraft && createdId) {
-        await travelApi.submit(createdId);
+        try {
+          await travelApi.submit(createdId);
+        } catch (err: any) {
+          const conflicts = err?.response?.data?.errors?.conflicts;
+          if (Array.isArray(conflicts) && conflicts.length) {
+            const note = window.prompt(
+              `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge, or Cancel to leave as draft.`,
+              "Reviewed with supervisor"
+            );
+            if (note) {
+              await travelApi.submit(createdId, {
+                acknowledge_conflicts: true,
+                conflict_resolution_note: note,
+              });
+            }
+          } else {
+            throw err;
+          }
+        }
       }
       router.push("/travel");
     } catch {
@@ -797,6 +851,23 @@ export default function TravelCreatePage() {
                       />
                     </div>
                   </div>
+                  <div className="flex flex-wrap gap-3 text-[10px] text-neutral-600" data-testid="funding-payor-matrix">
+                    {([
+                      ["payor_sadc_pf", "SADC PF"],
+                      ["payor_host", "Host"],
+                      ["payor_donor", "Donor"],
+                      ["payor_self", "Self"],
+                    ] as const).map(([key, label]) => (
+                      <label key={key} className="inline-flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(row[key])}
+                          onChange={(e) => updateFundingRow(i, key, e.target.checked)}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
 
                   {/* Toggle details */}
                   <button
@@ -936,6 +1007,29 @@ export default function TravelCreatePage() {
                     value={form.driver_name}
                     onChange={(e) => updateField("driver_name", e.target.value)}
                   />
+                </div>
+              )}
+
+              {form.vehicle_type === "private" && (
+                <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/40 p-3" data-testid="private-mileage-fields">
+                  <p className="text-xs text-amber-800">Private vehicle — mileage vs equivalent airfare comparison.</p>
+                  <label className="block text-xs font-medium text-neutral-700">Reason PF vehicle not used
+                    <textarea className="form-input mt-1" rows={2} value={form.private_vehicle_reason} onChange={(e) => updateField("private_vehicle_reason", e.target.value)} />
+                  </label>
+                  <label className="block text-xs font-medium text-neutral-700">Route
+                    <input className="form-input mt-1" value={form.private_vehicle_route} onChange={(e) => updateField("private_vehicle_route", e.target.value)} />
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <label className="text-xs font-medium text-neutral-700">Km
+                      <input type="number" className="form-input mt-1" value={form.estimated_kilometres} onChange={(e) => updateField("estimated_kilometres", e.target.value)} />
+                    </label>
+                    <label className="text-xs font-medium text-neutral-700">Rate/km
+                      <input type="number" className="form-input mt-1" value={form.mileage_rate_per_km} onChange={(e) => updateField("mileage_rate_per_km", e.target.value)} />
+                    </label>
+                    <label className="text-xs font-medium text-neutral-700">Equiv. airfare
+                      <input type="number" className="form-input mt-1" value={form.equivalent_airfare} onChange={(e) => updateField("equivalent_airfare", e.target.value)} />
+                    </label>
+                  </div>
                 </div>
               )}
             </div>

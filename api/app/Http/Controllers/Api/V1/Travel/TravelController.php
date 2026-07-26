@@ -7,12 +7,16 @@ use App\Models\TravelMission;
 use App\Models\TravelRequest;
 use App\Models\TravelToilCandidate;
 use App\Modules\Travel\Services\TravelAnalyticsService;
+use App\Modules\Travel\Services\TravelCalendarService;
+use App\Modules\Travel\Services\TravelDashboardService;
 use App\Modules\Travel\Services\TravelDsaService;
 use App\Modules\Travel\Services\TravelFxRateService;
 use App\Modules\Travel\Services\TravelHealthService;
 use App\Modules\Travel\Services\TravelItineraryParseService;
 use App\Modules\Travel\Services\TravelMissionService;
+use App\Modules\Travel\Services\TravelPackService;
 use App\Modules\Travel\Services\TravelProcurementLinkService;
+use App\Modules\Travel\Services\TravelReportsPackService;
 use App\Modules\Travel\Services\TravelService;
 use App\Modules\Travel\Services\TravelToilService;
 use App\Modules\Travel\Services\TravelVisaReminderService;
@@ -40,6 +44,10 @@ class TravelController extends Controller
         private readonly TravelFxRateService $fxRateService,
         private readonly TravelHealthService $healthService,
         private readonly TravelProcurementLinkService $procurementLinkService,
+        private readonly TravelDashboardService $dashboardService,
+        private readonly TravelCalendarService $calendarService,
+        private readonly TravelPackService $packService,
+        private readonly TravelReportsPackService $reportsPackService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -62,7 +70,7 @@ class TravelController extends Controller
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
             'directorFinanceConfirmer', 'emergencyAuthoriser',
-            'procurementRequest',
+            'procurementRequest', 'accommodations', 'imprestRequests',
         ]);
 
         $approval = $travelRequest->approvalRequest;
@@ -112,6 +120,11 @@ class TravelController extends Controller
             'funding_details'     => ['nullable', 'array'],
             'funding_lines'       => ['nullable', 'array'],
             'prepared_on_behalf_of' => ['nullable', 'integer', 'exists:users,id'],
+            'private_vehicle_reason' => ['nullable', 'string', 'max:2000'],
+            'private_vehicle_route' => ['nullable', 'string', 'max:500'],
+            'estimated_kilometres' => ['nullable', 'numeric', 'min:0'],
+            'mileage_rate_per_km' => ['nullable', 'numeric', 'min:0'],
+            'equivalent_airfare' => ['nullable', 'numeric', 'min:0'],
             'itineraries'         => ['nullable', 'array'],
             'itineraries.*.from_location'  => ['required_with:itineraries', 'string'],
             'itineraries.*.to_location'    => ['required_with:itineraries', 'string'],
@@ -172,7 +185,12 @@ class TravelController extends Controller
 
     public function submit(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        $travel = $this->travelService->submit($travelRequest, $request->user());
+        $data = $request->validate([
+            'acknowledge_conflicts' => ['nullable', 'boolean'],
+            'conflict_resolution_note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $travel = $this->travelService->submit($travelRequest, $request->user(), $data);
         return response()->json(['message' => 'Travel request submitted.', 'data' => $travel]);
     }
 
@@ -632,5 +650,116 @@ class TravelController extends Controller
         $travel = $this->procurementLinkService->link($travelRequest, $data, $request->user());
 
         return response()->json(['message' => 'Procurement link updated.', 'data' => $travel]);
+    }
+
+    public function dashboardTraveller(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->dashboardService->traveller($request->user())]);
+    }
+
+    public function dashboardAdmin(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.admin-review')
+                || $request->user()->can('travel.admin')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Administration Officer', 'System Admin', 'HOD', 'Secretary General']),
+            403
+        );
+
+        return response()->json(['data' => $this->dashboardService->admin($request->user())]);
+    }
+
+    public function dashboardFinance(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.finance-review')
+                || $request->user()->can('travel.director-finance-confirm')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'Director', 'System Admin', 'Secretary General']),
+            403
+        );
+
+        return response()->json(['data' => $this->dashboardService->finance($request->user())]);
+    }
+
+    public function calendar(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $data['to'] ?? now()->addMonths(2)->endOfMonth()->toDateString();
+
+        return response()->json(['data' => $this->calendarService->events($request->user(), $from, $to)]);
+    }
+
+    public function storeAccommodation(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'hotel_name' => ['required', 'string', 'max:255'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'check_in' => ['nullable', 'date'],
+            'check_out' => ['nullable', 'date', 'after_or_equal:check_in'],
+            'room_type' => ['nullable', 'string', 'max:100'],
+            'rate' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'paid_by' => ['nullable', 'string', 'in:sadc_pf,host,donor,self'],
+            'confirmation_number' => ['nullable', 'string', 'max:100'],
+            'cancellation_deadline' => ['nullable', 'date'],
+            'contact' => ['nullable', 'string', 'max:255'],
+            'attachment_id' => ['nullable', 'integer', 'exists:attachments,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $accommodation = $this->travelService->addAccommodation($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Accommodation recorded.', 'data' => $accommodation], 201);
+    }
+
+    public function updateVehicleMileage(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'private_vehicle_reason' => ['nullable', 'string', 'max:2000'],
+            'private_vehicle_route' => ['nullable', 'string', 'max:500'],
+            'estimated_kilometres' => ['required', 'numeric', 'min:0'],
+            'mileage_rate_per_km' => ['required', 'numeric', 'min:0'],
+            'equivalent_airfare' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $travel = $this->travelService->updateVehicleMileage($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Private vehicle mileage comparison saved.', 'data' => $travel]);
+    }
+
+    public function travelPack(Request $request, TravelRequest $travelRequest): Response|\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->authorizeRequestView($request->user(), $travelRequest, [
+            'Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD',
+        ]);
+
+        abort_unless(
+            $travelRequest->status === 'approved' && $travelRequest->booking_committed_at,
+            422,
+            'Travel pack is available after approval and booking.'
+        );
+
+        return $this->packService->download($travelRequest);
+    }
+
+    public function reportsPack(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.export')
+                || $request->user()->can('travel.view')
+                || $request->user()->can('travel.finance-review')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'Secretary General', 'Director', 'System Admin', 'Administration Officer']),
+            403
+        );
+
+        return response()->json(['data' => $this->reportsPackService->pack($request->user())]);
     }
 }

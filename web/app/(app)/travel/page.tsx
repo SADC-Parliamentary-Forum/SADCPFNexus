@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { travelApi, type TravelRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
@@ -19,34 +20,98 @@ const filterMap: Record<string, string | undefined> = {
   All: undefined, Draft: "draft", Submitted: "submitted", Approved: "approved", Rejected: "rejected",
 };
 
-export default function TravelPage() {
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
+  const inner = (
+    <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+      <p className="text-[11px] uppercase tracking-wide text-neutral-400">{label}</p>
+      <p className="text-2xl font-semibold text-neutral-900 mt-1">{value}</p>
+    </div>
+  );
+  return href ? <Link href={href}>{inner}</Link> : inner;
+}
 
-  const { data: requests = [], isLoading: loading, isError } = useQuery({
-    queryKey: ["travel", "list", statusFilter],
-    queryFn: () => {
-      const status = filterMap[statusFilter];
-      return travelApi.list(status ? { status } : undefined).then((res) => (res.data as any).data as TravelRequest[]);
-    },
+export default function TravelPage() {
+  const searchParams = useSearchParams();
+  const scope = searchParams.get("scope") || undefined;
+  const view = searchParams.get("view") || undefined;
+  const [statusFilter, setStatusFilter] = useState<string>(
+    view === "approved" || view === "upcoming" || view === "away" ? "Approved" : "All"
+  );
+
+  const { data: dash } = useQuery({
+    queryKey: ["travel", "dashboard", "traveller"],
+    queryFn: () => travelApi.dashboardTraveller().then((r) => r.data.data),
     staleTime: 30_000,
   });
+
+  const listParams = useMemo(() => {
+    const params: Record<string, string> = {};
+    const status = filterMap[statusFilter];
+    if (status) params.status = status;
+    if (scope === "mine") params.scope = "mine";
+    return params;
+  }, [statusFilter, scope]);
+
+  const { data: requests = [], isLoading: loading, isError } = useQuery({
+    queryKey: ["travel", "list", listParams, view],
+    queryFn: () => travelApi.list(listParams).then((res) => (res.data as any).data as TravelRequest[]),
+    staleTime: 30_000,
+  });
+
+  const filtered = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (view === "upcoming") {
+      return requests.filter((r) => r.status === "approved" && r.departure_date > today);
+    }
+    if (view === "away") {
+      return requests.filter((r) => r.status === "approved" && r.departure_date <= today && r.return_date >= today);
+    }
+    if (view === "approved") {
+      return requests.filter((r) => r.status === "approved");
+    }
+    return requests;
+  }, [requests, view]);
 
   const destination = (r: TravelRequest) =>
     [r.destination_city, r.destination_country].filter(Boolean).join(", ") || r.destination_country;
 
+  const title = view === "upcoming" ? "Upcoming Travel"
+    : view === "away" ? "Travellers Away"
+    : view === "approved" ? "Approved Travel"
+    : scope === "mine" ? "My Travel Requests"
+    : "Travel Dashboard";
+
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Travel Requests</h1>
-          <p className="page-subtitle">Manage your travel requisitions and DSA claims.</p>
+          <h1 className="page-title">{title}</h1>
+          <p className="page-subtitle">Manage travel requisitions, readiness, and retirement.</p>
         </div>
-        <Link href="/travel/create" className="btn-primary">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New Request
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/travel/calendar" className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+            Calendar
+          </Link>
+          <Link href="/travel/create" className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Request
+          </Link>
+        </div>
       </div>
+
+      {dash && !view && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="travel-traveller-dashboard">
+          <StatCard label="Drafts" value={dash.drafts ?? 0} href="/travel?scope=mine" />
+          <StatCard label="Pending" value={dash.pending_approvals ?? 0} href="/travel?scope=mine" />
+          <StatCard label="Upcoming" value={dash.upcoming ?? 0} href="/travel?view=upcoming" />
+          <StatCard label="Current trip" value={dash.current_trip ?? 0} href="/travel?view=away" />
+          <StatCard label="Retirement due" value={dash.retirement_due ?? 0} href="/travel/queues/retirement" />
+          <StatCard label="TOIL pending" value={dash.toil_pending ?? 0} href="/travel/toil" />
+          <StatCard label="Historical" value={dash.historical ?? 0} href="/travel?view=approved" />
+          <StatCard label="Docs pending" value={dash.documents_pending ?? 0} />
+        </div>
+      )}
 
       {isError && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
@@ -55,7 +120,6 @@ export default function TravelPage() {
         </div>
       )}
 
-      {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button
@@ -68,7 +132,6 @@ export default function TravelPage() {
         ))}
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className="card p-12 text-center">
           <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
@@ -76,64 +139,35 @@ export default function TravelPage() {
             <span className="text-sm">Loading…</span>
           </div>
         </div>
-      ) : requests.length > 0 ? (
+      ) : filtered.length > 0 ? (
         <div className="space-y-3">
-          {requests.map((req) => {
-            const s = statusConfig[req.status] ?? { label: req.status, cls: "badge-muted" };
+          {filtered.map((r) => {
+            const cfg = statusConfig[r.status] ?? { label: r.status, cls: "badge-muted" };
             return (
-              <Link
-                key={req.id}
-                href={`/travel/${req.id}`}
-                className="card block p-5 hover:border-primary/30 hover:shadow-elevated transition-all"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                      <span className="material-symbols-outlined text-primary text-[20px]">flight_takeoff</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500">{req.reference_number}</span>
-                        <span className={`badge ${s.cls}`}>{s.label}</span>
-                      </div>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{req.purpose}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">location_on</span>
-                          {destination(req)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                          {formatDateShort(req.departure_date)} → {formatDateShort(req.return_date)}
-                        </span>
-                      </div>
-                    </div>
+              <Link key={r.id} href={`/travel/${r.id}`} className="card p-4 flex items-center justify-between hover:border-primary/40 transition-colors">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-neutral-900 truncate">{r.purpose}</p>
+                    <span className={`badge ${cfg.cls}`}>{cfg.label}</span>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">Est. DSA</p>
-                    <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {req.currency} {req.estimated_dsa.toLocaleString()}
-                    </p>
-                  </div>
+                  <p className="text-sm text-neutral-500 mt-1 flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">place</span>
+                      {destination(r)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                      {formatDateShort(r.departure_date)} – {formatDateShort(r.return_date)}
+                    </span>
+                  </p>
                 </div>
+                <span className="material-symbols-outlined text-neutral-300">chevron_right</span>
               </Link>
             );
           })}
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">flight_takeoff</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No travel requests found</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-            {statusFilter === "All" ? "Create your first travel request to get started." : `No ${statusFilter.toLowerCase()} requests.`}
-          </p>
-          <Link href="/travel/create" className="btn-primary mt-5 inline-flex">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Travel Request
-          </Link>
-        </div>
+        <div className="card p-12 text-center text-neutral-400 text-sm">No travel requests found.</div>
       )}
     </div>
   );

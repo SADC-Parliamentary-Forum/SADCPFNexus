@@ -13,33 +13,63 @@ type Analytics = {
 
 export default function TravelReportsPage() {
   const [data, setData] = useState<Analytics | null>(null);
+  const [pack, setPack] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    travelApi.analyticsSummary()
-      .then((r) => setData(r.data.data))
+    Promise.all([
+      travelApi.analyticsSummary().then((r) => r.data.data),
+      travelApi.reportsPack().then((r) => r.data.data).catch(() => null),
+    ])
+      .then(([analytics, reports]) => {
+        setData(analytics);
+        setPack(reports);
+      })
       .catch(() => setError("Failed to load travel analytics."))
       .finally(() => setLoading(false));
   }, []);
+
+  const packCount = (key: string) => (Array.isArray(pack?.[key]) ? (pack?.[key] as unknown[]).length : 0);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Travel Reports &amp; Analytics</h1>
         <p className="text-sm text-neutral-500 mt-1">
-          Light aggregates by status, programme, and funding agency. Use Register export for row-level detail.
+          Aggregates plus PRD report pack slices (register, retirement, TOIL, visa, amendments).
         </p>
       </div>
 
       <ul className="flex flex-wrap gap-4 text-sm">
         <li><Link className="text-primary" href="/travel/register">Travel Register / export</Link></li>
         <li><Link className="text-primary" href="/travel/missions">Mission readiness</Link></li>
+        <li><Link className="text-primary" href="/travel/calendar">Travel calendar</Link></li>
         <li><Link className="text-primary" href="/reports">Institutional reports</Link></li>
       </ul>
 
       {loading && <p className="text-sm text-neutral-400">Loading analytics…</p>}
       {error && <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>}
+
+      {pack && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="travel-reports-pack">
+          {[
+            ["travel_register", "Register rows"],
+            ["upcoming_travel", "Upcoming"],
+            ["current_travellers", "Away now"],
+            ["outstanding_retirement", "Outstanding retirement"],
+            ["toil_candidates", "TOIL candidates"],
+            ["visa_status", "Visa watchlist"],
+            ["amendments", "Amendments"],
+            ["cost_by_destination", "Destinations"],
+          ].map(([key, label]) => (
+            <div key={key} className="card p-4">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-400">{label}</p>
+              <p className="text-2xl font-semibold mt-1">{packCount(key)}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {data && (
         <>

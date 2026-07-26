@@ -68,6 +68,25 @@ class ApprovalFlowTest extends TestCase
         ]);
         $create->assertCreated();
         $travelId = $create->json('data.id');
+        $travel = TravelRequest::findOrFail($travelId);
+        $travel->attachments()->create([
+            'tenant_id' => $travel->tenant_id,
+            'uploaded_by' => $staff->id,
+            'original_filename' => 'invitation.pdf',
+            'storage_path' => "travel/{$travel->id}/invitation.pdf",
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 100,
+            'document_type' => 'invitation',
+        ]);
+        $travel->attachments()->create([
+            'tenant_id' => $travel->tenant_id,
+            'uploaded_by' => $staff->id,
+            'original_filename' => 'agenda.pdf',
+            'storage_path' => "travel/{$travel->id}/agenda.pdf",
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 100,
+            'document_type' => 'agenda',
+        ]);
 
         $submit = $staffHttp->postJson("/api/v1/travel/requests/{$travelId}/submit");
         $submit->assertOk()->assertJsonPath('data.status', 'submitted');

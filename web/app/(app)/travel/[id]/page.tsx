@@ -93,6 +93,19 @@ export default function TravelDetailPage() {
   const [procReason, setProcReason] = useState("");
   const [procRequired, setProcRequired] = useState(false);
   const [procSaving, setProcSaving] = useState(false);
+  const [hotelName, setHotelName] = useState("");
+  const [hotelCity, setHotelCity] = useState("");
+  const [hotelCheckIn, setHotelCheckIn] = useState("");
+  const [hotelCheckOut, setHotelCheckOut] = useState("");
+  const [hotelPaidBy, setHotelPaidBy] = useState("sadc_pf");
+  const [hotelConfirm, setHotelConfirm] = useState("");
+  const [hotelSaving, setHotelSaving] = useState(false);
+  const [mileKm, setMileKm] = useState("");
+  const [mileRate, setMileRate] = useState("");
+  const [mileAirfare, setMileAirfare] = useState("");
+  const [mileReason, setMileReason] = useState("");
+  const [mileRoute, setMileRoute] = useState("");
+  const [mileSaving, setMileSaving] = useState(false);
 
   const syncPhase3Fields = (data: TravelRequest | null | undefined) => {
     if (!data) return;
@@ -573,8 +586,32 @@ export default function TravelDetailPage() {
                     try {
                       await travelApi.submit(request.id);
                       await refreshRequest();
-                    } catch { setError("Failed to submit."); }
-                    finally { setActionLoading(false); }
+                      showToast("Request submitted.");
+                    } catch (err: any) {
+                      const conflicts = err?.response?.data?.errors?.conflicts;
+                      if (Array.isArray(conflicts) && conflicts.length) {
+                        const note = window.prompt(
+                          `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge and submit, or Cancel.`,
+                          "Reviewed with supervisor"
+                        );
+                        if (note) {
+                          try {
+                            await travelApi.submit(request.id, {
+                              acknowledge_conflicts: true,
+                              conflict_resolution_note: note,
+                            });
+                            await refreshRequest();
+                            showToast("Submitted with conflict acknowledgement.");
+                          } catch {
+                            setError("Failed to submit after acknowledging conflicts.");
+                          }
+                        } else {
+                          setError(conflicts.join(" "));
+                        }
+                      } else {
+                        setError(err?.response?.data?.message || "Failed to submit.");
+                      }
+                    } finally { setActionLoading(false); }
                   }}
                   disabled={actionLoading}
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
@@ -1052,6 +1089,157 @@ export default function TravelDetailPage() {
             {healthSaving ? "Saving…" : "Save health pack"}
           </button>
         </div>
+
+      {/* Accommodation + mileage + travel pack */}
+      <div className="card p-5" data-testid="travel-accommodation-panel">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="hotel" color="text-indigo-700" bg="bg-indigo-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Accommodation records</h3>
+        </div>
+        {(request as any).accommodations?.length > 0 && (
+          <ul className="mb-3 space-y-2 text-sm">
+            {(request as any).accommodations.map((a: any) => (
+              <li key={a.id} className="rounded border border-neutral-100 px-3 py-2">
+                <strong>{a.hotel_name}</strong>
+                {a.city ? ` · ${a.city}` : ""}
+                {a.confirmation_number ? ` · #${a.confirmation_number}` : ""}
+                <span className="block text-xs text-neutral-500">
+                  {a.check_in || "?"} → {a.check_out || "?"} · paid by {a.paid_by || "n/a"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <label className="text-xs text-neutral-600">Hotel
+            <input className="form-input mt-1 w-full text-sm" value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">City
+            <input className="form-input mt-1 w-full text-sm" value={hotelCity} onChange={(e) => setHotelCity(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Check-in
+            <input type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckIn} onChange={(e) => setHotelCheckIn(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Check-out
+            <input type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckOut} onChange={(e) => setHotelCheckOut(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Paid by
+            <select className="form-input mt-1 w-full text-sm" value={hotelPaidBy} onChange={(e) => setHotelPaidBy(e.target.value)}>
+              <option value="sadc_pf">SADC PF</option>
+              <option value="host">Host</option>
+              <option value="donor">Donor</option>
+              <option value="self">Self</option>
+            </select>
+          </label>
+          <label className="text-xs text-neutral-600">Confirmation #
+            <input className="form-input mt-1 w-full text-sm" value={hotelConfirm} onChange={(e) => setHotelConfirm(e.target.value)} />
+          </label>
+        </div>
+        <button
+          type="button"
+          disabled={hotelSaving || !hotelName.trim()}
+          className="btn-secondary py-2 px-4 text-xs"
+          data-testid="travel-save-accommodation"
+          onClick={async () => {
+            if (!request) return;
+            setHotelSaving(true);
+            try {
+              await travelApi.addAccommodation(request.id, {
+                hotel_name: hotelName,
+                city: hotelCity || undefined,
+                check_in: hotelCheckIn || undefined,
+                check_out: hotelCheckOut || undefined,
+                paid_by: hotelPaidBy,
+                confirmation_number: hotelConfirm || undefined,
+              });
+              setHotelName(""); setHotelCity(""); setHotelCheckIn(""); setHotelCheckOut(""); setHotelConfirm("");
+              await refreshRequest();
+              showToast("Accommodation recorded.");
+            } catch {
+              setError("Failed to save accommodation.");
+            } finally {
+              setHotelSaving(false);
+            }
+          }}
+        >
+          {hotelSaving ? "Saving…" : "Add accommodation"}
+        </button>
+      </div>
+
+      <div className="card p-5" data-testid="travel-mileage-panel">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="directions_car" color="text-slate-700" bg="bg-slate-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Private vehicle mileage comparison</h3>
+        </div>
+        {(request as any).mileage_reimbursement_estimate != null && (
+          <p className="text-xs text-neutral-600 mb-3">
+            Estimate {(request as any).mileage_reimbursement_estimate} · capped {(request as any).reimbursement_capped_amount}
+            {(request as any).mileage_exceeds_airfare ? " · exceeds equivalent airfare" : ""}
+          </p>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <label className="text-xs text-neutral-600">Estimated km
+            <input type="number" className="form-input mt-1 w-full text-sm" value={mileKm} onChange={(e) => setMileKm(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Rate / km
+            <input type="number" className="form-input mt-1 w-full text-sm" value={mileRate} onChange={(e) => setMileRate(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Equivalent airfare
+            <input type="number" className="form-input mt-1 w-full text-sm" value={mileAirfare} onChange={(e) => setMileAirfare(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">Route
+            <input className="form-input mt-1 w-full text-sm" value={mileRoute} onChange={(e) => setMileRoute(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600 sm:col-span-2">Reason PF vehicle not used
+            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={mileReason} onChange={(e) => setMileReason(e.target.value)} />
+          </label>
+        </div>
+        <button
+          type="button"
+          disabled={mileSaving || !mileKm || !mileRate}
+          className="btn-secondary py-2 px-4 text-xs"
+          data-testid="travel-save-mileage"
+          onClick={async () => {
+            if (!request) return;
+            setMileSaving(true);
+            try {
+              await travelApi.updateVehicleMileage(request.id, {
+                estimated_kilometres: Number(mileKm),
+                mileage_rate_per_km: Number(mileRate),
+                equivalent_airfare: mileAirfare ? Number(mileAirfare) : undefined,
+                private_vehicle_reason: mileReason || undefined,
+                private_vehicle_route: mileRoute || undefined,
+              });
+              await refreshRequest();
+              showToast("Mileage comparison saved.");
+            } catch {
+              setError("Failed to save mileage comparison.");
+            } finally {
+              setMileSaving(false);
+            }
+          }}
+        >
+          {mileSaving ? "Saving…" : "Save mileage comparison"}
+        </button>
+      </div>
+
+      {request.status === "approved" && request.booking_committed_at && (
+        <div className="card p-5" data-testid="travel-pack-panel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Traveller travel pack</h3>
+              <p className="text-xs text-neutral-500 mt-1">ZIP with requisition PDF, itinerary summary, accommodations, and attachments.</p>
+            </div>
+            <a
+              href={travelApi.travelPackUrl(request.id)}
+              className="btn-primary py-2 px-4 text-xs"
+              data-testid="travel-download-pack"
+            >
+              Download pack
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Procurement soft link */}
       <div className="card p-5" data-testid="travel-procurement-link-panel">

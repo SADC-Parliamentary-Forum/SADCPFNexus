@@ -61,6 +61,14 @@ class LeaveService
 
         $hasLil = ($data['leave_type'] === 'lil');
 
+        $conflicts = app(\App\Modules\Travel\Services\TravelConflictService::class)
+            ->detectForLeave($user, $data['start_date'], $data['end_date']);
+        if (! empty($conflicts) && empty($data['acknowledge_conflicts'])) {
+            throw ValidationException::withMessages([
+                'conflicts' => array_map(fn ($c) => $c['message'], $conflicts),
+            ]);
+        }
+
         $leave = LeaveRequest::create([
             'tenant_id'          => $user->tenant_id,
             'requester_id'       => $user->id,

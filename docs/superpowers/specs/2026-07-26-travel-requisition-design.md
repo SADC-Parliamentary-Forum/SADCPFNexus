@@ -1,10 +1,10 @@
 # Travel Requisition / Official Travel Management — Design
 
 **Date:** 2026-07-26  
-**Status:** Locked 2026-07-26 — user Proceed (recommended defaults)  
+**Status:** Locked 2026-07-26 — user Proceed (recommended defaults); **PRD closeout 2026-07-26** (Phases 1–3 + closeout gaps)  
 **PRD:** Full Updated Product Requirements Document (user-supplied, §§1–94, 2026-07-26)  
 **System:** SADC PF Nexus  
-**Recommended delivery:** **Scope B** — PRD §92 Phase 1 mandatory pack; **extend** existing Travel module (do not rewrite)
+**Recommended delivery:** **Scope B** — PRD §92 Phase 1 mandatory pack; **extend** existing Travel module (do not rewrite). Phase 2/3 practical slices + 2026-07-26 closeout shipped — see `2026-07-26-travel-prd-closeout-design.md`.
 
 **Approval:** User proceeded without overrides → all recommended defaults locked. Do **not** touch Salary Advance or Procurement implementation except documented integration points (PIF → Travel; Imprest link).
 

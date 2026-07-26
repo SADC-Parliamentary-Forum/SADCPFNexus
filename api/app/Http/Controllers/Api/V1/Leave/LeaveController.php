@@ -115,6 +115,8 @@ class LeaveController extends Controller
             'lil_linkings.*.accrual_date'        => ['required_with:lil_linkings', 'date'],
             'lil_linkings.*.approved_by_name'    => ['nullable', 'string'],
             'prepared_on_behalf_of'              => ['nullable', 'integer', 'exists:users,id'],
+            'acknowledge_conflicts'              => ['nullable', 'boolean'],
+            'conflict_resolution_note'           => ['nullable', 'string', 'max:2000'],
         ]);
 
         $actor       = $request->user();

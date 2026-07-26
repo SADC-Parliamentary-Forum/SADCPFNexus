@@ -34,6 +34,10 @@ class TravelRequest extends Model
         'health_prophylaxis_required', 'health_prophylaxis_status',
         'health_estimated_cost', 'health_notes', 'health_cleared_at',
         'procurement_request_id', 'procurement_link_reason', 'procurement_link_required',
+        'private_vehicle_reason', 'private_vehicle_route', 'estimated_kilometres',
+        'mileage_rate_per_km', 'equivalent_airfare', 'mileage_reimbursement_estimate',
+        'reimbursement_capped_amount', 'mileage_exceeds_airfare',
+        'conflict_resolution_note', 'conflicts_acknowledged_at',
     ];
 
     protected $casts = [
@@ -66,6 +70,13 @@ class TravelRequest extends Model
         'terminal_comms_total'           => 'decimal:2',
         'estimated_dsa'                  => 'decimal:2',
         'actual_dsa'                     => 'decimal:2',
+        'estimated_kilometres'           => 'decimal:2',
+        'mileage_rate_per_km'            => 'decimal:4',
+        'equivalent_airfare'             => 'decimal:2',
+        'mileage_reimbursement_estimate' => 'decimal:2',
+        'reimbursement_capped_amount'    => 'decimal:2',
+        'mileage_exceeds_airfare'        => 'boolean',
+        'conflicts_acknowledged_at'      => 'datetime',
     ];
 
     public function requester()
@@ -81,6 +92,11 @@ class TravelRequest extends Model
     public function itineraries()
     {
         return $this->hasMany(TravelItinerary::class);
+    }
+
+    public function accommodations()
+    {
+        return $this->hasMany(TravelAccommodation::class);
     }
 
     public function fundingLines()

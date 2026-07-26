@@ -23,6 +23,7 @@ class TravelService
         protected NotificationService $notificationService,
         protected DelegationService $delegationService,
         protected TravelToilService $toilService,
+        protected TravelConflictService $conflictService,
     ) {}
 
     public function list(array $filters, User $user): LengthAwarePaginator
@@ -147,6 +148,12 @@ class TravelService
 
         $this->syncFundingLines($travel, $data['funding_details'] ?? $data['funding_lines'] ?? []);
 
+        if (($data['vehicle_type'] ?? null) === 'private'
+            || isset($data['estimated_kilometres'])
+            || isset($data['mileage_rate_per_km'])) {
+            $this->updateVehicleMileage($travel, $data, $user);
+        }
+
         AuditLog::record('travel.created', [
             'auditable_type' => TravelRequest::class,
             'auditable_id'   => $travel->id,
@@ -229,11 +236,21 @@ class TravelService
             if (empty($line['item']) && empty($line['description'])) {
                 continue;
             }
+            $forum = (float) ($line['forum_amount'] ?? $line['sadc_amount'] ?? 0);
+            $host = (float) ($line['host_amount'] ?? 0);
+            $donor = (float) ($line['donor_amount'] ?? 0);
+            $self = (float) ($line['self_amount'] ?? 0);
             TravelFundingLine::create([
                 'travel_request_id' => $travel->id,
                 'item'              => $line['item'] ?? $line['description'] ?? 'Funding',
-                'forum_amount'      => $line['forum_amount'] ?? $line['sadc_amount'] ?? 0,
-                'host_amount'       => $line['host_amount'] ?? 0,
+                'forum_amount'      => $forum,
+                'host_amount'       => $host,
+                'donor_amount'      => $donor,
+                'self_amount'       => $self,
+                'payor_sadc_pf'     => (bool) ($line['payor_sadc_pf'] ?? $forum > 0),
+                'payor_host'        => (bool) ($line['payor_host'] ?? $host > 0),
+                'payor_donor'       => (bool) ($line['payor_donor'] ?? $donor > 0),
+                'payor_self'        => (bool) ($line['payor_self'] ?? $self > 0),
                 'funding_agency'    => $line['funding_agency'] ?? $line['agency'] ?? null,
                 'project'           => $line['project'] ?? null,
                 'budget_line'       => $line['budget_line'] ?? null,
@@ -261,7 +278,7 @@ class TravelService
         }
     }
 
-    public function submit(TravelRequest $travel, User $user): TravelRequest
+    public function submit(TravelRequest $travel, User $user, array $options = []): TravelRequest
     {
         $canSubmit = (int) $travel->requester_id === (int) $user->id
             || (int) $travel->prepared_by === (int) $user->id
@@ -275,7 +292,19 @@ class TravelService
 
         $this->assertAttachmentsForStage($travel, 'submit');
 
-        $travel->update(['status' => 'submitted', 'submitted_at' => now()]);
+        $conflicts = $this->conflictService->detectForTravel($travel);
+        if (! empty($conflicts) && empty($options['acknowledge_conflicts'])) {
+            throw ValidationException::withMessages([
+                'conflicts' => array_map(fn ($c) => $c['message'], $conflicts),
+            ]);
+        }
+
+        $payload = ['status' => 'submitted', 'submitted_at' => now()];
+        if (! empty($options['acknowledge_conflicts'])) {
+            $payload['conflicts_acknowledged_at'] = now();
+            $payload['conflict_resolution_note'] = $options['conflict_resolution_note'] ?? null;
+        }
+        $travel->update($payload);
 
         $this->workflowService->initiate($travel, 'travel', $user);
 
@@ -670,5 +699,88 @@ class TravelService
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.travel_authorisation_parts_ad', [
             'travel' => $travel,
         ]);
+    }
+
+    public function addAccommodation(TravelRequest $travel, array $data, User $user): \App\Models\TravelAccommodation
+    {
+        abort_unless(
+            $user->can('travel.admin-review')
+                || $user->can('travel.admin')
+                || $user->isSystemAdmin()
+                || $user->hasAnyRole(['Administration Officer', 'System Admin', 'Finance Controller'])
+                || (int) $travel->requester_id === (int) $user->id,
+            403
+        );
+
+        $accommodation = $travel->accommodations()->create([
+            'hotel_name' => $data['hotel_name'],
+            'country' => $data['country'] ?? null,
+            'city' => $data['city'] ?? null,
+            'check_in' => $data['check_in'] ?? null,
+            'check_out' => $data['check_out'] ?? null,
+            'room_type' => $data['room_type'] ?? null,
+            'rate' => $data['rate'] ?? null,
+            'currency' => $data['currency'] ?? $travel->currency,
+            'paid_by' => $data['paid_by'] ?? null,
+            'confirmation_number' => $data['confirmation_number'] ?? null,
+            'cancellation_deadline' => $data['cancellation_deadline'] ?? null,
+            'contact' => $data['contact'] ?? null,
+            'attachment_id' => $data['attachment_id'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+
+        AuditLog::record('travel.accommodation_added', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id' => $travel->id,
+            'new_values' => ['hotel' => $accommodation->hotel_name, 'confirmation' => $accommodation->confirmation_number],
+            'tags' => 'travel',
+        ]);
+
+        return $accommodation;
+    }
+
+    public function updateVehicleMileage(TravelRequest $travel, array $data, User $user): TravelRequest
+    {
+        abort_unless(
+            $user->can('travel.admin-review')
+                || $user->can('travel.admin')
+                || $user->isSystemAdmin()
+                || $user->hasAnyRole(['Administration Officer', 'System Admin', 'Finance Controller', 'HOD'])
+                || (int) $travel->requester_id === (int) $user->id,
+            403
+        );
+
+        $km = (float) ($data['estimated_kilometres'] ?? 0);
+        $rate = (float) ($data['mileage_rate_per_km'] ?? 0);
+        $airfare = isset($data['equivalent_airfare']) ? (float) $data['equivalent_airfare'] : null;
+        $mileageEstimate = round($km * $rate, 2);
+        $capped = $airfare === null ? $mileageEstimate : min($mileageEstimate, $airfare);
+        $exceeds = $airfare !== null && $mileageEstimate > $airfare;
+
+        $travel->update([
+            'private_vehicle_reason' => $data['private_vehicle_reason'] ?? $travel->private_vehicle_reason,
+            'private_vehicle_route' => $data['private_vehicle_route'] ?? $travel->private_vehicle_route,
+            'estimated_kilometres' => $km,
+            'mileage_rate_per_km' => $rate,
+            'equivalent_airfare' => $airfare,
+            'mileage_reimbursement_estimate' => $mileageEstimate,
+            'reimbursement_capped_amount' => $capped,
+            'mileage_exceeds_airfare' => $exceeds,
+            'vehicle_type' => $travel->vehicle_type ?: 'private',
+        ]);
+
+        AuditLog::record('travel.vehicle_mileage_updated', [
+            'auditable_type' => TravelRequest::class,
+            'auditable_id' => $travel->id,
+            'new_values' => [
+                'km' => $km,
+                'mileage_estimate' => $mileageEstimate,
+                'capped' => $capped,
+                'exceeds_airfare' => $exceeds,
+            ],
+            'tags' => 'travel',
+        ]);
+
+        return $travel->fresh();
     }
 }

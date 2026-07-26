@@ -1039,8 +1039,8 @@ export const travelApi = {
   update: (id: number, data: Partial<TravelRequest>) =>
     api.put<{ data: TravelRequest; message: string }>(`/travel/requests/${id}`, data),
   delete: (id: number) => api.delete(`/travel/requests/${id}`),
-  submit: (id: number) =>
-    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/submit`),
+  submit: (id: number, data?: { acknowledge_conflicts?: boolean; conflict_resolution_note?: string }) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/submit`, data ?? {}),
   approve: (id: number, comment?: string) =>
     api.post<{ data: TravelRequest; message: string; notified_approvers: string[] }>(`/travel/requests/${id}/approve`, comment ? { comment } : {}),
   reject: (id: number, reason: string) =>
@@ -1055,6 +1055,18 @@ export const travelApi = {
     api.get<{ data: TravelRequest }>(`/travel/requests/${id}/certificate`),
   pdfUrl: (id: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/requests/${id}/pdf`,
+  travelPackUrl: (id: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/requests/${id}/travel-pack`,
+  dashboardTraveller: () => api.get<{ data: Record<string, number> }>("/travel/dashboards/traveller"),
+  dashboardAdmin: () => api.get<{ data: Record<string, number> }>("/travel/dashboards/admin"),
+  dashboardFinance: () => api.get<{ data: Record<string, unknown> }>("/travel/dashboards/finance"),
+  calendar: (params?: { from?: string; to?: string }) =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/travel/calendar", { params }),
+  reportsPack: () => api.get<{ data: Record<string, unknown> }>("/travel/reports/pack"),
+  addAccommodation: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: unknown; message: string }>(`/travel/requests/${id}/accommodations`, data),
+  updateVehicleMileage: (id: number, data: Record<string, unknown>) =>
+    api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/vehicle-mileage`, data),
   // Attachments
   listAttachments: (id: number) =>
     api.get<{ data: ModuleAttachment[] }>(`/travel/requests/${id}/attachments`),

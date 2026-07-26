@@ -273,6 +273,11 @@ Route::prefix('v1')->group(function () {
             Route::get('visa-reminders', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'visaReminders']);
             Route::get('fx-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'fxRatesIndex']);
             Route::post('fx-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'fxRatesStore']);
+            Route::get('dashboards/traveller', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dashboardTraveller']);
+            Route::get('dashboards/admin', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dashboardAdmin']);
+            Route::get('dashboards/finance', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dashboardFinance']);
+            Route::get('calendar', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'calendar']);
+            Route::get('reports/pack', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reportsPack']);
 
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
@@ -285,6 +290,9 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
             Route::get('requests/{travelRequest}/certificate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'certificate']);
             Route::get('requests/{travelRequest}/pdf', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'pdf']);
+            Route::get('requests/{travelRequest}/travel-pack', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'travelPack']);
+            Route::post('requests/{travelRequest}/accommodations', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'storeAccommodation']);
+            Route::patch('requests/{travelRequest}/vehicle-mileage', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateVehicleMileage']);
             Route::patch('requests/{travelRequest}/visa', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateVisa']);
             Route::patch('requests/{travelRequest}/health', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateHealth']);
             Route::patch('requests/{travelRequest}/procurement-link', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateProcurementLink']);
