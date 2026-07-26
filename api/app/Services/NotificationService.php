@@ -155,6 +155,10 @@ class NotificationService
                 'subject' => 'Potential TOIL from travel',
                 'body'    => "Dear {{name}},\n\nTOIL candidates were generated for travel {{reference}}. Travel date is not automatic TOIL — OT authorisation and HR validation are required.\n\nRegards,\nSADC-PF HR",
             ],
+            'travel.visa_reminder' => [
+                'subject' => 'Travel visa reminder — {{reference}}',
+                'body'    => "Dear {{name}},\n\nVisa follow-up is required for travel {{reference}} to {{destination}}.\n\nStatus: {{visa_status}}\nAppointment: {{appointment_date}}\nExpiry: {{expiry_date}}\nReason: {{reason}}\n\nPlease update visa progress in Nexus.\n\nRegards,\nSADC-PF Administration",
+            ],
 
             // Leave
             'leave.submitted' => [

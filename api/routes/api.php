@@ -267,6 +267,10 @@ Route::prefix('v1')->group(function () {
             Route::post('toil/{candidate}/hr-validate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilHrValidate']);
             Route::post('toil/{candidate}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilReject']);
             Route::post('toil/{candidate}/extend', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilExtend']);
+            Route::get('missions', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'missionsIndex']);
+            Route::get('missions/{mission}', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'missionsShow']);
+            Route::get('analytics/summary', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'analyticsSummary']);
+            Route::get('visa-reminders', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'visaReminders']);
 
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
@@ -278,6 +282,8 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/withdraw', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'withdraw']);
             Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
             Route::get('requests/{travelRequest}/certificate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'certificate']);
+            Route::get('requests/{travelRequest}/pdf', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'pdf']);
+            Route::patch('requests/{travelRequest}/visa', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'updateVisa']);
             Route::post('requests/{travelRequest}/dsa', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'saveDsa']);
             Route::post('requests/{travelRequest}/confirm-funds', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'confirmFunds']);
             Route::post('requests/{travelRequest}/mark-booked', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'markBooked']);

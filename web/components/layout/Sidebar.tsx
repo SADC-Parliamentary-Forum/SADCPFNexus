@@ -58,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Administration Queue", href: "/travel/queues/admin", icon: "admin_panel_settings" },
       { label: "Finance Review Queue", href: "/travel/queues/finance", icon: "account_balance" },
       { label: "Director Finance Queue", href: "/travel/queues/director-finance", icon: "verified" },
+      { label: "Mission Readiness", href: "/travel/missions", icon: "groups" },
       { label: "Travel Retirement", href: "/travel/queues/retirement", icon: "assignment_turned_in" },
       { label: "Potential Leave-in-Lieu", href: "/travel/toil", icon: "event_available" },
       { label: "Travel Register", href: "/travel/register", icon: "menu_book" },

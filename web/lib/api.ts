@@ -879,6 +879,8 @@ export interface TravelRequest {
   actual_dsa?: number | null;
   finance_dsa_total?: number | null;
   finance_status?: string | null;
+  meal_deduction_total?: number | null;
+  terminal_comms_total?: number | null;
   retirement_status?: string | null;
   retirement_due_at?: string | null;
   cabin_class?: string | null;
@@ -901,9 +903,57 @@ export interface TravelRequest {
   approver?: User;
   itineraries?: TravelItinerary[];
   funding_lines?: { id: number; item: string; forum_amount: number; host_amount: number }[];
+  dsa_lines?: TravelDsaLine[];
   amendments?: TravelAmendment[];
   returned_at?: string | null;
   director_finance_confirmed_at?: string | null;
+  visa_required?: boolean;
+  visa_status?: string | null;
+  visa_expiry_date?: string | null;
+  visa_appointment_date?: string | null;
+  visa_notes?: string | null;
+  mission?: { id: number; title: string } | null;
+}
+
+export interface TravelDsaLine {
+  id?: number;
+  date: string;
+  destination?: string | null;
+  rate_type: number;
+  daily_rate: number;
+  meal_deduction: number;
+  adjustments: number;
+  daily_payable?: number;
+  is_personal?: boolean;
+  notes?: string | null;
+}
+
+export interface TravelMission {
+  id: number;
+  title: string;
+  destination_country?: string | null;
+  destination_city?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  programme_id?: number | null;
+  requests_count?: number;
+  summary?: { travellers: number; ready: number; pending: number };
+  travellers?: TravelMissionTraveller[];
+}
+
+export interface TravelMissionTraveller {
+  travel_request_id: number;
+  reference_number: string;
+  traveller?: string | null;
+  status: string;
+  ticket: boolean;
+  visa: boolean;
+  hotel: boolean;
+  dsa: boolean;
+  ready: boolean;
+  visa_status?: string | null;
+  finance_status?: string | null;
+  finance_dsa_total?: number | null;
 }
 
 export interface TravelItinerary {
@@ -990,6 +1040,8 @@ export const travelApi = {
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/resubmit`),
   certificate: (id: number) =>
     api.get<{ data: TravelRequest }>(`/travel/requests/${id}/certificate`),
+  pdfUrl: (id: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/requests/${id}/pdf`,
   // Attachments
   listAttachments: (id: number) =>
     api.get<{ data: ModuleAttachment[] }>(`/travel/requests/${id}/attachments`),
@@ -1017,6 +1069,8 @@ export const travelApi = {
     api.post<{ data: TravelAmendment; message: string }>(`/travel/requests/${id}/amendments`, data),
   approveAmendment: (amendmentId: number) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/amendments/${amendmentId}/approve`),
+  updateVisa: (id: number, data: Record<string, unknown>) =>
+    api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/visa`, data),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<{ data: Record<string, unknown>[] }>("/travel/register/export", { params }),
   listDsaRates: (params?: Record<string, string | number>) =>
@@ -1031,6 +1085,19 @@ export const travelApi = {
   toilReject: (id: number, reason: string) => api.post(`/travel/toil/${id}/reject`, { reason }),
   toilExtend: (id: number, expires_at?: string) =>
     api.post(`/travel/toil/${id}/extend`, expires_at ? { expires_at } : {}),
+  listMissions: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<TravelMission>>("/travel/missions", { params }),
+  getMission: (id: number) =>
+    api.get<{ data: TravelMission }>(`/travel/missions/${id}`),
+  analyticsSummary: () =>
+    api.get<{ data: {
+      by_status: Record<string, number>;
+      cost_by_programme: { programme_id: number; programme_title?: string; programme_reference?: string; travel_count: number; dsa_total: number }[];
+      cost_by_funding_agency: { funding_agency: string; amount_total: number; travel_count: number }[];
+      totals: { requests: number; finance_dsa_total: number; estimated_dsa_total: number };
+    } }>("/travel/analytics/summary"),
+  visaReminders: () =>
+    api.get<{ data: TravelRequest[] }>("/travel/visa-reminders"),
 };
 
 // ─── Imprest ─────────────────────────────────────────────────────────────────

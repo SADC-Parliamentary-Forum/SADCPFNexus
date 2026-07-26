@@ -27,6 +27,8 @@ class TravelRequest extends Model
         'returned_at', 'retirement_status', 'retirement_due_at',
         'official_personal_days', 'finance_dsa_total', 'meal_deduction_total',
         'terminal_comms_total', 'amendment_of_id', 'original_snapshot',
+        'visa_required', 'visa_status', 'visa_expiry_date', 'visa_appointment_date',
+        'visa_notes', 'visa_last_reminded_at',
     ];
 
     protected $casts = [
@@ -39,9 +41,13 @@ class TravelRequest extends Model
         'booking_committed_at'           => 'datetime',
         'returned_at'                    => 'datetime',
         'retirement_due_at'              => 'date',
+        'visa_expiry_date'               => 'date',
+        'visa_appointment_date'          => 'date',
+        'visa_last_reminded_at'          => 'datetime',
         'route_is_most_economical'       => 'boolean',
         'driver_required'                => 'boolean',
         'is_emergency'                   => 'boolean',
+        'visa_required'                  => 'boolean',
         'official_personal_days'         => 'array',
         'original_snapshot'              => 'array',
         'personal_incremental_cost'      => 'decimal:2',

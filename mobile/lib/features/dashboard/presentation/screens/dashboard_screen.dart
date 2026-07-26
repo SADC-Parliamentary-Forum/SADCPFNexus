@@ -392,6 +392,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         if (canAccessFeature(_permissions, _roles, '/requests/travel/new'))
                           _ActionButton(icon: Icons.flight_takeoff, label: 'Travel',
                             onTap: () => context.push('/requests/travel/new')),
+                        if (canAccessFeature(_permissions, _roles, '/requests/travel/finance-queue')) ...[
+                          const SizedBox(width: 10),
+                          _ActionButton(icon: Icons.calculate_outlined, label: 'Travel DSA',
+                            onTap: () => context.push('/requests/travel/finance-queue')),
+                        ],
+                        if (canAccessFeature(_permissions, _roles, '/requests/travel/toil')) ...[
+                          const SizedBox(width: 10),
+                          _ActionButton(icon: Icons.more_time, label: 'TOIL',
+                            onTap: () => context.push('/requests/travel/toil')),
+                        ],
                         if (canAccessFeature(_permissions, _roles, '/requests')) ...[
                           const SizedBox(width: 10),
                           _ActionButton(icon: Icons.event_available, label: 'Leave',

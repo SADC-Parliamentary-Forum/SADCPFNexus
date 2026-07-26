@@ -34,6 +34,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
 use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Modules\Finance\Services\PayrollRecoveryAdapterFactory;
+use App\Modules\Travel\Contracts\AirlineItineraryParserInterface;
+use App\Modules\Travel\Contracts\FxRateFeedInterface;
+use App\Modules\Travel\Services\NullAirlineItineraryParser;
+use App\Modules\Travel\Services\NullFxRateFeed;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -49,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PayrollRecoveryAdapterInterface::class, function ($app) {
             return $app->make(PayrollRecoveryAdapterFactory::class)->make();
         });
+
+        // Travel Phase 2 stubs — no paid external airline/FX APIs.
+        $this->app->bind(AirlineItineraryParserInterface::class, NullAirlineItineraryParser::class);
+        $this->app->bind(FxRateFeedInterface::class, NullFxRateFeed::class);
     }
 
     /**

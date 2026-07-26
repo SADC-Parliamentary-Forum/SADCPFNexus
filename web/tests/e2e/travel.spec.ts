@@ -140,3 +140,23 @@ test.describe("Travel — detail page", () => {
     }
   });
 });
+
+test.describe("Travel Phase 2 — missions & reports smoke", () => {
+  test("missions page loads", async ({ page }) => {
+    await page.goto("/travel/missions");
+    await page.waitForURL("**/travel/missions", { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: /Mission Readiness/i })).toBeVisible();
+  });
+
+  test("reports analytics page loads", async ({ page }) => {
+    await page.goto("/travel/reports");
+    await page.waitForURL("**/travel/reports", { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: /Travel Reports/i })).toBeVisible();
+  });
+
+  test("finance queue page loads", async ({ page }) => {
+    await page.goto("/travel/queues/finance");
+    await page.waitForURL("**/travel/queues/finance", { timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: /Finance Review Queue/i })).toBeVisible();
+  });
+});

@@ -653,4 +653,22 @@ class TravelService
 
         return $rows;
     }
+
+    public function authorisationPdf(TravelRequest $travel)
+    {
+        $travel->load([
+            'requester.department',
+            'approver',
+            'itineraries',
+            'fundingLines',
+            'dsaLines',
+            'directorFinanceConfirmer',
+            'approvalRequest.history.user',
+            'approvalRequest.workflow.steps',
+        ]);
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.travel_authorisation_parts_ad', [
+            'travel' => $travel,
+        ]);
+    }
 }

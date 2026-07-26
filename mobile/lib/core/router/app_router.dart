@@ -16,6 +16,8 @@ import '../../shared/widgets/bottom_nav_bar.dart';
 // Travel Requests
 import '../../features/requests/presentation/screens/travel_request_form_screen.dart';
 import '../../features/requests/presentation/screens/travel_request_detail_screen.dart';
+import '../../features/requests/presentation/screens/travel_finance_queue_screen.dart';
+import '../../features/requests/presentation/screens/travel_toil_queue_screen.dart';
 import '../../features/requests/presentation/screens/leave_request_form_screen.dart';
 import '../../features/requests/presentation/screens/leave_request_detail_screen.dart';
 import '../../features/requests/presentation/screens/leave_balance_screen.dart';
@@ -214,6 +216,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => TravelRequestDetailScreen(
                   requestId: state.uri.queryParameters['id'],
                 ),
+              ),
+              GoRoute(
+                path: 'travel/finance-queue',
+                name: 'travel-finance-queue',
+                builder: (context, state) => const TravelFinanceQueueScreen(),
+              ),
+              GoRoute(
+                path: 'travel/toil',
+                name: 'travel-toil',
+                builder: (context, state) => const TravelToilQueueScreen(),
               ),
               GoRoute(
                 path: 'leave/new',

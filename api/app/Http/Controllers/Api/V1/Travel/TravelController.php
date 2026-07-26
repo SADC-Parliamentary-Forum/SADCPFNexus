@@ -3,16 +3,21 @@ namespace App\Http\Controllers\Api\V1\Travel;
 
 use App\Http\Controllers\Controller;
 use App\Models\TravelAmendment;
+use App\Models\TravelMission;
 use App\Models\TravelRequest;
 use App\Models\TravelToilCandidate;
+use App\Modules\Travel\Services\TravelAnalyticsService;
 use App\Modules\Travel\Services\TravelDsaService;
+use App\Modules\Travel\Services\TravelMissionService;
 use App\Modules\Travel\Services\TravelService;
 use App\Modules\Travel\Services\TravelToilService;
+use App\Modules\Travel\Services\TravelVisaReminderService;
 use App\Services\WorkflowService;
 use App\Support\AuthorizesCertificates;
 use App\Support\AuthorizesRequestRecords;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class TravelController extends Controller
 {
@@ -24,6 +29,9 @@ class TravelController extends Controller
         private readonly WorkflowService $workflowService,
         private readonly TravelDsaService $dsaService,
         private readonly TravelToilService $toilService,
+        private readonly TravelMissionService $missionService,
+        private readonly TravelAnalyticsService $analyticsService,
+        private readonly TravelVisaReminderService $visaReminderService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -442,5 +450,82 @@ class TravelController extends Controller
             'message' => 'TOIL expiry extended by SG.',
             'data' => $this->toilService->extendExpiry($candidate, $request->user(), $data['expires_at'] ?? null),
         ]);
+    }
+
+    public function missionsIndex(Request $request): JsonResponse
+    {
+        return response()->json($this->missionService->list($request->user(), $request->only(['search', 'per_page'])));
+    }
+
+    public function missionsShow(Request $request, TravelMission $mission): JsonResponse
+    {
+        $payload = $this->missionService->showWithReadiness($mission, $request->user());
+
+        return response()->json([
+            'data' => array_merge($payload['mission']->toArray(), [
+                'summary' => $payload['summary'],
+                'travellers' => $payload['travellers'],
+            ]),
+        ]);
+    }
+
+    public function analyticsSummary(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.export')
+                || $request->user()->can('travel.view')
+                || $request->user()->can('travel.finance-review')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Finance Controller', 'Secretary General', 'Director', 'System Admin']),
+            403
+        );
+
+        return response()->json(['data' => $this->analyticsService->summary($request->user())]);
+    }
+
+    public function updateVisa(Request $request, TravelRequest $travelRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'visa_required' => ['nullable', 'boolean'],
+            'visa_status' => ['nullable', 'string', 'in:not_required,pending,appointment_scheduled,submitted,approved,rejected,expired'],
+            'visa_expiry_date' => ['nullable', 'date'],
+            'visa_appointment_date' => ['nullable', 'date'],
+            'visa_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $travel = $this->visaReminderService->updateVisa($travelRequest, $data, $request->user());
+
+        return response()->json(['message' => 'Visa details updated.', 'data' => $travel]);
+    }
+
+    public function visaReminders(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('travel.admin-review')
+                || $request->user()->can('travel.admin')
+                || $request->user()->can('travel.finance-review')
+                || $request->user()->isSystemAdmin()
+                || $request->user()->hasAnyRole(['Administration Officer', 'Finance Controller', 'HR Manager', 'System Admin']),
+            403
+        );
+
+        return response()->json(['data' => $this->visaReminderService->watchlist($request->user())->values()]);
+    }
+
+    public function pdf(Request $request, TravelRequest $travelRequest): Response
+    {
+        $this->authorizeCertificateView($request->user(), $travelRequest, [
+            'Finance Controller',
+            'Secretary General',
+            'System Admin',
+            'System Administrator',
+            'Director',
+            'Administration Officer',
+            'HOD',
+        ]);
+
+        $pdf = $this->travelService->authorisationPdf($travelRequest);
+
+        return $pdf->download('TRAVEL-'.$travelRequest->reference_number.'.pdf');
     }
 }

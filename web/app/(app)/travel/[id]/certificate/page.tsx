@@ -64,6 +64,14 @@ export default function TravelCertificatePage() {
           <span className="text-neutral-600">Certificate</span>
         </nav>
         <PrintButton className="text-xs print:hidden" />
+        <a
+          href={travelApi.pdfUrl(id)}
+          className="btn-secondary text-xs print:hidden inline-flex items-center gap-1"
+          data-testid="travel-pdf-download"
+        >
+          <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          Download PDF (Parts A–D)
+        </a>
       </div>
 
       {/* Certificate */}
@@ -76,10 +84,10 @@ export default function TravelCertificatePage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-neutral-900">SADC Parliamentary Forum</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">Travel Authorisation Certificate</p>
+          <p className="text-sm text-neutral-500 mt-0.5">Travel Requisition / Authorisation Form (Parts A–D)</p>
           <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-3 py-1">
             <span className="material-symbols-outlined text-green-600 text-[14px]">verified</span>
-            <span className="text-xs font-semibold text-green-700">Fully Approved</span>
+            <span className="text-xs font-semibold text-green-700">Authorisation record</span>
           </div>
         </div>
 
@@ -89,11 +97,13 @@ export default function TravelCertificatePage() {
           <span>Generated: {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
         </div>
 
+        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part A — Traveller &amp; Mission</h2>
         {/* Requester */}
         <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4 mb-6">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-2">Requester</p>
           <p className="text-base font-bold text-neutral-900">{request.requester?.name ?? "—"}</p>
           <p className="text-sm text-neutral-500">{[request.requester?.job_title, request.requester?.employee_number].filter(Boolean).join(" · ")}</p>
+          <p className="text-sm text-neutral-600 mt-2">{request.purpose}</p>
         </div>
 
         {/* Trip Summary */}
@@ -120,6 +130,36 @@ export default function TravelCertificatePage() {
           </div>
         </div>
 
+        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part B — Itinerary</h2>
+        <div className="rounded-xl border border-neutral-100 p-4 mb-6 text-sm text-neutral-700">
+          {(request.itineraries?.length ?? 0) === 0 ? (
+            <p>{formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)} · {[request.destination_city, request.destination_country].filter(Boolean).join(", ")}</p>
+          ) : (
+            <ul className="space-y-1">
+              {request.itineraries!.map((leg) => (
+                <li key={leg.id}>{formatDateShort(leg.travel_date)} · {leg.from_location} → {leg.to_location} ({leg.transport_mode})</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part C — DSA Calculation</h2>
+        <div className="rounded-xl border border-neutral-100 p-4 mb-6 text-sm">
+          <p>Finance DSA total: <strong>{request.currency} {(request.finance_dsa_total ?? request.actual_dsa ?? request.estimated_dsa).toLocaleString()}</strong></p>
+          <p className="text-neutral-500 mt-1 capitalize">Status: {request.finance_status ?? "awaiting"}</p>
+          {(request.dsa_lines?.length ?? 0) > 0 && (
+            <ul className="mt-2 space-y-1 text-xs text-neutral-600">
+              {request.dsa_lines!.map((line, idx) => (
+                <li key={line.id ?? idx}>
+                  {String(line.date).slice(0, 10)} · Type {line.rate_type} · payable {line.daily_payable ?? line.daily_rate}
+                  {line.is_personal ? " (personal)" : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part D — Funding &amp; Authorisation</h2>
         {/* Approval Chain */}
         <div className="mb-6">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-3">Approval Chain</p>

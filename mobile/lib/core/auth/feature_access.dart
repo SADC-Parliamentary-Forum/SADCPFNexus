@@ -19,6 +19,8 @@ final _routeAccess = <String, List<String>>{
   '/approvals': ['travel.approve', 'leave.approve', 'imprest.approve', 'procurement.approve', 'finance.approve', 'governance.approve', 'hr.approve'],
   '/alerts': [],
   '/travel': ['travel.view'],
+  '/requests/travel/finance-queue': ['travel.finance-review', 'travel.view', 'finance.approve'],
+  '/requests/travel/toil': ['travel.review-toil', 'travel.approve', 'hr.view'],
   '/leave': ['leave.view'],
   '/finance': ['finance.view'],
   '/imprest': ['imprest.view'],

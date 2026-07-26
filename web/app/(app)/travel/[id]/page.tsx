@@ -69,6 +69,16 @@ export default function TravelDetailPage() {
   const [amendPurpose, setAmendPurpose] = useState("");
   const [amendReason, setAmendReason] = useState("");
   const [amendError, setAmendError] = useState<string | null>(null);
+  const [dsaRateType, setDsaRateType] = useState(1);
+  const [dsaTerminal, setDsaTerminal] = useState("");
+  const [dsaWarning, setDsaWarning] = useState<string | null>(null);
+  const [dsaSaving, setDsaSaving] = useState(false);
+  const [visaStatus, setVisaStatus] = useState("pending");
+  const [visaRequired, setVisaRequired] = useState(false);
+  const [visaExpiry, setVisaExpiry] = useState("");
+  const [visaAppointment, setVisaAppointment] = useState("");
+  const [visaNotes, setVisaNotes] = useState("");
+  const [visaSaving, setVisaSaving] = useState(false);
 
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
@@ -79,8 +89,16 @@ export default function TravelDetailPage() {
     travelApi.get(id)
       .then((res) => {
         const body = res.data as any;
-        setRequest(body.data ?? body);
+        const data = body.data ?? body;
+        setRequest(data);
         setWorkflowMeta(body.workflow ?? null);
+        setDsaRateType(data?.dsa_lines?.[0]?.rate_type ?? 1);
+        setDsaTerminal(data?.terminal_comms_total != null ? String(data.terminal_comms_total) : "");
+        setVisaRequired(Boolean(data?.visa_required));
+        setVisaStatus(data?.visa_status ?? "pending");
+        setVisaExpiry(data?.visa_expiry_date ? String(data.visa_expiry_date).slice(0, 10) : "");
+        setVisaAppointment(data?.visa_appointment_date ? String(data.visa_appointment_date).slice(0, 10) : "");
+        setVisaNotes(data?.visa_notes ?? "");
         return travelApi.listAttachments(id);
       })
       .then((res) => setAttachments(res.data.data))
@@ -91,8 +109,16 @@ export default function TravelDetailPage() {
   const refreshRequest = async () => {
     const res = await travelApi.get(id);
     const body = res.data as any;
-    setRequest(body.data ?? body);
+    const data = body.data ?? body;
+    setRequest(data);
     setWorkflowMeta(body.workflow ?? null);
+    setDsaRateType(data?.dsa_lines?.[0]?.rate_type ?? dsaRateType);
+    setDsaTerminal(data?.terminal_comms_total != null ? String(data.terminal_comms_total) : "");
+    setVisaRequired(Boolean(data?.visa_required));
+    setVisaStatus(data?.visa_status ?? "pending");
+    setVisaExpiry(data?.visa_expiry_date ? String(data.visa_expiry_date).slice(0, 10) : "");
+    setVisaAppointment(data?.visa_appointment_date ? String(data.visa_appointment_date).slice(0, 10) : "");
+    setVisaNotes(data?.visa_notes ?? "");
   };
 
   const showToast = (message: string) => {
@@ -256,6 +282,50 @@ export default function TravelDetailPage() {
       setError(`Failed: ${label}. Check required documents and approval status.`);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleSaveDsa = async () => {
+    if (!request) return;
+    setDsaSaving(true);
+    setDsaWarning(null);
+    try {
+      const res = await travelApi.saveDsa(request.id, {
+        rate_type: dsaRateType,
+        terminal_comms_total: dsaTerminal ? Number(dsaTerminal) : 0,
+      });
+      const warning = (res.data as any).warning;
+      if (warning) {
+        setDsaWarning(
+          `Day count variance: expected ${warning.expected_official_days} official days, payable lines ${warning.payable_line_count}.`
+        );
+      }
+      await refreshRequest();
+      showToast("DSA calculation saved (Finance Rate Types 1/2/3).");
+    } catch {
+      setError("Failed to save DSA. Only Finance may calculate DSA, and not on their own request.");
+    } finally {
+      setDsaSaving(false);
+    }
+  };
+
+  const handleSaveVisa = async () => {
+    if (!request) return;
+    setVisaSaving(true);
+    try {
+      await travelApi.updateVisa(request.id, {
+        visa_required: visaRequired,
+        visa_status: visaRequired ? visaStatus : "not_required",
+        visa_expiry_date: visaExpiry || null,
+        visa_appointment_date: visaAppointment || null,
+        visa_notes: visaNotes || null,
+      });
+      await refreshRequest();
+      showToast("Visa details updated.");
+    } catch {
+      setError("Failed to update visa details.");
+    } finally {
+      setVisaSaving(false);
     }
   };
 
@@ -683,6 +753,136 @@ export default function TravelDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Finance DSA calculation panel */}
+      {request.status !== "draft" && request.status !== "cancelled" && request.status !== "withdrawn" && (
+        <div className="card p-5" data-testid="travel-finance-dsa-panel">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="calculate" color="text-emerald-700" bg="bg-emerald-50" />
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Finance DSA calculation</h3>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Authoritative Rate Types 1/2/3. Traveller estimate {request.estimated_dsa} {request.currency} is not binding.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+            <label className="text-xs text-neutral-600">
+              Rate type
+              <select
+                className="form-input mt-1 w-full text-sm"
+                value={dsaRateType}
+                onChange={(e) => setDsaRateType(Number(e.target.value))}
+                data-testid="travel-dsa-rate-type"
+              >
+                <option value={1}>Type 1 — Acc + meals + incidentals</option>
+                <option value={2}>Type 2 — Meals + incidentals</option>
+                <option value={3}>Type 3 — Incidentals only</option>
+              </select>
+            </label>
+            <label className="text-xs text-neutral-600">
+              Terminal / comms total
+              <input
+                className="form-input mt-1 w-full text-sm"
+                type="number"
+                min={0}
+                step="0.01"
+                value={dsaTerminal}
+                onChange={(e) => setDsaTerminal(e.target.value)}
+                data-testid="travel-dsa-terminal"
+              />
+            </label>
+            <div className="text-xs text-neutral-600">
+              <p>Finance DSA total</p>
+              <p className="mt-2 text-lg font-semibold text-neutral-900" data-testid="travel-finance-dsa-total">
+                {request.finance_dsa_total != null ? `${request.finance_dsa_total} ${request.currency}` : "—"}
+              </p>
+              <p className="text-neutral-400 mt-1 capitalize">{request.finance_status ?? "awaiting calculation"}</p>
+            </div>
+          </div>
+          {(request.dsa_lines?.length ?? 0) > 0 && (
+            <div className="overflow-x-auto mb-3">
+              <table className="data-table w-full text-xs">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Rate</th>
+                    <th>Meal ded.</th>
+                    <th>Payable</th>
+                    <th>Personal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {request.dsa_lines!.map((line) => (
+                    <tr key={`${line.id ?? line.date}-${line.rate_type}`}>
+                      <td>{String(line.date).slice(0, 10)}</td>
+                      <td>{line.rate_type}</td>
+                      <td>{line.daily_rate}</td>
+                      <td>{line.meal_deduction}</td>
+                      <td>{line.daily_payable ?? "—"}</td>
+                      <td>{line.is_personal ? "Yes" : "No"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {dsaWarning && (
+            <div className="mb-3 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">{dsaWarning}</div>
+          )}
+          <button
+            type="button"
+            disabled={dsaSaving || actionLoading}
+            onClick={handleSaveDsa}
+            data-testid="travel-save-dsa"
+            className="btn-primary py-2 px-4 text-xs"
+          >
+            {dsaSaving ? "Saving…" : "Calculate & save DSA"}
+          </button>
+        </div>
+      )}
+
+      {/* Visa status panel */}
+      <div className="card p-5" data-testid="travel-visa-panel">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="badge" color="text-violet-700" bg="bg-violet-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Visa status &amp; reminders</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
+            <input type="checkbox" checked={visaRequired} onChange={(e) => setVisaRequired(e.target.checked)} />
+            Visa required
+          </label>
+          <label className="text-xs text-neutral-600">
+            Status
+            <select className="form-input mt-1 w-full text-sm" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} disabled={!visaRequired}>
+              <option value="pending">Pending</option>
+              <option value="appointment_scheduled">Appointment scheduled</option>
+              <option value="submitted">Submitted</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="expired">Expired</option>
+              <option value="not_required">Not required</option>
+            </select>
+          </label>
+          <label className="text-xs text-neutral-600">
+            Appointment date
+            <input className="form-input mt-1 w-full text-sm" type="date" value={visaAppointment} onChange={(e) => setVisaAppointment(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600">
+            Expiry date
+            <input className="form-input mt-1 w-full text-sm" type="date" value={visaExpiry} onChange={(e) => setVisaExpiry(e.target.value)} />
+          </label>
+          <label className="text-xs text-neutral-600 sm:col-span-2">
+            Notes
+            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={visaNotes} onChange={(e) => setVisaNotes(e.target.value)} />
+          </label>
+        </div>
+        <button type="button" disabled={visaSaving} onClick={handleSaveVisa} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-visa">
+          {visaSaving ? "Saving…" : "Save visa details"}
+        </button>
+      </div>
 
       {/* Post-approval lifecycle (booking gate, return, retirement) */}
       {(request.status === "approved" || request.status === "amendment_pending" || request.returned_at || request.booking_committed_at) && (
