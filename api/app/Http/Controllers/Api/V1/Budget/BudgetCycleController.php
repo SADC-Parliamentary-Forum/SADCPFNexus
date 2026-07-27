@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1\Budget;
 
 use App\Http\Controllers\Controller;
 use App\Models\BudgetCycle;
+use App\Models\BudgetCycleDecision;
 use App\Models\BudgetSubmission;
 use App\Modules\Budget\Services\BudgetCycleService;
+use App\Modules\Budget\Services\BudgetInstitutionalDecisionService;
 use App\Modules\Budget\Services\BudgetSubmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +18,7 @@ class BudgetCycleController extends Controller
     public function __construct(
         private readonly BudgetCycleService $cycles,
         private readonly BudgetSubmissionService $submissions,
+        private readonly BudgetInstitutionalDecisionService $decisions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -51,6 +54,7 @@ class BudgetCycleController extends Controller
             'financialYear',
             'guideline',
             'approvals.decidedBy',
+            'decisions.recordedBy',
             'submissions.items',
             'submissions.department',
             'submissions.preparer',
@@ -125,6 +129,51 @@ class BudgetCycleController extends Controller
         $cycle = $this->cycles->lock($cycle, $request->user());
 
         return response()->json(['success' => true, 'data' => $cycle]);
+    }
+
+    public function indexDecisions(Request $request, BudgetCycle $cycle): JsonResponse
+    {
+        $this->assertCycleTenant($request, $cycle);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->decisions->list($cycle),
+        ]);
+    }
+
+    public function storeDecision(Request $request, BudgetCycle $cycle): JsonResponse
+    {
+        $this->assertCycleTenant($request, $cycle);
+
+        $data = $request->validate([
+            'body' => ['required', Rule::in(BudgetCycleDecision::BODIES)],
+            'decision' => ['required', Rule::in(BudgetCycleDecision::DECISIONS)],
+            'meeting_on' => ['nullable', 'date'],
+            'minute_reference' => ['nullable', 'string', 'max:255'],
+            'comments' => ['nullable', 'string', 'max:5000'],
+            'attachment' => ['nullable', 'file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
+            'attachment_path' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if ($request->hasFile('attachment')) {
+            $path = $request->file('attachment')->store(
+                'budget-cycle-decisions/'.$cycle->id,
+                'local'
+            );
+            $data['attachment_path'] = $path;
+        }
+
+        unset($data['attachment']);
+
+        $row = $this->decisions->record($cycle, $data, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'decision' => $row,
+                'cycle' => $cycle->fresh(['financialYear', 'guideline', 'approvals', 'decisions.recordedBy']),
+            ],
+        ], 201);
     }
 
     public function indexSubmissions(Request $request): JsonResponse

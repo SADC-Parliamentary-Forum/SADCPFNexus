@@ -1924,6 +1924,7 @@ export interface BudgetCycle {
   financial_year?: { id: number; code: string; label: string };
   guideline?: BudgetGuideline | null;
   submissions?: BudgetSubmissionPack[];
+  decisions?: BudgetCycleDecision[];
   approvals?: Array<{
     id: number;
     stage: string;
@@ -1931,6 +1932,19 @@ export interface BudgetCycle {
     comments?: string | null;
     decided_at: string;
   }>;
+}
+
+export interface BudgetCycleDecision {
+  id: number;
+  budget_cycle_id: number;
+  body: "fsc" | "exco" | "plenary" | string;
+  meeting_on?: string | null;
+  decision: string;
+  minute_reference?: string | null;
+  comments?: string | null;
+  attachment_path?: string | null;
+  recorded_at: string;
+  recorded_by?: { id: number; name: string } | null;
 }
 
 export interface BudgetGuideline {
@@ -2026,6 +2040,14 @@ export const budgetApi = {
   sgApproveCycle: (id: number, data?: { comments?: string; approved_total?: number }) =>
     api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/sg-approve`, data ?? {}),
   lockCycle: (id: number) => api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/lock`),
+  listDecisions: (id: number) =>
+    api.get<{ success: boolean; data: BudgetCycleDecision[] }>(`/budget/cycles/${id}/decisions`),
+  recordDecision: (id: number, data: FormData | Record<string, unknown>) =>
+    api.post<{ success: boolean; data: { decision: BudgetCycleDecision; cycle: BudgetCycle } }>(
+      `/budget/cycles/${id}/decisions`,
+      data,
+      data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined,
+    ),
 
   submissions: (params?: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: PaginatedResponse<BudgetSubmissionPack> }>("/budget/submissions", { params }),

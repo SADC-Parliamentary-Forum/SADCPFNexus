@@ -581,6 +581,8 @@ Route::prefix('v1')->group(function () {
             Route::post('cycles/{cycle}/return', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'returnToDepartments']);
             Route::post('cycles/{cycle}/sg-approve', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'sgApprove']);
             Route::post('cycles/{cycle}/lock', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'lock']);
+            Route::get('cycles/{cycle}/decisions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'indexDecisions']);
+            Route::post('cycles/{cycle}/decisions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'storeDecision']);
 
             Route::get('submissions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'indexSubmissions']);
             Route::post('submissions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'storeSubmission']);

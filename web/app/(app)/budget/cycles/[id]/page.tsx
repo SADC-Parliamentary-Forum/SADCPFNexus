@@ -20,6 +20,11 @@ export default function BudgetCycleDetailPage() {
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
   const isSg =
     isSystemAdmin(user) || Boolean(user?.roles?.includes("Secretary General"));
+  const canRecordDecision =
+    canFinance ||
+    isSystemAdmin(user) ||
+    Boolean(user?.roles?.includes("Governance Officer")) ||
+    hasPermission(user, ["finance.admin"]);
 
   const [assumptions, setAssumptions] = useState("");
   const [inflation, setInflation] = useState("5");
@@ -31,6 +36,12 @@ export default function BudgetCycleDetailPage() {
   const [returnReason, setReturnReason] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [decisionBody, setDecisionBody] = useState<"fsc" | "exco" | "plenary">("fsc");
+  const [decisionOutcome, setDecisionOutcome] = useState("approved");
+  const [meetingOn, setMeetingOn] = useState("");
+  const [minuteRef, setMinuteRef] = useState("");
+  const [decisionComments, setDecisionComments] = useState("");
+  const [decisionFile, setDecisionFile] = useState<File | null>(null);
 
   const cycleQuery = useQuery({
     queryKey: ["budget", "cycles", id],
@@ -94,6 +105,28 @@ export default function BudgetCycleDetailPage() {
     onError: () => setError("Lock failed."),
   });
 
+  const decisionMut = useMutation({
+    mutationFn: () => {
+      const form = new FormData();
+      form.append("body", decisionBody);
+      form.append("decision", decisionOutcome);
+      if (meetingOn) form.append("meeting_on", meetingOn);
+      if (minuteRef.trim()) form.append("minute_reference", minuteRef.trim());
+      if (decisionComments.trim()) form.append("comments", decisionComments.trim());
+      if (decisionFile) form.append("attachment", decisionFile);
+      return budgetApi.recordDecision(id, form);
+    },
+    onSuccess: () => {
+      setMessage("Institutional decision recorded.");
+      setError("");
+      setDecisionComments("");
+      setMinuteRef("");
+      setDecisionFile(null);
+      invalidate();
+    },
+    onError: () => setError("Could not record decision (check body matches current stage)."),
+  });
+
   const createPackMut = useMutation({
     mutationFn: () =>
       budgetApi.createSubmission({
@@ -120,6 +153,10 @@ export default function BudgetCycleDetailPage() {
 
   const cycle = cycleQuery.data;
   const submissions: BudgetSubmissionPack[] = useMemo(() => cycle?.submissions ?? [], [cycle]);
+  const institutionalStatuses = ["fsc_review", "exco_review", "plenary_review", "plenary_approved"];
+  const canAdvance =
+    canFinance &&
+    ["planning", "department_preparation", "submitted_to_finance", "finance_review"].includes(cycle?.status ?? "");
 
   if (cycleQuery.isLoading) {
     return <p className="p-6 text-sm text-[var(--muted)]">Loading cycle…</p>;
@@ -149,7 +186,7 @@ export default function BudgetCycleDetailPage() {
           <p className="page-subtitle capitalize">Status: {statusLabel(cycle.status)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {canFinance && cycle.status !== "active" && cycle.status !== "sg_approved" && (
+          {canAdvance && (
             <button type="button" className="btn-secondary text-sm" onClick={() => advanceMut.mutate()} disabled={advanceMut.isPending}>
               Advance stage
             </button>
@@ -159,7 +196,7 @@ export default function BudgetCycleDetailPage() {
               SG approve
             </button>
           )}
-          {canFinance && cycle.status === "sg_approved" && (
+          {canFinance && cycle.status === "plenary_approved" && (
             <button type="button" className="btn-primary text-sm" onClick={() => lockMut.mutate()} disabled={lockMut.isPending}>
               Lock & activate
             </button>
@@ -265,6 +302,97 @@ export default function BudgetCycleDetailPage() {
           >
             Create pack
           </button>
+        </div>
+      )}
+
+      {canRecordDecision && institutionalStatuses.includes(cycle.status) && cycle.status !== "plenary_approved" && (
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Institutional decision (FSC → EXCO → Plenary)</h2>
+          <p className="text-xs text-[var(--muted)]">
+            Current stage: <span className="capitalize">{statusLabel(cycle.status)}</span>. Record the matching body outcome.
+            Non-approved returns the cycle to Finance review.
+          </p>
+          <div className="grid gap-2 md:grid-cols-2">
+            <label className="text-sm">
+              Body
+              <select
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                value={decisionBody}
+                onChange={(e) => setDecisionBody(e.target.value as "fsc" | "exco" | "plenary")}
+              >
+                <option value="fsc">Finance Sub-Committee</option>
+                <option value="exco">Executive Committee</option>
+                <option value="plenary">Plenary Assembly</option>
+              </select>
+            </label>
+            <label className="text-sm">
+              Decision
+              <select
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                value={decisionOutcome}
+                onChange={(e) => setDecisionOutcome(e.target.value)}
+              >
+                <option value="approved">Approved</option>
+                <option value="approved_with_amendments">Approved with amendments</option>
+                <option value="deferred">Deferred</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </label>
+            <label className="text-sm">
+              Meeting date
+              <input
+                type="date"
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                value={meetingOn}
+                onChange={(e) => setMeetingOn(e.target.value)}
+              />
+            </label>
+            <label className="text-sm">
+              Minute / reference
+              <input
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                value={minuteRef}
+                onChange={(e) => setMinuteRef(e.target.value)}
+                placeholder="e.g. FSC/2026/14"
+              />
+            </label>
+          </div>
+          <textarea
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            rows={2}
+            placeholder="Comments / summary"
+            value={decisionComments}
+            onChange={(e) => setDecisionComments(e.target.value)}
+          />
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            className="block w-full text-sm"
+            onChange={(e) => setDecisionFile(e.target.files?.[0] ?? null)}
+          />
+          <button
+            type="button"
+            className="btn-primary text-sm"
+            disabled={decisionMut.isPending}
+            onClick={() => decisionMut.mutate()}
+          >
+            Record decision
+          </button>
+        </div>
+      )}
+
+      {(cycle.decisions?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold">Institutional decisions</h2>
+          <ul className="space-y-1 text-sm text-[var(--muted)]">
+            {cycle.decisions?.map((d) => (
+              <li key={d.id}>
+                <span className="uppercase text-[var(--foreground)]">{d.body}</span> — {statusLabel(d.decision)}
+                {d.minute_reference ? ` (${d.minute_reference})` : ""}
+                {d.comments ? `: ${d.comments}` : ""}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

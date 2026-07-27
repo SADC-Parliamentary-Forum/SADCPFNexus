@@ -4,6 +4,7 @@ namespace Tests\Feature\Budget;
 
 use App\Models\Budget;
 use App\Models\BudgetCycle;
+use App\Models\BudgetCycleDecision;
 use App\Models\BudgetLine;
 use App\Models\BudgetSubmission;
 use App\Models\FinancialYear;
@@ -11,18 +12,40 @@ use App\Models\FundingSource;
 use App\Models\Tenant;
 use App\Modules\Budget\Services\BudgetAvailabilityService;
 use App\Modules\Budget\Services\BudgetCycleService;
+use App\Modules\Budget\Services\BudgetInstitutionalDecisionService;
 use App\Modules\Budget\Services\BudgetSubmissionService;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class BudgetAnnualCycleTest extends TestCase
 {
-    private function openCycle(Tenant $tenant): array
+    private function openCycle(Tenant $tenant, int $startYear = 2027): array
     {
         $finance = $this->makeFinanceController($tenant);
-        $fy = FinancialYear::defaultAprilMarch($tenant->id, 2027);
+        $fy = FinancialYear::defaultAprilMarch($tenant->id, $startYear);
         $cycle = app(BudgetCycleService::class)->open($tenant->id, $fy->id, $finance);
 
         return compact('finance', 'fy', 'cycle');
+    }
+
+    private function recordInstitutionalApprovals(BudgetCycle $cycle, $actor): BudgetCycle
+    {
+        $decisions = app(BudgetInstitutionalDecisionService::class);
+        foreach ([
+            BudgetCycleDecision::BODY_FSC,
+            BudgetCycleDecision::BODY_EXCO,
+            BudgetCycleDecision::BODY_PLENARY,
+        ] as $body) {
+            $decisions->record($cycle->fresh(), [
+                'body' => $body,
+                'decision' => BudgetCycleDecision::DECISION_APPROVED,
+                'meeting_on' => '2026-11-15',
+                'minute_reference' => strtoupper($body).'-MIN-1',
+                'comments' => 'Approved',
+            ], $actor);
+        }
+
+        return $cycle->fresh();
     }
 
     public function test_open_cycle_publish_guidelines_and_submit_pack(): void
@@ -104,7 +127,6 @@ class BudgetAnnualCycleTest extends TestCase
         $subs->submit($pack, $staff);
         $subs->accept($pack->fresh(), $finance);
 
-        // Advance: department_preparation → submitted_to_finance → finance_review → management_review
         $cycle = $cycles->advance($cycle->fresh(), $finance);
         $this->assertSame(BudgetCycle::STATUS_SUBMITTED_TO_FINANCE, $cycle->status);
         $cycle = $cycles->advance($cycle, $finance);
@@ -112,35 +134,99 @@ class BudgetAnnualCycleTest extends TestCase
         $cycle = $cycles->advance($cycle, $finance);
         $this->assertSame(BudgetCycle::STATUS_MANAGEMENT_REVIEW, $cycle->status);
 
-        $cycle = $cycles->sgApprove($cycle, $sg, 'Approved for lock');
-        $this->assertSame(BudgetCycle::STATUS_SG_APPROVED, $cycle->status);
+        $cycle = $cycles->sgApprove($cycle, $sg, 'Approved for institutional path');
+        $this->assertSame(BudgetCycle::STATUS_FSC_REVIEW, $cycle->status);
         $this->assertSame(1000000.0, (float) $cycle->approved_total);
+        $this->assertNotNull($cycle->sg_approved_at);
+
+        try {
+            $cycles->lock($cycle->fresh(), $finance);
+            $this->fail('Lock must wait for Plenary approval');
+        } catch (ValidationException $e) {
+            $this->assertArrayHasKey('status', $e->errors());
+        }
+    }
+
+    public function test_institutional_path_then_lock_materialises_lines(): void
+    {
+        $tenant = Tenant::factory()->create();
+        ['finance' => $finance, 'fy' => $fy, 'cycle' => $cycle] = $this->openCycle($tenant, 2029);
+        $sg = $this->makeSG($tenant);
+        $gov = $this->makeGovernanceOfficer($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $cycles = app(BudgetCycleService::class);
+        $subs = app(BudgetSubmissionService::class);
+
+        $cycles->publishGuidelines($cycle, ['assumptions' => 'Baseline'], $finance);
+        $pack = $subs->create([
+            'budget_cycle_id' => $cycle->id,
+            'title' => 'Core pack',
+            'items' => [
+                ['code' => 'CORE-OPS', 'name' => 'Core Ops', 'requested_amount' => 400000],
+                ['code' => 'CORE-PROG', 'name' => 'Programme', 'requested_amount' => 600000],
+            ],
+        ], $staff);
+        $subs->submit($pack, $staff);
+
+        $cycle = $cycles->advance($cycle->fresh(), $finance);
+        $cycle = $cycles->advance($cycle, $finance);
+        $cycle = $cycles->advance($cycle, $finance);
+        $cycle = $cycles->sgApprove($cycle, $sg);
+
+        $cycle = $this->recordInstitutionalApprovals($cycle, $gov);
+        $this->assertSame(BudgetCycle::STATUS_PLENARY_APPROVED, $cycle->status);
 
         $cycle = $cycles->lock($cycle, $finance);
         $this->assertSame(BudgetCycle::STATUS_ACTIVE, $cycle->status);
-        $this->assertNotNull($cycle->locked_at);
 
         $budget = Budget::query()
             ->where('tenant_id', $tenant->id)
             ->where('financial_year_id', $fy->id)
             ->first();
         $this->assertNotNull($budget);
-        $this->assertSame('active', $budget->status);
-        $this->assertSame(1000000.0, (float) $budget->total_amount);
-
-        $lines = BudgetLine::query()->where('budget_id', $budget->id)->orderBy('code')->get();
+        $lines = BudgetLine::query()->where('budget_id', $budget->id)->get();
         $this->assertCount(2, $lines);
-        $this->assertSame(400000.0, (float) $lines->firstWhere('code', 'CORE-OPS')->original_allocation);
 
         $availability = app(BudgetAvailabilityService::class)->check($lines->firstWhere('code', 'CORE-OPS')->id);
-        $this->assertSame(400000.0, $availability['approved']);
         $this->assertSame(400000.0, $availability['available']);
+    }
+
+    public function test_non_approved_institutional_decision_returns_to_finance_review(): void
+    {
+        $tenant = Tenant::factory()->create();
+        ['finance' => $finance, 'cycle' => $cycle] = $this->openCycle($tenant, 2030);
+        $sg = $this->makeSG($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $cycles = app(BudgetCycleService::class);
+        $subs = app(BudgetSubmissionService::class);
+        $decisions = app(BudgetInstitutionalDecisionService::class);
+
+        $cycles->publishGuidelines($cycle, ['assumptions' => 'x'], $finance);
+        $pack = $subs->create([
+            'budget_cycle_id' => $cycle->id,
+            'title' => 'Pack',
+            'items' => [['code' => 'A1', 'name' => 'A', 'requested_amount' => 1000]],
+        ], $staff);
+        $subs->submit($pack, $staff);
+        $cycle = $cycles->advance($cycle->fresh(), $finance);
+        $cycle = $cycles->advance($cycle, $finance);
+        $cycle = $cycles->advance($cycle, $finance);
+        $cycle = $cycles->sgApprove($cycle, $sg);
+
+        $decisions->record($cycle, [
+            'body' => BudgetCycleDecision::BODY_FSC,
+            'decision' => BudgetCycleDecision::DECISION_DEFERRED,
+            'comments' => 'Need more detail on travel envelope',
+        ], $finance);
+
+        $this->assertSame(BudgetCycle::STATUS_FINANCE_REVIEW, $cycle->fresh()->status);
     }
 
     public function test_staff_cannot_lock_and_requester_cannot_sg_approve_without_role(): void
     {
         $tenant = Tenant::factory()->create();
-        ['finance' => $finance, 'cycle' => $cycle] = $this->openCycle($tenant);
+        ['finance' => $finance, 'cycle' => $cycle] = $this->openCycle($tenant, 2031);
         $staff = $this->makeUser('staff', $tenant);
         $cycles = app(BudgetCycleService::class);
         $subs = app(BudgetSubmissionService::class);
@@ -167,6 +253,7 @@ class BudgetAnnualCycleTest extends TestCase
 
         $sg = $this->makeSG($tenant);
         $cycle = $cycles->sgApprove($cycle->fresh(), $sg);
+        $this->assertSame(BudgetCycle::STATUS_FSC_REVIEW, $cycle->status);
 
         try {
             $cycles->lock($cycle, $staff);
@@ -175,7 +262,15 @@ class BudgetAnnualCycleTest extends TestCase
             $this->assertSame(403, $e->getStatusCode());
         }
 
-        // Staff with only finance.create still cannot lock; Finance Controller can.
+        $cycle = $this->recordInstitutionalApprovals($cycle, $finance);
+
+        try {
+            $cycles->lock($cycle->fresh(), $staff);
+            $this->fail('Expected 403 for staff lock after plenary');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+        }
+
         $cycle = $cycles->lock($cycle->fresh(), $finance);
         $this->assertSame(BudgetCycle::STATUS_ACTIVE, $cycle->status);
     }

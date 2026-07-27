@@ -23,6 +23,14 @@ class BudgetCycle extends Model
 
     public const STATUS_SG_APPROVED = 'sg_approved';
 
+    public const STATUS_FSC_REVIEW = 'fsc_review';
+
+    public const STATUS_EXCO_REVIEW = 'exco_review';
+
+    public const STATUS_PLENARY_REVIEW = 'plenary_review';
+
+    public const STATUS_PLENARY_APPROVED = 'plenary_approved';
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_CLOSED = 'closed';
@@ -33,7 +41,7 @@ class BudgetCycle extends Model
         self::STATUS_DEPARTMENT_PREPARATION => self::STATUS_SUBMITTED_TO_FINANCE,
         self::STATUS_SUBMITTED_TO_FINANCE => self::STATUS_FINANCE_REVIEW,
         self::STATUS_FINANCE_REVIEW => self::STATUS_MANAGEMENT_REVIEW,
-        self::STATUS_MANAGEMENT_REVIEW => self::STATUS_SG_APPROVED,
+        // management_review → SG approve (service), then institutional path
     ];
 
     protected $fillable = [
@@ -80,6 +88,11 @@ class BudgetCycle extends Model
     public function approvals(): HasMany
     {
         return $this->hasMany(BudgetCycleApproval::class);
+    }
+
+    public function decisions(): HasMany
+    {
+        return $this->hasMany(BudgetCycleDecision::class);
     }
 
     public function openedBy(): BelongsTo

@@ -172,12 +172,9 @@ class BudgetCycleService
             abort(403);
         }
 
-        if (! in_array($cycle->status, [
-            BudgetCycle::STATUS_MANAGEMENT_REVIEW,
-            BudgetCycle::STATUS_SG_APPROVED,
-        ], true)) {
+        if ($cycle->status !== BudgetCycle::STATUS_MANAGEMENT_REVIEW) {
             throw ValidationException::withMessages([
-                'status' => 'SG approval requires management_review (or already sg_approved).',
+                'status' => 'SG approval requires management_review.',
             ]);
         }
 
@@ -191,8 +188,9 @@ class BudgetCycleService
                     ->sum('items_total');
             }
 
+            // SG done → institutional path starts at FSC
             $cycle->update([
-                'status' => BudgetCycle::STATUS_SG_APPROVED,
+                'status' => BudgetCycle::STATUS_FSC_REVIEW,
                 'sg_approved_by' => $actor->id,
                 'sg_approved_at' => now(),
                 'approved_total' => $total,
@@ -208,7 +206,7 @@ class BudgetCycleService
                 'approved_total' => $total,
             ]);
 
-            return $cycle->fresh(['financialYear', 'guideline', 'approvals']);
+            return $cycle->fresh(['financialYear', 'guideline', 'approvals', 'decisions']);
         });
     }
 
@@ -217,9 +215,9 @@ class BudgetCycleService
         $this->assertFinanceController($actor);
         $this->assertTenant($cycle, $actor);
 
-        if ($cycle->status !== BudgetCycle::STATUS_SG_APPROVED) {
+        if ($cycle->status !== BudgetCycle::STATUS_PLENARY_APPROVED) {
             throw ValidationException::withMessages([
-                'status' => 'Lock requires SG-approved status.',
+                'status' => 'Lock requires Plenary-approved status (FSC → EXCO → Plenary).',
             ]);
         }
 

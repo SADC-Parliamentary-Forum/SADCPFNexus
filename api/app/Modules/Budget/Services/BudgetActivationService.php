@@ -16,9 +16,9 @@ class BudgetActivationService
 {
     public function activate(BudgetCycle $cycle, User $actor): BudgetCycle
     {
-        if ($cycle->status !== BudgetCycle::STATUS_SG_APPROVED) {
+        if ($cycle->status !== BudgetCycle::STATUS_PLENARY_APPROVED) {
             throw ValidationException::withMessages([
-                'status' => 'Only SG-approved cycles can be locked and activated.',
+                'status' => 'Only Plenary-approved cycles can be locked and activated.',
             ]);
         }
 
