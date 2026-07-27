@@ -126,6 +126,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Budget Changes", href: "/budget/changes", icon: "swap_horiz" },
       { label: "Budget Variance", href: "/budget/variance", icon: "trending_down" },
       { label: "Budget Reports", href: "/budget/reports", icon: "analytics" },
+      { label: "Cashflow / Scenarios", href: "/budget/cashflow", icon: "waterfall_chart" },
       { label: "Budgets", href: "/finance/budget", icon: "account_balance" },
       { label: "Payslips", href: "/finance/payslips", icon: "receipt_long" },
       { label: "Imprest", href: "/imprest", icon: "account_balance_wallet" },

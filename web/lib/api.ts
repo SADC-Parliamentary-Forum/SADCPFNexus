@@ -2106,6 +2106,26 @@ export const budgetApi = {
     api.get<{ success: boolean; data: BudgetChangeRegisterReport }>("/budget/reports/change-register", { params }),
   reportCycleStatus: (params?: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: BudgetCycleStatusReport }>("/budget/reports/cycle-status", { params }),
+
+  cashflowForecast: (params: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: CashflowForecast }>("/budget/cashflow/forecast", { params }),
+  cashflowScenarios: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: CashflowScenario[] }>("/budget/cashflow/scenarios", { params }),
+  getCashflowScenario: (id: number) =>
+    api.get<{ success: boolean; data: CashflowScenario }>(`/budget/cashflow/scenarios/${id}`),
+  createCashflowScenario: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: CashflowScenario }>("/budget/cashflow/scenarios", data),
+  updateCashflowScenario: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: CashflowScenario }>(`/budget/cashflow/scenarios/${id}`, data),
+  deleteCashflowScenario: (id: number) =>
+    api.delete<{ success: boolean }>(`/budget/cashflow/scenarios/${id}`),
+  addCashflowAdjustment: (scenarioId: number, data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: CashflowScenarioAdjustment }>(
+      `/budget/cashflow/scenarios/${scenarioId}/adjustments`,
+      data,
+    ),
+  deleteCashflowAdjustment: (scenarioId: number, adjustmentId: number) =>
+    api.delete<{ success: boolean }>(`/budget/cashflow/scenarios/${scenarioId}/adjustments/${adjustmentId}`),
 };
 
 export interface BudgetUtilisationRow {
@@ -2203,6 +2223,88 @@ export interface BudgetCycleStatusRow {
 
 export interface BudgetCycleStatusReport {
   rows: BudgetCycleStatusRow[];
+}
+
+export interface CashflowScenarioAdjustment {
+  id: number;
+  cashflow_scenario_id: number;
+  period: string;
+  direction: "inflow" | "outflow" | string;
+  amount: number;
+  label?: string | null;
+  category?: string | null;
+  budget_reservation_id?: number | null;
+}
+
+export interface CashflowScenario {
+  id: number;
+  tenant_id?: number;
+  financial_year_id: number;
+  name: string;
+  kind: "base" | "optimistic" | "pessimistic" | "custom" | string;
+  opening_balance: number;
+  currency: string;
+  status: "draft" | "active" | "archived" | string;
+  notes?: string | null;
+  adjustments_count?: number;
+  adjustments?: CashflowScenarioAdjustment[];
+}
+
+export interface CashflowForecastPeriod {
+  period: string;
+  actual_outflow: number;
+  projected_outflow: number;
+  scenario_inflow: number;
+  scenario_outflow: number;
+  net: number;
+  closing_balance: number;
+}
+
+export interface CashflowForecastItem {
+  budget_reservation_id: number;
+  budget_line_id?: number | null;
+  budget_line_code?: string | null;
+  budget_line_name?: string | null;
+  source_type?: string | null;
+  source_id?: number | null;
+  source_key?: string | null;
+  status: string;
+  amount: number;
+  currency?: string | null;
+  expected_cash_date: string;
+  period: string;
+  resolution?: string;
+}
+
+export interface CashflowForecast {
+  financial_year: {
+    id: number;
+    code?: string | null;
+    label?: string | null;
+    starts_on?: string | null;
+    ends_on?: string | null;
+  };
+  scenario?: {
+    id: number;
+    name: string;
+    kind: string;
+    status: string;
+    opening_balance: number;
+    currency: string;
+  } | null;
+  as_of: string;
+  currency: string;
+  opening_balance: number;
+  periods: CashflowForecastPeriod[];
+  totals: {
+    actual_outflow: number;
+    projected_outflow: number;
+    scenario_inflow: number;
+    scenario_outflow: number;
+    closing_balance: number;
+  };
+  out_of_range_projected: { count: number; amount: number };
+  items: CashflowForecastItem[];
 }
 
 export interface BudgetChangeItem {

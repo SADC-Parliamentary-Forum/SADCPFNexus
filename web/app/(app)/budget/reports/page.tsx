@@ -99,6 +99,9 @@ export default function BudgetReportsPage() {
           <Link href="/budget" className="btn-secondary text-sm">
             Budget control
           </Link>
+          <Link href="/budget/cashflow" className="btn-secondary text-sm">
+            Cashflow
+          </Link>
           <Link href="/budget/variance" className="btn-secondary text-sm">
             Variance
           </Link>

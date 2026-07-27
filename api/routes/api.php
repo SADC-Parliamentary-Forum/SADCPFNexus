@@ -608,6 +608,16 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/commitment-ageing', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'commitmentAgeing']);
             Route::get('reports/change-register', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'changeRegister']);
             Route::get('reports/cycle-status', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'cycleStatus']);
+
+            // Cashflow / scenario planning
+            Route::get('cashflow/forecast', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'forecast']);
+            Route::get('cashflow/scenarios', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'indexScenarios']);
+            Route::post('cashflow/scenarios', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'storeScenario']);
+            Route::get('cashflow/scenarios/{scenario}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'showScenario']);
+            Route::put('cashflow/scenarios/{scenario}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'updateScenario']);
+            Route::delete('cashflow/scenarios/{scenario}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'destroyScenario']);
+            Route::post('cashflow/scenarios/{scenario}/adjustments', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'storeAdjustment']);
+            Route::delete('cashflow/scenarios/{scenario}/adjustments/{adjustment}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'destroyAdjustment']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets
