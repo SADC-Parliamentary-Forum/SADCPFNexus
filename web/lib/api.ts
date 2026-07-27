@@ -1261,6 +1261,7 @@ export interface Asset {
   asset_code: string;
   name: string;
   category: string;
+  asset_class?: string | null;
   status: string;
   assigned_to: number | null;
   issued_at: string | null;
@@ -1278,6 +1279,11 @@ export interface Asset {
   current_value?: number | null;
   qr_path?: string | null;
   qr_url?: string | null;
+  serial_number?: string | null;
+  tag_number?: string | null;
+  acknowledgement_at?: string | null;
+  funding_source?: string | null;
+  book_value?: number | null;
 }
 
 export interface AssetRequest {
@@ -1339,9 +1345,24 @@ export const assetsApi = {
     salvage_value?: number;
     depreciation_method?: string;
     notes?: string;
+    asset_class?: string;
+    force_controlled?: boolean;
+    serial_number?: string;
+    tag_number?: string;
+    allow_serial_duplicate?: boolean;
+    funding_source?: string;
+    location_id?: number;
   }) => api.post<{ data: Asset; message: string }>(`/assets/${id}/capitalise`, data),
   rejectCapitalisation: (id: number, data: { reason: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/reject-capitalisation`, data),
+  assign: (id: number, data: { assigned_to: number; department?: string; location_id?: number; notes?: string }) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/assign`, data),
+  acknowledge: (id: number) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/acknowledge`, {}),
+  transfer: (id: number, data: { to_user_id: number; department?: string; location_id?: number; notes?: string }) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/transfer`, data),
+  returnAsset: (id: number, data?: { location_id?: number; notes?: string }) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
     formData.append("invoice", file);

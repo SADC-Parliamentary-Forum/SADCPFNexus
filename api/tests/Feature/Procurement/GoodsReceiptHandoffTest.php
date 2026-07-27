@@ -85,13 +85,16 @@ class GoodsReceiptHandoffTest extends TestCase
 
         $this->assertDatabaseHas('assets', [
             'tenant_id'              => $tenant->id,
-            'name'                   => 'Dell XPS Laptop',
+            'name'                   => 'Dell XPS Laptop #1',
             'category'               => 'equipment',
             'status'                 => 'pending',
             'purchase_order_id'      => $po->id,
             'procurement_request_id' => $req->id,
             'goods_receipt_note_id'  => $grn->id,
         ]);
+
+        // One physical unit per accepted qty (PO/GRN line accepted = 2)
+        $this->assertSame(2, Asset::where('goods_receipt_note_id', $grn->id)->count());
 
         $this->assertDatabaseHas('audit_logs', [
             'event' => 'procurement.grn_handoff',

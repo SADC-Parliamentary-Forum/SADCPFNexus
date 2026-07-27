@@ -124,17 +124,42 @@ class GoodsReceiptService
             $type = $line['type'] ?? null;
 
             if ($type === 'fixed_asset') {
-                Asset::create([
-                    'tenant_id'              => $grn->tenant_id,
-                    'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
-                    'name'                   => $line['name'],
-                    'category'               => $line['category'] ?? 'equipment',
-                    'status'                 => 'pending',
-                    'purchase_order_id'      => $grn->purchase_order_id,
-                    'procurement_request_id' => $procurementRequestId,
-                    'goods_receipt_note_id'  => $grn->id,
-                    'notes'                  => $line['notes'] ?? null,
-                ]);
+                // One physical unit = one asset record (qty 20 → 20 pending assets).
+                $qty = (int) ($line['quantity'] ?? $grnItem->quantity_accepted ?? $grnItem->quantity_received ?? 1);
+                if ($qty < 1) {
+                    $qty = 1;
+                }
+                if ($qty > 500) {
+                    throw ValidationException::withMessages([
+                        'handoff' => 'Fixed-asset handoff quantity cannot exceed 500 per line.',
+                    ]);
+                }
+
+                $unitCost = isset($line['unit_cost']) ? (float) $line['unit_cost'] : null;
+                if ($unitCost === null && $grnItem->purchase_order_item_id) {
+                    $poItem = $grn->purchaseOrder?->items?->firstWhere('id', $grnItem->purchase_order_item_id)
+                        ?? \App\Models\PurchaseOrderItem::find($grnItem->purchase_order_item_id);
+                    if ($poItem && (float) $poItem->quantity > 0) {
+                        $unitCost = (float) $poItem->unit_price;
+                    }
+                }
+
+                for ($i = 1; $i <= $qty; $i++) {
+                    $suffix = $qty > 1 ? ' #'.$i : '';
+                    Asset::create([
+                        'tenant_id'              => $grn->tenant_id,
+                        'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
+                        'name'                   => $line['name'].$suffix,
+                        'category'               => $line['category'] ?? 'equipment',
+                        'status'                 => 'pending',
+                        'purchase_order_id'      => $grn->purchase_order_id,
+                        'procurement_request_id' => $procurementRequestId,
+                        'goods_receipt_note_id'  => $grn->id,
+                        'purchase_value'         => $unitCost,
+                        'currency'               => $po?->currency,
+                        'notes'                  => $line['notes'] ?? null,
+                    ]);
+                }
             } elseif ($type === 'stock') {
                 $qty = (int) ($line['quantity'] ?? 0);
                 if ($qty <= 0) {

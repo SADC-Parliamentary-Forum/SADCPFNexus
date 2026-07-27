@@ -5,22 +5,26 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Asset extends Model
 {
     protected $fillable = [
-        'tenant_id', 'asset_code', 'name', 'category', 'status',
+        'tenant_id', 'asset_code', 'serial_number', 'tag_number', 'name',
+        'manufacturer', 'model', 'category', 'asset_class', 'status', 'condition',
         'purchase_order_id', 'procurement_request_id', 'goods_receipt_note_id',
         'assigned_to', 'issued_at', 'value', 'notes',
         'invoice_number', 'invoice_path', 'purchase_date', 'purchase_value',
         'useful_life_years', 'salvage_value', 'depreciation_method', 'qr_path',
+        'funding_source', 'donor_name', 'donor_restrictions', 'department',
+        'location_id', 'warranty_expiry', 'warranty_provider',
+        'capitalisation_policy_id', 'accumulated_depreciation', 'book_value',
+        'currency', 'last_verified_at', 'acknowledgement_at', 'acknowledged_by',
+        'serial_duplicate_override',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
 
-    /**
-     * URL path to fetch QR code image (client should prepend API base).
-     */
     public function getQrUrlAttribute(): ?string
     {
         return $this->qr_path ? '/api/v1/assets/' . $this->id . '/qr' : null;
@@ -31,12 +35,18 @@ class Asset extends Model
         return [
             'issued_at' => 'date',
             'purchase_date' => 'date',
+            'warranty_expiry' => 'date',
+            'last_verified_at' => 'datetime',
+            'acknowledgement_at' => 'datetime',
+            'serial_duplicate_override' => 'boolean',
+            'purchase_value' => 'decimal:2',
+            'value' => 'decimal:2',
+            'salvage_value' => 'decimal:2',
+            'accumulated_depreciation' => 'decimal:2',
+            'book_value' => 'decimal:2',
         ];
     }
 
-    /**
-     * Reference date for age: purchase_date if set, else issued_at.
-     */
     public function getAgeReferenceDateAttribute(): ?Carbon
     {
         if ($this->purchase_date) {
@@ -45,24 +55,20 @@ class Asset extends Model
         if ($this->issued_at) {
             return $this->issued_at;
         }
+
         return null;
     }
 
-    /**
-     * Age in full years from reference date to today.
-     */
     public function getAgeYearsAttribute(): ?int
     {
         $ref = $this->age_reference_date;
         if (! $ref) {
             return null;
         }
+
         return (int) $ref->diffInYears(now());
     }
 
-    /**
-     * Human-readable age (e.g. "2 years 3 months").
-     */
     public function getAgeDisplayAttribute(): ?string
     {
         $ref = $this->age_reference_date;
@@ -77,17 +83,10 @@ class Asset extends Model
         if ($months === 0) {
             return "{$years} year(s)";
         }
+
         return "{$years} year(s) {$months} month(s)";
     }
 
-    /**
-     * Compute straight-line depreciated value. Used when creating/updating and in accessor.
-     *
-     * @param  float|null  $purchaseValue
-     * @param  int|null  $usefulLifeYears
-     * @param  float  $salvageValue
-     * @param  \Carbon\Carbon|null  $referenceDate
-     */
     public static function computeDepreciatedValue(?float $purchaseValue, ?int $usefulLifeYears, float $salvageValue = 0, ?Carbon $referenceDate = null): ?float
     {
         if ($purchaseValue === null || $usefulLifeYears === null || $usefulLifeYears <= 0 || ! $referenceDate) {
@@ -96,15 +95,15 @@ class Asset extends Model
         $yearsElapsed = min($referenceDate->diffInYears(now()), $usefulLifeYears);
         $depreciable = $purchaseValue - $salvageValue;
         $current = $salvageValue + $depreciable * max(0, 1 - $yearsElapsed / $usefulLifeYears);
+
         return round($current, 2);
     }
 
-    /**
-     * Current (depreciated) value. Straight-line from purchase_value, useful_life_years, salvage_value.
-     * If insufficient data, returns the stored value column.
-     */
     public function getCurrentValueAttribute(): ?float
     {
+        if ($this->book_value !== null) {
+            return (float) $this->book_value;
+        }
         $purchaseValue = $this->purchase_value !== null ? (float) $this->purchase_value : null;
         $usefulLife = $this->useful_life_years ? (int) $this->useful_life_years : null;
         $salvage = $this->salvage_value !== null ? (float) $this->salvage_value : 0.0;
@@ -114,7 +113,13 @@ class Asset extends Model
         if ($computed !== null) {
             return $computed;
         }
+
         return $this->value !== null ? (float) $this->value : null;
+    }
+
+    public function isDisposed(): bool
+    {
+        return in_array($this->status, ['disposed', 'sold', 'written_off', 'scrapped', 'donated_out'], true);
     }
 
     public function tenant(): BelongsTo
@@ -125,5 +130,35 @@ class Asset extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(AssetLocation::class, 'location_id');
+    }
+
+    public function capitalisationPolicy(): BelongsTo
+    {
+        return $this->belongsTo(AssetCapitalisationPolicy::class, 'capitalisation_policy_id');
+    }
+
+    public function assignmentHistories(): HasMany
+    {
+        return $this->hasMany(AssetAssignmentHistory::class);
+    }
+
+    public function locationHistories(): HasMany
+    {
+        return $this->hasMany(AssetLocationHistory::class);
+    }
+
+    public function disposals(): HasMany
+    {
+        return $this->hasMany(AssetDisposal::class);
+    }
+
+    public function maintenanceRecords(): HasMany
+    {
+        return $this->hasMany(AssetMaintenanceRecord::class);
     }
 }

@@ -979,15 +979,46 @@ Route::prefix('v1')->group(function () {
         Route::delete('asset-categories/{assetCategory}', [\App\Http\Controllers\Api\V1\Assets\AssetCategoryController::class, 'destroy']);
 
         // Assets (inventory, fleet - filter by category or assigned_to=me; create gated by admin/manager)
+        Route::get('assets/dashboard', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'dashboard']);
+        Route::get('assets/register-export', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'registerExport']);
         Route::get('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'index']);
         Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
         Route::post('assets/{asset}/capitalise', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'capitalise']);
         Route::post('assets/{asset}/reject-capitalisation', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'rejectCapitalisation']);
+        Route::post('assets/{asset}/assign', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assign']);
+        Route::post('assets/{asset}/acknowledge', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'acknowledge']);
+        Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'transfer']);
+        Route::post('assets/{asset}/return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'returnAsset']);
+        Route::post('assets/{asset}/mark-condition', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'markCondition']);
+        Route::get('assets/{asset}/assignment-history', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assignmentHistory']);
         Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
         Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
         Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);
         Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
         Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);
+
+        // Asset lifecycle: locations, policies, verification, maintenance, depreciation
+        Route::get('assets-meta/locations', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'locations']);
+        Route::post('assets-meta/locations', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeLocation']);
+        Route::get('assets-meta/capitalisation-policies', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'policies']);
+        Route::post('assets-meta/capitalisation-policies', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storePolicy']);
+        Route::get('assets-meta/verification-campaigns', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'campaigns']);
+        Route::post('assets-meta/verification-campaigns', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeCampaign']);
+        Route::post('assets-meta/verification-campaigns/{assetVerificationCampaign}/results', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'recordVerification']);
+        Route::post('assets-meta/verification-campaigns/{assetVerificationCampaign}/close', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'closeCampaign']);
+        Route::get('assets-meta/maintenance', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'maintenanceIndex']);
+        Route::post('assets-meta/maintenance', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeMaintenance']);
+        Route::post('assets-meta/maintenance/{assetMaintenanceRecord}/complete', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'completeMaintenance']);
+        Route::get('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'depreciationRuns']);
+        Route::post('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'runDepreciation']);
+
+        // Disposal workflow
+        Route::get('asset-disposals', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'index']);
+        Route::post('asset-disposals', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'store']);
+        Route::post('asset-disposals/{assetDisposal}/recommend', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'recommend']);
+        Route::post('asset-disposals/{assetDisposal}/finance-review', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'financeReview']);
+        Route::post('asset-disposals/{assetDisposal}/approve', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'approve']);
+        Route::post('asset-disposals/{assetDisposal}/complete', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'complete']);
 
         // Asset Movements
         Route::get('assets/movements/list', [\App\Http\Controllers\Api\V1\Assets\AssetMovementController::class, 'index']);

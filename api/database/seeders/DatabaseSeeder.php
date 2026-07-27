@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
             PortfolioSeeder::class,
             LookupsSeeder::class,
             AssetCategorySeeder::class,
+            FixedAssetPhase1Seeder::class,
 
             // ── Users & Auth ───────────────────────────────
             UsersSeeder::class,

@@ -30,10 +30,13 @@ class AssetController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $query = Asset::where('tenant_id', $user->tenant_id);
+        $query = Asset::where('tenant_id', $user->tenant_id)
+            ->with(['assignedUser:id,name,email', 'location']);
 
         if ($request->input('assigned_to') === 'me') {
             $query->where('assigned_to', $user->id);
+        } elseif ($request->filled('assigned_to') && is_numeric($request->input('assigned_to'))) {
+            $query->where('assigned_to', (int) $request->input('assigned_to'));
         }
 
         if ($category = $request->input('category')) {
@@ -42,6 +45,19 @@ class AssetController extends Controller
 
         if ($status = $request->input('status')) {
             $query->where('status', $status);
+        }
+
+        if ($class = $request->input('asset_class')) {
+            $query->where('asset_class', $class);
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('asset_code', 'like', "%{$search}%")
+                    ->orWhere('tag_number', 'like', "%{$search}%")
+                    ->orWhere('serial_number', 'like', "%{$search}%");
+            });
         }
 
         $perPage = min((int) $request->input('per_page', 50), 100);
@@ -137,14 +153,21 @@ class AssetController extends Controller
     public function capitalise(Request $request, Asset $asset): JsonResponse
     {
         $validated = $request->validate([
-            'asset_code'          => ['nullable', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
-            'category'            => ['required', 'string', 'max:32'],
-            'purchase_date'       => ['required', 'date'],
-            'purchase_value'      => ['required', 'numeric', 'min:0'],
-            'useful_life_years'   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'salvage_value'       => ['nullable', 'numeric', 'min:0'],
-            'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
+            'asset_code'             => ['nullable', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
+            'category'               => ['required', 'string', 'max:32'],
+            'purchase_date'          => ['required', 'date'],
+            'purchase_value'         => ['required', 'numeric', 'min:0'],
+            'useful_life_years'      => ['nullable', 'integer', 'min:1', 'max:100'],
+            'salvage_value'          => ['nullable', 'numeric', 'min:0'],
+            'depreciation_method'    => ['nullable', 'string', 'in:straight_line,declining_balance'],
+            'asset_class'            => ['nullable', 'string', 'in:capital,controlled'],
+            'force_controlled'       => ['nullable', 'boolean'],
+            'serial_number'          => ['nullable', 'string', 'max:128'],
+            'tag_number'             => ['nullable', 'string', 'max:64'],
+            'allow_serial_duplicate' => ['nullable', 'boolean'],
+            'funding_source'         => ['nullable', 'string', 'max:128'],
+            'location_id'            => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'notes'                  => ['nullable', 'string', 'max:2000'],
         ]);
 
         $capitalised = $this->assetService->capitalise($asset, $validated, $request->user());
@@ -153,6 +176,128 @@ class AssetController extends Controller
         return response()->json([
             'data'    => $capitalised->fresh(),
             'message' => 'Asset capitalised into the Fixed Asset Register.',
+        ]);
+    }
+
+    public function assign(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'assigned_to' => ['required', 'integer', 'exists:users,id'],
+            'department' => ['nullable', 'string', 'max:128'],
+            'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'assignment_type' => ['nullable', 'string', 'in:custody,loan,shared'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $assignee = \App\Models\User::findOrFail($validated['assigned_to']);
+        $updated = $this->assetService->assign($asset, $assignee, $request->user(), $validated);
+
+        return response()->json(['data' => $updated, 'message' => 'Asset assigned.']);
+    }
+
+    public function acknowledge(Request $request, Asset $asset): JsonResponse
+    {
+        $updated = $this->assetService->acknowledge($asset, $request->user());
+
+        return response()->json(['data' => $updated, 'message' => 'Custody acknowledged.']);
+    }
+
+    public function transfer(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'department' => ['nullable', 'string', 'max:128'],
+            'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $to = \App\Models\User::findOrFail($validated['to_user_id']);
+        $updated = $this->assetService->transfer($asset, $to, $request->user(), $validated);
+
+        return response()->json(['data' => $updated, 'message' => 'Asset transferred.']);
+    }
+
+    public function returnAsset(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $updated = $this->assetService->returnAsset($asset, $request->user(), $validated);
+
+        return response()->json(['data' => $updated, 'message' => 'Asset returned.']);
+    }
+
+    public function markCondition(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:missing,damaged,lost,stolen,under_investigation'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $updated = $this->assetService->markCondition($asset, $validated['status'], $request->user(), $validated['notes'] ?? null);
+
+        return response()->json(['data' => $updated, 'message' => 'Asset condition updated.']);
+    }
+
+    public function assignmentHistory(Request $request, Asset $asset): JsonResponse
+    {
+        $user = $request->user();
+        if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+
+        return response()->json([
+            'data' => $asset->assignmentHistories()->orderByDesc('assigned_at')->get(),
+        ]);
+    }
+
+    public function registerExport(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
+    {
+        $user = $request->user();
+        $rows = Asset::where('tenant_id', $user->tenant_id)
+            ->where('status', '!=', 'pending')
+            ->orderBy('asset_code')
+            ->get();
+
+        if ($request->input('format') === 'json') {
+            return response()->json(['data' => $rows]);
+        }
+
+        $filename = 'fixed-asset-register-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'asset_code', 'tag_number', 'name', 'category', 'asset_class', 'status',
+                'serial_number', 'purchase_date', 'purchase_value', 'funding_source',
+                'useful_life_years', 'accumulated_depreciation', 'book_value', 'location_id', 'assigned_to',
+            ]);
+            foreach ($rows as $r) {
+                fputcsv($out, [
+                    $r->asset_code, $r->tag_number, $r->name, $r->category, $r->asset_class, $r->status,
+                    $r->serial_number, optional($r->purchase_date)?->toDateString(), $r->purchase_value, $r->funding_source,
+                    $r->useful_life_years, $r->accumulated_depreciation, $r->book_value ?? $r->current_value, $r->location_id, $r->assigned_to,
+                ]);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    public function dashboard(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+        $base = Asset::where('tenant_id', $tenantId);
+
+        return response()->json([
+            'data' => [
+                'total' => (clone $base)->count(),
+                'pending' => (clone $base)->where('status', 'pending')->count(),
+                'capital' => (clone $base)->where('asset_class', 'capital')->count(),
+                'controlled' => (clone $base)->where('asset_class', 'controlled')->count(),
+                'assigned' => (clone $base)->whereNotNull('assigned_to')->whereNotIn('status', ['disposed', 'retired', 'pending'])->count(),
+                'missing' => (clone $base)->where('status', 'missing')->count(),
+                'pending_disposal' => (clone $base)->where('status', 'pending_disposal')->count(),
+                'warranty_expiring_30d' => (clone $base)->whereNotNull('warranty_expiry')
+                    ->whereBetween('warranty_expiry', [now()->toDateString(), now()->addDays(30)->toDateString()])->count(),
+            ],
         ]);
     }
 
@@ -310,6 +455,10 @@ class AssetController extends Controller
         }
         if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
             abort(404);
+        }
+
+        if ($asset->isDisposed()) {
+            return response()->json(['message' => 'Disposed assets are retained for audit; status unchanged.'], 422);
         }
 
         // Mark as retired rather than hard-delete to preserve audit history
