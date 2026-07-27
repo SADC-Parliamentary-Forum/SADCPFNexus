@@ -901,6 +901,10 @@ export interface TravelRequest {
   created_at: string;
   requester?: User;
   approver?: User;
+  workflow_stage?: string | null;
+  workflow_status?: string | null;
+  pending_with?: string[];
+  pending_with_label?: string | null;
   itineraries?: TravelItinerary[];
   funding_lines?: { id: number; item: string; forum_amount: number; host_amount: number }[];
   dsa_lines?: TravelDsaLine[];

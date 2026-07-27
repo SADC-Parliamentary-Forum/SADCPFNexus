@@ -43,6 +43,22 @@ function dsaOf(row: TravelRequest): number {
   return Number(row.finance_dsa_total ?? row.actual_dsa ?? row.estimated_dsa ?? 0);
 }
 
+function stageOf(row: TravelRequest): string {
+  return row.workflow_stage || STATUS_CONFIG[row.status]?.label || row.status || "—";
+}
+
+function holdingOf(row: TravelRequest): string {
+  if (row.pending_with_label) return row.pending_with_label;
+  if (row.pending_with?.length) return row.pending_with.join(", ");
+  if (row.status === "approved" && !row.director_finance_confirmed_at && row.finance_status) {
+    return "Director Finance";
+  }
+  if (row.retirement_status && row.retirement_status !== "completed") {
+    return row.requester?.name ? `${row.requester.name} (retirement)` : "Traveller (retirement)";
+  }
+  return "—";
+}
+
 export function TravelQueueTable({
   queue,
   title,
@@ -92,6 +108,9 @@ export function TravelQueueTable({
         row.status,
         row.finance_status,
         row.retirement_status,
+        row.workflow_stage,
+        row.pending_with_label,
+        ...(row.pending_with ?? []),
       ]
         .filter(Boolean)
         .join(" ")
@@ -110,6 +129,8 @@ export function TravelQueueTable({
         destination: destinationOf(r),
         requester: r.requester?.name ?? "",
         status: r.status,
+        workflow_stage: stageOf(r),
+        pending_with: holdingOf(r),
         finance_status: r.finance_status ?? "",
         estimated_dsa: r.estimated_dsa ?? "",
         finance_dsa_total: r.finance_dsa_total ?? r.actual_dsa ?? "",
@@ -124,6 +145,8 @@ export function TravelQueueTable({
         { key: "destination", header: "Destination" },
         { key: "requester", header: "Requester" },
         { key: "status", header: "Status" },
+        { key: "workflow_stage", header: "Workflow stage" },
+        { key: "pending_with", header: "Holding up" },
         { key: "finance_status", header: "Finance status" },
         { key: "estimated_dsa", header: "Est. DSA" },
         { key: "finance_dsa_total", header: "Finance DSA" },
@@ -218,7 +241,7 @@ export function TravelQueueTable({
           <input
             type="search"
             className="form-input pl-10"
-            placeholder="Search reference, purpose, destination…"
+            placeholder="Search reference, requester, stage…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -249,16 +272,16 @@ export function TravelQueueTable({
                 <tr>
                   <th>Reference</th>
                   <th>Purpose</th>
-                  {(variant === "approval" || variant === "admin") && <th>Destination</th>}
-                  {(variant === "approval" || variant === "admin") && <th>Requester</th>}
+                  <th>Destination</th>
+                  <th>Requester</th>
+                  <th>Stage</th>
+                  <th>Holding up</th>
                   {variant === "finance" && <th>Est. DSA</th>}
-                  {variant === "finance" && <th>Finance status</th>}
+                  {variant === "finance" && <th>Finance</th>}
                   {variant === "director-finance" && <th>DSA total</th>}
                   {variant === "retirement" && <th>Retirement</th>}
                   {variant === "retirement" && <th>Due</th>}
-                  {(variant === "approval" || variant === "admin" || variant === "director-finance") && (
-                    <th>Status</th>
-                  )}
+                  <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
@@ -267,14 +290,18 @@ export function TravelQueueTable({
                   const sc = STATUS_CONFIG[t.status] ?? { label: t.status, badge: "badge-muted" };
                   return (
                     <tr key={t.id}>
-                      <td className="font-mono text-xs text-neutral-600">{t.reference_number}</td>
-                      <td className="max-w-[220px] truncate font-medium text-neutral-900">{t.purpose}</td>
-                      {(variant === "approval" || variant === "admin") && (
-                        <td className="text-sm text-neutral-600">{destinationOf(t)}</td>
-                      )}
-                      {(variant === "approval" || variant === "admin") && (
-                        <td className="text-sm text-neutral-600">{t.requester?.name ?? "—"}</td>
-                      )}
+                      <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">{t.reference_number}</td>
+                      <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose}</td>
+                      <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(t)}</td>
+                      <td className="text-sm text-neutral-700 whitespace-nowrap">{t.requester?.name ?? "—"}</td>
+                      <td>
+                        <span className="badge badge-muted text-xs">{stageOf(t)}</span>
+                      </td>
+                      <td className="text-sm text-neutral-700 max-w-[160px]">
+                        <span className="line-clamp-2" title={holdingOf(t)}>
+                          {holdingOf(t)}
+                        </span>
+                      </td>
                       {variant === "finance" && (
                         <td className="whitespace-nowrap text-sm">
                           {formatCurrency(Number(t.estimated_dsa ?? 0))} {t.currency ?? ""}
@@ -304,11 +331,9 @@ export function TravelQueueTable({
                           {t.retirement_due_at ? formatDateShort(t.retirement_due_at) : "—"}
                         </td>
                       )}
-                      {(variant === "approval" || variant === "admin" || variant === "director-finance") && (
-                        <td>
-                          <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
-                        </td>
-                      )}
+                      <td>
+                        <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
+                      </td>
                       <td>
                         <Link
                           href={`/travel/${t.id}`}

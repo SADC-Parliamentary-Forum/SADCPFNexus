@@ -431,4 +431,56 @@ class TravelPhase1CoreTest extends TestCase
             ->assertJsonPath('data.prepared_by', $delegate->id)
             ->assertJsonPath('data.prepared_on_behalf_of', $principal->id);
     }
+
+    public function test_list_includes_workflow_stage_and_pending_with_fields(): void
+    {
+        [$http, $user] = $this->asStaff();
+        $create = $http->postJson('/api/v1/travel/requests', $this->travelPayload());
+        $create->assertCreated();
+        $id = $create->json('data.id');
+        $travel = TravelRequest::findOrFail($id);
+        $this->attachDoc($travel, $user->id, 'invitation');
+        $this->attachDoc($travel, $user->id, 'agenda');
+        $http->postJson("/api/v1/travel/requests/{$id}/submit")->assertOk();
+
+        $list = $http->getJson('/api/v1/travel/requests?queue=admin&per_page=50')
+            ->assertOk();
+
+        $payload = $list->json();
+        $items = $payload['data'] ?? [];
+        if (isset($items['data']) && is_array($items['data'])) {
+            $items = $items['data'];
+        }
+        $row = collect($items)->firstWhere('id', $id)
+            ?? collect($items)->firstWhere('id', (string) $id);
+
+        $this->assertNotNull($row, 'Submitted travel should appear in admin queue list. Keys=' . implode(',', array_keys($payload)));
+        $this->assertArrayHasKey('workflow_stage', $row, 'Row keys: ' . implode(',', array_keys($row)));
+        $this->assertArrayHasKey('pending_with', $row);
+        $this->assertArrayHasKey('pending_with_label', $row);
+        $this->assertNotEmpty($row['workflow_stage']);
+    }
+
+    public function test_owner_can_upload_travel_attachment(): void
+    {
+        [$http, $user] = $this->asStaff();
+        $create = $http->postJson('/api/v1/travel/requests', $this->travelPayload());
+        $id = $create->json('data.id');
+
+        $file = $this->fakePdf('invitation.pdf');
+
+        $http->post("/api/v1/travel/requests/{$id}/attachments", [
+            'file' => $file,
+            'document_type' => 'invitation',
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonPath('data.document_type', 'invitation')
+            ->assertJsonPath('data.original_filename', 'invitation.pdf');
+
+        $this->assertDatabaseHas('attachments', [
+            'attachable_id' => $id,
+            'document_type' => 'invitation',
+            'uploaded_by' => $user->id,
+        ]);
+    }
 }

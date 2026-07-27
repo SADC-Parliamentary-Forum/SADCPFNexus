@@ -29,7 +29,14 @@ class TravelService
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = TravelRequest::with(['requester', 'itineraries', 'programme'])
+        $query = TravelRequest::with([
+                'requester',
+                'itineraries',
+                'programme',
+                'approvalRequest.workflow.steps.role',
+                'approvalRequest.workflow.steps.user',
+                'approvalRequest.history.user',
+            ])
             ->orderByDesc('created_at');
 
         $canViewAll = $user->isSystemAdmin()
@@ -63,7 +70,55 @@ class TravelService
             });
         }
 
-        return $query->paginate($filters['per_page'] ?? 20);
+        $paginator = $query->paginate($filters['per_page'] ?? 20);
+
+        return $paginator->through(function (TravelRequest $travel) {
+            $this->appendWorkflowSummary($travel);
+
+            return array_merge($travel->toArray(), [
+                'workflow_stage' => $travel->getAttribute('workflow_stage'),
+                'workflow_status' => $travel->getAttribute('workflow_status'),
+                'pending_with' => $travel->getAttribute('pending_with') ?? [],
+                'pending_with_label' => $travel->getAttribute('pending_with_label'),
+            ]);
+        });
+    }
+
+    protected function appendWorkflowSummary(TravelRequest $travel): TravelRequest
+    {
+        $approval = $travel->approvalRequest;
+        if ($approval) {
+            $snap = $this->workflowService->snapshot($approval);
+            $pendingNames = collect($snap['currently_with'] ?? [])
+                ->pluck('name')
+                ->filter()
+                ->values()
+                ->all();
+            $travel->setAttribute('workflow_stage', $snap['current_stage']['label'] ?? null);
+            $travel->setAttribute('workflow_status', $snap['status'] ?? $approval->status);
+            $travel->setAttribute('pending_with', $pendingNames);
+            $travel->setAttribute(
+                'pending_with_label',
+                ! empty($pendingNames) ? implode(', ', $pendingNames) : null
+            );
+        } else {
+            $stage = match ($travel->status) {
+                'draft' => 'Draft',
+                'returned_for_correction' => 'Returned for correction',
+                'approved' => $travel->finance_status
+                    ? 'Approved · ' . str_replace('_', ' ', (string) $travel->finance_status)
+                    : 'Approved',
+                'rejected' => 'Rejected',
+                'cancelled', 'withdrawn' => ucfirst(str_replace('_', ' ', $travel->status)),
+                default => ucfirst(str_replace('_', ' ', (string) $travel->status)),
+            };
+            $travel->setAttribute('workflow_stage', $stage);
+            $travel->setAttribute('workflow_status', $travel->status);
+            $travel->setAttribute('pending_with', []);
+            $travel->setAttribute('pending_with_label', $travel->status === 'draft' ? $travel->requester?->name : null);
+        }
+
+        return $travel;
     }
 
     protected function applyQueueFilter($query, string $queue, User $user): void
