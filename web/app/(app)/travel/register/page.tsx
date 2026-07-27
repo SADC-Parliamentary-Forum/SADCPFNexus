@@ -206,16 +206,16 @@ export default function TravelRegisterPage() {
       showToast("Travel request updated.");
       await load();
     } catch (err: unknown) {
-      const msg =
+      const apiMessage =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })
-          ?.response?.data?.message ??
-        Object.values(
-          (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data
-            ?.errors ?? {},
-        )
-          .flat()
-          .join(" ") ||
-        "Failed to update travel request.";
+          ?.response?.data?.message;
+      const fieldErrors = Object.values(
+        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data
+          ?.errors ?? {},
+      )
+        .flat()
+        .join(" ");
+      const msg = apiMessage || fieldErrors || "Failed to update travel request.";
       setEditError(msg);
     } finally {
       setEditSaving(false);
