@@ -1911,6 +1911,75 @@ export interface BudgetVarianceRow {
   }>;
 }
 
+export interface BudgetCycle {
+  id: number;
+  tenant_id: number;
+  financial_year_id: number;
+  status: string;
+  opened_at?: string | null;
+  locked_at?: string | null;
+  sg_approved_at?: string | null;
+  approved_total?: number | null;
+  notes?: string | null;
+  financial_year?: { id: number; code: string; label: string };
+  guideline?: BudgetGuideline | null;
+  submissions?: BudgetSubmissionPack[];
+  approvals?: Array<{
+    id: number;
+    stage: string;
+    decision: string;
+    comments?: string | null;
+    decided_at: string;
+  }>;
+}
+
+export interface BudgetGuideline {
+  id: number;
+  budget_cycle_id: number;
+  submission_opens_on?: string | null;
+  department_deadline?: string | null;
+  assumptions?: string | null;
+  inflation_rate?: number | null;
+  fx_assumptions?: string | null;
+  ceilings?: Record<string, unknown> | null;
+  published_at?: string | null;
+}
+
+export interface BudgetSubmissionItem {
+  id?: number;
+  funding_source_id?: number | null;
+  category?: string | null;
+  code?: string | null;
+  name: string;
+  description?: string | null;
+  quantity?: number | null;
+  unit_rate?: number | null;
+  calculated_amount?: number | null;
+  requested_amount: number;
+  prior_year_amount?: number | null;
+  justification?: string | null;
+  workplan_ref?: string | null;
+}
+
+export interface BudgetSubmissionPack {
+  id: number;
+  budget_cycle_id: number;
+  department_id?: number | null;
+  programme_id?: number | null;
+  type: string;
+  title: string;
+  status: string;
+  prepared_by: number;
+  submitted_at?: string | null;
+  returned_reason?: string | null;
+  require_hod_approval?: boolean;
+  motivation?: string | null;
+  items?: BudgetSubmissionItem[];
+  department?: { id: number; name: string } | null;
+  preparer?: { id: number; name: string } | null;
+  cycle?: BudgetCycle;
+}
+
 export const budgetApi = {
   financialYears: () => api.get<{ success: boolean; data: unknown[] }>("/budget/financial-years"),
   fundingSources: (params?: { active_only?: boolean }) =>
@@ -1943,6 +2012,35 @@ export const budgetApi = {
     explanationId: number,
     data: { decision: "accepted" | "returned"; finance_comments?: string },
   ) => api.post<{ success: boolean; data: unknown }>(`/budget/variance/explanations/${explanationId}/review`, data),
+
+  cycles: () => api.get<{ success: boolean; data: BudgetCycle[] }>("/budget/cycles"),
+  createCycle: (data: { financial_year_id: number; notes?: string }) =>
+    api.post<{ success: boolean; data: BudgetCycle }>("/budget/cycles", data),
+  getCycle: (id: number) => api.get<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}`),
+  publishGuidelines: (id: number, data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: BudgetGuideline }>(`/budget/cycles/${id}/guidelines`, data),
+  advanceCycle: (id: number, data?: { comments?: string }) =>
+    api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/advance`, data ?? {}),
+  returnCycle: (id: number, data: { reason: string }) =>
+    api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/return`, data),
+  sgApproveCycle: (id: number, data?: { comments?: string; approved_total?: number }) =>
+    api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/sg-approve`, data ?? {}),
+  lockCycle: (id: number) => api.post<{ success: boolean; data: BudgetCycle }>(`/budget/cycles/${id}/lock`),
+
+  submissions: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: PaginatedResponse<BudgetSubmissionPack> }>("/budget/submissions", { params }),
+  getSubmission: (id: number) =>
+    api.get<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}`),
+  createSubmission: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: BudgetSubmissionPack }>("/budget/submissions", data),
+  updateSubmission: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}`, data),
+  submitSubmission: (id: number) =>
+    api.post<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}/submit`),
+  acceptSubmission: (id: number) =>
+    api.post<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}/accept`),
+  returnSubmission: (id: number, data: { reason: string }) =>
+    api.post<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}/return`, data),
 };
 
 export interface Vendor {

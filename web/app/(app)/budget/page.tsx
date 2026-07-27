@@ -83,6 +83,12 @@ export default function BudgetControlPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/budget/cycles" className="btn-secondary text-sm">
+            Annual cycles
+          </Link>
+          <Link href="/budget/variance" className="btn-secondary text-sm">
+            Variance
+          </Link>
           <Link href="/finance/budget" className="btn-secondary text-sm">
             Legacy portfolios
           </Link>

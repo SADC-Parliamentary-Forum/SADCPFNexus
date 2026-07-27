@@ -18,12 +18,13 @@ class WorkflowService
 {
     /** Human-readable labels for each module type. */
     private const MODULE_LABELS = [
-        'travel'         => 'Travel',
-        'leave'          => 'Leave',
-        'imprest'        => 'Imprest',
-        'procurement'    => 'Procurement',
-        'salary_advance' => 'Salary Advance',
-        'timesheet'      => 'Timesheet',
+        'travel'            => 'Travel',
+        'leave'             => 'Leave',
+        'imprest'           => 'Imprest',
+        'procurement'       => 'Procurement',
+        'salary_advance'    => 'Salary Advance',
+        'timesheet'         => 'Timesheet',
+        'budget_submission' => 'Budget Submission',
     ];
 
     public function __construct(
@@ -309,7 +310,7 @@ class WorkflowService
         if (method_exists($entity, 'creator') && $entity->creator) {
             return $entity->creator;
         }
-        $id = $entity->requester_id ?? $entity->created_by ?? null;
+        $id = $entity->requester_id ?? $entity->prepared_by ?? $entity->created_by ?? null;
 
         return $id ? User::find($id) : null;
     }
@@ -767,6 +768,7 @@ class WorkflowService
             'App\\Models\\ImprestRequest'       => 'imprest',
             'App\\Models\\ProcurementRequest'   => 'procurement',
             'App\\Models\\SalaryAdvanceRequest' => 'salary_advance',
+            'App\\Models\\BudgetSubmission'     => 'budget_submission',
         ];
 
         return $map[$type] ?? strtolower(class_basename($type));
@@ -779,12 +781,13 @@ class WorkflowService
         }
 
         return match ($module) {
-            'travel'         => 'Destination: ' . ($entity->destination_city ?? '') . ', ' . ($entity->destination_country ?? '') . "\nDeparture: " . ($entity->departure_date ?? ''),
-            'leave'          => 'Type: ' . ($entity->leave_type ?? '') . "\nFrom: " . ($entity->start_date ?? '') . ' to ' . ($entity->end_date ?? ''),
-            'imprest'        => 'Amount: ' . number_format((float) ($entity->amount_requested ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
-            'procurement'    => 'Item: ' . ($entity->title ?? '') . "\nEstimated value: " . number_format((float) ($entity->estimated_value ?? 0), 2) . ' ' . ($entity->currency ?? 'USD'),
-            'salary_advance' => 'Amount: ' . number_format((float) ($entity->amount ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
-            default          => '',
+            'travel'            => 'Destination: ' . ($entity->destination_city ?? '') . ', ' . ($entity->destination_country ?? '') . "\nDeparture: " . ($entity->departure_date ?? ''),
+            'leave'             => 'Type: ' . ($entity->leave_type ?? '') . "\nFrom: " . ($entity->start_date ?? '') . ' to ' . ($entity->end_date ?? ''),
+            'imprest'           => 'Amount: ' . number_format((float) ($entity->amount_requested ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
+            'procurement'       => 'Item: ' . ($entity->title ?? '') . "\nEstimated value: " . number_format((float) ($entity->estimated_value ?? 0), 2) . ' ' . ($entity->currency ?? 'USD'),
+            'salary_advance'    => 'Amount: ' . number_format((float) ($entity->amount ?? 0), 2) . ' ' . ($entity->currency ?? 'USD') . "\nPurpose: " . ($entity->purpose ?? ''),
+            'budget_submission' => 'Title: ' . ($entity->title ?? '') . "\nType: " . ($entity->type ?? ''),
+            default             => '',
         };
     }
 }

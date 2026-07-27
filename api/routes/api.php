@@ -571,6 +571,25 @@ Route::prefix('v1')->group(function () {
             Route::post('variance/scan', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'scanVariances']);
             Route::post('variance/{variance}/explanation', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'explainVariance']);
             Route::post('variance/explanations/{explanation}/review', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'reviewVarianceExplanation']);
+
+            // Phase 2 A1 — annual cycle
+            Route::get('cycles', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'index']);
+            Route::post('cycles', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'store']);
+            Route::get('cycles/{cycle}', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'show']);
+            Route::post('cycles/{cycle}/guidelines', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'publishGuidelines']);
+            Route::post('cycles/{cycle}/advance', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'advance']);
+            Route::post('cycles/{cycle}/return', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'returnToDepartments']);
+            Route::post('cycles/{cycle}/sg-approve', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'sgApprove']);
+            Route::post('cycles/{cycle}/lock', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'lock']);
+
+            Route::get('submissions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'indexSubmissions']);
+            Route::post('submissions', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'storeSubmission']);
+            Route::get('submissions/{submission}', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'showSubmission']);
+            Route::put('submissions/{submission}', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'updateSubmission']);
+            Route::post('submissions/{submission}/submit', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'submitSubmission']);
+            Route::post('submissions/{submission}/accept', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'acceptSubmission']);
+            Route::post('submissions/{submission}/consolidate', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'consolidateSubmission']);
+            Route::post('submissions/{submission}/return', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'returnSubmission']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets
