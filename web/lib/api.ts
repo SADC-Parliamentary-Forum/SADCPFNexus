@@ -1058,7 +1058,7 @@ export const travelApi = {
   get: (id: number) => api.get<TravelRequest>(`/travel/requests/${id}`),
   create: (data: Omit<Partial<TravelRequest>, "itineraries"> & { itineraries?: Partial<TravelItinerary>[] }) =>
     api.post<{ data: TravelRequest; message: string }>("/travel/requests", data),
-  update: (id: number, data: Partial<TravelRequest>) =>
+  update: (id: number, data: Omit<Partial<TravelRequest>, "itineraries"> & { itineraries?: Partial<TravelItinerary>[] }) =>
     api.put<{ data: TravelRequest; message: string }>(`/travel/requests/${id}`, data),
   delete: (id: number) => api.delete(`/travel/requests/${id}`),
   submit: (id: number, data?: { acknowledge_conflicts?: boolean; conflict_resolution_note?: string }) =>
