@@ -86,6 +86,9 @@ export default function BudgetControlPage() {
           <Link href="/budget/cycles" className="btn-secondary text-sm">
             Annual cycles
           </Link>
+          <Link href="/budget/changes" className="btn-secondary text-sm">
+            Changes
+          </Link>
           <Link href="/budget/variance" className="btn-secondary text-sm">
             Variance
           </Link>

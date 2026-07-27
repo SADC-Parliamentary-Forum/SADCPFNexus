@@ -12,12 +12,14 @@ class BudgetControlSetting extends Model
         'significant_variance_pct',
         'warning_utilisation_pct',
         'critical_utilisation_pct',
+        'revision_finance_ceiling_pct',
     ];
 
     protected $casts = [
         'significant_variance_pct' => 'float',
         'warning_utilisation_pct' => 'integer',
         'critical_utilisation_pct' => 'integer',
+        'revision_finance_ceiling_pct' => 'float',
     ];
 
     public function tenant(): BelongsTo
@@ -33,6 +35,7 @@ class BudgetControlSetting extends Model
                 'significant_variance_pct' => 20,
                 'warning_utilisation_pct' => 80,
                 'critical_utilisation_pct' => 100,
+                'revision_finance_ceiling_pct' => 10,
             ]
         );
     }

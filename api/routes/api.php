@@ -592,6 +592,16 @@ Route::prefix('v1')->group(function () {
             Route::post('submissions/{submission}/accept', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'acceptSubmission']);
             Route::post('submissions/{submission}/consolidate', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'consolidateSubmission']);
             Route::post('submissions/{submission}/return', [\App\Http\Controllers\Api\V1\Budget\BudgetCycleController::class, 'returnSubmission']);
+
+            // Phase 2 B — mid-year change control
+            Route::get('changes', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'index']);
+            Route::post('changes', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'store']);
+            Route::get('changes/{change}', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'show']);
+            Route::put('changes/{change}', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'update']);
+            Route::post('changes/{change}/submit', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'submit']);
+            Route::post('changes/{change}/finance-decide', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'financeDecide']);
+            Route::post('changes/{change}/sg-decide', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'sgDecide']);
+            Route::post('changes/{change}/apply', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'apply']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

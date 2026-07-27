@@ -28,6 +28,7 @@ class BudgetLine extends Model
         'revised_allocation',
         'amount_spent',
         'is_active',
+        'is_contingency',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class BudgetLine extends Model
         'revised_allocation' => 'float',
         'amount_spent' => 'float',
         'is_active' => 'boolean',
+        'is_contingency' => 'boolean',
     ];
 
     public function budget(): BelongsTo

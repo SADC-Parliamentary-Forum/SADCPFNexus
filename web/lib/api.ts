@@ -1883,6 +1883,7 @@ export interface OrgBudgetLine {
   category: string;
   amount_allocated: number;
   is_active: boolean;
+  is_contingency?: boolean;
   budget?: { id: number; year: string; name: string; financial_year_id?: number | null };
   funding_source?: { id: number; code: string; name: string } | null;
 }
@@ -2063,7 +2064,51 @@ export const budgetApi = {
     api.post<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}/accept`),
   returnSubmission: (id: number, data: { reason: string }) =>
     api.post<{ success: boolean; data: BudgetSubmissionPack }>(`/budget/submissions/${id}/return`, data),
+
+  changes: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: PaginatedResponse<BudgetChangeRequest> }>("/budget/changes", { params }),
+  getChange: (id: number) =>
+    api.get<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}`),
+  createChange: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: BudgetChangeRequest }>("/budget/changes", data),
+  updateChange: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}`, data),
+  submitChange: (id: number) =>
+    api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/submit`),
+  financeDecideChange: (id: number, data: { decision: "approve" | "return" | "reject"; comments?: string }) =>
+    api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/finance-decide`, data),
+  sgDecideChange: (id: number, data: { decision: "approve" | "return" | "reject"; comments?: string }) =>
+    api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/sg-decide`, data),
+  applyChange: (id: number) =>
+    api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/apply`),
 };
+
+export interface BudgetChangeItem {
+  id?: number;
+  source_budget_line_id?: number | null;
+  target_budget_line_id?: number | null;
+  new_line_code?: string | null;
+  new_line_name?: string | null;
+  new_line_category?: string | null;
+  amount: number;
+  is_decrease?: boolean;
+  notes?: string | null;
+  source_line?: OrgBudgetLine | null;
+  target_line?: OrgBudgetLine | null;
+}
+
+export interface BudgetChangeRequest {
+  id: number;
+  budget_id: number;
+  type: string;
+  title: string;
+  status: string;
+  justification?: string | null;
+  requires_sg: boolean;
+  items?: BudgetChangeItem[];
+  budget?: { id: number; name: string; year?: string };
+  preparer?: { id: number; name: string } | null;
+}
 
 export interface Vendor {
   id: number;
