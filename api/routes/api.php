@@ -602,6 +602,12 @@ Route::prefix('v1')->group(function () {
             Route::post('changes/{change}/finance-decide', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'financeDecide']);
             Route::post('changes/{change}/sg-decide', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'sgDecide']);
             Route::post('changes/{change}/apply', [\App\Http\Controllers\Api\V1\Budget\BudgetChangeController::class, 'apply']);
+
+            // Read-only reports pack
+            Route::get('reports/utilisation', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'utilisation']);
+            Route::get('reports/commitment-ageing', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'commitmentAgeing']);
+            Route::get('reports/change-register', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'changeRegister']);
+            Route::get('reports/cycle-status', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'cycleStatus']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets

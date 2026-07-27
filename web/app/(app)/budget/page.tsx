@@ -92,6 +92,9 @@ export default function BudgetControlPage() {
           <Link href="/budget/variance" className="btn-secondary text-sm">
             Variance
           </Link>
+          <Link href="/budget/reports" className="btn-secondary text-sm">
+            Reports
+          </Link>
           <Link href="/finance/budget" className="btn-secondary text-sm">
             Legacy portfolios
           </Link>

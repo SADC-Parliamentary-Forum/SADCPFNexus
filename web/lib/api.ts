@@ -2083,7 +2083,115 @@ export const budgetApi = {
     api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/sg-decide`, data),
   applyChange: (id: number) =>
     api.post<{ success: boolean; data: BudgetChangeRequest }>(`/budget/changes/${id}/apply`),
+
+  reportUtilisation: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: BudgetUtilisationReport }>("/budget/reports/utilisation", { params }),
+  reportCommitmentAgeing: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: BudgetCommitmentAgeingReport }>("/budget/reports/commitment-ageing", {
+      params,
+    }),
+  reportChangeRegister: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: BudgetChangeRegisterReport }>("/budget/reports/change-register", { params }),
+  reportCycleStatus: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: BudgetCycleStatusReport }>("/budget/reports/cycle-status", { params }),
 };
+
+export interface BudgetUtilisationRow {
+  budget_line_id?: number;
+  code?: string | null;
+  name?: string | null;
+  department_id?: number | null;
+  department_name?: string | null;
+  funding_source_id?: number | null;
+  funding_source_name?: string | null;
+  funding_source_code?: string | null;
+  line_count?: number;
+  approved: number;
+  actual: number;
+  committed: number;
+  available: number;
+  pct_utilised: number;
+}
+
+export interface BudgetUtilisationReport {
+  group_by: "line" | "department" | "funding_source";
+  rows: BudgetUtilisationRow[];
+  totals: {
+    approved: number;
+    actual: number;
+    committed: number;
+    available: number;
+    line_count: number;
+  };
+}
+
+export interface BudgetCommitmentAgeingItem {
+  id: number;
+  budget_line_id: number | null;
+  budget_line_code?: string | null;
+  budget_line_name?: string | null;
+  source_type?: string | null;
+  source_id?: number | null;
+  source_key?: string | null;
+  status: string;
+  amount: number;
+  currency?: string | null;
+  reserved_at?: string | null;
+  age_days: number;
+  age_bucket: "0_30" | "31_60" | "61_90" | "90_plus" | string;
+}
+
+export interface BudgetCommitmentAgeingReport {
+  as_of: string;
+  buckets: Record<string, { count: number; amount: number }>;
+  items: BudgetCommitmentAgeingItem[];
+}
+
+export interface BudgetChangeRegisterRow {
+  id: number;
+  title: string;
+  type: string;
+  status: string;
+  budget_name?: string | null;
+  requires_sg: boolean;
+  total_amount: number;
+  item_count: number;
+  submitted_at?: string | null;
+  finance_decided_at?: string | null;
+  sg_decided_at?: string | null;
+  applied_at?: string | null;
+  prepared_by?: { id: number; name: string } | null;
+  approver_path: Array<{
+    step: string;
+    label: string;
+    at?: string | null;
+    actor_id?: number | null;
+  }>;
+}
+
+export interface BudgetChangeRegisterReport {
+  rows: BudgetChangeRegisterRow[];
+}
+
+export interface BudgetCycleStatusRow {
+  id: number;
+  financial_year_code?: string | null;
+  financial_year_label?: string | null;
+  status: string;
+  opened_at?: string | null;
+  sg_approved_at?: string | null;
+  locked_at?: string | null;
+  approved_total?: number | null;
+  submission_opens_on?: string | null;
+  department_deadline?: string | null;
+  guidelines_published_at?: string | null;
+  submission_counts: Record<string, number>;
+  submission_total: number;
+}
+
+export interface BudgetCycleStatusReport {
+  rows: BudgetCycleStatusRow[];
+}
 
 export interface BudgetChangeItem {
   id?: number;

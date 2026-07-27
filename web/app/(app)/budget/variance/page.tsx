@@ -108,6 +108,9 @@ export default function BudgetVariancePage() {
           <Link href="/budget" className="btn-secondary text-sm">
             Budget control
           </Link>
+          <Link href="/budget/reports" className="btn-secondary text-sm">
+            Reports
+          </Link>
           {canFinance && (
             <button
               type="button"
