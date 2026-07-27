@@ -18,7 +18,7 @@ export default function AssetDisposalPage() {
 
   async function load() {
     const r = await api.get<{ data: Disposal[] }>("/asset-disposals");
-    setRows(Array.isArray(r.data) ? r.data : []);
+    setRows(Array.isArray(r.data.data) ? r.data.data : []);
   }
 
   useEffect(() => { load().catch(() => setRows([])); }, []);

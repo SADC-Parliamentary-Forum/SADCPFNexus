@@ -7,13 +7,13 @@ export default function MyAssetsPage() {
   const [items, setItems] = useState<Asset[]>([]);
 
   useEffect(() => {
-    assetsApi.list({ assigned_to: "me", per_page: 100 }).then((r) => setItems(r.data ?? []));
+    assetsApi.list({ assigned_to: "me", per_page: 100 }).then((r) => setItems(r.data.data ?? []));
   }, []);
 
   async function acknowledge(id: number) {
     await assetsApi.acknowledge?.(id);
     const r = await assetsApi.list({ assigned_to: "me", per_page: 100 });
-    setItems(r.data ?? []);
+    setItems(r.data.data ?? []);
   }
 
   return (

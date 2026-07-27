@@ -18,7 +18,7 @@ export default function AssetDepreciationPage() {
 
   async function load() {
     const r = await api.get<{ data: Run[] }>("/assets-meta/depreciation-runs");
-    setRuns(Array.isArray(r.data) ? r.data : []);
+    setRuns(Array.isArray(r.data.data) ? r.data.data : []);
   }
 
   useEffect(() => { load().catch(() => setRuns([])); }, []);
@@ -27,7 +27,7 @@ export default function AssetDepreciationPage() {
     setBusy(true);
     try {
       const r = await api.post<{ message: string }>("/assets-meta/depreciation-runs", {});
-      setMsg(r.message ?? "Depreciation run completed (monitoring only).");
+      setMsg(r.data.message ?? "Depreciation run completed (monitoring only).");
       await load();
     } catch {
       setMsg("Unable to run depreciation.");

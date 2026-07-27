@@ -21,7 +21,7 @@ export default function AssetsDashboardPage() {
 
   useEffect(() => {
     api.get<{ data: Dash }>("/assets/dashboard")
-      .then((r) => setData(r.data))
+      .then((r) => setData(r.data.data))
       .catch(() => setError("Unable to load asset dashboard."));
   }, []);
 

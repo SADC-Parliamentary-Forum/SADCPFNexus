@@ -17,7 +17,7 @@ export default function AssetMaintenancePage() {
 
   useEffect(() => {
     api.get<{ data: RecordRow[] }>("/assets-meta/maintenance")
-      .then((r) => setRows(Array.isArray(r.data) ? r.data : []))
+      .then((r) => setRows(Array.isArray(r.data.data) ? r.data.data : []))
       .catch(() => setRows([]));
   }, []);
 

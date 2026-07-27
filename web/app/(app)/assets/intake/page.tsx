@@ -12,7 +12,7 @@ export default function AssetsIntakePage() {
 
   useEffect(() => {
     assetsApi.list({ status: "pending", per_page: 100 })
-      .then((r) => setItems(r.data ?? []))
+      .then((r) => setItems(r.data.data ?? []))
       .finally(() => setLoading(false));
   }, []);
 

@@ -12,11 +12,8 @@ export default function AssetVerificationPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   async function load() {
-    const r = await api.get<{ data: Campaign[] } | { data?: Campaign[]; data?: never } & Record<string, unknown>>("/assets-meta/verification-campaigns");
-    const payload = r as { data?: Campaign[]; data?: Campaign[] } & { data?: Campaign[] };
-    // Laravel paginator: { data: [...], current_page }
-    const list = Array.isArray((r as { data: Campaign[] }).data) ? (r as { data: Campaign[] }).data : [];
-    setCampaigns(list);
+    const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
+    setCampaigns(Array.isArray(r.data.data) ? r.data.data : []);
   }
 
   useEffect(() => { load().catch(() => setCampaigns([])); }, []);

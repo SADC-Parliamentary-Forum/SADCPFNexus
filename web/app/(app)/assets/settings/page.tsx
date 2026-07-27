@@ -20,10 +20,10 @@ export default function AssetSettingsPage() {
 
   useEffect(() => {
     api.get<{ data: Policy[] }>("/assets-meta/capitalisation-policies")
-      .then((r) => setPolicies(r.data ?? []))
+      .then((r) => setPolicies(r.data.data ?? []))
       .catch(() => setPolicies([]));
     api.get<{ data: Location[] }>("/assets-meta/locations")
-      .then((r) => setLocations(r.data ?? []))
+      .then((r) => setLocations(r.data.data ?? []))
       .catch(() => setLocations([]));
   }, []);
 

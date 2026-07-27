@@ -8,7 +8,7 @@ export default function AssetTransfersPage() {
 
   useEffect(() => {
     assetMovementsApi.list({ movement_type: "transfer", per_page: 50 })
-      .then((r) => setRows(r.data ?? []))
+      .then((r) => setRows(r.data.data ?? []))
       .catch(() => setRows([]));
   }, []);
 

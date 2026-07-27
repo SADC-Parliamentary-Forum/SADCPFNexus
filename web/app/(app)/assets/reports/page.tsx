@@ -11,8 +11,8 @@ export default function AssetReportsPage() {
     setBusy(true);
     setMsg(null);
     try {
-      const data = await api.get<{ data: Record<string, unknown>[] }>("/assets/register-export?format=json");
-      const rows = data.data ?? [];
+      const res = await api.get<{ data: Record<string, unknown>[] }>("/assets/register-export?format=json");
+      const rows = res.data.data ?? [];
       if (!rows.length) {
         setMsg("Register is empty.");
         return;
