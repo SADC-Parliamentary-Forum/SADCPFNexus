@@ -1887,6 +1887,30 @@ export interface OrgBudgetLine {
   funding_source?: { id: number; code: string; name: string } | null;
 }
 
+export interface BudgetVarianceRow {
+  id: number;
+  budget_line_id: number;
+  period_type: string;
+  period_key: string;
+  approved_budget: number;
+  actual_expenditure: number;
+  open_commitments: number;
+  available_budget: number;
+  variance_amount: number;
+  variance_pct: number | null;
+  utilisation_pct: number | null;
+  is_significant: boolean;
+  status: string;
+  budget_line?: OrgBudgetLine;
+  explanations?: Array<{
+    id: number;
+    category: string;
+    explanation: string;
+    remedial_action?: string | null;
+    status: string;
+  }>;
+}
+
 export const budgetApi = {
   financialYears: () => api.get<{ success: boolean; data: unknown[] }>("/budget/financial-years"),
   fundingSources: (params?: { active_only?: boolean }) =>
@@ -1908,6 +1932,17 @@ export const budgetApi = {
     form.append("file", file);
     return api.post<{ success: boolean; data: unknown }>("/budget/actuals/import", form);
   },
+  variances: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: PaginatedResponse<BudgetVarianceRow> }>("/budget/variance", { params }),
+  scanVariances: () => api.post<{ success: boolean; data: { scanned: number; significant: number } }>("/budget/variance/scan"),
+  explainVariance: (
+    varianceId: number,
+    data: { category: string; explanation: string; remedial_action?: string },
+  ) => api.post<{ success: boolean; data: unknown }>(`/budget/variance/${varianceId}/explanation`, data),
+  reviewVarianceExplanation: (
+    explanationId: number,
+    data: { decision: "accepted" | "returned"; finance_comments?: string },
+  ) => api.post<{ success: boolean; data: unknown }>(`/budget/variance/explanations/${explanationId}/review`, data),
 };
 
 export interface Vendor {

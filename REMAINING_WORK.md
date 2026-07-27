@@ -5,16 +5,16 @@
 
 ---
 
-## In progress - Budget Phase 1 (2026-07-26)
+## In progress - Budget Phase 1 (2026-07-26/27)
 
 - Design: `docs/superpowers/specs/2026-07-26-budget-phase1-design.md`
 - Plan: `docs/superpowers/plans/2026-07-26-budget-phase1.md`
 - Slice A: availability/commitment engine + PIF/Travel/Procurement service wiring
 - Slice B: `/budget` dashboard, line pickers, PIF finance certify UI, award savings release
-- Tests: 20 passed (`BudgetPhase1Foundation`, `BudgetPifIntegration`, `BudgetAwardSavings`, `BudgetReservationTest`)
+- Slice C: variance monitoring (20% significant threshold, explanation workflow, `/budget/variance`)
+- Tests: Budget foundation + PIF + award savings + reservation + variance monitoring
 
 **Still next for Budget:**
-- [ ] Variance monitoring workflow
 - [ ] Annual budget preparation / governance approval path (Phase 2)
 - [ ] Imprest wiring
 - [ ] Fixed Asset Register + Consumables/Stock (after Budget control layer)

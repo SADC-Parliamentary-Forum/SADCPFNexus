@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Api\V1\Budget;
 use App\Http\Controllers\Controller;
 use App\Models\BudgetLine;
 use App\Models\BudgetReservation;
+use App\Models\BudgetVariance;
+use App\Models\BudgetVarianceExplanation;
 use App\Models\FinancialYear;
 use App\Models\FundingSource;
 use App\Modules\Budget\Services\BudgetActualService;
 use App\Modules\Budget\Services\BudgetAvailabilityService;
 use App\Modules\Budget\Services\BudgetCommitmentService;
+use App\Modules\Budget\Services\BudgetVarianceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BudgetControlController extends Controller
 {
@@ -19,6 +23,7 @@ class BudgetControlController extends Controller
         private readonly BudgetAvailabilityService $availability,
         private readonly BudgetCommitmentService $commitments,
         private readonly BudgetActualService $actuals,
+        private readonly BudgetVarianceService $variances,
     ) {}
 
     public function financialYears(Request $request): JsonResponse
@@ -281,6 +286,63 @@ class BudgetControlController extends Controller
         );
 
         return response()->json(['success' => true, 'data' => $result]);
+    }
+
+    public function variances(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'significant_only' => ['nullable', 'boolean'],
+            'status' => ['nullable', 'string', 'max:40'],
+            'period_type' => ['nullable', 'string', 'max:20'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
+        ]);
+
+        $page = $this->variances->list((int) $request->user()->tenant_id, $filters);
+
+        return response()->json(['success' => true, 'data' => $page]);
+    }
+
+    public function scanVariances(Request $request): JsonResponse
+    {
+        $this->authorizeFinanceWrite($request);
+        $result = $this->variances->scanTenant((int) $request->user()->tenant_id);
+
+        return response()->json(['success' => true, 'data' => $result]);
+    }
+
+    public function explainVariance(Request $request, BudgetVariance $variance): JsonResponse
+    {
+        if ((int) $variance->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'category' => ['required', 'string', Rule::in(BudgetVarianceExplanation::CATEGORIES)],
+            'explanation' => ['required', 'string', 'max:5000'],
+            'remedial_action' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $explanation = $this->variances->submitExplanation($variance, $data, $request->user());
+
+        return response()->json(['success' => true, 'data' => $explanation], 201);
+    }
+
+    public function reviewVarianceExplanation(Request $request, BudgetVarianceExplanation $explanation): JsonResponse
+    {
+        $this->authorizeFinanceWrite($request);
+        $data = $request->validate([
+            'decision' => ['required', 'in:accepted,returned'],
+            'finance_comments' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $row = $this->variances->reviewExplanation(
+            $explanation,
+            $data['decision'],
+            $request->user(),
+            $data['finance_comments'] ?? null,
+        );
+
+        return response()->json(['success' => true, 'data' => $row]);
     }
 
     private function authorizeFinanceWrite(Request $request): void

@@ -567,6 +567,10 @@ Route::prefix('v1')->group(function () {
             Route::post('commitments/{commitment}/consume', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'consume']);
             Route::post('actuals', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'postActual']);
             Route::post('actuals/import', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'importActuals']);
+            Route::get('variance', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'variances']);
+            Route::post('variance/scan', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'scanVariances']);
+            Route::post('variance/{variance}/explanation', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'explainVariance']);
+            Route::post('variance/explanations/{explanation}/review', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'reviewVarianceExplanation']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets
