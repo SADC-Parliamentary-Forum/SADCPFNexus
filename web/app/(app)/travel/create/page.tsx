@@ -283,8 +283,15 @@ export default function TravelCreatePage() {
   const [pendingDocType, setPendingDocType] = useState<string>("invitation");
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [travellers, setTravellers] = useState<Array<{ id: number; name: string; email?: string }>>([]);
-  const user = getStoredUser();
-  const canPrepareForOthers = isSystemAdmin(user) || hasPermission(user, "travel.prepare-for-others");
+  // Defer localStorage user until after mount to avoid hydration #418 text mismatch.
+  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setUser(getStoredUser());
+    setMounted(true);
+  }, []);
+  const canPrepareForOthers =
+    mounted && (isSystemAdmin(user) || hasPermission(user, "travel.prepare-for-others"));
 
   const [form, setForm] = useState<FormData>({
     purpose: "",
@@ -474,8 +481,26 @@ export default function TravelCreatePage() {
         return;
       }
 
-      for (const doc of pendingDocs) {
-        await travelApi.uploadAttachment(createdId, doc.file, doc.documentType);
+      try {
+        for (const doc of pendingDocs) {
+          await travelApi.uploadAttachment(createdId, doc.file, doc.documentType);
+        }
+      } catch (uploadErr: unknown) {
+        const axiosErr = uploadErr as {
+          response?: { data?: { message?: string; errors?: Record<string, string[] | string> } };
+        };
+        const errors = axiosErr?.response?.data?.errors;
+        const fileMsg = errors?.file;
+        const first =
+          (Array.isArray(fileMsg) ? fileMsg[0] : typeof fileMsg === "string" ? fileMsg : undefined) ||
+          (errors ? Object.values(errors).flat()[0] : undefined) ||
+          axiosErr?.response?.data?.message ||
+          "Document upload failed.";
+        setStep(4);
+        setSubmitError(
+          `${first} Request #${createdId} was saved as a draft — re-attach files on Documents, then submit.`,
+        );
+        return;
       }
 
       if (!asDraft) {
@@ -1176,6 +1201,12 @@ export default function TravelCreatePage() {
       {/* ── Step 4: Documents ───────────────────────────────────────────────── */}
       {step === 4 && (
         <div className="space-y-4">
+          {submitError && (
+            <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
+              <span>{submitError}</span>
+            </div>
+          )}
           <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">

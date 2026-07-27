@@ -49,6 +49,22 @@ const api = axios.create({
   },
 });
 
+// FormData + default application/json makes axios JSON.stringify the body
+// (File → {}), which Laravel rejects as "The file field is required."
+// Drop Content-Type so the browser sets multipart/form-data with boundary.
+api.interceptors.request.use((config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    const headers = config.headers;
+    if (headers && typeof headers.setContentType === "function") {
+      headers.setContentType(false);
+    } else if (headers) {
+      delete (headers as Record<string, unknown>)["Content-Type"];
+      delete (headers as Record<string, unknown>)["content-type"];
+    }
+  }
+  return config;
+});
+
 // In-memory token cache — avoids synchronous localStorage read on every request
 let csrfBootstrapped = false;
 
@@ -1096,7 +1112,12 @@ export const travelApi = {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("document_type", documentType);
-    return api.post<{ data: ModuleAttachment; message: string }>(`/travel/requests/${id}/attachments`, fd);
+    return api.post<{ data: ModuleAttachment; message: string }>(
+      `/travel/requests/${id}/attachments`,
+      fd,
+      // Explicit multipart so we never inherit application/json defaults.
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
   },
   deleteAttachment: (id: number, attachmentId: number) =>
     api.delete(`/travel/requests/${id}/attachments/${attachmentId}`),
@@ -1592,7 +1613,11 @@ export const leaveApi = {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("document_type", documentType);
-    return api.post<{ data: ModuleAttachment; message: string }>(`/leave/requests/${id}/attachments`, fd);
+    return api.post<{ data: ModuleAttachment; message: string }>(
+      `/leave/requests/${id}/attachments`,
+      fd,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
   },
   deleteAttachment: (id: number, attachmentId: number) =>
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),

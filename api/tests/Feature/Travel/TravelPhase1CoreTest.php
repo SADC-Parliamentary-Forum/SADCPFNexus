@@ -483,4 +483,23 @@ class TravelPhase1CoreTest extends TestCase
             'uploaded_by' => $user->id,
         ]);
     }
+
+    /**
+     * Production regression: clients that POST application/json with only
+     * document_type (no multipart file) get 422 "The file field is required."
+     * Content-Length ~40 matches {"file":{},"document_type":"invitation"}.
+     */
+    public function test_json_attachment_body_without_file_is_rejected(): void
+    {
+        [$http] = $this->asStaff();
+        $create = $http->postJson('/api/v1/travel/requests', $this->travelPayload());
+        $id = $create->json('data.id');
+
+        $http->postJson("/api/v1/travel/requests/{$id}/attachments", [
+            'document_type' => 'invitation',
+            'file' => new \stdClass(),
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['file']);
+    }
 }
