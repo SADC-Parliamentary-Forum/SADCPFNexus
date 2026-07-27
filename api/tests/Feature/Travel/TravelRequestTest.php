@@ -150,6 +150,49 @@ class TravelRequestTest extends TestCase
                ->assertJsonPath('data.status', 'submitted');
     }
 
+    public function test_travel_viewer_role_can_list_request_attachments(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->makeUser('staff', $tenant);
+        $hod = $this->makeUser('HOD', $tenant);
+        $travel = TravelRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $owner->id,
+            'status' => 'submitted',
+        ]);
+
+        $travel->attachments()->create([
+            'tenant_id' => $tenant->id,
+            'uploaded_by' => $owner->id,
+            'original_filename' => 'invitation.pdf',
+            'storage_path' => "travel/{$travel->id}/invitation.pdf",
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 100,
+            'document_type' => 'invitation',
+        ]);
+
+        $this->asUser($hod)
+            ->getJson("/api/v1/travel/requests/{$travel->id}/attachments")
+            ->assertOk()
+            ->assertJsonPath('data.0.original_filename', 'invitation.pdf');
+    }
+
+    public function test_unrelated_staff_cannot_list_request_attachments(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $owner = $this->makeUser('staff', $tenant);
+        $other = $this->makeUser('staff', $tenant);
+        $travel = TravelRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $owner->id,
+            'status' => 'submitted',
+        ]);
+
+        $this->asUser($other)
+            ->getJson("/api/v1/travel/requests/{$travel->id}/attachments")
+            ->assertForbidden();
+    }
+
     public function test_staff_cannot_submit_another_users_draft(): void
     {
         $tenant = Tenant::factory()->create();

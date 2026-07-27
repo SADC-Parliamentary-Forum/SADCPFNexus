@@ -132,8 +132,17 @@ export default function TravelDetailPage() {
       setError("Invalid request ID.");
       return;
     }
+
+    let active = true;
+    setLoading(true);
+    setError(null);
+    setAttachToast(null);
+    setAttachments([]);
+    setAttachmentsLoading(false);
+
     travelApi.get(id)
       .then((res) => {
+        if (!active) return;
         const body = res.data as any;
         const data = body.data ?? body;
         setRequest(data);
@@ -162,12 +171,40 @@ export default function TravelDetailPage() {
           setPersonalDays(out);
         }
         setVehicleId(data?.vehicle_asset_id != null ? String(data.vehicle_asset_id) : "");
-        return travelApi.listAttachments(id);
+
+        setAttachmentsLoading(true);
+        travelApi.listAttachments(id)
+          .then((res) => {
+            if (!active) return;
+            const data = res.data.data;
+            setAttachments(Array.isArray(data) ? data : []);
+          })
+          .catch(() => {
+            if (!active) return;
+            setAttachments([]);
+            setAttachToast("Documents could not be loaded.");
+          })
+          .finally(() => {
+            if (active) setAttachmentsLoading(false);
+          });
       })
-      .then((res) => setAttachments(res.data.data))
-      .catch(() => setError("Failed to load travel request."))
-      .finally(() => setLoading(false));
-    travelApi.fleetVehicles().then((r) => setFleet(r.data.data ?? [])).catch(() => setFleet([]));
+      .catch(() => {
+        if (active) setError("Failed to load travel request.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    travelApi.fleetVehicles()
+      .then((r) => {
+        if (active) setFleet(r.data.data ?? []);
+      })
+      .catch(() => {
+        if (active) setFleet([]);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const refreshRequest = async () => {
