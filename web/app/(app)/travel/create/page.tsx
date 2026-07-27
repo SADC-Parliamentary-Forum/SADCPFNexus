@@ -325,7 +325,7 @@ export default function TravelCreatePage() {
   });
 
   const requiredDocTypes = (): string[] => {
-    const required = [...REQUIRED_ON_SUBMIT];
+    const required: string[] = [...REQUIRED_ON_SUBMIT];
     if (form.programme_id) required.push("approved_pif");
     return required;
   };
