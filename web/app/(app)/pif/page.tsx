@@ -1,32 +1,52 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { programmeApi, type Programme } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import {
+  DEFAULT_PAGE_SIZE,
+  clientPageCount,
+  getListData,
+  slicePage,
+} from "@/lib/listPagination";
 
 const STATUS_BADGE: Record<string, string> = {
-  draft:              "badge-muted",
-  submitted:          "badge-warning",
-  approved:           "badge-primary",
-  active:             "badge-success",
-  on_hold:            "badge-warning",
-  completed:          "badge-success",
+  draft: "badge-muted",
+  submitted: "badge-warning",
+  approved: "badge-primary",
+  active: "badge-success",
+  on_hold: "badge-warning",
+  completed: "badge-success",
   financially_closed: "badge-muted",
-  archived:           "badge-muted",
+  archived: "badge-muted",
 };
 
-const STATUS_LABELS = ["All", "draft", "submitted", "approved", "active", "on_hold", "completed"];
+const STATUS_LABELS = ["All", "draft", "submitted", "approved", "active", "on_hold", "completed"] as const;
 
 function SkeletonRow() {
   return (
     <tr>
-      {[1,2,3,4,5,6,7,8].map((i) => (
-        <td key={i}><div className="h-4 bg-neutral-100 rounded animate-pulse w-full max-w-[120px]" /></td>
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <td key={i}>
+          <div className="h-4 bg-neutral-100 rounded animate-pulse w-full max-w-[120px]" />
+        </td>
       ))}
     </tr>
   );
+}
+
+function formatBudget(currency: string | null | undefined, amount: number | null | undefined): string {
+  const code = currency?.trim() || "—";
+  if (amount == null || Number.isNaN(Number(amount))) return `${code} —`;
+  return `${code} ${Number(amount).toLocaleString()}`;
+}
+
+function statusLabel(status: string | null | undefined): string {
+  if (!status) return "unknown";
+  return status.replace(/_/g, " ");
 }
 
 export default function PifPage() {
@@ -34,19 +54,59 @@ export default function PifPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    programmeApi.list({
-      ...(filterStatus !== "All" && { status: filterStatus }),
-      ...(search && { search }),
-    })
-      .then((r) => setProgrammes((r.data as any).data))
-      .catch(() => setError("Failed to load programmes."))
-      .finally(() => setLoading(false));
-  }, [filterStatus, search]);
+
+    programmeApi
+      .list({ per_page: 100 })
+      .then((r) => {
+        if (cancelled) return;
+        setProgrammes(getListData<Programme>(r.data));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setProgrammes([]);
+        setError("Failed to load programmes.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return programmes.filter((row) => {
+      if (filterStatus !== "All" && row.status !== filterStatus) return false;
+      if (!q) return true;
+      const hay = [
+        row.reference_number,
+        row.title,
+        row.status,
+        row.funding_source,
+        row.responsible_officer,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [programmes, filterStatus, search]);
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const safePage = Math.min(page, lastPage);
+  const paged = useMemo(
+    () => slicePage(filtered, safePage, DEFAULT_PAGE_SIZE),
+    [filtered, safePage],
+  );
 
   const stats = ["active", "submitted", "completed", "on_hold"].map((s) => ({
     status: s,
@@ -54,16 +114,16 @@ export default function PifPage() {
   }));
 
   const handleExport = () => {
-    if (programmes.length === 0) return;
+    if (filtered.length === 0) return;
     exportToCsv(
       `pif-programmes-${new Date().toISOString().slice(0, 10)}.csv`,
-      programmes.map((p) => ({
-        reference: p.reference_number,
-        title: p.title,
-        status: p.status,
+      filtered.map((p) => ({
+        reference: p.reference_number ?? "",
+        title: p.title ?? "",
+        status: p.status ?? "",
         funding_source: p.funding_source ?? "",
-        currency: p.primary_currency,
-        total_budget: p.total_budget,
+        currency: p.primary_currency ?? "",
+        total_budget: p.total_budget ?? "",
         responsible_officer: p.responsible_officer ?? "",
         end_date: p.end_date ?? "",
       })),
@@ -88,26 +148,32 @@ export default function PifPage() {
             <span className="text-neutral-700">Programmes (PIF)</span>
           </div>
           <h1 className="page-title">Programmes</h1>
-          <p className="page-subtitle">Programme Implementation Framework — manage and track all funded programmes.</p>
+          <p className="page-subtitle">
+            Programme Implementation Framework — manage and track all funded programmes.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 self-start">
           <button
             type="button"
             className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
-            disabled={programmes.length === 0}
+            disabled={filtered.length === 0}
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export CSV
           </button>
           <Link href="/pif/create" className="btn-primary px-4 py-2 text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>add</span>
+            <span
+              className="material-symbols-outlined text-[18px]"
+              style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}
+            >
+              add
+            </span>
             New Programme
           </Link>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map(({ status, count }) => (
           <div key={status} className="card p-4 text-center">
@@ -117,22 +183,36 @@ export default function PifPage() {
         ))}
       </div>
 
-      {/* Filters */}
       <div className="card p-4 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" style={{ fontSize: "20px" }}>search</span>
+          <span
+            className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
+            style={{ fontSize: "20px" }}
+          >
+            search
+          </span>
           <input
             type="search"
             placeholder="Search programmes…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="form-input pl-10"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
           {STATUS_LABELS.map((s) => (
-            <button key={s} type="button" onClick={() => setFilterStatus(s)}
-              className={`filter-tab capitalize ${filterStatus === s ? "active" : ""}`}>
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setFilterStatus(s);
+                setPage(1);
+              }}
+              className={`filter-tab capitalize ${filterStatus === s ? "active" : ""}`}
+            >
               {s === "All" ? "All" : s.replace("_", " ")}
             </button>
           ))}
@@ -146,69 +226,85 @@ export default function PifPage() {
         </div>
       )}
 
-      {/* Table */}
       <div className="card overflow-hidden">
-        {!loading && programmes.length === 0 && !error ? (
+        {!loading && filtered.length === 0 && !error ? (
           <div className="min-h-[200px] flex flex-col items-center justify-center gap-2 py-12">
             <span className="material-symbols-outlined text-5xl text-neutral-200">account_tree</span>
             <p className="text-sm font-medium text-neutral-500">No programmes found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Title</th>
-                  <th>Status</th>
-                  <th>Funding Source</th>
-                  <th>Budget</th>
-                  <th>Responsible</th>
-                  <th>End Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading
-                  ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
-                  : programmes.map((p) => (
-                      <tr key={p.id}>
-                        <td className="font-mono text-xs text-neutral-600">{p.reference_number}</td>
-                        <td className="font-medium text-neutral-900 max-w-[220px]">
-                          <p className="truncate">{p.title}</p>
-                        </td>
-                        <td>
-                          <span className={`badge ${STATUS_BADGE[p.status] ?? "badge-muted"} capitalize`}>
-                            {p.status.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="text-neutral-600">{p.funding_source || "—"}</td>
-                        <td className="text-neutral-700 font-medium">
-                          {p.primary_currency} {p.total_budget.toLocaleString()}
-                        </td>
-                        <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
-                        <td className="text-neutral-500 text-xs">{formatDateShort(p.end_date) ?? "—"}</td>
-                        <td>
-                          <div className="flex flex-wrap gap-2">
-                            <Link href={`/pif/${p.id}`} className="text-primary hover:underline text-xs font-medium">
-                              View
-                            </Link>
-                            {p.status === "draft" && (
+          <>
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Funding Source</th>
+                    <th>Budget</th>
+                    <th>Responsible</th>
+                    <th>End Date</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading
+                    ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
+                    : paged.map((p) => (
+                        <tr key={p.id}>
+                          <td className="font-mono text-xs text-neutral-600">
+                            {p.reference_number || "—"}
+                          </td>
+                          <td className="font-medium text-neutral-900 max-w-[220px]">
+                            <p className="truncate">{p.title || "—"}</p>
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${STATUS_BADGE[p.status] ?? "badge-muted"} capitalize`}
+                            >
+                              {statusLabel(p.status)}
+                            </span>
+                          </td>
+                          <td className="text-neutral-600">{p.funding_source || "—"}</td>
+                          <td className="text-neutral-700 font-medium">
+                            {formatBudget(p.primary_currency, p.total_budget)}
+                          </td>
+                          <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
+                          <td className="text-neutral-500 text-xs">
+                            {formatDateShort(p.end_date)}
+                          </td>
+                          <td>
+                            <div className="flex flex-wrap gap-2">
                               <Link
-                                href={`/pif/${p.id}/edit`}
-                                className="text-neutral-600 hover:underline text-xs font-medium"
+                                href={`/pif/${p.id}`}
+                                className="text-primary hover:underline text-xs font-medium"
                               >
-                                Edit
+                                View
                               </Link>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                }
-              </tbody>
-            </table>
-          </div>
+                              {p.status === "draft" && (
+                                <Link
+                                  href={`/pif/${p.id}/edit`}
+                                  className="text-neutral-600 hover:underline text-xs font-medium"
+                                >
+                                  Edit
+                                </Link>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+            <ListPagination
+              page={safePage}
+              lastPage={lastPage}
+              total={filtered.length}
+              onPageChange={setPage}
+              disabled={loading}
+            />
+          </>
         )}
       </div>
     </div>
