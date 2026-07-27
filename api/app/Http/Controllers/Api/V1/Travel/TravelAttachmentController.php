@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Travel;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\TravelRequest;
+use App\Support\AuthorizesRequestRecords;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TravelAttachmentController extends Controller
 {
+    use AuthorizesRequestRecords;
+
+    private const VIEW_ROLES = [
+        'Secretary General',
+        'HR Manager',
+        'Finance Controller',
+        'Director',
+        'Administration Officer',
+        'HOD',
+    ];
+
     public function index(Request $request, TravelRequest $travelRequest): JsonResponse
     {
         $this->ensureCanView($request, $travelRequest);
@@ -22,7 +34,7 @@ class TravelAttachmentController extends Controller
 
     public function store(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        $this->ensureCanView($request, $travelRequest);
+        $this->ensureCanManage($request, $travelRequest);
         $request->validate([
             'file'          => ['required', 'file', 'max:25600'], // 25 MB
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::TRAVEL_DOCUMENT_TYPES)],
@@ -48,7 +60,7 @@ class TravelAttachmentController extends Controller
 
     public function destroy(Request $request, TravelRequest $travelRequest, Attachment $attachment): JsonResponse
     {
-        $this->ensureCanView($request, $travelRequest);
+        $this->ensureCanManage($request, $travelRequest);
         if ($attachment->attachable_type !== TravelRequest::class || (int) $attachment->attachable_id !== (int) $travelRequest->id) {
             abort(404);
         }
@@ -83,13 +95,25 @@ class TravelAttachmentController extends Controller
 
     private function ensureCanView(Request $request, TravelRequest $travelRequest): void
     {
+        $this->ensureSameTenant($request, $travelRequest);
+        $this->authorizeRequestView($request->user(), $travelRequest, self::VIEW_ROLES);
+    }
+
+    private function ensureCanManage(Request $request, TravelRequest $travelRequest): void
+    {
+        $this->ensureSameTenant($request, $travelRequest);
+
         $user = $request->user();
-        if ($travelRequest->tenant_id !== $user->tenant_id) {
-            abort(404);
-        }
         $isAdmin = $user->isSystemAdmin() || $user->hasPermissionTo('travel.admin') || $user->hasPermissionTo('travel.approve');
         if (! $isAdmin && $travelRequest->requester_id !== $user->id) {
             abort(403);
+        }
+    }
+
+    private function ensureSameTenant(Request $request, TravelRequest $travelRequest): void
+    {
+        if ($travelRequest->tenant_id !== $request->user()->tenant_id) {
+            abort(404);
         }
     }
 }
