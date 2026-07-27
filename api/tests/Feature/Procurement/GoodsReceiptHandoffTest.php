@@ -134,6 +134,15 @@ class GoodsReceiptHandoffTest extends TestCase
             'purchase_order_id'      => $po->id,
             'current_balance'        => 10,
         ]);
+
+        $item = StockItem::where('name', 'Toner Cartridge')->where('tenant_id', $tenant->id)->first();
+        $this->assertNotNull($item);
+        $this->assertDatabaseHas('stock_transactions', [
+            'stock_item_id' => $item->id,
+            'type'          => 'in',
+            'quantity'      => 10,
+            'balance_after' => 10,
+        ]);
     }
 
     public function test_accept_grn_without_handoff_still_works(): void

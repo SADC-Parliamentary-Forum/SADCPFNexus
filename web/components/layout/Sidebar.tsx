@@ -261,7 +261,8 @@ const NAV_ITEMS: NavItem[] = [
     href: "/assets",
     icon: "inventory_2",
     children: [
-      { label: "Inventory", href: "/assets", icon: "inventory_2" },
+      { label: "Register", href: "/assets", icon: "inventory_2" },
+      { label: "Pending capitalisation", href: "/assets?status=pending", icon: "pending_actions" },
       { label: "My Requests", href: "/assets/requests", icon: "request_quote" },
     ],
   },

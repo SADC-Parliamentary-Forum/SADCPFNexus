@@ -962,6 +962,8 @@ Route::prefix('v1')->group(function () {
         // Assets (inventory, fleet - filter by category or assigned_to=me; create gated by admin/manager)
         Route::get('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'index']);
         Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
+        Route::post('assets/{asset}/capitalise', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'capitalise']);
+        Route::post('assets/{asset}/reject-capitalisation', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'rejectCapitalisation']);
         Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
         Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
         Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);

@@ -1,23 +1,33 @@
 # SADC PF Nexus - Remaining Work (production readiness)
 
-**Last updated:** 2026-07-26  
-**Status:** Budget Phase 1 foundation started on `feat/budget-phase1-foundation` (isolated worktree). Leave Phase 1 remains local on `main` WIP.
+**Last updated:** 2026-07-27  
+**Status:** Fixed Asset + Stock Phase 1 capitalisation slice on `feat/fixed-asset-stock` (from budget worktree). Leave Phase 1 remains local on `main` WIP.
 
 ---
 
-## In progress - Budget Phase 1 (2026-07-26/27)
+## In progress - Fixed Asset + Stock Phase 1 (2026-07-27)
 
-- Design: `docs/superpowers/specs/2026-07-26-budget-phase1-design.md`
-- Plan: `docs/superpowers/plans/2026-07-26-budget-phase1.md`
-- Slice A: availability/commitment engine + PIF/Travel/Procurement service wiring
-- Slice B: `/budget` dashboard, line pickers, PIF finance certify UI, award savings release
-- Slice C: variance monitoring (20% significant threshold, explanation workflow, `/budget/variance`)
-- Tests: Budget foundation + PIF + award savings + reservation + variance monitoring
+- Design: `docs/superpowers/specs/2026-07-27-fixed-asset-stock-phase1-design.md`
+- Plan: `docs/superpowers/plans/2026-07-27-fixed-asset-stock-phase1.md`
+- Slice: pending FA capitalise/reject + stock GRN inbound ledger + pending UI
 
-**Still next for Budget:**
-- [ ] Annual budget preparation / governance approval path (Phase 2)
-- [ ] Imprest wiring
-- [ ] Fixed Asset Register + Consumables/Stock (after Budget control layer)
+**Still next for FA/Stock:**
+- [ ] Declining-balance NBV parity on API
+- [ ] Disposal / revaluation workflows
+- [ ] Optional budget-line link (only if product requires)
+
+---
+
+## Done recently - Budget (live through edaa54c)
+
+- Phase 1 foundation + variance
+- Phase 2 annual cycle, institutional decisions, mid-year changes
+- Imprest wiring
+- Budget reports pack
+
+**Optional Budget follow-ons:**
+- [ ] Cashflow / scenario forecasting
+- [ ] UX polish on budget pickers
 
 ---
 
@@ -25,4 +35,5 @@
 
 - Deploy: `scripts/deploy.sh`
 - Budget API: `/api/v1/budget`
-- Existing Finance budgets UI: `/finance/budget`
+- Assets: `/assets` (capitalise pending via `/api/v1/assets/{id}/capitalise`)
+- Stock: `/stock`

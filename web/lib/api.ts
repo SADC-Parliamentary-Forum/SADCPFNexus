@@ -1268,7 +1268,7 @@ export interface AssetRequest {
 }
 
 export const assetsApi = {
-  list: (params?: { assigned_to?: string; category?: string; search?: string; per_page?: number; page?: number }) =>
+  list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
     api.get<PaginatedResponse<Asset>>("/assets", { params }),
   get: (id: number) => api.get<Asset>(`/assets/${id}`),
   update: (id: number, data: {
@@ -1305,6 +1305,18 @@ export const assetsApi = {
     salvage_value?: number;
     depreciation_method?: string;
   }) => api.post<Asset>("/assets", data),
+  capitalise: (id: number, data: {
+    asset_code?: string;
+    category: string;
+    purchase_date: string;
+    purchase_value: number;
+    useful_life_years?: number;
+    salvage_value?: number;
+    depreciation_method?: string;
+    notes?: string;
+  }) => api.post<{ data: Asset; message: string }>(`/assets/${id}/capitalise`, data),
+  rejectCapitalisation: (id: number, data: { reason: string }) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/reject-capitalisation`, data),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
     formData.append("invoice", file);

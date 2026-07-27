@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Modules\Assets\Services\AssetService;
 use Carbon\Carbon;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\SvgWriter;
@@ -17,8 +18,13 @@ use Illuminate\Validation\Rule;
 
 class AssetController extends Controller
 {
+    public function __construct(private readonly AssetService $assetService)
+    {
+    }
+
     /**
      * List assets. Optional ?assigned_to=me for current user's assigned assets only.
+     * Optional ?status=pending|active|… filter.
      * Response includes computed age_years, age_display, current_value via model appends.
      */
     public function index(Request $request): JsonResponse
@@ -32,6 +38,10 @@ class AssetController extends Controller
 
         if ($category = $request->input('category')) {
             $query->where('category', $category);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
         }
 
         $perPage = min((int) $request->input('per_page', 50), 100);
@@ -119,6 +129,48 @@ class AssetController extends Controller
             abort(404);
         }
         return response()->json($asset);
+    }
+
+    /**
+     * Capitalise a pending (GRN-draft) asset into the active Fixed Asset Register.
+     */
+    public function capitalise(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'asset_code'          => ['nullable', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
+            'category'            => ['required', 'string', 'max:32'],
+            'purchase_date'       => ['required', 'date'],
+            'purchase_value'      => ['required', 'numeric', 'min:0'],
+            'useful_life_years'   => ['nullable', 'integer', 'min:1', 'max:100'],
+            'salvage_value'       => ['nullable', 'numeric', 'min:0'],
+            'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
+            'notes'               => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $capitalised = $this->assetService->capitalise($asset, $validated, $request->user());
+        $this->generateAndSaveQr($capitalised);
+
+        return response()->json([
+            'data'    => $capitalised->fresh(),
+            'message' => 'Asset capitalised into the Fixed Asset Register.',
+        ]);
+    }
+
+    /**
+     * Reject capitalisation of a pending draft (retire with reason).
+     */
+    public function rejectCapitalisation(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $rejected = $this->assetService->rejectCapitalisation($asset, $validated['reason'], $request->user());
+
+        return response()->json([
+            'data'    => $rejected,
+            'message' => 'Pending capitalisation rejected.',
+        ]);
     }
 
     /**

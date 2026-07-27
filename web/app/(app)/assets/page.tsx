@@ -8,6 +8,7 @@ import { assetsApi, assetRequestsApi, type Asset, type AssetRequest } from "@/li
 import { canManageAssets, getStoredUser } from "@/lib/auth";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
+  pending:      { label: "Pending capitalisation", cls: "badge-warning" },
   active:       { label: "Active",       cls: "badge-success" },
   service_due:  { label: "Service Due",  cls: "badge-warning" },
   loan_out:     { label: "Loan Out",      cls: "badge-info" },
@@ -55,6 +56,181 @@ function calcDepreciation(
 
 function fmtMoney(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ─── Capitalise Modal (pending GRN drafts → active register) ─────────────────
+
+function CapitaliseModal({
+  asset,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  onClose: () => void;
+  onSaved: (updated: Asset) => void;
+}) {
+  const [purchaseDate, setPurchaseDate] = useState(asset.purchase_date?.slice(0, 10) ?? "");
+  const [purchaseValue, setPurchaseValue] = useState(
+    asset.purchase_value != null ? String(asset.purchase_value) : "",
+  );
+  const [usefulLife, setUsefulLife] = useState(
+    asset.useful_life_years != null ? String(asset.useful_life_years) : "3",
+  );
+  const [salvageValue, setSalvageValue] = useState(
+    asset.salvage_value != null ? String(asset.salvage_value) : "0",
+  );
+  const [method, setMethod] = useState(asset.depreciation_method ?? "straight_line");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const pv = purchaseValue === "" ? null : Number(purchaseValue);
+  const ul = usefulLife === "" ? null : Number(usefulLife);
+  const sv = salvageValue === "" ? 0 : Number(salvageValue);
+  const preview = pv && ul ? calcDepreciation(pv, ul, sv, method, purchaseDate || null, asset.issued_at) : null;
+
+  const handleSave = async () => {
+    if (!purchaseDate || pv == null || Number.isNaN(pv)) {
+      setError("Purchase date and purchase value are required.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await assetsApi.capitalise(asset.id, {
+        category: asset.category,
+        purchase_date: purchaseDate,
+        purchase_value: pv,
+        useful_life_years: ul && !Number.isNaN(ul) ? ul : undefined,
+        salvage_value: sv,
+        depreciation_method: method,
+      });
+      onSaved(res.data.data);
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
+          ?.message ||
+        Object.values(
+          (e as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {},
+        )
+          .flat()
+          .join(" ") ||
+        "Failed to capitalise asset.";
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <span className="material-symbols-outlined text-primary text-[18px]">verified</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 text-sm">Capitalise Asset</h3>
+              <p className="text-xs text-neutral-400">
+                {asset.asset_code} — {asset.name}
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">error_outline</span>
+              {error}
+            </div>
+          )}
+          <p className="text-xs text-neutral-500">
+            Confirm financial details to add this GRN draft into the Fixed Asset Register. No auto-capitalisation —
+            officer confirmation is required.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Date *</label>
+              <input
+                type="date"
+                className="form-input"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Value *</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className="form-input"
+                value={purchaseValue}
+                onChange={(e) => setPurchaseValue(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Useful Life (years)</label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                className="form-input"
+                value={usefulLife}
+                onChange={(e) => setUsefulLife(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Salvage Value</label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                className="form-input"
+                value={salvageValue}
+                onChange={(e) => setSalvageValue(e.target.value)}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Depreciation Method</label>
+              <select className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
+                {DEPR_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {preview && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm">
+              <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Book value preview</p>
+              <p className="text-lg font-bold text-neutral-900">{fmtMoney(preview.currentValue)}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !purchaseDate || pv == null}
+            className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[16px]">verified</span>
+            {saving ? "Capitalising…" : "Capitalise"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Depreciation Modal ───────────────────────────────────────────────────────
@@ -251,6 +427,8 @@ export default function AssetsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
+  const [rejectingId, setRejectingId] = useState<number | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -321,13 +499,17 @@ export default function AssetsPage() {
     const user = getStoredUser();
     setShowRequestButton(!!user);
     setShowAddAssetButton(canManageAssets(user));
+    if (typeof window !== "undefined") {
+      const status = new URLSearchParams(window.location.search).get("status");
+      if (status) setFilterStatus(status);
+    }
   }, []);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
     assetsApi
-      .list({ per_page: 50 })
+      .list({ per_page: 100 })
       .then((res) => setAssets((res.data as { data?: Asset[] }).data ?? []))
       .catch(() => setError("Failed to load assets."))
       .finally(() => setLoading(false));
@@ -353,18 +535,34 @@ export default function AssetsPage() {
   });
 
   const statusCounts = {
+    pending: assets.filter((a) => a.status === "pending").length,
     active: assets.filter((a) => a.status === "active").length,
     service_due: assets.filter((a) => a.status === "service_due").length,
     loan_out: assets.filter((a) => a.status === "loan_out").length,
     retired: assets.filter((a) => a.status === "retired").length,
   };
 
+  const handleRejectCapitalisation = async (asset: Asset) => {
+    const reason = window.prompt("Reason for rejecting capitalisation:");
+    if (!reason || !reason.trim()) return;
+    setRejectingId(asset.id);
+    setError(null);
+    try {
+      const res = await assetsApi.rejectCapitalisation(asset.id, { reason: reason.trim() });
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+    } catch {
+      setError("Failed to reject capitalisation.");
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="page-title">Assets &amp; Inventory</h1>
-          <p className="page-subtitle">View inventory and submit asset requests.</p>
+          <h1 className="page-title">Fixed Asset Register</h1>
+          <p className="page-subtitle">Capital assets, movements, and GRN capitalisation queue.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {(showAddAssetButton || showRequestButton) && (
@@ -435,14 +633,20 @@ export default function AssetsPage() {
 
       {/* Summary stats — only when viewing inventory */}
       {view === "inventory" && !loading && assets.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: "Active",      count: statusCounts.active,      icon: "check_circle",  color: "text-green-600",  bg: "bg-green-50"  },
-            { label: "Service Due", count: statusCounts.service_due, icon: "build",         color: "text-amber-600",  bg: "bg-amber-50"  },
-            { label: "Loan Out",    count: statusCounts.loan_out,    icon: "swap_horiz",    color: "text-blue-600",   bg: "bg-blue-50"   },
-            { label: "Retired",     count: statusCounts.retired,     icon: "archive",       color: "text-neutral-500", bg: "bg-neutral-100"},
+            { label: "Pending",     count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
+            { label: "Active",      count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
+            { label: "Service Due", count: statusCounts.service_due, icon: "build",           color: "text-amber-600",  bg: "bg-amber-50",   status: "service_due" },
+            { label: "Loan Out",    count: statusCounts.loan_out,    icon: "swap_horiz",      color: "text-blue-600",   bg: "bg-blue-50",    status: "loan_out" },
+            { label: "Retired",     count: statusCounts.retired,     icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
           ].map((s) => (
-            <div key={s.label} className="card p-4">
+            <button
+              key={s.label}
+              type="button"
+              onClick={() => setFilterStatus(s.status)}
+              className={`card p-4 text-left transition-shadow hover:shadow-elevated ${filterStatus === s.status ? "ring-2 ring-primary/40" : ""}`}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-neutral-500">{s.label}</p>
@@ -452,7 +656,7 @@ export default function AssetsPage() {
                   <span className={`material-symbols-outlined ${s.color} text-[18px]`}>{s.icon}</span>
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -476,6 +680,7 @@ export default function AssetsPage() {
             <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
             <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
               <option value="all">All Statuses</option>
+              <option value="pending">Pending capitalisation</option>
               <option value="active">Active</option>
               <option value="service_due">Service Due</option>
               <option value="loan_out">Loan Out</option>
@@ -586,13 +791,35 @@ export default function AssetsPage() {
                         </div>
                       </div>
                       {showAddAssetButton && (
-                        <Link
-                          href={`/assets/${asset.id}/edit`}
-                          className="flex-shrink-0 p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
-                          aria-label="Edit asset"
-                        >
-                          <span className="material-symbols-outlined text-[20px]">edit</span>
-                        </Link>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          {asset.status === "pending" ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setCapitaliseAsset(asset)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90"
+                              >
+                                Capitalise
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRejectCapitalisation(asset)}
+                                disabled={rejectingId === asset.id}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                {rejectingId === asset.id ? "…" : "Reject"}
+                              </button>
+                            </>
+                          ) : (
+                            <Link
+                              href={`/assets/${asset.id}/edit`}
+                              className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
+                              aria-label="Edit asset"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
+                            </Link>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -621,6 +848,17 @@ export default function AssetsPage() {
             </div>
           )}
         </>
+      )}
+
+      {capitaliseAsset && (
+        <CapitaliseModal
+          asset={capitaliseAsset}
+          onClose={() => setCapitaliseAsset(null)}
+          onSaved={(updated) => {
+            setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+            setCapitaliseAsset(null);
+          }}
+        />
       )}
     </div>
   );

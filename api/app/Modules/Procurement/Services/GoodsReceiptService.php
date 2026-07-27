@@ -136,15 +136,31 @@ class GoodsReceiptService
                     'notes'                  => $line['notes'] ?? null,
                 ]);
             } elseif ($type === 'stock') {
-                $this->stockService->createItem([
+                $qty = (int) ($line['quantity'] ?? 0);
+                if ($qty <= 0) {
+                    throw ValidationException::withMessages([
+                        'handoff' => 'Stock handoff requires a positive quantity.',
+                    ]);
+                }
+
+                $item = $this->stockService->createItem([
                     'stock_category_id'      => $line['stock_category_id'] ?? null,
                     'item_code'              => 'STK-' . strtoupper(Str::random(8)),
                     'name'                   => $line['name'],
                     'unit'                   => $line['unit'] ?? 'each',
-                    'current_balance'        => (int) ($line['quantity'] ?? 0),
+                    'current_balance'        => 0,
                     'procurement_request_id' => $procurementRequestId,
                     'purchase_order_id'      => $grn->purchase_order_id,
                     'status'                 => 'active',
+                ], $user);
+
+                $this->stockService->recordTransaction($item, [
+                    'type'             => 'in',
+                    'quantity'         => $qty,
+                    'reference'        => 'GRN-'.$grn->id,
+                    'reason'           => 'Goods receipt handoff',
+                    'notes'            => $line['notes'] ?? null,
+                    'transaction_date' => now()->toDateString(),
                 ], $user);
             } else {
                 throw ValidationException::withMessages([

@@ -33,7 +33,7 @@ const SEARCH_INDEX: SearchResult[] = [
   { id: "m-hr",          label: "HR",                        description: "Staff records, leave, payroll",         href: "/hr",                  category: "Modules",     icon: "people"                 },
   { id: "m-timesheets",  label: "Timesheets",                description: "Weekly time logging",                   href: "/hr/timesheets",       category: "Modules",     icon: "schedule"               },
   { id: "m-reports",     label: "Reports",                   description: "Financial and operational reports",     href: "/reports",             category: "Modules",     icon: "assessment"             },
-  { id: "m-assets",      label: "Asset Register",            description: "IT, vehicles, furniture tracking",      href: "/assets",              category: "Modules",     icon: "inventory_2"            },
+  { id: "m-assets",      label: "Fixed Asset Register",      description: "Capital assets & pending capitalisation", href: "/assets",           category: "Modules",     icon: "inventory_2"            },
   { id: "m-governance",  label: "Governance",                description: "Meetings, resolutions, compliance",     href: "/governance",          category: "Modules",     icon: "policy"                 },
   // ── Admin pages ─────────────────────────────────────────────────────────
   { id: "a-users",       label: "User Management",           description: "Create and manage user accounts",       href: "/admin/users",         category: "Admin",       icon: "people"                 },
