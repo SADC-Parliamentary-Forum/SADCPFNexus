@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   draft:            { label: "Draft",           cls: "badge-muted"   },
@@ -37,8 +38,12 @@ export default function CorrespondenceRegistryPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
   const load = useCallback(() => {
     setLoading(true);
+    setError(null);
     const params: Record<string, string | number> = { page, per_page: 25 };
     if (search) params.search = search;
     if (filterStatus !== "all") params.status = filterStatus;
@@ -54,7 +59,7 @@ export default function CorrespondenceRegistryPage() {
         setTotal(res.data.total ?? 0);
         setLastPage(res.data.last_page ?? 1);
       })
-      .catch(() => {})
+      .catch(() => setError("Failed to load correspondence registry."))
       .finally(() => setLoading(false));
   }, [page, search, filterStatus, filterType, filterDir, dateFrom, dateTo]);
 
@@ -66,24 +71,45 @@ export default function CorrespondenceRegistryPage() {
     setPage(1);
   }
 
-  function exportCsv() {
-    const rows = [
-      ["Reference", "Subject", "Type", "Direction", "Status", "Created By", "Date"],
-      ...letters.map((l) => [
-        l.reference_number ?? "",
-        l.subject,
-        typeLabel[l.type] ?? l.type,
-        l.direction,
-        l.status,
-        l.creator?.name ?? "",
-        safeIsoDay(l.created_at),
-      ]),
-    ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-    a.download = `correspondence-registry-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const params: Record<string, string | number> = { page: 1, per_page: Math.max(total, 500) };
+      if (search) params.search = search;
+      if (filterStatus !== "all") params.status = filterStatus;
+      if (filterType !== "all") params.type = filterType;
+      if (filterDir !== "all") params.direction = filterDir;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      const res = await correspondenceApi.list(params);
+      const rows = res.data.data ?? [];
+      if (rows.length === 0) return;
+      exportToCsv(
+        `correspondence-registry-${new Date().toISOString().slice(0, 10)}.csv`,
+        rows.map((l) => ({
+          reference: l.reference_number ?? "",
+          subject: l.subject,
+          type: typeLabel[l.type] ?? l.type,
+          direction: l.direction,
+          status: l.status,
+          created_by: l.creator?.name ?? "",
+          date: safeIsoDay(l.created_at),
+        })),
+        [
+          { key: "reference", header: "Reference" },
+          { key: "subject", header: "Subject" },
+          { key: "type", header: "Type" },
+          { key: "direction", header: "Direction" },
+          { key: "status", header: "Status" },
+          { key: "created_by", header: "Created By" },
+          { key: "date", header: "Date" },
+        ],
+      );
+    } catch {
+      setError("Export failed.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -100,9 +126,14 @@ export default function CorrespondenceRegistryPage() {
           <p className="page-subtitle">{total} record{total !== 1 ? "s" : ""} total</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={exportCsv} className="btn-secondary inline-flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={exporting || total === 0}
+            className="btn-secondary inline-flex items-center gap-1.5 disabled:opacity-50"
+          >
             <span className="material-symbols-outlined text-[16px]">download</span>
-            Export CSV
+            {exporting ? "Exporting…" : "Export CSV"}
           </button>
           <Link href="/correspondence/create" className="btn-primary inline-flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">add</span>
@@ -110,6 +141,38 @@ export default function CorrespondenceRegistryPage() {
           </Link>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span className="material-symbols-outlined text-[16px]">error_outline</span>
+          <span className="flex-1">{error}</span>
+          <button type="button" className="text-xs font-semibold underline" onClick={() => void load()}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && total > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {[
+            { label: "Total records", value: total, icon: "mail", color: "text-primary", bg: "bg-primary/10" },
+            { label: "This page", value: letters.length, icon: "list", color: "text-amber-600", bg: "bg-amber-50" },
+            { label: "Pages", value: lastPage, icon: "layers", color: "text-neutral-600", bg: "bg-neutral-100" },
+          ].map((s) => (
+            <div key={s.label} className="card p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-neutral-500">{s.label}</p>
+                  <p className="mt-0.5 text-lg font-bold text-neutral-900">{s.value}</p>
+                </div>
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
+                  <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card p-4">

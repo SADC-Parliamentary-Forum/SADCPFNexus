@@ -1,224 +1,526 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { exportToCsv } from "@/lib/csvExport";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
-const statusConfig: Record<string, { label: string; cls: string }> = {
-  approved:   { label: "Approved",   cls: "badge-success" },
-  submitted:  { label: "Submitted",  cls: "badge-warning" },
-  rejected:   { label: "Rejected",   cls: "badge-danger"  },
-  draft:      { label: "Draft",      cls: "badge-muted"   },
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  approved: { label: "Approved", cls: "badge-success" },
+  submitted: { label: "Submitted", cls: "badge-warning" },
+  rejected: { label: "Rejected", cls: "badge-danger" },
+  draft: { label: "Draft", cls: "badge-muted" },
   liquidated: { label: "Liquidated", cls: "badge-success" },
+  withdrawn: { label: "Withdrawn", cls: "badge-muted" },
+  returned_for_correction: { label: "Returned", cls: "badge-warning" },
 };
 
-const FILTERS = ["All", "Draft", "Submitted", "Approved", "Liquidated"] as const;
-const filterMap: Record<string, string | undefined> = {
-  All: undefined, Draft: "draft", Submitted: "submitted", Approved: "approved", Liquidated: "liquidated",
-};
+const FILTER_TABS = [
+  { key: "all", label: "All" },
+  { key: "draft", label: "Draft" },
+  { key: "submitted", label: "Submitted" },
+  { key: "approved", label: "Approved" },
+  { key: "liquidated", label: "Liquidated" },
+  { key: "returned_for_correction", label: "Returned" },
+] as const;
+
+type FilterKey = (typeof FILTER_TABS)[number]["key"];
+
+function unwrapList(payload: unknown): ImprestRequest[] {
+  if (!payload || typeof payload !== "object") return [];
+  const root = payload as { data?: unknown };
+  const data = root.data ?? payload;
+  if (Array.isArray(data)) return data as ImprestRequest[];
+  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
+    return (data as { data: ImprestRequest[] }).data;
+  }
+  return [];
+}
 
 export default function ImprestPage() {
   const { fmt: formatDateShort } = useFormatDate();
+  const { confirm } = useConfirm();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [actionId, setActionId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
-  const { data: requests = [], isLoading: loading } = useQuery({
-    queryKey: ["imprest", "list", statusFilter],
-    queryFn: () => {
-      const status = filterMap[statusFilter];
-      return imprestApi.list(status ? { status } : undefined).then((res) => (res.data as any).data as ImprestRequest[]);
-    },
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 3200);
+  };
+
+  const {
+    data: requests = [],
+    isLoading: loading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["imprest", "list"],
+    queryFn: () => imprestApi.list({ per_page: 100 }).then((res) => unwrapList(res.data)),
     staleTime: 30_000,
   });
 
-  const toggleSelect = (id: number) => setSelected((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
-  const toggleAll = () => setSelected((prev) => prev.size === requests.length ? new Set() : new Set(requests.map((r) => r.id)));
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return requests.filter((row) => {
+      if (filter !== "all" && row.status !== filter) return false;
+      if (!q) return true;
+      const hay = [
+        row.reference_number,
+        row.purpose,
+        row.budget_line,
+        row.status,
+        row.requester?.name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [requests, filter, search]);
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(() => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE), [filtered, page, lastPage]);
+
+  const pendingCount = requests.filter((r) => r.status === "submitted").length;
+  const unliquidated = requests.filter(
+    (r) => r.status === "approved" && (!r.amount_liquidated || r.amount_liquidated === 0),
+  ).length;
+
+  const toggleSelect = (id: number) =>
+    setSelected((prev) => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+  const toggleAll = () =>
+    setSelected((prev) =>
+      prev.size === filtered.length ? new Set() : new Set(filtered.map((r) => r.id)),
+    );
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
+    if (
+      !(await confirm({
+        title: "Delete drafts",
+        message: `Permanently delete ${selected.size} selected draft(s)?`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
     setBulkLoading(true);
+    setError(null);
     try {
       await Promise.all([...selected].map((id) => imprestApi.delete(id)));
       setSelected(new Set());
-      queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
-    } catch { setError("Some deletions failed."); }
-    finally { setBulkLoading(false); }
+      showToast("Selected drafts deleted.");
+      await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
+    } catch {
+      setError("Some deletions failed.");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   const handleBulkSubmit = async () => {
     if (selected.size === 0) return;
     setBulkLoading(true);
+    setError(null);
     try {
       await Promise.all([...selected].map((id) => imprestApi.submit(id)));
       setSelected(new Set());
-      queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
-    } catch { setError("Some submissions failed."); }
-    finally { setBulkLoading(false); }
+      showToast("Selected drafts submitted.");
+      await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
+    } catch {
+      setError("Some submissions failed.");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
-  const pendingCount = requests.filter((r) => r.status === "submitted").length;
-  const unliquidated = requests.filter(
-    (r) => r.status === "approved" && (!r.amount_liquidated || r.amount_liquidated === 0)
-  ).length;
+  const handleDelete = async (row: ImprestRequest) => {
+    if (
+      !(await confirm({
+        title: "Delete draft",
+        message: `Permanently remove draft ${row.reference_number}?`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setActionId(row.id);
+    setError(null);
+    try {
+      await imprestApi.delete(row.id);
+      showToast("Draft deleted.");
+      await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
+    } catch {
+      setError("Failed to delete draft.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleWithdraw = async (row: ImprestRequest) => {
+    if (
+      !(await confirm({
+        title: "Withdraw request",
+        message: `Withdraw ${row.reference_number} from the approval workflow?`,
+        confirmText: "Withdraw",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setActionId(row.id);
+    setError(null);
+    try {
+      await imprestApi.withdraw(row.id);
+      showToast("Request withdrawn.");
+      await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
+    } catch {
+      setError("Failed to withdraw request.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `imprest-requests-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((r) => ({
+        reference: r.reference_number,
+        purpose: r.purpose,
+        budget_line: r.budget_line,
+        status: r.status,
+        currency: r.currency,
+        amount_requested: r.amount_requested,
+        amount_approved: r.amount_approved ?? "",
+        amount_liquidated: r.amount_liquidated ?? "",
+        expected_liquidation_date: r.expected_liquidation_date,
+        requester: r.requester?.name ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "purpose", header: "Purpose" },
+        { key: "budget_line", header: "Budget line" },
+        { key: "status", header: "Status" },
+        { key: "currency", header: "Currency" },
+        { key: "amount_requested", header: "Amount requested" },
+        { key: "amount_approved", header: "Amount approved" },
+        { key: "amount_liquidated", header: "Amount liquidated" },
+        { key: "expected_liquidation_date", header: "Liquidate by" },
+        { key: "requester", header: "Requester" },
+      ],
+    );
+  };
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <span className="text-neutral-700">Imprest</span>
+          </div>
           <h1 className="page-title">Imprest Requests</h1>
           <p className="page-subtitle">Manage petty cash requests and liquidations.</p>
         </div>
-        <Link href="/imprest/create" className="btn-primary">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New Request
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+          <Link href="/imprest/create" className="btn-primary text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Request
+          </Link>
+        </div>
       </div>
 
-      {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
+      {toast && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
+      )}
+
+      {(isError || error) && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          {error}
+          <span className="flex-1">{error ?? "Failed to load imprest requests."}</span>
+          {isError ? (
+            <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+              Retry
+            </button>
+          ) : (
+            <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+              Dismiss
+            </button>
+          )}
         </div>
       )}
 
-      {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Pending Approval", value: String(pendingCount),        icon: "pending_actions",         color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
-          { label: "Unliquidated",     value: String(unliquidated),         icon: "account_balance_wallet",  color: "text-primary",   bg: "bg-primary/10"},
-          { label: "Total This View",  value: String(requests.length),     icon: "receipt_long",            color: "text-purple-600",bg: "bg-purple-50 dark:bg-purple-900/20" },
+          {
+            label: "Pending Approval",
+            value: String(pendingCount),
+            icon: "pending_actions",
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+          },
+          {
+            label: "Unliquidated",
+            value: String(unliquidated),
+            icon: "account_balance_wallet",
+            color: "text-primary",
+            bg: "bg-primary/10",
+          },
+          {
+            label: "In register",
+            value: String(requests.length),
+            icon: "receipt_long",
+            color: "text-neutral-600",
+            bg: "bg-neutral-100",
+          },
         ].map((stat) => (
           <div key={stat.label} className="card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{stat.label}</p>
-                <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{stat.value}</p>
+                <p className="text-xs text-neutral-500">{stat.label}</p>
+                <p className="mt-1 text-xl font-bold text-neutral-900">{stat.value}</p>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                <span className={`material-symbols-outlined ${stat.color} text-[20px]`}>{stat.icon}</span>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.bg}`}>
+                <span className={`material-symbols-outlined text-[20px] ${stat.color}`}>{stat.icon}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Filter tabs + bulk toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map((f) => (
-            <button key={f} onClick={() => setStatusFilter(f)} className={`filter-tab ${statusFilter === f ? "active" : ""}`}>{f}</button>
-          ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search reference, purpose, budget line…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setFilter(tab.key);
+                  setSelected(new Set());
+                  setPage(1);
+                }}
+                className={`filter-tab ${filter === tab.key ? "active" : ""}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
         {selected.size > 0 && (
-          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2">
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2">
             <span className="text-xs font-semibold text-primary">{selected.size} selected</span>
-            {statusFilter === "Draft" && (
+            {filter === "draft" && (
               <>
-                <button type="button" disabled={bulkLoading} onClick={handleBulkSubmit}
-                  className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline disabled:opacity-50">
-                  <span className="material-symbols-outlined text-[14px]">send</span>Submit all
+                <button
+                  type="button"
+                  disabled={bulkLoading}
+                  onClick={() => void handleBulkSubmit()}
+                  className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[14px]">send</span>
+                  Submit all
                 </button>
-                <button type="button" disabled={bulkLoading} onClick={handleBulkDelete}
-                  className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50">
-                  <span className="material-symbols-outlined text-[14px]">delete</span>Delete all
+                <button
+                  type="button"
+                  disabled={bulkLoading}
+                  onClick={() => void handleBulkDelete()}
+                  className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                  Delete all
                 </button>
               </>
             )}
-            <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-neutral-400 hover:text-neutral-600">Clear</button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set())}
+              className="text-xs text-neutral-400 hover:text-neutral-600"
+            >
+              Clear
+            </button>
           </div>
         )}
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="card p-12 text-center">
-          <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
-            <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+      <div className="card overflow-hidden">
+        {loading ? (
+          <div className="space-y-3 p-5">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
+            ))}
           </div>
-        </div>
-      ) : requests.length > 0 ? (
-        <div className="space-y-3">
-          {requests.length > 1 && (
-            <div className="flex items-center gap-2 px-1">
-              <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 accent-primary"
-                checked={selected.size === requests.length} onChange={toggleAll} />
-              <span className="text-xs text-neutral-500 dark:text-neutral-400">Select all</span>
-            </div>
-          )}
-          {requests.map((req) => {
-            const s = statusConfig[req.status] ?? { label: req.status, cls: "badge-muted" };
-            const isSelected = selected.has(req.id);
-            return (
-              <div key={req.id} className={`card p-5 hover:shadow-elevated transition-all ${isSelected ? "border-primary/30 bg-primary/5" : ""}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                      <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 accent-primary mt-1"
-                        checked={isSelected} onChange={() => toggleSelect(req.id)} />
-                    </div>
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-900/20">
-                      <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[20px]">account_balance_wallet</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500">{req.reference_number}</span>
-                        <span className={`badge ${s.cls}`}>{s.label}</span>
-                      </div>
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 truncate">{req.purpose}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">receipt</span>
-                          {req.budget_line}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px]">event</span>
-                          Liquidate by {formatDateShort(req.expected_liquidation_date)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-[10px] text-neutral-400 dark:text-neutral-500 uppercase tracking-wide">Amount</p>
-                    <p className="text-base font-bold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {req.currency} {req.amount_requested.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700/50">
-                  {req.status === "draft" && (
-                    <Link href={`/imprest/create?edit=${req.id}`} className="text-xs font-semibold text-primary hover:underline">Edit</Link>
-                  )}
-                  {req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0) && (
-                    <Link href={`/imprest/${req.id}/liquidate`} className="text-xs font-semibold text-amber-600 hover:underline">Retire →</Link>
-                  )}
-                  <Link href={`/imprest/${req.id}`} className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View Details →</Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">account_balance_wallet</span>
+        ) : filtered.length === 0 ? (
+          <div className="px-5 py-16 text-center">
+            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
+              account_balance_wallet
+            </span>
+            <p className="text-sm font-semibold text-neutral-600">No imprest requests found</p>
+            <p className="mt-1 text-xs text-neutral-400">
+              {filter === "all" && !search
+                ? "Create a petty cash request to get started."
+                : "No rows match the current filters."}
+            </p>
+            <Link href="/imprest/create" className="btn-primary mt-5 inline-flex text-sm">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Imprest Request
+            </Link>
           </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No imprest requests found</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-            {statusFilter === "All" ? "Create a petty cash request to get started." : `No ${statusFilter.toLowerCase()} requests.`}
-          </p>
-          <Link href="/imprest/create" className="btn-primary mt-5 inline-flex">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Imprest Request
-          </Link>
-        </div>
-      )}
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th className="w-10">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-neutral-300 accent-primary"
+                      checked={selected.size === filtered.length && filtered.length > 0}
+                      onChange={toggleAll}
+                      aria-label="Select all"
+                    />
+                  </th>
+                  <th>Reference</th>
+                  <th>Purpose</th>
+                  <th>Budget</th>
+                  <th>Amount</th>
+                  <th>Liquidate by</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((req) => {
+                  const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
+                  const busy = actionId === req.id || bulkLoading;
+                  const needsRetire =
+                    req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0);
+                  return (
+                    <tr key={req.id} className={selected.has(req.id) ? "bg-primary/5" : undefined}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-neutral-300 accent-primary"
+                          checked={selected.has(req.id)}
+                          onChange={() => toggleSelect(req.id)}
+                          aria-label={`Select ${req.reference_number}`}
+                        />
+                      </td>
+                      <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>
+                      <td className="max-w-[200px] truncate font-medium text-neutral-900">{req.purpose}</td>
+                      <td className="max-w-[140px] truncate text-xs text-neutral-600">{req.budget_line}</td>
+                      <td className="whitespace-nowrap text-sm font-semibold">
+                        {req.currency} {Number(req.amount_requested).toLocaleString()}
+                      </td>
+                      <td className="whitespace-nowrap text-xs text-neutral-500">
+                        {formatDateShort(req.expected_liquidation_date)}
+                      </td>
+                      <td>
+                        <span className={`badge text-xs ${s.cls}`}>{s.label}</span>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link
+                            href={`/imprest/${req.id}`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            View
+                          </Link>
+                          {req.status === "draft" && (
+                            <>
+                              <Link
+                                href={`/imprest/create?edit=${req.id}`}
+                                className="text-xs font-medium text-neutral-600 hover:underline"
+                              >
+                                Edit
+                              </Link>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void handleDelete(req)}
+                                className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {(req.status === "submitted" || req.status === "returned_for_correction") && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void handleWithdraw(req)}
+                              className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                            >
+                              Withdraw
+                            </button>
+                          )}
+                          {needsRetire && (
+                            <Link
+                              href={`/imprest/${req.id}/liquidate`}
+                              className="text-xs font-medium text-amber-600 hover:underline"
+                            >
+                              Retire
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <ListPagination
+          page={Math.min(page, lastPage)}
+          lastPage={lastPage}
+          total={filtered.length}
+          onPageChange={setPage}
+          disabled={bulkLoading}
+        />
+      </div>
     </div>
   );
 }

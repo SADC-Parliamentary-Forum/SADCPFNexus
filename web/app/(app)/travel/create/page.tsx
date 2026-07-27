@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { travelApi, programmeApi } from "@/lib/api";
+import { travelApi, programmeApi, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
 import type { Programme } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
@@ -46,7 +46,15 @@ const FUNDING_ITEMS: { item: string; icon: string }[] = [
   { item: "Participation Fees",            icon: "confirmation_number" },
 ];
 
-const STEPS = ["Trip Details", "Itinerary", "Funding Details", "Vehicle & Driver", "Review & Submit"];
+const STEPS = ["Trip Details", "Itinerary", "Funding Details", "Vehicle & Driver", "Documents", "Review & Submit"];
+
+interface PendingDoc {
+  key: string;
+  file: File;
+  documentType: string;
+}
+
+const REQUIRED_ON_SUBMIT = ["invitation", "agenda"] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Leg {
@@ -270,6 +278,9 @@ export default function TravelCreatePage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
+  const [pendingDocType, setPendingDocType] = useState<string>("invitation");
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [travellers, setTravellers] = useState<Array<{ id: number; name: string; email?: string }>>([]);
   const user = getStoredUser();
@@ -312,6 +323,17 @@ export default function TravelCreatePage() {
     equivalent_airfare: "",
     prepared_on_behalf_of: "",
   });
+
+  const requiredDocTypes = (): string[] => {
+    const required = [...REQUIRED_ON_SUBMIT];
+    if (form.programme_id) required.push("approved_pif");
+    return required;
+  };
+
+  const missingRequiredDocs = (): string[] => {
+    const attached = new Set(pendingDocs.map((d) => d.documentType));
+    return requiredDocTypes().filter((t) => !attached.has(t));
+  };
 
   // Load approved programmes for PIF dropdown
   useEffect(() => {
@@ -373,12 +395,33 @@ export default function TravelCreatePage() {
     }
     if (step === 1)
       return form.legs.every((l) => l.from_location && l.to_location && l.travel_date);
+    if (step === 4) return missingRequiredDocs().length === 0;
     return true;
+  };
+
+  const docLabel = (type: string) =>
+    TRAVEL_DOCUMENT_TYPES.find((t) => t.value === type)?.label ?? type.replace(/_/g, " ");
+
+  const addPendingDoc = (file: File | undefined) => {
+    if (!file) return;
+    setPendingDocs((prev) => [
+      ...prev,
+      { key: `${Date.now()}-${file.name}`, file, documentType: pendingDocType },
+    ]);
   };
 
   const handleSubmit = async (asDraft: boolean) => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
+      if (!asDraft && missingRequiredDocs().length > 0) {
+        setSubmitError(
+          `Attach required documents before submit: ${missingRequiredDocs().map(docLabel).join(", ")}.`,
+        );
+        setStep(4);
+        return;
+      }
+
       const payload = {
         purpose: form.purpose,
         destination_country: form.destination_country,
@@ -426,30 +469,57 @@ export default function TravelCreatePage() {
       };
       const { data } = await travelApi.create(payload);
       const createdId = data.data?.id ?? (data as { id?: number }).id;
-      if (!asDraft && createdId) {
+      if (!createdId) {
+        setSubmitError("Travel request was created but no id was returned.");
+        return;
+      }
+
+      for (const doc of pendingDocs) {
+        await travelApi.uploadAttachment(createdId, doc.file, doc.documentType);
+      }
+
+      if (!asDraft) {
         try {
           await travelApi.submit(createdId);
-        } catch (err: any) {
-          const conflicts = err?.response?.data?.errors?.conflicts;
+        } catch (err: unknown) {
+          const axiosErr = err as { response?: { data?: { errors?: Record<string, string[] | string>; message?: string } } };
+          const errors = axiosErr?.response?.data?.errors;
+          const conflicts = errors?.conflicts;
           if (Array.isArray(conflicts) && conflicts.length) {
             const note = window.prompt(
               `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge, or Cancel to leave as draft.`,
-              "Reviewed with supervisor"
+              "Reviewed with supervisor",
             );
             if (note) {
               await travelApi.submit(createdId, {
                 acknowledge_conflicts: true,
                 conflict_resolution_note: note,
               });
+            } else {
+              setSubmitError("Saved as draft due to unresolved conflicts. Open the request to attach docs or resubmit.");
+              router.push(`/travel/${createdId}`);
+              return;
             }
           } else {
-            throw err;
+            const attachMsg = errors?.attachments;
+            const msg = Array.isArray(attachMsg)
+              ? attachMsg.join(" ")
+              : typeof attachMsg === "string"
+                ? attachMsg
+                : axiosErr?.response?.data?.message || "Submit failed after upload. Open the draft to finish.";
+            setSubmitError(msg);
+            router.push(`/travel/${createdId}`);
+            return;
           }
         }
       }
-      router.push("/travel");
-    } catch {
-      setSubmitting(false);
+      router.push(asDraft ? `/travel/${createdId}` : "/travel");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const first = axiosErr?.response?.data?.errors
+        ? Object.values(axiosErr.response.data.errors).flat()[0]
+        : undefined;
+      setSubmitError(first || axiosErr?.response?.data?.message || "Could not save travel request. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -1103,8 +1173,94 @@ export default function TravelCreatePage() {
         </div>
       )}
 
-      {/* ── Step 4: Review & Submit ─────────────────────────────────────────── */}
+      {/* ── Step 4: Documents ───────────────────────────────────────────────── */}
       {step === 4 && (
+        <div className="space-y-4">
+          <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span className="material-symbols-outlined text-[14px]">attach_file</span>
+              </span>
+              Supporting Documents
+            </h3>
+            <p className="text-xs text-neutral-500">
+              Invitation letter and agenda are required before submit. Files upload when you save or submit.
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {requiredDocTypes().map((type) => {
+                const ok = pendingDocs.some((d) => d.documentType === type);
+                return (
+                  <span
+                    key={type}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                      ok ? "bg-green-50 text-green-700 border border-green-200" : "bg-amber-50 text-amber-800 border border-amber-200"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">{ok ? "check_circle" : "error"}</span>
+                    {docLabel(type)}
+                    {ok ? "" : " required"}
+                  </span>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className="form-input text-xs py-1.5 w-48"
+                value={pendingDocType}
+                onChange={(e) => setPendingDocType(e.target.value)}
+              >
+                {TRAVEL_DOCUMENT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <label className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer">
+                <span className="material-symbols-outlined text-[15px]">upload_file</span>
+                Add file
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx"
+                  onChange={(e) => {
+                    addPendingDoc(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+
+            {pendingDocs.length === 0 ? (
+              <p className="text-xs text-neutral-400 text-center py-6 border border-dashed border-neutral-200 rounded-xl">
+                No documents selected yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {pendingDocs.map((doc) => (
+                  <div key={doc.key} className="flex items-center gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+                    <span className="material-symbols-outlined text-[20px] text-indigo-400">description</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-neutral-900 truncate">{doc.file.name}</p>
+                      <p className="text-[10px] text-neutral-400">{docLabel(doc.documentType)} · {(doc.file.size / 1024).toFixed(0)} KB</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50"
+                      onClick={() => setPendingDocs((prev) => prev.filter((d) => d.key !== doc.key))}
+                      title="Remove"
+                    >
+                      <span className="material-symbols-outlined text-[17px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 5: Review & Submit ─────────────────────────────────────────── */}
+      {step === 5 && (
         <div className="space-y-4">
           <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
@@ -1149,6 +1305,12 @@ export default function TravelCreatePage() {
                   value: `${form.legs.length} leg${form.legs.length !== 1 ? "s" : ""}`,
                 },
                 {
+                  label: "Documents",
+                  value: pendingDocs.length
+                    ? pendingDocs.map((d) => docLabel(d.documentType)).join(", ")
+                    : "None",
+                },
+                {
                   label: "Estimated Total",
                   value:
                     grandTotal > 0 ? `${form.currency} ${grandTotal.toFixed(2)}` : "Not specified",
@@ -1181,6 +1343,13 @@ export default function TravelCreatePage() {
               availability. You will be notified at each stage.
             </p>
           </div>
+        </div>
+      )}
+
+      {submitError && (
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
+          <span>{submitError}</span>
         </div>
       )}
 
@@ -1217,7 +1386,7 @@ export default function TravelCreatePage() {
           ) : (
             <button
               onClick={() => handleSubmit(false)}
-              disabled={submitting}
+              disabled={submitting || missingRequiredDocs().length > 0}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               {submitting ? "Submitting…" : "Submit Request"}

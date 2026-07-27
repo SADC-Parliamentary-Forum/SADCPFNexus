@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { hrFilesApi, adminApi, type HrPersonalFile } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { getLastPage, getListData, getTotal } from "@/lib/listPagination";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -49,6 +52,9 @@ export default function HrFilesDirectoryPage() {
   const [employmentStatus, setEmploymentStatus] = useState<string>("");
   const [probationStatus, setProbationStatus] = useState<string>("");
   const [fileStatus, setFileStatus] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const loadDepartments = useCallback(async () => {
     try {
@@ -64,22 +70,24 @@ export default function HrFilesDirectoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, string | number> = { per_page: 100 };
+      const params: Record<string, string | number> = { per_page: 25, page };
       if (search.trim()) params.search = search.trim();
       if (departmentId) params.department_id = Number(departmentId);
       if (employmentStatus) params.employment_status = employmentStatus;
       if (probationStatus) params.probation_status = probationStatus;
       if (fileStatus) params.file_status = fileStatus;
       const res = await hrFilesApi.list(params);
-      const data = (res.data as { data?: HrPersonalFile[] }).data ?? [];
-      setFiles(Array.isArray(data) ? data : []);
+      const data = getListData<HrPersonalFile>(res.data);
+      setFiles(data);
+      setLastPage(getLastPage(res.data));
+      setTotalCount(getTotal(res.data, data.length));
     } catch {
       setError("Failed to load HR files.");
       setFiles([]);
     } finally {
       setLoading(false);
     }
-  }, [search, departmentId, employmentStatus, probationStatus, fileStatus]);
+  }, [search, departmentId, employmentStatus, probationStatus, fileStatus, page]);
 
   useEffect(() => {
     loadDepartments();
@@ -89,14 +97,41 @@ export default function HrFilesDirectoryPage() {
     loadFiles();
   }, [loadFiles]);
 
-  const total = files.length;
+  const total = totalCount || files.length;
   const activeCount = files.filter((f) => f.employment_status === "permanent" || f.file_status === "active").length;
   const probationCount = files.filter((f) => f.probation_status === "on_probation").length;
   const warningCount = files.filter((f) => f.active_warning_flag).length;
 
+  const handleExport = () => {
+    if (files.length === 0) return;
+    exportToCsv(
+      `hr-files-${new Date().toISOString().slice(0, 10)}.csv`,
+      files.map((f) => ({
+        employee: f.employee?.name ?? "",
+        staff_number: f.staff_number ?? "",
+        department: f.department?.name ?? "",
+        position: f.current_position ?? "",
+        employment: f.employment_status,
+        probation: f.probation_status,
+        file_status: f.file_status,
+        warning: f.active_warning_flag ? "yes" : "no",
+      })),
+      [
+        { key: "employee", header: "Employee" },
+        { key: "staff_number", header: "Staff #" },
+        { key: "department", header: "Department" },
+        { key: "position", header: "Position" },
+        { key: "employment", header: "Employment" },
+        { key: "probation", header: "Probation" },
+        { key: "file_status", header: "File status" },
+        { key: "warning", header: "Warning" },
+      ],
+    );
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-6xl">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
             HR
@@ -106,6 +141,15 @@ export default function HrFilesDirectoryPage() {
             Searchable employee directory and digital HR files.
           </p>
         </div>
+        <button
+          type="button"
+          className="btn-secondary text-sm disabled:opacity-50"
+          disabled={files.length === 0}
+          onClick={handleExport}
+        >
+          <span className="material-symbols-outlined text-[18px]">download</span>
+          Export CSV
+        </button>
       </div>
 
       {error && (
@@ -144,7 +188,10 @@ export default function HrFilesDirectoryPage() {
             className="form-input pl-10"
             placeholder="Search by name or staff number…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         <div className="flex flex-wrap gap-3">
@@ -153,7 +200,10 @@ export default function HrFilesDirectoryPage() {
             <select
               className="form-input py-2 text-sm min-w-[140px]"
               value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
+              onChange={(e) => {
+                setDepartmentId(e.target.value);
+                setPage(1);
+              }}
             >
               <option value="">All</option>
               {departments.map((d) => (
@@ -166,7 +216,10 @@ export default function HrFilesDirectoryPage() {
             <select
               className="form-input py-2 text-sm min-w-[120px]"
               value={employmentStatus}
-              onChange={(e) => setEmploymentStatus(e.target.value)}
+              onChange={(e) => {
+                setEmploymentStatus(e.target.value);
+                setPage(1);
+              }}
             >
               <option value="">All</option>
               {Object.entries(EMPLOYMENT_STATUS_LABELS).map(([v, l]) => (
@@ -179,7 +232,10 @@ export default function HrFilesDirectoryPage() {
             <select
               className="form-input py-2 text-sm min-w-[120px]"
               value={probationStatus}
-              onChange={(e) => setProbationStatus(e.target.value)}
+              onChange={(e) => {
+                setProbationStatus(e.target.value);
+                setPage(1);
+              }}
             >
               <option value="">All</option>
               {Object.entries(PROBATION_STATUS_LABELS).map(([v, l]) => (
@@ -192,7 +248,10 @@ export default function HrFilesDirectoryPage() {
             <select
               className="form-input py-2 text-sm min-w-[120px]"
               value={fileStatus}
-              onChange={(e) => setFileStatus(e.target.value)}
+              onChange={(e) => {
+                setFileStatus(e.target.value);
+                setPage(1);
+              }}
             >
               <option value="">All</option>
               {Object.entries(FILE_STATUS_LABELS).map(([v, l]) => (
@@ -280,6 +339,13 @@ export default function HrFilesDirectoryPage() {
             </table>
           </div>
         )}
+        <ListPagination
+          page={page}
+          lastPage={lastPage}
+          total={totalCount}
+          onPageChange={setPage}
+          disabled={loading}
+        />
       </div>
     </div>
   );

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { goodsReceiptsApi, purchaseOrdersApi, type GoodsReceiptNote, type PurchaseOrderItem } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "badge-warning", icon: "hourglass_empty" },
@@ -34,6 +37,8 @@ function ReceiptsPageInner() {
   const queryClient   = useQueryClient();
 
   const [statusFilter, setStatusFilter]   = useState("all");
+  const [search, setSearch]               = useState("");
+  const [page, setPage]                   = useState(1);
   const [showModal, setShowModal]         = useState(false);
   const [receivedDate, setReceivedDate]   = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes]                 = useState("");
@@ -115,6 +120,19 @@ function ReceiptsPageInner() {
   });
 
   const items: GoodsReceiptNote[] = (data as { data?: GoodsReceiptNote[] })?.data ?? [];
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((g) => {
+      const hay = [g.reference_number, g.status, g.purchase_order?.reference_number].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [items, search]);
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(
+    () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [filtered, page, lastPage],
+  );
   const total    = items.length;
   const pending  = items.filter((g) => g.status === "pending").length;
   const accepted = items.filter((g) => g.status === "accepted").length;
@@ -122,17 +140,50 @@ function ReceiptsPageInner() {
 
   const canSubmit = itemRows.length > 0 && itemRows.every((r) => Number(r.quantity_received) >= 0);
 
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `goods-receipts-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((g) => ({
+        reference: g.reference_number,
+        po: g.purchase_order?.reference_number ?? "",
+        status: g.status,
+        received_date: g.received_date ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "po", header: "PO" },
+        { key: "status", header: "Status" },
+        { key: "received_date", header: "Received" },
+      ],
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Receipts</span>
+          </div>
           <h1 className="page-title">Goods Receipts</h1>
           <p className="page-subtitle">
             {poIdParam ? `Receipts for PO #${poIdParam}` : "Track deliveries against purchase orders"}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export CSV
+          </button>
           {poId && (
             <>
               <button
@@ -176,16 +227,39 @@ function ReceiptsPageInner() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
-          >
-            {f === "all" ? "All" : f}
-          </button>
-        ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search GRN or PO…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(f);
+                  setPage(1);
+                }}
+                className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
+              >
+                {f === "all" ? "All" : f}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Content */}
@@ -204,7 +278,7 @@ function ReceiptsPageInner() {
         </div>
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load goods receipts.</div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">inventory_2</span>
           <p className="text-sm text-neutral-500">No goods receipts found.</p>
@@ -226,7 +300,7 @@ function ReceiptsPageInner() {
               </tr>
             </thead>
             <tbody>
-              {items.map((grn) => {
+              {paged.map((grn) => {
                 const s = statusConfig[grn.status] ?? statusConfig.pending;
                 return (
                   <tr key={grn.id}>
@@ -270,6 +344,12 @@ function ReceiptsPageInner() {
               })}
             </tbody>
           </table>
+          <ListPagination
+            page={Math.min(page, lastPage)}
+            lastPage={lastPage}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

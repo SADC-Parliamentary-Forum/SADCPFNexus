@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { getStoredUser } from "@/lib/auth";
+import { exportToCsv } from "@/lib/csvExport";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -72,6 +73,7 @@ function AdvancesPageInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [canUseQueues, setCanUseQueues] = useState(false);
@@ -119,6 +121,43 @@ function AdvancesPageInner() {
   const visibleTabs = canUseQueues ? QUEUE_TABS : QUEUE_TABS.filter((t) => t.key === "");
   const activeHint = QUEUE_TABS.find((t) => t.key === activeQueue)?.hint;
 
+  const visibleAdvances = advances.filter((adv) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [adv.reference_number, adv.purpose, adv.advance_type, adv.status, adv.requester?.name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
+
+  const handleExport = () => {
+    if (visibleAdvances.length === 0) return;
+    exportToCsv(
+      `finance-advances-${new Date().toISOString().slice(0, 10)}.csv`,
+      visibleAdvances.map((a) => ({
+        reference: a.reference_number,
+        requester: a.requester?.name ?? "",
+        type: a.advance_type,
+        amount: a.amount,
+        currency: a.currency,
+        purpose: a.purpose,
+        status: a.status,
+        submitted_at: a.submitted_at ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "requester", header: "Requester" },
+        { key: "type", header: "Type" },
+        { key: "amount", header: "Amount" },
+        { key: "currency", header: "Currency" },
+        { key: "purpose", header: "Purpose" },
+        { key: "status", header: "Status" },
+        { key: "submitted_at", header: "Submitted" },
+      ],
+    );
+  };
+
   return (
     <div className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -135,10 +174,36 @@ function AdvancesPageInner() {
             <Link href="/salary-advances" className="text-primary font-medium hover:underline">Open new Salary Advances hub</Link>
           </p>
         </div>
-        <Link href="/finance/advances/create" className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New advance request
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-sm disabled:opacity-50"
+            disabled={visibleAdvances.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+          <Link href="/finance/advances/create" className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New advance request
+          </Link>
+        </div>
+      </div>
+
+      <div className="card p-4">
+        <div className="relative max-w-md">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+            search
+          </span>
+          <input
+            type="search"
+            className="form-input pl-10"
+            placeholder="Search reference, purpose, requester…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Advance queues">
@@ -182,14 +247,16 @@ function AdvancesPageInner() {
             <div key={i} className="h-12 rounded-lg bg-neutral-100 animate-pulse" />
           ))}
         </div>
-      ) : advances.length === 0 ? (
+      ) : visibleAdvances.length === 0 ? (
         <div className="card px-5 py-16 text-center">
           <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-[28px] text-primary">payments</span>
           </div>
           <p className="text-sm font-semibold text-neutral-700">No advance requests found</p>
           <p className="text-xs text-neutral-500 mt-1">
-            {activeQueue
+            {search.trim()
+              ? "No requests match your search."
+              : activeQueue
               ? "No requests in this finance queue."
               : statusFilter !== "all"
                 ? "No requests match the selected filter."
@@ -220,7 +287,7 @@ function AdvancesPageInner() {
                 </tr>
               </thead>
               <tbody>
-                {advances.map((adv) => {
+                {visibleAdvances.map((adv) => {
                   const sc = STATUS_CONFIG[adv.status] ?? { label: adv.status, badge: "badge-muted" };
                   return (
                     <tr key={adv.id}>

@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchaseOrdersApi, vendorsApi, procurementApi, type PurchaseOrder, type Vendor, type ProcurementRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",             cls: "badge-muted",    icon: "edit_note"      },
@@ -34,6 +37,8 @@ function PurchaseOrdersPageInner() {
   const requestParam = searchParams.get("request");
 
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [showModal, setShowModal]       = useState(false);
   const [submitError, setSubmitError]   = useState<string | null>(null);
 
@@ -156,24 +161,72 @@ function PurchaseOrdersPageInner() {
   const canSubmit = !!selectedRequestId && !!selectedVendorId && !!title.trim() && poItems.some((r) => r.description.trim());
 
   const items: PurchaseOrder[] = (data as { data?: PurchaseOrder[] })?.data ?? [];
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((p) => {
+      if (!q) return true;
+      const hay = [p.reference_number, p.title, p.status, p.vendor?.name].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [items, search]);
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(
+    () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [filtered, page, lastPage],
+  );
   const total   = items.length;
   const issued  = items.filter((p) => p.status === "issued").length;
   const received = items.filter((p) => p.status === "received").length;
   const pending = items.filter((p) => ["draft", "issued", "partially_received"].includes(p.status)).length;
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((p) => ({
+        reference: p.reference_number,
+        title: p.title,
+        vendor: p.vendor?.name ?? "",
+        status: p.status,
+        amount: p.total_amount,
+        currency: p.currency,
+        issued_at: p.issued_at ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "title", header: "Title" },
+        { key: "vendor", header: "Vendor" },
+        { key: "status", header: "Status" },
+        { key: "amount", header: "Amount" },
+        { key: "currency", header: "Currency" },
+        { key: "issued_at", header: "Issued" },
+      ],
+    );
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Purchase Orders</span>
+          </div>
           <h1 className="page-title">Purchase Orders</h1>
           <p className="page-subtitle">Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
-            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Requests
-          </Link>
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export CSV
+          </button>
         </div>
       </div>
 
@@ -198,16 +251,39 @@ function PurchaseOrdersPageInner() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
-          >
-            {f === "all" ? "All" : f.replace("_", " ")}
-          </button>
-        ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search PO, title, vendor…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(f);
+                  setPage(1);
+                }}
+                className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
+              >
+                {f === "all" ? "All" : f.replace(/_/g, " ")}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Content */}
@@ -226,11 +302,15 @@ function PurchaseOrdersPageInner() {
         </div>
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load purchase orders.</div>
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">receipt_long</span>
           <p className="text-sm text-neutral-500">No purchase orders found.</p>
-          <p className="text-xs text-neutral-400">Purchase orders are created automatically after an RFQ is awarded to a registered supplier.</p>
+          <p className="text-xs text-neutral-400">
+            {search.trim()
+              ? "No purchase orders match your search."
+              : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
+          </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -246,7 +326,7 @@ function PurchaseOrdersPageInner() {
               </tr>
             </thead>
             <tbody>
-              {items.map((po) => {
+              {paged.map((po) => {
                 const s = statusConfig[po.status] ?? statusConfig.draft;
                 return (
                   <tr key={po.id}>
@@ -280,6 +360,12 @@ function PurchaseOrdersPageInner() {
               })}
             </tbody>
           </table>
+          <ListPagination
+            page={Math.min(page, lastPage)}
+            lastPage={lastPage}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

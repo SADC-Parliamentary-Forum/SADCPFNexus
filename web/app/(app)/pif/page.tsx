@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { programmeApi, type Programme } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
 
 const STATUS_BADGE: Record<string, string> = {
   draft:              "badge-muted",
@@ -52,17 +53,58 @@ export default function PifPage() {
     count: programmes.filter((p) => p.status === s).length,
   }));
 
+  const handleExport = () => {
+    if (programmes.length === 0) return;
+    exportToCsv(
+      `pif-programmes-${new Date().toISOString().slice(0, 10)}.csv`,
+      programmes.map((p) => ({
+        reference: p.reference_number,
+        title: p.title,
+        status: p.status,
+        funding_source: p.funding_source ?? "",
+        currency: p.primary_currency,
+        total_budget: p.total_budget,
+        responsible_officer: p.responsible_officer ?? "",
+        end_date: p.end_date ?? "",
+      })),
+      [
+        { key: "reference", header: "Code" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "funding_source", header: "Funding Source" },
+        { key: "currency", header: "Currency" },
+        { key: "total_budget", header: "Budget" },
+        { key: "responsible_officer", header: "Responsible" },
+        { key: "end_date", header: "End Date" },
+      ],
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <span className="text-neutral-700">Programmes (PIF)</span>
+          </div>
           <h1 className="page-title">Programmes</h1>
           <p className="page-subtitle">Programme Implementation Framework — manage and track all funded programmes.</p>
         </div>
-        <Link href="/pif/create" className="btn-primary px-4 py-2 text-sm flex items-center gap-2 self-start">
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>add</span>
-          New Programme
-        </Link>
+        <div className="flex flex-wrap gap-2 self-start">
+          <button
+            type="button"
+            className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+            disabled={programmes.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+          <Link href="/pif/create" className="btn-primary px-4 py-2 text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}>add</span>
+            New Programme
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -147,9 +189,19 @@ export default function PifPage() {
                         <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
                         <td className="text-neutral-500 text-xs">{formatDateShort(p.end_date) ?? "—"}</td>
                         <td>
-                          <Link href={`/pif/${p.id}`} className="text-primary hover:underline text-xs font-medium">
-                            View
-                          </Link>
+                          <div className="flex flex-wrap gap-2">
+                            <Link href={`/pif/${p.id}`} className="text-primary hover:underline text-xs font-medium">
+                              View
+                            </Link>
+                            {p.status === "draft" && (
+                              <Link
+                                href={`/pif/${p.id}/edit`}
+                                className="text-neutral-600 hover:underline text-xs font-medium"
+                              >
+                                Edit
+                              </Link>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))

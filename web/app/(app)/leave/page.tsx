@@ -1,32 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { leaveApi, type LeaveRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
-const typeConfig: Record<string, { label: string; color: string; bg: string }> = {
-  annual:    { label: "Annual Leave",    color: "text-primary",                              bg: "bg-primary/10"                          },
-  sick:      { label: "Sick Leave",      color: "text-red-600 dark:text-red-400",            bg: "bg-red-50 dark:bg-red-900/20"           },
-  lil:       { label: "Leave in Lieu",   color: "text-purple-600 dark:text-purple-300",      bg: "bg-purple-50 dark:bg-purple-900/20"     },
-  special:   { label: "Special Leave",   color: "text-orange-600 dark:text-orange-300",      bg: "bg-orange-50 dark:bg-orange-900/20"     },
-  maternity: { label: "Maternity Leave", color: "text-pink-600 dark:text-pink-300",          bg: "bg-pink-50 dark:bg-pink-900/20"         },
-  paternity: { label: "Paternity Leave", color: "text-teal-600 dark:text-teal-300",          bg: "bg-teal-50 dark:bg-teal-900/20"         },
+const TYPE_LABELS: Record<string, string> = {
+  annual: "Annual",
+  sick: "Sick",
+  lil: "Leave in Lieu",
+  special: "Special",
+  maternity: "Maternity",
+  paternity: "Paternity",
 };
 
-const statusConfig: Record<string, { label: string; cls: string }> = {
-  approved:  { label: "Approved",  cls: "badge-success" },
+const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
+  approved: { label: "Approved", cls: "badge-success" },
   submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected:  { label: "Rejected",  cls: "badge-danger"  },
-  draft:     { label: "Draft",     cls: "badge-muted"   },
-  cancelled: { label: "Cancelled", cls: "badge-muted"   },
+  rejected: { label: "Rejected", cls: "badge-danger" },
+  draft: { label: "Draft", cls: "badge-muted" },
+  cancelled: { label: "Cancelled", cls: "badge-muted" },
+  withdrawn: { label: "Withdrawn", cls: "badge-muted" },
+  returned_for_correction: { label: "Returned", cls: "badge-warning" },
 };
 
-const FILTERS = ["All", "Draft", "Submitted", "Approved", "Rejected"] as const;
-const filterMap: Record<string, string | undefined> = {
-  All: undefined, Draft: "draft", Submitted: "submitted", Approved: "approved", Rejected: "rejected",
-};
+const FILTER_TABS = [
+  { key: "all", label: "All" },
+  { key: "draft", label: "Draft" },
+  { key: "submitted", label: "Submitted" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Rejected" },
+  { key: "returned_for_correction", label: "Returned" },
+] as const;
+
+type FilterKey = (typeof FILTER_TABS)[number]["key"];
 
 interface Balances {
   annual_balance_days: number;
@@ -37,15 +49,40 @@ interface Balances {
   paternity_leave_days_used?: number;
 }
 
-export default function LeavePage() {
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+function unwrapList(payload: unknown): LeaveRequest[] {
+  if (!payload || typeof payload !== "object") return [];
+  const root = payload as { data?: unknown };
+  const data = root.data ?? payload;
+  if (Array.isArray(data)) return data as LeaveRequest[];
+  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
+    return (data as { data: LeaveRequest[] }).data;
+  }
+  return [];
+}
 
-  const { data: requests = [], isLoading: loading, isError } = useQuery({
-    queryKey: ["leave", "list", statusFilter],
-    queryFn: () => {
-      const status = filterMap[statusFilter];
-      return leaveApi.list(status ? { status } : undefined).then((res) => (res.data as any).data as LeaveRequest[]);
-    },
+export default function LeavePage() {
+  const { confirm } = useConfirm();
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [actionId, setActionId] = useState<number | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 3200);
+  };
+
+  const {
+    data: requests = [],
+    isLoading: loading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["leave", "list"],
+    queryFn: () => leaveApi.list({ per_page: 100 }).then((res) => unwrapList(res.data)),
     staleTime: 30_000,
   });
 
@@ -55,130 +92,353 @@ export default function LeavePage() {
     staleTime: 5 * 60_000,
   });
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return requests.filter((row) => {
+      if (filter !== "all" && row.status !== filter) return false;
+      if (!q) return true;
+      const hay = [
+        row.reference_number,
+        row.reason,
+        row.leave_type,
+        row.status,
+        row.requester?.name,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [requests, filter, search]);
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(() => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE), [filtered, page, lastPage]);
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `leave-requests-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((r) => ({
+        reference: r.reference_number,
+        type: r.leave_type,
+        status: r.status,
+        start_date: r.start_date,
+        end_date: r.end_date,
+        days: r.days_requested,
+        reason: r.reason ?? "",
+        requester: r.requester?.name ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "type", header: "Type" },
+        { key: "status", header: "Status" },
+        { key: "start_date", header: "Start" },
+        { key: "end_date", header: "End" },
+        { key: "days", header: "Days" },
+        { key: "reason", header: "Reason" },
+        { key: "requester", header: "Requester" },
+      ],
+    );
+  };
+
+  const handleDelete = async (row: LeaveRequest) => {
+    if (
+      !(await confirm({
+        title: "Delete draft",
+        message: `Permanently remove draft ${row.reference_number}? This cannot be undone.`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setActionId(row.id);
+    setActionError(null);
+    try {
+      await leaveApi.delete(row.id);
+      showToast("Draft deleted.");
+      await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
+    } catch {
+      setActionError("Failed to delete draft.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleWithdraw = async (row: LeaveRequest) => {
+    if (
+      !(await confirm({
+        title: "Withdraw request",
+        message: `Withdraw ${row.reference_number} from the approval workflow?`,
+        confirmText: "Withdraw",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setActionId(row.id);
+    setActionError(null);
+    try {
+      await leaveApi.withdraw(row.id);
+      showToast("Request withdrawn.");
+      await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
+    } catch {
+      setActionError("Failed to withdraw request.");
+    } finally {
+      setActionId(null);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <span className="text-neutral-700">Leave</span>
+          </div>
           <h1 className="page-title">Leave Requests</h1>
-          <p className="page-subtitle">Manage your leave applications and LIL linkings.</p>
+          <p className="page-subtitle">Manage leave applications, balances, and LIL linkings.</p>
         </div>
-        <Link href="/leave/create" className="btn-primary">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New Request
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+          <Link href="/leave/create" className="btn-primary text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Request
+          </Link>
+        </div>
       </div>
 
-      {isError && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
+      {toast && (
+        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
+      )}
+
+      {(isError || actionError) && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          Failed to load leave requests.
+          <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
+          {isError ? (
+            <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+              Retry
+            </button>
+          ) : (
+            <button type="button" className="text-xs font-semibold underline" onClick={() => setActionError(null)}>
+              Dismiss
+            </button>
+          )}
         </div>
       )}
 
-      {/* Balance cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {[
-          { label: "Annual Leave",   sub: "days remaining",   value: balances ? `${balances.annual_balance_days}` : "—",           icon: "event_available",  color: "text-green-600 dark:text-green-300",   bg: "bg-green-50 dark:bg-green-900/20"   },
-          { label: "Leave in Lieu",  sub: "hours available",  value: balances ? `${balances.lil_hours_available}` : "—",           icon: "schedule",         color: "text-purple-600 dark:text-purple-300", bg: "bg-purple-50 dark:bg-purple-900/20" },
-          { label: "Sick Leave",     sub: "days used",        value: balances ? `${balances.sick_leave_used_days}` : "—",          icon: "sick",             color: "text-red-600 dark:text-red-400",       bg: "bg-red-50 dark:bg-red-900/20"       },
-          { label: "Special Leave",  sub: "days used",        value: balances ? `${balances.special_leave_days_used}` : "—",       icon: "star",             color: "text-orange-600 dark:text-orange-300", bg: "bg-orange-50 dark:bg-orange-900/20" },
-          { label: "Maternity Leave",sub: "days used",        value: balances ? `${balances.maternity_leave_days_used}` : "—",     icon: "pregnant_woman",   color: "text-pink-600 dark:text-pink-300",     bg: "bg-pink-50 dark:bg-pink-900/20"     },
-          { label: "Paternity Leave",sub: "days used",        value: balances ? `${balances.paternity_leave_days_used}` : "—",     icon: "man",              color: "text-teal-600 dark:text-teal-300",     bg: "bg-teal-50 dark:bg-teal-900/20"     },
+          {
+            label: "Annual Leave",
+            sub: "days remaining",
+            value: balances ? `${balances.annual_balance_days}` : "—",
+            icon: "event_available",
+            color: "text-green-600",
+            bg: "bg-green-50",
+          },
+          {
+            label: "Leave in Lieu",
+            sub: "hours available",
+            value: balances ? `${balances.lil_hours_available}` : "—",
+            icon: "schedule",
+            color: "text-primary",
+            bg: "bg-primary/10",
+          },
+          {
+            label: "Sick Leave",
+            sub: "days used",
+            value: balances ? `${balances.sick_leave_used_days}` : "—",
+            icon: "sick",
+            color: "text-red-600",
+            bg: "bg-red-50",
+          },
+          {
+            label: "Special Leave",
+            sub: "days used",
+            value: balances ? `${balances.special_leave_days_used ?? 0}` : "—",
+            icon: "star",
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+          },
+          {
+            label: "Maternity Leave",
+            sub: "days used",
+            value: balances ? `${balances.maternity_leave_days_used ?? 0}` : "—",
+            icon: "pregnant_woman",
+            color: "text-pink-600",
+            bg: "bg-pink-50",
+          },
+          {
+            label: "Paternity Leave",
+            sub: "days used",
+            value: balances ? `${balances.paternity_leave_days_used ?? 0}` : "—",
+            icon: "man",
+            color: "text-teal-600",
+            bg: "bg-teal-50",
+          },
         ].map((stat) => (
           <div key={stat.label} className="card p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">{stat.label}</p>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{stat.value}</p>
-                <p className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">{stat.sub}</p>
+                <p className="text-xs font-medium text-neutral-700">{stat.label}</p>
+                <p className="mt-1 text-2xl font-bold text-neutral-900">{stat.value}</p>
+                <p className="mt-0.5 text-[11px] text-neutral-400">{stat.sub}</p>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center flex-shrink-0`}>
-                <span className={`material-symbols-outlined ${stat.color} text-[20px]`}>{stat.icon}</span>
+              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
+                <span className={`material-symbols-outlined text-[20px] ${stat.color}`}>{stat.icon}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`filter-tab ${statusFilter === f ? "active" : ""}`}
-          >
-            {f}
-          </button>
-        ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search reference, reason, type…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setFilter(tab.key);
+                  setPage(1);
+                }}
+                className={`filter-tab ${filter === tab.key ? "active" : ""}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="card p-12 text-center">
-          <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
-            <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            <span className="text-sm">Loading…</span>
+      <div className="card overflow-hidden">
+        {loading ? (
+          <div className="space-y-3 p-5">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
+            ))}
           </div>
-        </div>
-      ) : requests.length > 0 ? (
-        <div className="space-y-3">
-          {requests.map((req) => {
-            const s = statusConfig[req.status] ?? { label: req.status, cls: "badge-muted" };
-            const t = typeConfig[req.leave_type] ?? { label: req.leave_type, color: "text-neutral-600", bg: "bg-neutral-100" };
-            return (
-              <div key={req.id} className="card p-5 hover:shadow-elevated transition-shadow">
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${t.bg}`}>
-                    <span className={`material-symbols-outlined ${t.color} text-[20px]`}>event_available</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-neutral-400 dark:text-neutral-500">{req.reference_number}</span>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${t.bg} ${t.color}`}>
-                        {t.label}
-                      </span>
-                      <span className={`badge ${s.cls}`}>{s.label}</span>
-                    </div>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{req.reason || "No reason provided"}</p>
-                    <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+        ) : filtered.length === 0 ? (
+          <div className="px-5 py-16 text-center">
+            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">event_available</span>
+            <p className="text-sm font-semibold text-neutral-600">No leave requests found</p>
+            <p className="mt-1 text-xs text-neutral-400">
+              {filter === "all" && !search
+                ? "Submit your first leave application."
+                : "No rows match the current filters."}
+            </p>
+            <Link href="/leave/create" className="btn-primary mt-5 inline-flex text-sm">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Apply for Leave
+            </Link>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="data-table w-full">
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>Type</th>
+                  <th>Dates</th>
+                  <th>Days</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((req) => {
+                  const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
+                  const busy = actionId === req.id;
+                  return (
+                    <tr key={req.id}>
+                      <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>
+                      <td className="text-sm">{TYPE_LABELS[req.leave_type] ?? req.leave_type}</td>
+                      <td className="whitespace-nowrap text-xs text-neutral-600">
                         {formatDateShort(req.start_date)} → {formatDateShort(req.end_date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-                        {req.days_requested} day{req.days_requested !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-3 pt-3 border-t border-neutral-50 dark:border-neutral-700/50">
-                  {req.status === "draft" && (
-                    <Link href={`/leave/create?edit=${req.id}`} className="text-xs font-semibold text-primary hover:underline">Edit</Link>
-                  )}
-                  <Link href={`/leave/${req.id}`} className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View Details →</Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">event_available</span>
+                      </td>
+                      <td>{req.days_requested}</td>
+                      <td className="max-w-[220px] truncate text-sm text-neutral-700">
+                        {req.reason || "—"}
+                      </td>
+                      <td>
+                        <span className={`badge text-xs ${s.cls}`}>{s.label}</span>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link href={`/leave/${req.id}`} className="text-xs font-medium text-primary hover:underline">
+                            View
+                          </Link>
+                          {req.status === "draft" && (
+                            <>
+                              <Link
+                                href={`/leave/create?edit=${req.id}`}
+                                className="text-xs font-medium text-neutral-600 hover:underline"
+                              >
+                                Edit
+                              </Link>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void handleDelete(req)}
+                                className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {(req.status === "submitted" || req.status === "returned_for_correction") && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void handleWithdraw(req)}
+                              className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                            >
+                              Withdraw
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No leave requests found</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-            {statusFilter === "All" ? "Submit your first leave application." : `No ${statusFilter.toLowerCase()} requests.`}
-          </p>
-          <Link href="/leave/create" className="btn-primary mt-5 inline-flex">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Apply for Leave
-          </Link>
-        </div>
-      )}
+        )}
+        <ListPagination
+          page={Math.min(page, lastPage)}
+          lastPage={lastPage}
+          total={filtered.length}
+          onPageChange={setPage}
+        />
+      </div>
     </div>
   );
 }

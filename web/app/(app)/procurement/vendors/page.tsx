@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, vendorsApi, type SupplierCategory, type Vendor } from "@/lib/api";
 import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
@@ -516,6 +519,7 @@ export default function VendorsPage() {
   const [search, setSearch]           = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
   const [showForm, setShowForm]       = useState(false);
   const [editVendor, setEditVendor]   = useState<Vendor | null>(null);
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
@@ -569,7 +573,10 @@ export default function VendorsPage() {
 
   // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => setSearch(searchInput), 350);
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
     return () => clearTimeout(t);
   }, [searchInput]);
 
@@ -584,11 +591,43 @@ export default function VendorsPage() {
   });
 
   const vendors = data ?? [];
+  const lastPage = clientPageCount(vendors.length, DEFAULT_PAGE_SIZE);
+  const pagedVendors = useMemo(
+    () => slicePage(vendors, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [vendors, page, lastPage],
+  );
 
   const approvedCount    = vendors.filter((v) => v.is_approved && v.is_active && !v.is_blacklisted).length;
   const pendingCount     = vendors.filter((v) => !v.is_approved && v.is_active && !v.is_blacklisted).length;
   const blacklistedCount = vendors.filter((v) => v.is_blacklisted).length;
   const avgRated         = vendors.filter((v) => v.ratings_avg_rating).length;
+
+  const handleExport = () => {
+    if (vendors.length === 0) return;
+    exportToCsv(
+      `vendors-${new Date().toISOString().slice(0, 10)}.csv`,
+      vendors.map((v) => ({
+        name: v.name,
+        country: v.country ?? "",
+        email: v.contact_email ?? "",
+        phone: v.contact_phone ?? "",
+        approved: v.is_approved ? "yes" : "no",
+        active: v.is_active ? "yes" : "no",
+        blacklisted: v.is_blacklisted ? "yes" : "no",
+        rating: v.ratings_avg_rating ?? "",
+      })),
+      [
+        { key: "name", header: "Name" },
+        { key: "country", header: "Country" },
+        { key: "email", header: "Email" },
+        { key: "phone", header: "Phone" },
+        { key: "approved", header: "Approved" },
+        { key: "active", header: "Active" },
+        { key: "blacklisted", header: "Blacklisted" },
+        { key: "rating", header: "Rating" },
+      ],
+    );
+  };
 
   return (
     <>
@@ -596,19 +635,35 @@ export default function VendorsPage() {
         {/* Page header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+              <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
+              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+              <span className="text-neutral-700">Vendors</span>
+            </div>
             <h1 className="page-title">Vendor Register</h1>
             <p className="page-subtitle">Approved suppliers and service providers for procurement.</p>
           </div>
-          {canManageVendors && (
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => { setEditVendor(null); setShowForm(true); }}
-              className="btn-primary flex items-center gap-2 self-start sm:self-auto"
+              className="btn-secondary flex items-center gap-2 disabled:opacity-50"
+              disabled={vendors.length === 0}
+              onClick={handleExport}
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              New Vendor
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              Export CSV
             </button>
-          )}
+            {canManageVendors && (
+              <button
+                type="button"
+                onClick={() => { setEditVendor(null); setShowForm(true); }}
+                className="btn-primary flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                New Vendor
+              </button>
+            )}
+          </div>
         </div>
 
         {/* KPI strip */}
@@ -641,7 +696,10 @@ export default function VendorsPage() {
               <button
                 key={f.key}
                 type="button"
-                onClick={() => setStatusFilter(f.key)}
+                onClick={() => {
+                  setStatusFilter(f.key);
+                  setPage(1);
+                }}
                 className={`filter-tab flex items-center gap-1.5 ${statusFilter === f.key ? "active" : ""}`}
               >
                 <span className="material-symbols-outlined text-[14px]">{f.icon}</span>
@@ -715,7 +773,7 @@ export default function VendorsPage() {
                     onAdd={() => { setEditVendor(null); setShowForm(true); }}
                   />
                 ) : (
-                  vendors.map((v) => (
+                  pagedVendors.map((v) => (
                     <tr key={v.id} className="group hover:bg-neutral-50/60">
                       {/* Vendor name + reg + country */}
                       <td>
@@ -822,6 +880,12 @@ export default function VendorsPage() {
               </tbody>
             </table>
           </div>
+          <ListPagination
+            page={Math.min(page, lastPage)}
+            lastPage={lastPage}
+            total={vendors.length}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 

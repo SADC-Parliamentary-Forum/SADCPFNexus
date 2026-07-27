@@ -12,6 +12,9 @@ import {
 } from "@/lib/api";
 import { canIssueProcurementRfq, canViewProcurementRfq, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -45,6 +48,8 @@ export default function RfqListPage() {
   const canIssueRfq = canIssueProcurementRfq(user);
 
   const [tab, setTab] = useState<RfqFilter | "awarded">("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<number | "">("");
   const [rfqDeadline, setRfqDeadline] = useState("");
@@ -93,6 +98,46 @@ export default function RfqListPage() {
     if (tab === "in_progress") return inProgress;
     return [...approved, ...awarded];
   })();
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return displayed;
+    return displayed.filter((r) => {
+      const hay = [r.reference_number, r.title, r.status].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [displayed, search]);
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(
+    () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [filtered, page, lastPage],
+  );
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `procurement-rfq-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((r) => ({
+        reference: r.reference_number,
+        title: r.title,
+        status: r.status,
+        quotes: (r.quotes ?? []).length,
+        deadline: r.rfq_deadline ?? "",
+        value: r.estimated_value,
+        currency: r.currency,
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "quotes", header: "Quotes" },
+        { key: "deadline", header: "Deadline" },
+        { key: "value", header: "Value" },
+        { key: "currency", header: "Currency" },
+      ],
+    );
+  };
 
   const issueMutation = useMutation({
     mutationFn: async () => {
@@ -153,22 +198,38 @@ export default function RfqListPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">RFQ</span>
+          </div>
           <h1 className="page-title">Requests for Quotation</h1>
           <p className="page-subtitle">Issue RFQs from approved procurement requests and track supplier responses.</p>
         </div>
-        {canIssueRfq && (
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="btn-primary inline-flex items-center gap-1.5 text-sm"
-            onClick={() => {
-              setFormError(null);
-              setShowCreate(true);
-            }}
+            className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
           >
-            <span className="material-symbols-outlined text-[16px]">add</span>
-            Create RFQ
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export CSV
           </button>
-        )}
+          {canIssueRfq && (
+            <button
+              type="button"
+              className="btn-primary inline-flex items-center gap-1.5 text-sm"
+              onClick={() => {
+                setFormError(null);
+                setShowCreate(true);
+              }}
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Create RFQ
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -190,16 +251,39 @@ export default function RfqListPage() {
         ))}
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setTab(f.key)}
-            className={`filter-tab ${tab === f.key ? "active" : ""}`}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search RFQ reference or title…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => {
+                  setTab(f.key);
+                  setPage(1);
+                }}
+                className={`filter-tab ${tab === f.key ? "active" : ""}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {canIssueRfq && eligibleRequests.length === 0 && (
@@ -221,7 +305,7 @@ export default function RfqListPage() {
             </div>
           ))}
         </div>
-      ) : displayed.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">request_quote</span>
           <p className="text-sm text-neutral-500">No RFQs found for this filter.</p>
@@ -246,7 +330,7 @@ export default function RfqListPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayed.map((req) => {
+                {paged.map((req) => {
                   const quotes = req.quotes ?? [];
                   const isAwarded = req.status === "awarded";
                   const filter = isAwarded ? ("awarded" as const) : rfqFilter(req);
@@ -305,6 +389,12 @@ export default function RfqListPage() {
               </tbody>
             </table>
           </div>
+          <ListPagination
+            page={Math.min(page, lastPage)}
+            lastPage={lastPage}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { leaveApi, tenantUsersApi, type LeaveRequest, type TenantUserOption } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -110,6 +113,7 @@ export default function HRLeavePage() {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState("All");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -152,6 +156,39 @@ export default function HRLeavePage() {
       (r.requester?.name ?? "").toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const paged = useMemo(
+    () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [filtered, page, lastPage],
+  );
+
+  const handleExport = () => {
+    if (filtered.length === 0) return;
+    exportToCsv(
+      `hr-leave-${new Date().toISOString().slice(0, 10)}.csv`,
+      filtered.map((r) => ({
+        reference: r.reference_number,
+        employee: r.requester?.name ?? "",
+        type: r.leave_type,
+        status: r.status,
+        start_date: r.start_date,
+        end_date: r.end_date,
+        days: r.days_requested,
+        reason: r.reason ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "employee", header: "Employee" },
+        { key: "type", header: "Type" },
+        { key: "status", header: "Status" },
+        { key: "start_date", header: "Start" },
+        { key: "end_date", header: "End" },
+        { key: "days", header: "Days" },
+        { key: "reason", header: "Reason" },
+      ],
+    );
+  };
 
   const handleApprove = (id: number, override?: string) => {
     setSubmitting(true);
@@ -232,6 +269,15 @@ export default function HRLeavePage() {
           )}
           <button
             type="button"
+            className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+          <button
+            type="button"
             onClick={() => setShowNew(true)}
             className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
           >
@@ -249,14 +295,24 @@ export default function HRLeavePage() {
             type="search"
             placeholder="Search by name or reference…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="form-input pl-10"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
           {statuses.map((s) => (
-            <button key={s} type="button" onClick={() => setFilterStatus(s)}
-              className={`filter-tab ${filterStatus === s ? "active" : ""}`}>
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                setFilterStatus(s);
+                setPage(1);
+              }}
+              className={`filter-tab ${filterStatus === s ? "active" : ""}`}
+            >
               {s}
             </button>
           ))}
@@ -304,7 +360,7 @@ export default function HRLeavePage() {
                       </td>
                     </tr>
                   )
-                  : filtered.map((r) => (
+                  : paged.map((r) => (
                     <tr key={r.id}>
                       <td className="font-mono text-xs text-neutral-600">{r.reference_number}</td>
                       <td className="font-medium text-neutral-900">{r.requester?.name ?? "—"}</td>
@@ -348,6 +404,12 @@ export default function HRLeavePage() {
             </tbody>
           </table>
         </div>
+        <ListPagination
+          page={Math.min(page, lastPage)}
+          lastPage={lastPage}
+          total={filtered.length}
+          onPageChange={setPage}
+        />
       </div>
 
       {/* New Leave Request Modal */}

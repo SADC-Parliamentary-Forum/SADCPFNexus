@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { conductApi, tenantUsersApi, type ConductRecord, type TenantUserOption } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
   commendation: "Commendation",
@@ -116,6 +118,7 @@ export default function ConductPage() {
   const [error, setError] = useState<string | null>(null);
   const [recordTypeFilter, setRecordTypeFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [search, setSearch] = useState("");
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -182,19 +185,58 @@ export default function ConductPage() {
     } finally { setCreating(false); }
   };
 
+  const visible = list.filter((r) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [r.employee?.name, r.title, r.record_type, r.status].filter(Boolean).join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+
+  const handleExport = () => {
+    if (visible.length === 0) return;
+    exportToCsv(
+      `hr-conduct-${new Date().toISOString().slice(0, 10)}.csv`,
+      visible.map((r) => ({
+        employee: r.employee?.name ?? "",
+        type: r.record_type,
+        title: r.title,
+        status: r.status,
+        issue_date: r.issue_date ?? "",
+      })),
+      [
+        { key: "employee", header: "Employee" },
+        { key: "type", header: "Type" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "issue_date", header: "Issue date" },
+      ],
+    );
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            HR
-          </Link>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/hr" className="hover:text-neutral-700 transition-colors">HR</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Conduct</span>
+          </div>
           <h1 className="page-title">Conduct, Discipline & Recognition</h1>
           <p className="page-subtitle">
             Commendations, warnings, and corrective actions. These records support performance review and HR decisions.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            className="btn-secondary py-2 px-3 text-sm disabled:opacity-50"
+            disabled={visible.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
           <Link href="/hr/conduct/new" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">open_in_new</span>
             Full Form
@@ -217,12 +259,27 @@ export default function ConductPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="card p-4 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+            search
+          </span>
+          <input
+            type="search"
+            className="form-input pl-10"
+            placeholder="Search employee or title…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Type</span>
         <select
           className="form-input max-w-[220px] py-2 text-sm"
           value={recordTypeFilter}
-          onChange={(e) => setRecordTypeFilter(e.target.value)}
+          onChange={(e) => {
+            setRecordTypeFilter(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">All types</option>
           {Object.entries(RECORD_TYPE_LABELS).map(([value, label]) => (
@@ -235,7 +292,10 @@ export default function ConductPage() {
         <select
           className="form-input max-w-[180px] py-2 text-sm"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">All</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -259,12 +319,12 @@ export default function ConductPage() {
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
             <span className="ml-2">Loading…</span>
           </div>
-        ) : list.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="py-16 text-center">
             <span className="material-symbols-outlined text-4xl text-neutral-200">gavel</span>
             <p className="mt-3 text-sm text-neutral-500">No conduct records found.</p>
             <p className="text-xs text-neutral-400 mt-1">
-              {recordTypeFilter || statusFilter ? "Try changing the filters." : "Commendations and disciplinary records will appear here."}
+              {recordTypeFilter || statusFilter || search ? "Try changing the filters." : "Commendations and disciplinary records will appear here."}
             </p>
           </div>
         ) : (
@@ -282,7 +342,7 @@ export default function ConductPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {list.map((r) => (
+                  {visible.map((r) => (
                     <tr key={r.id}>
                       <td className="font-medium text-neutral-900">
                         {r.employee?.name ?? `#${r.employee_id}`}
@@ -316,29 +376,13 @@ export default function ConductPage() {
                 </tbody>
               </table>
             </div>
-            {lastPage > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-100 text-sm text-neutral-600">
-                <span>Page {page} of {lastPage} ({total} total)</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={page >= lastPage}
-                    onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
-                    className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
+            <ListPagination
+              page={page}
+              lastPage={lastPage}
+              total={total}
+              onPageChange={setPage}
+              disabled={loading}
+            />
           </>
         )}
       </div>

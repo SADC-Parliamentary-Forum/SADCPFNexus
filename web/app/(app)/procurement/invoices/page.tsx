@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoicesApi, purchaseOrdersApi, goodsReceiptsApi, type Invoice, type PurchaseOrder, type GoodsReceiptNote } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   received: { label: "Received", cls: "badge-warning",  icon: "inbox"         },
@@ -30,6 +33,8 @@ const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [showModal, setShowModal]       = useState(false);
   const [submitError, setSubmitError]   = useState<string | null>(null);
 
@@ -119,20 +124,87 @@ export default function InvoicesPage() {
   const canSubmit = !!selectedPoId && !!selectedPO?.vendor?.id && !!vendorInvNumber.trim() && !!invoiceDate && !!dueDate && !!amount && Number(amount) > 0;
 
   const items: Invoice[] = (data as { data?: Invoice[] })?.data ?? [];
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((i) => {
+      const hay = [
+        i.reference_number,
+        i.vendor_invoice_number,
+        i.status,
+        i.vendor?.name,
+        i.purchase_order?.reference_number,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [items, search]);
+
+  const lastPage = clientPageCount(filteredItems.length, DEFAULT_PAGE_SIZE);
+  const pagedItems = useMemo(
+    () => slicePage(filteredItems, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
+    [filteredItems, page, lastPage],
+  );
+
   const total    = items.length;
   const pending  = items.filter((i) => i.match_status === "pending").length;
   const matched  = items.filter((i) => i.match_status === "matched").length;
   const approved = items.filter((i) => ["approved", "approved_for_payment", "paid"].includes(i.status)).length;
+
+  const handleExport = () => {
+    if (filteredItems.length === 0) return;
+    exportToCsv(
+      `procurement-invoices-${new Date().toISOString().slice(0, 10)}.csv`,
+      filteredItems.map((i) => ({
+        reference: i.reference_number,
+        vendor_invoice: i.vendor_invoice_number,
+        vendor: i.vendor?.name ?? "",
+        status: i.status,
+        match_status: i.match_status,
+        amount: i.amount,
+        currency: i.currency,
+        invoice_date: i.invoice_date,
+        due_date: i.due_date,
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "vendor_invoice", header: "Vendor invoice #" },
+        { key: "vendor", header: "Vendor" },
+        { key: "status", header: "Status" },
+        { key: "match_status", header: "Match" },
+        { key: "amount", header: "Amount" },
+        { key: "currency", header: "Currency" },
+        { key: "invoice_date", header: "Invoice date" },
+        { key: "due_date", header: "Due date" },
+      ],
+    );
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Invoices</span>
+          </div>
           <h1 className="page-title">Invoices</h1>
           <p className="page-subtitle">3-way matching and invoice approval workflow</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
+            disabled={filteredItems.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Export CSV
+          </button>
           <button
             onClick={openModal}
             className="btn-primary inline-flex items-center gap-1.5 text-sm"
@@ -140,10 +212,6 @@ export default function InvoicesPage() {
             <span className="material-symbols-outlined text-[16px]">add</span>
             Record Invoice
           </button>
-          <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
-            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-            Procurement
-          </Link>
         </div>
       </div>
 
@@ -168,16 +236,39 @@ export default function InvoicesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
-          >
-            {f === "all" ? "All" : f}
-          </button>
-        ))}
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search invoice, vendor, PO…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(f);
+                  setPage(1);
+                }}
+                className={`filter-tab capitalize ${statusFilter === f ? "active" : ""}`}
+              >
+                {f === "all" ? "All" : f.replace(/_/g, " ")}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Content */}
@@ -196,11 +287,15 @@ export default function InvoicesPage() {
         </div>
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load invoices.</div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="card p-12 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">request_quote</span>
           <p className="text-sm text-neutral-500">No invoices found.</p>
-          <p className="text-xs text-neutral-400">Click "Record Invoice" above to log an invoice against a purchase order.</p>
+          <p className="text-xs text-neutral-400">
+            {search.trim()
+              ? "No invoices match your search."
+              : 'Click "Record Invoice" above to log an invoice against a purchase order.'}
+          </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -217,7 +312,7 @@ export default function InvoicesPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((inv) => {
+              {pagedItems.map((inv) => {
                 const s = statusConfig[inv.status] ?? statusConfig.received;
                 const m = matchConfig[inv.match_status] ?? matchConfig.pending;
                 return (
@@ -259,6 +354,12 @@ export default function InvoicesPage() {
               })}
             </tbody>
           </table>
+          <ListPagination
+            page={Math.min(page, lastPage)}
+            lastPage={lastPage}
+            total={filteredItems.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 
