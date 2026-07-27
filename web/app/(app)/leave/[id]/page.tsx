@@ -17,6 +17,10 @@ const typeConfig: Record<string, { label: string; color: string; icon: string }>
   special: { label: "Special Leave", color: "text-orange-700 bg-orange-50 border-orange-200", icon: "star" },
   maternity: { label: "Maternity Leave", color: "text-pink-700 bg-pink-50 border-pink-200", icon: "child_care" },
   paternity: { label: "Paternity Leave", color: "text-teal-700 bg-teal-50 border-teal-200", icon: "family_restroom" },
+  compassionate: { label: "Compassionate Leave", color: "text-rose-700 bg-rose-50 border-rose-200", icon: "volunteer_activism" },
+  study: { label: "Study Leave", color: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "school" },
+  unpaid: { label: "Leave Without Pay", color: "text-slate-700 bg-slate-50 border-slate-200", icon: "money_off" },
+  home: { label: "Home Leave", color: "text-cyan-700 bg-cyan-50 border-cyan-200", icon: "home" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -37,6 +41,29 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
       <span className={`material-symbols-outlined text-[18px] ${color}`}>{icon}</span>
     </div>
   );
+}
+
+function formatWorkflowStage(stage: unknown, fallback: string) {
+  if (!stage) return fallback;
+  if (typeof stage === "string") return stage;
+  if (typeof stage === "number") return String(stage);
+  if (typeof stage === "object") {
+    const value = stage as {
+      label?: unknown;
+      step_name?: unknown;
+      name?: unknown;
+      approver_type?: unknown;
+      index?: unknown;
+    };
+    if (typeof value.label === "string" && value.label.trim()) return value.label;
+    if (typeof value.step_name === "string" && value.step_name.trim()) return value.step_name;
+    if (typeof value.name === "string" && value.name.trim()) return value.name;
+    if (typeof value.approver_type === "string" && value.approver_type.trim()) {
+      const human = value.approver_type.replace(/_/g, " ");
+      return value.index != null ? `Stage ${Number(value.index) + 1}: ${human}` : human;
+    }
+  }
+  return fallback;
 }
 
 function SkeletonCard() {
@@ -223,6 +250,7 @@ export default function LeaveDetailPage() {
   const s = statusConfig[request.status] ?? statusConfig.draft;
   const lilLinkings = (request as LeaveRequest & { lil_linkings?: LilLinking[] }).lil_linkings ?? [];
   const hasLil = request.has_lil_linking && (lilLinkings.length > 0 || (request.lil_hours_required != null && request.lil_hours_linked != null));
+  const segments = request.segments ?? [];
 
   const durationDays = request.days_requested;
   const approvalRequest = (request as any).approval_request;
@@ -278,6 +306,15 @@ export default function LeaveDetailPage() {
                 Certificate
               </Link>
             )}
+            <a
+              href={leaveApi.pdfUrl(request.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
+              FORM-005
+            </a>
             {request.status === "draft" && (
               <>
                 <button
@@ -350,6 +387,27 @@ export default function LeaveDetailPage() {
         ))}
       </div>
 
+      {/* Current workflow holder */}
+      <div className="card p-5">
+        <div className="flex items-center gap-3 mb-4">
+          <SectionIcon icon="account_tree" color="text-indigo-600" bg="bg-indigo-50" />
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Workflow Status</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { label: "Current Stage", value: formatWorkflowStage(request.current_stage, request.status) },
+            { label: "Current Holder", value: request.current_holder ?? "Not assigned" },
+            { label: "HOD Recommendation", value: request.recommendation_status ?? "Pending" },
+            { label: "HR Certification", value: request.certification_status ?? "Pending" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-lg border border-neutral-100 bg-neutral-50 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{item.label}</p>
+              <p className="mt-1 text-sm font-semibold text-neutral-800">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Submitted By */}
       {request.requester && (
         <div className="card p-5">
@@ -417,6 +475,65 @@ export default function LeaveDetailPage() {
 
       {/* Workflow Timeline */}
       <ApprovalTimeline request={approvalRequest} />
+
+      {/* Leave Segments */}
+      {segments.length > 0 && (
+        <div className="card p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <SectionIcon icon="calendar_view_week" color="text-primary" bg="bg-primary/10" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Leave Segments</h3>
+            {request.policy_version && (
+              <span className="ml-auto text-[11px] text-neutral-400">
+                Policy: {request.policy_version.name} {request.policy_version.version}
+              </span>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-100 text-left text-[11px] uppercase tracking-wide text-neutral-400">
+                  <th className="py-2 pr-3 font-semibold">Type</th>
+                  <th className="py-2 px-3 font-semibold">Dates</th>
+                  <th className="py-2 px-3 text-right font-semibold">Working</th>
+                  <th className="py-2 px-3 text-right font-semibold">Holidays</th>
+                  <th className="py-2 px-3 text-right font-semibold">Balance After</th>
+                  <th className="py-2 pl-3 font-semibold">Certification</th>
+                </tr>
+              </thead>
+              <tbody>
+                {segments.map((segment) => {
+                  const info = typeConfig[segment.leave_type] ?? { label: segment.leave_type, color: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "event_available" };
+                  return (
+                    <tr key={segment.id} className="border-b border-neutral-50 last:border-0">
+                      <td className="py-3 pr-3">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${info.color}`}>
+                          <span className="material-symbols-outlined text-[12px]">{info.icon}</span>
+                          {segment.type?.name ?? info.label}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-neutral-700">
+                        {formatDateShort(segment.start_date)} - {formatDateShort(segment.end_date)}
+                        {segment.day_part && segment.day_part !== "full" && (
+                          <span className="ml-1 text-xs text-neutral-400">({segment.day_part})</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right font-semibold text-neutral-900">{Number(segment.amount_requested).toFixed(2)}</td>
+                      <td className="py-3 px-3 text-right text-neutral-600">{Number(segment.public_holidays_excluded ?? 0).toFixed(2)}</td>
+                      <td className="py-3 px-3 text-right text-neutral-600">
+                        {segment.balance_after == null ? "-" : Number(segment.balance_after).toFixed(2)}
+                      </td>
+                      <td className="py-3 pl-3 text-neutral-600">
+                        <div className="text-xs font-medium">{segment.certification_status ?? "Pending"}</div>
+                        <div className="text-[11px] text-neutral-400">Docs: {segment.document_status ?? "not recorded"}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Leave Details */}
       <div className="card p-5">

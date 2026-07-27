@@ -143,6 +143,10 @@ class ApprovalFlowTest extends TestCase
         $manager = $this->makeHrManager($tenant);
 
         $staffHttp = $this->asUser($staff);
+        LeaveBalance::query()->updateOrCreate(
+            ['user_id' => $staff->id, 'period_year' => (int) date('Y')],
+            ['annual_balance_days' => 30, 'lil_hours_available' => 8.0, 'sick_leave_used_days' => 0]
+        );
 
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',

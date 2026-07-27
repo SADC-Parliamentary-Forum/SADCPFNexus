@@ -3,6 +3,7 @@
 namespace Tests\Feature\Workflow;
 
 use App\Models\LeaveRequest;
+use App\Models\LeaveBalance;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;
 use Tests\TestCase;
@@ -12,7 +13,11 @@ class ReadinessInvariantTest extends TestCase
     public function test_requester_cannot_approve_own_leave_request(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http, $user] = $this->asStaff($tenant);
+        LeaveBalance::query()->updateOrCreate(
+            ['user_id' => $user->id, 'period_year' => (int) date('Y')],
+            ['annual_balance_days' => 30, 'lil_hours_available' => 0, 'sick_leave_used_days' => 0]
+        );
 
         $create = $http->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
@@ -53,8 +58,11 @@ class ReadinessInvariantTest extends TestCase
     public function test_only_assigned_approver_can_approve_submitted_leave(): void
     {
         $tenant = Tenant::factory()->create();
-        [$staffHttp] = $this->asStaff($tenant);
-        [$randomStaff] = $this->asStaff($tenant);
+        [$staffHttp, $staff] = $this->asStaff($tenant);
+        LeaveBalance::query()->updateOrCreate(
+            ['user_id' => $staff->id, 'period_year' => (int) date('Y')],
+            ['annual_balance_days' => 30, 'lil_hours_available' => 0, 'sick_leave_used_days' => 0]
+        );
 
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
@@ -66,6 +74,7 @@ class ReadinessInvariantTest extends TestCase
         $id = $create->json('data.id');
         $staffHttp->postJson("/api/v1/leave/requests/{$id}/submit")->assertOk();
 
+        [$randomStaff] = $this->asStaff($tenant);
         $randomStaff->postJson("/api/v1/leave/requests/{$id}/approve", [
             'comment' => 'Out of sequence attempt',
         ])->assertStatus(403);

@@ -72,6 +72,10 @@ class LeaveRequestTest extends TestCase
     public function test_staff_can_submit_their_draft(): void
     {
         [$http, $user] = $this->asStaff();
+        \App\Models\LeaveBalance::updateOrCreate(
+            ['user_id' => $user->id, 'period_year' => (int) date('Y')],
+            ['annual_balance_days' => 30, 'lil_hours_available' => 0, 'sick_leave_used_days' => 0]
+        );
 
         $create = $http->postJson('/api/v1/leave/requests', $this->leavePayload());
         $create->assertCreated();

@@ -107,9 +107,9 @@ class LeaveWorkflowPatternTest extends TestCase
 
         $response = $this->asUser($otherStaff)
             ->postJson("/api/v1/leave/requests/{$leave->id}/approve", ['comment' => 'Attempt'])
-            ->assertStatus(200);
+            ->assertStatus(403);
 
-        $this->assertNotNull($response->json('data.id'));
+        $this->assertNotEmpty($response->json('message'));
     }
 
     public function test_leave_workflow_pattern_requester_cannot_self_approve(): void

@@ -1563,11 +1563,16 @@ export const reportsApi = {
 export interface LeaveRequest {
   id: number;
   reference_number: string;
-  leave_type: "annual" | "sick" | "lil" | "special" | "maternity" | "paternity";
+  leave_type: LeaveTypeCode;
   start_date: string;
   end_date: string;
   days_requested: number;
   reason: string | null;
+  leave_address?: string | null;
+  contact_number?: string | null;
+  emergency_contact?: string | null;
+  handover_required?: boolean;
+  handover_notes?: string | null;
   status: "draft" | "submitted" | "approved" | "rejected" | "cancelled" | "returned_for_correction" | "withdrawn";
   rejection_reason: string | null;
   has_lil_linking: boolean;
@@ -1576,15 +1581,130 @@ export interface LeaveRequest {
   submitted_at: string | null;
   approved_at: string | null;
   created_at: string;
+  current_stage?: string | null;
+  current_holder?: string | null;
+  recommendation_status?: string | null;
+  recommendation_comments?: string | null;
+  certification_status?: string | null;
+  certification_comments?: string | null;
+  policy_version?: LeavePolicyVersion | null;
+  segments?: LeaveSegment[];
+  approval_request?: ApprovalRequest | null;
   requester?: User;
   approver?: User;
+  recommender?: User;
+  certifier?: User;
 }
+
+export type LeaveTypeCode =
+  | "annual"
+  | "sick"
+  | "lil"
+  | "special"
+  | "maternity"
+  | "paternity"
+  | "compassionate"
+  | "study"
+  | "unpaid"
+  | "home";
+
+export interface LeaveType {
+  id: number;
+  code: LeaveTypeCode | string;
+  name: string;
+  annual_entitlement?: string | number | null;
+  accrual_rate?: string | number | null;
+  cycle?: string | null;
+  is_paid?: boolean;
+  allow_half_day?: boolean;
+}
+
+export interface LeavePolicyVersion {
+  id: number;
+  name: string;
+  version: string;
+}
+
+export interface LeaveSegment {
+  id: number;
+  leave_type: LeaveTypeCode | string;
+  start_date: string;
+  end_date: string;
+  day_part?: "full" | "morning" | "afternoon" | string;
+  calendar_days: string | number;
+  weekend_days?: string | number;
+  public_holidays_excluded?: string | number;
+  working_days?: string | number;
+  balance_before?: string | number | null;
+  amount_requested: string | number;
+  balance_after?: string | number | null;
+  source_type?: string | null;
+  source_id?: number | null;
+  pay_treatment?: string | null;
+  status?: string | null;
+  certification_status?: string | null;
+  eligible_days?: string | number | null;
+  document_status?: string | null;
+  comments?: string | null;
+  type?: LeaveType | null;
+}
+
+export interface LeavePreviewSegment extends LeaveSegment {
+  leave_type_id: number;
+  holidays?: Array<Record<string, unknown>>;
+}
+
+export interface LeavePreviewResponse {
+  segments: LeavePreviewSegment[];
+  total_working_days: number;
+}
+
+export interface LeaveSegmentInput {
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  day_part?: "full" | "morning" | "afternoon";
+  amount_requested?: number;
+  source_type?: string | null;
+  source_id?: number | null;
+  document_status?: string | null;
+  comments?: string | null;
+}
+
+export interface ToilCredit {
+  id: number;
+  credit_reference: string;
+  user_id: number;
+  source_type: string;
+  source_id: number | null;
+  duty_date: string | null;
+  earned_amount: string | number;
+  unit: string;
+  credited_days: string | number;
+  accrual_date: string | null;
+  expiry_date: string | null;
+  original_balance: string | number;
+  used: string | number;
+  remaining_balance: string | number;
+  status: string;
+  days_until_expiry?: number;
+  user?: Pick<User, "id" | "name" | "email">;
+}
+
+export type LeaveCreatePayload = Omit<Partial<LeaveRequest>, "segments"> & {
+  segments?: LeaveSegmentInput[] | LeaveSegment[];
+  lil_linkings?: object[];
+  user_id?: number;
+};
 
 export const leaveApi = {
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<LeaveRequest>>("/leave/requests", { params }),
-  get: (id: number) => api.get<LeaveRequest>(`/leave/requests/${id}`),
-  create: (data: Partial<LeaveRequest> & { lil_linkings?: object[] }) =>
+  get: (id: number) => api.get<{ data: LeaveRequest } | LeaveRequest>(`/leave/requests/${id}`),
+  types: () => api.get<{ policy: LeavePolicyVersion; data: LeaveType[] }>("/leave/types"),
+  preview: (segments: LeaveSegmentInput[]) =>
+    api.post<{ data: LeavePreviewResponse }>("/leave/preview", { segments }),
+  create: (data: LeaveCreatePayload) =>
     api.post<{ data: LeaveRequest; message: string }>("/leave/requests", data),
   update: (id: number, data: Partial<LeaveRequest>) =>
     api.put<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}`, data),
@@ -1603,7 +1723,10 @@ export const leaveApi = {
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/resubmit`),
   certificate: (id: number) =>
     api.get<{ data: LeaveRequest }>(`/leave/requests/${id}/certificate`),
+  pdfUrl: (id: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/pdf`,
   listLilAccruals: () => api.get<{ data: LilAccrual[] }>("/leave/lil-accruals"),
+  listToil: () => api.get<{ data: ToilCredit[] }>("/leave/toil"),
   getBalances: () =>
     api.get<{ annual_balance_days: number; lil_hours_available: number; sick_leave_used_days: number; period_year: number }>("/leave/balances"),
   // Attachments
@@ -1613,11 +1736,7 @@ export const leaveApi = {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("document_type", documentType);
-    return api.post<{ data: ModuleAttachment; message: string }>(
-      `/leave/requests/${id}/attachments`,
-      fd,
-      { headers: { "Content-Type": "multipart/form-data" } },
-    );
+    return api.post<{ data: ModuleAttachment; message: string }>(`/leave/requests/${id}/attachments`, fd);
   },
   deleteAttachment: (id: number, attachmentId: number) =>
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),

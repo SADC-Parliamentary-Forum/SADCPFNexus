@@ -206,6 +206,15 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nYour {{leave_type}} leave request ({{reference}}) from {{start_date}} to {{end_date}} has been returned:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF HR",
             ],
 
+            'leave.toil_expiry_alert' => [
+                'subject' => 'TOIL {{reference}} expires in {{days}} day(s)',
+                'body'    => "Dear {{name}},\n\nYour TOIL credit {{reference}} has {{remaining}} day(s) remaining and expires on {{expiry_date}}. It must normally be taken within 30 days unless the Secretary General authorises an extension.\n\nRegards,\nSADC-PF HR",
+            ],
+            'leave.toil_extended' => [
+                'subject' => 'TOIL extension approved - {{reference}}',
+                'body'    => "Dear {{name}},\n\nThe Secretary General has extended TOIL credit {{reference}} to {{expiry_date}}.\n\nRegards,\nSADC-PF HR",
+            ],
+
             // Imprest
             'imprest.submitted' => [
                 'subject' => 'Imprest request submitted — Action required',

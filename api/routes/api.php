@@ -337,23 +337,32 @@ Route::prefix('v1')->group(function () {
         });
 
         // Leave Module
+        Route::pattern('leaveRequest', '[0-9]+');
         Route::prefix('leave')->group(function () {
+            Route::get('types', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'types']);
+            Route::post('preview', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'preview']);
             Route::get('balances', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'balances']);
             // HR Admin: all-staff leave balance management
             Route::get('admin/balances', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'index']);
             Route::post('admin/balances/initialize-year', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'initializeYear']);
             Route::post('admin/balances/upsert', [\App\Http\Controllers\Api\V1\Hr\AdminLeaveBalancesController::class, 'upsert']);
             Route::get('lil-accruals', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'lilAccruals']);
+            Route::get('toil', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'toil']);
+            Route::post('toil/{toilCredit}/extend', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'extendToil']);
+            Route::get('requests/{badLeaveRequest}', fn () => abort(404))->where('badLeaveRequest', '[^0-9]+');
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
                 ->names('leave.requests');
             Route::post('requests/{leaveRequest}/submit',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
+            Route::post('requests/{leaveRequest}/recommend', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'recommend']);
+            Route::post('requests/{leaveRequest}/certify',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certify']);
             Route::post('requests/{leaveRequest}/approve',  [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
             Route::post('requests/{leaveRequest}/reject',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
             Route::post('requests/{leaveRequest}/return',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'returnForCorrection']);
             Route::post('requests/{leaveRequest}/withdraw', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'withdraw']);
             Route::post('requests/{leaveRequest}/resubmit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'resubmit']);
             Route::get('requests/{leaveRequest}/certificate', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certificate']);
+            Route::get('requests/{leaveRequest}/pdf', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'pdf']);
             // Leave attachments
             Route::get('requests/{leaveRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'index']);
             Route::post('requests/{leaveRequest}/attachments',                      [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'store']);

@@ -12,8 +12,14 @@ class LeaveRequest extends Model
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
+        'policy_version_id',
         'leave_type', 'start_date', 'end_date', 'days_requested', 'reason',
+        'leave_address', 'contact_number', 'emergency_contact',
+        'handover_required', 'handover_notes',
         'status', 'rejection_reason', 'has_lil_linking',
+        'current_stage', 'current_holder',
+        'recommendation_status', 'recommended_by', 'recommended_at', 'recommendation_comments',
+        'certification_status', 'certified_by', 'certified_at', 'certification_comments',
         'lil_hours_required', 'lil_hours_linked', 'submitted_at', 'approved_at',
         'prepared_by', 'prepared_on_behalf_of', 'delegated_authority_id',
     ];
@@ -23,7 +29,10 @@ class LeaveRequest extends Model
         'end_date'      => 'date',
         'submitted_at'  => 'datetime',
         'approved_at'   => 'datetime',
+        'recommended_at' => 'datetime',
+        'certified_at' => 'datetime',
         'has_lil_linking' => 'boolean',
+        'handover_required' => 'boolean',
     ];
 
     public function requester()
@@ -36,9 +45,34 @@ class LeaveRequest extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function recommender()
+    {
+        return $this->belongsTo(User::class, 'recommended_by');
+    }
+
+    public function certifier()
+    {
+        return $this->belongsTo(User::class, 'certified_by');
+    }
+
     public function lilLinkings()
     {
         return $this->hasMany(LeaveLilLinking::class);
+    }
+
+    public function policyVersion()
+    {
+        return $this->belongsTo(LeavePolicyVersion::class, 'policy_version_id');
+    }
+
+    public function segments()
+    {
+        return $this->hasMany(LeaveSegment::class);
+    }
+
+    public function payrollImpacts()
+    {
+        return $this->hasMany(LeavePayrollImpact::class);
     }
 
     public function approvalRequest()

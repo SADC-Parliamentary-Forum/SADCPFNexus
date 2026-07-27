@@ -40,6 +40,12 @@ Schedule::command('travel:send-visa-reminders')->dailyAt('07:45');
 // Travel retirement overdue marking + due-soon reminders.
 Schedule::command('travel:mark-overdue-retirements')->dailyAt('08:10');
 
+// Post configured annual leave accruals into the auditable leave ledger.
+Schedule::command('leave:post-monthly-accruals')->monthlyOn(1, '02:00');
+
+// Expire overdue leave-in-lieu credits and remind staff before expiry.
+Schedule::command('leave:manage-toil-expiry')->dailyAt('08:20');
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()
