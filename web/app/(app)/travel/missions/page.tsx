@@ -5,17 +5,7 @@ import Link from "next/link";
 import { travelApi, type TravelMission } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
-
-function unwrapList(payload: unknown): TravelMission[] {
-  if (!payload || typeof payload !== "object") return [];
-  const root = payload as { data?: unknown };
-  const data = root.data ?? payload;
-  if (Array.isArray(data)) return data as TravelMission[];
-  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
-    return (data as { data: TravelMission[] }).data;
-  }
-  return [];
-}
+import { getListData } from "@/lib/listPagination";
 
 export default function TravelMissionsPage() {
   const [rows, setRows] = useState<TravelMission[]>([]);
@@ -28,7 +18,7 @@ export default function TravelMissionsPage() {
     setError(null);
     try {
       const res = await travelApi.listMissions({ per_page: 100 });
-      setRows(unwrapList(res.data));
+      setRows(getListData<TravelMission>(res.data));
     } catch {
       setError("Failed to load missions.");
       setRows([]);

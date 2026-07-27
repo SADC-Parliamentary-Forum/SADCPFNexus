@@ -5,6 +5,13 @@ import Link from "next/link";
 import { travelApi, type TravelRequest } from "@/lib/api";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
+import { ListPagination } from "@/components/ui/ListPagination";
+import {
+  DEFAULT_PAGE_SIZE,
+  clientPageCount,
+  getListData,
+  slicePage,
+} from "@/lib/listPagination";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -20,17 +27,6 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
 
 export type TravelQueueVariant = "approval" | "finance" | "admin" | "director-finance" | "retirement";
 
-function unwrapList(payload: unknown): TravelRequest[] {
-  if (!payload || typeof payload !== "object") return [];
-  const root = payload as { data?: unknown };
-  const data = root.data ?? payload;
-  if (Array.isArray(data)) return data as TravelRequest[];
-  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
-    return (data as { data: TravelRequest[] }).data;
-  }
-  return [];
-}
-
 function destinationOf(row: TravelRequest): string {
   return (
     [row.destination_city, row.destination_country].filter(Boolean).join(", ") ||
@@ -40,7 +36,7 @@ function destinationOf(row: TravelRequest): string {
 }
 
 function dsaOf(row: TravelRequest): number {
-  return Number(row.finance_dsa_total ?? row.actual_dsa ?? row.estimated_dsa ?? 0);
+  return Number(row.finance_dsa_total ?? row.actual_dsa ?? row.estimated_dsa ?? 0) || 0;
 }
 
 function stageOf(row: TravelRequest): string {
@@ -49,7 +45,7 @@ function stageOf(row: TravelRequest): string {
 
 function holdingOf(row: TravelRequest): string {
   if (row.pending_with_label) return row.pending_with_label;
-  if (row.pending_with?.length) return row.pending_with.join(", ");
+  if (Array.isArray(row.pending_with) && row.pending_with.length) return row.pending_with.join(", ");
   if (row.status === "approved" && !row.director_finance_confirmed_at && row.finance_status) {
     return "Director Finance";
   }
@@ -76,13 +72,14 @@ export function TravelQueueTable({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await travelApi.list({ queue, per_page: 100 });
-      setRows(unwrapList(res.data));
+      setRows(getListData<TravelRequest>(res.data));
     } catch {
       setError("Failed to load this queue.");
       setRows([]);
@@ -94,6 +91,10 @@ export function TravelQueueTable({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, queue]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -110,7 +111,7 @@ export function TravelQueueTable({
         row.retirement_status,
         row.workflow_stage,
         row.pending_with_label,
-        ...(row.pending_with ?? []),
+        ...(Array.isArray(row.pending_with) ? row.pending_with : []),
       ]
         .filter(Boolean)
         .join(" ")
@@ -118,6 +119,13 @@ export function TravelQueueTable({
       return hay.includes(q);
     });
   }, [rows, search]);
+
+  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const safePage = Math.min(page, lastPage);
+  const paged = useMemo(
+    () => slicePage(filtered, safePage, DEFAULT_PAGE_SIZE),
+    [filtered, safePage],
+  );
 
   const handleExport = () => {
     if (filtered.length === 0) return;
@@ -266,6 +274,7 @@ export function TravelQueueTable({
             </p>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="data-table w-full">
               <thead>
@@ -286,12 +295,12 @@ export function TravelQueueTable({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t) => {
-                  const sc = STATUS_CONFIG[t.status] ?? { label: t.status, badge: "badge-muted" };
+                {paged.map((t) => {
+                  const sc = STATUS_CONFIG[t.status] ?? { label: t.status || "Unknown", badge: "badge-muted" };
                   return (
                     <tr key={t.id}>
-                      <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">{t.reference_number}</td>
-                      <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose}</td>
+                      <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">{t.reference_number ?? "—"}</td>
+                      <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose ?? "—"}</td>
                       <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(t)}</td>
                       <td className="text-sm text-neutral-700 whitespace-nowrap">{t.requester?.name ?? "—"}</td>
                       <td>
@@ -348,6 +357,13 @@ export function TravelQueueTable({
               </tbody>
             </table>
           </div>
+          <ListPagination
+            page={safePage}
+            lastPage={lastPage}
+            total={filtered.length}
+            onPageChange={setPage}
+          />
+          </>
         )}
       </div>
     </div>

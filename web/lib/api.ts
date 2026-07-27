@@ -891,7 +891,7 @@ export interface TravelRequest {
   destination_city: string | null;
   departure_date: string;
   return_date: string;
-  estimated_dsa: number;
+  estimated_dsa: number | null;
   actual_dsa?: number | null;
   finance_dsa_total?: number | null;
   finance_status?: string | null;

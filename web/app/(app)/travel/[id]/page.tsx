@@ -10,6 +10,7 @@ import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
+import { getListData } from "@/lib/listPagination";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
@@ -21,6 +22,31 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
   withdrawn:               { label: "Withdrawn",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
   amendment_pending:       { label: "Amendment Pending",     cls: "text-blue-700 bg-blue-50 border-blue-200",     icon: "edit_document" },
 };
+
+function apiErrorMessage(err: unknown, fallback: string): string {
+  const axiosErr = err as {
+    response?: { data?: { message?: string; errors?: Record<string, string[] | string> } };
+  };
+  const data = axiosErr?.response?.data;
+  if (data?.errors) {
+    const first = Object.values(data.errors).flat()[0];
+    if (typeof first === "string" && first.trim()) return first;
+  }
+  if (data?.message?.trim()) return data.message;
+  return fallback;
+}
+
+function formatMoney(amount: number | null | undefined, currency?: string | null): string {
+  const code = currency?.trim() || "";
+  if (amount == null || Number.isNaN(Number(amount))) return code ? `${code} —` : "—";
+  return `${code ? `${code} ` : ""}${Number(amount).toLocaleString()}`;
+}
+
+function requesterInitials(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return parts.map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+}
 
 function SkeletonCard() {
   return (
@@ -176,8 +202,7 @@ export default function TravelDetailPage() {
         travelApi.listAttachments(id)
           .then((res) => {
             if (!active) return;
-            const data = res.data.data;
-            setAttachments(Array.isArray(data) ? data : []);
+            setAttachments(getListData<ModuleAttachment>(res.data));
           })
           .catch(() => {
             if (!active) return;
@@ -196,7 +221,7 @@ export default function TravelDetailPage() {
       });
     travelApi.fleetVehicles()
       .then((r) => {
-        if (active) setFleet(r.data.data ?? []);
+        if (active) setFleet(getListData<{ id: number; asset_code: string; name: string; status: string }>(r.data));
       })
       .catch(() => {
         if (active) setFleet([]);
@@ -233,15 +258,15 @@ export default function TravelDetailPage() {
     setActionLoading(true);
     try {
       const res = await travelApi.approve(request.id);
-      const notified: string[] = (res.data as any).notified_approvers ?? [];
+      const notified: string[] = (res.data as { notified_approvers?: string[] }).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
         showToast(`Approved. Notified: ${notified.join(", ")}`);
       } else {
         showToast("Request fully approved.");
       }
-    } catch {
-      setError("Failed to approve request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to approve request."));
     } finally {
       setActionLoading(false);
     }
@@ -255,8 +280,8 @@ export default function TravelDetailPage() {
       await refreshRequest();
       setShowRejectModal(false);
       setRejectReason("");
-    } catch {
-      setError("Failed to reject request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to reject request."));
     } finally {
       setActionLoading(false);
     }
@@ -270,8 +295,8 @@ export default function TravelDetailPage() {
       await refreshRequest();
       setShowReturnModal(false);
       showToast("Request returned to requester for correction.");
-    } catch {
-      setError("Failed to return request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to return request."));
     } finally {
       setReturnLoading(false);
     }
@@ -285,8 +310,8 @@ export default function TravelDetailPage() {
       await travelApi.withdraw(request.id);
       await refreshRequest();
       showToast("Request withdrawn.");
-    } catch {
-      setError("Failed to withdraw request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to withdraw request."));
     } finally {
       setActionLoading(false);
     }
@@ -300,8 +325,25 @@ export default function TravelDetailPage() {
       await travelApi.resubmit(request.id);
       await refreshRequest();
       showToast("Request resubmitted for approval.");
-    } catch {
-      setError("Failed to resubmit request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to resubmit request."));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!request) return;
+    const reason = window.prompt("Cancellation reason (required):");
+    if (!reason?.trim()) return;
+    if (!(await confirm({ title: "Cancel Request", message: "Cancel this travel request? Budget reservations will be released where applicable.", variant: "danger" }))) return;
+    setActionLoading(true);
+    try {
+      await travelApi.cancel(request.id, reason.trim());
+      await refreshRequest();
+      showToast("Request cancelled.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to cancel request."));
     } finally {
       setActionLoading(false);
     }
@@ -347,8 +389,8 @@ export default function TravelDetailPage() {
       setShowAmendmentModal(false);
       await refreshRequest();
       showToast("Amendment submitted for approval.");
-    } catch {
-      setAmendError("Failed to submit amendment. Approved requests cannot be edited silently.");
+    } catch (err) {
+      setAmendError(apiErrorMessage(err, "Failed to submit amendment. Approved requests cannot be edited silently."));
     } finally {
       setActionLoading(false);
     }
@@ -365,8 +407,8 @@ export default function TravelDetailPage() {
       await travelApi.approveAmendment(amendment.id);
       await refreshRequest();
       showToast("Amendment approved and applied.");
-    } catch {
-      setError("Failed to approve amendment.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to approve amendment."));
     } finally {
       setActionLoading(false);
     }
@@ -380,8 +422,8 @@ export default function TravelDetailPage() {
       await fn();
       await refreshRequest();
       showToast(`${label} completed.`);
-    } catch {
-      setError(`Failed: ${label}. Check required documents and approval status.`);
+    } catch (err) {
+      setError(apiErrorMessage(err, `Failed: ${label}. Check required documents and approval status.`));
     } finally {
       setActionLoading(false);
     }
@@ -396,7 +438,7 @@ export default function TravelDetailPage() {
         rate_type: dsaRateType,
         terminal_comms_total: dsaTerminal ? Number(dsaTerminal) : 0,
       });
-      const warning = (res.data as any).warning;
+      const warning = (res.data as { warning?: { expected_official_days?: number; payable_line_count?: number } }).warning;
       if (warning) {
         setDsaWarning(
           `Day count variance: expected ${warning.expected_official_days} official days, payable lines ${warning.payable_line_count}.`
@@ -404,8 +446,8 @@ export default function TravelDetailPage() {
       }
       await refreshRequest();
       showToast("DSA calculation saved (Finance Rate Types 1/2/3).");
-    } catch {
-      setError("Failed to save DSA. Only Finance may calculate DSA, and not on their own request.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to save DSA. Only Finance may calculate DSA, and not on their own request."));
     } finally {
       setDsaSaving(false);
     }
@@ -639,6 +681,13 @@ export default function TravelDetailPage() {
             )}
             {request.status === "draft" && (
               <>
+                <Link
+                  href={`/travel/create?edit=${request.id}`}
+                  className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[14px]">edit</span>
+                  Edit in wizard
+                </Link>
                 <button
                   onClick={async () => {
                     if (!(await confirm({ title: "Submit Request", message: "Submit this travel request for approval?", variant: "primary" }))) return;
@@ -647,8 +696,9 @@ export default function TravelDetailPage() {
                       await travelApi.submit(request.id);
                       await refreshRequest();
                       showToast("Request submitted.");
-                    } catch (err: any) {
-                      const conflicts = err?.response?.data?.errors?.conflicts;
+                    } catch (err: unknown) {
+                      const axiosErr = err as { response?: { data?: { errors?: { conflicts?: string[] }; message?: string } } };
+                      const conflicts = axiosErr?.response?.data?.errors?.conflicts;
                       if (Array.isArray(conflicts) && conflicts.length) {
                         const note = window.prompt(
                           `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge and submit, or Cancel.`,
@@ -662,14 +712,14 @@ export default function TravelDetailPage() {
                             });
                             await refreshRequest();
                             showToast("Submitted with conflict acknowledgement.");
-                          } catch {
-                            setError("Failed to submit after acknowledging conflicts.");
+                          } catch (ackErr) {
+                            setError(apiErrorMessage(ackErr, "Failed to submit after acknowledging conflicts."));
                           }
                         } else {
                           setError(conflicts.join(" "));
                         }
                       } else {
-                        setError(err?.response?.data?.message || "Failed to submit.");
+                        setError(apiErrorMessage(err, "Failed to submit."));
                       }
                     } finally { setActionLoading(false); }
                   }}
@@ -685,7 +735,7 @@ export default function TravelDetailPage() {
                     try {
                       await travelApi.delete(request.id);
                       router.push("/travel");
-                    } catch { setError("Failed to delete."); }
+                    } catch (err) { setError(apiErrorMessage(err, "Failed to delete.")); }
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
@@ -693,6 +743,15 @@ export default function TravelDetailPage() {
                   Delete
                 </button>
               </>
+            )}
+            {isReturnedForCorrection && (
+              <Link
+                href={`/travel/create?edit=${request.id}`}
+                className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">edit</span>
+                Fix in wizard
+              </Link>
             )}
             {/* Withdraw: visible when submitted/pending, requester can act */}
             {request.status === "submitted" && approvalRequest?.status === "pending" && (
@@ -703,6 +762,16 @@ export default function TravelDetailPage() {
               >
                 <span className="material-symbols-outlined text-[14px]">block</span>
                 Withdraw
+              </button>
+            )}
+            {["approved", "submitted", "amendment_pending"].includes(request.status) && (
+              <button
+                onClick={handleCancel}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">cancel</span>
+                Cancel
               </button>
             )}
             {/* Resubmit: visible when returned for correction */}
@@ -777,11 +846,11 @@ export default function TravelDetailPage() {
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <span className="text-sm font-bold text-primary">
-                {request.requester.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                {requesterInitials(request.requester.name)}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-neutral-900">{request.requester.name}</p>
+              <p className="text-sm font-semibold text-neutral-900">{request.requester.name?.trim() || "Unknown requester"}</p>
               <p className="text-xs text-neutral-400">{[request.requester.job_title, request.requester.employee_number].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
@@ -800,7 +869,7 @@ export default function TravelDetailPage() {
               <span className="material-symbols-outlined text-[14px] text-neutral-300">location_on</span>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Destination</p>
             </div>
-            <p className="font-semibold text-neutral-900">{[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country}</p>
+            <p className="font-semibold text-neutral-900">{[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country || "—"}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
@@ -814,14 +883,14 @@ export default function TravelDetailPage() {
               <span className="material-symbols-outlined text-[14px] text-neutral-300">currency_exchange</span>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Currency</p>
             </div>
-            <p className="font-semibold text-neutral-900">{request.currency}</p>
+            <p className="font-semibold text-neutral-900">{request.currency || "—"}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">payments</span>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Estimated DSA</p>
             </div>
-            <p className="text-lg font-bold text-primary">{request.currency} {request.estimated_dsa.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary">{formatMoney(request.estimated_dsa, request.currency)}</p>
           </div>
         </div>
         {request.justification && (
@@ -858,7 +927,11 @@ export default function TravelDetailPage() {
                 <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-neutral-400 uppercase tracking-wide">DSA</p>
                   <p className="text-sm font-bold text-neutral-900">
-                    {request.currency} {((leg as { calculated_dsa?: number }).calculated_dsa ?? (leg.dsa_rate * leg.days_count)).toLocaleString()}
+                    {formatMoney(
+                      (leg as { calculated_dsa?: number | null }).calculated_dsa ??
+                        (Number(leg.dsa_rate ?? 0) * Number(leg.days_count ?? 0)),
+                      request.currency,
+                    )}
                   </p>
                 </div>
                 {i < itineraries.length - 1 && (
@@ -961,7 +1034,7 @@ export default function TravelDetailPage() {
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Finance DSA calculation</h3>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Authoritative Rate Types 1/2/3. Traveller estimate {request.estimated_dsa} {request.currency} is not binding.
+                Authoritative Rate Types 1/2/3. Traveller estimate {formatMoney(request.estimated_dsa, request.currency)} is not binding.
               </p>
             </div>
           </div>
@@ -1557,7 +1630,15 @@ export default function TravelDetailPage() {
         </div>
 
         {attachToast && (
-          <div className="mb-3 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">{attachToast}</div>
+          <div
+            className={`mb-3 rounded-lg px-3 py-2 text-xs ${
+              /fail|could not|error/i.test(attachToast)
+                ? "bg-red-50 border border-red-200 text-red-700"
+                : "bg-green-50 border border-green-200 text-green-700"
+            }`}
+          >
+            {attachToast}
+          </div>
         )}
 
         {/* Upload row */}
@@ -1585,12 +1666,13 @@ export default function TravelDetailPage() {
                 setUploadLoading(true);
                 try {
                   const res = await travelApi.uploadAttachment(request.id, file, uploadDocType);
-                  setAttachments((prev) => [res.data.data, ...prev]);
+                  const uploaded = res.data.data;
+                  if (uploaded) setAttachments((prev) => [uploaded, ...prev]);
                   setAttachToast("File uploaded successfully.");
                   setTimeout(() => setAttachToast(null), 3000);
-                } catch {
-                  setAttachToast("Upload failed. Please try again.");
-                  setTimeout(() => setAttachToast(null), 3000);
+                } catch (err) {
+                  setAttachToast(apiErrorMessage(err, "Upload failed. Please try again."));
+                  setTimeout(() => setAttachToast(null), 5000);
                 } finally {
                   setUploadLoading(false);
                   e.target.value = "";

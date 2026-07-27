@@ -126,17 +126,22 @@ export default function TravelCertificatePage() {
           </div>
           <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-1">Estimated DSA</p>
-            <p className="text-sm font-bold text-primary">{request.currency} {request.estimated_dsa.toLocaleString()}</p>
+            <p className="text-sm font-bold text-primary">
+              {request.currency ?? ""}{" "}
+              {request.estimated_dsa == null || Number.isNaN(Number(request.estimated_dsa))
+                ? "—"
+                : Number(request.estimated_dsa).toLocaleString()}
+            </p>
           </div>
         </div>
 
         <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part B — Itinerary</h2>
         <div className="rounded-xl border border-neutral-100 p-4 mb-6 text-sm text-neutral-700">
           {(request.itineraries?.length ?? 0) === 0 ? (
-            <p>{formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)} · {[request.destination_city, request.destination_country].filter(Boolean).join(", ")}</p>
+            <p>{formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)} · {[request.destination_city, request.destination_country].filter(Boolean).join(", ") || "—"}</p>
           ) : (
             <ul className="space-y-1">
-              {request.itineraries!.map((leg) => (
+              {(request.itineraries ?? []).map((leg) => (
                 <li key={leg.id}>{formatDateShort(leg.travel_date)} · {leg.from_location} → {leg.to_location} ({leg.transport_mode})</li>
               ))}
             </ul>
@@ -145,7 +150,16 @@ export default function TravelCertificatePage() {
 
         <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-700 mb-2">Part C — DSA Calculation</h2>
         <div className="rounded-xl border border-neutral-100 p-4 mb-6 text-sm">
-          <p>Finance DSA total: <strong>{request.currency} {(request.finance_dsa_total ?? request.actual_dsa ?? request.estimated_dsa).toLocaleString()}</strong></p>
+          <p>
+            Finance DSA total:{" "}
+            <strong>
+              {request.currency ?? ""}{" "}
+              {(() => {
+                const amt = request.finance_dsa_total ?? request.actual_dsa ?? request.estimated_dsa;
+                return amt == null || Number.isNaN(Number(amt)) ? "—" : Number(amt).toLocaleString();
+              })()}
+            </strong>
+          </p>
           <p className="text-neutral-500 mt-1 capitalize">Status: {request.finance_status ?? "awaiting"}</p>
           {(request.dsa_lines?.length ?? 0) > 0 && (
             <ul className="mt-2 space-y-1 text-xs text-neutral-600">

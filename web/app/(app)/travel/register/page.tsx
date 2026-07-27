@@ -6,6 +6,7 @@ import { travelApi, type TravelRequest } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { getListData } from "@/lib/listPagination";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -38,17 +39,6 @@ type EditForm = {
   return_date: string;
   justification: string;
 };
-
-function unwrapList(payload: unknown): TravelRequest[] {
-  if (!payload || typeof payload !== "object") return [];
-  const root = payload as { data?: unknown };
-  const data = root.data ?? payload;
-  if (Array.isArray(data)) return data as TravelRequest[];
-  if (data && typeof data === "object" && Array.isArray((data as { data?: unknown }).data)) {
-    return (data as { data: TravelRequest[] }).data;
-  }
-  return [];
-}
 
 function destinationOf(row: TravelRequest): string {
   return [row.destination_city, row.destination_country].filter(Boolean).join(", ") || row.destination_country || "—";
@@ -124,7 +114,7 @@ export default function TravelRegisterPage() {
     setError(null);
     try {
       const res = await travelApi.list({ per_page: 100 });
-      setRows(unwrapList(res.data));
+      setRows(getListData<TravelRequest>(res.data));
     } catch {
       setError("Failed to load the travel register.");
       setRows([]);
@@ -531,16 +521,26 @@ export default function TravelRegisterPage() {
                             <span className="material-symbols-outlined text-[18px]">visibility</span>
                           </Link>
                           {canEdit && (
-                            <button
+                            <>
+                              <Link
+                                href={`/travel/create?edit=${row.id}`}
+                                className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-primary/10 hover:text-primary"
+                                aria-label={`Edit ${row.reference_number} in wizard`}
+                                title="Edit in wizard"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                              </Link>
+                              <button
                               type="button"
                               disabled={busy}
                               onClick={() => openEdit(row)}
                               className="rounded-lg p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-40"
-                              aria-label={`Edit ${row.reference_number}`}
-                              title="Edit"
+                              aria-label={`Quick edit ${row.reference_number}`}
+                              title="Quick edit"
                             >
                               <span className="material-symbols-outlined text-[18px]">edit</span>
                             </button>
+                            </>
                           )}
                           {canDelete && (
                             <button

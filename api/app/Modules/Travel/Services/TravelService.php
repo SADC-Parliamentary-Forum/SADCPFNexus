@@ -275,8 +275,31 @@ class TravelService
 
         $travel->update($payload);
 
+        if (array_key_exists('itineraries', $data)) {
+            $travel->itineraries()->delete();
+            foreach ($data['itineraries'] ?? [] as $leg) {
+                $travel->itineraries()->create([
+                    'from_location'  => $leg['from_location'] ?? '',
+                    'to_location'    => $leg['to_location'] ?? '',
+                    'travel_date'    => $leg['travel_date'] ?? null,
+                    'transport_mode' => $leg['transport_mode'] ?? 'flight',
+                    'dsa_rate'       => $leg['dsa_rate'] ?? 0,
+                    'days_count'     => $leg['days_count'] ?? 1,
+                    'day_type'       => $leg['day_type'] ?? 'official',
+                ]);
+            }
+        }
+
         if (isset($data['funding_details']) || isset($data['funding_lines'])) {
             $this->syncFundingLines($travel, $data['funding_details'] ?? $data['funding_lines'] ?? []);
+        }
+
+        if (isset($data['estimated_kilometres'])
+            || isset($data['mileage_rate_per_km'])
+            || isset($data['equivalent_airfare'])
+            || isset($data['private_vehicle_reason'])
+            || isset($data['private_vehicle_route'])) {
+            $this->updateVehicleMileage($travel, $data, $user);
         }
 
         AuditLog::record('travel.updated', [

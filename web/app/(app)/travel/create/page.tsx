@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { travelApi, programmeApi, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
-import type { Programme } from "@/lib/api";
+import type { Programme, TravelRequest } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
+import { getListData } from "@/lib/listPagination";
 
 // ─── Country lists ────────────────────────────────────────────────────────────
 const SADC_COUNTRIES = [
@@ -273,14 +274,106 @@ function LocationCombobox({
   );
 }
 
+function emptyFundingRows(): FundingRow[] {
+  return FUNDING_ITEMS.map(({ item, icon }) => ({
+    item,
+    icon,
+    forum_amount: "",
+    host_amount: "",
+    funding_agency: "",
+    project: "",
+    budget_line: "",
+    expanded: false,
+    payor_sadc_pf: false,
+    payor_host: false,
+    payor_donor: false,
+    payor_self: false,
+  }));
+}
+
+function hydrateFormFromRequest(data: TravelRequest): FormData {
+  const fundingRows = emptyFundingRows();
+  const lines = (data as TravelRequest & { funding_lines?: Array<Record<string, unknown>> }).funding_lines ?? [];
+  for (const line of lines) {
+    const idx = fundingRows.findIndex((r) => r.item === line.item);
+    const target = idx >= 0 ? fundingRows[idx] : null;
+    if (!target) continue;
+    target.forum_amount = line.forum_amount != null ? String(line.forum_amount) : "";
+    target.host_amount = line.host_amount != null ? String(line.host_amount) : "";
+    target.funding_agency = typeof line.funding_agency === "string" ? line.funding_agency : "";
+    target.project = typeof line.project === "string" ? line.project : "";
+    target.budget_line = typeof line.budget_line === "string" ? line.budget_line : "";
+    target.payor_sadc_pf = Boolean(line.payor_sadc_pf);
+    target.payor_host = Boolean(line.payor_host);
+    target.payor_donor = Boolean(line.payor_donor);
+    target.payor_self = Boolean(line.payor_self);
+    target.expanded = !!(target.forum_amount || target.host_amount);
+  }
+
+  const legs = (data.itineraries ?? []).map((leg) => ({
+    from_location: leg.from_location ?? "",
+    to_location: leg.to_location ?? "",
+    travel_date: String(leg.travel_date ?? "").slice(0, 10),
+    transport_mode: leg.transport_mode ?? "flight",
+    days_count: Number(leg.days_count ?? 1) || 1,
+  }));
+
+  const hasProgramme = data.programme_id != null;
+  const hasJustification = Boolean(data.justification?.trim());
+
+  return {
+    purpose: data.purpose ?? "",
+    host_organization: data.host_organization ?? "",
+    destination_country: data.destination_country ?? "",
+    destination_city: data.destination_city ?? "",
+    departure_date: String(data.departure_date ?? "").slice(0, 10),
+    return_date: String(data.return_date ?? "").slice(0, 10),
+    currency: data.currency || "USD",
+    pif_type: hasProgramme ? "linked" : hasJustification ? "justification" : "",
+    programme_id: data.programme_id != null ? String(data.programme_id) : "",
+    justification: data.justification ?? "",
+    budget_line_id: (data as { budget_line_id?: number | null }).budget_line_id ?? null,
+    legs: legs.length
+      ? legs
+      : [{ from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 }],
+    funding_rows: fundingRows,
+    vehicle_type: data.vehicle_type === "sadcpf" || data.vehicle_type === "private" ? data.vehicle_type : "",
+    driver_required: Boolean((data as { driver_required?: boolean }).driver_required),
+    driver_name: (data as { driver_name?: string | null }).driver_name ?? "",
+    private_vehicle_reason: (data as { private_vehicle_reason?: string | null }).private_vehicle_reason ?? "",
+    private_vehicle_route: (data as { private_vehicle_route?: string | null }).private_vehicle_route ?? "",
+    estimated_kilometres:
+      (data as { estimated_kilometres?: number | null }).estimated_kilometres != null
+        ? String((data as { estimated_kilometres?: number | null }).estimated_kilometres)
+        : "",
+    mileage_rate_per_km:
+      (data as { mileage_rate_per_km?: number | null }).mileage_rate_per_km != null
+        ? String((data as { mileage_rate_per_km?: number | null }).mileage_rate_per_km)
+        : "",
+    equivalent_airfare:
+      (data as { equivalent_airfare?: number | null }).equivalent_airfare != null
+        ? String((data as { equivalent_airfare?: number | null }).equivalent_airfare)
+        : "",
+    prepared_on_behalf_of:
+      data.prepared_on_behalf_of != null ? String(data.prepared_on_behalf_of) : "",
+  };
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function TravelCreatePage() {
+function TravelCreatePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editParam = searchParams.get("edit");
+  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
+
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [stepHint, setStepHint] = useState<string | null>(null);
   const [pendingDocs, setPendingDocs] = useState<PendingDoc[]>([]);
   const [pendingDocType, setPendingDocType] = useState<string>("invitation");
+  const [existingDocTypes, setExistingDocTypes] = useState<string[]>([]);
+  const [loadingDraft, setLoadingDraft] = useState(Boolean(editId));
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [travellers, setTravellers] = useState<Array<{ id: number; name: string; email?: string }>>([]);
   // Defer localStorage user until after mount to avoid hydration #418 text mismatch.
@@ -306,20 +399,7 @@ export default function TravelCreatePage() {
     justification: "",
     budget_line_id: null,
     legs: [{ from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 }],
-    funding_rows: FUNDING_ITEMS.map(({ item, icon }) => ({
-      item,
-      icon,
-      forum_amount: "",
-      host_amount: "",
-      funding_agency: "",
-      project: "",
-      budget_line: "",
-      expanded: false,
-      payor_sadc_pf: false,
-      payor_host: false,
-      payor_donor: false,
-      payor_self: false,
-    })),
+    funding_rows: emptyFundingRows(),
     vehicle_type: "",
     driver_required: false,
     driver_name: "",
@@ -338,7 +418,7 @@ export default function TravelCreatePage() {
   };
 
   const missingRequiredDocs = (): string[] => {
-    const attached = new Set(pendingDocs.map((d) => d.documentType));
+    const attached = new Set([...existingDocTypes, ...pendingDocs.map((d) => d.documentType)]);
     return requiredDocTypes().filter((t) => !attached.has(t));
   };
 
@@ -347,15 +427,54 @@ export default function TravelCreatePage() {
     programmeApi
       .list({ status: "approved", per_page: 100 })
       .then((res) => {
-        setProgrammes(res.data.data ?? []);
+        setProgrammes(getListData<Programme>(res.data));
       })
-      .catch(() => {});
+      .catch(() => setProgrammes([]));
   }, []);
 
   useEffect(() => {
     if (!canPrepareForOthers) return;
-    travelApi.travellers().then((r) => setTravellers(r.data.data ?? [])).catch(() => setTravellers([]));
+    travelApi
+      .travellers()
+      .then((r) => setTravellers(getListData<{ id: number; name: string; email?: string }>(r.data)))
+      .catch(() => setTravellers([]));
   }, [canPrepareForOthers]);
+
+  useEffect(() => {
+    if (!editId) {
+      setLoadingDraft(false);
+      return;
+    }
+    let active = true;
+    setLoadingDraft(true);
+    setSubmitError(null);
+    Promise.all([travelApi.get(editId), travelApi.listAttachments(editId)])
+      .then(([reqRes, attRes]) => {
+        if (!active) return;
+        const body = reqRes.data as { data?: TravelRequest } | TravelRequest;
+        const data = ("data" in body && body.data ? body.data : body) as TravelRequest;
+        if (!data || typeof data !== "object" || !("id" in data)) {
+          setSubmitError("Could not load travel request for editing.");
+          return;
+        }
+        if (data.status !== "draft" && data.status !== "returned_for_correction") {
+          setSubmitError("Only draft or returned requests can be edited in the wizard.");
+          return;
+        }
+        setForm(hydrateFormFromRequest(data));
+        const docs = getListData<{ document_type?: string | null }>(attRes.data);
+        setExistingDocTypes(docs.map((d) => d.document_type).filter((t): t is string => Boolean(t)));
+      })
+      .catch(() => {
+        if (active) setSubmitError("Failed to load travel request for editing.");
+      })
+      .finally(() => {
+        if (active) setLoadingDraft(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [editId]);
 
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -386,6 +505,9 @@ export default function TravelCreatePage() {
       return { ...prev, funding_rows: rows };
     });
 
+  const docLabel = (type: string) =>
+    TRAVEL_DOCUMENT_TYPES.find((t) => t.value === type)?.label ?? type.replace(/_/g, " ");
+
   const canNext = () => {
     if (step === 0) {
       const baseOk = !!(
@@ -396,6 +518,7 @@ export default function TravelCreatePage() {
         form.pif_type
       );
       if (!baseOk) return false;
+      if (form.return_date < form.departure_date) return false;
       if (form.pif_type === "linked") return !!form.programme_id;
       if (form.pif_type === "justification") return !!form.justification.trim();
       return false;
@@ -406,8 +529,25 @@ export default function TravelCreatePage() {
     return true;
   };
 
-  const docLabel = (type: string) =>
-    TRAVEL_DOCUMENT_TYPES.find((t) => t.value === type)?.label ?? type.replace(/_/g, " ");
+  const nextBlockedReason = (): string | null => {
+    if (canNext()) return null;
+    if (step === 0) {
+      if (!form.purpose) return "Enter the purpose of travel.";
+      if (!form.destination_country) return "Select a destination country.";
+      if (!form.departure_date || !form.return_date) return "Enter departure and return dates.";
+      if (form.return_date < form.departure_date) return "Return date must be on or after departure.";
+      if (!form.pif_type) return "Choose a linked PIF or provide a justification.";
+      if (form.pif_type === "linked" && !form.programme_id) return "Select an approved PIF.";
+      if (form.pif_type === "justification" && !form.justification.trim()) {
+        return "Provide a justification when no PIF is linked.";
+      }
+    }
+    if (step === 1) return "Complete from, to, and date for each itinerary leg.";
+    if (step === 4) {
+      return `Attach required documents: ${missingRequiredDocs().map(docLabel).join(", ")}.`;
+    }
+    return "Complete the required fields before continuing.";
+  };
 
   const addPendingDoc = (file: File | undefined) => {
     if (!file) return;
@@ -415,7 +555,54 @@ export default function TravelCreatePage() {
       ...prev,
       { key: `${Date.now()}-${file.name}`, file, documentType: pendingDocType },
     ]);
+    setStepHint(null);
   };
+
+  const buildPayload = () => ({
+    purpose: form.purpose,
+    destination_country: form.destination_country,
+    destination_city: form.destination_city || undefined,
+    departure_date: form.departure_date,
+    return_date: form.return_date,
+    currency: form.currency,
+    justification: form.justification || undefined,
+    host_organization: form.host_organization || undefined,
+    programme_id: form.programme_id ? parseInt(form.programme_id) : undefined,
+    budget_line_id: form.budget_line_id ?? undefined,
+    vehicle_type: form.vehicle_type || undefined,
+    driver_required: form.driver_required || undefined,
+    driver_name: form.driver_name || undefined,
+    private_vehicle_reason: form.private_vehicle_reason || undefined,
+    private_vehicle_route: form.private_vehicle_route || undefined,
+    estimated_kilometres: form.estimated_kilometres ? Number(form.estimated_kilometres) : undefined,
+    mileage_rate_per_km: form.mileage_rate_per_km ? Number(form.mileage_rate_per_km) : undefined,
+    equivalent_airfare: form.equivalent_airfare ? Number(form.equivalent_airfare) : undefined,
+    prepared_on_behalf_of: form.prepared_on_behalf_of ? Number(form.prepared_on_behalf_of) : undefined,
+    funding_details: form.funding_rows
+      .filter((r) => r.forum_amount || r.host_amount || r.payor_sadc_pf || r.payor_host || r.payor_donor || r.payor_self)
+      .map((r) => ({
+        item: r.item,
+        forum_amount: r.forum_amount || 0,
+        host_amount: r.host_amount || 0,
+        payor_sadc_pf: r.payor_sadc_pf || Number(r.forum_amount) > 0,
+        payor_host: r.payor_host || Number(r.host_amount) > 0,
+        payor_donor: r.payor_donor,
+        payor_self: r.payor_self,
+        funding_agency: r.funding_agency || undefined,
+        project: r.project || undefined,
+        budget_line: r.budget_line || undefined,
+      })),
+    itineraries: form.legs
+      .filter((l) => l.from_location && l.to_location && l.travel_date)
+      .map((l) => ({
+        from_location: l.from_location,
+        to_location: l.to_location,
+        travel_date: l.travel_date,
+        transport_mode: l.transport_mode,
+        dsa_rate: 0,
+        days_count: l.days_count,
+      })),
+  });
 
   const handleSubmit = async (asDraft: boolean) => {
     setSubmitting(true);
@@ -429,61 +616,29 @@ export default function TravelCreatePage() {
         return;
       }
 
-      const payload = {
-        purpose: form.purpose,
-        destination_country: form.destination_country,
-        destination_city: form.destination_city || undefined,
-        departure_date: form.departure_date,
-        return_date: form.return_date,
-        currency: form.currency,
-        justification: form.justification || undefined,
-        host_organization: form.host_organization || undefined,
-        programme_id: form.programme_id ? parseInt(form.programme_id) : undefined,
-        budget_line_id: form.budget_line_id ?? undefined,
-        vehicle_type: form.vehicle_type || undefined,
-        driver_required: form.driver_required || undefined,
-        driver_name: form.driver_name || undefined,
-        private_vehicle_reason: form.private_vehicle_reason || undefined,
-        private_vehicle_route: form.private_vehicle_route || undefined,
-        estimated_kilometres: form.estimated_kilometres ? Number(form.estimated_kilometres) : undefined,
-        mileage_rate_per_km: form.mileage_rate_per_km ? Number(form.mileage_rate_per_km) : undefined,
-        equivalent_airfare: form.equivalent_airfare ? Number(form.equivalent_airfare) : undefined,
-        prepared_on_behalf_of: form.prepared_on_behalf_of ? Number(form.prepared_on_behalf_of) : undefined,
-        funding_details: form.funding_rows
-          .filter((r) => r.forum_amount || r.host_amount || r.payor_sadc_pf || r.payor_host || r.payor_donor || r.payor_self)
-          .map((r) => ({
-            item: r.item,
-            forum_amount: r.forum_amount || 0,
-            host_amount: r.host_amount || 0,
-            payor_sadc_pf: r.payor_sadc_pf || Number(r.forum_amount) > 0,
-            payor_host: r.payor_host || Number(r.host_amount) > 0,
-            payor_donor: r.payor_donor,
-            payor_self: r.payor_self,
-            funding_agency: r.funding_agency || undefined,
-            project: r.project || undefined,
-            budget_line: r.budget_line || undefined,
-          })),
-        itineraries: form.legs
-          .filter((l) => l.from_location && l.to_location && l.travel_date)
-          .map((l) => ({
-            from_location: l.from_location,
-            to_location: l.to_location,
-            travel_date: l.travel_date,
-            transport_mode: l.transport_mode,
-            dsa_rate: 0,
-            days_count: l.days_count,
-          })),
-      };
-      const { data } = await travelApi.create(payload);
-      const createdId = data.data?.id ?? (data as { id?: number }).id;
+      const payload = buildPayload();
+      let createdId = editId;
+
+      if (editId) {
+        const { data } = await travelApi.update(editId, payload);
+        createdId = data.data?.id ?? editId;
+      } else {
+        const { data } = await travelApi.create(payload);
+        createdId = data.data?.id ?? (data as { id?: number }).id ?? null;
+      }
+
       if (!createdId) {
-        setSubmitError("Travel request was created but no id was returned.");
+        setSubmitError("Travel request was saved but no id was returned.");
         return;
       }
 
       try {
         for (const doc of pendingDocs) {
           await travelApi.uploadAttachment(createdId, doc.file, doc.documentType);
+        }
+        if (pendingDocs.length) {
+          setExistingDocTypes((prev) => [...prev, ...pendingDocs.map((d) => d.documentType)]);
+          setPendingDocs([]);
         }
       } catch (uploadErr: unknown) {
         const axiosErr = uploadErr as {
@@ -554,6 +709,16 @@ export default function TravelCreatePage() {
   const totalHost = form.funding_rows.reduce((s, r) => s + (parseFloat(r.host_amount) || 0), 0);
   const grandTotal = totalForum + totalHost;
 
+  if (loadingDraft) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-4 p-6">
+        <div className="h-6 w-48 animate-pulse rounded bg-neutral-100" />
+        <div className="h-40 animate-pulse rounded-xl bg-neutral-50" />
+        <p className="text-sm text-neutral-400">Loading travel request…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -561,11 +726,15 @@ export default function TravelCreatePage() {
         <div className="flex items-center gap-1 text-sm text-neutral-500 mb-1">
           <a href="/travel" className="hover:text-primary transition-colors">Travel</a>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">New Request</span>
+          <span className="text-neutral-700 font-medium">{editId ? "Edit Request" : "New Request"}</span>
         </div>
-        <h2 className="text-xl font-bold text-neutral-900">New Travel Request</h2>
+        <h2 className="text-xl font-bold text-neutral-900">
+          {editId ? "Edit Travel Request" : "New Travel Request"}
+        </h2>
         <p className="text-sm text-neutral-500 mt-0.5">
-          Submit a travel requisition for approval. DSA will be calculated by Finance Officers.
+          {editId
+            ? "Update destinations, dates, funding, documents, then save or submit."
+            : "Submit a travel requisition for approval. DSA will be calculated by Finance Officers."}
         </p>
       </div>
 
@@ -1220,7 +1389,8 @@ export default function TravelCreatePage() {
 
             <div className="flex flex-wrap gap-2">
               {requiredDocTypes().map((type) => {
-                const ok = pendingDocs.some((d) => d.documentType === type);
+                const ok =
+                  existingDocTypes.includes(type) || pendingDocs.some((d) => d.documentType === type);
                 return (
                   <span
                     key={type}
@@ -1230,7 +1400,7 @@ export default function TravelCreatePage() {
                   >
                     <span className="material-symbols-outlined text-[14px]">{ok ? "check_circle" : "error"}</span>
                     {docLabel(type)}
-                    {ok ? "" : " required"}
+                    {ok ? (existingDocTypes.includes(type) && !pendingDocs.some((d) => d.documentType === type) ? " on file" : "") : " required"}
                   </span>
                 );
               })}
@@ -1337,9 +1507,13 @@ export default function TravelCreatePage() {
                 },
                 {
                   label: "Documents",
-                  value: pendingDocs.length
-                    ? pendingDocs.map((d) => docLabel(d.documentType)).join(", ")
-                    : "None",
+                  value: (() => {
+                    const labels = [
+                      ...existingDocTypes.map(docLabel),
+                      ...pendingDocs.map((d) => docLabel(d.documentType)),
+                    ];
+                    return labels.length ? Array.from(new Set(labels)).join(", ") : "None";
+                  })(),
                 },
                 {
                   label: "Estimated Total",
@@ -1378,9 +1552,16 @@ export default function TravelCreatePage() {
       )}
 
       {submitError && (
-        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
           <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
           <span>{submitError}</span>
+        </div>
+      )}
+
+      {stepHint && !submitError && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+          <span className="material-symbols-outlined text-[16px] mt-0.5">info</span>
+          <span>{stepHint}</span>
         </div>
       )}
 
@@ -1389,7 +1570,10 @@ export default function TravelCreatePage() {
         <div>
           {step > 0 && (
             <button
-              onClick={() => setStep((s) => s - 1)}
+              onClick={() => {
+                setStepHint(null);
+                setStep((s) => s - 1);
+              }}
               className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -1400,15 +1584,22 @@ export default function TravelCreatePage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => handleSubmit(true)}
-            disabled={submitting}
+            disabled={submitting || loadingDraft}
             className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
             Save Draft
           </button>
           {step < STEPS.length - 1 ? (
             <button
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canNext()}
+              onClick={() => {
+                const reason = nextBlockedReason();
+                if (reason) {
+                  setStepHint(reason);
+                  return;
+                }
+                setStepHint(null);
+                setStep((s) => s + 1);
+              }}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
@@ -1420,12 +1611,20 @@ export default function TravelCreatePage() {
               disabled={submitting || missingRequiredDocs().length > 0}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {submitting ? "Submitting…" : "Submit Request"}
+              {submitting ? "Submitting…" : editId ? "Update & Submit" : "Submit Request"}
               <span className="material-symbols-outlined text-[18px]">send</span>
             </button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TravelCreatePage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading travel form…</div>}>
+      <TravelCreatePageInner />
+    </Suspense>
   );
 }

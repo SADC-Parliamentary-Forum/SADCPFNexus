@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { travelApi, type TravelRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
+import { getListData } from "@/lib/listPagination";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   approved:  { label: "Approved",  cls: "badge-success" },
@@ -57,13 +58,7 @@ function TravelPageInner() {
 
   const { data: requests = [], isLoading: loading, isError, refetch } = useQuery({
     queryKey: ["travel", "list", listParams, view],
-    queryFn: () => travelApi.list(listParams).then((res) => {
-      const payload = res.data as { data?: TravelRequest[] | { data?: TravelRequest[] } };
-      const data = payload.data;
-      if (Array.isArray(data)) return data;
-      if (data && typeof data === "object" && Array.isArray(data.data)) return data.data;
-      return [];
-    }),
+    queryFn: () => travelApi.list(listParams).then((res) => getListData<TravelRequest>(res.data)),
     staleTime: 30_000,
   });
 
@@ -71,16 +66,29 @@ function TravelPageInner() {
     const today = new Date().toISOString().slice(0, 10);
     let rows = requests;
     if (view === "upcoming") {
-      rows = rows.filter((r) => r.status === "approved" && r.departure_date > today);
+      rows = rows.filter((r) => r.status === "approved" && (r.departure_date ?? "") > today);
     } else if (view === "away") {
-      rows = rows.filter((r) => r.status === "approved" && r.departure_date <= today && r.return_date >= today);
+      rows = rows.filter(
+        (r) =>
+          r.status === "approved" &&
+          (r.departure_date ?? "") <= today &&
+          (r.return_date ?? "") >= today,
+      );
     } else if (view === "approved") {
       rows = rows.filter((r) => r.status === "approved");
     }
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((r) => {
-      const hay = [r.reference_number, r.purpose, r.destination_city, r.destination_country, r.status]
+      const hay = [
+        r.reference_number,
+        r.purpose,
+        r.destination_city,
+        r.destination_country,
+        r.status,
+        r.requester?.name,
+        r.workflow_stage,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -89,7 +97,7 @@ function TravelPageInner() {
   }, [requests, view, search]);
 
   const destination = (r: TravelRequest) =>
-    [r.destination_city, r.destination_country].filter(Boolean).join(", ") || r.destination_country;
+    [r.destination_city, r.destination_country].filter(Boolean).join(", ") || r.destination_country || "—";
 
   const title = view === "upcoming" ? "Upcoming Travel"
     : view === "away" ? "Travellers Away"
@@ -219,6 +227,8 @@ function TravelPageInner() {
                   <th>Reference</th>
                   <th>Purpose</th>
                   <th>Destination</th>
+                  <th>Requester</th>
+                  <th>Stage</th>
                   <th>Dates</th>
                   <th>Status</th>
                   <th></th>
@@ -226,13 +236,19 @@ function TravelPageInner() {
               </thead>
               <tbody>
                 {filtered.map((r) => {
-                  const cfg = statusConfig[r.status] ?? { label: r.status, cls: "badge-muted" };
+                  const cfg = statusConfig[r.status] ?? { label: r.status || "Unknown", cls: "badge-muted" };
                   const canEdit = r.status === "draft" || r.status === "returned_for_correction";
                   return (
                     <tr key={r.id}>
-                      <td className="font-mono text-xs text-neutral-600">{r.reference_number}</td>
-                      <td className="max-w-[220px] truncate font-medium text-neutral-900">{r.purpose}</td>
+                      <td className="font-mono text-xs text-neutral-600">{r.reference_number ?? "—"}</td>
+                      <td className="max-w-[220px] truncate font-medium text-neutral-900">{r.purpose ?? "—"}</td>
                       <td className="text-sm text-neutral-600">{destination(r)}</td>
+                      <td className="text-sm text-neutral-700 whitespace-nowrap">{r.requester?.name ?? "—"}</td>
+                      <td>
+                        <span className="badge badge-muted text-xs">
+                          {r.workflow_stage || cfg.label}
+                        </span>
+                      </td>
                       <td className="whitespace-nowrap text-xs text-neutral-500">
                         {formatDateShort(r.departure_date)} – {formatDateShort(r.return_date)}
                       </td>
@@ -243,7 +259,7 @@ function TravelPageInner() {
                             View
                           </Link>
                           {canEdit && (
-                            <Link href={`/travel/${r.id}`} className="text-xs font-medium text-neutral-600 hover:underline">
+                            <Link href={`/travel/create?edit=${r.id}`} className="text-xs font-medium text-neutral-600 hover:underline">
                               Edit
                             </Link>
                           )}
