@@ -33,7 +33,7 @@ class ImprestController extends Controller
         ]);
 
         return response()->json($imprestRequest->load([
-            'requester', 'approver',
+            'requester', 'approver', 'orgBudgetLine',
             'approvalRequest.workflow.steps',
             'approvalRequest.history.user',
         ]));
@@ -42,7 +42,8 @@ class ImprestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'budget_line'               => ['required', 'string', 'max:200'],
+            'budget_line_id'            => ['nullable', 'integer', 'exists:budget_lines,id'],
+            'budget_line'               => ['required_without:budget_line_id', 'nullable', 'string', 'max:200'],
             'amount_requested'          => ['required', 'numeric', 'min:1'],
             'currency'                  => ['nullable', 'string', 'size:3'],
             'expected_liquidation_date' => ['required', 'date', 'after:today'],
@@ -59,7 +60,8 @@ class ImprestController extends Controller
     {
         $this->authorizeRequestMutate($request->user(), $imprestRequest);
         $data = $request->validate([
-            'budget_line'               => ['sometimes', 'string', 'max:200'],
+            'budget_line_id'            => ['nullable', 'integer', 'exists:budget_lines,id'],
+            'budget_line'               => ['sometimes', 'nullable', 'string', 'max:200'],
             'amount_requested'          => ['sometimes', 'numeric', 'min:1'],
             'expected_liquidation_date' => ['sometimes', 'date'],
             'purpose'                   => ['sometimes', 'string', 'max:2000'],

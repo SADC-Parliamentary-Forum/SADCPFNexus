@@ -680,6 +680,7 @@ class TravelService
         }
 
         $imprest = app(\App\Modules\Imprest\Services\ImprestService::class)->create([
+            'budget_line_id' => $data['budget_line_id'] ?? $travel->budget_line_id,
             'budget_line' => $data['budget_line']
                 ?? $travel->fundingLines()->whereNotNull('budget_line')->value('budget_line')
                 ?? 'TRAVEL-'.$travel->reference_number,

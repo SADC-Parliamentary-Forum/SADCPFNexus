@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { imprestApi, lookupsApi } from "@/lib/api";
+import { imprestApi, type OrgBudgetLine } from "@/lib/api";
+import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 
 const STEPS = ["Request Details", "Justification", "Review & Submit"];
 
 interface FormData {
   budget_line: string;
+  budget_line_id: number | null;
   amount_requested: string;
   currency: string;
   expected_liquidation_date: string;
@@ -19,27 +21,28 @@ export default function ImprestCreatePage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
-  const [budgetLines, setBudgetLines] = useState<string[]>([]);
   const [form, setForm] = useState<FormData>({
     budget_line: "",
+    budget_line_id: null,
     amount_requested: "",
-    currency: "USD",
+    currency: "NAD",
     expected_liquidation_date: "",
     purpose: "",
     justification: "",
   });
 
-  useEffect(() => {
-    lookupsApi.get(["budget_lines"]).then((res) => {
-      setBudgetLines(res.data.budget_lines ?? []);
-    }).catch(() => {});
-  }, []);
-
   const updateField = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const canNext = () => {
-    if (step === 0) return form.budget_line && form.amount_requested && form.expected_liquidation_date && form.purpose;
+    if (step === 0) {
+      return (
+        (form.budget_line_id || form.budget_line) &&
+        form.amount_requested &&
+        form.expected_liquidation_date &&
+        form.purpose
+      );
+    }
     return true;
   };
 
@@ -47,7 +50,8 @@ export default function ImprestCreatePage() {
     setSubmitting(true);
     try {
       const payload = {
-        budget_line: form.budget_line,
+        budget_line_id: form.budget_line_id ?? undefined,
+        budget_line: form.budget_line || undefined,
         amount_requested: parseFloat(form.amount_requested) || 0,
         currency: form.currency,
         expected_liquidation_date: form.expected_liquidation_date,
@@ -80,10 +84,9 @@ export default function ImprestCreatePage() {
         <p className="text-sm text-neutral-500 mt-0.5">Initiate a new petty cash request for operational expenses.</p>
       </div>
 
-      {/* FY Banner */}
       <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-medium text-amber-700">
         <span className="material-symbols-outlined text-[16px]">info</span>
-        FY 2025-2026 Period Open
+        Funds reserve from the selected budget line on approval.
       </div>
 
       {/* Stepper */}
@@ -121,18 +124,22 @@ export default function ImprestCreatePage() {
               General Information
             </h3>
 
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-neutral-700">Budget Line <span className="text-red-500">*</span></label>
-              <select
-                className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                value={form.budget_line}
-                onChange={(e) => updateField("budget_line", e.target.value)}
-              >
-                <option value="">Select a budget line...</option>
-                {budgetLines.map((bl) => <option key={bl} value={bl}>{bl}</option>)}
-              </select>
-              <p className="text-[11px] text-neutral-400">Funds will be reserved from this line item immediately upon approval.</p>
-            </div>
+            <BudgetLinePicker
+              value={form.budget_line_id}
+              amount={form.amount_requested ? Number(form.amount_requested) : null}
+              required
+              label="Budget Line"
+              onChange={(lineId: number | null, line: OrgBudgetLine | null) => {
+                setForm((prev) => ({
+                  ...prev,
+                  budget_line_id: lineId,
+                  budget_line: line
+                    ? `${line.code || `#${line.id}`} — ${line.name || line.category}`
+                    : prev.budget_line,
+                }));
+              }}
+            />
+            <p className="text-[11px] text-neutral-400 -mt-1">Funds will be reserved from this line item immediately upon approval.</p>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -157,9 +164,9 @@ export default function ImprestCreatePage() {
                   value={form.currency}
                   onChange={(e) => updateField("currency", e.target.value)}
                 >
+                  <option value="NAD">NAD</option>
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
-                  <option value="NAD">NAD</option>
                   <option value="ZAR">ZAR</option>
                 </select>
               </div>

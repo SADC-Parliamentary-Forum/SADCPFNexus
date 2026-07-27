@@ -13,13 +13,16 @@ class ImprestRequest extends Model
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
-        'budget_line', 'amount_requested', 'amount_approved', 'amount_liquidated',
+        'budget_line', 'budget_line_id', 'amount_requested', 'amount_approved', 'amount_liquidated',
         'currency', 'expected_liquidation_date', 'purpose', 'justification',
         'status', 'rejection_reason', 'submitted_at', 'approved_at', 'liquidated_at',
         'travel_request_id',
     ];
 
     protected $casts = [
+        'amount_requested' => 'float',
+        'amount_approved' => 'float',
+        'amount_liquidated' => 'float',
         'expected_liquidation_date' => 'date',
         'submitted_at'  => 'datetime',
         'approved_at'   => 'datetime',
@@ -34,6 +37,11 @@ class ImprestRequest extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function orgBudgetLine()
+    {
+        return $this->belongsTo(BudgetLine::class, 'budget_line_id');
     }
 
     public function travelRequest()
@@ -72,6 +80,11 @@ class ImprestRequest extends Model
         try {
             app(BalanceRegisterService::class)->createFromImprest($this->fresh(), $approver);
         } catch (\Throwable) {}
+
+        try {
+            app(\App\Modules\Imprest\Services\ImprestBudgetReservationService::class)
+                ->reserveOnApprove($this->fresh(), $approver);
+        } catch (\Throwable) {}
     }
 
     public function onWorkflowRejected(User $approver, ?string $reason = null): void
@@ -90,6 +103,11 @@ class ImprestRequest extends Model
                 'comment'   => $reason,
             ], ['module' => 'imprest', 'record_id' => $this->id, 'url' => '/imprest/' . $this->id]);
         }
+
+        try {
+            app(\App\Modules\Imprest\Services\ImprestBudgetReservationService::class)
+                ->releaseOnCancel($this->fresh(), $approver, $reason ?? 'Imprest rejected');
+        } catch (\Throwable) {}
     }
 
     public function onWorkflowReturned(User $approver, ?string $comment = null): void
@@ -100,6 +118,13 @@ class ImprestRequest extends Model
     public function onWorkflowWithdrawn(): void
     {
         $this->update(['status' => 'withdrawn']);
+        try {
+            $actor = auth()->user() ?? $this->requester;
+            if ($actor) {
+                app(\App\Modules\Imprest\Services\ImprestBudgetReservationService::class)
+                    ->releaseOnCancel($this->fresh(), $actor, 'Imprest withdrawn');
+            }
+        } catch (\Throwable) {}
     }
 
     public function onWorkflowResubmitted(): void

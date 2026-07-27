@@ -1164,6 +1164,7 @@ export interface ImprestRequest {
   id: number;
   reference_number: string;
   budget_line: string;
+  budget_line_id?: number | null;
   amount_requested: number;
   amount_approved: number | null;
   amount_liquidated: number | null;
@@ -1179,6 +1180,7 @@ export interface ImprestRequest {
   created_at: string;
   requester?: User;
   approver?: User;
+  org_budget_line?: OrgBudgetLine | null;
 }
 
 export const imprestApi = {
