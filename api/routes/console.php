@@ -46,6 +46,9 @@ Schedule::command('leave:post-monthly-accruals')->monthlyOn(1, '02:00');
 // Expire overdue leave-in-lieu credits and remind staff before expiry.
 Schedule::command('leave:manage-toil-expiry')->dailyAt('08:20');
 
+// Assignment reminders + unclaimed/overdue escalations.
+Schedule::command('assignments:process-reminders')->hourly();
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()

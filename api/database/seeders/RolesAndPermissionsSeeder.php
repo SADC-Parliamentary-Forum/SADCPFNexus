@@ -47,6 +47,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'workplan.view', 'workplan.create', 'workplan.approve', 'workplan.admin', 'workplan.external',
             // Assignments (Oversight & Accountability)
             'assignments.view', 'assignments.create', 'assignments.issue', 'assignments.admin',
+            'assignments.team', 'assignments.review', 'assignments.reports', 'assignments.confidential.view',
             // Timesheets
             'timesheets.view', 'timesheets.create', 'timesheets.approve',
             // Performance Appraisals

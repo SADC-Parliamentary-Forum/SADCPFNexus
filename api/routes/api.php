@@ -1083,17 +1083,36 @@ Route::prefix('v1')->group(function () {
         // Assignments, Oversight & Accountability
         Route::prefix('assignments')->group(function () {
             Route::get('stats', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'stats']);
+            Route::get('mine', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'mine']);
+            Route::get('team', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'team']);
+            Route::get('register', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'register']);
+            Route::get('review-queue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reviewQueue']);
+            Route::get('reports/summary', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reportsSummary']);
+            Route::get('weekly-summary-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'weeklySummaryFeed']);
+            Route::post('from-source', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'fromSource']);
+            Route::post('templates', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'storeTemplate']);
             Route::apiResource('/', \App\Http\Controllers\Api\V1\Assignments\AssignmentController::class)
                 ->parameter('', 'assignment')
                 ->names('assignments');
             Route::post('{assignment}/issue',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'issue']);
             Route::post('{assignment}/accept',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'accept']);
+            Route::post('{assignment}/claim',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'claim']);
             Route::post('{assignment}/start',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'start']);
             Route::post('{assignment}/updates',  [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addUpdate']);
+            Route::post('{assignment}/block',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'block']);
+            Route::post('{assignment}/unblock',  [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'unblock']);
             Route::post('{assignment}/complete', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'complete']);
+            Route::post('{assignment}/verify',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'verify']);
             Route::post('{assignment}/close',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'close']);
             Route::post('{assignment}/return',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'returnAssignment']);
             Route::post('{assignment}/cancel',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
+            Route::post('{assignment}/reassign', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reassign']);
+            Route::post('{assignment}/change-due-date', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'changeDueDate']);
+            Route::post('{assignment}/participants', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addParticipant']);
+            Route::post('{assignment}/checklist', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addChecklistItem']);
+            Route::post('{assignment}/checklist/{checklistItem}/toggle', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'toggleChecklistItem']);
+            Route::post('{assignment}/subtasks', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'createSubtask']);
+            Route::post('{assignment}/generate', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'generateFromTemplate']);
         });
 
         // Governance — committees & meeting-type config

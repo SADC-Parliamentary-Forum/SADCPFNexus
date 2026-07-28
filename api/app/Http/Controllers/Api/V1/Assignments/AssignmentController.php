@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Assignments;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
+use App\Models\AssignmentChecklistItem;
 use App\Modules\Assignments\Services\AssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,44 @@ class AssignmentController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'priority', 'assigned_to', 'department_id', 'overdue', 'search', 'per_page']);
+        $filters = $request->only([
+            'status', 'priority', 'assigned_to', 'department_id', 'overdue', 'blocked',
+            'escalated', 'unassigned', 'search', 'per_page', 'source_type', 'review_status', 'scope',
+            'templates_only', 'created_by',
+        ]);
+
+        return response()->json($this->service->list($filters, $request->user()));
+    }
+
+    public function mine(Request $request): JsonResponse
+    {
+        $filters = $request->only(['status', 'priority', 'overdue', 'search', 'per_page']);
+
+        return response()->json($this->service->mine($filters, $request->user()));
+    }
+
+    public function team(Request $request): JsonResponse
+    {
+        $filters = $request->only(['status', 'priority', 'overdue', 'department_id', 'search', 'per_page']);
+
+        return response()->json($this->service->team($filters, $request->user()));
+    }
+
+    public function reviewQueue(Request $request): JsonResponse
+    {
+        $filters = $request->only(['status', 'search', 'per_page', 'review_status']);
+
+        return response()->json($this->service->reviewQueue($filters, $request->user()));
+    }
+
+    public function register(Request $request): JsonResponse
+    {
+        $filters = $request->only([
+            'status', 'priority', 'assigned_to', 'department_id', 'overdue', 'blocked',
+            'escalated', 'unassigned', 'search', 'per_page', 'source_type', 'review_status',
+        ]);
+        $filters['scope'] = 'register';
+
         return response()->json($this->service->list($filters, $request->user()));
     }
 
@@ -23,103 +61,166 @@ class AssignmentController extends Controller
         return response()->json($this->service->stats($request->user()));
     }
 
-    public function show(Assignment $assignment): JsonResponse
+    public function reportsSummary(Request $request): JsonResponse
     {
-        return response()->json(
-            $assignment->load(['creator', 'assignee', 'department', 'updates.submitter', 'attachments.uploader'])
-        );
+        return response()->json($this->service->reportsSummary($request->user()));
+    }
+
+    public function weeklySummaryFeed(Request $request): JsonResponse
+    {
+        return response()->json($this->service->weeklySummaryFeed(
+            $request->user(),
+            $request->query('period_start'),
+            $request->query('period_end')
+        ));
+    }
+
+    public function show(Request $request, Assignment $assignment): JsonResponse
+    {
+        return response()->json($this->service->show($assignment, $request->user()));
     }
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'title'               => ['required', 'string', 'max:255'],
-            'description'         => ['required', 'string'],
-            'objective'           => ['nullable', 'string'],
-            'expected_output'     => ['nullable', 'string'],
-            'type'                => ['sometimes', 'in:individual,sector,collaborative'],
-            'priority'            => ['sometimes', 'in:low,medium,high,critical'],
-            'assigned_to'         => ['nullable', 'integer', 'exists:users,id'],
-            'department_id'       => ['nullable', 'integer', 'exists:departments,id'],
-            'due_date'            => ['required', 'date', 'after_or_equal:today'],
-            'start_date'          => ['nullable', 'date'],
-            'checkin_frequency'   => ['nullable', 'in:daily,weekly,biweekly,monthly'],
-            'linked_programme_id' => ['nullable', 'integer'],
-            'linked_event_id'     => ['nullable', 'integer'],
-            'is_confidential'     => ['sometimes', 'boolean'],
-        ]);
-
+        $data = $request->validate($this->createRules());
         $assignment = $this->service->create($data, $request->user());
+
         return response()->json(['message' => 'Assignment created.', 'data' => $assignment], 201);
+    }
+
+    public function fromSource(Request $request): JsonResponse
+    {
+        $data = $request->validate(array_merge($this->createRules(), [
+            'source_type' => ['required', 'string'],
+            'source_id' => ['required', 'integer'],
+            'source_purpose' => ['nullable', 'string', 'max:120'],
+            'source_confidential' => ['sometimes', 'boolean'],
+        ]));
+
+        $assignment = $this->service->createFromSource($data, $request->user());
+
+        return response()->json(['message' => 'Assignment linked from source.', 'data' => $assignment], 201);
     }
 
     public function update(Request $request, Assignment $assignment): JsonResponse
     {
         $data = $request->validate([
-            'title'               => ['sometimes', 'string', 'max:255'],
-            'description'         => ['sometimes', 'string'],
-            'objective'           => ['nullable', 'string'],
-            'expected_output'     => ['nullable', 'string'],
-            'type'                => ['sometimes', 'in:individual,sector,collaborative'],
-            'priority'            => ['sometimes', 'in:low,medium,high,critical'],
-            'assigned_to'         => ['nullable', 'integer', 'exists:users,id'],
-            'department_id'       => ['nullable', 'integer', 'exists:departments,id'],
-            'due_date'            => ['sometimes', 'date'],
-            'start_date'          => ['nullable', 'date'],
-            'checkin_frequency'   => ['nullable', 'in:daily,weekly,biweekly,monthly'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'description' => ['sometimes', 'string'],
+            'objective' => ['nullable', 'string'],
+            'expected_output' => ['nullable', 'string'],
+            'acceptance_criteria' => ['nullable', 'string'],
+            'evidence_required' => ['sometimes', 'boolean'],
+            'completion_instructions' => ['nullable', 'string'],
+            'type' => ['sometimes', 'in:individual,sector,collaborative'],
+            'priority' => ['sometimes', 'in:low,medium,high,urgent,critical'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'department_claim_due_at' => ['nullable', 'date'],
+            'due_date' => ['sometimes', 'date'],
+            'start_date' => ['nullable', 'date'],
+            'checkin_frequency' => ['nullable', 'in:daily,weekly,biweekly,monthly'],
             'linked_programme_id' => ['nullable', 'integer'],
-            'linked_event_id'     => ['nullable', 'integer'],
-            'is_confidential'     => ['sometimes', 'boolean'],
+            'linked_event_id' => ['nullable', 'integer'],
+            'is_confidential' => ['sometimes', 'boolean'],
+            'review_required' => ['sometimes', 'boolean'],
+            'reviewer_id' => ['nullable', 'integer', 'exists:users,id'],
+            'contributor_ids' => ['sometimes', 'array'],
+            'contributor_ids.*' => ['integer', 'exists:users,id'],
+            'watcher_ids' => ['sometimes', 'array'],
+            'watcher_ids.*' => ['integer', 'exists:users,id'],
         ]);
 
         $updated = $this->service->update($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Assignment updated.', 'data' => $updated]);
     }
 
     public function destroy(Request $request, Assignment $assignment): JsonResponse
     {
         $this->service->delete($assignment, $request->user());
+
         return response()->json(['message' => 'Assignment deleted.']);
     }
-
-    // ── Workflow actions ───────────────────────────────────────────────────────
 
     public function issue(Request $request, Assignment $assignment): JsonResponse
     {
         $result = $this->service->issue($assignment, $request->user());
+
         return response()->json(['message' => 'Assignment issued to assignee.', 'data' => $result]);
     }
 
     public function accept(Request $request, Assignment $assignment): JsonResponse
     {
         $data = $request->validate([
-            'decision'          => ['required', 'in:accepted,clarification_requested,deadline_proposed,rejected'],
-            'notes'             => ['nullable', 'string', 'max:2000'],
+            'decision' => ['required', 'in:accepted,clarification_requested,deadline_proposed,rejected'],
+            'notes' => ['nullable', 'string', 'max:2000'],
             'proposed_deadline' => ['nullable', 'date'],
         ]);
 
         $result = $this->service->accept($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Acceptance response recorded.', 'data' => $result]);
+    }
+
+    public function claim(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $result = $this->service->claim($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Assignment claimed.', 'data' => $result]);
     }
 
     public function start(Request $request, Assignment $assignment): JsonResponse
     {
         $result = $this->service->start($assignment, $request->user());
+
         return response()->json(['message' => 'Assignment marked as active.', 'data' => $result]);
     }
 
     public function addUpdate(Request $request, Assignment $assignment): JsonResponse
     {
         $data = $request->validate([
-            'type'             => ['sometimes', 'in:update,comment,feedback,escalation,closure_request'],
+            'type' => ['sometimes', 'in:update,comment,feedback,escalation,closure_request'],
             'progress_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'notes'            => ['required', 'string', 'max:5000'],
-            'blocker_type'     => ['nullable', 'in:awaiting_approval,awaiting_funds,awaiting_information,external_dependency'],
-            'blocker_details'  => ['nullable', 'string', 'max:2000'],
+            'notes' => ['required', 'string', 'max:5000'],
+            'blocker_type' => ['nullable', 'string', 'max:64'],
+            'blocker_details' => ['nullable', 'string', 'max:2000'],
+            'blocker_owner_id' => ['nullable', 'integer', 'exists:users,id'],
+            'blocker_expected_resolution_at' => ['nullable', 'date'],
         ]);
 
         $update = $this->service->addUpdate($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Update posted.', 'data' => $update], 201);
+    }
+
+    public function block(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'blocker_type' => ['required', 'string', 'max:64'],
+            'blocker_details' => ['nullable', 'string', 'max:2000'],
+            'blocker_owner_id' => ['required', 'integer', 'exists:users,id'],
+            'blocker_expected_resolution_at' => ['nullable', 'date'],
+        ]);
+
+        $result = $this->service->block($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Assignment blocked.', 'data' => $result]);
+    }
+
+    public function unblock(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = $this->service->unblock($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Assignment unblocked.', 'data' => $result]);
     }
 
     public function complete(Request $request, Assignment $assignment): JsonResponse
@@ -129,17 +230,33 @@ class AssignmentController extends Controller
         ]);
 
         $result = $this->service->complete($assignment, $data, $request->user());
-        return response()->json(['message' => 'Assignment submitted for closure.', 'data' => $result]);
+
+        return response()->json(['message' => 'Assignment submitted for closure/review.', 'data' => $result]);
+    }
+
+    public function verify(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'decision' => ['required', 'in:accepted,returned,request_evidence,accepted_with_follow_up'],
+            'comments' => ['nullable', 'string', 'max:5000'],
+            'follow_up_required' => ['sometimes', 'boolean'],
+            'acceptance_criteria_results' => ['nullable', 'array'],
+        ]);
+
+        $result = $this->service->verify($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Review decision recorded.', 'data' => $result]);
     }
 
     public function close(Request $request, Assignment $assignment): JsonResponse
     {
         $data = $request->validate([
-            'notes'  => ['nullable', 'string', 'max:5000'],
+            'notes' => ['nullable', 'string', 'max:5000'],
             'rating' => ['nullable', 'integer', 'min:1', 'max:5'],
         ]);
 
         $result = $this->service->close($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Assignment closed.', 'data' => $result]);
     }
 
@@ -150,6 +267,7 @@ class AssignmentController extends Controller
         ]);
 
         $result = $this->service->returnAssignment($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Assignment returned to assignee.', 'data' => $result]);
     }
 
@@ -160,6 +278,150 @@ class AssignmentController extends Controller
         ]);
 
         $result = $this->service->cancel($assignment, $data, $request->user());
+
         return response()->json(['message' => 'Assignment cancelled.', 'data' => $result]);
+    }
+
+    public function reassign(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'assigned_to' => ['required', 'integer', 'exists:users,id'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'acted_via_delegation_id' => ['nullable', 'integer'],
+        ]);
+
+        $result = $this->service->reassign($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Assignment reassigned.', 'data' => $result]);
+    }
+
+    public function changeDueDate(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'due_date' => ['required', 'date'],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $result = $this->service->changeDueDate($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Due date updated.', 'data' => $result]);
+    }
+
+    public function addParticipant(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'role' => ['required', 'in:contributor,watcher,reviewer'],
+        ]);
+
+        $participant = $this->service->addParticipant($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Participant added.', 'data' => $participant], 201);
+    }
+
+    public function addChecklistItem(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'sequence' => ['nullable', 'integer'],
+            'mandatory' => ['sometimes', 'boolean'],
+            'assignee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'due_at' => ['nullable', 'date'],
+        ]);
+
+        $item = $this->service->addChecklistItem($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Checklist item added.', 'data' => $item], 201);
+    }
+
+    public function toggleChecklistItem(Request $request, Assignment $assignment, AssignmentChecklistItem $checklistItem): JsonResponse
+    {
+        abort_if($checklistItem->assignment_id !== $assignment->id, 404);
+        $data = $request->validate([
+            'completed' => ['required', 'boolean'],
+        ]);
+
+        $item = $this->service->toggleChecklistItem($checklistItem, $request->user(), (bool) $data['completed']);
+
+        return response()->json(['message' => 'Checklist updated.', 'data' => $item]);
+    }
+
+    public function createSubtask(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'due_date' => ['nullable', 'date'],
+            'priority' => ['sometimes', 'in:low,medium,high,urgent,critical'],
+        ]);
+
+        $sub = $this->service->createSubtask($assignment, $data, $request->user());
+
+        return response()->json(['message' => 'Subtask created.', 'data' => $sub], 201);
+    }
+
+    public function storeTemplate(Request $request): JsonResponse
+    {
+        $data = $request->validate(array_merge($this->createRules(), [
+            'recurrence_rule' => ['nullable', 'array'],
+            'recurrence_next_run_at' => ['nullable', 'date'],
+        ]));
+
+        $template = $this->service->createTemplate($data, $request->user());
+
+        return response()->json(['message' => 'Recurring template created.', 'data' => $template], 201);
+    }
+
+    public function generateFromTemplate(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $instance = $this->service->generateFromTemplate($assignment, $request->user(), $data['due_date'] ?? null);
+
+        return response()->json(['message' => 'Recurring instance generated.', 'data' => $instance], 201);
+    }
+
+    private function createRules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
+            'objective' => ['nullable', 'string'],
+            'expected_output' => ['nullable', 'string'],
+            'acceptance_criteria' => ['nullable', 'string'],
+            'evidence_required' => ['sometimes', 'boolean'],
+            'completion_instructions' => ['nullable', 'string'],
+            'type' => ['sometimes', 'in:individual,sector,collaborative'],
+            'priority' => ['sometimes', 'in:low,medium,high,urgent,critical'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'department_claim_due_at' => ['nullable', 'date'],
+            'due_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_date' => ['nullable', 'date'],
+            'checkin_frequency' => ['nullable', 'in:daily,weekly,biweekly,monthly'],
+            'linked_programme_id' => ['nullable', 'integer'],
+            'linked_event_id' => ['nullable', 'integer'],
+            'meeting_minutes_id' => ['nullable', 'integer'],
+            'source_type' => ['nullable', 'string', 'max:64'],
+            'source_id' => ['nullable', 'integer'],
+            'source_reference' => ['nullable', 'string', 'max:255'],
+            'source_title' => ['nullable', 'string', 'max:255'],
+            'source_purpose' => ['nullable', 'string', 'max:120'],
+            'is_confidential' => ['sometimes', 'boolean'],
+            'review_required' => ['sometimes', 'boolean'],
+            'reviewer_id' => ['nullable', 'integer', 'exists:users,id'],
+            'contributor_ids' => ['sometimes', 'array'],
+            'contributor_ids.*' => ['integer', 'exists:users,id'],
+            'watcher_ids' => ['sometimes', 'array'],
+            'watcher_ids.*' => ['integer', 'exists:users,id'],
+            'parent_id' => ['nullable', 'integer', 'exists:assignments,id'],
+            'is_template' => ['sometimes', 'boolean'],
+            'recurrence_rule' => ['nullable', 'array'],
+            'recurrence_next_run_at' => ['nullable', 'date'],
+        ];
     }
 }

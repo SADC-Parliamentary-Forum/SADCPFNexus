@@ -5075,7 +5075,7 @@ export const supportTicketsApi = {
 // ─── Assignments, Oversight & Accountability ──────────────────────────────────
 
 export type AssignmentType = "individual" | "sector" | "collaborative";
-export type AssignmentPriority = "low" | "medium" | "high" | "critical";
+export type AssignmentPriority = "low" | "medium" | "high" | "urgent" | "critical";
 export type AssignmentStatus =
   | "draft" | "issued" | "awaiting_acceptance" | "accepted"
   | "active" | "at_risk" | "blocked" | "delayed"
@@ -5087,8 +5087,11 @@ export type AcceptanceDecision =
 export type UpdateType =
   | "update" | "comment" | "feedback" | "escalation" | "closure_request" | "system";
 
-export type BlockerType =
-  | "awaiting_approval" | "awaiting_funds" | "awaiting_information" | "external_dependency";
+export type BlockerType = string;
+
+export type AssignmentDeadlineState =
+  | "none" | "future" | "due_soon" | "due_today" | "overdue"
+  | "completed_on_time" | "completed_late" | "cancelled_before_due";
 
 export interface AssignmentUpdate {
   id: number;
@@ -5103,6 +5106,14 @@ export interface AssignmentUpdate {
   submitter?: User;
 }
 
+export interface AssignmentParticipant {
+  id: number;
+  assignment_id: number;
+  user_id: number;
+  role: "contributor" | "watcher" | "reviewer";
+  user?: User;
+}
+
 export interface Assignment {
   id: number;
   reference_number: string;
@@ -5110,25 +5121,45 @@ export interface Assignment {
   description: string;
   objective: string | null;
   expected_output: string | null;
+  acceptance_criteria?: string | null;
+  evidence_required?: boolean;
+  completion_instructions?: string | null;
   type: AssignmentType;
   priority: AssignmentPriority;
   status: AssignmentStatus;
   created_by: number;
   assigned_to: number | null;
   department_id: number | null;
+  department_claim_due_at?: string | null;
   due_date: string;
   start_date: string | null;
   checkin_frequency: "daily" | "weekly" | "biweekly" | "monthly" | null;
   linked_programme_id: number | null;
   linked_event_id: number | null;
+  source_type?: string;
+  source_id?: number | null;
+  source_reference?: string | null;
+  source_title?: string | null;
+  source_purpose?: string | null;
   is_confidential: boolean;
+  review_required?: boolean;
+  reviewer_id?: number | null;
+  review_status?: string;
+  verified_at?: string | null;
+  verified_by?: number | null;
   progress_percent: number;
+  escalation_level?: number;
+  is_template?: boolean;
+  template_id?: number | null;
+  deadline_state?: AssignmentDeadlineState;
+  is_overdue_flag?: boolean;
   acceptance_decision: AcceptanceDecision | null;
   acceptance_notes: string | null;
   proposed_deadline: string | null;
   accepted_at: string | null;
   blocker_type: BlockerType | null;
   blocker_details: string | null;
+  blocker_owner_id?: number | null;
   closure_notes: string | null;
   rejection_reason: string | null;
   issued_at: string | null;
@@ -5138,8 +5169,11 @@ export interface Assignment {
   created_at: string;
   creator?: User;
   assignee?: User;
+  reviewer?: User;
+  blocker_owner?: User;
   department?: { id: number; name: string };
   updates?: AssignmentUpdate[];
+  participants?: AssignmentParticipant[];
 }
 
 export interface AssignmentStats {
@@ -5151,6 +5185,9 @@ export interface AssignmentStats {
   blocked: number;
   completed: number;
   my_pending: number;
+  awaiting_my_review?: number;
+  unassigned?: number;
+  escalated?: number;
   by_priority: Record<string, number>;
   by_status: Record<string, number>;
 }
@@ -5159,10 +5196,23 @@ export const assignmentsApi = {
   stats: () => api.get<AssignmentStats>("/assignments/stats"),
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Assignment>>("/assignments/", { params }),
+  mine: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Assignment>>("/assignments/mine", { params }),
+  team: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Assignment>>("/assignments/team", { params }),
+  register: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Assignment>>("/assignments/register", { params }),
+  reviewQueue: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<Assignment>>("/assignments/review-queue", { params }),
+  reportsSummary: () => api.get<{ stats: AssignmentStats; by_source: Record<string, number>; blockers: Record<string, number>; performance_scoring: string }>("/assignments/reports/summary"),
+  weeklySummaryFeed: (params?: { period_start?: string; period_end?: string }) =>
+    api.get<Record<string, unknown>>("/assignments/weekly-summary-feed", { params }),
   get: (id: number) =>
     api.get<Assignment>(`/assignments/${id}`),
-  create: (data: Partial<Assignment>) =>
+  create: (data: Partial<Assignment> & Record<string, unknown>) =>
     api.post<{ data: Assignment; message: string }>("/assignments/", data),
+  fromSource: (data: Partial<Assignment> & Record<string, unknown>) =>
+    api.post<{ data: Assignment; message: string }>("/assignments/from-source", data),
   update: (id: number, data: Partial<Assignment>) =>
     api.put<{ data: Assignment; message: string }>(`/assignments/${id}`, data),
   delete: (id: number) =>
@@ -5171,18 +5221,34 @@ export const assignmentsApi = {
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/issue`),
   accept: (id: number, data: { decision: AcceptanceDecision; notes?: string; proposed_deadline?: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/accept`, data),
+  claim: (id: number, data?: { assigned_to?: number }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/claim`, data ?? {}),
   start: (id: number) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/start`),
-  addUpdate: (id: number, data: { type?: UpdateType; progress_percent?: number; notes: string; blocker_type?: BlockerType; blocker_details?: string }) =>
+  addUpdate: (id: number, data: { type?: UpdateType; progress_percent?: number; notes: string; blocker_type?: BlockerType; blocker_details?: string; blocker_owner_id?: number }) =>
     api.post<{ data: AssignmentUpdate; message: string }>(`/assignments/${id}/updates`, data),
+  block: (id: number, data: { blocker_type: string; blocker_owner_id: number; blocker_details?: string }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/block`, data),
+  unblock: (id: number, data?: { notes?: string }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/unblock`, data ?? {}),
   complete: (id: number, data?: { notes?: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/complete`, data),
+  verify: (id: number, data: { decision: string; comments?: string; follow_up_required?: boolean }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/verify`, data),
   close: (id: number, data?: { notes?: string; rating?: number }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/close`, data),
   returnAssignment: (id: number, data: { reason: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/return`, data),
   cancel: (id: number, data?: { reason?: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/cancel`, data),
+  reassign: (id: number, data: { assigned_to: number; reason: string; acted_via_delegation_id?: number }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/reassign`, data),
+  changeDueDate: (id: number, data: { due_date: string; reason: string }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/change-due-date`, data),
+  createTemplate: (data: Partial<Assignment> & Record<string, unknown>) =>
+    api.post<{ data: Assignment; message: string }>("/assignments/templates", data),
+  generateFromTemplate: (id: number, data?: { due_date?: string }) =>
+    api.post<{ data: Assignment; message: string }>(`/assignments/${id}/generate`, data ?? {}),
 };
 
 // ─── HR Settings — Master Data & Rules ───────────────────────────────────────
