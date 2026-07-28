@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { assignmentsApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
+import { assignmentsApi, tenantUsersApi, type AssignmentPriority, type TenantUserOption } from "@/lib/api";
 
 type Props = {
   open: boolean;
@@ -39,7 +39,7 @@ export function CreateAssignmentFromSourceModal({
   const [description, setDescription] = useState(defaultDescription || defaultTitle);
   const [dueDate, setDueDate] = useState(defaultDueDate ?? "");
   const [assignedTo, setAssignedTo] = useState(defaultAssigneeId ? String(defaultAssigneeId) : "");
-  const [priority, setPriority] = useState("medium");
+  const [priority, setPriority] = useState<AssignmentPriority>("medium");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -117,7 +117,7 @@ export function CreateAssignmentFromSourceModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
-              <select className="form-input" value={priority} onChange={(e) => setPriority(e.target.value)}>
+              <select className="form-input" value={priority} onChange={(e) => setPriority(e.target.value as AssignmentPriority)}>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
