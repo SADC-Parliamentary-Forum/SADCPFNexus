@@ -9,6 +9,7 @@ import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
   annual: { label: "Annual Leave", color: "text-blue-700 bg-blue-50 border-blue-200", icon: "sunny" },
@@ -95,6 +96,10 @@ export default function LeaveDetailPage() {
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
+
+  // HOD / HR recommendation & certification
+  const [recommendComment, setRecommendComment] = useState("");
+  const [certifyComment, setCertifyComment] = useState("");
 
   // Attachments
   const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
@@ -407,6 +412,152 @@ export default function LeaveDetailPage() {
           ))}
         </div>
       </div>
+
+      {/* HOD Recommendation / HR Certification */}
+      {["submitted", "resubmitted", "pending_next_step"].includes(request.status) && (() => {
+        const currentUser = getStoredUser();
+        const roles = currentUser?.roles ?? [];
+        const canRecommend = isSystemAdmin(currentUser)
+          || hasPermission(currentUser, ["leave.approve", "hr.approve"])
+          || roles.some((r) => ["HOD", "HR Manager", "HR Administrator", "Secretary General"].includes(r));
+        const canCertify = isSystemAdmin(currentUser)
+          || hasPermission(currentUser, ["leave.approve", "hr.admin"])
+          || roles.some((r) => ["HR Manager", "HR Administrator"].includes(r));
+        const needsRecommend = !request.recommendation_status || request.recommendation_status === "pending";
+        const needsCertify = request.recommendation_status === "recommended"
+          && (!request.certification_status || request.certification_status === "pending");
+        if (!((canRecommend && needsRecommend) || (canCertify && needsCertify))) return null;
+        return (
+          <div className="card p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <SectionIcon icon="fact_check" color="text-indigo-600" bg="bg-indigo-50" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                {needsRecommend ? "HOD Recommendation" : "HR Certification"}
+              </h3>
+            </div>
+            {canRecommend && needsRecommend && (
+              <div className="space-y-3">
+                <textarea
+                  className="form-input min-h-[70px]"
+                  placeholder="Optional comment (required if not recommending / returning)"
+                  value={recommendComment}
+                  onChange={(e) => setRecommendComment(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    className="btn-primary disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.recommend(request.id, { action: "recommend", comment: recommendComment || undefined });
+                        await refreshRequest();
+                        setToast("Recommendation recorded.");
+                      } catch { setError("Failed to record recommendation."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Recommend
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading || !recommendComment.trim()}
+                    className="btn-secondary disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.recommend(request.id, { action: "not_recommend", comment: recommendComment.trim() });
+                        await refreshRequest();
+                        setToast("Not recommended recorded.");
+                      } catch { setError("Failed to record recommendation."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Do Not Recommend
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading || !recommendComment.trim()}
+                    className="btn-secondary text-amber-700 border-amber-200 disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.recommend(request.id, { action: "return", comment: recommendComment.trim() });
+                        await refreshRequest();
+                        setToast("Returned for correction.");
+                      } catch { setError("Failed to return leave request."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Return
+                  </button>
+                </div>
+              </div>
+            )}
+            {canCertify && needsCertify && (
+              <div className="space-y-3">
+                <textarea
+                  className="form-input min-h-[70px]"
+                  placeholder="Optional comment (required for conditional / return / ineligible)"
+                  value={certifyComment}
+                  onChange={(e) => setCertifyComment(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    className="btn-primary disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.certify(request.id, { action: "certify", comment: certifyComment || undefined });
+                        await refreshRequest();
+                        setToast("Certification recorded.");
+                      } catch { setError("Failed to certify leave request."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Certify
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading || !certifyComment.trim()}
+                    className="btn-secondary disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.certify(request.id, { action: "certify_with_condition", comment: certifyComment.trim() });
+                        await refreshRequest();
+                        setToast("Certified with condition.");
+                      } catch { setError("Failed to certify leave request."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Certify with Condition
+                  </button>
+                  <button
+                    type="button"
+                    disabled={actionLoading || !certifyComment.trim()}
+                    className="btn-secondary text-amber-700 border-amber-200 disabled:opacity-50"
+                    onClick={async () => {
+                      setActionLoading(true);
+                      try {
+                        await leaveApi.certify(request.id, { action: "return", comment: certifyComment.trim() });
+                        await refreshRequest();
+                        setToast("Returned for correction.");
+                      } catch { setError("Failed to return leave request."); }
+                      finally { setActionLoading(false); }
+                    }}
+                  >
+                    Return
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Submitted By */}
       {request.requester && (

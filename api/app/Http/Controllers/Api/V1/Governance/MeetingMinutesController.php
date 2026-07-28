@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingMinutes;
 use App\Models\User;
+use App\Modules\Assignments\Services\AssignmentService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,9 @@ use Illuminate\Support\Facades\Storage;
 
 class MeetingMinutesController extends Controller
 {
+    public function __construct(
+        private readonly AssignmentService $assignments,
+    ) {}
     // ─── List ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request): JsonResponse
@@ -241,23 +245,29 @@ class MeetingMinutesController extends Controller
         $data = $request->validate([
             'assigned_to'      => ['nullable', 'exists:users,id'],
             'due_date'         => ['required', 'date'],
-            'priority'         => ['sometimes', 'in:low,medium,high,critical'],
+            'priority'         => ['sometimes', 'in:low,medium,high,urgent,critical'],
             'description'      => ['nullable', 'string'],
         ]);
 
-        $assignment = app(\App\Modules\Assignments\Services\AssignmentService::class)->createFromSource([
+        $assigneeId = $data['assigned_to'] ?? $actionItem->responsible_id;
+        $assignment = $this->assignments->createFromSource([
             'source_type' => 'meeting_action_item',
             'source_id' => $actionItem->id,
             'source_purpose' => 'minute_action',
-            'source_reference' => 'MIN-'.$meetingMinute->id,
+            'source_reference' => $meetingMinute->reference_number ?? ('MIN-'.$meetingMinute->id),
             'source_title' => $meetingMinute->title,
             'title' => $actionItem->description,
             'description' => $data['description'] ?? "Action item from meeting: {$meetingMinute->title}",
+            'type' => 'individual',
             'priority' => $data['priority'] ?? 'medium',
-            'assigned_to' => $data['assigned_to'] ?? $actionItem->responsible_id,
+            'assigned_to' => $assigneeId,
             'due_date' => $data['due_date'],
             'meeting_minutes_id' => $meetingMinute->id,
         ], $request->user());
+
+        if ($assignment->isDraft() && $assignment->assigned_to) {
+            $assignment = $this->assignments->issue($assignment, $request->user());
+        }
 
         $actionItem->update(['assignment_id' => $assignment->id, 'status' => 'in_progress']);
         $actionItem->load('responsible:id,name', 'assignment:id,reference_number,status');
@@ -266,6 +276,6 @@ class MeetingMinutesController extends Controller
             'message'     => 'Action item formally assigned.',
             'data'        => $actionItem,
             'assignment'  => $assignment,
-        ]);
+        ], 201);
     }
 }

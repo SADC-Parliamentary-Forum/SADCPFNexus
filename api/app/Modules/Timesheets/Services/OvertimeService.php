@@ -13,6 +13,7 @@ use App\Models\PayrollExportBatch;
 use App\Models\PayrollExportLine;
 use App\Models\TimesheetAuditEvent;
 use App\Models\User;
+use App\Modules\Leave\Services\LeaveToilCreditService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class OvertimeService
 
     public function __construct(
         protected NotificationService $notificationService,
+        protected LeaveToilCreditService $leaveToilCreditService,
     ) {}
 
     /**
@@ -333,14 +335,14 @@ class OvertimeService
     }
 
     /**
-     * TOIL transfer via OvertimeAccrual (bridge until Leave Phase 1 ToilCredit is on main).
-     * Idempotent by code = OT-TOIL-{actual_id}.
+     * TOIL transfer: OvertimeAccrual + Leave Phase 1 ToilCredit (idempotent, no double credit).
+     * Accrual key = OT-TOIL-{actual_id}; ToilCredit key = source OvertimeAccrual id.
      */
     public function transferToil(OvertimeActualEntry $actual, User $actor, OvertimeSettlement $settlement): OvertimeAccrual
     {
         $code = 'OT-TOIL-'.$actual->id;
 
-        return OvertimeAccrual::firstOrCreate(
+        $accrual = OvertimeAccrual::firstOrCreate(
             ['user_id' => $actual->user_id, 'code' => $code],
             [
                 'description' => 'Timesheet OT TOIL settlement #'.$settlement->id.' (use within '.self::TOIL_EXPIRY_DAYS.' days via Leave)',
@@ -352,6 +354,10 @@ class OvertimeService
                 'is_linked' => false,
             ]
         );
+
+        $this->leaveToilCreditService->ensureCreditFromOvertimeAccrual($accrual->fresh(['user']), $actor);
+
+        return $accrual->fresh();
     }
 
     /**

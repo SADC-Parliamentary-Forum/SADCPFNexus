@@ -2118,6 +2118,12 @@ export const leaveApi = {
   listToil: () => api.get<{ data: ToilCredit[] }>("/leave/toil"),
   getBalances: () =>
     api.get<{ annual_balance_days: number; lil_hours_available: number; sick_leave_used_days: number; period_year: number }>("/leave/balances"),
+  recommend: (id: number, data: { action: "recommend" | "not_recommend" | "return"; comment?: string }) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/recommend`, data),
+  certify: (id: number, data: { action: "certify" | "certify_with_condition" | "return" | "mark_ineligible"; comment?: string; segments?: Array<Record<string, unknown>> }) =>
+    api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/certify`, data),
+  teamCalendar: (params?: { from?: string; to?: string; department_id?: number }) =>
+    api.get<{ from: string; to: string; data: Array<Record<string, unknown>> }>("/leave/team-calendar", { params }),
   // Attachments
   listAttachments: (id: number) =>
     api.get<{ data: ModuleAttachment[] }>(`/leave/requests/${id}/attachments`),
@@ -5377,6 +5383,20 @@ export interface Assignment {
   department?: { id: number; name: string };
   updates?: AssignmentUpdate[];
   participants?: AssignmentParticipant[];
+  checklist_items?: AssignmentChecklistItem[];
+}
+
+export interface AssignmentChecklistItem {
+  id: number;
+  assignment_id: number;
+  title: string;
+  description?: string | null;
+  sequence?: number;
+  mandatory?: boolean;
+  completed?: boolean;
+  completed_at?: string | null;
+  assignee_id?: number | null;
+  due_at?: string | null;
 }
 
 export interface AssignmentStats {
@@ -5448,6 +5468,10 @@ export const assignmentsApi = {
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/reassign`, data),
   changeDueDate: (id: number, data: { due_date: string; reason: string }) =>
     api.post<{ data: Assignment; message: string }>(`/assignments/${id}/change-due-date`, data),
+  addChecklistItem: (id: number, data: { title: string; description?: string; mandatory?: boolean; assignee_id?: number; due_at?: string }) =>
+    api.post<{ data: AssignmentChecklistItem; message: string }>(`/assignments/${id}/checklist`, data),
+  toggleChecklistItem: (id: number, itemId: number, completed: boolean) =>
+    api.post<{ data: AssignmentChecklistItem; message: string }>(`/assignments/${id}/checklist/${itemId}/toggle`, { completed }),
   createTemplate: (data: Partial<Assignment> & Record<string, unknown>) =>
     api.post<{ data: Assignment; message: string }>("/assignments/templates", data),
   generateFromTemplate: (id: number, data?: { due_date?: string }) =>

@@ -274,6 +274,9 @@ class TimesheetsPhase1Test extends TestCase
         $this->assertSame($first->id, $second->id);
         $this->assertSame(1, OvertimeSettlement::where('overtime_actual_id', $actual->id)->count());
         $this->assertSame(1, OvertimeAccrual::where('code', 'OT-TOIL-'.$actual->id)->count());
+        $accrual = OvertimeAccrual::where('code', 'OT-TOIL-'.$actual->id)->first();
+        $this->assertTrue((bool) $accrual?->is_linked);
+        $this->assertSame(1, \App\Models\ToilCredit::where('source_type', OvertimeAccrual::class)->where('source_id', $accrual->id)->count());
 
         // Fresh actual for payroll idempotency
         $actualPay = $this->makeHrValidatedActual($ot, $users, 'Mission B');

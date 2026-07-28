@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { correspondenceApi, saamApi, type CorrespondenceLetter, type CorrespondenceContact, type SignatureEvent } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SigningModal } from "@/components/saam/SigningModal";
+import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
 
 const statusSteps = ["draft", "pending_review", "pending_approval", "approved", "sent"];
 const statusLabel: Record<string, string> = {
@@ -47,6 +48,7 @@ export default function CorrespondenceDetailPage() {
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [signingModal, setSigningModal] = useState<{ action: "approve" | "reject" | "review" | "return"; stepKey: string } | null>(null);
   const [signingEvents, setSigningEvents] = useState<SignatureEvent[]>([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   useEffect(() => {
     correspondenceApi
@@ -158,6 +160,17 @@ export default function CorrespondenceDetailPage() {
           </div>
           {/* Workflow Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
+            {!["voided", "archived"].includes(letter.status) && (
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(true)}
+                className="btn-secondary text-sm"
+                title="Create tracked assignment from this correspondence"
+              >
+                <span className="material-symbols-outlined text-[16px]">assignment_ind</span>
+                Create Assignment
+              </button>
+            )}
             {letter.status === "draft" && canCreate && (
               <button
                 onClick={() => runAction(() => correspondenceApi.submit(letter.id), "")}
@@ -426,6 +439,21 @@ export default function CorrespondenceDetailPage() {
           }}
         />
       )}
+
+      <CreateAssignmentFromSourceModal
+        open={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        sourceType="correspondence"
+        sourceId={letter.id}
+        sourcePurpose="action"
+        defaultTitle={`Action: ${letter.subject || letter.title}`}
+        defaultDescription={letter.sg_instruction || letter.summary || letter.subject || letter.title}
+        defaultDueDate={letter.internal_deadline ?? letter.final_deadline ?? null}
+        defaultAssigneeId={letter.primary_owner_id ?? null}
+        sourceConfidential={["restricted", "confidential", "highly_confidential", "privileged_legal", "hr_confidential", "finance_confidential"].includes(letter.confidentiality ?? "")}
+        sourceReference={letter.reference_number ?? letter.registry_reference}
+        sourceTitle={letter.subject || letter.title}
+      />
 
       {/* Review Modal */}
       {showReviewModal && (

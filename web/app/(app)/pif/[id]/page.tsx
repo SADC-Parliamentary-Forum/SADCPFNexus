@@ -20,6 +20,7 @@ import {
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
 import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
+import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -161,6 +162,7 @@ export default function PifDetailPage() {
   const [selectedTravellerIds, setSelectedTravellerIds] = useState<number[]>([]);
   const [sendTravelSubmitting, setSendTravelSubmitting] = useState(false);
   const [missionTitle, setMissionTitle] = useState("");
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const { confirm } = useConfirm();
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
@@ -453,6 +455,17 @@ export default function PifDetailPage() {
               <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
               <span className="hidden sm:inline">Download PDF</span>
             </a>
+            {["approved", "active", "on_hold", "completed", "amended"].includes(programme.status) && (
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(true)}
+                className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
+                title="Create tracked follow-up / M&E assignment from this PIF"
+              >
+                <span className="material-symbols-outlined text-[15px]">assignment_ind</span>
+                <span className="hidden sm:inline">Create Assignment</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setTab("attachments")}
@@ -1615,6 +1628,20 @@ export default function PifDetailPage() {
           </div>
         </Modal>
       )}
+
+      <CreateAssignmentFromSourceModal
+        open={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        sourceType="pif"
+        sourceId={programme.id}
+        sourcePurpose={programme.me_status && programme.me_status !== "not_yet_linked" ? "me_follow_up" : "programme_action"}
+        defaultTitle={`PIF follow-up: ${programme.title}`}
+        defaultDescription={programme.background || `Follow-up / M&E action for PIF ${programme.reference_number ?? programme.id}`}
+        defaultDueDate={programme.end_date ?? null}
+        defaultAssigneeId={programme.responsible_officer_id ?? programme.responsible_officer_ids?.[0] ?? null}
+        sourceReference={programme.reference_number}
+        sourceTitle={programme.title}
+      />
     </div>
   );
 }

@@ -253,6 +253,10 @@ export default function LeavePage() {
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export CSV
           </button>
+          <Link href="/leave/calendar" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+            Team Calendar
+          </Link>
           <Link href="/leave/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
             New Request

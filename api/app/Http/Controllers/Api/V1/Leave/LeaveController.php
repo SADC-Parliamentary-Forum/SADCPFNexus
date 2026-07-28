@@ -74,6 +74,61 @@ class LeaveController extends Controller
         ]);
     }
 
+    /**
+     * Basic team leave calendar: approved leave overlapping [from, to].
+     */
+    public function teamCalendar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('leave.approve')
+                || $user->can('hr.admin')
+                || $user->can('hr.view')
+                || $user->hasAnyRole(['HOD', 'HR Manager', 'HR Administrator', 'Secretary General', 'System Admin']),
+            403
+        );
+
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $data['to'] ?? now()->endOfMonth()->toDateString();
+
+        $query = LeaveRequest::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $to)
+            ->whereDate('end_date', '>=', $from)
+            ->with(['requester:id,name,department_id,job_title'])
+            ->orderBy('start_date');
+
+        if (! empty($data['department_id'])) {
+            $query->whereHas('requester', fn ($q) => $q->where('department_id', $data['department_id']));
+        } elseif ($user->department_id && ! $user->hasAnyRole(['HR Manager', 'HR Administrator', 'Secretary General', 'System Admin'])) {
+            $query->whereHas('requester', fn ($q) => $q->where('department_id', $user->department_id));
+        }
+
+        $rows = $query->get()->map(fn (LeaveRequest $leave) => [
+            'id' => $leave->id,
+            'reference' => $leave->reference_number,
+            'leave_type' => $leave->leave_type,
+            'start_date' => $leave->start_date?->toDateString(),
+            'end_date' => $leave->end_date?->toDateString(),
+            'days_requested' => $leave->days_requested,
+            'requester' => $leave->requester ? [
+                'id' => $leave->requester->id,
+                'name' => $leave->requester->name,
+                'job_title' => $leave->requester->job_title,
+                'department_id' => $leave->requester->department_id,
+            ] : null,
+        ]);
+
+        return response()->json(['from' => $from, 'to' => $to, 'data' => $rows]);
+    }
+
     public function preview(Request $request): JsonResponse
     {
         $data = $request->validate([

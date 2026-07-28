@@ -215,6 +215,16 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nThe Secretary General has extended TOIL credit {{reference}} to {{expiry_date}}.\n\nRegards,\nSADC-PF HR",
             ],
 
+            // Correspondence deadlines
+            'correspondence.deadline_overdue' => [
+                'subject' => 'Correspondence deadline overdue — {{reference}}',
+                'body'    => "Dear {{name}},\n\nCorrespondence {{reference}} ({{subject}}) is overdue.\n\nDeadline: {{deadline}}\nDays overdue: {{days_overdue}}\n\nPlease action or update the register.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'correspondence.deadline_escalated' => [
+                'subject' => 'Escalation: correspondence overdue — {{reference}}',
+                'body'    => "Dear {{name}},\n\nCorrespondence {{reference}} ({{subject}}) has been overdue for {{days_overdue}} day(s) and is escalated for management attention.\n\nDeadline: {{deadline}}\n\nPlease intervene or reassign ownership.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Imprest
             'imprest.submitted' => [
                 'subject' => 'Imprest request submitted — Action required',

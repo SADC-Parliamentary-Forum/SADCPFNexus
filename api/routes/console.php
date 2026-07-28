@@ -49,6 +49,9 @@ Schedule::command('leave:manage-toil-expiry')->dailyAt('08:20');
 // Assignment reminders + unclaimed/overdue escalations.
 Schedule::command('assignments:process-reminders')->hourly();
 
+// Correspondence deadline overdue notifications + HOD escalation after 3 days.
+Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()

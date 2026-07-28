@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { assignmentsApi, type Assignment, type AssignmentUpdate } from "@/lib/api";
+import { assignmentsApi, tenantUsersApi, type Assignment, type AssignmentUpdate, type TenantUserOption } from "@/lib/api";
 import { formatDateShort, formatDateRelative } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -106,6 +107,11 @@ export default function AssignmentDetailPage() {
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+  const [showChecklistModal, setShowChecklistModal] = useState(false);
+  const [users, setUsers] = useState<TenantUserOption[]>([]);
 
   // Update form state
   const [updateForm, setUpdateForm] = useState({
@@ -122,6 +128,14 @@ export default function AssignmentDetailPage() {
 
   // Cancel reason
   const [cancelReason, setCancelReason] = useState("");
+  const [blockForm, setBlockForm] = useState({ blocker_type: "awaiting_information", blocker_owner_id: "", blocker_details: "" });
+  const [verifyForm, setVerifyForm] = useState({ decision: "accepted", comments: "" });
+  const [reassignForm, setReassignForm] = useState({ assigned_to: "", reason: "" });
+  const [checklistTitle, setChecklistTitle] = useState("");
+
+  useEffect(() => {
+    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => {});
+  }, []);
 
   const { data: assignment, isLoading, isError } = useQuery<Assignment>({
     queryKey: ["assignments", id],
@@ -171,6 +185,47 @@ export default function AssignmentDetailPage() {
   const cancelMutation = useMutation({
     mutationFn: () => assignmentsApi.cancel(Number(id), { reason: cancelReason }),
     onSuccess: () => { invalidate(); setShowCancelModal(false); },
+  });
+
+  const blockMutation = useMutation({
+    mutationFn: () => assignmentsApi.block(Number(id), {
+      blocker_type: blockForm.blocker_type,
+      blocker_owner_id: Number(blockForm.blocker_owner_id),
+      blocker_details: blockForm.blocker_details || undefined,
+    }),
+    onSuccess: () => { invalidate(); setShowBlockModal(false); },
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: () => assignmentsApi.unblock(Number(id)),
+    onSuccess: invalidate,
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: () => assignmentsApi.verify(Number(id), {
+      decision: verifyForm.decision,
+      comments: verifyForm.comments || undefined,
+    }),
+    onSuccess: () => { invalidate(); setShowVerifyModal(false); },
+  });
+
+  const reassignMutation = useMutation({
+    mutationFn: () => assignmentsApi.reassign(Number(id), {
+      assigned_to: Number(reassignForm.assigned_to),
+      reason: reassignForm.reason,
+    }),
+    onSuccess: () => { invalidate(); setShowReassignModal(false); setReassignForm({ assigned_to: "", reason: "" }); },
+  });
+
+  const checklistMutation = useMutation({
+    mutationFn: () => assignmentsApi.addChecklistItem(Number(id), { title: checklistTitle.trim() }),
+    onSuccess: () => { invalidate(); setShowChecklistModal(false); setChecklistTitle(""); },
+  });
+
+  const toggleChecklistMutation = useMutation({
+    mutationFn: ({ itemId, completed }: { itemId: number; completed: boolean }) =>
+      assignmentsApi.toggleChecklistItem(Number(id), itemId, completed),
+    onSuccess: invalidate,
   });
 
   if (isLoading) {
@@ -286,6 +341,29 @@ export default function AssignmentDetailPage() {
                 <span className="material-symbols-outlined text-[16px]">edit_note</span>
                 Post Update
               </button>
+              {assignment.status !== "blocked" ? (
+                <button onClick={() => setShowBlockModal(true)} className="btn-secondary text-red-600 border-red-200">
+                  <span className="material-symbols-outlined text-[16px]">block</span>
+                  Mark Blocked
+                </button>
+              ) : (
+                <button
+                  onClick={() => unblockMutation.mutate()}
+                  disabled={unblockMutation.isPending}
+                  className="btn-secondary disabled:opacity-60"
+                >
+                  <span className="material-symbols-outlined text-[16px]">lock_open</span>
+                  Unblock
+                </button>
+              )}
+              <button onClick={() => setShowReassignModal(true)} className="btn-secondary">
+                <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
+                Reassign
+              </button>
+              <button onClick={() => setShowChecklistModal(true)} className="btn-secondary">
+                <span className="material-symbols-outlined text-[16px]">checklist</span>
+                Add Checklist Item
+              </button>
               <button
                 onClick={() => completeMutation.mutate()}
                 disabled={completeMutation.isPending}
@@ -298,7 +376,11 @@ export default function AssignmentDetailPage() {
           )}
           {assignment.status === "completed" && (
             <>
-              <button onClick={() => setShowCloseModal(true)} className="btn-primary">
+              <button onClick={() => setShowVerifyModal(true)} className="btn-primary">
+                <span className="material-symbols-outlined text-[16px]">verified</span>
+                Verify
+              </button>
+              <button onClick={() => setShowCloseModal(true)} className="btn-secondary">
                 <span className="material-symbols-outlined text-[16px]">lock</span>
                 Close Assignment
               </button>
@@ -418,6 +500,27 @@ export default function AssignmentDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Checklist */}
+      {(assignment.checklist_items?.length ?? 0) > 0 && (
+        <div className="card p-5">
+          <SectionIcon icon="checklist" color="bg-teal-50 text-teal-600" label="Checklist" />
+          <ul className="space-y-2">
+            {assignment.checklist_items!.map((item) => (
+              <li key={item.id} className="flex items-center gap-2 text-sm">
+                <button
+                  type="button"
+                  className="flex h-5 w-5 items-center justify-center rounded border border-neutral-300"
+                  onClick={() => toggleChecklistMutation.mutate({ itemId: item.id, completed: !item.completed })}
+                >
+                  {item.completed && <span className="material-symbols-outlined text-[14px] text-green-600">check</span>}
+                </button>
+                <span className={cn(item.completed && "line-through text-neutral-400")}>{item.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Update Timeline */}
       <div className="card p-5">
@@ -635,6 +738,106 @@ export default function AssignmentDetailPage() {
               </button>
               <button onClick={() => setShowCancelModal(false)} className="btn-secondary">Keep Assignment</button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {showBlockModal && (
+        <Modal title="Mark Blocked" onClose={() => setShowBlockModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker type</label>
+              <select className="form-input" value={blockForm.blocker_type} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_type: e.target.value }))}>
+                <option value="awaiting_approval">Awaiting approval</option>
+                <option value="awaiting_funds">Awaiting funds</option>
+                <option value="awaiting_information">Awaiting information</option>
+                <option value="external_dependency">External dependency</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker owner</label>
+              <select className="form-input" value={blockForm.blocker_owner_id} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_owner_id: e.target.value }))}>
+                <option value="">Select…</option>
+                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Details</label>
+              <textarea className="form-input" rows={3} value={blockForm.blocker_details} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_details: e.target.value }))} />
+            </div>
+            <button
+              className="btn-primary disabled:opacity-60"
+              disabled={blockMutation.isPending || !blockForm.blocker_owner_id}
+              onClick={() => blockMutation.mutate()}
+            >
+              {blockMutation.isPending ? "Saving…" : "Mark Blocked"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showVerifyModal && (
+        <Modal title="Verify Completion" onClose={() => setShowVerifyModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
+              <select className="form-input" value={verifyForm.decision} onChange={(e) => setVerifyForm((f) => ({ ...f, decision: e.target.value }))}>
+                <option value="accepted">Accepted</option>
+                <option value="accepted_with_follow_up">Accepted with follow-up</option>
+                <option value="returned">Returned</option>
+                <option value="request_evidence">Request evidence</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Comments</label>
+              <textarea className="form-input" rows={3} value={verifyForm.comments} onChange={(e) => setVerifyForm((f) => ({ ...f, comments: e.target.value }))} />
+            </div>
+            <button className="btn-primary disabled:opacity-60" disabled={verifyMutation.isPending} onClick={() => verifyMutation.mutate()}>
+              {verifyMutation.isPending ? "Saving…" : "Submit Verification"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showReassignModal && (
+        <Modal title="Reassign" onClose={() => setShowReassignModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">New assignee</label>
+              <select className="form-input" value={reassignForm.assigned_to} onChange={(e) => setReassignForm((f) => ({ ...f, assigned_to: e.target.value }))}>
+                <option value="">Select…</option>
+                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
+              <textarea className="form-input" rows={3} value={reassignForm.reason} onChange={(e) => setReassignForm((f) => ({ ...f, reason: e.target.value }))} />
+            </div>
+            <button
+              className="btn-primary disabled:opacity-60"
+              disabled={reassignMutation.isPending || !reassignForm.assigned_to || !reassignForm.reason.trim()}
+              onClick={() => reassignMutation.mutate()}
+            >
+              {reassignMutation.isPending ? "Saving…" : "Reassign"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showChecklistModal && (
+        <Modal title="Add Checklist Item" onClose={() => setShowChecklistModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
+              <input className="form-input" value={checklistTitle} onChange={(e) => setChecklistTitle(e.target.value)} />
+            </div>
+            <button
+              className="btn-primary disabled:opacity-60"
+              disabled={checklistMutation.isPending || !checklistTitle.trim()}
+              onClick={() => checklistMutation.mutate()}
+            >
+              {checklistMutation.isPending ? "Adding…" : "Add Item"}
+            </button>
           </div>
         </Modal>
       )}

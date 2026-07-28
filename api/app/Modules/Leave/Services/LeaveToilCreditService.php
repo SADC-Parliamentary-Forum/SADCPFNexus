@@ -6,6 +6,7 @@ use App\Models\LeaveLedgerEntry;
 use App\Models\LeaveRequest;
 use App\Models\LeaveSegment;
 use App\Models\Notification;
+use App\Models\OvertimeAccrual;
 use App\Models\ToilCredit;
 use App\Models\ToilExtension;
 use App\Models\TravelToilCandidate;
@@ -68,6 +69,67 @@ class LeaveToilCreditService
                 'reason' => 'Validated travel TOIL credit',
             ]
         );
+
+        return $credit;
+    }
+
+    /**
+     * Bridge timesheet/travel OvertimeAccrual into Leave Phase 1 ToilCredit.
+     * Idempotent by source_type + source_id — never double-credits.
+     */
+    public function ensureCreditFromOvertimeAccrual(OvertimeAccrual $accrual, ?User $actor = null): ToilCredit
+    {
+        $user = $accrual->relationLoaded('user') ? $accrual->user : $accrual->user()->first();
+        if (! $user) {
+            throw ValidationException::withMessages(['toil' => ['Overtime accrual has no owning user.']]);
+        }
+
+        $hours = (float) $accrual->hours;
+        $days = round($hours / 8, 2);
+        $expiry = $accrual->expires_at
+            ? Carbon::parse($accrual->expires_at)->toDateString()
+            : Carbon::parse($accrual->accrual_date ?? now())->addDays(30)->toDateString();
+
+        $credit = ToilCredit::firstOrCreate(
+            ['source_type' => OvertimeAccrual::class, 'source_id' => $accrual->id],
+            [
+                'tenant_id' => $user->tenant_id,
+                'user_id' => $user->id,
+                'credit_reference' => 'TOIL-OT-'.strtoupper(Str::random(8)),
+                'duty_date' => $accrual->accrual_date,
+                'earned_amount' => $hours,
+                'unit' => 'hours',
+                'credited_days' => $days,
+                'accrual_date' => $accrual->accrual_date?->toDateString() ?? now()->toDateString(),
+                'expiry_date' => $expiry,
+                'original_balance' => $days,
+                'remaining_balance' => $days,
+                'status' => ToilCredit::AVAILABLE,
+                'validated_by' => $actor?->id,
+                'validated_at' => now(),
+            ]
+        );
+
+        LeaveLedgerEntry::firstOrCreate(
+            ['source_type' => ToilCredit::class, 'source_id' => $credit->id, 'transaction_type' => LeaveLedgerEntry::TOIL_CREDIT],
+            [
+                'tenant_id' => $credit->tenant_id,
+                'user_id' => $credit->user_id,
+                'leave_type' => 'lil',
+                'amount' => $credit->credited_days,
+                'unit' => 'days',
+                'effective_date' => $credit->accrual_date,
+                'reference' => $credit->credit_reference,
+                'balance_after' => null,
+                'recorded_by' => $credit->validated_by,
+                'approved_by' => $credit->validated_by,
+                'reason' => $accrual->description ?: ('Timesheet OT TOIL credit '.$accrual->code),
+            ]
+        );
+
+        if (! $accrual->is_linked) {
+            $accrual->update(['is_linked' => true]);
+        }
 
         return $credit;
     }

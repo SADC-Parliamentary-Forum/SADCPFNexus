@@ -16,6 +16,7 @@ use App\Models\CorrespondenceRoute;
 use App\Models\CorrespondenceSubjectFile;
 use App\Models\SignatureEvent;
 use App\Models\User;
+use App\Modules\Assignments\Services\AssignmentService;
 use App\Services\NotificationService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -29,6 +30,7 @@ class CorrespondenceRegisterService
 {
     public function __construct(
         private readonly NotificationService $notifications,
+        private readonly AssignmentService $assignments,
     ) {}
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -694,19 +696,34 @@ class CorrespondenceRegisterService
             if ($assignmentId) {
                 $assignment = Assignment::where('tenant_id', $c->tenant_id)->findOrFail($assignmentId);
             } elseif ($create) {
-                $assignment = Assignment::create([
-                    'tenant_id' => $c->tenant_id,
-                    'title' => $create['title'] ?? ('Action: '.$c->subject),
-                    'description' => $create['description'] ?? ($c->sg_instruction ?: $c->summary),
-                    'type' => $create['type'] ?? 'task',
-                    'priority' => $c->priority === 'urgent' ? 'high' : ($c->priority ?? 'normal'),
-                    'status' => 'draft',
-                    'created_by' => $user->id,
+                $due = $create['due_date'] ?? $c->internal_deadline?->toDateString() ?? $c->final_deadline?->toDateString();
+                if (! $due) {
+                    $due = now()->addDays(7)->toDateString();
+                }
+
+                $priority = match ($c->priority) {
+                    'urgent' => 'urgent',
+                    'high' => 'high',
+                    'low' => 'low',
+                    default => 'medium',
+                };
+
+                $assignment = $this->assignments->createFromSource([
+                    'title' => $create['title'] ?? ('Action: '.($c->subject ?: $c->title)),
+                    'description' => $create['description'] ?? ($c->sg_instruction ?: ($c->summary ?: $c->subject ?: $c->title)),
+                    'type' => $create['type'] ?? 'individual',
+                    'priority' => $create['priority'] ?? $priority,
                     'assigned_to' => $create['assigned_to'] ?? $c->primary_owner_id,
                     'department_id' => $create['department_id'] ?? $c->department_id,
-                    'due_date' => $create['due_date'] ?? $c->internal_deadline ?? $c->final_deadline,
+                    'due_date' => $due,
+                    'source_type' => 'correspondence',
+                    'source_id' => $c->id,
+                    'source_purpose' => $create['source_purpose'] ?? 'action',
+                    'source_reference' => $c->reference_number ?? $c->registry_reference,
+                    'source_title' => $c->subject ?: $c->title,
+                    'source_confidential' => in_array($c->confidentiality, Correspondence::RESTRICTED_CONFIDENTIALITY, true),
                     'is_confidential' => in_array($c->confidentiality, Correspondence::RESTRICTED_CONFIDENTIALITY, true),
-                ]);
+                ], $user);
             } else {
                 throw ValidationException::withMessages(['assignment' => 'Provide assignment_id or create payload.']);
             }
