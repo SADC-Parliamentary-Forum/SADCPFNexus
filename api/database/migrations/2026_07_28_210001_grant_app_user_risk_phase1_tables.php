@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $tables = [
             'risk_assessments',
             'risk_controls',
@@ -17,18 +21,13 @@ return new class extends Migration
             'risk_incidents',
         ];
 
-        $user = config('database.connections.pgsql.app_user', 'sadcpf_app');
-
         foreach ($tables as $table) {
             if (! Schema::hasTable($table)) {
                 continue;
             }
-            try {
-                DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON {$table} TO {$user}");
-                DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$table}_id_seq TO {$user}");
-            } catch (\Throwable) {
-                // Local sqlite / non-pgsql test envs ignore grants.
-            }
+
+            DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
+            DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$table}_id_seq TO app_user");
         }
     }
 
