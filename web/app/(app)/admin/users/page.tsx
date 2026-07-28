@@ -9,6 +9,7 @@ import {
   BulkSelectionBar,
   RowCheckbox,
   SelectAllCheckbox,
+  selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 
@@ -293,7 +294,7 @@ export default function AdminUsersPage() {
               type="button"
               disabled={bulkLoading || selection.selectedCount === 0}
               onClick={() => void handleBulkDeactivate()}
-              className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">person_off</span>
               {bulkLoading ? "Deactivating…" : "Deactivate selected"}
@@ -317,10 +318,12 @@ export default function AdminUsersPage() {
                 <thead>
                   <tr>
                     {isAdmin && (
-                      <th className="w-10">
+                      <th className={selectionColumnClass.th}>
                         <SelectAllCheckbox
                           checked={selection.allSelectableSelected}
-                          indeterminate={selection.someSelectableSelected}
+                          indeterminate={
+                            selection.someSelectableSelected && !selection.allSelectableSelected
+                          }
                           onChange={selection.toggleAllSelectable}
                           disabled={selection.selectableIds.length === 0 || bulkLoading}
                         />
@@ -344,7 +347,7 @@ export default function AdminUsersPage() {
                         className={selection.isSelected(user.id) ? "bg-primary/5" : undefined}
                       >
                         {isAdmin && (
-                          <td>
+                          <td className={selectionColumnClass.td}>
                             <RowCheckbox
                               checked={selection.isSelected(user.id)}
                               onChange={() => selection.toggle(user.id)}

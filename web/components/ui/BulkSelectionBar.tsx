@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { cn } from "@/lib/utils";
 
 interface BulkSelectionBarProps {
   count: number;
@@ -24,20 +26,40 @@ export function BulkSelectionBar({
 
   return (
     <div
-      className={`mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 ${className}`}
+      className={cn(
+        "mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2 sm:gap-3 sm:px-4",
+        className,
+      )}
       role="status"
       aria-live="polite"
     >
-      <span className="text-xs font-semibold text-primary">
+      <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
+        <span
+          className="material-symbols-outlined text-[14px] leading-none"
+          style={{ fontVariationSettings: "'FILL' 1, 'wght' 500" }}
+          aria-hidden
+        >
+          check_box
+        </span>
         {count} selected
       </span>
-      {children}
+
+      {children ? (
+        <>
+          <span className="hidden h-4 w-px bg-primary/15 sm:block" aria-hidden />
+          <div className="flex flex-wrap items-center gap-2">{children}</div>
+        </>
+      ) : null}
+
       <button
         type="button"
         disabled={disabled}
         onClick={onClear}
-        className="text-xs text-neutral-400 hover:text-neutral-600 disabled:opacity-50"
+        className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-neutral-500 transition-colors hover:bg-white/80 hover:text-neutral-800 disabled:opacity-50"
       >
+        <span className="material-symbols-outlined text-[14px] leading-none" aria-hidden>
+          close
+        </span>
         Clear
       </button>
     </div>
@@ -61,16 +83,13 @@ export function SelectAllCheckbox({
   label = "Select all",
 }: SelectAllCheckboxProps) {
   return (
-    <input
-      type="checkbox"
-      className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary/30 disabled:opacity-40"
+    <Checkbox
       checked={checked}
-      ref={(el) => {
-        if (el) el.indeterminate = !checked && indeterminate;
-      }}
-      onChange={onChange}
+      indeterminate={indeterminate}
+      onChange={() => onChange()}
       disabled={disabled}
       aria-label={label}
+      className="-m-2"
     />
   );
 }
@@ -91,14 +110,19 @@ export function RowCheckbox({
   label,
 }: RowCheckboxProps) {
   return (
-    <input
-      type="checkbox"
-      className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-40"
+    <Checkbox
       checked={checked}
-      onChange={onChange}
+      onChange={() => onChange()}
       disabled={disabled}
       title={title}
       aria-label={label}
+      className="-m-2"
     />
   );
 }
+
+/** Shared narrow column classes for selection checkboxes in data tables. */
+export const selectionColumnClass = {
+  th: "w-12 !px-2 text-center align-middle",
+  td: "!px-2 text-center align-middle",
+} as const;

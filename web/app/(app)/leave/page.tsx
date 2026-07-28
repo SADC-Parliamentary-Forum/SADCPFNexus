@@ -13,6 +13,7 @@ import {
   BulkSelectionBar,
   RowCheckbox,
   SelectAllCheckbox,
+  selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 
@@ -384,7 +385,7 @@ export default function LeavePage() {
             type="button"
             disabled={bulkLoading}
             onClick={() => void handleBulkDelete()}
-            className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">delete</span>
             {bulkLoading ? "Deleting…" : "Delete selected"}
@@ -418,10 +419,12 @@ export default function LeavePage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
-                  <th className="w-10">
+                  <th className={selectionColumnClass.th}>
                     <SelectAllCheckbox
                       checked={selection.allSelectableSelected}
-                      indeterminate={selection.someSelectableSelected}
+                      indeterminate={
+                        selection.someSelectableSelected && !selection.allSelectableSelected
+                      }
                       onChange={selection.toggleAllSelectable}
                       disabled={selection.selectableIds.length === 0 || bulkLoading}
                       label="Select all drafts"
@@ -443,7 +446,7 @@ export default function LeavePage() {
                   const canDelete = req.status === "draft";
                   return (
                     <tr key={req.id} className={selection.isSelected(req.id) ? "bg-primary/5" : undefined}>
-                      <td>
+                      <td className={selectionColumnClass.td}>
                         <RowCheckbox
                           checked={selection.isSelected(req.id)}
                           onChange={() => selection.toggle(req.id)}
