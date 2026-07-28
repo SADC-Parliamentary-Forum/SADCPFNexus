@@ -57,6 +57,13 @@ export default function CreateRiskPage() {
     impact: 0,
     review_frequency: "",
     next_review_date: "",
+    strategic_objective_id: "",
+    risk_owner_id: "",
+    cause: "",
+    event_description: "",
+    consequence: "",
+    register_scope: "department",
+    is_confidential: false,
   });
   const [saving, setSaving]   = useState(false);
   const [errors, setErrors]   = useState<Record<string, string[]>>({});
@@ -78,6 +85,13 @@ export default function CreateRiskPage() {
       const payload: Record<string, unknown> = { ...form };
       if (!form.review_frequency) delete payload.review_frequency;
       if (!form.next_review_date) delete payload.next_review_date;
+      if (!form.strategic_objective_id) delete payload.strategic_objective_id;
+      else payload.strategic_objective_id = Number(form.strategic_objective_id);
+      if (!form.risk_owner_id) delete payload.risk_owner_id;
+      else payload.risk_owner_id = Number(form.risk_owner_id);
+      if (!form.cause) delete payload.cause;
+      if (!form.event_description) delete payload.event_description;
+      if (!form.consequence) delete payload.consequence;
 
       const res = await riskApi.create(payload as any);
       const created = res.data.data;
@@ -147,6 +161,39 @@ export default function CreateRiskPage() {
           />
           {errors.description && <p className="text-xs text-red-600 mt-1">{errors.description[0]}</p>}
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Strategic objective ID</label>
+            <input className="form-input w-full" value={form.strategic_objective_id} onChange={(e) => set("strategic_objective_id", e.target.value)} placeholder="Required before submit" />
+            {errors.strategic_objective_id && <p className="text-xs text-red-600 mt-1">{errors.strategic_objective_id[0]}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Risk owner user ID</label>
+            <input className="form-input w-full" value={form.risk_owner_id} onChange={(e) => set("risk_owner_id", e.target.value)} placeholder="Single accountable owner" />
+            {errors.risk_owner_id && <p className="text-xs text-red-600 mt-1">{errors.risk_owner_id[0]}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Cause</label>
+            <textarea className="form-input w-full h-16 resize-none" value={form.cause} onChange={(e) => set("cause", e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Event</label>
+            <textarea className="form-input w-full h-16 resize-none" value={form.event_description} onChange={(e) => set("event_description", e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consequence</label>
+            <textarea className="form-input w-full h-16 resize-none" value={form.consequence} onChange={(e) => set("consequence", e.target.value)} />
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={form.is_confidential} onChange={(e) => setForm((p) => ({ ...p, is_confidential: e.target.checked }))} />
+          Mark confidential (hidden from unprivileged search/dashboards)
+        </label>
 
         {/* Category */}
         <div>

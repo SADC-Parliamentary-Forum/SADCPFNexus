@@ -767,6 +767,24 @@ class WeeklyReportService
         ]);
     }
 
+    public function createRiskFromWeeklyRisk(WeeklyReportRisk $weeklyRisk, User $actor, array $data = []): Risk
+    {
+        if ($weeklyRisk->linked_risk_id) {
+            return Risk::findOrFail($weeklyRisk->linked_risk_id);
+        }
+
+        $risk = app(\App\Modules\Risk\Services\RiskService::class)
+            ->createFromWeeklyRisk($weeklyRisk, $actor, $data);
+
+        $weeklyRisk->update([
+            'linked_risk_id' => $risk->id,
+            'escalate_to_risk_register' => true,
+            'status' => 'escalated',
+        ]);
+
+        return $risk;
+    }
+
     public function snapshotVersion(WeeklyReport $report, User $actor, string $reason): WeeklyReportVersion
     {
         $report->load($this->detailRelations());

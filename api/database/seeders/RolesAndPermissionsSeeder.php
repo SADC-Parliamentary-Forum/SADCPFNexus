@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -24,7 +24,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.view', 'leave.create', 'leave.approve', 'leave.admin',
             'imprest.view', 'imprest.create', 'imprest.approve', 'imprest.liquidate',
             'finance.view', 'finance.create', 'finance.approve', 'finance.export', 'finance.admin',
-            // Salary Advance (dedicated module permissions — Phase 1)
+            // Salary Advance (dedicated module permissions â€” Phase 1)
             'salary_advance.view', 'salary_advance.create', 'salary_advance.certify',
             'salary_advance.approve', 'salary_advance.pay', 'salary_advance.recover',
             'salary_advance.export', 'salary_advance.admin',
@@ -39,7 +39,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'stock.approve', 'stock.transfer',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin', 'hr.supervisor',
-            // HR Settings (master data governance — restricted to HR Manager & Finance Director)
+            // HR Settings (master data governance â€” restricted to HR Manager & Finance Director)
             'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
             // Programmes / PIF
             'pif.view', 'pif.create', 'pif.approve', 'pif.admin',
@@ -78,10 +78,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'audit.view', 'audit.export',
             'system.admin',
             // Risk Register
-            'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin',
-            // M&E / Results Monitoring (PRD §10)
+            'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin', 'risk.accept', 'risk.confidential',
+            // M&E / Results Monitoring (PRD Â§10)
             'mande.view', 'mande.create', 'mande.review', 'mande.admin',
-            // Weekly Summary Reports (operational — distinct from email digest)
+            // Weekly Summary Reports (operational â€” distinct from email digest)
             'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
             'weekly-reports.submit', 'weekly-reports.view-team', 'weekly-reports.review-team',
             'weekly-reports.return', 'weekly-reports.accept', 'weekly-reports.consolidate-department',
@@ -190,7 +190,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 ])->where('guard_name', $guard)->get()
             );
 
-            // HOD: Head of Department — reviews procurement requests before Procurement Officer approval
+            // HOD: Head of Department â€” reviews procurement requests before Procurement Officer approval
             $hod = Role::firstOrCreate(['name' => 'HOD', 'guard_name' => $guard]);
             $hod->syncPermissions(
                 Permission::whereIn('name', [
@@ -262,7 +262,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 ])->where('guard_name', $guard)->get()
             );
 
-            // ── Risk Register: update existing roles ──────────────────────────────
+            // â”€â”€ Risk Register: update existing roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
             // Staff: risk view, create, submit
             $staff->givePermissionTo(
@@ -278,7 +278,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Governance Officer: + risk.review, risk.manage
             $governanceOfficer->givePermissionTo(
-                Permission::whereIn('name', ['risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.manage'])
+                Permission::whereIn('name', ['risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.manage', 'risk.accept', 'risk.confidential'])
                     ->where('guard_name', $guard)->get()
             );
 
@@ -297,7 +297,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::where('name', 'risk.view')->where('guard_name', $guard)->get()
             );
 
-            // ── M&E / Results Monitoring: extend existing roles ───────────────────
+            // â”€â”€ M&E / Results Monitoring: extend existing roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
             // Staff create activity reports against their approved PIFs.
             $staff->givePermissionTo(
@@ -332,7 +332,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     ->where('guard_name', $guard)->get()
             );
 
-            // ── New roles ─────────────────────────────────────────────────────────
+            // â”€â”€ New roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
             $director = Role::firstOrCreate(['name' => 'Director', 'guard_name' => $guard]);
             $director->syncPermissions(
@@ -390,3 +390,5 @@ class RolesAndPermissionsSeeder extends Seeder
         }
     }
 }
+
+

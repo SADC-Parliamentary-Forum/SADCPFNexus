@@ -14,18 +14,29 @@ class RiskController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'category', 'risk_level', 'search', 'per_page']);
+        $filters = $request->only(['status', 'category', 'risk_level', 'search', 'per_page', 'register_scope', 'department_id']);
         return response()->json($this->riskService->list($filters, $request->user()));
     }
 
-    public function show(Risk $risk): JsonResponse
+    public function show(Request $request, Risk $risk): JsonResponse
     {
         $risk = Risk::where('id', $risk->id)
-            ->where('tenant_id', request()->user()->tenant_id)
+            ->where('tenant_id', $request->user()->tenant_id)
             ->firstOrFail();
 
+        if ($risk->is_confidential && ! $this->riskService->canSeeConfidential($request->user())) {
+            $uid = (int) $request->user()->id;
+            if (! in_array($uid, [(int) $risk->submitted_by, (int) $risk->risk_owner_id, (int) $risk->control_owner_id], true)) {
+                abort(404);
+            }
+        }
+
         return response()->json([
-            'data' => $risk->load(['submitter', 'riskOwner', 'actionOwner', 'reviewer', 'approver', 'closer', 'department', 'actions', 'history.actor']),
+            'data' => $risk->load([
+                'submitter', 'riskOwner', 'actionOwner', 'controlOwner', 'reviewer', 'approver', 'closer',
+                'department', 'strategicObjective', 'actions.assignment', 'assessments.assessor',
+                'acceptances', 'incidents', 'controls', 'history.actor',
+            ]),
         ]);
     }
 
@@ -38,11 +49,23 @@ class RiskController extends Controller
             'likelihood'           => ['required', 'integer', 'min:1', 'max:5'],
             'impact'               => ['required', 'integer', 'min:1', 'max:5'],
             'department_id'        => ['nullable', 'integer', 'exists:departments,id'],
+            'strategic_objective_id' => ['nullable', 'integer', 'exists:strategic_objectives,id'],
+            'register_scope'       => ['nullable', 'string', 'in:enterprise,department,project'],
+            'project_id'           => ['nullable', 'integer'],
+            'cause'                => ['nullable', 'string', 'max:5000'],
+            'event_description'    => ['nullable', 'string', 'max:5000'],
+            'consequence'          => ['nullable', 'string', 'max:5000'],
             'risk_owner_id'        => ['nullable', 'integer', 'exists:users,id'],
             'action_owner_id'      => ['nullable', 'integer', 'exists:users,id'],
+            'control_owner_id'     => ['nullable', 'integer', 'exists:users,id'],
+            'is_confidential'      => ['nullable', 'boolean'],
             'control_effectiveness'=> ['nullable', 'string', 'in:none,partial,adequate,strong'],
+            'treatment_strategy'   => ['nullable', 'string', 'in:mitigate,accept,transfer,avoid,share'],
             'review_frequency'     => ['nullable', 'string', 'in:monthly,quarterly,bi_annual,annual'],
             'next_review_date'     => ['nullable', 'date'],
+            'as_proposal'          => ['nullable', 'boolean'],
+            'control_reduction_pct'=> ['prohibited'],
+            'controls_reduce_percent' => ['prohibited'],
         ]);
 
         $risk = $this->riskService->create($data, $request->user());
@@ -62,14 +85,26 @@ class RiskController extends Controller
             'likelihood'           => ['sometimes', 'integer', 'min:1', 'max:5'],
             'impact'               => ['sometimes', 'integer', 'min:1', 'max:5'],
             'department_id'        => ['nullable', 'integer', 'exists:departments,id'],
+            'strategic_objective_id' => ['nullable', 'integer', 'exists:strategic_objectives,id'],
+            'register_scope'       => ['nullable', 'string', 'in:enterprise,department,project'],
+            'project_id'           => ['nullable', 'integer'],
+            'cause'                => ['nullable', 'string', 'max:5000'],
+            'event_description'    => ['nullable', 'string', 'max:5000'],
+            'consequence'          => ['nullable', 'string', 'max:5000'],
             'risk_owner_id'        => ['nullable', 'integer', 'exists:users,id'],
             'action_owner_id'      => ['nullable', 'integer', 'exists:users,id'],
+            'control_owner_id'     => ['nullable', 'integer', 'exists:users,id'],
+            'is_confidential'      => ['nullable', 'boolean'],
             'control_effectiveness'=> ['nullable', 'string', 'in:none,partial,adequate,strong'],
+            'treatment_strategy'   => ['nullable', 'string', 'in:mitigate,accept,transfer,avoid,share'],
             'review_frequency'     => ['nullable', 'string', 'in:monthly,quarterly,bi_annual,annual'],
             'next_review_date'     => ['nullable', 'date'],
             'review_notes'         => ['nullable', 'string', 'max:2000'],
             'residual_likelihood'  => ['nullable', 'integer', 'min:1', 'max:5'],
             'residual_impact'      => ['nullable', 'integer', 'min:1', 'max:5'],
+            'residual_rationale'   => ['nullable', 'string', 'max:5000'],
+            'control_reduction_pct'=> ['prohibited'],
+            'controls_reduce_percent' => ['prohibited'],
         ]);
 
         $updated = $this->riskService->update($risk, $data, $request->user());

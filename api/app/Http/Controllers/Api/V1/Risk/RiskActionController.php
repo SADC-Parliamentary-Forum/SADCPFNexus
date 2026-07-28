@@ -40,10 +40,11 @@ class RiskActionController extends Controller
         $data = $request->validate([
             'description'    => ['required', 'string', 'max:2000'],
             'action_plan'    => ['nullable', 'string', 'max:5000'],
-            'treatment_type' => ['nullable', 'string', 'in:mitigate,accept,transfer,avoid'],
+            'treatment_type' => ['nullable', 'string', 'in:mitigate,accept,transfer,avoid,share'],
             'due_date'       => ['nullable', 'date'],
             'owner_id'       => ['nullable', 'integer', 'exists:users,id'],
             'notes'          => ['nullable', 'string', 'max:2000'],
+            'create_assignment' => ['nullable', 'boolean'],
         ]);
 
         $action = $this->actionService->create($risk, $data, $request->user());
@@ -104,7 +105,22 @@ class RiskActionController extends Controller
             abort(404);
         }
 
-        $this->actionService->delete($action, $request->user());
+        $this->actionService->destroy($action, $request->user());
         return response()->json(['message' => 'Action deleted.']);
+    }
+
+    public function createAssignment(Request $request, Risk $risk, RiskAction $action): JsonResponse
+    {
+        if ((int) $risk->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        if ((int) $action->risk_id !== (int) $risk->id) {
+            abort(404);
+        }
+
+        $assignment = $this->actionService->createAssignmentForAction($action, $request->user(), $request->all());
+        $action->update(['assignment_id' => $assignment->id]);
+
+        return response()->json(['message' => 'Assignment linked.', 'data' => $action->fresh(['assignment'])], 201);
     }
 }

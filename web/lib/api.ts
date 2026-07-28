@@ -6514,6 +6514,28 @@ export const riskApi = {
     api.get<{ data: RiskDashboardData }>("/risk/dashboard"),
   getAuditTrail: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<RiskHistory>>("/risk/audit-trail", { params }),
+
+  // Phase 1 extensions
+  listAssessments: (riskId: number) =>
+    api.get(`/risk/risks/${riskId}/assessments`),
+  recordAssessment: (riskId: number, data: Record<string, unknown>) =>
+    api.post(`/risk/risks/${riskId}/assessments`, data),
+  requestAcceptance: (riskId: number, data: { justification: string; expires_at: string }) =>
+    api.post(`/risk/risks/${riskId}/acceptances`, data),
+  decideAcceptance: (acceptanceId: number, data: { decision: string; decision_notes?: string }) =>
+    api.post(`/risk/acceptances/${acceptanceId}/decide`, data),
+  materialise: (riskId: number, data?: Record<string, unknown>) =>
+    api.post(`/risk/risks/${riskId}/materialise`, data),
+  createControl: (data: Record<string, unknown>) =>
+    api.post(`/risk/controls`, data),
+  linkControl: (riskId: number, data: Record<string, unknown>) =>
+    api.post(`/risk/risks/${riskId}/controls`, data),
+  listIncidents: (params?: Record<string, string | number>) =>
+    api.get(`/risk/incidents`, { params }),
+  createIncident: (data: Record<string, unknown>) =>
+    api.post(`/risk/incidents`, data),
+  listAppetitePolicies: () =>
+    api.get(`/risk/appetite-policies`),
 };
 
 // ── Risk Document Types ──────────────────────────────────────────────────────

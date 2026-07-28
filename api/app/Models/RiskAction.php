@@ -11,7 +11,7 @@ class RiskAction extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tenant_id', 'risk_id', 'created_by', 'owner_id',
+        'tenant_id', 'risk_id', 'created_by', 'owner_id', 'assignment_id',
         'description', 'action_plan', 'treatment_type',
         'due_date', 'status', 'progress', 'notes', 'completed_at',
     ];
@@ -24,9 +24,10 @@ class RiskAction extends Model
 
     // ── Relationships ─────────────────────────────────────────────────────────
 
-    public function risk()    { return $this->belongsTo(Risk::class); }
-    public function creator() { return $this->belongsTo(User::class, 'created_by'); }
-    public function owner()   { return $this->belongsTo(User::class, 'owner_id'); }
+    public function risk()       { return $this->belongsTo(Risk::class); }
+    public function creator()    { return $this->belongsTo(User::class, 'created_by'); }
+    public function owner()      { return $this->belongsTo(User::class, 'owner_id'); }
+    public function assignment() { return $this->belongsTo(Assignment::class); }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

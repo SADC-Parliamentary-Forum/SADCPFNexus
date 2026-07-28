@@ -240,7 +240,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Positions", href: "/hr/positions", icon: "work" },
     ],
   },
-  {
+    {
     label: "Risk Register",
     href: "/risk",
     icon: "shield",
@@ -249,9 +249,15 @@ const NAV_ITEMS: NavItem[] = [
       { label: "All Risks",      href: "/risk",              icon: "bar_chart_4_bars" },
       { label: "Dashboard",     href: "/risk/dashboard",   icon: "dashboard"        },
       { label: "Analytics",     href: "/risk/analytics",   icon: "analytics"        },
+      { label: "Controls",      href: "/risk/controls",    icon: "verified_user"    },
+      { label: "Incidents",     href: "/risk/incidents",   icon: "report"           },
+      { label: "Appetite",      href: "/risk/appetite",    icon: "tune"             },
       { label: "Audit Trail",   href: "/risk/audit-trail", icon: "history"          },
       { label: "Policy Library",href: "/risk/policies",    icon: "policy"           },
       { label: "Log Risk",      href: "/risk/create",      icon: "add_circle"       },
+      { label: "KRI Automation (Phase 2)", href: "/risk/kri", icon: "speed" },
+      { label: "Control Testing (Phase 2)", href: "/risk/control-testing", icon: "fact_check" },
+      { label: "BCP / Insurance (Phase 3)", href: "/risk/bcp", icon: "health_and_safety" },
     ],
   },
   {

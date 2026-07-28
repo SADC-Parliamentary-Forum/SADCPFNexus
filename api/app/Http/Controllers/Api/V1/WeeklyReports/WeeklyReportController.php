@@ -7,6 +7,7 @@ use App\Models\WeeklyReport;
 use App\Models\WeeklyReportDecisionRequest;
 use App\Models\WeeklyReportItem;
 use App\Models\WeeklyReportPriority;
+use App\Models\WeeklyReportRisk;
 use App\Modules\WeeklyReports\Services\WeeklyConsolidationService;
 use App\Modules\WeeklyReports\Services\WeeklyExportService;
 use App\Modules\WeeklyReports\Services\WeeklyPeriodService;
@@ -250,6 +251,24 @@ class WeeklyReportController extends Controller
         $assignment = $this->reports->createAssignmentFromItem($weeklySummaryItem, $request->user(), $data);
 
         return response()->json(['data' => $assignment], 201);
+    }
+
+    public function createRiskFromWeekly(Request $request, WeeklyReportRisk $weeklyReportRisk): JsonResponse
+    {
+        $data = $request->validate([
+            'title' => 'nullable|string|max:300',
+            'description' => 'nullable|string|max:5000',
+            'category' => 'nullable|string|in:strategic,operational,financial,compliance,reputational,security,other',
+            'likelihood' => 'nullable|integer|min:1|max:5',
+            'impact' => 'nullable|integer|min:1|max:5',
+            'strategic_objective_id' => 'nullable|integer|exists:strategic_objectives,id',
+            'risk_owner_id' => 'nullable|integer|exists:users,id',
+            'cause' => 'nullable|string|max:5000',
+        ]);
+
+        $risk = $this->reports->createRiskFromWeeklyRisk($weeklyReportRisk, $request->user(), $data);
+
+        return response()->json(['message' => 'Risk proposal created from weekly emerging risk.', 'data' => $risk], 201);
     }
 
     public function recordDecision(Request $request, WeeklyReportDecisionRequest $weeklySummaryItem): JsonResponse

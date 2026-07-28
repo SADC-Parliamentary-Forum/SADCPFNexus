@@ -18,6 +18,15 @@ class RiskDashboardService
             ->where('tenant_id', $tid)
             ->whereNull('deleted_at');
 
+        if (! app(RiskService::class)->canSeeConfidential($user)) {
+            $base->where(function ($q) use ($user) {
+                $q->where('is_confidential', false)
+                    ->orWhere('submitted_by', $user->id)
+                    ->orWhere('risk_owner_id', $user->id)
+                    ->orWhere('control_owner_id', $user->id);
+            });
+        }
+
         $open    = (clone $base)->whereNotIn('status', ['closed', 'archived'])->count();
         $critical = (clone $base)->where('risk_level', 'critical')->count();
         $high    = (clone $base)->where('risk_level', 'high')->count();

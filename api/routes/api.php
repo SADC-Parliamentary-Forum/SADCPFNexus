@@ -1359,7 +1359,24 @@ Route::prefix('v1')->group(function () {
             Route::post('risks/{risk}/actions',                   [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'store']);
             Route::put('risks/{risk}/actions/{action}',           [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'update']);
             Route::post('risks/{risk}/actions/{action}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'markComplete']);
+            Route::post('risks/{risk}/actions/{action}/create-assignment', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'createAssignment']);
             Route::delete('risks/{risk}/actions/{action}',        [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'destroy']);
+
+            // Phase 1 extensions
+            Route::get('risks/{risk}/assessments', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listAssessments']);
+            Route::post('risks/{risk}/assessments', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'storeAssessment']);
+            Route::post('risks/{risk}/acceptances', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'requestAcceptance']);
+            Route::post('acceptances/{acceptance}/decide', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'decideAcceptance']);
+            Route::post('risks/{risk}/materialise', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'materialise']);
+            Route::post('risks/{risk}/accept-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'acceptProposal']);
+            Route::post('risks/{risk}/reject-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'rejectProposal']);
+            Route::post('controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'storeControl']);
+            Route::post('risks/{risk}/controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'linkControl']);
+            Route::get('incidents', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listIncidents']);
+            Route::post('incidents', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'storeIncident']);
+            Route::get('appetite-policies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'appetiteIndex']);
+            Route::post('appetite-policies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'appetiteStore']);
+            Route::post('appetite-policies/{policy}/activate', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'appetiteActivate']);
 
             // Risk Attachments
             Route::get('risks/{risk}/attachments',                            [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'index']);
@@ -1422,6 +1439,7 @@ Route::prefix('v1')->group(function () {
         Route::post('weekly-summary-items/{weeklySummaryItem}/record-decision', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'recordDecision'])
             ->whereNumber('weeklySummaryItem');
         Route::post('weekly-summary-items/{weeklySummaryItem}/carry-forward', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'carryForward']);
+        Route::post('weekly-report-risks/{weeklyReportRisk}/create-risk', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'createRiskFromWeekly']);
 
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {

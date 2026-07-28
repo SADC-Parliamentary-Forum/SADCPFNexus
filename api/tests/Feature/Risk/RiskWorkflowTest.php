@@ -4,13 +4,38 @@ namespace Tests\Feature\Risk;
 
 use App\Models\Risk;
 use App\Models\RiskHistory;
+use App\Models\StrategicGoal;
+use App\Models\StrategicObjective;
+use App\Models\StrategicPlan;
 use App\Models\Tenant;
 use Tests\TestCase;
 
 class RiskWorkflowTest extends TestCase
 {
+    private function makeObjective(int $tenantId): StrategicObjective
+    {
+        $plan = StrategicPlan::create([
+            'tenant_id' => $tenantId,
+            'name' => 'Test Plan',
+            'status' => 'active',
+        ]);
+        $goal = StrategicGoal::create([
+            'tenant_id' => $tenantId,
+            'strategic_plan_id' => $plan->id,
+            'title' => 'Test Goal',
+        ]);
+
+        return StrategicObjective::create([
+            'tenant_id' => $tenantId,
+            'strategic_goal_id' => $goal->id,
+            'title' => 'Test Objective',
+        ]);
+    }
+
     private function makeDraftRisk(int $tenantId, int $userId): Risk
     {
+        $objective = $this->makeObjective($tenantId);
+
         return Risk::create([
             'tenant_id'    => $tenantId,
             'submitted_by' => $userId,
@@ -19,6 +44,8 @@ class RiskWorkflowTest extends TestCase
             'category'     => 'strategic',
             'likelihood'   => 3,
             'impact'       => 4,
+            'strategic_objective_id' => $objective->id,
+            'risk_owner_id' => $userId,
         ]);
     }
 
