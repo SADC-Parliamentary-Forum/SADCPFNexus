@@ -11,6 +11,7 @@ const SKIP_REFRESH_PATHS = [
   "/login",
   "/forgot-password",
   "/request-password",
+  "/activate-account",
   "/reset-password",
   "/setup",
   "/approval",

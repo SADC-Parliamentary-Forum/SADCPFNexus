@@ -430,7 +430,23 @@ class NotificationService
             // User management
             'user.welcome' => [
                 'subject' => 'Welcome to SADC-PF Nexus — Your account is ready',
-                'body'    => "Dear {{name}},\n\nYour SADC-PF Nexus account has been created.\n\nEmail: {{email}}\nTemporary password: {{password}}\nRole: {{role}}\n\nPlease log in at {{portal_url}} and change your password immediately.\n\nRegards,\nSADC-PF Nexus Administrator",
+                'body'    => "Dear {{name}},\n\nYour SADC-PF Nexus account has been created.\n\nEmail: {{email}}\nRole: {{role}}\n\nUse the invitation or password-reset link sent separately to register your own password. Nexus will never email you a password.\n\nRegards,\nSADC-PF Nexus Administrator",
+            ],
+            'user.invited' => [
+                'subject' => 'Activate your SADC-PF Nexus account',
+                'body'    => "Dear {{name}},\n\nYou have been invited to SADC-PF Nexus.\n\nEmail: {{email}}\nRole: {{role}}\n\nActivate your account and register your password here:\n{{activation_url}}\n\nThis invitation expires on {{expires_at}}. Nexus will never email you a password.\n\nRegards,\nSADC-PF Nexus Administrator",
+            ],
+            'user.security_reset_link' => [
+                'subject' => 'SADC-PF Nexus password reset link sent',
+                'body'    => "Dear {{name}},\n\nA password reset link has been sent for your SADC-PF Nexus account. If you did not request this, contact the System Administrator immediately.\n\nRegards,\nSADC-PF Nexus Administrator",
+            ],
+            'user.mfa_reset' => [
+                'subject' => 'SADC-PF Nexus MFA reset',
+                'body'    => "Dear {{name}},\n\nMulti-factor authentication was reset for your SADC-PF Nexus account by an authorised administrator. You must enroll MFA again where policy requires it.\n\nIf you did not expect this change, contact the System Administrator immediately.\n\nRegards,\nSADC-PF Nexus Administrator",
+            ],
+            'user.sessions_revoked' => [
+                'subject' => 'SADC-PF Nexus sessions revoked',
+                'body'    => "Dear {{name}},\n\nYour active Nexus sessions were revoked by an authorised administrator. Sign in again if you still have approved access.\n\nRegards,\nSADC-PF Nexus Administrator",
             ],
 
             // BCRE — Balance Control & Reconciliation Engine

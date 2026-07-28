@@ -21,6 +21,9 @@ class UserFactory extends Factory
             'password'       => static::$password ??= Hash::make('password'),
             'classification' => 'UNCLASSIFIED',
             'is_active'      => true,
+            'account_status' => 'active',
+            'activated_at'   => now(),
+            'password_changed_at' => now(),
             'remember_token' => Str::random(10),
         ];
     }

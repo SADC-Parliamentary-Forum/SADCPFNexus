@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\User;
+use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -98,11 +100,22 @@ class RolesController extends Controller
         $old = $role->permissions->pluck('name')->toArray();
         $role->syncPermissions($data['permissions']);
 
+        $affectedUserIds = User::role($role->name)->pluck('id');
+        if ($affectedUserIds->isNotEmpty()) {
+            \Laravel\Sanctum\PersonalAccessToken::where('tokenable_type', User::class)
+                ->whereIn('tokenable_id', $affectedUserIds)
+                ->delete();
+            UserSession::whereIn('user_id', $affectedUserIds)->delete();
+        }
+
         AuditLog::record('role.permissions_synced', [
             'auditable_type' => Role::class,
             'auditable_id'   => $role->id,
             'old_values'     => ['permissions' => $old],
-            'new_values'     => ['permissions' => $data['permissions']],
+            'new_values'     => [
+                'permissions' => $data['permissions'],
+                'revoked_user_sessions' => $affectedUserIds->count(),
+            ],
             'tags'           => 'rbac',
         ]);
 

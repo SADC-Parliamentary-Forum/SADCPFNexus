@@ -46,17 +46,10 @@ class UserPolicy
 
     /**
      * Only System Admins can deactivate users.
-     * Self and System Admin accounts are protected.
      */
     public function delete(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) {
-            return false; // Cannot deactivate self
-        }
-        if ($user->isSystemAdmin()) {
-            return false; // Protect System Admin accounts
-        }
-
+        if ($authUser->id === $user->id) return false; // Cannot deactivate self
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 
@@ -65,6 +58,10 @@ class UserPolicy
      */
     public function assignRole(User $authUser, User $user): bool
     {
+        if ($authUser->id === $user->id) {
+            return false;
+        }
+
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 }

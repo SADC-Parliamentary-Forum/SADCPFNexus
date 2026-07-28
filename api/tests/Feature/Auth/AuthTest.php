@@ -233,7 +233,7 @@ class AuthTest extends TestCase
         $this->withHeader('Authorization', "Bearer {$token}")
             ->getJson('/api/v1/auth/me')
             ->assertStatus(403)
-            ->assertJsonPath('message', 'This account has been deactivated.');
+            ->assertJsonPath('message', 'This account is not active.');
 
         $this->assertDatabaseMissing('personal_access_tokens', [
             'id' => $currentToken->id,

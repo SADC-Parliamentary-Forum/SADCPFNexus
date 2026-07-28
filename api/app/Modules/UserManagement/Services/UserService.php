@@ -3,12 +3,16 @@
 namespace App\Modules\UserManagement\Services;
 
 use App\Models\AuditLog;
+use App\Models\AccountInvitation;
 use App\Models\UserSession;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserService
 {
@@ -39,8 +43,12 @@ class UserService
 
         if (!empty($filters['status'])) {
             match ($filters['status']) {
-                'active'   => $query->where('is_active', true),
+                'active'   => $query->where('is_active', true)->where('account_status', User::STATUS_ACTIVE),
                 'inactive' => $query->where('is_active', false),
+                'invited'  => $query->where('account_status', User::STATUS_INVITED),
+                'suspended' => $query->where('account_status', User::STATUS_SUSPENDED),
+                'disabled' => $query->where('account_status', User::STATUS_DISABLED),
+                'offboarded' => $query->where('account_status', User::STATUS_OFFBOARDED),
                 default    => null,
             };
         }
@@ -57,69 +65,120 @@ class UserService
      */
     public function create(array $data, User $createdBy): User
     {
-        $plainPassword = $data['password'] ?? str()->random(16);
-
-        $user = User::create([
-            'tenant_id'       => $createdBy->tenant_id,
-            'department_id'   => $data['department_id'] ?? null,
-            'name'            => $data['name'],
-            'email'           => $data['email'],
-            'password'        => Hash::make($plainPassword),
-            'employee_number' => $data['employee_number'] ?? null,
-            'job_title'       => $data['job_title'] ?? null,
-            'classification'  => $data['classification'] ?? 'UNCLASSIFIED',
-            'mfa_enabled'          => $data['mfa_enabled'] ?? false,
-            'must_reset_password'  => true,
-            'is_active'            => true,
-            'bio'             => $data['bio'] ?? null,
-            'date_of_birth'   => $data['date_of_birth'] ?? null,
-            'join_date'       => $data['join_date'] ?? null,
-            'phone'           => $data['phone'] ?? null,
-            'nationality'     => $data['nationality'] ?? null,
-            'gender'          => $data['gender'] ?? null,
-            'marital_status'  => $data['marital_status'] ?? null,
-            'emergency_contact_name'         => $data['emergency_contact_name'] ?? null,
-            'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
-            'emergency_contact_phone'        => $data['emergency_contact_phone'] ?? null,
-            'address_line1'   => $data['address_line1'] ?? null,
-            'address_line2'   => $data['address_line2'] ?? null,
-            'city'            => $data['city'] ?? null,
-            'country'         => $data['country'] ?? null,
-            'skills'          => $data['skills'] ?? null,
-            'qualifications'  => $data['qualifications'] ?? null,
-        ]);
-
-        if (!empty($data['portfolio_ids'])) {
-            $user->portfolios()->sync($data['portfolio_ids']);
-        }
-
-        // Assign role if provided
-        if (!empty($data['role'])) {
-            $user->assignRole($data['role']);
-        }
-
-        AuditLog::record('user.created', [
-            'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'new_values'     => [
-                'name'       => $user->name,
-                'email'      => $user->email,
-                'role'       => $data['role'] ?? null,
-            ],
-            'tags' => 'user_management',
-        ]);
-
-        if ($data['send_welcome_email'] ?? true) {
-            $this->notifications->dispatch($user, 'user.welcome', [
-                'name'       => $user->name,
-                'email'      => $user->email,
-                'password'   => $plainPassword,
-                'role'       => $data['role'] ?? 'Staff',
-                'portal_url' => env('APP_FRONTEND_URL', config('app.url')),
+        return DB::transaction(function () use ($data, $createdBy): User {
+            $user = User::create([
+                'tenant_id'       => $createdBy->tenant_id,
+                'department_id'   => $data['department_id'] ?? null,
+                'name'            => $data['name'],
+                'email'           => strtolower(trim((string) $data['email'])),
+                'password'        => Hash::make(Str::random(64)),
+                'employee_number' => $data['employee_number'] ?? null,
+                'job_title'       => $data['job_title'] ?? null,
+                'classification'  => $data['classification'] ?? 'UNCLASSIFIED',
+                'mfa_enabled'          => false,
+                'mfa_secret'           => null,
+                'must_reset_password'  => false,
+                'setup_completed'      => false,
+                'is_active'            => false,
+                'account_status'       => User::STATUS_INVITED,
+                'invited_at'           => now(),
+                'status_changed_at'    => now(),
+                'bio'             => $data['bio'] ?? null,
+                'date_of_birth'   => $data['date_of_birth'] ?? null,
+                'join_date'       => $data['join_date'] ?? null,
+                'phone'           => $data['phone'] ?? null,
+                'nationality'     => $data['nationality'] ?? null,
+                'gender'          => $data['gender'] ?? null,
+                'marital_status'  => $data['marital_status'] ?? null,
+                'emergency_contact_name'         => $data['emergency_contact_name'] ?? null,
+                'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
+                'emergency_contact_phone'        => $data['emergency_contact_phone'] ?? null,
+                'address_line1'   => $data['address_line1'] ?? null,
+                'address_line2'   => $data['address_line2'] ?? null,
+                'city'            => $data['city'] ?? null,
+                'country'         => $data['country'] ?? null,
+                'skills'          => $data['skills'] ?? null,
+                'qualifications'  => $data['qualifications'] ?? null,
             ]);
+
+            if (!empty($data['portfolio_ids'])) {
+                $user->portfolios()->sync($data['portfolio_ids']);
+            }
+
+            if (!empty($data['role'])) {
+                $user->assignRole($data['role']);
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
+            }
+
+            $invitation = $this->issueInvitation(
+                $user,
+                $createdBy,
+                (bool) ($data['send_welcome_email'] ?? true)
+            );
+
+            AuditLog::record('user.invited', [
+                'auditable_type' => User::class,
+                'auditable_id'   => $user->id,
+                'new_values'     => [
+                    'name'       => $user->name,
+                    'email'      => $user->email,
+                    'role'       => $data['role'] ?? null,
+                    'invitation_id' => $invitation->id,
+                ],
+                'tags' => 'user_management',
+            ]);
+
+            return $user->fresh(['department', 'roles', 'latestAccountInvitation']);
+        });
+    }
+
+    public function issueInvitation(User $user, User $invitedBy, bool $sendEmail = true): AccountInvitation
+    {
+        [$plainToken, $tokenHash] = $this->makeInvitationToken();
+        $expiresAt = now()->addHours(max(1, (int) config('auth_lifecycle.invitation_expire_hours', 48)));
+
+        AccountInvitation::where('user_id', $user->id)
+            ->where('status', AccountInvitation::STATUS_PENDING)
+            ->update(['status' => AccountInvitation::STATUS_SUPERSEDED]);
+
+        $invitation = AccountInvitation::create([
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'invited_by_id' => $invitedBy->id,
+            'email' => $user->email,
+            'token_hash' => $tokenHash,
+            'status' => AccountInvitation::STATUS_PENDING,
+            'expires_at' => $expiresAt,
+        ]);
+
+        if ($sendEmail) {
+            $this->notifications->dispatch($user, 'user.invited', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->getRoleNames()->first() ?? 'Staff',
+                'activation_url' => $this->activationUrl($plainToken),
+                'expires_at' => $expiresAt->toDayDateTimeString(),
+            ], [
+                'module' => 'auth',
+                'invitation_id' => $invitation->id,
+            ], true, false);
         }
 
-        return $user->load(['department', 'roles']);
+        return $invitation;
+    }
+
+    private function makeInvitationToken(): array
+    {
+        $plainToken = bin2hex(random_bytes(32));
+
+        return [$plainToken, AccountInvitation::hashToken($plainToken)];
+    }
+
+    private function activationUrl(string $plainToken): string
+    {
+        $frontendUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+
+        return "{$frontendUrl}/activate-account?token=".urlencode($plainToken);
     }
 
     /**
@@ -143,10 +202,11 @@ class UserService
         }
 
         $oldValues = $user->only([
-            'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'bio', 'date_of_birth', 'join_date', 'phone',
+            'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'account_status', 'bio', 'date_of_birth', 'join_date', 'phone',
             'nationality', 'gender', 'marital_status', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone',
             'address_line1', 'address_line2', 'city', 'country'
         ]);
+        $oldRoles = $user->getRoleNames()->values()->all();
 
         $user->update(array_filter([
             'name'           => $data['name'] ?? null,
@@ -154,7 +214,6 @@ class UserService
             'department_id'  => $data['department_id'] ?? null,
             'job_title'      => $data['job_title'] ?? null,
             'classification' => $data['classification'] ?? null,
-            'mfa_enabled'    => $data['mfa_enabled'] ?? null,
             'bio'            => $data['bio'] ?? null,
             'date_of_birth'  => $data['date_of_birth'] ?? null,
             'join_date'      => $data['join_date'] ?? null,
@@ -184,6 +243,19 @@ class UserService
 
         if (!empty($data['role'])) {
             $user->syncRoles([$data['role']]);
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            if ($oldRoles !== [$data['role']]) {
+                $this->revokeAllAccess($user);
+
+                AuditLog::record('user.role_changed', [
+                    'auditable_type' => User::class,
+                    'auditable_id' => $user->id,
+                    'old_values' => ['roles' => $oldRoles],
+                    'new_values' => ['roles' => [$data['role']]],
+                    'tags' => 'user_management',
+                ]);
+            }
         }
 
         AuditLog::record('user.updated', [
@@ -191,7 +263,7 @@ class UserService
             'auditable_id'   => $user->id,
             'old_values'     => $oldValues,
             'new_values'     => $user->fresh()->only([
-                'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'bio', 'date_of_birth', 'join_date', 'phone',
+                'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'account_status', 'bio', 'date_of_birth', 'join_date', 'phone',
                 'nationality', 'gender', 'marital_status', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone',
                 'address_line1', 'address_line2', 'city', 'country'
             ]),
@@ -206,24 +278,9 @@ class UserService
      */
     public function deactivate(User $user, User $deactivatedBy): User
     {
-        $user->update(['is_active' => false]);
-        $this->revokeAllAccess($user);
-
-        AuditLog::record('user.deactivated', [
-            'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'tags' => 'user_management',
-        ]);
-
-        return $user->fresh();
+        return $this->updateAccountStatus($user, User::STATUS_DISABLED, $deactivatedBy, 'Deactivated by administrator.');
     }
 
-    /**
-     * Soft-disable many users. Caller must authorize each target beforehand.
-     *
-     * @param  list<int>  $ids
-     * @return array{deactivated: list<int>, skipped: list<array{id: int, reason: string}>}
-     */
     public function bulkDeactivate(array $ids, User $actor, callable $canDelete): array
     {
         $deactivated = [];
@@ -237,11 +294,11 @@ class UserService
 
         foreach ($uniqueIds as $id) {
             $user = $users->get($id);
-            if (!$user) {
+            if (! $user) {
                 $skipped[] = ['id' => $id, 'reason' => 'not_found'];
                 continue;
             }
-            if (!$user->is_active) {
+            if (! $user->is_active) {
                 $skipped[] = ['id' => $id, 'reason' => 'already_inactive'];
                 continue;
             }
@@ -249,7 +306,7 @@ class UserService
                 $skipped[] = ['id' => $id, 'reason' => 'self'];
                 continue;
             }
-            if (!$canDelete($user)) {
+            if (! $canDelete($user)) {
                 $skipped[] = ['id' => $id, 'reason' => 'forbidden'];
                 continue;
             }
@@ -275,15 +332,63 @@ class UserService
      */
     public function reactivate(User $user, User $reactivatedBy): User
     {
-        $user->update(['is_active' => true]);
+        return $this->updateAccountStatus($user, User::STATUS_ACTIVE, $reactivatedBy, 'Reactivated by administrator.');
+    }
 
-        AuditLog::record('user.reactivated', [
+    public function updateAccountStatus(User $user, string $status, User $actor, ?string $reason = null): User
+    {
+        $allowed = [
+            User::STATUS_ACTIVE,
+            User::STATUS_LOCKED,
+            User::STATUS_SUSPENDED,
+            User::STATUS_DISABLED,
+            User::STATUS_OFFBOARDED,
+        ];
+
+        if (! in_array($status, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'status' => ['Unsupported account status transition.'],
+            ]);
+        }
+
+        $oldValues = $user->only(['is_active', 'account_status', 'status_reason']);
+        $now = now();
+
+        $updates = [
+            'account_status' => $status,
+            'is_active' => $status === User::STATUS_ACTIVE,
+            'status_changed_at' => $now,
+            'status_reason' => $reason,
+        ];
+
+        if ($status === User::STATUS_ACTIVE) {
+            $updates['activated_at'] = $user->activated_at ?? $now;
+        }
+        if ($status === User::STATUS_SUSPENDED) {
+            $updates['suspended_at'] = $now;
+        }
+        if ($status === User::STATUS_DISABLED) {
+            $updates['disabled_at'] = $now;
+        }
+        if ($status === User::STATUS_OFFBOARDED) {
+            $updates['offboarded_at'] = $now;
+        }
+
+        $user->forceFill($updates)->save();
+
+        if ($status !== User::STATUS_ACTIVE) {
+            $this->revokeAllAccess($user);
+        }
+
+        AuditLog::record('user.account_status_changed', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
+            'auditable_id' => $user->id,
+            'old_values' => $oldValues,
+            'new_values' => $user->fresh()->only(['is_active', 'account_status', 'status_reason']),
             'tags' => 'user_management',
         ]);
 
-        return $user->fresh();
+        return $user->fresh(['department', 'roles']);
     }
 
     /**

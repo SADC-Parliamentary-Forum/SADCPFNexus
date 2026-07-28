@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountAccessRequest;
+use App\Models\AccountInvitation;
 use App\Models\Department;
 use App\Models\User;
 use App\Modules\UserManagement\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UsersController extends Controller
 {
@@ -96,14 +100,14 @@ class UsersController extends Controller
             'qualifications'      => ['nullable', 'array'],
             'portfolio_ids'       => ['nullable', 'array'],
             'portfolio_ids.*'     => ['exists:portfolios,id'],
-            'password'            => ['nullable', 'string', 'min:8'],
+            'password'            => ['prohibited'],
             'send_welcome_email'  => ['boolean'],
         ]);
 
         $user = $this->userService->create($data, $request->user());
 
         return response()->json([
-            'message' => 'User created successfully.',
+            'message' => 'User invited successfully.',
             'user'    => $user,
         ], 201);
     }
@@ -179,9 +183,6 @@ class UsersController extends Controller
         return response()->json(['message' => 'User deactivated successfully.']);
     }
 
-    /**
-     * Soft-disable many users in one request (same rules as single destroy).
-     */
     public function bulkDeactivate(Request $request): JsonResponse
     {
         // Same gate as create: System Admin only (HR can view but not deactivate).
@@ -225,35 +226,187 @@ class UsersController extends Controller
         return response()->json(['message' => 'User reactivated.', 'user' => $user]);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/v1/admin/users/{id}/change-password",
-     *     summary="Admin: set a new password for a user",
-     *     tags={"Admin - Users"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(response=200, description="Password changed")
-     * )
-     */
-    public function changePassword(Request $request, User $user): JsonResponse
+    public function updateStatus(Request $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);
 
         $data = $request->validate([
-            'password'              => ['required', 'string', 'min:8', 'confirmed'],
-            'password_confirmation' => ['required', 'string'],
+            'status' => ['required', Rule::in([
+                User::STATUS_ACTIVE,
+                User::STATUS_LOCKED,
+                User::STATUS_SUSPENDED,
+                User::STATUS_DISABLED,
+                User::STATUS_OFFBOARDED,
+            ])],
+            'reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $user->update(['password' => \Illuminate\Support\Facades\Hash::make($data['password'])]);
+        if ($request->user()->id === $user->id && $data['status'] !== User::STATUS_ACTIVE) {
+            throw ValidationException::withMessages([
+                'status' => ['Administrators cannot revoke their own account status.'],
+            ]);
+        }
+
+        $updated = $this->userService->updateAccountStatus(
+            $user,
+            $data['status'],
+            $request->user(),
+            $data['reason'] ?? null
+        );
+
+        return response()->json(['message' => 'Account status updated.', 'user' => $updated]);
+    }
+
+    public function updateRoles(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('assignRole', $user);
+
+        $data = $request->validate([
+            'role' => ['nullable', 'string', 'exists:roles,name'],
+            'roles' => ['nullable', 'array', 'min:1'],
+            'roles.*' => ['string', 'exists:roles,name'],
+        ]);
+
+        $roles = $data['roles'] ?? array_filter([$data['role'] ?? null]);
+        if ($roles === []) {
+            throw ValidationException::withMessages([
+                'roles' => ['At least one role is required.'],
+            ]);
+        }
+
+        $oldRoles = $user->getRoleNames()->values()->all();
+        $user->syncRoles($roles);
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         $this->userService->revokeAllAccess($user);
 
-        \App\Models\AuditLog::record('user.password_changed_by_admin', [
+        \App\Models\AuditLog::record('user.roles_updated', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'old_values' => ['roles' => $oldRoles],
+            'new_values' => ['roles' => array_values($roles)],
+            'tags' => 'auth',
+        ]);
+
+        return response()->json(['message' => 'User roles updated.', 'user' => $user->fresh(['roles'])]);
+    }
+
+    public function resendInvitation(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        if ($user->accountAllowsAuthentication()) {
+            throw ValidationException::withMessages([
+                'user' => ['Active accounts do not use invitation links.'],
+            ]);
+        }
+
+        $invitation = $this->userService->issueInvitation($user, $request->user(), true);
+
+        \App\Models\AuditLog::record('user.invitation_resent', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'new_values' => ['invitation_id' => $invitation->id],
+            'tags' => 'auth',
+        ]);
+
+        return response()->json(['message' => 'Invitation resent.', 'user' => $user->fresh(['latestAccountInvitation'])]);
+    }
+
+    public function mfaReset(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        if ($request->user()->id === $user->id) {
+            throw ValidationException::withMessages([
+                'user' => ['Use the self-service MFA flow for your own account.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $user->forceFill([
+            'mfa_enabled' => false,
+            'mfa_secret' => null,
+        ])->save();
+        $this->userService->revokeAllAccess($user);
+
+        \App\Models\AuditLog::record('user.mfa_reset_by_admin', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'new_values' => ['reason' => $data['reason']],
+            'tags' => 'auth',
+        ]);
+
+        app(\App\Services\NotificationService::class)->dispatch($user, 'user.mfa_reset', [
+            'name' => $user->name,
+        ], ['module' => 'auth'], true, false);
+
+        return response()->json(['message' => 'MFA reset. User sessions were revoked.']);
+    }
+
+    public function revokeSessions(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $this->userService->revokeAllAccess($user);
+
+        \App\Models\AuditLog::record('user.sessions_revoked_by_admin', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
+
+        app(\App\Services\NotificationService::class)->dispatch($user, 'user.sessions_revoked', [
+            'name' => $user->name,
+        ], ['module' => 'auth'], true, false);
+
+        return response()->json(['message' => 'User sessions revoked.']);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/users/{id}/change-password",
+     *     summary="Admin: send a password reset link for a user",
+     *     tags={"Admin - Users"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(response=200, description="Password reset link sent")
+     * )
+     */
+    public function changePassword(Request $request, User $user): JsonResponse
+    {
+        return $this->sendPasswordReset($request, $user);
+    }
+
+    public function sendPasswordReset(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('update', $user);
+
+        $request->validate([
+            'password' => ['prohibited'],
+            'password_confirmation' => ['prohibited'],
+        ]);
+
+        if (! $user->accountAllowsAuthentication()) {
+            throw ValidationException::withMessages([
+                'user' => ['Password reset links can only be sent to active accounts.'],
+            ]);
+        }
+
+        $this->userService->revokeAllAccess($user);
+        $user->forceFill(['must_reset_password' => true])->save();
+        Password::sendResetLink(['email' => $user->email]);
+
+        \App\Models\AuditLog::record('user.password_reset_link_sent_by_admin', [
             'auditable_type' => User::class,
             'auditable_id'   => $user->id,
             'actor_id'       => $request->user()->id,
-            'meta'           => ['target_user' => $user->email],
+            'new_values'     => ['action' => 'reset_link_sent', 'target_user' => $user->email],
+            'tags'           => 'auth',
         ]);
 
-        return response()->json(['message' => 'Password updated successfully.']);
+        return response()->json(['message' => 'Password reset link sent.']);
     }
 
     /**
@@ -271,5 +424,106 @@ class UsersController extends Controller
         $trail = $this->userService->auditTrail($user);
 
         return response()->json(['data' => $trail]);
+    }
+
+    public function accessRequests(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        $status = $request->query('status');
+        $query = AccountAccessRequest::query()
+            ->orderByDesc('created_at');
+
+        if (is_string($status) && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        return response()->json($query->paginate((int) $request->query('per_page', 25)));
+    }
+
+    public function approveAccessRequest(Request $request, AccountAccessRequest $accessRequest): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        if ($accessRequest->status !== AccountAccessRequest::STATUS_REQUESTED) {
+            throw ValidationException::withMessages([
+                'request' => ['This access request has already been reviewed.'],
+            ]);
+        }
+
+        if (User::withTrashed()->where('email', $accessRequest->official_email)->exists()) {
+            throw ValidationException::withMessages([
+                'official_email' => ['A Nexus identity already exists for this email address.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'role' => ['required', 'string', 'exists:roles,name'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'employee_number' => ['nullable', 'string', 'max:50', 'unique:users,employee_number'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'classification' => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
+            'review_comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $user = $this->userService->create([
+            'name' => $accessRequest->full_name,
+            'email' => $accessRequest->official_email,
+            'department_id' => $data['department_id'] ?? null,
+            'employee_number' => $data['employee_number'] ?? null,
+            'job_title' => $data['job_title'] ?? $accessRequest->position_title,
+            'classification' => $data['classification'] ?? 'UNCLASSIFIED',
+            'role' => $data['role'],
+            'send_welcome_email' => true,
+        ], $request->user());
+
+        $accessRequest->forceFill([
+            'tenant_id' => $request->user()->tenant_id,
+            'status' => AccountAccessRequest::STATUS_APPROVED,
+            'reviewed_by_id' => $request->user()->id,
+            'reviewed_at' => now(),
+            'review_comment' => $data['review_comment'] ?? null,
+        ])->save();
+
+        \App\Models\AuditLog::record('auth.access_approved', [
+            'auditable_type' => AccountAccessRequest::class,
+            'auditable_id' => $accessRequest->id,
+            'new_values' => ['user_id' => $user->id],
+            'tags' => 'auth',
+        ]);
+
+        return response()->json(['message' => 'Access request approved and invitation sent.', 'user' => $user]);
+    }
+
+    public function rejectAccessRequest(Request $request, AccountAccessRequest $accessRequest): JsonResponse
+    {
+        $this->authorize('viewAny', User::class);
+
+        if ($accessRequest->status !== AccountAccessRequest::STATUS_REQUESTED) {
+            throw ValidationException::withMessages([
+                'request' => ['This access request has already been reviewed.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $accessRequest->forceFill([
+            'tenant_id' => $request->user()->tenant_id,
+            'status' => AccountAccessRequest::STATUS_REJECTED,
+            'reviewed_by_id' => $request->user()->id,
+            'reviewed_at' => now(),
+            'review_comment' => $data['reason'],
+        ])->save();
+
+        \App\Models\AuditLog::record('auth.access_rejected', [
+            'auditable_type' => AccountAccessRequest::class,
+            'auditable_id' => $accessRequest->id,
+            'new_values' => ['reason' => $data['reason']],
+            'tags' => 'auth',
+        ]);
+
+        return response()->json(['message' => 'Access request rejected.']);
     }
 }

@@ -24,6 +24,8 @@ Route::prefix('v1')->group(function () {
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
         Route::post('access-request', [AuthController::class, 'accessRequest'])->middleware('throttle:5,1');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+        Route::get('invitations/{token}', [AuthController::class, 'showInvitation'])->middleware('throttle:20,1');
+        Route::post('invitations/{token}/activate', [AuthController::class, 'activateInvitation'])->middleware('throttle:5,1');
         // Lightweight connection pre-warm used by the mobile splash screen.
         Route::get('ping', fn () => response()->json(['ok' => true]))->middleware('throttle:60,1');
     });
@@ -62,6 +64,7 @@ Route::prefix('v1')->group(function () {
 
         Route::prefix('auth')->group(function () {
             Route::post('logout', [AuthController::class, 'logout']);
+            Route::post('logout-all', [AuthController::class, 'logoutAll']);
             Route::get('me', [AuthController::class, 'me']);
             Route::post('force-reset-password', [AuthController::class, 'forceResetPassword']);
             Route::post('device-token', [AuthController::class, 'registerDeviceToken']);
@@ -131,7 +134,16 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);
             Route::post('users/{user}/change-password', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'changePassword']);
+            Route::post('users/{user}/password-reset', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'sendPasswordReset']);
+            Route::post('users/{user}/resend-invitation', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'resendInvitation']);
+            Route::patch('users/{user}/status', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'updateStatus']);
+            Route::patch('users/{user}/roles', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'updateRoles']);
+            Route::post('users/{user}/mfa-reset', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'mfaReset']);
+            Route::post('users/{user}/revoke-sessions', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'revokeSessions']);
             Route::get('users/{user}/audit', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'audit']);
+            Route::get('access-requests', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'accessRequests']);
+            Route::post('access-requests/{accessRequest}/approve', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'approveAccessRequest']);
+            Route::post('access-requests/{accessRequest}/reject', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'rejectAccessRequest']);
 
             // Admin: user profile documents
             Route::get('users/{user}/documents', [\App\Http\Controllers\Api\V1\ProfileDocumentController::class, 'adminIndex']);

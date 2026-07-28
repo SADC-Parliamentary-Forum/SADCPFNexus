@@ -18,6 +18,7 @@ const PUBLIC_PATHS = [
   LOGIN_PATH,
   "/forgot-password",
   "/request-password",
+  "/activate-account",
   "/supplier/register",
   "/tender-notices",
 ];
@@ -26,6 +27,7 @@ const PUBLIC_PATHS = [
 const ANON_OK_PATHS = [
   "/forgot-password",
   "/request-password",
+  "/activate-account",
   RESET_PATH,
 ];
 
@@ -170,6 +172,7 @@ export const config = {
     "/login",
     "/forgot-password",
     "/request-password",
+    "/activate-account",
     "/reset-password",
     "/setup",
     "/approval",

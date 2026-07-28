@@ -112,6 +112,7 @@ api.interceptors.response.use(
           path.startsWith("/login") ||
           path.startsWith("/forgot-password") ||
           path.startsWith("/request-password") ||
+          path.startsWith("/activate-account") ||
           path.startsWith("/reset-password") ||
           path.startsWith("/setup") ||
           path.startsWith("/approval") ||
@@ -183,6 +184,18 @@ export const authApi = {
     return api.post<{ message: string }>("/auth/access-request", {
       ...data,
       official_email: data.official_email.trim(),
+    });
+  },
+  getInvitation: async (token: string) =>
+    api.get<{ data: { email: string; name?: string | null; expires_at?: string | null } }>(
+      `/auth/invitations/${encodeURIComponent(token)}`
+    ),
+  activateInvitation: async (token: string, password: string, passwordConfirmation: string) => {
+    await ensureCsrfCookie();
+    return api.post<{ message: string }>(`/auth/invitations/${encodeURIComponent(token)}/activate`, {
+      password,
+      password_confirmation: passwordConfirmation,
+      accepted_notices: true,
     });
   },
   resetPassword: async (token: string, email: string, password: string, passwordConfirmation: string) => {
@@ -292,6 +305,7 @@ export interface AuthUser {
   tenant_id: number;
   vendor_id?: number | null;
   classification: string;
+  account_status?: string;
   mfa_enabled?: boolean;
   must_reset_password?: boolean;
   setup_completed?: boolean;
@@ -312,6 +326,12 @@ export interface User {
   roles: string[];
   classification: string;
   is_active: boolean;
+  account_status?: string;
+  latest_account_invitation?: {
+    id: number;
+    status: string;
+    expires_at: string;
+  } | null;
   mfa_enabled: boolean;
   bio?: string | null;
   date_of_birth?: string | null;
@@ -331,6 +351,20 @@ export interface User {
   qualifications?: { title: string; institution: string; year: string }[] | null;
   portfolios?: Portfolio[];
   created_at: string;
+}
+
+export interface AccessRequest {
+  id: number;
+  full_name: string;
+  official_email: string;
+  position_title?: string | null;
+  department_name?: string | null;
+  supervisor_name?: string | null;
+  reason?: string | null;
+  status: string;
+  reviewed_at?: string | null;
+  review_comment?: string | null;
+  created_at?: string;
 }
 
 export interface Portfolio {
@@ -439,12 +473,25 @@ export const adminApi = {
       skipped_count: number;
     }>("/admin/users/bulk-deactivate", { ids }),
   reactivateUser: (id: number) => api.post(`/admin/users/${id}/reactivate`),
-  changeUserPassword: (id: number, password: string, passwordConfirmation: string) =>
-    api.post<{ message: string }>(`/admin/users/${id}/change-password`, {
-      password,
-      password_confirmation: passwordConfirmation,
-    }),
+  changeUserPassword: (id: number, _password?: string, _passwordConfirmation?: string) =>
+    api.post<{ message: string }>(`/admin/users/${id}/password-reset`),
+  resendUserInvitation: (id: number) =>
+    api.post<{ message: string; user: User }>(`/admin/users/${id}/resend-invitation`),
+  updateUserStatus: (id: number, data: { status: string; reason?: string }) =>
+    api.patch<{ message: string; user: User }>(`/admin/users/${id}/status`, data),
   getUserAudit: (id: number) => api.get(`/admin/users/${id}/audit`),
+  listAccessRequests: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<AccessRequest>>("/admin/access-requests", { params }),
+  approveAccessRequest: (id: number, data: {
+    role: string;
+    department_id?: number | null;
+    employee_number?: string;
+    job_title?: string;
+    classification?: string;
+    review_comment?: string;
+  }) => api.post<{ message: string; user: User }>(`/admin/access-requests/${id}/approve`, data),
+  rejectAccessRequest: (id: number, reason: string) =>
+    api.post<{ message: string }>(`/admin/access-requests/${id}/reject`, { reason }),
 
   // Departments
   listDepartments: () => api.get<PaginatedResponse<Department>>("/admin/departments"),

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\V1\Profile;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
+use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorController extends Controller
@@ -48,6 +51,12 @@ class TwoFactorController extends Controller
         // Store temporarily (not confirmed yet)
         $user->update(['mfa_secret' => $secret, 'mfa_enabled' => false]);
 
+        AuditLog::record('auth.mfa_setup_started', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
+
         $qrCodeUrl = $this->google2fa->getQRCodeUrl(
             config('app.name', 'SADCPFNexus'),
             $user->email,
@@ -79,10 +88,22 @@ class TwoFactorController extends Controller
         $valid = $this->google2fa->verifyKey($user->mfa_secret, $data['code']);
 
         if (!$valid) {
+            AuditLog::record('auth.mfa_setup_failed', [
+                'auditable_type' => \App\Models\User::class,
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
+            ]);
+
             throw ValidationException::withMessages(['code' => ['Invalid or expired code. Please try again.']]);
         }
 
         $user->update(['mfa_enabled' => true]);
+
+        AuditLog::record('auth.mfa_registered', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
 
         return response()->json(['message' => '2FA enabled successfully.', 'enabled' => true]);
     }
@@ -104,6 +125,13 @@ class TwoFactorController extends Controller
         }
 
         $user->update(['mfa_enabled' => false, 'mfa_secret' => null]);
+        $this->revokeOtherAccess($request);
+
+        AuditLog::record('auth.mfa_disabled', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
 
         return response()->json(['message' => '2FA disabled.', 'enabled' => false]);
     }
@@ -127,9 +155,51 @@ class TwoFactorController extends Controller
         $valid = $this->google2fa->verifyKey($user->mfa_secret, $data['code']);
 
         if (!$valid) {
+            AuditLog::record('auth.mfa.failed', [
+                'auditable_type' => \App\Models\User::class,
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
+            ]);
+
             throw ValidationException::withMessages(['code' => ['Invalid or expired verification code.']]);
         }
 
+        AuditLog::record('auth.mfa.success', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
+
         return response()->json(['message' => 'Code verified.', 'valid' => true]);
+    }
+
+    private function revokeOtherAccess(Request $request): void
+    {
+        $user = $request->user();
+        $currentToken = $user->currentAccessToken();
+        $currentTokenId = $currentToken instanceof PersonalAccessToken
+            ? $currentToken->getKey()
+            : null;
+        $currentSessionId = $request->hasSession() ? $request->session()->getId() : null;
+
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+            UserSession::where('user_id', $user->id)
+                ->where(function ($query) use ($currentTokenId) {
+                    $query->whereNull('token_id')->orWhere('token_id', '!=', $currentTokenId);
+                })
+                ->delete();
+
+            return;
+        }
+
+        $user->tokens()->delete();
+
+        UserSession::where('user_id', $user->id)
+            ->where(function ($query) use ($currentSessionId) {
+                $query->where('auth_type', '!=', 'browser')
+                    ->orWhere('session_id', '!=', $currentSessionId);
+            })
+            ->delete();
     }
 }

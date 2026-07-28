@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
+use App\Models\UserSession;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class ProfileController extends Controller
 {
@@ -49,7 +53,7 @@ class ProfileController extends Controller
     {
         $request->validate([
             'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => PasswordPolicy::rules($request->user()),
         ], [
             'password.confirmed' => 'The new password confirmation does not match.',
         ]);
@@ -62,10 +66,46 @@ class ProfileController extends Controller
             ]);
         }
 
-        $user->update([
-            'password' => Hash::make($request->password),
+        PasswordPolicy::applyNewPassword($user, (string) $request->password);
+
+        $this->revokeOtherAccess($request);
+
+        AuditLog::record('auth.password_changed', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
         ]);
 
         return response()->json(['message' => 'Password changed successfully.']);
+    }
+
+    private function revokeOtherAccess(Request $request): void
+    {
+        $user = $request->user();
+        $currentToken = $user->currentAccessToken();
+        $currentTokenId = $currentToken instanceof PersonalAccessToken
+            ? $currentToken->getKey()
+            : null;
+        $currentSessionId = $request->hasSession() ? $request->session()->getId() : null;
+
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+            UserSession::where('user_id', $user->id)
+                ->where(function ($query) use ($currentTokenId) {
+                    $query->whereNull('token_id')->orWhere('token_id', '!=', $currentTokenId);
+                })
+                ->delete();
+
+            return;
+        }
+
+        $user->tokens()->delete();
+
+        UserSession::where('user_id', $user->id)
+            ->where(function ($query) use ($currentSessionId) {
+                $query->where('auth_type', '!=', 'browser')
+                    ->orWhere('session_id', '!=', $currentSessionId);
+            })
+            ->delete();
     }
 }

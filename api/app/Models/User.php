@@ -14,6 +14,14 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
 
+    public const STATUS_INVITED = 'invited';
+    public const STATUS_PENDING_ACTIVATION = 'pending_activation';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_LOCKED = 'locked';
+    public const STATUS_SUSPENDED = 'suspended';
+    public const STATUS_DISABLED = 'disabled';
+    public const STATUS_OFFBOARDED = 'offboarded';
+
     protected $guard_name = 'sanctum';
 
     protected $fillable = [
@@ -28,9 +36,18 @@ class User extends Authenticatable
         'job_title',
         'classification',
         'is_active',
+        'account_status',
+        'status_changed_at',
+        'suspended_at',
+        'disabled_at',
+        'offboarded_at',
+        'invited_at',
+        'activated_at',
+        'status_reason',
         'mfa_enabled',
         'mfa_secret',
         'must_reset_password',
+        'password_changed_at',
         'setup_completed',
         'last_login_at',
         'bio',
@@ -64,8 +81,15 @@ class User extends Authenticatable
             'last_login_at'     => 'datetime',
             'password'          => 'hashed',
             'is_active'              => 'boolean',
+            'status_changed_at'      => 'datetime',
+            'suspended_at'           => 'datetime',
+            'disabled_at'            => 'datetime',
+            'offboarded_at'          => 'datetime',
+            'invited_at'             => 'datetime',
+            'activated_at'           => 'datetime',
             'mfa_enabled'            => 'boolean',
             'must_reset_password'    => 'boolean',
+            'password_changed_at'    => 'datetime',
             'setup_completed'        => 'boolean',
             'date_of_birth'     => 'date',
             'join_date'         => 'date',
@@ -106,6 +130,21 @@ class User extends Authenticatable
             ->whereIn('document_type', Attachment::PROFILE_DOCUMENT_TYPES);
     }
 
+    public function accountInvitations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AccountInvitation::class);
+    }
+
+    public function latestAccountInvitation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AccountInvitation::class)->latestOfMany();
+    }
+
+    public function passwordHistories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PasswordHistory::class);
+    }
+
     /**
      * Whether the user has a system administrator role (accepts both "System Admin" and "System Administrator").
      */
@@ -125,5 +164,38 @@ class User extends Authenticatable
     public function isSupplier(): bool
     {
         return $this->hasAnyRole(['Supplier', 'Supplier Finance User']);
+    }
+
+    public function accountAllowsAuthentication(): bool
+    {
+        return (bool) $this->is_active && $this->account_status === self::STATUS_ACTIVE;
+    }
+
+    public function authenticationBlockReason(): ?string
+    {
+        if ($this->accountAllowsAuthentication()) {
+            return null;
+        }
+
+        return match ($this->account_status) {
+            self::STATUS_INVITED,
+            self::STATUS_PENDING_ACTIVATION => 'pending_activation',
+            self::STATUS_LOCKED => 'locked',
+            self::STATUS_SUSPENDED => 'suspended',
+            self::STATUS_OFFBOARDED => 'offboarded',
+            default => 'disabled',
+        };
+    }
+
+    public function isPrivilegedAccount(): bool
+    {
+        return $this->isSystemAdmin()
+            || $this->hasAnyRole([
+                'Secretary General',
+                'Finance Controller',
+                'HR Manager',
+                'HR Administrator',
+                'Procurement Officer',
+            ]);
     }
 }

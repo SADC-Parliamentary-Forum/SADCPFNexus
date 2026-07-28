@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\UserSession;
+use App\Models\AuditLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,11 +19,18 @@ class EnsureSessionAuthIsValid
             return $next($request);
         }
 
-        if (! $user->is_active) {
+        if (! $user->accountAllowsAuthentication()) {
+            AuditLog::record('auth.session_blocked', [
+                'auditable_type' => \App\Models\User::class,
+                'auditable_id'   => $user->id,
+                'new_values'     => ['reason' => $user->authenticationBlockReason()],
+                'tags'           => 'auth',
+            ]);
+
             $this->revokeCurrentAuth($request);
 
             return response()->json([
-                'message' => 'This account has been deactivated.',
+                'message' => 'This account is not active.',
             ], 403);
         }
 
