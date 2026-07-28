@@ -7444,3 +7444,99 @@ export const mandeApi = {
   deleteThematicArea: (id: number) =>
     api.delete<{ message: string }>(`/mande/thematic-areas/${id}`),
 };
+
+// ─── Meeting Resolutions / Decision Register ─────────────────────────────────
+
+export type MeetingDecisionStatus =
+  | "draft"
+  | "adopted"
+  | "in_progress"
+  | "implemented"
+  | "closed"
+  | "superseded";
+
+export type MeetingDecisionType = "resolution" | "management_decision";
+
+export interface MeetingDecision {
+  id: number;
+  tenant_id: number;
+  reference_number: string;
+  decision_type: MeetingDecisionType;
+  title: string;
+  body?: string | null;
+  status: MeetingDecisionStatus;
+  owner_id?: number | null;
+  due_date?: string | null;
+  meeting_minutes_id?: number | null;
+  workplan_event_id?: number | null;
+  is_confidential: boolean;
+  created_by: number;
+  adopted_by?: number | null;
+  adopted_at?: string | null;
+  adoption_notes?: string | null;
+  implemented_at?: string | null;
+  closed_by?: number | null;
+  closed_at?: string | null;
+  closure_notes?: string | null;
+  superseded_by_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
+  owner?: { id: number; name: string } | null;
+  creator?: { id: number; name: string } | null;
+  adopter?: { id: number; name: string } | null;
+  minutes?: { id: number; title: string; meeting_date?: string; status?: string } | null;
+  actions?: MeetingDecisionAction[];
+}
+
+export interface MeetingDecisionAction {
+  id: number;
+  meeting_decision_id: number;
+  description: string;
+  notes?: string | null;
+  priority: "low" | "medium" | "high" | "critical";
+  status: "open" | "in_progress" | "completed" | "cancelled";
+  owner_id?: number | null;
+  due_date?: string | null;
+  assignment_id?: number | null;
+  owner?: { id: number; name: string } | null;
+  assignment?: { id: number; reference_number: string; status: string } | null;
+}
+
+export interface MeetingDecisionDashboard {
+  by_status: Record<string, number>;
+  total: number;
+  overdue: number;
+  open_critical_actions: number;
+}
+
+export const decisionsApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<MeetingDecision>>("/decisions", { params }),
+  get: (id: number) =>
+    api.get<{ data: MeetingDecision }>(`/decisions/${id}`),
+  create: (data: Partial<MeetingDecision>) =>
+    api.post<{ message: string; data: MeetingDecision }>("/decisions", data),
+  update: (id: number, data: Partial<MeetingDecision>) =>
+    api.put<{ message: string; data: MeetingDecision }>(`/decisions/${id}`, data),
+  remove: (id: number) =>
+    api.delete<{ message: string }>(`/decisions/${id}`),
+  adopt: (id: number, data?: { adoption_notes?: string; owner_id?: number; due_date?: string }) =>
+    api.post<{ message: string; data: MeetingDecision }>(`/decisions/${id}/adopt`, data ?? {}),
+  startProgress: (id: number) =>
+    api.post<{ message: string; data: MeetingDecision }>(`/decisions/${id}/start-progress`),
+  markImplemented: (id: number, data?: { notes?: string }) =>
+    api.post<{ message: string; data: MeetingDecision }>(`/decisions/${id}/mark-implemented`, data ?? {}),
+  close: (id: number, data?: { closure_notes?: string }) =>
+    api.post<{ message: string; data: MeetingDecision }>(`/decisions/${id}/close`, data ?? {}),
+  createAssignment: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ message: string; data: unknown }>(`/decisions/${id}/create-assignment`, data ?? {}),
+  listActions: (id: number) =>
+    api.get<{ data: MeetingDecisionAction[] }>(`/decisions/${id}/actions`),
+  addAction: (id: number, data: Partial<MeetingDecisionAction> & { create_assignment?: boolean }) =>
+    api.post<{ message: string; data: MeetingDecisionAction }>(`/decisions/${id}/actions`, data),
+  history: (id: number) =>
+    api.get<{ data: Array<{ id: number; change_type: string; from_status?: string; to_status?: string; notes?: string; created_at: string; actor?: { id: number; name: string } }> }>(`/decisions/${id}/history`),
+  dashboard: () =>
+    api.get<{ data: MeetingDecisionDashboard }>("/decisions/dashboard"),
+};
+

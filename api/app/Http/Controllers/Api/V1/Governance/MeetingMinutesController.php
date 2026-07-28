@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1\Governance;
 
 use App\Http\Controllers\Controller;
-use App\Models\Assignment;
 use App\Models\Attachment;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingMinutes;
@@ -246,25 +245,20 @@ class MeetingMinutesController extends Controller
             'description'      => ['nullable', 'string'],
         ]);
 
-        // Create a formal Assignment
-        $assignment = Assignment::create([
-            'tenant_id'          => $request->user()->tenant_id,
-            'reference_number'   => 'ASN-' . strtoupper(uniqid()),
-            'title'              => $actionItem->description,
-            'description'        => $data['description'] ?? "Action item from meeting: {$meetingMinute->title}",
-            'type'               => 'individual',
-            'priority'           => $data['priority'] ?? 'medium',
-            'status'             => 'draft',
-            'created_by'         => $request->user()->id,
-            'assigned_to'        => $data['assigned_to'] ?? $actionItem->responsible_id,
-            'due_date'           => $data['due_date'],
-            'meeting_minutes_id'  => $meetingMinute->id,
-        ]);
+        $assignment = app(\App\Modules\Assignments\Services\AssignmentService::class)->createFromSource([
+            'source_type' => 'meeting_action_item',
+            'source_id' => $actionItem->id,
+            'source_purpose' => 'minute_action',
+            'source_reference' => 'MIN-'.$meetingMinute->id,
+            'source_title' => $meetingMinute->title,
+            'title' => $actionItem->description,
+            'description' => $data['description'] ?? "Action item from meeting: {$meetingMinute->title}",
+            'priority' => $data['priority'] ?? 'medium',
+            'assigned_to' => $data['assigned_to'] ?? $actionItem->responsible_id,
+            'due_date' => $data['due_date'],
+            'meeting_minutes_id' => $meetingMinute->id,
+        ], $request->user());
 
-        // Issue it immediately
-        $assignment->update(['status' => 'issued']);
-
-        // Link back to action item
         $actionItem->update(['assignment_id' => $assignment->id, 'status' => 'in_progress']);
         $actionItem->load('responsible:id,name', 'assignment:id,reference_number,status');
 

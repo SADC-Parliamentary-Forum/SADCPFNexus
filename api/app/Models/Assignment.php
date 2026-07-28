@@ -20,6 +20,8 @@ class Assignment extends Model
         'pif',
         'meeting_minutes',
         'meeting_action_item',
+        'meeting_decision',
+        'meeting_decision_action',
         'programme',
         'me_recommendation',
         'procurement',

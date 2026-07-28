@@ -344,7 +344,8 @@ const NAV_ITEMS: NavItem[] = [
     icon: "policy",
     section: "Governance",
     children: [
-      { label: "Resolutions",        href: "/governance/resolutions", icon: "gavel" },
+      { label: "Decision Register",  href: "/decisions",              icon: "gavel" },
+      { label: "Resolutions (legacy)", href: "/governance/resolutions", icon: "description" },
       { label: "Plenary Sessions",   href: "/governance/plenary",     icon: "groups_3" },
       { label: "Meetings & Minutes", href: "/governance",              icon: "meeting_room" },
     ],

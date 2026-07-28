@@ -1222,6 +1222,27 @@ Route::prefix('v1')->group(function () {
         Route::delete('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteActionItem']);
         Route::post('governance/minutes/{meetingMinute}/action-items/{actionItem}/assign', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'assignActionItem']);
 
+        // Meeting Resolutions / Decision Register (Phase 1)
+        Route::prefix('decisions')->group(function () {
+            Route::get('dashboard', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'dashboard']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'store']);
+            Route::get('{decision}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'show']);
+            Route::put('{decision}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'update']);
+            Route::delete('{decision}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'destroy']);
+            Route::post('{decision}/adopt', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'adopt']);
+            Route::post('{decision}/start-progress', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'startProgress']);
+            Route::post('{decision}/mark-implemented', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'markImplemented']);
+            Route::post('{decision}/close', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'close']);
+            Route::post('{decision}/supersede', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'supersede']);
+            Route::get('{decision}/history', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'history']);
+            Route::post('{decision}/create-assignment', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'createAssignment']);
+            Route::get('{decision}/actions', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'listActions']);
+            Route::post('{decision}/actions', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'storeAction']);
+            Route::put('{decision}/actions/{action}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'updateAction']);
+            Route::post('{decision}/actions/{action}/create-assignment', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'createActionAssignment']);
+        });
+
         // Correspondence & Registry (ICRMS) — Phase 1 Register
         Route::prefix('correspondence')->group(function () {
             $letters = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class;

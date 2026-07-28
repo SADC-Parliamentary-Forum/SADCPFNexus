@@ -79,6 +79,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'system.admin',
             // Risk Register
             'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin', 'risk.accept', 'risk.confidential',
+            // Meeting Resolutions / Decision Register
+            'decisions.view', 'decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin', 'decisions.confidential',
             // M&E / Results Monitoring (PRD Â§10)
             'mande.view', 'mande.create', 'mande.review', 'mande.admin',
             // Weekly Summary Reports (operational â€” distinct from email digest)
@@ -151,6 +153,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $governanceOfficer->syncPermissions(
                 Permission::whereIn('name', [
                     'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
+                    'decisions.view', 'decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin', 'decisions.confidential',
                     'reports.view', 'reports.export',
                 ])->where('guard_name', $guard)->get()
             );
@@ -174,6 +177,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
                     'governance.view', 'reports.view', 'assets.view',
+                    'decisions.view', 'decisions.create',
                     'stock.view',
                     'saam.view', 'saam.delegate',
                     'correspondence.view', 'correspondence.create',
@@ -252,6 +256,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'finance.view', 'finance.approve',
                     'salary_advance.view', 'salary_advance.approve',
                     'governance.view', 'governance.approve',
+                    'decisions.view', 'decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin', 'decisions.confidential',
                     'hr.view', 'hr.approve',
                     'reports.view', 'reports.export',
                     'audit.view',
@@ -342,6 +347,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'leave.view', 'imprest.view', 'finance.view',
                     'salary_advance.view', 'salary_advance.approve',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
+                    'decisions.view', 'decisions.create', 'decisions.adopt', 'decisions.manage',
                     'workplan.view', 'assignments.view',
                     'mande.view', 'mande.create', 'mande.review',
                     'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.submit',

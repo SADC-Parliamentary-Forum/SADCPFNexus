@@ -343,6 +343,16 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nA risk has been escalated to level {{level}} by {{actor}}.\n\nRisk Code: {{risk_code}}\nTitle: {{title}}\n\n{{notes}}\n\nPlease log in to review.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Meeting Resolutions / Decision Register
+            'decision.adopted' => [
+                'subject' => 'Decision adopted — {{reference}}',
+                'body'    => "Dear {{name}},\n\nDecision {{reference}} ({{title}}) has been adopted by {{adopter}}.\n\nPlease log in to review implementation responsibilities.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'decision.assigned' => [
+                'subject' => 'Decision follow-up assigned — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYou have been assigned a follow-up for decision {{reference}} ({{title}}).\n\nDue date: {{due_date}}\n\nPlease log in to review.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // SRHR / Field Researchers
             'srhr.deployment.started' => [
                 'subject' => 'Field deployment confirmed — {{reference}}',
