@@ -80,6 +80,15 @@ class RolesAndPermissionsSeeder extends Seeder
             'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin',
             // M&E / Results Monitoring (PRD §10)
             'mande.view', 'mande.create', 'mande.review', 'mande.admin',
+            // Weekly Summary Reports (operational — distinct from email digest)
+            'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
+            'weekly-reports.submit', 'weekly-reports.view-team', 'weekly-reports.review-team',
+            'weekly-reports.return', 'weekly-reports.accept', 'weekly-reports.consolidate-department',
+            'weekly-reports.view-department', 'weekly-reports.view-management',
+            'weekly-reports.publish-department', 'weekly-reports.publish-institutional',
+            'weekly-reports.record-decision', 'weekly-reports.create-assignment', 'weekly-reports.create-risk',
+            'weekly-reports.manage-periods', 'weekly-reports.manage-templates', 'weekly-reports.manage-exemptions',
+            'weekly-reports.reopen', 'weekly-reports.export', 'weekly-reports.audit', 'weekly-reports.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -169,9 +178,13 @@ class RolesAndPermissionsSeeder extends Seeder
                     'correspondence.registry', 'correspondence.dispatch',
                     'correspondence.review', 'correspondence.send',
                     'parliaments.view',
+                    'parliaments.view',
+                    'assignments.view', 'assignments.create',
                     'timesheets.view', 'timesheets.create', 'timesheets.view-own',
                     'timesheets.create-own', 'timesheets.edit-own-draft', 'timesheets.submit',
                     'overtime.request',
+                    'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
+                    'weekly-reports.submit', 'weekly-reports.export',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -182,9 +195,17 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.hod_approve',
                     'hr.view', 'travel.view', 'leave.view', 'finance.view',
                     'reports.view',
+                    'reports.view',
                     'timesheets.view', 'timesheets.view-team', 'timesheets.review-team',
                     'timesheets.return', 'timesheets.approve',
                     'overtime.recommend', 'overtime.approve', 'overtime.verify-actual',
+                    'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
+                    'weekly-reports.submit', 'weekly-reports.view-team', 'weekly-reports.review-team',
+                    'weekly-reports.return', 'weekly-reports.accept',
+                    'weekly-reports.consolidate-department', 'weekly-reports.view-department',
+                    'weekly-reports.publish-department', 'weekly-reports.record-decision',
+                    'weekly-reports.create-assignment', 'weekly-reports.create-risk',
+                    'weekly-reports.export',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -321,6 +342,11 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'workplan.view', 'assignments.view',
                     'mande.view', 'mande.create', 'mande.review',
+                    'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.submit',
+                    'weekly-reports.view-team', 'weekly-reports.review-team', 'weekly-reports.return',
+                    'weekly-reports.accept', 'weekly-reports.view-department', 'weekly-reports.view-management',
+                    'weekly-reports.publish-institutional', 'weekly-reports.record-decision',
+                    'weekly-reports.create-assignment', 'weekly-reports.create-risk', 'weekly-reports.export',
                 ])->where('guard_name', $guard)->get()
             );
 

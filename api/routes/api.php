@@ -1341,7 +1341,7 @@ Route::prefix('v1')->group(function () {
             Route::get('policies/{policy}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'download']);
         });
 
-        // Weekly Summary
+        // Weekly Summary (email digest — existing)
         Route::prefix('weekly-summary')->group(function () {
             Route::get('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'getPreferences']);
             Route::put('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'updatePreferences']);
@@ -1353,6 +1353,36 @@ Route::prefix('v1')->group(function () {
             Route::get('runs',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listRuns']);
             Route::post('run',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'triggerRun']);
         });
+
+        // Weekly Summary Reports (operational progress reporting — PRD Phase 1)
+        Route::prefix('weekly-summaries')->group(function () {
+            Route::get('dashboard', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'dashboard']);
+            Route::get('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'periods']);
+            Route::post('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'storePeriod']);
+            Route::get('current', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'current']);
+            Route::get('current/suggestions', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'suggestions']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'store']);
+            Route::post('department', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'department']);
+            Route::post('institutional', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'institutional']);
+            Route::post('exemptions', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'exemptions']);
+            Route::get('{weeklySummary}', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'show']);
+            Route::put('{weeklySummary}', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'update']);
+            Route::post('{weeklySummary}/items', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'storeItem']);
+            Route::post('{weeklySummary}/submit', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'submit']);
+            Route::post('{weeklySummary}/return', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'returnReport']);
+            Route::post('{weeklySummary}/accept', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'accept']);
+            Route::post('{weeklySummary}/reopen', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'reopen']);
+            Route::post('{weeklySummary}/include-suggestion', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'includeSuggestion']);
+            Route::post('{weeklySummary}/exclude-suggestion', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'excludeSuggestion']);
+            Route::post('{weeklySummary}/consolidate-item', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'consolidateItem']);
+            Route::post('{weeklySummary}/publish', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'publish']);
+            Route::post('{weeklySummary}/extend-deadline', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'extendDeadline']);
+            Route::get('{weeklySummary}/export/{format}', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'export']);
+        });
+        Route::post('weekly-summary-items/{weeklySummaryItem}/create-assignment', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'createAssignmentFromItem']);
+        Route::post('weekly-summary-items/{weeklySummaryItem}/record-decision', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'recordDecision'])
+            ->whereNumber('weeklySummaryItem');
+        Route::post('weekly-summary-items/{weeklySummaryItem}/carry-forward', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'carryForward']);
 
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {

@@ -55,6 +55,20 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "Weekly Summaries",
+    href: "/weekly-summaries",
+    icon: "calendar_view_week",
+    section: "Accountability",
+    children: [
+      { label: "My Weekly Summary", href: "/weekly-summaries", icon: "edit_note" },
+      { label: "Team Review", href: "/weekly-summaries/review", icon: "rate_review" },
+      { label: "Department Summary", href: "/weekly-summaries/department", icon: "corporate_fare" },
+      { label: "Institutional Summary", href: "/weekly-summaries/institutional", icon: "account_balance" },
+      { label: "Compliance", href: "/weekly-summaries/compliance", icon: "rule" },
+      { label: "Email Digest (legacy)", href: "/reports/weekly", icon: "mail" },
+    ],
+  },
+  {
     label: "Travel",
     href: "/travel",
     icon: "flight_takeoff",

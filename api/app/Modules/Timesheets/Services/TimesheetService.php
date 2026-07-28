@@ -511,6 +511,45 @@ class TimesheetService
      *
      * @return array<string, mixed>
      */
+    /**
+     * Suggestion rows for Weekly Summaries (opt-in include only).
+     *
+     * @return list<array{source_id:int,reference:?string,title:string,status:?string,meta:array}>
+     */
+    public function weeklySummarySuggestions(User $employee, $period): array
+    {
+        $start = $period->start_date instanceof Carbon
+            ? $period->start_date->copy()->startOfDay()
+            : Carbon::parse($period->start_date)->startOfDay();
+        $end = $period->end_date instanceof Carbon
+            ? $period->end_date->copy()->endOfDay()
+            : Carbon::parse($period->end_date)->endOfDay();
+
+        $rows = Timesheet::query()
+            ->where('tenant_id', $employee->tenant_id)
+            ->where('user_id', $employee->id)
+            ->whereDate('week_start', '>=', $start->toDateString())
+            ->whereDate('week_start', '<=', $end->toDateString())
+            ->orderByDesc('week_start')
+            ->get();
+
+        return $rows->map(function (Timesheet $ts) {
+            $ref = $ts->week_start?->format('Y-m-d') ?? (string) $ts->id;
+
+            return [
+                'source_id' => (int) $ts->id,
+                'reference' => $ref,
+                'title' => 'Timesheet week of '.$ref.' ('.($ts->status ?? 'unknown').')',
+                'status' => $ts->status,
+                'meta' => [
+                    'expected_hours' => $ts->expected_hours,
+                    'accounted_hours' => $ts->accounted_hours,
+                    'week_start' => $ts->week_start?->toDateString(),
+                ],
+            ];
+        })->all();
+    }
+
     public function weeklySummaryContract(int $tenantId, Carbon $periodStart, Carbon $periodEnd, ?array $userIds = null): array
     {
         $base = DB::table('timesheets')

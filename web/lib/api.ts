@@ -6668,6 +6668,70 @@ export const weeklySummaryApi = {
     api.post<{ message: string }>("/admin/weekly-summary/run"),
 };
 
+/** Operational Weekly Summary Reports (distinct from email digest above). */
+export interface WeeklyOpsReport {
+  id: number;
+  uuid: string;
+  reference: string;
+  report_type: "individual" | "department" | "institutional";
+  status: string;
+  period_id: number;
+  employee_id?: number | null;
+  department_id?: number | null;
+  version: number;
+  submitted_at?: string | null;
+  accepted_at?: string | null;
+  published_at?: string | null;
+  additional_notes?: string | null;
+  items?: Array<Record<string, unknown>>;
+  blockers?: Array<Record<string, unknown>>;
+  decision_requests?: Array<Record<string, unknown>>;
+  priorities?: Array<Record<string, unknown>>;
+  risks?: Array<Record<string, unknown>>;
+  period?: { id: number; start_date: string; end_date: string; reference: string };
+}
+
+export const weeklyReportsApi = {
+  dashboard: () => api.get<{ data: Record<string, unknown> }>("/weekly-summaries/dashboard"),
+  periods: () => api.get<{ data: Array<Record<string, unknown>> }>("/weekly-summaries/periods"),
+  current: (periodId?: number) =>
+    api.get<{ data: WeeklyOpsReport }>("/weekly-summaries/current", { params: periodId ? { period_id: periodId } : undefined }),
+  suggestions: (periodId?: number) =>
+    api.get<{ data: { suggestions: Array<Record<string, unknown>>; note?: string; deferred_hooks?: Array<Record<string, unknown>> } }>(
+      "/weekly-summaries/current/suggestions",
+      { params: periodId ? { period_id: periodId } : undefined },
+    ),
+  create: (periodId?: number) =>
+    api.post<{ data: WeeklyOpsReport }>("/weekly-summaries/", periodId ? { period_id: periodId } : {}),
+  get: (id: number) => api.get<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}`),
+  update: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}`, data),
+  addItem: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown> }>(`/weekly-summaries/${id}/items`, data),
+  submit: (id: number) =>
+    api.post<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}/submit`, { declaration_confirmed: true }),
+  returnReport: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}/return`, data),
+  accept: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}/accept`, data ?? {}),
+  includeSuggestion: (id: number, data: Record<string, unknown>) =>
+    api.post(`/weekly-summaries/${id}/include-suggestion`, data),
+  excludeSuggestion: (id: number, data: Record<string, unknown>) =>
+    api.post(`/weekly-summaries/${id}/exclude-suggestion`, data),
+  department: (periodId: number, departmentId?: number) =>
+    api.post<{ data: WeeklyOpsReport }>("/weekly-summaries/department", {
+      period_id: periodId,
+      department_id: departmentId,
+    }),
+  institutional: (periodId: number) =>
+    api.post<{ data: WeeklyOpsReport }>("/weekly-summaries/institutional", { period_id: periodId }),
+  consolidateItem: (id: number, data: Record<string, unknown>) =>
+    api.post(`/weekly-summaries/${id}/consolidate-item`, data),
+  publish: (id: number) => api.post<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}/publish`),
+  exportUrl: (id: number, format: "pdf" | "csv" | "word") =>
+    `/api/v1/weekly-summaries/${id}/export/${format}`,
+};
+
 // ── M&E / Results Monitoring (PRD §10 + §23.5) ───────────────────────────────
 
 export type StrategicPlanStatus = "draft" | "active" | "archived";

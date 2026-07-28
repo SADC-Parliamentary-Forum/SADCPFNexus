@@ -459,6 +459,24 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nBalance register {{reference}} has been locked for the current period by {{controller}}.\n\nNo further updates can be made until the period is unlocked.\n\nRegards,\nSADC-PF Finance",
             ],
 
+            // Weekly Summary Reports (operational)
+            'weekly_report.submitted' => [
+                'subject' => 'Weekly summary submitted — {{reference}}',
+                'body'    => "Dear {{name}},\n\n{{employee}} has submitted weekly summary {{reference}} for your review.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'weekly_report.returned' => [
+                'subject' => 'Weekly summary returned — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYour weekly summary {{reference}} has been returned for correction. Please revise and resubmit.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'weekly_report.accepted' => [
+                'subject' => 'Weekly summary accepted — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYour weekly summary {{reference}} has been accepted.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'weekly_report.missing' => [
+                'subject' => 'Weekly summary outstanding',
+                'body'    => "Dear {{name}},\n\nYour weekly summary for the current reporting period has not yet been submitted.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Consumables / Stock
             'stock.low_stock' => [
                 'subject' => 'Low stock alert — {{item_code}}',

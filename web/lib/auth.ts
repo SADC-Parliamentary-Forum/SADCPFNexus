@@ -167,6 +167,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/approvals", permission: ["travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
   { path: "/alerts" },
   { path: "/assignments" },
+  { path: "/weekly-summaries" },
   { path: "/travel/settings", permission: ["travel.admin", "travel.finance-review"] },
   { path: "/travel/reports", permission: ["travel.export", "travel.view", "reports.export"] },
   { path: "/travel/register", permission: ["travel.view", "travel.export", "travel.admin"] },
