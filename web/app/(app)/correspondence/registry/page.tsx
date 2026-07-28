@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
@@ -33,7 +33,7 @@ function safeIsoDay(value: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function CorrespondenceRegistryPage() {
+function CorrespondenceRegistryPageInner() {
   const searchParams = useSearchParams();
   const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
   const [total, setTotal] = useState(0);
@@ -192,5 +192,13 @@ export default function CorrespondenceRegistryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CorrespondenceRegistryPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-400">Loading registry...</div>}>
+      <CorrespondenceRegistryPageInner />
+    </Suspense>
   );
 }
