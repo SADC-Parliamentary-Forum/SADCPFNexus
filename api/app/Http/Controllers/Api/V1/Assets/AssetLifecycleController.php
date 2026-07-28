@@ -170,11 +170,41 @@ class AssetLifecycleController extends Controller
 
     public function depreciationRuns(Request $request): JsonResponse
     {
-        $rows = AssetDepreciationRun::where('tenant_id', $request->user()->tenant_id)
-            ->orderByDesc('id')
-            ->paginate(20);
+        $query = AssetDepreciationRun::where('tenant_id', $request->user()->tenant_id)
+            ->with(['runner:id,name']);
 
-        return response()->json($rows);
+        if ($request->filled('status')) {
+            $query->where('status', (string) $request->input('status'));
+        }
+
+        if ($request->filled('search')) {
+            $term = '%'.trim((string) $request->input('search')).'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('status', 'like', $term)
+                    ->orWhere('run_date', 'like', $term)
+                    ->orWhere('period_start', 'like', $term)
+                    ->orWhere('period_end', 'like', $term);
+            });
+        }
+
+        $perPage = min(100, max(1, (int) $request->input('per_page', 25)));
+
+        return response()->json($query->orderByDesc('id')->paginate($perPage));
+    }
+
+    public function showDepreciationRun(Request $request, AssetDepreciationRun $assetDepreciationRun): JsonResponse
+    {
+        if ((int) $assetDepreciationRun->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $assetDepreciationRun->load([
+            'runner:id,name',
+            'policy:id,version,method',
+            'lines.asset:id,asset_code,name,tag_number,category',
+        ]);
+
+        return response()->json(['data' => $assetDepreciationRun]);
     }
 
     public function runDepreciation(Request $request): JsonResponse
@@ -183,10 +213,19 @@ class AssetLifecycleController extends Controller
         if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('finance.approve')) {
             abort(403);
         }
-        $run = $this->depreciation->run((int) $user->tenant_id, $user);
+
+        $validated = $request->validate([
+            'as_of' => ['nullable', 'date'],
+        ]);
+
+        $asOf = isset($validated['as_of'])
+            ? \Carbon\Carbon::parse($validated['as_of'])
+            : null;
+
+        $run = $this->depreciation->run((int) $user->tenant_id, $user, $asOf);
 
         return response()->json([
-            'data' => $run,
+            'data' => $run->load(['runner:id,name', 'lines.asset:id,asset_code,name,tag_number']),
             'message' => 'Depreciation run completed for monitoring. Official GL remains the accounting system.',
         ], 201);
     }

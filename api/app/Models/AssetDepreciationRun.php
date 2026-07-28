@@ -32,4 +32,9 @@ class AssetDepreciationRun extends Model
     {
         return $this->belongsTo(AssetDepreciationRatePolicy::class, 'policy_id');
     }
+
+    public function runner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'run_by');
+    }
 }

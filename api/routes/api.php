@@ -1012,6 +1012,7 @@ Route::prefix('v1')->group(function () {
         Route::post('assets-meta/maintenance', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeMaintenance']);
         Route::post('assets-meta/maintenance/{assetMaintenanceRecord}/complete', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'completeMaintenance']);
         Route::get('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'depreciationRuns']);
+        Route::get('assets-meta/depreciation-runs/{assetDepreciationRun}', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'showDepreciationRun']);
         Route::post('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'runDepreciation']);
 
         // Disposal workflow

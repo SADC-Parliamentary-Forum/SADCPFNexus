@@ -317,4 +317,57 @@ class FixedAssetPhase1Test extends TestCase
             ->assertOk()
             ->assertJsonFragment(['id' => $asset->id]);
     }
+
+    public function test_depreciation_run_list_create_and_show(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $category = $this->makeCategory($tenant, 'it');
+
+        $asset = $this->makePendingAsset($tenant, $category, [
+            'status' => 'active',
+            'asset_class' => 'capital',
+            'purchase_date' => '2025-01-15',
+            'purchase_value' => 12000,
+            'useful_life_years' => 3,
+            'salvage_value' => 0,
+            'book_value' => 12000,
+            'accumulated_depreciation' => 0,
+            'tag_number' => 'TAG-DEPR-1',
+        ]);
+
+        $create = $http->postJson('/api/v1/assets-meta/depreciation-runs', [
+            'as_of' => '2026-07-28',
+        ])->assertCreated()
+            ->assertJsonPath('data.status', 'completed')
+            ->assertJsonPath('data.asset_count', 1);
+
+        $runId = (int) $create->json('data.id');
+        $this->assertGreaterThan(0, $runId);
+        $this->assertNotEmpty($create->json('data.lines'));
+
+        $list = $http->getJson('/api/v1/assets-meta/depreciation-runs')->assertOk();
+        $ids = collect($list->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($runId));
+
+        $show = $http->getJson("/api/v1/assets-meta/depreciation-runs/{$runId}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $runId);
+
+        $lineAssetIds = collect($show->json('data.lines'))->pluck('asset_id');
+        $this->assertTrue($lineAssetIds->contains($asset->id));
+
+        $fresh = $asset->fresh();
+        $this->assertLessThan(12000, (float) $fresh->book_value);
+        $this->assertGreaterThan(0, (float) $fresh->accumulated_depreciation);
+    }
+
+    public function test_staff_cannot_run_depreciation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $http->postJson('/api/v1/assets-meta/depreciation-runs', [])
+            ->assertForbidden();
+    }
 }
