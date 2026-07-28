@@ -1462,6 +1462,8 @@ export interface StockUnit {
   tenant_id: number;
   code: string;
   name: string;
+  base_unit_id?: number | null;
+  conversion_factor?: number | string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -1479,9 +1481,12 @@ export interface StockLocation {
 export type StockReasonCode =
   | "receipt"
   | "issue"
+  | "return"
+  | "transfer"
   | "shortage"
   | "damaged"
   | "expired"
+  | "write_off"
   | "stocktake"
   | "other";
 
@@ -1496,7 +1501,12 @@ export interface StockItem {
   stock_unit_id?: number | null;
   unit_cost: number | string | null;
   current_balance: number;
+  quantity_reserved?: number;
+  quantity_quarantined?: number;
+  available_quantity?: number;
   reorder_level: number;
+  max_level?: number | null;
+  tracks_batches?: boolean;
   storage_location: string | null;
   stock_location_id?: number | null;
   vendor_id: number | null;
@@ -1575,7 +1585,7 @@ export interface StocktakeLine {
   id: number;
   stocktake_id: number;
   stock_item_id: number;
-  system_qty: number;
+  system_qty: number | null;
   counted_qty: number | null;
   variance: number | null;
   notes?: string | null;
@@ -1588,7 +1598,8 @@ export interface Stocktake {
   reference_number: string;
   name: string;
   stock_location_id: number | null;
-  status: "draft" | "in_progress" | "completed" | "cancelled";
+  status: "draft" | "in_progress" | "pending_approval" | "completed" | "cancelled";
+  is_blind?: boolean;
   count_date: string;
   notes?: string | null;
   created_by: number;
@@ -1688,6 +1699,7 @@ export const stocktakesApi = {
     count_date: string;
     stock_location_id?: number | null;
     notes?: string | null;
+    is_blind?: boolean;
     include_all_active?: boolean;
     stock_item_ids?: number[];
   }) => api.post<{ data: Stocktake; message: string }>("/stock/stocktakes", data),
@@ -1695,8 +1707,152 @@ export const stocktakesApi = {
     api.put<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/counts`, { lines }),
   complete: (id: number) =>
     api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/complete`),
+  approveVariances: (id: number) =>
+    api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/approve-variances`),
   cancel: (id: number) =>
     api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/cancel`),
+};
+
+export interface StockRequestLine {
+  id: number;
+  stock_item_id: number;
+  quantity_requested: number;
+  quantity_approved?: number | null;
+  quantity_issued?: number;
+  item?: Pick<StockItem, "id" | "item_code" | "name" | "unit" | "current_balance" | "available_quantity">;
+}
+
+export interface StockRequest {
+  id: number;
+  reference_number: string;
+  status: string;
+  purpose?: string | null;
+  notes?: string | null;
+  lines?: StockRequestLine[];
+  requester?: { id: number; name: string };
+  created_at?: string;
+}
+
+export interface StockIssue {
+  id: number;
+  voucher_number: string;
+  status: string;
+  issue_date: string;
+  stock_request_id?: number | null;
+  issued_to_user?: { id: number; name: string } | null;
+  lines?: Array<{ id: number; stock_item_id: number; quantity: number; item?: Pick<StockItem, "id" | "item_code" | "name"> }>;
+}
+
+export interface StockTransfer {
+  id: number;
+  reference_number: string;
+  status: string;
+  from_location?: Pick<StockLocation, "id" | "code" | "name">;
+  to_location?: Pick<StockLocation, "id" | "code" | "name">;
+  lines?: Array<{ id: number; stock_item_id: number; quantity: number; item?: Pick<StockItem, "id" | "item_code" | "name"> }>;
+}
+
+export interface StockWriteOff {
+  id: number;
+  reference_number: string;
+  status: string;
+  quantity: number;
+  reason_code: string;
+  item?: Pick<StockItem, "id" | "item_code" | "name">;
+}
+
+export interface StockReplenishmentRequest {
+  id: number;
+  reference_number: string;
+  status: string;
+  quantity_requested: number;
+  quantity_suggested: number;
+  item?: Pick<StockItem, "id" | "item_code" | "name" | "current_balance" | "reorder_level">;
+}
+
+export interface StockAvailabilityRow {
+  id: number;
+  item_code: string;
+  name: string;
+  on_hand: number;
+  reserved: number;
+  quarantined: number;
+  available: number;
+  recommendation: string;
+}
+
+export const stockAvailabilityApi = {
+  check: (params: { q?: string; item_ids?: number[]; names?: string[] }) =>
+    api.get<{ data: StockAvailabilityRow[] }>("/stock/availability", { params }),
+  checkPost: (data: { q?: string; item_ids?: number[]; names?: string[] }) =>
+    api.post<{ data: StockAvailabilityRow[] }>("/stock/availability", data),
+};
+
+export const stockRequestsApi = {
+  list: (params?: { status?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<StockRequest>>("/stock/requests", { params }),
+  get: (id: number) => api.get<{ data: StockRequest }>(`/stock/requests/${id}`),
+  create: (data: {
+    purpose?: string;
+    notes?: string;
+    submit?: boolean;
+    lines: Array<{ stock_item_id: number; quantity_requested: number; notes?: string }>;
+  }) => api.post<{ data: StockRequest; message: string }>("/stock/requests", data),
+  submit: (id: number) => api.post<{ data: StockRequest; message: string }>(`/stock/requests/${id}/submit`),
+  approve: (id: number, lines?: Array<{ id: number; quantity_approved: number }>) =>
+    api.post<{ data: StockRequest; message: string }>(`/stock/requests/${id}/approve`, { lines }),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: StockRequest; message: string }>(`/stock/requests/${id}/reject`, { reason }),
+  cancel: (id: number) => api.post<{ data: StockRequest; message: string }>(`/stock/requests/${id}/cancel`),
+};
+
+export const stockIssuesApi = {
+  list: (params?: { per_page?: number }) =>
+    api.get<PaginatedResponse<StockIssue>>("/stock/issues", { params }),
+  get: (id: number) => api.get<{ data: StockIssue }>(`/stock/issues/${id}`),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: StockIssue; message: string }>("/stock/issues", data),
+  acknowledge: (id: number) =>
+    api.post<{ data: StockIssue; message: string }>(`/stock/issues/${id}/acknowledge`),
+};
+
+export const stockReturnsApi = {
+  list: (params?: { per_page?: number }) => api.get("/stock/returns", { params }),
+  create: (data: Record<string, unknown>) => api.post("/stock/returns", data),
+};
+
+export const stockTransfersApi = {
+  list: (params?: { per_page?: number }) =>
+    api.get<PaginatedResponse<StockTransfer>>("/stock/transfers", { params }),
+  get: (id: number) => api.get<{ data: StockTransfer }>(`/stock/transfers/${id}`),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: StockTransfer; message: string }>("/stock/transfers", data),
+  dispatch: (id: number) =>
+    api.post<{ data: StockTransfer; message: string }>(`/stock/transfers/${id}/dispatch`),
+  receive: (id: number) =>
+    api.post<{ data: StockTransfer; message: string }>(`/stock/transfers/${id}/receive`),
+};
+
+export const stockWriteOffsApi = {
+  list: (params?: { per_page?: number }) =>
+    api.get<PaginatedResponse<StockWriteOff>>("/stock/write-offs", { params }),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: StockWriteOff; message: string }>("/stock/write-offs", data),
+  approve: (id: number) =>
+    api.post<{ data: StockWriteOff; message: string }>(`/stock/write-offs/${id}/approve`),
+};
+
+export const stockReplenishmentsApi = {
+  list: (params?: { per_page?: number }) =>
+    api.get<PaginatedResponse<StockReplenishmentRequest>>("/stock/replenishments", { params }),
+  create: (data: Record<string, unknown>) =>
+    api.post<{ data: StockReplenishmentRequest; message: string }>("/stock/replenishments", data),
+};
+
+export const stockBatchesApi = {
+  list: (params?: { stock_item_id?: number; per_page?: number }) =>
+    api.get("/stock/batches", { params }),
+  create: (data: Record<string, unknown>) => api.post("/stock/batches", data),
 };
 
 // ─── Reports (hub endpoints for report types) ───────────────────────────────────

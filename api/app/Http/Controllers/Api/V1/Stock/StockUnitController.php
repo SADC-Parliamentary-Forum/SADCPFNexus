@@ -27,18 +27,22 @@ class StockUnitController extends Controller
 
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'code'       => ['required', 'string', 'max:32', Rule::unique('stock_units', 'code')->where('tenant_id', $tenantId)],
-            'name'       => ['required', 'string', 'max:255'],
-            'is_active'  => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'code'              => ['required', 'string', 'max:32', Rule::unique('stock_units', 'code')->where('tenant_id', $tenantId)],
+            'name'              => ['required', 'string', 'max:255'],
+            'base_unit_id'      => ['nullable', 'integer', Rule::exists('stock_units', 'id')->where('tenant_id', $tenantId)],
+            'conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
+            'is_active'         => ['nullable', 'boolean'],
+            'sort_order'        => ['nullable', 'integer', 'min:0'],
         ]);
 
         $unit = StockUnit::create([
-            'tenant_id'  => $tenantId,
-            'code'       => strtolower($data['code']),
-            'name'       => $data['name'],
-            'is_active'  => $data['is_active'] ?? true,
-            'sort_order' => $data['sort_order'] ?? 0,
+            'tenant_id'         => $tenantId,
+            'code'              => strtolower($data['code']),
+            'name'              => $data['name'],
+            'base_unit_id'      => $data['base_unit_id'] ?? null,
+            'conversion_factor' => $data['conversion_factor'] ?? null,
+            'is_active'         => $data['is_active'] ?? true,
+            'sort_order'        => $data['sort_order'] ?? 0,
         ]);
 
         AuditLog::record('stock.unit_created', [
@@ -59,10 +63,12 @@ class StockUnitController extends Controller
         }
 
         $data = $request->validate([
-            'code'       => ['sometimes', 'string', 'max:32', Rule::unique('stock_units', 'code')->where('tenant_id', $request->user()->tenant_id)->ignore($stockUnit->id)],
-            'name'       => ['sometimes', 'string', 'max:255'],
-            'is_active'  => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'code'              => ['sometimes', 'string', 'max:32', Rule::unique('stock_units', 'code')->where('tenant_id', $request->user()->tenant_id)->ignore($stockUnit->id)],
+            'name'              => ['sometimes', 'string', 'max:255'],
+            'base_unit_id'      => ['nullable', 'integer', Rule::exists('stock_units', 'id')->where('tenant_id', $request->user()->tenant_id)],
+            'conversion_factor' => ['nullable', 'numeric', 'min:0.0001'],
+            'is_active'         => ['nullable', 'boolean'],
+            'sort_order'        => ['nullable', 'integer', 'min:0'],
         ]);
         if (isset($data['code'])) {
             $data['code'] = strtolower($data['code']);

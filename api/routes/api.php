@@ -1086,6 +1086,7 @@ Route::prefix('v1')->group(function () {
             Route::get('stock/stocktakes/{stocktake}', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'show']);
             Route::put('stock/stocktakes/{stocktake}/counts', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'updateCounts']);
             Route::post('stock/stocktakes/{stocktake}/complete', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'complete']);
+            Route::post('stock/stocktakes/{stocktake}/approve-variances', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'approveVariances']);
             Route::post('stock/stocktakes/{stocktake}/cancel', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'cancel']);
 
             // Stock movements (in/out/adjustment) — declared before {stockItem} to avoid clashes
@@ -1093,12 +1094,50 @@ Route::prefix('v1')->group(function () {
             Route::post('stock/transactions', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'store']);
             Route::get('stock/transactions/{stockTransaction}', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'show']);
 
+            // PRD Phase 1 stores workflows
+            $stores = \App\Http\Controllers\Api\V1\Stock\StockStoresController::class;
+            Route::match(['get', 'post'], 'stock/availability', [$stores, 'availability']);
+
+            Route::get('stock/requests', [$stores, 'indexRequests']);
+            Route::post('stock/requests', [$stores, 'storeRequest']);
+            Route::get('stock/requests/{stockRequest}', [$stores, 'showRequest']);
+            Route::post('stock/requests/{stockRequest}/submit', [$stores, 'submitRequest']);
+            Route::post('stock/requests/{stockRequest}/approve', [$stores, 'approveRequest']);
+            Route::post('stock/requests/{stockRequest}/reject', [$stores, 'rejectRequest']);
+            Route::post('stock/requests/{stockRequest}/cancel', [$stores, 'cancelRequest']);
+
+            Route::get('stock/issues', [$stores, 'indexIssues']);
+            Route::post('stock/issues', [$stores, 'storeIssue']);
+            Route::get('stock/issues/{stockIssue}', [$stores, 'showIssue']);
+            Route::post('stock/issues/{stockIssue}/acknowledge', [$stores, 'acknowledgeIssue']);
+
+            Route::get('stock/returns', [$stores, 'indexReturns']);
+            Route::post('stock/returns', [$stores, 'storeReturn']);
+
+            Route::get('stock/transfers', [$stores, 'indexTransfers']);
+            Route::post('stock/transfers', [$stores, 'storeTransfer']);
+            Route::get('stock/transfers/{stockTransfer}', [$stores, 'showTransfer']);
+            Route::post('stock/transfers/{stockTransfer}/dispatch', [$stores, 'dispatchTransfer']);
+            Route::post('stock/transfers/{stockTransfer}/receive', [$stores, 'receiveTransfer']);
+
+            Route::get('stock/write-offs', [$stores, 'indexWriteOffs']);
+            Route::post('stock/write-offs', [$stores, 'storeWriteOff']);
+            Route::post('stock/write-offs/{stockWriteOff}/approve', [$stores, 'approveWriteOff']);
+
+            Route::get('stock/replenishments', [$stores, 'indexReplenishments']);
+            Route::post('stock/replenishments', [$stores, 'storeReplenishment']);
+
+            Route::get('stock/batches', [$stores, 'indexBatches']);
+            Route::post('stock/batches', [$stores, 'storeBatch']);
+
             // Stock items (§17.2)
             Route::get('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'index']);
             Route::post('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'store']);
             Route::get('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'show']);
             Route::put('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'update']);
             Route::delete('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'destroy']);
+            Route::post('stock/items/{stockItem}/quarantine', [$stores, 'quarantine']);
+            Route::post('stock/items/{stockItem}/release-quarantine', [$stores, 'releaseQuarantine']);
         });
 
         // Assignments, Oversight & Accountability

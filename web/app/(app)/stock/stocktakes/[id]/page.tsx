@@ -62,9 +62,28 @@ export default function StocktakeDetailPage() {
       await saveCounts();
       const res = await stocktakesApi.complete(stocktake.id);
       setStocktake(res.data.data);
-      toast("success", "Stocktake completed — variances posted");
+      toast(
+        "success",
+        res.data.data.status === "pending_approval"
+          ? "Submitted — variance approval required"
+          : "Stocktake completed — no variances"
+      );
     } catch {
       toast("error", "Complete failed — ensure every line has a count");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const approveVariances = async () => {
+    if (!stocktake) return;
+    setSaving(true);
+    try {
+      const res = await stocktakesApi.approveVariances(stocktake.id);
+      setStocktake(res.data.data);
+      toast("success", "Variances approved and posted to ledger");
+    } catch {
+      toast("error", "Variance approval failed");
     } finally {
       setSaving(false);
     }
@@ -80,6 +99,7 @@ export default function StocktakeDetailPage() {
           <h1 className="page-title">{stocktake.name}</h1>
           <p className="page-subtitle capitalize">
             Status: {stocktake.status.replace("_", " ")} · Count date: {String(stocktake.count_date).slice(0, 10)}
+            {stocktake.is_blind ? " · Blind count" : ""}
           </p>
         </div>
         <div className="flex gap-2">
@@ -87,8 +107,13 @@ export default function StocktakeDetailPage() {
           {canIssue && editable && (
             <>
               <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>Save counts</button>
-              <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Complete</button>
+              <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Submit / Complete</button>
             </>
+          )}
+          {canIssue && stocktake.status === "pending_approval" && (
+            <button type="button" className="btn-primary" disabled={saving} onClick={approveVariances}>
+              Approve variances
+            </button>
           )}
         </div>
       </div>
@@ -105,14 +130,18 @@ export default function StocktakeDetailPage() {
         <tbody>
           {(stocktake.lines ?? []).map((l) => {
             const counted = counts[l.id] === "" ? null : Number(counts[l.id]);
-            const variance = counted == null || Number.isNaN(counted) ? null : counted - l.system_qty;
+            const systemQty = l.system_qty;
+            const variance =
+              counted == null || Number.isNaN(counted) || systemQty == null
+                ? null
+                : counted - systemQty;
             return (
               <tr key={l.id} className="border-t border-neutral-100">
                 <td className="px-4 py-2">
                   <span className="font-mono text-xs text-neutral-400 mr-2">{l.item?.item_code}</span>
                   {l.item?.name}
                 </td>
-                <td className="px-4 py-2">{l.system_qty}</td>
+                <td className="px-4 py-2">{systemQty == null ? "—" : systemQty}</td>
                 <td className="px-4 py-2">
                   {editable ? (
                     <input

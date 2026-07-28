@@ -11,12 +11,14 @@ class Stocktake extends Model
 {
     public const STATUS_DRAFT = 'draft';
     public const STATUS_IN_PROGRESS = 'in_progress';
+    public const STATUS_PENDING_APPROVAL = 'pending_approval';
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
     public const STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_IN_PROGRESS,
+        self::STATUS_PENDING_APPROVAL,
         self::STATUS_COMPLETED,
         self::STATUS_CANCELLED,
     ];
@@ -27,18 +29,23 @@ class Stocktake extends Model
         'name',
         'stock_location_id',
         'status',
+        'is_blind',
         'count_date',
         'notes',
         'created_by',
         'completed_by',
         'completed_at',
+        'variance_approved_by',
+        'variance_approved_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'count_date'   => 'date',
-            'completed_at' => 'datetime',
+            'count_date'           => 'date',
+            'completed_at'         => 'datetime',
+            'variance_approved_at' => 'datetime',
+            'is_blind'             => 'boolean',
         ];
     }
 
@@ -67,6 +74,11 @@ class Stocktake extends Model
         return $this->belongsTo(User::class, 'completed_by');
     }
 
+    public function varianceApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'variance_approved_by');
+    }
+
     public function scopeForTenant(Builder $query, $tenantId): Builder
     {
         return $query->where('tenant_id', $tenantId);
@@ -75,5 +87,10 @@ class Stocktake extends Model
     public function isEditable(): bool
     {
         return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_IN_PROGRESS], true);
+    }
+
+    public function hasVariance(): bool
+    {
+        return $this->lines->contains(fn (StocktakeLine $line) => (int) $line->variance !== 0);
     }
 }

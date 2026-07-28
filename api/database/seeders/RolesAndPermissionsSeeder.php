@@ -36,6 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             // Consumables / Stock Register (separate from Fixed Assets)
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.admin',
+            'stock.approve', 'stock.transfer',
             'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
             'hr.view', 'hr.create', 'hr.edit', 'hr.approve', 'hr.admin', 'hr.supervisor',
             // HR Settings (master data governance — restricted to HR Manager & Finance Director)
@@ -142,6 +143,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'assets.view', 'assets.create', 'finance.view', 'governance.view',
                     // Procurement officers manage the consumables/stock register
                     'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage',
+                    'stock.approve', 'stock.transfer',
                 ])->where('guard_name', $guard)->get()
             );
 

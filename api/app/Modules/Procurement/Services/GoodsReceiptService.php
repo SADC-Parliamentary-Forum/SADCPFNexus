@@ -123,8 +123,21 @@ class GoodsReceiptService
 
             $type = $line['type'] ?? null;
 
-            if ($type === 'fixed_asset') {
-                // One physical unit = one asset record (qty 20 â†’ 20 pending assets).
+            // Classification gateway (PRD): capital/controlled → FA; consumable → stock; direct_expense → skip.
+            // Legacy aliases fixed_asset/stock/skip remain accepted.
+            $normalized = match ($type) {
+                'capital', 'controlled', 'fixed_asset' => 'fixed_asset',
+                'consumable', 'stock' => 'stock',
+                'direct_expense', 'skip' => 'skip',
+                default => null,
+            };
+
+            if ($normalized === 'skip') {
+                continue;
+            }
+
+            if ($normalized === 'fixed_asset') {
+                // One physical unit = one asset record (qty 20 → 20 pending assets).
                 $qty = (int) ($line['quantity'] ?? $grnItem->quantity_accepted ?? $grnItem->quantity_received ?? 1);
                 if ($qty < 1) {
                     $qty = 1;
@@ -144,13 +157,15 @@ class GoodsReceiptService
                     }
                 }
 
+                $assetCategory = $line['category'] ?? ($type === 'controlled' ? 'controlled' : 'equipment');
+
                 for ($i = 1; $i <= $qty; $i++) {
                     $suffix = $qty > 1 ? ' #'.$i : '';
                     Asset::create([
                         'tenant_id'              => $grn->tenant_id,
                         'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
                         'name'                   => $line['name'].$suffix,
-                        'category'               => $line['category'] ?? 'equipment',
+                        'category'               => $assetCategory,
                         'status'                 => 'pending',
                         'purchase_order_id'      => $grn->purchase_order_id,
                         'procurement_request_id' => $procurementRequestId,
@@ -160,12 +175,12 @@ class GoodsReceiptService
                         'notes'                  => $line['notes'] ?? null,
                     ]);
                 }
-            } elseif ($type === 'stock') {
-                // Consumables only - never create FA records for type=stock.
+            } elseif ($normalized === 'stock') {
+                // Consumables only — never create FA records for consumable/stock.
                 $this->stockService->receiveFromGrn($grn, $line, $user, $procurementRequestId);
             } else {
                 throw ValidationException::withMessages([
-                    'handoff' => 'Each handoff line must specify type fixed_asset or stock.',
+                    'handoff' => 'Each handoff line must specify type capital, controlled, consumable, direct_expense (or legacy fixed_asset/stock/skip).',
                 ]);
             }
         }

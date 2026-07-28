@@ -34,7 +34,8 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showHandoffModal, setShowHandoffModal] = useState(false);
-  const [handoffTypes, setHandoffTypes] = useState<Record<number, "stock" | "fixed_asset" | "skip">>({});
+  const [handoffTypes, setHandoffTypes] = useState<Record<number, "consumable" | "capital" | "controlled" | "direct_expense">>({});
+
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
   const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
@@ -54,10 +55,11 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   const acceptMutation = useMutation({
     mutationFn: (handoff?: Array<{
       goods_receipt_item_id: number;
-      type: "fixed_asset" | "stock";
+      type: "capital" | "controlled" | "consumable" | "direct_expense" | "fixed_asset" | "stock";
       name: string;
       quantity?: number;
       unit?: string;
+      category?: string;
     }>) => goodsReceiptsApi.accept(poId, grnId, handoff),
     onSuccess:  () => {
       setShowHandoffModal(false);
@@ -163,8 +165,8 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
               <>
                 <button
                   onClick={() => {
-                    const defaults: Record<number, "stock" | "fixed_asset" | "skip"> = {};
-                    items.forEach((it) => { defaults[it.id] = "stock"; });
+                    const defaults: Record<number, "consumable" | "capital" | "controlled" | "direct_expense"> = {};
+                    items.forEach((it) => { defaults[it.id] = "consumable"; });
                     setHandoffTypes(defaults);
                     setShowHandoffModal(true);
                   }}
@@ -318,7 +320,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
             <div>
               <h2 className="text-base font-bold text-neutral-900">Accept & classify handoff</h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Stock lines go to Consumables / Stock only. Fixed asset lines go to the FA register. Choose Skip to accept without creating register records.
+                Classification gateway: Capital/Controlled → Fixed Assets; Consumable → Stock; Direct expense → accept without register intake.
               </p>
             </div>
             <div className="space-y-3 max-h-72 overflow-y-auto">
@@ -330,12 +332,13 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
                     <p className="text-xs text-neutral-500">Accepted qty: {it.quantity_accepted ?? it.quantity_received}</p>
                     <select
                       className="form-input text-sm"
-                      value={handoffTypes[it.id] ?? "stock"}
-                      onChange={(e) => setHandoffTypes((p) => ({ ...p, [it.id]: e.target.value as "stock" | "fixed_asset" | "skip" }))}
+                      value={handoffTypes[it.id] ?? "consumable"}
+                      onChange={(e) => setHandoffTypes((p) => ({ ...p, [it.id]: e.target.value as "consumable" | "capital" | "controlled" | "direct_expense" }))}
                     >
-                      <option value="stock">Consumables / Stock</option>
-                      <option value="fixed_asset">Fixed Asset</option>
-                      <option value="skip">Skip handoff for this line</option>
+                      <option value="consumable">Consumable → Stock</option>
+                      <option value="capital">Capital → Fixed Asset</option>
+                      <option value="controlled">Controlled Non-Capital → Fixed Asset</option>
+                      <option value="direct_expense">Direct Expense (no register)</option>
                     </select>
                   </div>
                 );
@@ -348,15 +351,18 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
                 className="btn-primary flex-1"
                 onClick={() => {
                   const handoff = items
-                    .filter((it) => (handoffTypes[it.id] ?? "stock") !== "skip")
-                    .map((it) => ({
-                      goods_receipt_item_id: it.id,
-                      type: (handoffTypes[it.id] ?? "stock") as "stock" | "fixed_asset",
-                      name: it.purchase_order_item?.description ?? `GRN item ${it.id}`,
-                      quantity: Number(it.quantity_accepted ?? it.quantity_received ?? 1),
-                      unit: it.purchase_order_item?.unit ?? "each",
-                      category: "equipment",
-                    }));
+                    .filter((it) => (handoffTypes[it.id] ?? "consumable") !== "direct_expense")
+                    .map((it) => {
+                      const type = handoffTypes[it.id] ?? "consumable";
+                      return {
+                        goods_receipt_item_id: it.id,
+                        type,
+                        name: it.purchase_order_item?.description ?? `GRN item ${it.id}`,
+                        quantity: Number(it.quantity_accepted ?? it.quantity_received ?? 1),
+                        unit: it.purchase_order_item?.unit ?? "each",
+                        category: type === "controlled" ? "controlled" : "equipment",
+                      };
+                    });
                   acceptMutation.mutate(handoff.length ? handoff : undefined);
                 }}
               >

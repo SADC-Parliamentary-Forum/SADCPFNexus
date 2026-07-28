@@ -22,6 +22,7 @@ class StocktakeService
      *     count_date: string,
      *     stock_location_id?: int|null,
      *     notes?: string|null,
+     *     is_blind?: bool,
      *     include_all_active?: bool,
      *     stock_item_ids?: int[]
      * }  $data
@@ -35,6 +36,7 @@ class StocktakeService
                 'name'              => $data['name'],
                 'stock_location_id' => $data['stock_location_id'] ?? null,
                 'status'            => Stocktake::STATUS_DRAFT,
+                'is_blind'          => (bool) ($data['is_blind'] ?? false),
                 'count_date'        => $data['count_date'],
                 'notes'             => $data['notes'] ?? null,
                 'created_by'        => $user->id,
@@ -74,11 +76,12 @@ class StocktakeService
                 'new_values'     => [
                     'reference_number' => $stocktake->reference_number,
                     'lines'            => $items->count(),
+                    'is_blind'         => $stocktake->is_blind,
                 ],
                 'tags'           => 'stock',
             ]);
 
-            return $stocktake->fresh(['lines.item', 'location', 'creator']);
+            return $this->present($stocktake->fresh(['lines.item', 'location', 'creator']), $user);
         });
     }
 
@@ -126,10 +129,14 @@ class StocktakeService
                 'tags'           => 'stock',
             ]);
 
-            return $stocktake->fresh(['lines.item', 'location', 'creator']);
+            return $this->present($stocktake->fresh(['lines.item', 'location', 'creator']), $user);
         });
     }
 
+    /**
+     * Submit for completion. Zero-variance completes immediately; any variance
+     * requires approval before ledger adjustments are posted.
+     */
     public function complete(Stocktake $stocktake, User $user): Stocktake
     {
         if ((int) $stocktake->tenant_id !== (int) $user->tenant_id) {
@@ -137,7 +144,7 @@ class StocktakeService
         }
         if (! $stocktake->isEditable()) {
             throw ValidationException::withMessages([
-                'status' => 'This stocktake is already closed.',
+                'status' => 'This stocktake is already closed or awaiting approval.',
             ]);
         }
 
@@ -149,43 +156,39 @@ class StocktakeService
             ]);
         }
 
-        return DB::transaction(function () use ($stocktake, $user) {
-            foreach ($stocktake->lines as $line) {
-                $variance = (int) $line->counted_qty - (int) $line->system_qty;
-                $line->variance = $variance;
-                $line->save();
+        foreach ($stocktake->lines as $line) {
+            $line->variance = (int) $line->counted_qty - (int) $line->system_qty;
+            $line->save();
+        }
 
-                if ($variance === 0) {
-                    continue;
-                }
+        $hasVariance = $stocktake->lines->contains(fn (StocktakeLine $l) => (int) $l->variance !== 0);
 
-                $this->stockService->recordTransaction($line->item, [
-                    'type'             => StockTransaction::TYPE_ADJUSTMENT,
-                    'quantity'         => $variance,
-                    'reference'        => $stocktake->reference_number,
-                    'reason'           => 'Stocktake variance',
-                    'reason_code'      => StockTransaction::REASON_STOCKTAKE,
-                    'stock_location_id'=> $stocktake->stock_location_id,
-                    'notes'            => $line->notes,
-                    'transaction_date' => $stocktake->count_date?->toDateString() ?? now()->toDateString(),
-                ], $user);
-            }
-
-            $stocktake->update([
-                'status'       => Stocktake::STATUS_COMPLETED,
-                'completed_by' => $user->id,
-                'completed_at' => now(),
-            ]);
-
-            AuditLog::record('stock.stocktake_completed', [
+        if ($hasVariance) {
+            $stocktake->update(['status' => Stocktake::STATUS_PENDING_APPROVAL]);
+            AuditLog::record('stock.stocktake_pending_approval', [
                 'auditable_type' => Stocktake::class,
                 'auditable_id'   => $stocktake->id,
-                'new_values'     => ['reference_number' => $stocktake->reference_number],
                 'tags'           => 'stock',
             ]);
 
-            return $stocktake->fresh(['lines.item', 'location', 'creator', 'completer']);
-        });
+            return $this->present($stocktake->fresh(['lines.item', 'location', 'creator']), $user);
+        }
+
+        return $this->finalize($stocktake, $user, postAdjustments: false);
+    }
+
+    public function approveVariances(Stocktake $stocktake, User $user): Stocktake
+    {
+        if ((int) $stocktake->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+        if ($stocktake->status !== Stocktake::STATUS_PENDING_APPROVAL) {
+            throw ValidationException::withMessages([
+                'status' => 'Only stocktakes pending variance approval can be approved.',
+            ]);
+        }
+
+        return $this->finalize($stocktake, $user, postAdjustments: true);
     }
 
     public function cancel(Stocktake $stocktake, User $user): Stocktake
@@ -208,5 +211,84 @@ class StocktakeService
         ]);
 
         return $stocktake->fresh();
+    }
+
+    private function finalize(Stocktake $stocktake, User $user, bool $postAdjustments): Stocktake
+    {
+        return DB::transaction(function () use ($stocktake, $user, $postAdjustments) {
+            $stocktake->load('lines.item');
+
+            if ($postAdjustments) {
+                foreach ($stocktake->lines as $line) {
+                    $variance = (int) $line->counted_qty - (int) $line->system_qty;
+                    $line->variance = $variance;
+                    $line->save();
+                    if ($variance === 0) {
+                        continue;
+                    }
+                    $this->stockService->recordTransaction($line->item, [
+                        'type'              => StockTransaction::TYPE_ADJUSTMENT,
+                        'quantity'          => $variance,
+                        'reference'         => $stocktake->reference_number,
+                        'reason'            => 'Stocktake variance (approved)',
+                        'reason_code'       => StockTransaction::REASON_STOCKTAKE,
+                        'stock_location_id' => $stocktake->stock_location_id,
+                        'notes'             => $line->notes,
+                        'transaction_date'  => $stocktake->count_date?->toDateString() ?? now()->toDateString(),
+                        'skip_available_check' => true,
+                    ], $user);
+                }
+            }
+
+            $stocktake->update([
+                'status'               => Stocktake::STATUS_COMPLETED,
+                'completed_by'         => $user->id,
+                'completed_at'         => now(),
+                'variance_approved_by' => $postAdjustments ? $user->id : null,
+                'variance_approved_at' => $postAdjustments ? now() : null,
+            ]);
+
+            AuditLog::record('stock.stocktake_completed', [
+                'auditable_type' => Stocktake::class,
+                'auditable_id'   => $stocktake->id,
+                'new_values'     => [
+                    'reference_number' => $stocktake->reference_number,
+                    'variances_posted' => $postAdjustments,
+                ],
+                'tags'           => 'stock',
+            ]);
+
+            return $this->present($stocktake->fresh(['lines.item', 'location', 'creator', 'completer', 'varianceApprover']), $user);
+        });
+    }
+
+    /**
+     * Blind counts hide system_qty / variance from counters until approval/complete.
+     */
+    public function present(Stocktake $stocktake, User $user): Stocktake
+    {
+        $canSeeSystem = $user->isSystemAdmin()
+            || $user->hasPermissionTo('stock.manage')
+            || $user->hasPermissionTo('stock.admin')
+            || $user->hasPermissionTo('stock.approve');
+
+        $revealed = in_array($stocktake->status, [
+            Stocktake::STATUS_PENDING_APPROVAL,
+            Stocktake::STATUS_COMPLETED,
+            Stocktake::STATUS_CANCELLED,
+        ], true);
+
+        if ($stocktake->is_blind && ! $canSeeSystem && ! $revealed) {
+            $stocktake->setRelation(
+                'lines',
+                $stocktake->lines->map(function (StocktakeLine $line) {
+                    $line->setAttribute('system_qty', null);
+                    $line->setAttribute('variance', null);
+                    return $line;
+                })
+            );
+        }
+
+        return $stocktake;
     }
 }

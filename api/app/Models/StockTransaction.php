@@ -6,9 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A stock movement (PRD §17.3): stock-in, stock-out or adjustment.
- * `quantity` is the signed delta applied to the item balance; `balance_after`
- * is the resulting balance snapshot, forming an immutable running ledger.
+ * Immutable stock ledger line. quantity is signed delta; balance_after is snapshot.
  */
 class StockTransaction extends Model
 {
@@ -20,18 +18,24 @@ class StockTransaction extends Model
 
     public const REASON_RECEIPT = 'receipt';
     public const REASON_ISSUE = 'issue';
+    public const REASON_RETURN = 'return';
+    public const REASON_TRANSFER = 'transfer';
     public const REASON_SHORTAGE = 'shortage';
     public const REASON_DAMAGED = 'damaged';
     public const REASON_EXPIRED = 'expired';
+    public const REASON_WRITE_OFF = 'write_off';
     public const REASON_STOCKTAKE = 'stocktake';
     public const REASON_OTHER = 'other';
 
     public const REASON_CODES = [
         self::REASON_RECEIPT,
         self::REASON_ISSUE,
+        self::REASON_RETURN,
+        self::REASON_TRANSFER,
         self::REASON_SHORTAGE,
         self::REASON_DAMAGED,
         self::REASON_EXPIRED,
+        self::REASON_WRITE_OFF,
         self::REASON_STOCKTAKE,
         self::REASON_OTHER,
     ];
@@ -51,6 +55,11 @@ class StockTransaction extends Model
         'reason_code',
         'stock_location_id',
         'goods_receipt_note_id',
+        'stock_request_id',
+        'stock_issue_id',
+        'stock_transfer_id',
+        'stock_batch_id',
+        'reverses_transaction_id',
         'notes',
         'transaction_date',
         'recorded_by',
@@ -94,6 +103,31 @@ class StockTransaction extends Model
     public function goodsReceiptNote(): BelongsTo
     {
         return $this->belongsTo(GoodsReceiptNote::class);
+    }
+
+    public function request(): BelongsTo
+    {
+        return $this->belongsTo(StockRequest::class, 'stock_request_id');
+    }
+
+    public function issue(): BelongsTo
+    {
+        return $this->belongsTo(StockIssue::class, 'stock_issue_id');
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(StockTransfer::class, 'stock_transfer_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class, 'stock_batch_id');
+    }
+
+    public function reverses(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reverses_transaction_id');
     }
 
     public function recorder(): BelongsTo

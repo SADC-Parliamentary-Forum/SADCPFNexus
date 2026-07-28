@@ -100,6 +100,12 @@ class ConsumablesStockPhase1Test extends TestCase
 
         $http->postJson("/api/v1/stock/stocktakes/{$stocktakeId}/complete")
             ->assertOk()
+            ->assertJsonPath('data.status', 'pending_approval');
+
+        $this->assertDatabaseHas('stock_items', ['id' => $item->id, 'current_balance' => 40]);
+
+        $http->postJson("/api/v1/stock/stocktakes/{$stocktakeId}/approve-variances")
+            ->assertOk()
             ->assertJsonPath('data.status', 'completed');
 
         $this->assertDatabaseHas('stock_items', ['id' => $item->id, 'current_balance' => 35]);

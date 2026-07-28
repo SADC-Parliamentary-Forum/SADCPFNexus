@@ -83,10 +83,11 @@ class GoodsReceiptController extends Controller
         $data = $request->validate([
             'handoff'                              => ['nullable', 'array'],
             'handoff.*.goods_receipt_item_id'      => ['required_with:handoff', 'integer'],
-            'handoff.*.type'                       => ['required_with:handoff', 'string', 'in:fixed_asset,stock'],
+            'handoff.*.type'                       => ['required_with:handoff', 'string', 'in:fixed_asset,stock,capital,controlled,consumable,direct_expense,skip'],
             'handoff.*.name'                       => ['required_with:handoff', 'string', 'max:255'],
             'handoff.*.category'                   => ['nullable', 'string', 'max:32'],
             'handoff.*.quantity'                   => ['nullable', 'integer', 'min:1'],
+            'handoff.*.quantity_damaged'           => ['nullable', 'integer', 'min:0'],
             'handoff.*.unit'                       => ['nullable', 'string', 'max:32'],
             'handoff.*.stock_category_id'          => ['nullable', 'integer', 'exists:stock_categories,id'],
             'handoff.*.stock_item_id'              => ['nullable', 'integer', 'exists:stock_items,id'],

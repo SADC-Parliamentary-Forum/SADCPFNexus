@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * Consumable stock item (PRD §17.2). Tracks running balance, reorder level,
- * storage location and optional procurement linkage. SEPARATE from Asset.
+ * Consumable stock item. SEPARATE from Asset.
+ * Available = on_hand − reserved − quarantined.
  */
 class StockItem extends Model
 {
@@ -24,7 +24,11 @@ class StockItem extends Model
         'stock_unit_id',
         'unit_cost',
         'current_balance',
+        'quantity_reserved',
+        'quantity_quarantined',
         'reorder_level',
+        'max_level',
+        'tracks_batches',
         'storage_location',
         'stock_location_id',
         'vendor_id',
@@ -34,34 +38,40 @@ class StockItem extends Model
         'notes',
     ];
 
-    protected $appends = ['is_low_stock', 'stock_value'];
+    protected $appends = ['is_low_stock', 'stock_value', 'available_quantity'];
 
     protected function casts(): array
     {
         return [
-            'unit_cost'       => 'decimal:2',
-            'current_balance' => 'integer',
-            'reorder_level'   => 'integer',
+            'unit_cost'             => 'decimal:2',
+            'current_balance'       => 'integer',
+            'quantity_reserved'     => 'integer',
+            'quantity_quarantined'  => 'integer',
+            'reorder_level'         => 'integer',
+            'max_level'             => 'integer',
+            'tracks_batches'        => 'boolean',
         ];
     }
 
-    /**
-     * True when the running balance is at or below the configured reorder level.
-     * A reorder level of 0 disables the flag (no threshold configured).
-     */
-    public function getIsLowStockAttribute(): bool
+    public function getAvailableQuantityAttribute(): int
     {
-        return $this->reorder_level > 0 && $this->current_balance <= $this->reorder_level;
+        return max(
+            0,
+            (int) $this->current_balance - (int) $this->quantity_reserved - (int) $this->quantity_quarantined
+        );
     }
 
-    /**
-     * Indicative value of stock on hand (balance × unit cost).
-     */
+    public function getIsLowStockAttribute(): bool
+    {
+        return $this->reorder_level > 0 && $this->available_quantity <= $this->reorder_level;
+    }
+
     public function getStockValueAttribute(): ?float
     {
         if ($this->unit_cost === null) {
             return null;
         }
+
         return round((float) $this->unit_cost * (int) $this->current_balance, 2);
     }
 
@@ -105,18 +115,25 @@ class StockItem extends Model
         return $this->hasMany(StockTransaction::class);
     }
 
+    public function batches(): HasMany
+    {
+        return $this->hasMany(StockBatch::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
 
-    /**
-     * Scope to items at or below their reorder level (reorder level configured).
-     */
     public function scopeLowStock(Builder $query): Builder
     {
         return $query->where('reorder_level', '>', 0)
-            ->whereColumn('current_balance', '<=', 'reorder_level');
+            ->whereRaw('(current_balance - quantity_reserved - quantity_quarantined) <= reorder_level');
     }
 
     public function scopeForTenant(Builder $query, $tenantId): Builder

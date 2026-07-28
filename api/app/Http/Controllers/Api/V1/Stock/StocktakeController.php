@@ -38,6 +38,7 @@ class StocktakeController extends Controller
             'count_date'         => ['required', 'date'],
             'stock_location_id'  => ['nullable', 'integer', Rule::exists('stock_locations', 'id')->where('tenant_id', $tenantId)],
             'notes'              => ['nullable', 'string', 'max:2000'],
+            'is_blind'           => ['nullable', 'boolean'],
             'include_all_active' => ['nullable', 'boolean'],
             'stock_item_ids'     => ['nullable', 'array'],
             'stock_item_ids.*'   => ['integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
@@ -58,10 +59,13 @@ class StocktakeController extends Controller
             'location:id,code,name',
             'creator:id,name',
             'completer:id,name',
+            'varianceApprover:id,name',
             'lines.item:id,item_code,name,unit,current_balance,stock_location_id',
         ]);
 
-        return response()->json(['data' => $stocktake]);
+        return response()->json([
+            'data' => $this->stocktakeService->present($stocktake, $request->user()),
+        ]);
     }
 
     public function updateCounts(Request $request, Stocktake $stocktake): JsonResponse
@@ -85,8 +89,23 @@ class StocktakeController extends Controller
         $this->authorizeIssue($request);
 
         $completed = $this->stocktakeService->complete($stocktake, $request->user());
+        $message = $completed->status === Stocktake::STATUS_PENDING_APPROVAL
+            ? 'Stocktake submitted; variance approval required before ledger adjustments.'
+            : 'Stocktake completed with no variances.';
 
-        return response()->json(['message' => 'Stocktake completed; variances posted to ledger.', 'data' => $completed]);
+        return response()->json(['message' => $message, 'data' => $completed]);
+    }
+
+    public function approveVariances(Request $request, Stocktake $stocktake): JsonResponse
+    {
+        $this->authorizeApprove($request);
+
+        $approved = $this->stocktakeService->approveVariances($stocktake, $request->user());
+
+        return response()->json([
+            'message' => 'Variances approved and posted to ledger.',
+            'data'    => $approved,
+        ]);
     }
 
     public function cancel(Request $request, Stocktake $stocktake): JsonResponse
@@ -106,6 +125,17 @@ class StocktakeController extends Controller
             && ! $user->hasPermissionTo('stock.manage')
             && ! $user->hasPermissionTo('stock.issue')) {
             abort(403, 'You do not have permission to manage stocktakes.');
+        }
+    }
+
+    private function authorizeApprove(Request $request): void
+    {
+        $user = $request->user();
+        if (! $user->isSystemAdmin()
+            && ! $user->hasPermissionTo('stock.admin')
+            && ! $user->hasPermissionTo('stock.manage')
+            && ! $user->hasPermissionTo('stock.approve')) {
+            abort(403, 'You do not have permission to approve stocktake variances.');
         }
     }
 }
