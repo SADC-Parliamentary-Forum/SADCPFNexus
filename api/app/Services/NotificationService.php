@@ -459,6 +459,12 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nBalance register {{reference}} has been locked for the current period by {{controller}}.\n\nNo further updates can be made until the period is unlocked.\n\nRegards,\nSADC-PF Finance",
             ],
 
+            // Consumables / Stock
+            'stock.low_stock' => [
+                'subject' => 'Low stock alert — {{item_code}}',
+                'body'    => "Dear {{name}},\n\nStock item {{item_name}} ({{item_code}}) has fallen to {{balance}} unit(s), at or below the reorder level of {{reorder_level}}.\n\nRecorded by: {{actor}}\n\nPlease review replenishment needs in the Consumables / Stock register.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Daily alert digest (sent to managers/admins)
             'alerts.daily_digest' => [
                 'subject' => 'SADC-PF Nexus — Daily Alerts Digest ({{date}})',

@@ -21,10 +21,12 @@ class StockItem extends Model
         'name',
         'description',
         'unit',
+        'stock_unit_id',
         'unit_cost',
         'current_balance',
         'reorder_level',
         'storage_location',
+        'stock_location_id',
         'vendor_id',
         'procurement_request_id',
         'purchase_order_id',
@@ -71,6 +73,16 @@ class StockItem extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(StockCategory::class, 'stock_category_id');
+    }
+
+    public function unitOfMeasure(): BelongsTo
+    {
+        return $this->belongsTo(StockUnit::class, 'stock_unit_id');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(StockLocation::class, 'stock_location_id');
     }
 
     public function vendor(): BelongsTo

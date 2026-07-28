@@ -33,6 +33,8 @@ class StoreStockTransactionRequest extends FormRequest
             'unit_cost'               => ['nullable', 'numeric', 'min:0'],
             'reference'               => ['nullable', 'string', 'max:255'],
             'reason'                  => ['nullable', 'string', 'max:255'],
+            'reason_code'             => ['nullable', 'string', Rule::in(StockTransaction::REASON_CODES)],
+            'stock_location_id'       => ['nullable', 'integer', $tenantScoped('stock_locations')],
             'notes'                   => ['nullable', 'string', 'max:2000'],
             'transaction_date'        => ['required', 'date'],
         ];

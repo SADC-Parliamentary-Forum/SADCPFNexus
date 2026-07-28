@@ -16,7 +16,7 @@ class StockTransactionController extends Controller
 
     /**
      * List stock movements for the current tenant.
-     * Filters: ?stock_item_id, ?type (in|out|adjustment).
+     * Filters: stock_item_id, type, reason_code, issued_to_user_id, issued_to_department_id, date_from, date_to.
      */
     public function index(Request $request): JsonResponse
     {
@@ -26,6 +26,7 @@ class StockTransactionController extends Controller
                 'issuedToUser:id,name,email',
                 'issuedToDepartment:id,name',
                 'recorder:id,name,email',
+                'location:id,code,name',
             ])
             ->orderByDesc('transaction_date')
             ->orderByDesc('id');
@@ -35,6 +36,21 @@ class StockTransactionController extends Controller
         }
         if ($type = $request->string('type')->toString()) {
             $query->where('type', $type);
+        }
+        if ($reasonCode = $request->string('reason_code')->toString()) {
+            $query->where('reason_code', $reasonCode);
+        }
+        if ($userId = $request->integer('issued_to_user_id')) {
+            $query->where('issued_to_user_id', $userId);
+        }
+        if ($deptId = $request->integer('issued_to_department_id')) {
+            $query->where('issued_to_department_id', $deptId);
+        }
+        if ($from = $request->string('date_from')->toString()) {
+            $query->whereDate('transaction_date', '>=', $from);
+        }
+        if ($to = $request->string('date_to')->toString()) {
+            $query->whereDate('transaction_date', '<=', $to);
         }
 
         return response()->json($query->paginate($request->integer('per_page', 25)));

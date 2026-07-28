@@ -73,6 +73,14 @@ export default function StockItemsPage() {
           <p className="page-subtitle">Track consumable stock items, balances and reorder levels — separate from fixed assets.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Link href="/stock/dashboard" className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">dashboard</span>
+            Dashboard
+          </Link>
+          <Link href="/stock/stocktakes" className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">fact_check</span>
+            Stocktakes
+          </Link>
           <Link href="/stock/reports" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">summarize</span>
             Reports
@@ -187,7 +195,9 @@ export default function StockItemsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div>
-                          <p className="font-medium text-neutral-900">{i.name}</p>
+                          <p className="font-medium text-neutral-900">
+                            <Link href={`/stock/${i.id}`} className="hover:text-primary hover:underline">{i.name}</Link>
+                          </p>
                           <p className="text-xs font-mono text-neutral-400">{i.item_code}{i.unit ? ` · ${i.unit}` : ""}</p>
                         </div>
                         {i.is_low_stock && <span className="badge badge-warning">Low</span>}

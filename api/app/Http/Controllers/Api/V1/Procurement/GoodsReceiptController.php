@@ -89,6 +89,10 @@ class GoodsReceiptController extends Controller
             'handoff.*.quantity'                   => ['nullable', 'integer', 'min:1'],
             'handoff.*.unit'                       => ['nullable', 'string', 'max:32'],
             'handoff.*.stock_category_id'          => ['nullable', 'integer', 'exists:stock_categories,id'],
+            'handoff.*.stock_item_id'              => ['nullable', 'integer', 'exists:stock_items,id'],
+            'handoff.*.stock_unit_id'              => ['nullable', 'integer', 'exists:stock_units,id'],
+            'handoff.*.stock_location_id'          => ['nullable', 'integer', 'exists:stock_locations,id'],
+            'handoff.*.unit_cost'                  => ['nullable', 'numeric', 'min:0'],
             'handoff.*.notes'                      => ['nullable', 'string', 'max:2000'],
         ]);
 

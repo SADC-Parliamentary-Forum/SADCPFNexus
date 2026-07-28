@@ -1423,6 +1423,34 @@ export interface StockCategory {
   items_count?: number;
 }
 
+export interface StockUnit {
+  id: number;
+  tenant_id: number;
+  code: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface StockLocation {
+  id: number;
+  tenant_id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export type StockReasonCode =
+  | "receipt"
+  | "issue"
+  | "shortage"
+  | "damaged"
+  | "expired"
+  | "stocktake"
+  | "other";
+
 export interface StockItem {
   id: number;
   tenant_id: number;
@@ -1431,10 +1459,12 @@ export interface StockItem {
   name: string;
   description: string | null;
   unit: string | null;
+  stock_unit_id?: number | null;
   unit_cost: number | string | null;
   current_balance: number;
   reorder_level: number;
   storage_location: string | null;
+  stock_location_id?: number | null;
   vendor_id: number | null;
   procurement_request_id: number | null;
   purchase_order_id: number | null;
@@ -1443,6 +1473,8 @@ export interface StockItem {
   is_low_stock?: boolean;
   stock_value?: number | null;
   category?: Pick<StockCategory, "id" | "name" | "code"> | null;
+  unit_of_measure?: Pick<StockUnit, "id" | "code" | "name"> | null;
+  location?: Pick<StockLocation, "id" | "code" | "name"> | null;
   vendor?: { id: number; name: string } | null;
   transactions?: StockTransaction[];
   created_at?: string;
@@ -1462,6 +1494,9 @@ export interface StockTransaction {
   unit_cost: number | string | null;
   reference: string | null;
   reason: string | null;
+  reason_code?: StockReasonCode | null;
+  stock_location_id?: number | null;
+  goods_receipt_note_id?: number | null;
   notes: string | null;
   transaction_date: string;
   recorded_by: number;
@@ -1470,6 +1505,7 @@ export interface StockTransaction {
   issued_to_user?: Pick<User, "id" | "name" | "email"> | null;
   issued_to_department?: { id: number; name: string } | null;
   recorder?: Pick<User, "id" | "name" | "email">;
+  location?: Pick<StockLocation, "id" | "code" | "name"> | null;
 }
 
 export interface StockItemInput {
@@ -1478,15 +1514,57 @@ export interface StockItemInput {
   stock_category_id?: number | null;
   description?: string | null;
   unit?: string | null;
+  stock_unit_id?: number | null;
   unit_cost?: number | null;
   opening_balance?: number;
   reorder_level?: number;
   storage_location?: string | null;
+  stock_location_id?: number | null;
   vendor_id?: number | null;
   procurement_request_id?: number | null;
   purchase_order_id?: number | null;
   status?: string;
   notes?: string | null;
+}
+
+export interface StockDashboard {
+  active_items: number;
+  low_stock_count: number;
+  total_stock_value: number;
+  issues_last_30_days: number;
+  loss_movements_90d: number;
+  open_stocktakes: number;
+  low_stock_items: StockItem[];
+}
+
+export interface StocktakeLine {
+  id: number;
+  stocktake_id: number;
+  stock_item_id: number;
+  system_qty: number;
+  counted_qty: number | null;
+  variance: number | null;
+  notes?: string | null;
+  item?: Pick<StockItem, "id" | "item_code" | "name" | "unit" | "current_balance">;
+}
+
+export interface Stocktake {
+  id: number;
+  tenant_id: number;
+  reference_number: string;
+  name: string;
+  stock_location_id: number | null;
+  status: "draft" | "in_progress" | "completed" | "cancelled";
+  count_date: string;
+  notes?: string | null;
+  created_by: number;
+  completed_by?: number | null;
+  completed_at?: string | null;
+  lines_count?: number;
+  location?: Pick<StockLocation, "id" | "code" | "name"> | null;
+  creator?: Pick<User, "id" | "name"> | null;
+  completer?: Pick<User, "id" | "name"> | null;
+  lines?: StocktakeLine[];
 }
 
 export const stockCategoriesApi = {
@@ -1496,6 +1574,24 @@ export const stockCategoriesApi = {
   update: (id: number, data: { name?: string; code?: string; sort_order?: number }) =>
     api.put<{ data: StockCategory; message: string }>(`/stock/categories/${id}`, data),
   delete: (id: number) => api.delete<{ message: string }>(`/stock/categories/${id}`),
+};
+
+export const stockUnitsApi = {
+  list: () => api.get<{ data: StockUnit[] }>("/stock/units"),
+  create: (data: { code: string; name: string; is_active?: boolean; sort_order?: number }) =>
+    api.post<{ data: StockUnit; message: string }>("/stock/units", data),
+  update: (id: number, data: Partial<{ code: string; name: string; is_active: boolean; sort_order: number }>) =>
+    api.put<{ data: StockUnit; message: string }>(`/stock/units/${id}`, data),
+  delete: (id: number) => api.delete<{ message: string }>(`/stock/units/${id}`),
+};
+
+export const stockLocationsApi = {
+  list: () => api.get<{ data: StockLocation[] }>("/stock/locations"),
+  create: (data: { code: string; name: string; description?: string; is_active?: boolean; sort_order?: number }) =>
+    api.post<{ data: StockLocation; message: string }>("/stock/locations", data),
+  update: (id: number, data: Partial<{ code: string; name: string; description: string; is_active: boolean; sort_order: number }>) =>
+    api.put<{ data: StockLocation; message: string }>(`/stock/locations/${id}`, data),
+  delete: (id: number) => api.delete<{ message: string }>(`/stock/locations/${id}`),
 };
 
 export const stockItemsApi = {
@@ -1516,8 +1612,17 @@ export const stockItemsApi = {
 };
 
 export const stockTransactionsApi = {
-  list: (params?: { stock_item_id?: number; type?: string; per_page?: number; page?: number }) =>
-    api.get<PaginatedResponse<StockTransaction>>("/stock/transactions", { params }),
+  list: (params?: {
+    stock_item_id?: number;
+    type?: string;
+    reason_code?: string;
+    issued_to_user_id?: number;
+    issued_to_department_id?: number;
+    date_from?: string;
+    date_to?: string;
+    per_page?: number;
+    page?: number;
+  }) => api.get<PaginatedResponse<StockTransaction>>("/stock/transactions", { params }),
   create: (data: {
     stock_item_id: number;
     type: StockTransaction["type"];
@@ -1528,10 +1633,36 @@ export const stockTransactionsApi = {
     unit_cost?: number | null;
     reference?: string | null;
     reason?: string | null;
+    reason_code?: StockReasonCode | null;
+    stock_location_id?: number | null;
     notes?: string | null;
     transaction_date: string;
   }) => api.post<{ data: StockTransaction; message: string }>("/stock/transactions", data),
   get: (id: number) => api.get<{ data: StockTransaction }>(`/stock/transactions/${id}`),
+};
+
+export const stockDashboardApi = {
+  get: () => api.get<{ data: StockDashboard }>("/stock/dashboard"),
+};
+
+export const stocktakesApi = {
+  list: (params?: { status?: string; per_page?: number; page?: number }) =>
+    api.get<PaginatedResponse<Stocktake>>("/stock/stocktakes", { params }),
+  get: (id: number) => api.get<{ data: Stocktake }>(`/stock/stocktakes/${id}`),
+  create: (data: {
+    name: string;
+    count_date: string;
+    stock_location_id?: number | null;
+    notes?: string | null;
+    include_all_active?: boolean;
+    stock_item_ids?: number[];
+  }) => api.post<{ data: Stocktake; message: string }>("/stock/stocktakes", data),
+  updateCounts: (id: number, lines: { id: number; counted_qty?: number | null; notes?: string | null }[]) =>
+    api.put<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/counts`, { lines }),
+  complete: (id: number) =>
+    api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/complete`),
+  cancel: (id: number) =>
+    api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/cancel`),
 };
 
 // ─── Reports (hub endpoints for report types) ───────────────────────────────────
@@ -2822,8 +2953,25 @@ export const goodsReceiptsApi = {
     api.get<{ data: GoodsReceiptNote }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}`),
   create: (poId: number, data: { received_date: string; notes?: string; items: { purchase_order_item_id: number; quantity_received: number; quantity_accepted?: number }[] }) =>
     api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts`, data),
-  accept: (poId: number, grnId: number) =>
-    api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/accept`),
+  accept: (
+    poId: number,
+    grnId: number,
+    handoff?: Array<{
+      goods_receipt_item_id: number;
+      type: "fixed_asset" | "stock";
+      name: string;
+      category?: string;
+      quantity?: number;
+      unit?: string;
+      stock_category_id?: number;
+      stock_item_id?: number;
+      notes?: string;
+    }>,
+  ) =>
+    api.post<{ data: GoodsReceiptNote; message: string }>(
+      `/procurement/purchase-orders/${poId}/receipts/${grnId}/accept`,
+      handoff ? { handoff } : {},
+    ),
   reject: (poId: number, grnId: number, reason: string) =>
     api.post<{ data: GoodsReceiptNote; message: string }>(`/procurement/purchase-orders/${poId}/receipts/${grnId}/reject`, { reason }),
 };

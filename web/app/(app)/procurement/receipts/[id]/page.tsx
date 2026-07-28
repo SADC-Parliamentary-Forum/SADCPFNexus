@@ -33,6 +33,8 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   const queryClient = useQueryClient();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showHandoffModal, setShowHandoffModal] = useState(false);
+  const [handoffTypes, setHandoffTypes] = useState<Record<number, "stock" | "fixed_asset" | "skip">>({});
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
   const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
@@ -50,8 +52,17 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: () => goodsReceiptsApi.accept(poId, grnId),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["grn", poId, grnId] }),
+    mutationFn: (handoff?: Array<{
+      goods_receipt_item_id: number;
+      type: "fixed_asset" | "stock";
+      name: string;
+      quantity?: number;
+      unit?: string;
+    }>) => goodsReceiptsApi.accept(poId, grnId, handoff),
+    onSuccess:  () => {
+      setShowHandoffModal(false);
+      queryClient.invalidateQueries({ queryKey: ["grn", poId, grnId] });
+    },
   });
 
   const rejectMutation = useMutation({
@@ -151,12 +162,17 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
             {canAct && (
               <>
                 <button
-                  onClick={() => acceptMutation.mutate()}
+                  onClick={() => {
+                    const defaults: Record<number, "stock" | "fixed_asset" | "skip"> = {};
+                    items.forEach((it) => { defaults[it.id] = "stock"; });
+                    setHandoffTypes(defaults);
+                    setShowHandoffModal(true);
+                  }}
                   disabled={acceptMutation.isPending}
                   className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
                 >
                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  {acceptMutation.isPending ? "Accepting…" : "Accept"}
+                  Accept
                 </button>
                 <button
                   onClick={() => setShowRejectModal(true)}
@@ -294,6 +310,62 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
         Back to Receipts
       </Link>
       </> /* end details tab */}
+
+      {/* Handoff Modal — classify lines as stock (consumables) vs fixed asset */}
+      {showHandoffModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowHandoffModal(false)}>
+          <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div>
+              <h2 className="text-base font-bold text-neutral-900">Accept & classify handoff</h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Stock lines go to Consumables / Stock only. Fixed asset lines go to the FA register. Choose Skip to accept without creating register records.
+              </p>
+            </div>
+            <div className="space-y-3 max-h-72 overflow-y-auto">
+              {items.map((it) => {
+                const desc = it.purchase_order_item?.description ?? `Line #${it.id}`;
+                return (
+                  <div key={it.id} className="rounded-lg border border-neutral-200 p-3 space-y-2">
+                    <p className="text-sm font-medium text-neutral-800">{desc}</p>
+                    <p className="text-xs text-neutral-500">Accepted qty: {it.quantity_accepted ?? it.quantity_received}</p>
+                    <select
+                      className="form-input text-sm"
+                      value={handoffTypes[it.id] ?? "stock"}
+                      onChange={(e) => setHandoffTypes((p) => ({ ...p, [it.id]: e.target.value as "stock" | "fixed_asset" | "skip" }))}
+                    >
+                      <option value="stock">Consumables / Stock</option>
+                      <option value="fixed_asset">Fixed Asset</option>
+                      <option value="skip">Skip handoff for this line</option>
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => setShowHandoffModal(false)}>Cancel</button>
+              <button
+                disabled={acceptMutation.isPending}
+                className="btn-primary flex-1"
+                onClick={() => {
+                  const handoff = items
+                    .filter((it) => (handoffTypes[it.id] ?? "stock") !== "skip")
+                    .map((it) => ({
+                      goods_receipt_item_id: it.id,
+                      type: (handoffTypes[it.id] ?? "stock") as "stock" | "fixed_asset",
+                      name: it.purchase_order_item?.description ?? `GRN item ${it.id}`,
+                      quantity: Number(it.quantity_accepted ?? it.quantity_received ?? 1),
+                      unit: it.purchase_order_item?.unit ?? "each",
+                      category: "equipment",
+                    }));
+                  acceptMutation.mutate(handoff.length ? handoff : undefined);
+                }}
+              >
+                {acceptMutation.isPending ? "Accepting…" : "Confirm accept"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {showRejectModal && (

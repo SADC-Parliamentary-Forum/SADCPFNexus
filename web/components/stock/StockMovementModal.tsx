@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { stockTransactionsApi, type StockItem } from "@/lib/api";
+import { stockTransactionsApi, type StockItem, type StockReasonCode } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 type MovementType = "in" | "out" | "adjustment";
@@ -10,6 +10,16 @@ const TYPE_OPTIONS: { value: MovementType; label: string; help: string }[] = [
   { value: "in", label: "Stock In (Receipt)", help: "Increase the balance — replenishment or receipt." },
   { value: "out", label: "Stock Out (Issue)", help: "Decrease the balance — issued to a person or department." },
   { value: "adjustment", label: "Adjustment", help: "Correct the balance (use a negative quantity to reduce)." },
+];
+
+const REASON_OPTIONS: { value: StockReasonCode; label: string }[] = [
+  { value: "receipt", label: "Receipt / replenishment" },
+  { value: "issue", label: "Issue to staff / dept" },
+  { value: "shortage", label: "Shortage" },
+  { value: "damaged", label: "Damaged" },
+  { value: "expired", label: "Expired" },
+  { value: "stocktake", label: "Stocktake variance" },
+  { value: "other", label: "Other" },
 ];
 
 interface ApiError {
@@ -44,6 +54,7 @@ export function StockMovementModal({
   const [issuedTo, setIssuedTo] = useState("");
   const [reference, setReference] = useState("");
   const [reason, setReason] = useState("");
+  const [reasonCode, setReasonCode] = useState<StockReasonCode | "">("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +79,7 @@ export function StockMovementModal({
         issued_to_other: type === "out" && issuedTo.trim() ? issuedTo.trim() : null,
         reference: reference.trim() || null,
         reason: reason.trim() || null,
+        reason_code: reasonCode || null,
         transaction_date: date,
       });
       toast("success", "Stock movement recorded");
@@ -165,9 +177,17 @@ export function StockMovementModal({
               <input className="form-input" placeholder="GRN / requisition no." value={reference} onChange={(e) => setReference(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason / Note</label>
-              <input className="form-input" placeholder="Optional" value={reason} onChange={(e) => setReason(e.target.value)} />
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason code</label>
+              <select className="form-input" value={reasonCode} onChange={(e) => setReasonCode(e.target.value as StockReasonCode | "")}>
+                <option value="">Optional…</option>
+                {REASON_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason / Note</label>
+            <input className="form-input" placeholder="Optional detail" value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
         </div>
 

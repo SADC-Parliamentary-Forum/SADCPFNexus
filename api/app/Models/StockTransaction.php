@@ -18,6 +18,24 @@ class StockTransaction extends Model
 
     public const TYPES = [self::TYPE_IN, self::TYPE_OUT, self::TYPE_ADJUSTMENT];
 
+    public const REASON_RECEIPT = 'receipt';
+    public const REASON_ISSUE = 'issue';
+    public const REASON_SHORTAGE = 'shortage';
+    public const REASON_DAMAGED = 'damaged';
+    public const REASON_EXPIRED = 'expired';
+    public const REASON_STOCKTAKE = 'stocktake';
+    public const REASON_OTHER = 'other';
+
+    public const REASON_CODES = [
+        self::REASON_RECEIPT,
+        self::REASON_ISSUE,
+        self::REASON_SHORTAGE,
+        self::REASON_DAMAGED,
+        self::REASON_EXPIRED,
+        self::REASON_STOCKTAKE,
+        self::REASON_OTHER,
+    ];
+
     protected $fillable = [
         'tenant_id',
         'stock_item_id',
@@ -30,6 +48,9 @@ class StockTransaction extends Model
         'unit_cost',
         'reference',
         'reason',
+        'reason_code',
+        'stock_location_id',
+        'goods_receipt_note_id',
         'notes',
         'transaction_date',
         'recorded_by',
@@ -63,6 +84,16 @@ class StockTransaction extends Model
     public function issuedToDepartment(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'issued_to_department_id');
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(StockLocation::class, 'stock_location_id');
+    }
+
+    public function goodsReceiptNote(): BelongsTo
+    {
+        return $this->belongsTo(GoodsReceiptNote::class);
     }
 
     public function recorder(): BelongsTo

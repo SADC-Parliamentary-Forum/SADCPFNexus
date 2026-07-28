@@ -43,7 +43,7 @@ class GoodsReceiptService
             $outstanding = $poItem->outstanding();
             if (($lineItem['quantity_received'] ?? 0) > $outstanding) {
                 throw ValidationException::withMessages([
-                    'items' => "Cannot receive {$lineItem['quantity_received']} units of \"{$poItem->description}\" — only {$outstanding} outstanding.",
+                    'items' => "Cannot receive {$lineItem['quantity_received']} units of \"{$poItem->description}\" â€” only {$outstanding} outstanding.",
                 ]);
             }
         }
@@ -124,7 +124,7 @@ class GoodsReceiptService
             $type = $line['type'] ?? null;
 
             if ($type === 'fixed_asset') {
-                // One physical unit = one asset record (qty 20 → 20 pending assets).
+                // One physical unit = one asset record (qty 20 â†’ 20 pending assets).
                 $qty = (int) ($line['quantity'] ?? $grnItem->quantity_accepted ?? $grnItem->quantity_received ?? 1);
                 if ($qty < 1) {
                     $qty = 1;
@@ -161,32 +161,8 @@ class GoodsReceiptService
                     ]);
                 }
             } elseif ($type === 'stock') {
-                $qty = (int) ($line['quantity'] ?? 0);
-                if ($qty <= 0) {
-                    throw ValidationException::withMessages([
-                        'handoff' => 'Stock handoff requires a positive quantity.',
-                    ]);
-                }
-
-                $item = $this->stockService->createItem([
-                    'stock_category_id'      => $line['stock_category_id'] ?? null,
-                    'item_code'              => 'STK-' . strtoupper(Str::random(8)),
-                    'name'                   => $line['name'],
-                    'unit'                   => $line['unit'] ?? 'each',
-                    'current_balance'        => 0,
-                    'procurement_request_id' => $procurementRequestId,
-                    'purchase_order_id'      => $grn->purchase_order_id,
-                    'status'                 => 'active',
-                ], $user);
-
-                $this->stockService->recordTransaction($item, [
-                    'type'             => 'in',
-                    'quantity'         => $qty,
-                    'reference'        => 'GRN-'.$grn->id,
-                    'reason'           => 'Goods receipt handoff',
-                    'notes'            => $line['notes'] ?? null,
-                    'transaction_date' => now()->toDateString(),
-                ], $user);
+                // Consumables only - never create FA records for type=stock.
+                $this->stockService->receiveFromGrn($grn, $line, $user, $procurementRequestId);
             } else {
                 throw ValidationException::withMessages([
                     'handoff' => 'Each handoff line must specify type fixed_asset or stock.',

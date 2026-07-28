@@ -138,13 +138,14 @@ class GoodsReceiptHandoffTest extends TestCase
             'current_balance'        => 10,
         ]);
 
-        $item = StockItem::where('name', 'Toner Cartridge')->where('tenant_id', $tenant->id)->first();
+        $item = StockItem::where('tenant_id', $tenant->id)->where('name', 'Toner Cartridge')->first();
         $this->assertNotNull($item);
         $this->assertDatabaseHas('stock_transactions', [
-            'stock_item_id' => $item->id,
-            'type'          => 'in',
-            'quantity'      => 10,
-            'balance_after' => 10,
+            'stock_item_id'         => $item->id,
+            'type'                  => 'in',
+            'quantity'              => 10,
+            'reason_code'           => 'receipt',
+            'goods_receipt_note_id' => $grn->id,
         ]);
     }
 

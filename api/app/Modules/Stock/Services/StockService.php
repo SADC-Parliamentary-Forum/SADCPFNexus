@@ -3,10 +3,13 @@
 namespace App\Modules\Stock\Services;
 
 use App\Models\AuditLog;
+use App\Models\GoodsReceiptNote;
 use App\Models\StockItem;
 use App\Models\StockTransaction;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -18,6 +21,10 @@ use Illuminate\Validation\ValidationException;
  */
 class StockService
 {
+    public function __construct(
+        private readonly NotificationService $notifications,
+    ) {}
+
     /**
      * Record a stock movement and atomically update the item balance.
      *
@@ -30,6 +37,9 @@ class StockService
      *     unit_cost?: float|null,
      *     reference?: string|null,
      *     reason?: string|null,
+     *     reason_code?: string|null,
+     *     stock_location_id?: int|null,
+     *     goods_receipt_note_id?: int|null,
      *     notes?: string|null,
      *     transaction_date: string
      * }  $data
@@ -47,6 +57,11 @@ class StockService
             throw ValidationException::withMessages(['type' => 'Invalid stock transaction type.']);
         }
 
+        $reasonCode = $data['reason_code'] ?? null;
+        if ($reasonCode !== null && $reasonCode !== '' && ! in_array($reasonCode, StockTransaction::REASON_CODES, true)) {
+            throw ValidationException::withMessages(['reason_code' => 'Invalid stock reason code.']);
+        }
+
         // Normalise the signed delta applied to the balance.
         $delta = match ($type) {
             StockTransaction::TYPE_IN  => abs($quantity),
@@ -61,11 +76,12 @@ class StockService
             ]);
         }
 
-        return DB::transaction(function () use ($item, $data, $user, $type, $delta) {
+        return DB::transaction(function () use ($item, $data, $user, $type, $delta, $reasonCode) {
             // Row-level lock prevents concurrent movements from racing the balance.
             /** @var StockItem $locked */
             $locked = StockItem::whereKey($item->id)->lockForUpdate()->firstOrFail();
 
+            $wasLow = $locked->reorder_level > 0 && $locked->current_balance <= $locked->reorder_level;
             $newBalance = $locked->current_balance + $delta;
 
             if ($newBalance < 0) {
@@ -89,6 +105,9 @@ class StockService
                 'unit_cost'               => $data['unit_cost'] ?? $locked->unit_cost,
                 'reference'               => $data['reference'] ?? null,
                 'reason'                  => $data['reason'] ?? null,
+                'reason_code'             => $reasonCode ?: null,
+                'stock_location_id'       => $data['stock_location_id'] ?? $locked->stock_location_id,
+                'goods_receipt_note_id'   => $data['goods_receipt_note_id'] ?? null,
                 'notes'                   => $data['notes'] ?? null,
                 'transaction_date'        => $data['transaction_date'],
                 'recorded_by'             => $user->id,
@@ -102,12 +121,74 @@ class StockService
                     'item'          => $locked->name,
                     'delta'         => $delta,
                     'balance_after' => $newBalance,
+                    'reason_code'   => $reasonCode,
                 ],
                 'tags'           => 'stock',
             ]);
 
+            $isLow = $locked->reorder_level > 0 && $newBalance <= $locked->reorder_level;
+            if ($isLow && ! $wasLow) {
+                $this->notifyLowStock($locked->fresh(), $user);
+            }
+
             return $transaction;
         });
+    }
+
+    /**
+     * GRN stock handoff: create a new SKU or replenish an existing one, always via ledgered stock-in.
+     *
+     * @param  array<string, mixed>  $line
+     */
+    public function receiveFromGrn(GoodsReceiptNote $grn, array $line, User $user, ?int $procurementRequestId = null): StockItem
+    {
+        $qty = (int) ($line['quantity'] ?? 0);
+        if ($qty <= 0) {
+            throw ValidationException::withMessages([
+                'handoff' => 'Stock handoff requires a positive quantity.',
+            ]);
+        }
+
+        $existingId = isset($line['stock_item_id']) ? (int) $line['stock_item_id'] : null;
+
+        if ($existingId) {
+            $item = StockItem::where('tenant_id', $user->tenant_id)->find($existingId);
+            if (! $item) {
+                throw ValidationException::withMessages([
+                    'handoff' => "Stock item #{$existingId} not found for replenishment.",
+                ]);
+            }
+        } else {
+            $item = $this->createItem([
+                'stock_category_id'      => $line['stock_category_id'] ?? null,
+                'item_code'              => $line['item_code'] ?? ('STK-' . strtoupper(Str::random(8))),
+                'name'                   => $line['name'],
+                'unit'                   => $line['unit'] ?? 'each',
+                'stock_unit_id'          => $line['stock_unit_id'] ?? null,
+                'stock_location_id'      => $line['stock_location_id'] ?? null,
+                'unit_cost'              => $line['unit_cost'] ?? null,
+                'current_balance'        => 0,
+                'reorder_level'          => $line['reorder_level'] ?? 0,
+                'procurement_request_id' => $procurementRequestId,
+                'purchase_order_id'      => $grn->purchase_order_id,
+                'status'                 => 'active',
+            ], $user);
+        }
+
+        $this->recordTransaction($item, [
+            'type'                   => StockTransaction::TYPE_IN,
+            'quantity'               => $qty,
+            'unit_cost'              => $line['unit_cost'] ?? $item->unit_cost,
+            'reference'              => 'GRN-' . $grn->id,
+            'reason'                 => 'Goods receipt handoff',
+            'reason_code'            => StockTransaction::REASON_RECEIPT,
+            'goods_receipt_note_id'  => $grn->id,
+            'stock_location_id'      => $line['stock_location_id'] ?? $item->stock_location_id,
+            'notes'                  => $line['notes'] ?? null,
+            'transaction_date'       => now()->toDateString(),
+        ], $user);
+
+        return $item->fresh();
     }
 
     /**
@@ -150,5 +231,96 @@ class StockService
         ]);
 
         return $item->fresh();
+    }
+
+    /**
+     * Dashboard KPIs for the consumables / stock register.
+     *
+     * @return array<string, mixed>
+     */
+    public function dashboard(int $tenantId): array
+    {
+        $activeItems = StockItem::where('tenant_id', $tenantId)->where('status', 'active');
+        $itemCount = (clone $activeItems)->count();
+        $lowStockCount = (clone $activeItems)->lowStock()->count();
+        $totalValue = (float) (clone $activeItems)->get()->sum(fn (StockItem $i) => (float) ($i->stock_value ?? 0));
+
+        $recentIssues = StockTransaction::where('tenant_id', $tenantId)
+            ->where('type', StockTransaction::TYPE_OUT)
+            ->where('transaction_date', '>=', now()->subDays(30)->toDateString())
+            ->count();
+
+        $lossMovements = StockTransaction::where('tenant_id', $tenantId)
+            ->whereIn('reason_code', [
+                StockTransaction::REASON_SHORTAGE,
+                StockTransaction::REASON_DAMAGED,
+                StockTransaction::REASON_EXPIRED,
+            ])
+            ->where('transaction_date', '>=', now()->subDays(90)->toDateString())
+            ->count();
+
+        $openStocktakes = \App\Models\Stocktake::where('tenant_id', $tenantId)
+            ->whereIn('status', [\App\Models\Stocktake::STATUS_DRAFT, \App\Models\Stocktake::STATUS_IN_PROGRESS])
+            ->count();
+
+        return [
+            'active_items'       => $itemCount,
+            'low_stock_count'    => $lowStockCount,
+            'total_stock_value'  => round($totalValue, 2),
+            'issues_last_30_days'=> $recentIssues,
+            'loss_movements_90d' => $lossMovements,
+            'open_stocktakes'    => $openStocktakes,
+            'low_stock_items'    => StockItem::where('tenant_id', $tenantId)
+                ->where('status', 'active')
+                ->lowStock()
+                ->with(['category:id,name,code', 'location:id,code,name'])
+                ->orderBy('name')
+                ->limit(10)
+                ->get(),
+        ];
+    }
+
+    private function notifyLowStock(StockItem $item, User $actor): void
+    {
+        $recipients = User::query()
+            ->where('tenant_id', $item->tenant_id)
+            ->where('is_active', true)
+            ->get()
+            ->filter(fn (User $u) => $u->isSystemAdmin()
+                || $u->hasPermissionTo('stock.manage')
+                || $u->hasPermissionTo('stock.admin'));
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $this->notifications->dispatchToMany(
+            $recipients,
+            'stock.low_stock',
+            [
+                'item_name'     => $item->name,
+                'item_code'     => $item->item_code,
+                'balance'       => (string) $item->current_balance,
+                'reorder_level' => (string) $item->reorder_level,
+                'actor'         => $actor->name,
+            ],
+            [
+                'module'    => 'stock',
+                'record_id' => $item->id,
+                'url'       => '/stock/low-stock',
+                'trigger'   => 'stock.low_stock',
+            ],
+            false,
+        );
+
+        AuditLog::record('stock.low_stock_alert', [
+            'auditable_type' => StockItem::class,
+            'auditable_id'   => $item->id,
+            'new_values'     => [
+                'balance'       => $item->current_balance,
+                'reorder_level' => $item->reorder_level,
+            ],
+            'tags'           => 'stock',
+        ]);
     }
 }

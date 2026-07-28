@@ -24,7 +24,7 @@ class StockItemController extends Controller
     {
         $user = $request->user();
         $query = StockItem::where('tenant_id', $user->tenant_id)
-            ->with(['category:id,name,code', 'vendor:id,name'])
+            ->with(['category:id,name,code', 'vendor:id,name', 'unitOfMeasure:id,code,name', 'location:id,code,name'])
             ->orderBy('name');
 
         if ($categoryId = $request->integer('category_id')) {
@@ -87,6 +87,8 @@ class StockItemController extends Controller
         $stockItem->load([
             'category:id,name,code',
             'vendor:id,name',
+            'unitOfMeasure:id,code,name',
+            'location:id,code,name',
             'procurementRequest:id,reference_number',
             'purchaseOrder:id,reference_number',
             'transactions' => fn ($q) => $q->with([

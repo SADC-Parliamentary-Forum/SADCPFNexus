@@ -1037,11 +1037,32 @@ Route::prefix('v1')->group(function () {
         // stock.view; write actions are gated by Form Request authorize() using
         // stock.create / stock.edit / stock.issue / stock.manage / stock.admin.
         Route::middleware('can:stock.view')->group(function () {
+            Route::get('stock/dashboard', \App\Http\Controllers\Api\V1\Stock\StockDashboardController::class);
+
             // Stock categories (admin config — §27)
             Route::get('stock/categories', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'index']);
             Route::post('stock/categories', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'store']);
             Route::put('stock/categories/{stockCategory}', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'update']);
             Route::delete('stock/categories/{stockCategory}', [\App\Http\Controllers\Api\V1\Stock\StockCategoryController::class, 'destroy']);
+
+            // Units of measure & store locations
+            Route::get('stock/units', [\App\Http\Controllers\Api\V1\Stock\StockUnitController::class, 'index']);
+            Route::post('stock/units', [\App\Http\Controllers\Api\V1\Stock\StockUnitController::class, 'store']);
+            Route::put('stock/units/{stockUnit}', [\App\Http\Controllers\Api\V1\Stock\StockUnitController::class, 'update']);
+            Route::delete('stock/units/{stockUnit}', [\App\Http\Controllers\Api\V1\Stock\StockUnitController::class, 'destroy']);
+
+            Route::get('stock/locations', [\App\Http\Controllers\Api\V1\Stock\StockLocationController::class, 'index']);
+            Route::post('stock/locations', [\App\Http\Controllers\Api\V1\Stock\StockLocationController::class, 'store']);
+            Route::put('stock/locations/{stockLocation}', [\App\Http\Controllers\Api\V1\Stock\StockLocationController::class, 'update']);
+            Route::delete('stock/locations/{stockLocation}', [\App\Http\Controllers\Api\V1\Stock\StockLocationController::class, 'destroy']);
+
+            // Stocktakes / physical counts
+            Route::get('stock/stocktakes', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'index']);
+            Route::post('stock/stocktakes', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'store']);
+            Route::get('stock/stocktakes/{stocktake}', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'show']);
+            Route::put('stock/stocktakes/{stocktake}/counts', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'updateCounts']);
+            Route::post('stock/stocktakes/{stocktake}/complete', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'complete']);
+            Route::post('stock/stocktakes/{stocktake}/cancel', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'cancel']);
 
             // Stock movements (in/out/adjustment) — declared before {stockItem} to avoid clashes
             Route::get('stock/transactions', [\App\Http\Controllers\Api\V1\Stock\StockTransactionController::class, 'index']);
