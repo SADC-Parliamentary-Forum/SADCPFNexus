@@ -76,12 +76,20 @@ class TimesheetController extends Controller
             'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
             'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
             'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
+            'entries.*.entry_category'     => ['nullable', 'string', 'max:64'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
+            'entries.*.assignment_id'      => ['nullable', 'integer'],
+            'entries.*.pif_id'             => ['nullable', 'integer'],
+            'entries.*.programme_id'       => ['nullable', 'integer'],
+            'entries.*.start_time'         => ['nullable', 'date_format:H:i'],
+            'entries.*.end_time'           => ['nullable', 'date_format:H:i'],
             'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
             'entries.*.source_record_id'   => ['nullable', 'integer'],
         ]);
 
         $user = $request->user();
+        $this->timesheetService->validateEntries($user, $data['week_start'], $data['week_end'], $data['entries']);
+
         $total = 0;
         $overtime = 0;
         foreach ($data['entries'] as $e) {
@@ -90,9 +98,12 @@ class TimesheetController extends Controller
         }
 
         $weekNumber = Carbon::parse($data['week_start'])->isoWeek();
+        $period = $this->timesheetService->ensurePeriod((int) $user->tenant_id, $data['week_start'], $data['week_end']);
+        $this->timesheetService->assertPeriodEditable($period);
 
         $timesheet = Timesheet::create([
             'tenant_id'      => $user->tenant_id,
+            'period_id'      => $period->id,
             'user_id'        => $user->id,
             'week_start'     => $data['week_start'],
             'week_end'       => $data['week_end'],
@@ -106,20 +117,28 @@ class TimesheetController extends Controller
             TimesheetEntry::create([
                 'timesheet_id'       => $timesheet->id,
                 'work_date'          => $e['work_date'],
+                'start_time'         => isset($e['start_time']) ? $e['start_time'].':00' : null,
+                'end_time'           => isset($e['end_time']) ? $e['end_time'].':00' : null,
                 'hours'              => $e['hours'],
                 'overtime_hours'     => $e['overtime_hours'] ?? 0,
                 'description'        => $e['description'] ?? null,
                 'project_id'         => $e['project_id'] ?? null,
                 'work_bucket'        => $e['work_bucket'] ?? null,
                 'activity_type'      => $e['activity_type'] ?? null,
+                'entry_category'     => $e['entry_category'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
+                'assignment_id'      => $e['assignment_id'] ?? null,
+                'pif_id'             => $e['pif_id'] ?? null,
+                'programme_id'       => $e['programme_id'] ?? null,
                 'source_type'        => $e['source_type'] ?? 'manual',
                 'source_record_id'   => $e['source_record_id'] ?? null,
                 'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
-        return response()->json(['message' => 'Timesheet created.', 'data' => $timesheet->load(['entries.project', 'entries.workAssignment', 'user'])], 201);
+        $this->timesheetService->syncTimesheetDays($timesheet->fresh(), $user);
+
+        return response()->json(['message' => 'Timesheet created.', 'data' => $timesheet->fresh(['entries.project', 'entries.workAssignment', 'user', 'days'])], 201);
     }
 
     public function update(Request $request, Timesheet $timesheet): JsonResponse
@@ -127,8 +146,8 @@ class TimesheetController extends Controller
         if ($timesheet->user_id !== $request->user()->id) {
             abort(403);
         }
-        if ($timesheet->status !== 'draft') {
-            throw ValidationException::withMessages(['status' => 'Only draft timesheets can be edited.']);
+        if (! in_array($timesheet->status, ['draft', 'returned'], true)) {
+            throw ValidationException::withMessages(['status' => 'Only draft or returned timesheets can be edited. Silent edits of submitted timesheets are not allowed.']);
         }
 
         $data = $request->validate([
@@ -140,10 +159,26 @@ class TimesheetController extends Controller
             'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
             'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
             'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
+            'entries.*.entry_category'     => ['nullable', 'string', 'max:64'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
+            'entries.*.assignment_id'      => ['nullable', 'integer'],
+            'entries.*.pif_id'             => ['nullable', 'integer'],
+            'entries.*.programme_id'       => ['nullable', 'integer'],
+            'entries.*.start_time'         => ['nullable', 'date_format:H:i'],
+            'entries.*.end_time'           => ['nullable', 'date_format:H:i'],
             'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
             'entries.*.source_record_id'   => ['nullable', 'integer'],
         ]);
+
+        $this->timesheetService->validateEntries(
+            $request->user(),
+            $timesheet->week_start->format('Y-m-d'),
+            $timesheet->week_end->format('Y-m-d'),
+            $data['entries']
+        );
+        if ($timesheet->period_id) {
+            $this->timesheetService->assertPeriodEditable($timesheet->period);
+        }
 
         $total = 0;
         $overtime = 0;
@@ -152,26 +187,35 @@ class TimesheetController extends Controller
             $overtime += (float) ($e['overtime_hours'] ?? 0);
         }
 
-        $timesheet->update(['total_hours' => $total, 'overtime_hours' => $overtime]);
+        $timesheet->update(['total_hours' => $total, 'overtime_hours' => $overtime, 'status' => 'draft']);
         $timesheet->entries()->delete();
         foreach ($data['entries'] as $e) {
             TimesheetEntry::create([
                 'timesheet_id'       => $timesheet->id,
                 'work_date'          => $e['work_date'],
+                'start_time'         => isset($e['start_time']) ? $e['start_time'].':00' : null,
+                'end_time'           => isset($e['end_time']) ? $e['end_time'].':00' : null,
                 'hours'              => $e['hours'],
                 'overtime_hours'     => $e['overtime_hours'] ?? 0,
                 'description'        => $e['description'] ?? null,
                 'project_id'         => $e['project_id'] ?? null,
                 'work_bucket'        => $e['work_bucket'] ?? null,
                 'activity_type'      => $e['activity_type'] ?? null,
+                'entry_category'     => $e['entry_category'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
+                'assignment_id'      => $e['assignment_id'] ?? null,
+                'pif_id'             => $e['pif_id'] ?? null,
+                'programme_id'       => $e['programme_id'] ?? null,
                 'source_type'        => $e['source_type'] ?? 'manual',
                 'source_record_id'   => $e['source_record_id'] ?? null,
                 'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
-        return response()->json(['message' => 'Updated.', 'data' => $timesheet->fresh(['entries.project', 'entries.workAssignment', 'user'])]);
+        $this->timesheetService->syncTimesheetDays($timesheet->fresh(), $request->user());
+        $this->timesheetService->audit($timesheet, $request->user(), 'timesheet.updated');
+
+        return response()->json(['message' => 'Updated.', 'data' => $timesheet->fresh(['entries.project', 'entries.workAssignment', 'user', 'days'])]);
     }
 
     public function submit(Request $request, Timesheet $timesheet): JsonResponse
@@ -180,34 +224,32 @@ class TimesheetController extends Controller
             abort(403);
         }
 
-        $timesheet = $this->timesheetService->submit($timesheet, $request->user());
+        $data = $request->validate([
+            'declaration_accepted' => ['nullable', 'boolean'],
+        ]);
+
+        $timesheet = $this->timesheetService->submit(
+            $timesheet,
+            $request->user(),
+            $data['declaration_accepted'] ?? true
+        );
 
         return response()->json(['message' => 'Submitted.', 'data' => $timesheet->fresh('user')]);
     }
 
+    public function returnTimesheet(Request $request, Timesheet $timesheet): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        $timesheet = $this->timesheetService->returnToEmployee($timesheet, $request->user(), $data['reason']);
+
+        return response()->json(['message' => 'Returned to employee.', 'data' => $timesheet]);
+    }
+
     public function approve(Request $request, Timesheet $timesheet): JsonResponse
     {
-        if ($timesheet->status !== 'submitted') {
-            throw ValidationException::withMessages(['status' => 'Only submitted timesheets can be approved.']);
-        }
-        if ((int) $timesheet->user_id === (int) $request->user()->id) {
-            throw ValidationException::withMessages(['approval' => 'You cannot approve your own request.']);
-        }
+        $timesheet = $this->timesheetService->approve($timesheet, $request->user(), $request->input('comment'));
 
-        // Use workflow service if a workflow request exists, otherwise direct approve
-        if ($timesheet->approvalRequest) {
-            $this->workflowService->approve($timesheet->approvalRequest, $request->user(), $request->input('comment'));
-            $timesheet->refresh();
-        } else {
-            $timesheet->update([
-                'status'      => 'approved',
-                'approved_at' => now(),
-                'approved_by' => $request->user()->id,
-            ]);
-            $this->timesheetService->onWorkflowApproved($timesheet, $request->user());
-        }
-
-        return response()->json(['message' => 'Approved.', 'data' => $timesheet->fresh(['user', 'approver'])]);
+        return response()->json(['message' => 'Approved.', 'data' => $timesheet]);
     }
 
     public function reject(Request $request, Timesheet $timesheet): JsonResponse

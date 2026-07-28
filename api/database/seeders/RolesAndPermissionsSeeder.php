@@ -50,6 +50,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'assignments.team', 'assignments.review', 'assignments.reports', 'assignments.confidential.view',
             // Timesheets
             'timesheets.view', 'timesheets.create', 'timesheets.approve',
+            'timesheets.view-own', 'timesheets.create-own', 'timesheets.edit-own-draft', 'timesheets.submit',
+            'timesheets.view-team', 'timesheets.review-team', 'timesheets.return',
+            'timesheets.manage-schedules', 'timesheets.manage-periods',
+            'timesheets.view-attendance', 'timesheets.manage-attendance-exceptions',
+            'overtime.request', 'overtime.recommend', 'overtime.approve',
+            'overtime.verify-actual', 'overtime.hr-validate', 'overtime.send-payroll', 'overtime.send-toil',
+            'timesheets.export', 'timesheets.audit', 'timesheets.admin',
             // Performance Appraisals
             'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
             // Conduct, Discipline & Recognition
@@ -113,6 +120,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'governance.view', 'audit.view',
                     'reports.view', 'reports.export',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
+                    'overtime.send-payroll', 'timesheets.export', 'timesheets.view',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -161,6 +169,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'correspondence.registry', 'correspondence.dispatch',
                     'correspondence.review', 'correspondence.send',
                     'parliaments.view',
+                    'timesheets.view', 'timesheets.create', 'timesheets.view-own',
+                    'timesheets.create-own', 'timesheets.edit-own-draft', 'timesheets.submit',
+                    'overtime.request',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -171,6 +182,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.hod_approve',
                     'hr.view', 'travel.view', 'leave.view', 'finance.view',
                     'reports.view',
+                    'timesheets.view', 'timesheets.view-team', 'timesheets.review-team',
+                    'timesheets.return', 'timesheets.approve',
+                    'overtime.recommend', 'overtime.approve', 'overtime.verify-actual',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -192,6 +206,11 @@ class RolesAndPermissionsSeeder extends Seeder
                     'leave.view', 'leave.approve',
                     'travel.view', 'travel.review-toil', 'travel.review-retirement', 'travel.health-view',
                     'timesheets.view', 'timesheets.create', 'timesheets.approve',
+                    'timesheets.view-team', 'timesheets.review-team', 'timesheets.return',
+                    'timesheets.manage-schedules', 'timesheets.manage-periods',
+                    'timesheets.export', 'timesheets.audit', 'timesheets.admin',
+                    'overtime.request', 'overtime.recommend', 'overtime.approve',
+                    'overtime.verify-actual', 'overtime.hr-validate', 'overtime.send-toil',
                     'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
                     'conduct.view', 'conduct.create', 'conduct.admin',
                     'governance.view',

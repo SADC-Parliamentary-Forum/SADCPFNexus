@@ -708,12 +708,33 @@ Route::prefix('v1')->group(function () {
             Route::get('timesheets/leave-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'leaveDays']);
             Route::get('timesheets/travel-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'travelDays']);
             Route::get('timesheets/holiday-dates', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'holidayDates']);
+            Route::get('timesheets/expected-hours', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'expectedHours']);
+            Route::get('timesheets/periods', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'periods']);
+            Route::post('timesheets/periods/{timesheetPeriod}/close', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'closePeriod']);
+            Route::get('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'index']);
+            Route::post('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'store']);
+            Route::post('timesheets/schedules/assign', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'assign']);
+            Route::post('timesheets/payroll-exports', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'exportPayroll']);
             Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);
             Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update']);
             Route::post('timesheets/{timesheet}/submit', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'submit']);
+            Route::post('timesheets/{timesheet}/return', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'returnTimesheet']);
             Route::post('timesheets/{timesheet}/approve', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'approve']);
             Route::post('timesheets/{timesheet}/reject', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'reject']);
+
+            // Overtime requisitions / actuals / settlement (PRD §89)
+            Route::get('overtime-requisitions', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'index']);
+            Route::post('overtime-requisitions', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'store']);
+            Route::get('overtime-requisitions/{overtimeRequisition}', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'show']);
+            Route::post('overtime-requisitions/{overtimeRequisition}/submit', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'submit']);
+            Route::post('overtime-requisitions/{overtimeRequisition}/recommend', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'recommend']);
+            Route::post('overtime-requisitions/{overtimeRequisition}/approve', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'approve']);
+            Route::post('overtime-requisitions/{overtimeRequisition}/reject', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'reject']);
+            Route::post('overtime-requisitions/{overtimeRequisition}/actuals', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'recordActual']);
+            Route::post('overtime-actuals/{overtimeActual}/hr-validate', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'hrValidate']);
+            Route::post('overtime-actuals/{overtimeActual}/send-to-payroll', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'sendToPayroll']);
+            Route::post('overtime-actuals/{overtimeActual}/send-to-toil', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'sendToToil']);
             Route::get('incidents', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'index']);
             Route::post('incidents', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'store']);
             Route::get('incidents/{hrIncident}', [\App\Http\Controllers\Api\V1\Hr\HrIncidentController::class, 'show']);

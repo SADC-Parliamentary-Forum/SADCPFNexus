@@ -170,30 +170,15 @@ class WeeklySummaryDataService
 
     public function getTimesheetSummary(): array
     {
-        $base = DB::table('timesheets')
-            ->where('tenant_id', $this->tenantId)
-            ->whereDate('week_start', $this->periodStart);
+        /** @var \App\Modules\Timesheets\Services\TimesheetService $svc */
+        $svc = app(\App\Modules\Timesheets\Services\TimesheetService::class);
 
-        if ($this->userIds !== null) {
-            $base->whereIn('user_id', $this->userIds);
-        }
-
-        $submitted = (clone $base)->whereIn('status', ['submitted', 'approved'])->count();
-        $approved  = (clone $base)->where('status', 'approved')->count();
-
-        // Expected count: number of users in scope
-        $expected = $this->userIds !== null
-            ? count($this->userIds)
-            : DB::table('users')->where('tenant_id', $this->tenantId)->where('is_active', true)->count();
-
-        $missing = max(0, $expected - $submitted);
-
-        return [
-            'submitted' => $submitted,
-            'approved'  => $approved,
-            'missing'   => $missing,
-            'expected'  => $expected,
-        ];
+        return $svc->weeklySummaryContract(
+            (int) $this->tenantId,
+            $this->periodStart,
+            $this->periodEnd,
+            $this->userIds
+        );
     }
 
     // ─── Assignments Summary ──────────────────────────────────────────────────────

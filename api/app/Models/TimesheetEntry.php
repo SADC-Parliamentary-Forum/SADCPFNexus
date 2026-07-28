@@ -17,10 +17,17 @@ class TimesheetEntry extends Model
         'project_id',
         'work_bucket',
         'activity_type',
+        'entry_category',
         'work_assignment_id',
+        'assignment_id',
+        'pif_id',
+        'programme_id',
         'work_date',
+        'start_time',
+        'end_time',
         'hours',
         'overtime_hours',
+        'overtime_requisition_id',
         'description',
         'source_type',
         'source_record_id',
@@ -45,5 +52,10 @@ class TimesheetEntry extends Model
     public function workAssignment(): BelongsTo
     {
         return $this->belongsTo(WorkAssignment::class, 'work_assignment_id');
+    }
+
+    public function assignment(): BelongsTo
+    {
+        return $this->belongsTo(Assignment::class, 'assignment_id');
     }
 }
