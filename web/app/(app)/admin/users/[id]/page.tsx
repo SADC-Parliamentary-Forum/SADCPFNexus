@@ -378,16 +378,17 @@ export default function UserEditPage() {
 
   const handleDelete = async () => {
     if (await confirm({
-      title: "Delete User",
-      message: "Are you sure? This cannot be undone.",
+      title: "Deactivate User",
+      message: "Deactivate this user? They will lose access until reactivated. System Admin accounts cannot be deactivated here.",
+      confirmText: "Deactivate",
       variant: "danger",
     })) {
       try {
         await adminApi.deactivateUser(Number(id));
-        success("Deleted", "User has been removed.");
+        success("Deactivated", "User has been deactivated.");
         router.push("/admin/users");
       } catch {
-        toastError("Error", "Failed to delete user.");
+        toastError("Error", "Failed to deactivate user. You cannot deactivate yourself or a System Admin.");
       }
     }
   };
@@ -436,8 +437,8 @@ export default function UserEditPage() {
             onClick={handleDelete}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors shadow-sm"
           >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
-            Delete User
+            <span className="material-symbols-outlined text-[18px]">person_off</span>
+            Deactivate User
           </button>
           <button
             type="submit"

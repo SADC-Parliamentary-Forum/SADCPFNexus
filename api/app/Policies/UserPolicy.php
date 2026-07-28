@@ -46,10 +46,17 @@ class UserPolicy
 
     /**
      * Only System Admins can deactivate users.
+     * Self and System Admin accounts are protected.
      */
     public function delete(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return false; // Cannot deactivate self
+        if ($authUser->id === $user->id) {
+            return false; // Cannot deactivate self
+        }
+        if ($user->isSystemAdmin()) {
+            return false; // Protect System Admin accounts
+        }
+
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 

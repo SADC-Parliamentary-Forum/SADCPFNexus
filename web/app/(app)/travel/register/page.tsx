@@ -7,6 +7,12 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { getListData } from "@/lib/listPagination";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -93,6 +99,7 @@ export default function TravelRegisterPage() {
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const [editRow, setEditRow] = useState<TravelRequest | null>(null);
   const [editForm, setEditForm] = useState<EditForm | null>(null);
@@ -146,6 +153,18 @@ export default function TravelRegisterPage() {
       return hay.includes(q);
     });
   }, [rows, filter, search]);
+
+  const getId = useCallback((row: TravelRequest) => row.id, []);
+  const canSelectRow = useCallback(
+    (row: TravelRequest) =>
+      row.status === "draft" && canMutateRow(row, user?.id, admin),
+    [user?.id, admin],
+  );
+  const selection = useRowSelection({
+    rows: filtered,
+    getId,
+    canSelect: canSelectRow,
+  });
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -227,6 +246,7 @@ export default function TravelRegisterPage() {
     try {
       await travelApi.delete(row.id);
       showToast("Draft deleted.");
+      selection.clear();
       await load();
     } catch (err: unknown) {
       setError(
@@ -235,6 +255,36 @@ export default function TravelRegisterPage() {
       );
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: "Delete drafts",
+        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setError(null);
+    try {
+      await Promise.all(ids.map((id) => travelApi.delete(id)));
+      selection.clear();
+      showToast("Selected drafts deleted.");
+      await load();
+    } catch (err: unknown) {
+      setError(
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Some deletions failed.",
+      );
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -387,33 +437,49 @@ export default function TravelRegisterPage() {
         </div>
       )}
 
-      <div className="card flex flex-wrap items-end gap-3 p-3">
-        <div className="min-w-[180px] flex-1">
-          <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
-              search
-            </span>
-            <input
-              className="form-input pl-8 text-sm"
-              placeholder="Reference, purpose, traveller, destination…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      <div className="card flex flex-col gap-3 p-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
+                search
+              </span>
+              <input
+                className="form-input pl-8 text-sm"
+                placeholder="Reference, purpose, traveller, destination…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 pb-0.5">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setFilter(tab.key);
+                  selection.clear();
+                }}
+                className={`filter-tab ${filter === tab.key ? "active" : ""}`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 pb-0.5">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setFilter(tab.key)}
-              className={`filter-tab ${filter === tab.key ? "active" : ""}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
+          <button
+            type="button"
+            disabled={bulkLoading}
+            onClick={() => void handleBulkDelete()}
+            className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[14px]">delete</span>
+            {bulkLoading ? "Deleting…" : "Delete selected"}
+          </button>
+        </BulkSelectionBar>
       </div>
 
       {loading ? (
@@ -459,6 +525,15 @@ export default function TravelRegisterPage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <SelectAllCheckbox
+                      checked={selection.allSelectableSelected}
+                      indeterminate={selection.someSelectableSelected}
+                      onChange={selection.toggleAllSelectable}
+                      disabled={selection.selectableIds.length === 0 || bulkLoading}
+                      label="Select all deletable drafts"
+                    />
+                  </th>
                   <th>Reference</th>
                   <th>Traveller</th>
                   <th>Purpose / destination</th>
@@ -483,7 +558,19 @@ export default function TravelRegisterPage() {
                   const busy = actionId === row.id;
 
                   return (
-                    <tr key={row.id} className="align-top">
+                    <tr
+                      key={row.id}
+                      className={`align-top ${selection.isSelected(row.id) ? "bg-primary/5" : ""}`}
+                    >
+                      <td>
+                        <RowCheckbox
+                          checked={selection.isSelected(row.id)}
+                          onChange={() => selection.toggle(row.id)}
+                          disabled={!canDelete || bulkLoading}
+                          title={canDelete ? undefined : "Only mutable drafts can be deleted"}
+                          label={`Select ${row.reference_number}`}
+                        />
+                      </td>
                       <td className="whitespace-nowrap font-mono text-xs text-neutral-600">
                         <Link href={`/travel/${row.id}`} className="font-semibold text-primary hover:underline">
                           {row.reference_number}

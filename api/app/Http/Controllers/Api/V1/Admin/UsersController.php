@@ -180,6 +180,35 @@ class UsersController extends Controller
     }
 
     /**
+     * Soft-disable many users in one request (same rules as single destroy).
+     */
+    public function bulkDeactivate(Request $request): JsonResponse
+    {
+        // Same gate as create: System Admin only (HR can view but not deactivate).
+        $this->authorize('create', User::class);
+
+        $data = $request->validate([
+            'ids'   => ['required', 'array', 'min:1', 'max:100'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $actor = $request->user();
+        $result = $this->userService->bulkDeactivate(
+            $data['ids'],
+            $actor,
+            fn (User $target) => $actor->can('delete', $target),
+        );
+
+        return response()->json([
+            'message'            => 'Bulk deactivate completed.',
+            'deactivated'        => $result['deactivated'],
+            'deactivated_count'  => count($result['deactivated']),
+            'skipped'            => $result['skipped'],
+            'skipped_count'      => count($result['skipped']),
+        ]);
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/v1/admin/users/{id}/reactivate",
      *     summary="Reactivate a deactivated user",

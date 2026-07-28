@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { leaveApi, type LeaveRequest } from "@/lib/api";
@@ -9,6 +9,12 @@ import { exportToCsv } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -67,6 +73,7 @@ export default function LeavePage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [actionId, setActionId] = useState<number | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -114,6 +121,14 @@ export default function LeavePage() {
   const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
   const paged = useMemo(() => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE), [filtered, page, lastPage]);
 
+  const getId = useCallback((row: LeaveRequest) => row.id, []);
+  const canSelectDraft = useCallback((row: LeaveRequest) => row.status === "draft", []);
+  const selection = useRowSelection({
+    rows: filter === "draft" ? filtered : filtered.filter((r) => r.status === "draft"),
+    getId,
+    canSelect: canSelectDraft,
+  });
+
   const handleExport = () => {
     if (filtered.length === 0) return;
     exportToCsv(
@@ -157,11 +172,39 @@ export default function LeavePage() {
     try {
       await leaveApi.delete(row.id);
       showToast("Draft deleted.");
+      selection.clear();
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
       setActionError("Failed to delete draft.");
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: "Delete drafts",
+        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setActionError(null);
+    try {
+      await Promise.all(ids.map((id) => leaveApi.delete(id)));
+      selection.clear();
+      showToast("Selected drafts deleted.");
+      await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
+    } catch {
+      setActionError("Some deletions failed.");
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -326,6 +369,7 @@ export default function LeavePage() {
                 type="button"
                 onClick={() => {
                   setFilter(tab.key);
+                  selection.clear();
                   setPage(1);
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
@@ -335,6 +379,17 @@ export default function LeavePage() {
             ))}
           </div>
         </div>
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
+          <button
+            type="button"
+            disabled={bulkLoading}
+            onClick={() => void handleBulkDelete()}
+            className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[14px]">delete</span>
+            {bulkLoading ? "Deleting…" : "Delete selected"}
+          </button>
+        </BulkSelectionBar>
       </div>
 
       <div className="card overflow-hidden">
@@ -363,6 +418,15 @@ export default function LeavePage() {
             <table className="data-table w-full">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <SelectAllCheckbox
+                      checked={selection.allSelectableSelected}
+                      indeterminate={selection.someSelectableSelected}
+                      onChange={selection.toggleAllSelectable}
+                      disabled={selection.selectableIds.length === 0 || bulkLoading}
+                      label="Select all drafts"
+                    />
+                  </th>
                   <th>Reference</th>
                   <th>Type</th>
                   <th>Dates</th>
@@ -376,8 +440,18 @@ export default function LeavePage() {
                 {paged.map((req) => {
                   const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
                   const busy = actionId === req.id;
+                  const canDelete = req.status === "draft";
                   return (
-                    <tr key={req.id}>
+                    <tr key={req.id} className={selection.isSelected(req.id) ? "bg-primary/5" : undefined}>
+                      <td>
+                        <RowCheckbox
+                          checked={selection.isSelected(req.id)}
+                          onChange={() => selection.toggle(req.id)}
+                          disabled={!canDelete || bulkLoading}
+                          title={canDelete ? undefined : "Only drafts can be deleted"}
+                          label={`Select ${req.reference_number}`}
+                        />
+                      </td>
                       <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>
                       <td className="text-sm">{TYPE_LABELS[req.leave_type] ?? req.leave_type}</td>
                       <td className="whitespace-nowrap text-xs text-neutral-600">
@@ -395,7 +469,7 @@ export default function LeavePage() {
                           <Link href={`/leave/${req.id}`} className="text-xs font-medium text-primary hover:underline">
                             View
                           </Link>
-                          {req.status === "draft" && (
+                          {canDelete && (
                             <>
                               <Link
                                 href={`/leave/create?edit=${req.id}`}

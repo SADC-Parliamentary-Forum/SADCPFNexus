@@ -218,6 +218,52 @@ class UserService
         return $user->fresh();
     }
 
+    /**
+     * Soft-disable many users. Caller must authorize each target beforehand.
+     *
+     * @param  list<int>  $ids
+     * @return array{deactivated: list<int>, skipped: list<array{id: int, reason: string}>}
+     */
+    public function bulkDeactivate(array $ids, User $actor, callable $canDelete): array
+    {
+        $deactivated = [];
+        $skipped = [];
+        $uniqueIds = array_values(array_unique(array_map('intval', $ids)));
+
+        $users = User::query()
+            ->whereIn('id', $uniqueIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($uniqueIds as $id) {
+            $user = $users->get($id);
+            if (!$user) {
+                $skipped[] = ['id' => $id, 'reason' => 'not_found'];
+                continue;
+            }
+            if (!$user->is_active) {
+                $skipped[] = ['id' => $id, 'reason' => 'already_inactive'];
+                continue;
+            }
+            if ($actor->id === $user->id) {
+                $skipped[] = ['id' => $id, 'reason' => 'self'];
+                continue;
+            }
+            if (!$canDelete($user)) {
+                $skipped[] = ['id' => $id, 'reason' => 'forbidden'];
+                continue;
+            }
+
+            $this->deactivate($user, $actor);
+            $deactivated[] = $id;
+        }
+
+        return [
+            'deactivated' => $deactivated,
+            'skipped'     => $skipped,
+        ];
+    }
+
     public function revokeAllAccess(User $user): void
     {
         $user->tokens()->delete();

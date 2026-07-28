@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
@@ -9,6 +9,12 @@ import { exportToCsv } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -49,7 +55,6 @@ export default function ImprestPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,23 +103,21 @@ export default function ImprestPage() {
     (r) => r.status === "approved" && (!r.amount_liquidated || r.amount_liquidated === 0),
   ).length;
 
-  const toggleSelect = (id: number) =>
-    setSelected((prev) => {
-      const s = new Set(prev);
-      s.has(id) ? s.delete(id) : s.add(id);
-      return s;
-    });
-  const toggleAll = () =>
-    setSelected((prev) =>
-      prev.size === filtered.length ? new Set() : new Set(filtered.map((r) => r.id)),
-    );
+  const getId = useCallback((row: ImprestRequest) => row.id, []);
+  const canSelectDraft = useCallback((row: ImprestRequest) => row.status === "draft", []);
+  const selection = useRowSelection({
+    rows: filter === "draft" ? filtered : filtered.filter((r) => r.status === "draft"),
+    getId,
+    canSelect: canSelectDraft,
+  });
 
   const handleBulkDelete = async () => {
-    if (selected.size === 0) return;
+    const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
     if (
       !(await confirm({
         title: "Delete drafts",
-        message: `Permanently delete ${selected.size} selected draft(s)?`,
+        message: `Permanently delete ${ids.length} selected draft(s)?`,
         confirmText: "Delete",
         variant: "danger",
       }))
@@ -124,8 +127,8 @@ export default function ImprestPage() {
     setBulkLoading(true);
     setError(null);
     try {
-      await Promise.all([...selected].map((id) => imprestApi.delete(id)));
-      setSelected(new Set());
+      await Promise.all(ids.map((id) => imprestApi.delete(id)));
+      selection.clear();
       showToast("Selected drafts deleted.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
@@ -136,12 +139,13 @@ export default function ImprestPage() {
   };
 
   const handleBulkSubmit = async () => {
-    if (selected.size === 0) return;
+    const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
     setBulkLoading(true);
     setError(null);
     try {
-      await Promise.all([...selected].map((id) => imprestApi.submit(id)));
-      setSelected(new Set());
+      await Promise.all(ids.map((id) => imprestApi.submit(id)));
+      selection.clear();
       showToast("Selected drafts submitted.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
@@ -339,7 +343,7 @@ export default function ImprestPage() {
                 type="button"
                 onClick={() => {
                   setFilter(tab.key);
-                  setSelected(new Set());
+                  selection.clear();
                   setPage(1);
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
@@ -349,40 +353,26 @@ export default function ImprestPage() {
             ))}
           </div>
         </div>
-        {selected.size > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2">
-            <span className="text-xs font-semibold text-primary">{selected.size} selected</span>
-            {filter === "draft" && (
-              <>
-                <button
-                  type="button"
-                  disabled={bulkLoading}
-                  onClick={() => void handleBulkSubmit()}
-                  className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[14px]">send</span>
-                  Submit all
-                </button>
-                <button
-                  type="button"
-                  disabled={bulkLoading}
-                  onClick={() => void handleBulkDelete()}
-                  className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
-                >
-                  <span className="material-symbols-outlined text-[14px]">delete</span>
-                  Delete all
-                </button>
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => setSelected(new Set())}
-              className="text-xs text-neutral-400 hover:text-neutral-600"
-            >
-              Clear
-            </button>
-          </div>
-        )}
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
+          <button
+            type="button"
+            disabled={bulkLoading}
+            onClick={() => void handleBulkSubmit()}
+            className="flex items-center gap-1 text-xs font-semibold text-green-700 hover:underline disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[14px]">send</span>
+            Submit all
+          </button>
+          <button
+            type="button"
+            disabled={bulkLoading}
+            onClick={() => void handleBulkDelete()}
+            className="flex items-center gap-1 text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[14px]">delete</span>
+            Delete all
+          </button>
+        </BulkSelectionBar>
       </div>
 
       <div className="card overflow-hidden">
@@ -414,12 +404,12 @@ export default function ImprestPage() {
               <thead>
                 <tr>
                   <th className="w-10">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-neutral-300 accent-primary"
-                      checked={selected.size === filtered.length && filtered.length > 0}
-                      onChange={toggleAll}
-                      aria-label="Select all"
+                    <SelectAllCheckbox
+                      checked={selection.allSelectableSelected}
+                      indeterminate={selection.someSelectableSelected}
+                      onChange={selection.toggleAllSelectable}
+                      disabled={selection.selectableIds.length === 0 || bulkLoading}
+                      label="Select all drafts"
                     />
                   </th>
                   <th>Reference</th>
@@ -438,14 +428,14 @@ export default function ImprestPage() {
                   const needsRetire =
                     req.status === "approved" && (!req.amount_liquidated || req.amount_liquidated === 0);
                   return (
-                    <tr key={req.id} className={selected.has(req.id) ? "bg-primary/5" : undefined}>
+                    <tr key={req.id} className={selection.isSelected(req.id) ? "bg-primary/5" : undefined}>
                       <td>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-neutral-300 accent-primary"
-                          checked={selected.has(req.id)}
-                          onChange={() => toggleSelect(req.id)}
-                          aria-label={`Select ${req.reference_number}`}
+                        <RowCheckbox
+                          checked={selection.isSelected(req.id)}
+                          onChange={() => selection.toggle(req.id)}
+                          disabled={req.status !== "draft" || bulkLoading}
+                          title={req.status === "draft" ? undefined : "Only drafts can be selected"}
+                          label={`Select ${req.reference_number}`}
                         />
                       </td>
                       <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>

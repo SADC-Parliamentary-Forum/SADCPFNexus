@@ -430,6 +430,14 @@ export const adminApi = {
   updateUser: (id: number, data: Partial<User> & { role?: string; portfolio_ids?: number[] }) =>
     api.put<{ user: User; message: string }>(`/admin/users/${id}`, data),
   deactivateUser: (id: number) => api.delete(`/admin/users/${id}`),
+  bulkDeactivateUsers: (ids: number[]) =>
+    api.post<{
+      message: string;
+      deactivated: number[];
+      deactivated_count: number;
+      skipped: { id: number; reason: string }[];
+      skipped_count: number;
+    }>("/admin/users/bulk-deactivate", { ids }),
   reactivateUser: (id: number) => api.post(`/admin/users/${id}/reactivate`),
   changeUserPassword: (id: number, password: string, passwordConfirmation: string) =>
     api.post<{ message: string }>(`/admin/users/${id}/change-password`, {
