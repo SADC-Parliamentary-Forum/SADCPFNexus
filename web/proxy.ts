@@ -16,8 +16,17 @@ const PUBLIC_PATH_PREFIXES = [
 
 const PUBLIC_PATHS = [
   LOGIN_PATH,
+  "/forgot-password",
+  "/request-password",
   "/supplier/register",
   "/tender-notices",
+];
+
+/** Unauthenticated token-reset links must reach the form (email deep links). */
+const ANON_OK_PATHS = [
+  "/forgot-password",
+  "/request-password",
+  RESET_PATH,
 ];
 
 const PROTECTED_PREFIXES = [
@@ -110,6 +119,9 @@ export function proxy(request: NextRequest) {
   }
 
   if (!isAuth) {
+    if (ANON_OK_PATHS.includes(path)) {
+      return NextResponse.next();
+    }
     return buildLoginRedirect(request, pathWithSearch);
   }
 
@@ -156,6 +168,8 @@ export const config = {
   matcher: [
     "/",
     "/login",
+    "/forgot-password",
+    "/request-password",
     "/reset-password",
     "/setup",
     "/approval",

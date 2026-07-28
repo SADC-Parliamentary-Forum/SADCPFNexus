@@ -340,7 +340,7 @@ export default function LoginPage() {
                 {t("login.resetPassword")}
               </Link>
               {" "}{t("login.or")}{" "}
-              <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              <Link href="/request-password" className="font-medium text-primary hover:underline">
                 {t("login.requestPassword")}
               </Link>
               {" "}{t("login.forAccounts")}

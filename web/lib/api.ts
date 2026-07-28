@@ -105,7 +105,19 @@ api.interceptors.response.use(
       }
 
       if (status === 401) {
-        if (!window.location.pathname.startsWith("/login") && !_redirecting401) {
+        const path = window.location.pathname;
+        // Public auth flows (forgot / request / email-token reset) must stay put
+        // when a background /auth/me 401 fires — otherwise the form never loads.
+        const isPublicAuthPath =
+          path.startsWith("/login") ||
+          path.startsWith("/forgot-password") ||
+          path.startsWith("/request-password") ||
+          path.startsWith("/reset-password") ||
+          path.startsWith("/setup") ||
+          path.startsWith("/approval") ||
+          path.startsWith("/supplier");
+
+        if (!isPublicAuthPath && !_redirecting401) {
           _redirecting401 = true;
           clearStoredUser();
           clearAuthCookie();
@@ -158,6 +170,20 @@ export const authApi = {
   forgotPassword: async (email: string) => {
     await ensureCsrfCookie();
     return api.post<{ message: string }>("/auth/forgot-password", { email: email.trim() });
+  },
+  requestAccess: async (data: {
+    full_name: string;
+    official_email: string;
+    position_title?: string;
+    department_name?: string;
+    supervisor_name?: string;
+    reason?: string;
+  }) => {
+    await ensureCsrfCookie();
+    return api.post<{ message: string }>("/auth/access-request", {
+      ...data,
+      official_email: data.official_email.trim(),
+    });
   },
   resetPassword: async (token: string, email: string, password: string, passwordConfirmation: string) => {
     await ensureCsrfCookie();

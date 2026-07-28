@@ -57,6 +57,44 @@ test.describe("Login page", () => {
     const me = await meResponse.json();
     expect(me.email).toBe("staff@sadcpf.org");
   });
+
+  test("forgot-password link opens and stays on the reset form", async ({ page }) => {
+    await page.getByRole("link", { name: /reset password/i }).click();
+    await page.waitForURL("**/forgot-password", { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /reset password/i })).toBeVisible();
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page).toHaveURL(/\/forgot-password/);
+  });
+
+  test("request-password link opens and stays on the access form", async ({ page }) => {
+    await page.getByRole("link", { name: /request a password/i }).click();
+    await page.waitForURL("**/request-password", { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /request a password/i })).toBeVisible();
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page).toHaveURL(/\/request-password/);
+  });
+});
+
+test.describe("Public auth pages", () => {
+  test("direct /forgot-password does not bounce to login", async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto("/forgot-password");
+    await expect(page.getByRole("heading", { name: /reset password/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    expect(page.url()).toContain("/forgot-password");
+    expect(page.url()).not.toContain("/login");
+  });
+
+  test("direct /request-password does not bounce to login", async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto("/request-password");
+    await expect(page.getByRole("heading", { name: /request a password/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    expect(page.url()).toContain("/request-password");
+    expect(page.url()).not.toContain("/login");
+  });
 });
 
 test.describe("Auth protection", () => {

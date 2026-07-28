@@ -119,6 +119,55 @@ class AuthTest extends TestCase
         $this->getJson('/api/v1/auth/me')->assertUnauthorized();
     }
 
+    public function test_forgot_password_accepts_email(): void
+    {
+        $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => $this->user->email,
+        ])->assertOk()
+          ->assertJsonPath('message', 'If an account with that email exists, a password reset link has been sent.');
+    }
+
+    public function test_access_request_records_new_official_email(): void
+    {
+        $this->postJson('/api/v1/auth/access-request', [
+            'full_name' => 'New Staff',
+            'official_email' => 'new.staff@sadcpf.org',
+            'position_title' => 'Officer',
+            'reason' => 'Need Nexus login',
+        ])->assertStatus(202)
+          ->assertJsonPath(
+              'message',
+              'If your request can be processed, further instructions will be sent to the email address provided.'
+          );
+
+        $this->assertDatabaseHas('account_access_requests', [
+            'official_email' => 'new.staff@sadcpf.org',
+            'full_name' => 'New Staff',
+            'status' => 'requested',
+        ]);
+    }
+
+    public function test_access_request_rejects_non_allowed_domain(): void
+    {
+        $this->postJson('/api/v1/auth/access-request', [
+            'full_name' => 'Outsider',
+            'official_email' => 'outsider@example.com',
+        ])->assertUnprocessable()
+          ->assertJsonValidationErrors(['official_email']);
+    }
+
+    public function test_access_request_does_not_duplicate_existing_user_email(): void
+    {
+        $this->postJson('/api/v1/auth/access-request', [
+            'full_name' => 'Existing',
+            'official_email' => $this->user->email,
+        ])->assertStatus(202);
+
+        $this->assertDatabaseMissing('account_access_requests', [
+            'official_email' => $this->user->email,
+        ]);
+    }
+
     public function test_logout_revokes_token(): void
     {
         $token = $this->user->createToken('test')->plainTextToken;

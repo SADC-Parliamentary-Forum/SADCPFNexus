@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountAccessRequest;
 use App\Models\AuditLog;
 use App\Models\DeviceToken;
 use App\Models\User;
@@ -31,6 +32,55 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'If an account with that email exists, a password reset link has been sent.',
         ]);
+    }
+
+    public function accessRequest(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'official_email' => ['required', 'email', 'max:255'],
+            'position_title' => ['nullable', 'string', 'max:255'],
+            'department_name' => ['nullable', 'string', 'max:255'],
+            'supervisor_name' => ['nullable', 'string', 'max:255'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $email = strtolower(trim($data['official_email']));
+        if (! $this->emailDomainAllowed($email)) {
+            throw ValidationException::withMessages([
+                'official_email' => ['Use an approved official SADC PF email address.'],
+            ]);
+        }
+
+        $hasExistingIdentity = User::withTrashed()->where('email', $email)->exists();
+        $hasPendingRequest = AccountAccessRequest::where('official_email', $email)
+            ->where('status', AccountAccessRequest::STATUS_REQUESTED)
+            ->exists();
+
+        if (! $hasExistingIdentity && ! $hasPendingRequest) {
+            AccountAccessRequest::create([
+                'tenant_id' => null,
+                'full_name' => trim((string) $data['full_name']),
+                'official_email' => $email,
+                'position_title' => $data['position_title'] ?? null,
+                'department_name' => $data['department_name'] ?? null,
+                'supervisor_name' => $data['supervisor_name'] ?? null,
+                'reason' => $data['reason'] ?? null,
+                'status' => AccountAccessRequest::STATUS_REQUESTED,
+            ]);
+        }
+
+        AuditLog::record('auth.access_requested', [
+            'new_values' => [
+                'email' => $email,
+                'recorded' => ! $hasExistingIdentity && ! $hasPendingRequest,
+            ],
+            'tags' => 'auth',
+        ]);
+
+        return response()->json([
+            'message' => 'If your request can be processed, further instructions will be sent to the email address provided.',
+        ], 202);
     }
 
     public function resetPassword(Request $request): JsonResponse
@@ -354,6 +404,23 @@ class AuthController extends Controller
         }
 
         return (new Google2FA())->verifyKey($user->mfa_secret, $code);
+    }
+
+    private function emailDomainAllowed(string $email): bool
+    {
+        $allowedDomains = config('auth_lifecycle.allowed_email_domains', []);
+        if ($allowedDomains === []) {
+            return true;
+        }
+
+        $at = strrpos($email, '@');
+        if ($at === false) {
+            return false;
+        }
+
+        $domain = strtolower(substr($email, $at + 1));
+
+        return in_array($domain, $allowedDomains, true);
     }
 
     private function serializeUser(User $user): array

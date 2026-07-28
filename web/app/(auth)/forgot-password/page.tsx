@@ -32,9 +32,9 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f6f7f8] px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white border border-neutral-200 shadow-sm p-8">
-        <h1 className="text-xl font-bold text-neutral-900">Reset or Request Password</h1>
+        <h1 className="text-xl font-bold text-neutral-900">Reset Password</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Enter your account email (staff or supplier). We will send reset instructions.
+          Enter your account email (staff or supplier). We will send reset instructions if an account exists.
         </p>
 
         {sent && (
@@ -68,7 +68,9 @@ export default function ForgotPasswordPage() {
           </button>
         </form>
 
-        <p className="mt-5 text-xs text-neutral-500 text-center">
+        <p className="mt-5 text-xs text-neutral-500 text-center space-x-3">
+          <Link href="/request-password" className="text-primary hover:underline font-medium">Request a password</Link>
+          <span>·</span>
           <Link href="/login" className="text-primary hover:underline font-medium">Back to login</Link>
         </p>
       </div>
