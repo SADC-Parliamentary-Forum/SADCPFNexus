@@ -25,14 +25,14 @@ export default function WorkSchedulesPage() {
   const load = useCallback(async () => {
     try {
       const res = await api.get<{ data: Schedule[] }>("/hr/timesheets/schedules");
-      setSchedules(res.data.data ?? []);
+      setSchedules((res.data as any).data ?? []);
       const monday = mondayOf(new Date());
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       const exp = await api.get<{ data: { expected_hours: number } }>(
         `/hr/timesheets/expected-hours?week_start=${fmt(monday)}&week_end=${fmt(sunday)}`
       );
-      setExpected(exp.data.data);
+      setExpected((exp.data as any).data ?? null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load schedules");
     }

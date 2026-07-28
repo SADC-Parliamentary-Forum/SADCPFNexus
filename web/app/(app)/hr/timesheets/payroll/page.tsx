@@ -24,7 +24,9 @@ export default function TimesheetPayrollExportPage() {
         "/hr/timesheets/payroll-exports",
         { settlement_ids, idempotency_key: `ui-${settlement_ids.join("-")}` }
       );
-      setResult(`Exported batch ${res.data.data.batch_reference} (#${res.data.data.id}). Re-submit is idempotent.`);
+      const body = res.data as { data?: { batch_reference?: string; id?: number }; batch_reference?: string; id?: number };
+      const batch = body.data ?? body;
+      setResult(`Exported batch ${batch.batch_reference ?? "?"} (#${batch.id ?? "?"}). Re-submit is idempotent.`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Export failed");
     } finally {

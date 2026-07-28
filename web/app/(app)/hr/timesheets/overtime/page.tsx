@@ -33,10 +33,14 @@ export default function OvertimeRequestsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<{ data: OtReq[] } | { data: { data: OtReq[] } }>("/hr/overtime-requisitions");
-      const payload = res.data as { data?: OtReq[] } & OtReq[];
-      const rows = Array.isArray(payload) ? payload : (payload.data ?? []);
-      setItems(Array.isArray(rows) ? rows : []);
+      const res = await api.get("/hr/overtime-requisitions");
+      const payload = res.data as unknown;
+      const rows = Array.isArray(payload)
+        ? payload
+        : payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)
+          ? (payload as { data: OtReq[] }).data
+          : [];
+      setItems(rows as OtReq[]);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load overtime requests");
     } finally {
@@ -131,7 +135,7 @@ export default function OvertimeRequestsPage() {
             value={form.day_type}
             onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value }))}
           >
-            <option value="normal_working_day">Normal working day (1.5×)</option>
+            <option value="normal_working_day">Normal working day (1.5Ã—)</option>
             <option value="weekend">Weekend (rate must be configured)</option>
             <option value="public_holiday">Public holiday (rate must be configured)</option>
           </select>
@@ -142,7 +146,7 @@ export default function OvertimeRequestsPage() {
             disabled={saving}
             className="rounded bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Create draft requisition"}
+            {saving ? "Savingâ€¦" : "Create draft requisition"}
           </button>
         </div>
       </form>
@@ -162,7 +166,7 @@ export default function OvertimeRequestsPage() {
             {loading && (
               <tr>
                 <td colSpan={5} className="px-3 py-6 text-center text-[var(--text-secondary)]">
-                  Loading…
+                  Loadingâ€¦
                 </td>
               </tr>
             )}
