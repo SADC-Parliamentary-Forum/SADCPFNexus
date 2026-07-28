@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class SignatureEvent extends Model
 {
-    public const UPDATED_AT = null; // Events are immutable
+    public $timestamps = false; // Table has signed_at only; no created_at/updated_at
 
     protected $fillable = [
         'tenant_id',

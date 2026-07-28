@@ -26,6 +26,14 @@ export default function IncomingMailPage() {
     file_code: "",
     department_id: "",
     body: "",
+    sender_name: "",
+    sender_organisation: "",
+    sender_country: "",
+    sender_reference: "",
+    channel: "post",
+    confidentiality: "general_official",
+    summary: "",
+    response_required: "0",
   });
 
   useEffect(() => {
@@ -80,7 +88,7 @@ export default function IncomingMailPage() {
       fd.append("direction", "incoming");
       fd.append("file", file);
 
-      const res = await correspondenceApi.create(fd);
+      const res = await correspondenceApi.registerIncoming(fd);
       router.push(`/correspondence/${res.data.data.id}`);
     } catch {
       setError("Failed to save. Please try again.");
@@ -189,6 +197,43 @@ export default function IncomingMailPage() {
           <div>
             <label className="block text-xs font-medium text-neutral-600 mb-1">File Code</label>
             <input name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-neutral-600 mb-1">Sender name</label>
+            <input name="sender_name" value={form.sender_name} onChange={handleField} className="form-input w-full" placeholder="Person or office" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-600 mb-1">Sender organisation</label>
+            <input name="sender_organisation" value={form.sender_organisation} onChange={handleField} className="form-input w-full" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-600 mb-1">Channel</label>
+            <select name="channel" value={form.channel} onChange={handleField} className="form-input w-full">
+              <option value="post">Post</option>
+              <option value="email">Email</option>
+              <option value="hand">Hand delivery</option>
+              <option value="courier">Courier</option>
+              <option value="fax">Fax</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-600 mb-1">Confidentiality</label>
+            <select name="confidentiality" value={form.confidentiality} onChange={handleField} className="form-input w-full">
+              <option value="general_official">General Official</option>
+              <option value="internal">Internal</option>
+              <option value="restricted">Restricted</option>
+              <option value="confidential">Confidential</option>
+              <option value="highly_confidential">Highly Confidential</option>
+              <option value="privileged_legal">Privileged / Legal</option>
+              <option value="hr_confidential">HR Confidential</option>
+              <option value="finance_confidential">Finance Confidential</option>
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-medium text-neutral-600 mb-1">Summary</label>
+            <textarea name="summary" value={form.summary} onChange={handleField} className="form-input w-full" rows={2} />
           </div>
 
           <div>

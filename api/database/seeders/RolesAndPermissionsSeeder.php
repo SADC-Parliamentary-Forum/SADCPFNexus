@@ -58,7 +58,10 @@ class RolesAndPermissionsSeeder extends Seeder
             // Support Tickets
             'support.view', 'support.create', 'support.admin',
             'saam.view', 'saam.delegate',
-            'correspondence.view', 'correspondence.create', 'correspondence.admin',
+            'correspondence.view', 'correspondence.create', 'correspondence.review',
+            'correspondence.approve', 'correspondence.send', 'correspondence.admin',
+            'correspondence.registry', 'correspondence.route', 'correspondence.dispatch',
+            'correspondence.confidential.view',
             'srhr.view', 'srhr.create', 'srhr.manage', 'srhr.admin',
             'parliaments.view', 'parliaments.manage',
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
@@ -154,6 +157,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'stock.view',
                     'saam.view', 'saam.delegate',
                     'correspondence.view', 'correspondence.create',
+                    'correspondence.registry', 'correspondence.dispatch',
+                    'correspondence.review', 'correspondence.send',
                     'parliaments.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -208,6 +213,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'reports.view', 'reports.export',
                     'audit.view',
                     'risk.view', 'risk.review', 'risk.approve',
+                    'correspondence.view', 'correspondence.create', 'correspondence.review',
+                    'correspondence.approve', 'correspondence.send', 'correspondence.route',
+                    'correspondence.registry', 'correspondence.dispatch', 'correspondence.confidential.view',
                 ])->where('guard_name', $guard)->get()
             );
 

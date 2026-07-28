@@ -10,11 +10,17 @@ import { SigningModal } from "@/components/saam/SigningModal";
 const statusSteps = ["draft", "pending_review", "pending_approval", "approved", "sent"];
 const statusLabel: Record<string, string> = {
   draft: "Draft", pending_review: "Under Review", pending_approval: "Pending Approval",
-  approved: "Approved", sent: "Sent", archived: "Archived",
+  approved: "Approved", signed: "Signed", ready_dispatch: "Ready for Dispatch",
+  sent: "Sent", archived: "Archived",
+  pending_sg_routing: "Pending SG Routing", routed: "Routed", in_progress: "In Progress",
+  responded: "Responded", closed: "Closed", voided: "Voided", misrouted: "Misrouted",
 };
 const statusCls: Record<string, string> = {
   draft: "badge-muted", pending_review: "badge-warning", pending_approval: "badge-warning",
-  approved: "badge-success", sent: "badge-success", archived: "badge-muted",
+  approved: "badge-success", signed: "badge-success", ready_dispatch: "badge-success",
+  sent: "badge-success", archived: "badge-muted",
+  pending_sg_routing: "badge-warning", routed: "badge-warning", in_progress: "badge-warning",
+  responded: "badge-success", closed: "badge-muted", voided: "badge-muted", misrouted: "badge-warning",
 };
 const typeLabel: Record<string, string> = {
   internal_memo: "Internal Memo", external: "External",
@@ -188,11 +194,40 @@ export default function CorrespondenceDetailPage() {
                 Final Approve
               </button>
             )}
-            {letter.status === "approved" && canSend && (
+            {letter.status === "approved" && canApprove && (
+              <button
+                onClick={() => runAction(() => correspondenceApi.sign(letter.id), "Signed — ready for dispatch.")}
+                disabled={actionLoading}
+                className="btn-secondary text-sm"
+              >
+                Digital Sign
+              </button>
+            )}
+            {["approved", "signed", "ready_dispatch"].includes(letter.status) && canSend && (
               <button onClick={() => setShowSendModal(true)} disabled={actionLoading} className="btn-primary text-sm">
                 <span className="material-symbols-outlined text-[16px] mr-1">send</span>
-                Send
+                Dispatch / Send
               </button>
+            )}
+            {["approved", "signed", "ready_dispatch"].includes(letter.status) && (isSystemAdmin(currentUser) || hasPermission(currentUser, "correspondence.dispatch")) && (
+              <button
+                onClick={() => runAction(
+                  () => correspondenceApi.dispatch(letter.id, { channel: "post", delivery_status: "dispatched" }),
+                  "Physical dispatch recorded."
+                )}
+                disabled={actionLoading}
+                className="btn-secondary text-sm"
+              >
+                Record Post Dispatch
+              </button>
+            )}
+            {letter.registry_reference && (
+              <p className="text-xs text-neutral-500 w-full mt-1 font-mono">
+                Registry: {letter.registry_reference}
+                {letter.primary_owner?.name ? ` · Owner: ${letter.primary_owner.name}` : ""}
+                {letter.original_immutable_at ? " · Original locked" : ""}
+                {letter.signed_immutable_at ? " · Signed locked" : ""}
+              </p>
             )}
           </div>
         </div>

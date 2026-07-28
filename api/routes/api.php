@@ -1131,18 +1131,43 @@ Route::prefix('v1')->group(function () {
         Route::delete('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteActionItem']);
         Route::post('governance/minutes/{meetingMinute}/action-items/{actionItem}/assign', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'assignActionItem']);
 
-        // Correspondence & Registry (ICRMS)
+        // Correspondence & Registry (ICRMS) — Phase 1 Register
         Route::prefix('correspondence')->group(function () {
-            Route::get('letters', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'index']);
-            Route::post('letters', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'store']);
-            Route::get('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'show']);
-            Route::put('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'update']);
-            Route::delete('letters/{correspondence}', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'destroy']);
-            Route::post('letters/{correspondence}/submit', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'submit']);
-            Route::post('letters/{correspondence}/review', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'review']);
-            Route::post('letters/{correspondence}/approve', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'approve']);
-            Route::post('letters/{correspondence}/send', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'send']);
-            Route::get('letters/{correspondence}/download', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class, 'download']);
+            $letters = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceController::class;
+            $register = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceRegisterController::class;
+
+            Route::get('letters', [$letters, 'index']);
+            Route::post('letters', [$letters, 'store']);
+            Route::post('letters/incoming/register', [$register, 'registerIncoming']);
+            Route::get('letters/{correspondence}', [$letters, 'show']);
+            Route::put('letters/{correspondence}', [$letters, 'update']);
+            Route::delete('letters/{correspondence}', [$letters, 'destroy']);
+            Route::post('letters/{correspondence}/submit', [$letters, 'submit']);
+            Route::post('letters/{correspondence}/review', [$letters, 'review']);
+            Route::post('letters/{correspondence}/approve', [$letters, 'approve']);
+            Route::post('letters/{correspondence}/send', [$letters, 'send']);
+            Route::get('letters/{correspondence}/download', [$letters, 'download']);
+
+            Route::post('letters/{correspondence}/sg-route', [$register, 'sgRoute']);
+            Route::post('letters/{correspondence}/acknowledge', [$register, 'acknowledge']);
+            Route::get('letters/{correspondence}/notes', [$register, 'notes']);
+            Route::post('letters/{correspondence}/notes', [$register, 'addNote']);
+            Route::post('letters/{correspondence}/relationships', [$register, 'linkRelationship']);
+            Route::post('letters/{correspondence}/sign', [$register, 'sign']);
+            Route::post('letters/{correspondence}/dispatch', [$register, 'dispatchItem']);
+            Route::post('letters/{correspondence}/void-reference', [$register, 'voidReference']);
+            Route::post('letters/{correspondence}/assignments', [$register, 'linkAssignment']);
+            Route::post('letters/{correspondence}/subject-files', [$register, 'linkSubjectFile']);
+
+            Route::patch('dispatches/{dispatch}/delivery', [$register, 'updateDelivery']);
+
+            Route::get('subject-files', [$register, 'subjectFiles']);
+            Route::post('subject-files', [$register, 'storeSubjectFile']);
+            Route::get('master-register', [$register, 'masterRegister']);
+            Route::get('my-actions', [$register, 'myActions']);
+            Route::get('reports/summary', [$register, 'reportSummary']);
+            Route::get('settings/numbering', [$register, 'numberingPolicy']);
+            Route::put('settings/numbering', [$register, 'updateNumberingPolicy']);
 
             Route::get('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'index']);
             Route::post('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'store']);

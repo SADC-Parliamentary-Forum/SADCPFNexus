@@ -5505,13 +5505,15 @@ export const hrSettingsApi = {
 export interface CorrespondenceLetter {
   id: number;
   reference_number: string | null;
+  registry_reference?: string | null;
   title: string;
   subject: string;
   body: string | null;
+  summary?: string | null;
   type: "internal_memo" | "external" | "diplomatic_note" | "procurement";
   priority: "low" | "normal" | "high" | "urgent";
   language: "en" | "fr" | "pt";
-  status: "draft" | "pending_review" | "pending_approval" | "approved" | "sent" | "archived";
+  status: string;
   direction: "outgoing" | "incoming";
   file_code: string | null;
   signatory_code: string | null;
@@ -5526,12 +5528,37 @@ export interface CorrespondenceLetter {
   reviewed_at: string | null;
   approved_at: string | null;
   sent_at: string | null;
+  received_at?: string | null;
+  registered_at?: string | null;
+  confidentiality?: string;
+  content_restricted?: boolean;
+  primary_owner_id?: number | null;
+  primary_owner?: { id: number; name: string; email?: string } | null;
+  sender_name?: string | null;
+  sender_organisation?: string | null;
+  sender_deadline?: string | null;
+  internal_deadline?: string | null;
+  final_deadline?: string | null;
+  original_immutable_at?: string | null;
+  signed_immutable_at?: string | null;
+  sg_instruction?: string | null;
+  sg_action?: string | null;
   created_at: string;
   updated_at: string;
   creator?: { id: number; name: string; email: string };
   reviewer?: { id: number; name: string } | null;
   approver?: { id: number; name: string } | null;
   recipients?: CorrespondenceRecipient[];
+  owners?: Array<{ id: number; role: string; user?: { id: number; name: string } }>;
+  subject_files?: Array<{ id: number; file_code: string; title: string }>;
+}
+
+export interface CorrespondenceSubjectFile {
+  id: number;
+  file_code: string;
+  title: string;
+  description: string | null;
+  status: string;
 }
 
 export interface CorrespondenceRecipient {
@@ -5570,8 +5597,12 @@ export const correspondenceApi = {
     api.post<{ data: CorrespondenceLetter; message: string }>("/correspondence/letters", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+  registerIncoming: (formData: FormData) =>
+    api.post<{ data: CorrespondenceLetter; message: string }>("/correspondence/letters/incoming/register", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   get: (id: number) =>
-    api.get<{ data: CorrespondenceLetter }>(`/correspondence/letters/${id}`),
+    api.get<{ data: CorrespondenceLetter; can_view_content?: boolean }>("/correspondence/letters/" + id),
   update: (id: number, data: FormData | Partial<CorrespondenceLetter>) =>
     api.put<{ data: CorrespondenceLetter }>(`/correspondence/letters/${id}`, data),
   delete: (id: number) => api.delete(`/correspondence/letters/${id}`),
@@ -5583,6 +5614,34 @@ export const correspondenceApi = {
     api.post(`/correspondence/letters/${id}/send`, { recipients }),
   download: (id: number) =>
     api.get(`/correspondence/letters/${id}/download`, { responseType: "blob" }),
+  sgRoute: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: CorrespondenceLetter; message: string }>(`/correspondence/letters/${id}/sg-route`, data),
+  acknowledge: (id: number, ack_status: "viewed" | "accepted" | "misrouted") =>
+    api.post(`/correspondence/letters/${id}/acknowledge`, { ack_status }),
+  addNote: (id: number, body: string) =>
+    api.post(`/correspondence/letters/${id}/notes`, { body }),
+  listNotes: (id: number) => api.get<{ data: Array<{ id: number; body: string; author?: { name: string } }> }>(`/correspondence/letters/${id}/notes`),
+  sign: (id: number, comment?: string) =>
+    api.post(`/correspondence/letters/${id}/sign`, { comment }),
+  dispatch: (id: number, data: Record<string, unknown>) =>
+    api.post(`/correspondence/letters/${id}/dispatch`, data),
+  linkAssignment: (id: number, data: { assignment_id?: number; create?: Record<string, unknown> }) =>
+    api.post(`/correspondence/letters/${id}/assignments`, data),
+  linkRelationship: (id: number, data: { to_correspondence_id: number; type: string }) =>
+    api.post(`/correspondence/letters/${id}/relationships`, data),
+  masterRegister: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<CorrespondenceLetter>>("/correspondence/master-register", { params }),
+  myActions: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<CorrespondenceLetter>>("/correspondence/my-actions", { params }),
+  reportSummary: () =>
+    api.get<{ data: Record<string, number> }>("/correspondence/reports/summary"),
+  listSubjectFiles: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<CorrespondenceSubjectFile>>("/correspondence/subject-files", { params }),
+  createSubjectFile: (data: { file_code: string; title: string; description?: string }) =>
+    api.post<{ data: CorrespondenceSubjectFile }>("/correspondence/subject-files", data),
+  linkSubjectFile: (id: number, subject_file_id: number, is_primary?: boolean) =>
+    api.post(`/correspondence/letters/${id}/subject-files`, { subject_file_id, is_primary }),
+  numberingPolicy: () => api.get<{ data: Record<string, unknown> }>("/correspondence/settings/numbering"),
 
   // Contacts
   listContacts: (params?: Record<string, string | number>) =>

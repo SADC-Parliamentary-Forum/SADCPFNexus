@@ -7,6 +7,7 @@ use App\Jobs\SendCorrespondenceMailJob;
 use App\Models\AuditLog;
 use App\Models\Correspondence;
 use App\Models\CorrespondenceRecipient;
+use App\Modules\Correspondence\Services\CorrespondenceRegisterService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CorrespondenceController extends Controller
 {
+    public function __construct(
+        private readonly CorrespondenceRegisterService $register,
+    ) {}
+
     private function checkPerm(Request $request, string $permission): void
     {
         $user = $request->user();
@@ -27,8 +32,8 @@ class CorrespondenceController extends Controller
     {
         $this->checkPerm($request, 'correspondence.view');
         $user = $request->user();
-        $query = Correspondence::where('tenant_id', $user->tenant_id)
-            ->with(['creator:id,name,email', 'department:id,name'])
+        $query = $this->register->accessibleQuery($user)
+            ->with(['creator:id,name,email', 'department:id,name', 'primaryOwner:id,name'])
             ->orderByDesc('created_at');
 
         if ($status = $request->input('status')) {
@@ -46,11 +51,16 @@ class CorrespondenceController extends Controller
         if ($dateTo = $request->input('date_to')) {
             $query->whereDate('created_at', '<=', $dateTo);
         }
+        if ($owner = $request->input('primary_owner_id')) {
+            $query->where('primary_owner_id', $owner);
+        }
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('subject', 'ilike', "%{$search}%")
                   ->orWhere('title', 'ilike', "%{$search}%")
-                  ->orWhere('reference_number', 'ilike', "%{$search}%");
+                  ->orWhere('reference_number', 'ilike', "%{$search}%")
+                  ->orWhere('registry_reference', 'ilike', "%{$search}%")
+                  ->orWhere('sender_name', 'ilike', "%{$search}%");
             });
         }
 
@@ -75,8 +85,25 @@ class CorrespondenceController extends Controller
             'signatory_code' => ['nullable', 'string', 'max:16'],
             'department_id'  => ['nullable', 'integer', 'exists:departments,id'],
             'programme_id'   => ['nullable', 'integer'],
+            'confidentiality'=> ['nullable', 'string', 'in:internal,general_official,restricted,confidential,highly_confidential,privileged_legal,hr_confidential,finance_confidential'],
+            'response_required' => ['nullable', 'boolean'],
+            'sender_deadline' => ['nullable', 'date'],
+            'internal_deadline' => ['nullable', 'date'],
+            'final_deadline' => ['nullable', 'date'],
             'file'           => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:25600'],
         ]);
+
+        // Prefer dedicated registerIncoming for official incoming with registry rights
+        if (($data['direction'] ?? 'outgoing') === 'incoming'
+            && ($user->isSystemAdmin() || $user->hasPermissionTo('correspondence.registry', 'sanctum'))
+        ) {
+            $c = $this->register->registerIncoming($user, $data, $request->file('file'));
+
+            return response()->json([
+                'message' => 'Incoming correspondence registered.',
+                'data' => $c,
+            ], 201);
+        }
 
         $filePath = null;
         $originalFilename = null;
@@ -105,6 +132,11 @@ class CorrespondenceController extends Controller
             'signatory_code'    => $data['signatory_code'] ?? null,
             'department_id'     => $data['department_id'] ?? null,
             'programme_id'      => $data['programme_id'] ?? null,
+            'confidentiality'   => $data['confidentiality'] ?? 'general_official',
+            'response_required' => (bool) ($data['response_required'] ?? false),
+            'sender_deadline'   => $data['sender_deadline'] ?? null,
+            'internal_deadline' => $data['internal_deadline'] ?? null,
+            'final_deadline'    => $data['final_deadline'] ?? null,
             'file_path'         => $filePath,
             'original_filename' => $originalFilename,
             'mime_type'         => $mimeType,
@@ -127,27 +159,42 @@ class CorrespondenceController extends Controller
     public function show(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.view');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
+
+        $loaded = $correspondence->load([
+            'creator:id,name,email',
+            'reviewer:id,name',
+            'approver:id,name',
+            'primaryOwner:id,name,email',
+            'department:id,name',
+            'recipients.contact',
+            'owners.user:id,name',
+            'routes',
+            'notes.author:id,name',
+            'dispatches',
+            'subjectFiles',
+            'assignmentLinks.assignment',
+        ]);
+
+        $redacted = $this->register->redactForUser($loaded, $request->user());
 
         return response()->json([
-            'data' => $correspondence->load([
-                'creator:id,name,email',
-                'reviewer:id,name',
-                'approver:id,name',
-                'department:id,name',
-                'recipients.contact',
-            ]),
+            'data' => $redacted,
+            'can_view_content' => $this->register->canViewContent($correspondence, $request->user()),
+            'external_payload' => $correspondence->externalPayload(),
         ]);
     }
 
     public function update(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.create');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isDraft()) {
             return response()->json(['message' => 'Only draft correspondence can be edited.'], 422);
         }
+
+        $this->register->assertMutable($correspondence, $request->hasFile('file'));
 
         $data = $request->validate([
             'title'          => ['sometimes', 'string', 'max:500'],
@@ -161,11 +208,11 @@ class CorrespondenceController extends Controller
             'signatory_code' => ['nullable', 'string', 'max:16'],
             'department_id'  => ['nullable', 'integer', 'exists:departments,id'],
             'programme_id'   => ['nullable', 'integer'],
+            'confidentiality'=> ['nullable', 'string', 'max:32'],
             'file'           => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:25600'],
         ]);
 
         if ($request->hasFile('file')) {
-            // Remove old file
             if ($correspondence->file_path && Storage::disk('local')->exists($correspondence->file_path)) {
                 Storage::disk('local')->delete($correspondence->file_path);
             }
@@ -191,10 +238,14 @@ class CorrespondenceController extends Controller
     public function destroy(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.create');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isDraft()) {
             return response()->json(['message' => 'Only draft correspondence can be deleted.'], 422);
+        }
+
+        if ($correspondence->isOriginalImmutable() || $correspondence->isSignedImmutable()) {
+            return response()->json(['message' => 'Immutable correspondence cannot be deleted.'], 422);
         }
 
         if ($correspondence->file_path && Storage::disk('local')->exists($correspondence->file_path)) {
@@ -209,7 +260,7 @@ class CorrespondenceController extends Controller
     public function submit(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.create');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isDraft()) {
             return response()->json(['message' => 'Only draft correspondence can be submitted.'], 422);
@@ -235,7 +286,7 @@ class CorrespondenceController extends Controller
     public function review(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.review');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isPendingReview()) {
             return response()->json(['message' => 'Correspondence is not pending review.'], 422);
@@ -273,22 +324,17 @@ class CorrespondenceController extends Controller
     public function approve(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.approve');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isPendingApproval()) {
             return response()->json(['message' => 'Correspondence is not pending approval.'], 422);
         }
 
         $user = $request->user();
-        $referenceNumber = null;
+        $referenceNumber = $correspondence->reference_number;
 
-        if ($correspondence->file_code && $correspondence->signatory_code) {
-            $referenceNumber = Correspondence::generateReferenceNumber(
-                $correspondence->file_code,
-                $correspondence->signatory_code,
-                $correspondence->creator,
-                $correspondence->tenant_id
-            );
+        if (! $referenceNumber) {
+            $referenceNumber = $this->register->allocateOutgoingReference($correspondence, $user);
         }
 
         $correspondence->update([
@@ -296,6 +342,7 @@ class CorrespondenceController extends Controller
             'approved_by'      => $user->id,
             'approved_at'      => now(),
             'reference_number' => $referenceNumber,
+            'letterhead_applied_at' => $correspondence->letterhead_applied_at ?? now(),
         ]);
 
         AuditLog::record('correspondence.approved', [
@@ -316,9 +363,9 @@ class CorrespondenceController extends Controller
     public function send(Request $request, Correspondence $correspondence): JsonResponse
     {
         $this->checkPerm($request, 'correspondence.send');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
 
-        if (!$correspondence->isApproved()) {
+        if (! $correspondence->canDispatch()) {
             return response()->json(['message' => 'Correspondence must be approved before sending.'], 422);
         }
 
@@ -328,7 +375,10 @@ class CorrespondenceController extends Controller
             'recipients.*.type'       => ['required', 'string', 'in:to,cc,bcc'],
         ]);
 
-        // Clear existing recipients and add new ones
+        // Never include internal notes in outbound mail payload
+        $external = $correspondence->externalPayload();
+        unset($external); // payload built inside mail job from letter fields only
+
         $correspondence->recipients()->delete();
 
         foreach ($data['recipients'] as $recipientData) {
@@ -345,9 +395,10 @@ class CorrespondenceController extends Controller
             }
         }
 
-        $correspondence->update([
-            'status'  => 'sent',
-            'sent_at' => now(),
+        $this->register->dispatchRecord($correspondence, $request->user(), [
+            'channel' => 'email',
+            'delivery_status' => 'dispatched',
+            'recipient_name' => 'email recipients',
         ]);
 
         AuditLog::record('correspondence.sent', [
@@ -361,18 +412,28 @@ class CorrespondenceController extends Controller
 
         return response()->json([
             'message' => 'Correspondence sent to ' . count($data['recipients']) . ' recipient(s).',
-            'data'    => $correspondence->fresh(['recipients.contact']),
+            'data'    => $correspondence->fresh(['recipients.contact', 'dispatches']),
         ]);
     }
 
     public function download(Request $request, Correspondence $correspondence): StreamedResponse|JsonResponse
     {
         $this->checkPerm($request, 'correspondence.view');
-        abort_unless((int) $correspondence->tenant_id === (int) $request->user()->tenant_id, 404);
+        $this->register->assertCanAccess($correspondence, $request->user());
+
+        if (! $this->register->canViewContent($correspondence, $request->user())) {
+            return response()->json(['message' => 'Content access denied for this classification.'], 403);
+        }
 
         if (!$correspondence->file_path || !Storage::disk('local')->exists($correspondence->file_path)) {
             return response()->json(['message' => 'File not found.'], 404);
         }
+
+        AuditLog::record('correspondence.downloaded', [
+            'auditable_type' => Correspondence::class,
+            'auditable_id'   => $correspondence->id,
+            'new_values'     => ['user_id' => $request->user()->id],
+        ]);
 
         return response()->streamDownload(function () use ($correspondence) {
             $stream = Storage::disk('local')->readStream($correspondence->file_path);

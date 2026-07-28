@@ -5,44 +5,54 @@ import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  draft:              { label: "Draft",           cls: "badge-muted"    },
-  pending_review:     { label: "Pending Review",  cls: "badge-warning"  },
-  pending_approval:   { label: "Pending Approval",cls: "badge-warning"  },
-  approved:           { label: "Approved",        cls: "badge-success"  },
-  sent:               { label: "Sent",            cls: "badge-success"  },
-  archived:           { label: "Archived",        cls: "badge-muted"    },
+  draft: { label: "Draft", cls: "badge-muted" },
+  pending_review: { label: "Pending Review", cls: "badge-warning" },
+  pending_approval: { label: "Pending Approval", cls: "badge-warning" },
+  approved: { label: "Approved", cls: "badge-success" },
+  sent: { label: "Sent", cls: "badge-success" },
+  pending_sg_routing: { label: "Pending SG Routing", cls: "badge-warning" },
+  in_progress: { label: "In Progress", cls: "badge-warning" },
+  archived: { label: "Archived", cls: "badge-muted" },
 };
 
 const typeLabel: Record<string, string> = {
-  internal_memo:   "Internal Memo",
-  external:        "External",
+  internal_memo: "Internal Memo",
+  external: "External",
   diplomatic_note: "Diplomatic Note",
-  procurement:     "Procurement",
+  procurement: "Procurement",
 };
 
 export default function CorrespondencePage() {
   const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
+  const [summary, setSummary] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    correspondenceApi
-      .list({ per_page: 10 })
-      .then((res) => setLetters(res.data.data ?? []))
+    Promise.all([
+      correspondenceApi.list({ per_page: 10 }),
+      correspondenceApi.reportSummary().catch(() => ({ data: { data: {} as Record<string, number> } })),
+    ])
+      .then(([listRes, sumRes]) => {
+        setLetters(listRes.data.data ?? []);
+        setSummary(sumRes.data.data ?? {});
+      })
       .catch(() => setError("Failed to load correspondence."))
       .finally(() => setLoading(false));
   }, []);
 
-  const drafts = letters.filter((l) => l.status === "draft").length;
-  const pendingReview = letters.filter((l) => l.status === "pending_review").length;
-  const pendingApproval = letters.filter((l) => l.status === "pending_approval").length;
-  const sent = letters.filter((l) => l.status === "sent").length;
+  const kpis = [
+    { label: "Pending SG Routing", value: summary?.incoming_pending_routing ?? 0, href: "/correspondence/pending-routing", icon: "route", color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "My Open Actions", value: summary?.my_open_actions ?? 0, href: "/correspondence/my-actions", icon: "assignment_ind", color: "text-orange-600", bg: "bg-orange-50" },
+    { label: "Ready for Dispatch", value: summary?.ready_for_dispatch ?? 0, href: "/correspondence/registry?direction=outgoing", icon: "outbox", color: "text-green-600", bg: "bg-green-50" },
+    { label: "Overdue", value: summary?.overdue ?? 0, href: "/correspondence/reports", icon: "schedule", color: "text-red-600", bg: "bg-red-50" },
+  ];
 
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="page-title">Correspondence</h1>
-        <p className="page-subtitle">Manage outgoing and incoming institutional correspondence.</p>
+        <h1 className="page-title">Correspondence Register</h1>
+        <p className="page-subtitle">Institutional action-and-record register — Registry → SG routing → ownership → dispatch.</p>
       </div>
 
       {error && (
@@ -52,15 +62,9 @@ export default function CorrespondencePage() {
         </div>
       )}
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: "Drafts",           value: drafts,          icon: "draft",         color: "text-neutral-500", bg: "bg-neutral-50"  },
-          { label: "Pending Review",   value: pendingReview,   icon: "rate_review",   color: "text-amber-600",   bg: "bg-amber-50"    },
-          { label: "Pending Approval", value: pendingApproval, icon: "approval",      color: "text-orange-600",  bg: "bg-orange-50"   },
-          { label: "Sent",             value: sent,            icon: "send",          color: "text-green-600",   bg: "bg-green-50"    },
-        ].map((s) => (
-          <div key={s.label} className="card p-5">
+        {kpis.map((s) => (
+          <Link key={s.label} href={s.href} className="card p-5 hover:border-primary/30 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-neutral-500">{s.label}</p>
@@ -72,84 +76,61 @@ export default function CorrespondencePage() {
                 <span className={`material-symbols-outlined ${s.color} text-[22px]`}>{s.icon}</span>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
-      {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
-        <Link href="/correspondence/create" className="btn-primary inline-flex items-center gap-2">
+        <Link href="/correspondence/incoming" className="btn-primary inline-flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">move_to_inbox</span>
+          Register Incoming
+        </Link>
+        <Link href="/correspondence/create" className="btn-secondary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">edit_square</span>
-          New Letter
+          Draft Outgoing
         </Link>
-        <Link href="/correspondence/registry" className="btn-secondary inline-flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">inventory_2</span>
-          View Registry
+        <Link href="/correspondence/master-register" className="btn-secondary inline-flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">menu_book</span>
+          Master Register
         </Link>
-        <Link href="/correspondence/contacts" className="btn-secondary inline-flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">contacts</span>
-          Manage Contacts
+        <Link href="/correspondence/subject-files" className="btn-secondary inline-flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px]">folder_open</span>
+          Subject Files
         </Link>
       </div>
 
-      {/* Recent letters */}
       <div className="card">
-        <div className="card-header">
+        <div className="card-header flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">mark_email_read</span>
             <h3 className="text-sm font-semibold text-neutral-900">Recent Correspondence</h3>
           </div>
-          <Link href="/correspondence/registry" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
-            View all
-            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-          </Link>
+          <Link href="/correspondence/registry" className="text-xs text-primary hover:underline">View register →</Link>
         </div>
-
-        {loading ? (
-          <div className="px-5 py-8 text-center text-sm text-neutral-400">Loading…</div>
-        ) : letters.length > 0 ? (
-          <div className="divide-y divide-neutral-50">
-            {letters.map((letter) => {
-              const s = statusConfig[letter.status] ?? { label: letter.status, cls: "badge-muted" };
-              return (
-                <Link
-                  key={letter.id}
-                  href={`/correspondence/${letter.id}`}
-                  className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 rounded-xl bg-sky-50 flex items-center justify-center flex-shrink-0">
-                      <span className="material-symbols-outlined text-sky-600 text-[20px]">description</span>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-neutral-900 truncate">
-                        {letter.reference_number ?? letter.title}
-                      </p>
-                      <p className="text-xs text-neutral-400 truncate">
-                        {letter.subject} · {typeLabel[letter.type] ?? letter.type}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <span className={`badge ${s.cls}`}>{s.label}</span>
-                    <p className="text-xs text-neutral-400">
-                      {new Date(letter.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">mark_email_read</span>
-            <p className="mt-3 text-sm text-neutral-400">No correspondence yet.</p>
-            <Link href="/correspondence/create" className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
-              <span className="material-symbols-outlined text-[14px]">add</span>
-              Create your first letter
-            </Link>
-          </div>
-        )}
+        <div className="divide-y divide-neutral-100">
+          {loading && <div className="p-6 text-center text-neutral-400 text-sm">Loading…</div>}
+          {!loading && letters.length === 0 && (
+            <div className="p-6 text-center text-neutral-400 text-sm">No correspondence yet.</div>
+          )}
+          {letters.map((l) => {
+            const st = statusConfig[l.status] ?? { label: l.status, cls: "badge-muted" };
+            return (
+              <Link
+                key={l.id}
+                href={`/correspondence/${l.id}`}
+                className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-neutral-50"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-neutral-900 truncate">{l.subject}</p>
+                  <p className="text-xs text-neutral-500 font-mono mt-0.5">
+                    {l.registry_reference || l.reference_number || `#${l.id}`} · {typeLabel[l.type] ?? l.type}
+                  </p>
+                </div>
+                <span className={st.cls}>{st.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
