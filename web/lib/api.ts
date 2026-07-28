@@ -3148,7 +3148,7 @@ export const goodsReceiptsApi = {
     grnId: number,
     handoff?: Array<{
       goods_receipt_item_id: number;
-      type: "fixed_asset" | "stock";
+      type: "fixed_asset" | "stock" | "capital" | "controlled" | "consumable" | "direct_expense" | "skip";
       name: string;
       category?: string;
       quantity?: number;
