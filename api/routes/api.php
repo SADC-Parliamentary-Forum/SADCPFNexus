@@ -1041,6 +1041,16 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
         Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);
 
+        // Fleet ops layer on vehicle Fixed Assets (category=fleet)
+        Route::prefix('fleet')->group(function () {
+            $fleet = \App\Http\Controllers\Api\V1\Fleet\FleetController::class;
+            Route::get('vehicles', [$fleet, 'index']);
+            Route::get('vehicles/{asset}', [$fleet, 'show']);
+            Route::post('vehicles/{asset}/trips', [$fleet, 'storeTrip']);
+            Route::post('vehicles/{asset}/fuel-logs', [$fleet, 'storeFuelLog']);
+            Route::post('vehicles/{asset}/service-schedules', [$fleet, 'storeServiceSchedule']);
+        });
+
         // Asset lifecycle: locations, policies, verification, maintenance, depreciation
         Route::get('assets-meta/locations', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'locations']);
         Route::post('assets-meta/locations', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeLocation']);
@@ -1403,6 +1413,13 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard',   [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
             Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
             Route::get('matrix',      [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
+
+            // Phase 2 — automated KRIs
+            Route::get('kris/catalog', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'catalog']);
+            Route::get('kris', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'index']);
+            Route::post('kris/evaluate', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'evaluate']);
+            Route::patch('kris/{kri}', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'update']);
+
             Route::apiResource('risks', \App\Http\Controllers\Api\V1\Risk\RiskController::class);
             Route::post('risks/{risk}/submit',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
             Route::post('risks/{risk}/start-review', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'startReview']);

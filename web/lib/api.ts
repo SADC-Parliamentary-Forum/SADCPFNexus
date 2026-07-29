@@ -1504,6 +1504,72 @@ export const assetRequestsApi = {
     api.post<AssetRequest>("/asset-requests", data),
 };
 
+// ─── Fleet (ops layer on vehicle Fixed Assets) ───────────────────────────────
+
+export interface FleetVehicle {
+  id: number;
+  asset_code: string;
+  name: string;
+  category: string;
+  status: string;
+}
+
+export interface FleetTripLog {
+  id: number;
+  asset_id: number;
+  started_at: string;
+  ended_at?: string | null;
+  start_odometer_km?: number | null;
+  end_odometer_km?: number | null;
+  distance_km?: number | null;
+  purpose?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+}
+
+export interface FleetFuelLog {
+  id: number;
+  asset_id: number;
+  logged_at: string;
+  litres: number;
+  cost_amount?: number | null;
+  currency: string;
+  odometer_km?: number | null;
+  station?: string | null;
+}
+
+export interface FleetServiceSchedule {
+  id: number;
+  asset_id: number;
+  service_type: string;
+  interval_km?: number | null;
+  interval_days?: number | null;
+  last_service_at?: string | null;
+  last_service_odometer_km?: number | null;
+  next_due_at?: string | null;
+  next_due_odometer_km?: number | null;
+  notes?: string | null;
+}
+
+export const fleetApi = {
+  listVehicles: () => api.get<{ data: FleetVehicle[] }>("/fleet/vehicles"),
+  getVehicle: (id: number) =>
+    api.get<{
+      data: {
+        vehicle: FleetVehicle;
+        trips: FleetTripLog[];
+        fuel_logs: FleetFuelLog[];
+        service_schedules: FleetServiceSchedule[];
+      };
+    }>(`/fleet/vehicles/${id}`),
+  createTrip: (assetId: number, data: Record<string, unknown>) =>
+    api.post<{ data: FleetTripLog }>(`/fleet/vehicles/${assetId}/trips`, data),
+  createFuelLog: (assetId: number, data: Record<string, unknown>) =>
+    api.post<{ data: FleetFuelLog }>(`/fleet/vehicles/${assetId}/fuel-logs`, data),
+  createServiceSchedule: (assetId: number, data: Record<string, unknown>) =>
+    api.post<{ data: FleetServiceSchedule }>(`/fleet/vehicles/${assetId}/service-schedules`, data),
+};
+
 // ─── Asset Movements ──────────────────────────────────────────────────────────
 
 export interface AssetMovement {
@@ -6006,9 +6072,19 @@ export interface CorrespondenceContact {
 
 export interface CorrespondenceMailboxSettings {
   id?: number;
+  tenant_id?: number;
   mailbox_address?: string | null;
   enabled?: boolean;
   notes?: string | null;
+  imap_host?: string | null;
+  imap_port?: number | null;
+  imap_encryption?: string | null;
+  imap_username?: string | null;
+  imap_password?: string | null;
+  imap_configured?: boolean;
+  has_imap_password?: boolean;
+  last_polled_at?: string | null;
+  last_poll_status?: string | null;
 }
 
 export interface CorrespondenceMailboxSuggestion {
@@ -6768,7 +6844,52 @@ export const riskApi = {
     api.post(`/risk/incidents`, data),
   listAppetitePolicies: () =>
     api.get(`/risk/appetite-policies`),
+
+  // Phase 2 — KRIs
+  listKris: () =>
+    api.get<{ data: RiskKri[] }>("/risk/kris"),
+  kriCatalog: () =>
+    api.get<{ data: RiskKriCatalogEntry[] }>("/risk/kris/catalog"),
+  evaluateKris: () =>
+    api.post<{ data: RiskKri[]; message: string }>("/risk/kris/evaluate"),
+  updateKri: (id: number, data: Partial<RiskKri>) =>
+    api.patch<{ data: RiskKri }>(`/risk/kris/${id}`, data),
 };
+
+export interface RiskKri {
+  id: number;
+  tenant_id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  source_module: string;
+  source_key: string;
+  unit: string;
+  direction: string;
+  warning_threshold: number | null;
+  breach_threshold: number | null;
+  risk_id: number | null;
+  strategic_objective_id: number | null;
+  enabled: boolean;
+  last_value: number | null;
+  last_status: "ok" | "warning" | "breach" | null;
+  last_evaluated_at: string | null;
+  risk?: { id: number; risk_code: string; title: string } | null;
+  strategic_objective?: { id: number; code: string; title: string } | null;
+}
+
+export interface RiskKriCatalogEntry {
+  code: string;
+  name: string;
+  source_module: string;
+  source_key: string;
+  unit: string;
+  direction: string;
+  warning_threshold: number;
+  breach_threshold: number;
+  data_source: string;
+  description: string;
+}
 
 // ── Risk Document Types ──────────────────────────────────────────────────────
 

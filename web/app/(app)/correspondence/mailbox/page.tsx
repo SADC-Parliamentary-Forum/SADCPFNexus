@@ -1,13 +1,22 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi, type CorrespondenceMailboxSuggestion } from "@/lib/api";
 
 export default function CorrespondenceMailboxPage() {
   const qc = useQueryClient();
-  const [settingsForm, setSettingsForm] = useState({ mailbox_address: "", enabled: true, notes: "" });
+  const [settingsForm, setSettingsForm] = useState({
+    mailbox_address: "",
+    enabled: true,
+    notes: "",
+    imap_host: "",
+    imap_port: "993",
+    imap_encryption: "ssl",
+    imap_username: "",
+    imap_password: "",
+  });
   const [importForm, setImportForm] = useState({
     message_id: "",
     subject: "",
@@ -28,15 +37,36 @@ export default function CorrespondenceMailboxPage() {
     queryFn: () => correspondenceApi.mailboxSuggestions({ status: "suggested" }).then((r) => r.data.data ?? []),
   });
 
+  useEffect(() => {
+    const s = settingsQuery.data;
+    if (!s) return;
+    setSettingsForm((f) => ({
+      ...f,
+      mailbox_address: s.mailbox_address ?? "",
+      enabled: Boolean(s.enabled),
+      notes: s.notes ?? "",
+      imap_host: s.imap_host ?? "",
+      imap_port: String(s.imap_port ?? 993),
+      imap_encryption: s.imap_encryption ?? "ssl",
+      imap_username: s.imap_username ?? "",
+    }));
+  }, [settingsQuery.data]);
+
   const saveSettings = useMutation({
     mutationFn: () =>
       correspondenceApi.updateMailboxSettings({
-        mailbox_address: settingsForm.mailbox_address || settingsQuery.data?.mailbox_address || null,
+        mailbox_address: settingsForm.mailbox_address || null,
         enabled: settingsForm.enabled,
         notes: settingsForm.notes || null,
+        imap_host: settingsForm.imap_host || null,
+        imap_port: settingsForm.imap_port ? Number(settingsForm.imap_port) : null,
+        imap_encryption: settingsForm.imap_encryption || null,
+        imap_username: settingsForm.imap_username || null,
+        ...(settingsForm.imap_password ? { imap_password: settingsForm.imap_password } : {}),
       }),
     onSuccess: () => {
       setError(null);
+      setSettingsForm((f) => ({ ...f, imap_password: "" }));
       qc.invalidateQueries({ queryKey: ["correspondence", "mailbox", "settings"] });
     },
     onError: () => setError("Could not save mailbox settings."),
@@ -72,6 +102,7 @@ export default function CorrespondenceMailboxPage() {
         <h1 className="page-title">Registry Mailbox</h1>
         <p className="page-subtitle">
           Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits.
+          Poll via <code>php artisan correspondence:poll-mailbox</code> when IMAP is configured (or <code>--fixture</code> / <code>--dry-run</code>).
         </p>
       </div>
 
@@ -81,28 +112,26 @@ export default function CorrespondenceMailboxPage() {
         <h2 className="text-base font-semibold">Mailbox settings</h2>
         <p className="text-sm text-neutral-600">
           Current: {settings?.mailbox_address || "not configured"} {settings?.enabled ? "(enabled)" : "(disabled)"}
+          {" · "}
+          IMAP {settings?.imap_configured ? "ready" : "not fully configured"}
+          {settings?.last_polled_at ? ` · last poll ${new Date(settings.last_polled_at).toLocaleString()}` : ""}
         </p>
         <div className="grid gap-3 md:grid-cols-2">
-          <input
-            className="form-input"
-            placeholder="registry@sadcpf.org"
-            defaultValue={settings?.mailbox_address ?? ""}
-            onChange={(e) => setSettingsForm((f) => ({ ...f, mailbox_address: e.target.value }))}
-          />
+          <input className="form-input" placeholder="registry@sadcpf.org" value={settingsForm.mailbox_address} onChange={(e) => setSettingsForm((f) => ({ ...f, mailbox_address: e.target.value }))} />
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={settingsForm.enabled}
-              onChange={(e) => setSettingsForm((f) => ({ ...f, enabled: e.target.checked }))}
-            />
+            <input type="checkbox" checked={settingsForm.enabled} onChange={(e) => setSettingsForm((f) => ({ ...f, enabled: e.target.checked }))} />
             Enabled for suggestion intake
           </label>
-          <textarea
-            className="form-input md:col-span-2"
-            rows={2}
-            placeholder="Notes (IMAP sync deferred — paste Message-ID / headers manually)"
-            onChange={(e) => setSettingsForm((f) => ({ ...f, notes: e.target.value }))}
-          />
+          <input className="form-input" placeholder="IMAP host" value={settingsForm.imap_host} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_host: e.target.value }))} />
+          <input className="form-input" placeholder="IMAP port" value={settingsForm.imap_port} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_port: e.target.value }))} />
+          <select className="form-input" value={settingsForm.imap_encryption} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_encryption: e.target.value }))}>
+            <option value="ssl">SSL</option>
+            <option value="tls">TLS</option>
+            <option value="none">None</option>
+          </select>
+          <input className="form-input" placeholder="IMAP username" value={settingsForm.imap_username} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_username: e.target.value }))} />
+          <input className="form-input md:col-span-2" type="password" placeholder={settings?.has_imap_password ? "IMAP password (leave blank to keep / use CORRESPONDENCE_IMAP_PASSWORD)" : "IMAP password (optional if env set)"} value={settingsForm.imap_password} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_password: e.target.value }))} />
+          <textarea className="form-input md:col-span-2" rows={2} placeholder="Notes — designated registry mailbox only" value={settingsForm.notes} onChange={(e) => setSettingsForm((f) => ({ ...f, notes: e.target.value }))} />
         </div>
         <button type="button" className="btn-primary text-sm" onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
           Save settings
@@ -120,12 +149,7 @@ export default function CorrespondenceMailboxPage() {
           <textarea className="form-input md:col-span-2" rows={2} placeholder="Body preview" value={importForm.body_preview} onChange={(e) => setImportForm((f) => ({ ...f, body_preview: e.target.value }))} />
           <textarea className="form-input md:col-span-2" rows={3} placeholder="Raw headers (optional)" value={importForm.raw_headers} onChange={(e) => setImportForm((f) => ({ ...f, raw_headers: e.target.value }))} />
         </div>
-        <button
-          type="button"
-          className="btn-primary text-sm"
-          disabled={!importForm.message_id || importSuggestion.isPending}
-          onClick={() => importSuggestion.mutate()}
-        >
+        <button type="button" className="btn-primary text-sm" disabled={!importForm.message_id || importSuggestion.isPending} onClick={() => importSuggestion.mutate()}>
           Import suggested message
         </button>
       </div>

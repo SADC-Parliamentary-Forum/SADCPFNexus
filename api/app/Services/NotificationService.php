@@ -352,6 +352,10 @@ class NotificationService
                 'subject' => 'Risk escalated — {{risk_code}} requires attention',
                 'body'    => "Dear {{name}},\n\nA risk has been escalated to level {{level}} by {{actor}}.\n\nRisk Code: {{risk_code}}\nTitle: {{title}}\n\n{{notes}}\n\nPlease log in to review.\n\nRegards,\nSADC-PF Nexus",
             ],
+            'risk.kri_breached' => [
+                'subject' => 'KRI breach — {{kri_code}}',
+                'body'    => "Dear {{name}},\n\nKey Risk Indicator {{kri_code}} ({{kri_name}}) has breached its threshold.\n\nCurrent value: {{value}} {{unit}}\nBreach threshold: {{threshold}}\n\nPlease review the KRI dashboard.\n\nRegards,\nSADC-PF Nexus",
+            ],
 
             // Meeting Resolutions / Decision Register
             'decision.adopted' => [

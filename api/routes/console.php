@@ -49,8 +49,14 @@ Schedule::command('leave:manage-toil-expiry')->dailyAt('08:20');
 // Assignment reminders + unclaimed/overdue escalations.
 Schedule::command('assignments:process-reminders')->hourly();
 
+// Evaluate automated Key Risk Indicators and raise in-app breach alerts.
+Schedule::command('risk:evaluate-kris')->weekdays()->at('07:20');
+
 // Correspondence deadline overdue notifications + HOD escalation after 3 days.
 Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
+
+// Poll designated registry mailbox into suggestions only (requires IMAP config or is a no-op when disabled).
+Schedule::command('correspondence:poll-mailbox')->everyFifteenMinutes()->withoutOverlapping();
 
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())

@@ -202,6 +202,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets", permission: "assets.view" },
+  { path: "/fleet", permission: "assets.view" },
   { path: "/stock", permission: "stock.view" },
   { path: "/governance", permission: "governance.view" },
   { path: "/procurement/create", permission: ["procurement.create", "procurement.admin"] },

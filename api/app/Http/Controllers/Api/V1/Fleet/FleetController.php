@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Fleet;
+
+use App\Http\Controllers\Controller;
+use App\Models\Asset;
+use App\Modules\Fleet\Services\FleetService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class FleetController extends Controller
+{
+    public function __construct(private readonly FleetService $fleet) {}
+
+    private function canView($user): bool
+    {
+        return $user->can('assets.view') || $user->can('assets.manage') || $user->can('assets.admin');
+    }
+
+    private function canManage($user): bool
+    {
+        return $user->can('assets.manage') || $user->can('assets.admin') || $user->can('assets.create') || $user->can('assets.edit');
+    }
+
+    public function index(Request $request): JsonResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+
+        return response()->json([
+            'data' => $this->fleet->listVehicles((int) $request->user()->tenant_id),
+        ]);
+    }
+
+    public function show(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+
+        return response()->json([
+            'data' => $this->fleet->showVehicle($asset, (int) $request->user()->tenant_id),
+        ]);
+    }
+
+    public function storeTrip(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'started_at' => ['required', 'date'],
+            'ended_at' => ['nullable', 'date', 'after_or_equal:started_at'],
+            'start_odometer_km' => ['nullable', 'integer', 'min:0'],
+            'end_odometer_km' => ['nullable', 'integer', 'min:0'],
+            'purpose' => ['nullable', 'string', 'max:255'],
+            'origin' => ['nullable', 'string', 'max:255'],
+            'destination' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+            'driver_user_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $trip = $this->fleet->createTrip($asset, $request->user(), $data);
+
+        return response()->json(['data' => $trip], 201);
+    }
+
+    public function storeFuelLog(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'logged_at' => ['required', 'date'],
+            'litres' => ['required', 'numeric', 'gt:0'],
+            'cost_amount' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'odometer_km' => ['nullable', 'integer', 'min:0'],
+            'station' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $log = $this->fleet->createFuelLog($asset, $request->user(), $data);
+
+        return response()->json(['data' => $log], 201);
+    }
+
+    public function storeServiceSchedule(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'service_type' => ['nullable', 'string', 'max:64'],
+            'interval_km' => ['nullable', 'integer', 'min:1'],
+            'interval_days' => ['nullable', 'integer', 'min:1'],
+            'last_service_at' => ['nullable', 'date'],
+            'last_service_odometer_km' => ['nullable', 'integer', 'min:0'],
+            'next_due_at' => ['nullable', 'date'],
+            'next_due_odometer_km' => ['nullable', 'integer', 'min:0'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $schedule = $this->fleet->createServiceSchedule($asset, $request->user(), $data);
+
+        return response()->json(['data' => $schedule], 201);
+    }
+}

@@ -27,6 +27,11 @@ class CorrespondenceMailboxController extends Controller
             'mailbox_address' => ['nullable', 'email', 'max:255'],
             'enabled' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string'],
+            'imap_host' => ['nullable', 'string', 'max:255'],
+            'imap_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'imap_encryption' => ['nullable', 'in:ssl,tls,none'],
+            'imap_username' => ['nullable', 'string', 'max:255'],
+            'imap_password' => ['nullable', 'string', 'max:500'],
         ]);
 
         return response()->json([
