@@ -102,6 +102,9 @@ export default function BudgetReportsPage() {
           <Link href="/budget/cashflow" className="btn-secondary text-sm">
             Cashflow
           </Link>
+          <Link href="/budget/variance" className="btn-secondary text-sm">
+            Variance
+          </Link>
           <a
             className="btn-secondary text-sm"
             href={budgetApi.reportExportUrl(
@@ -122,13 +125,6 @@ export default function BudgetReportsPage() {
           >
             Export PDF
           </a>
-        </div>
-          <Link href="/budget/cashflow" className="btn-secondary text-sm">
-            Cashflow
-          </Link>
-          <Link href="/budget/variance" className="btn-secondary text-sm">
-            Variance
-          </Link>
         </div>
       </div>
 

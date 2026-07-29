@@ -135,8 +135,6 @@ export default function BcreDashboardPage() {
             </div>
           </div>
 
-          </div>
-
           {/* Programme snapshot (existing PIF/programme data) */}
           <div className="card">
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
