@@ -176,6 +176,8 @@ class CorrespondenceRegisterService
                 'sender_organisation' => $data['sender_organisation'] ?? null,
                 'sender_country' => $data['sender_country'] ?? null,
                 'sender_reference' => $data['sender_reference'] ?? null,
+                'message_id' => $data['message_id'] ?? null,
+                'mailbox_source' => $data['mailbox_source'] ?? null,
                 'sender_contact_id' => $data['sender_contact_id'] ?? null,
                 'attention_to' => $data['attention_to'] ?? null,
                 'confidentiality' => $confidentiality,

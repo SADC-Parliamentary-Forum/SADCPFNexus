@@ -108,7 +108,8 @@ class AssetController extends Controller
         } elseif (! empty($validated['issued_at'])) {
             $refDate = Carbon::parse($validated['issued_at']);
         }
-        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $refDate);
+        $method = $validated['depreciation_method'] ?? 'straight_line';
+        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $refDate, $method);
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
 
         $asset = Asset::create([
@@ -127,7 +128,7 @@ class AssetController extends Controller
             'purchase_value'       => $purchaseValue,
             'useful_life_years'    => $usefulLife,
             'salvage_value'        => isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null,
-            'depreciation_method'  => $validated['depreciation_method'] ?? 'straight_line',
+            'depreciation_method'  => $method,
         ]);
 
         $this->generateAndSaveQr($asset);
@@ -362,7 +363,8 @@ class AssetController extends Controller
         } elseif (! empty($validated['issued_at'])) {
             $refDate = Carbon::parse($validated['issued_at']);
         }
-        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $refDate);
+        $method = $validated['depreciation_method'] ?? 'straight_line';
+        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $refDate, $method);
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
 
         $oldAssetCode = $asset->asset_code;
@@ -381,7 +383,7 @@ class AssetController extends Controller
         $asset->purchase_value       = $purchaseValue;
         $asset->useful_life_years    = $usefulLife;
         $asset->salvage_value        = isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null;
-        $asset->depreciation_method  = $validated['depreciation_method'] ?? 'straight_line';
+        $asset->depreciation_method  = $method;
         $asset->save();
 
         if ($asset->asset_code !== $oldAssetCode) {

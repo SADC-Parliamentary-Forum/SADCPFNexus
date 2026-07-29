@@ -87,12 +87,29 @@ class Asset extends Model
         return "{$years} year(s) {$months} month(s)";
     }
 
-    public static function computeDepreciatedValue(?float $purchaseValue, ?int $usefulLifeYears, float $salvageValue = 0, ?Carbon $referenceDate = null): ?float
-    {
+    public static function computeDepreciatedValue(
+        ?float $purchaseValue,
+        ?int $usefulLifeYears,
+        float $salvageValue = 0,
+        ?Carbon $referenceDate = null,
+        string $method = 'straight_line',
+    ): ?float {
         if ($purchaseValue === null || $usefulLifeYears === null || $usefulLifeYears <= 0 || ! $referenceDate) {
             return null;
         }
-        $yearsElapsed = min($referenceDate->diffInYears(now()), $usefulLifeYears);
+
+        $yearsElapsed = min(
+            max(0.0, $referenceDate->diffInDays(now(), false) / 365.25),
+            (float) $usefulLifeYears,
+        );
+
+        if ($method === 'declining_balance') {
+            $rate = 2 / $usefulLifeYears;
+            $current = $purchaseValue * pow(1 - $rate, $yearsElapsed);
+
+            return round(max($salvageValue, $current), 2);
+        }
+
         $depreciable = $purchaseValue - $salvageValue;
         $current = $salvageValue + $depreciable * max(0, 1 - $yearsElapsed / $usefulLifeYears);
 
@@ -108,8 +125,9 @@ class Asset extends Model
         $usefulLife = $this->useful_life_years ? (int) $this->useful_life_years : null;
         $salvage = $this->salvage_value !== null ? (float) $this->salvage_value : 0.0;
         $ref = $this->age_reference_date;
+        $method = $this->depreciation_method ?: 'straight_line';
 
-        $computed = self::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $ref);
+        $computed = self::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $ref, $method);
         if ($computed !== null) {
             return $computed;
         }

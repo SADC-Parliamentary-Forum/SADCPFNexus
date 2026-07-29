@@ -364,6 +364,7 @@ Route::prefix('v1')->group(function () {
             Route::get('toil', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'toil']);
             Route::post('toil/{toilCredit}/extend', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'extendToil']);
             Route::get('team-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'teamCalendar']);
+            Route::get('register/export', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'registerExport']);
             Route::get('requests/{badLeaveRequest}', fn () => abort(404))->where('badLeaveRequest', '[^0-9]+');
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
@@ -635,6 +636,13 @@ Route::prefix('v1')->group(function () {
 
             // Cashflow / scenario planning
             Route::get('cashflow/forecast', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'forecast']);
+            Route::get('cashflow/forecast/export', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'exportForecast']);
+            Route::get('cashflow/compare', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'compare']);
+            Route::get('cashflow/compare/export', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'exportCompare']);
+            Route::get('cashflow/inflows', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'indexInflows']);
+            Route::post('cashflow/inflows', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'storeInflow']);
+            Route::put('cashflow/inflows/{inflow}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'updateInflow']);
+            Route::delete('cashflow/inflows/{inflow}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'destroyInflow']);
             Route::get('cashflow/scenarios', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'indexScenarios']);
             Route::post('cashflow/scenarios', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'storeScenario']);
             Route::get('cashflow/scenarios/{scenario}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'showScenario']);
@@ -1048,6 +1056,12 @@ Route::prefix('v1')->group(function () {
         Route::get('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'depreciationRuns']);
         Route::get('assets-meta/depreciation-runs/{assetDepreciationRun}', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'showDepreciationRun']);
         Route::post('assets-meta/depreciation-runs', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'runDepreciation']);
+        Route::get('assets-meta/insurance/policies', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'indexPolicies']);
+        Route::post('assets-meta/insurance/policies', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'storePolicy']);
+        Route::put('assets-meta/insurance/policies/{policy}', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'updatePolicy']);
+        Route::get('assets-meta/insurance/claims', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'indexClaims']);
+        Route::post('assets-meta/insurance/claims', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'storeClaim']);
+        Route::put('assets-meta/insurance/claims/{claim}', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'updateClaim']);
 
         // Disposal workflow
         Route::get('asset-disposals', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'index']);
@@ -1142,6 +1156,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('stock/batches', [$stores, 'indexBatches']);
             Route::post('stock/batches', [$stores, 'storeBatch']);
+            Route::get('stock/demand-forecast', [$stores, 'demandForecast']);
 
             // Stock items (§17.2)
             Route::get('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'index']);
@@ -1159,6 +1174,7 @@ Route::prefix('v1')->group(function () {
             Route::get('mine', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'mine']);
             Route::get('team', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'team']);
             Route::get('register', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'register']);
+            Route::get('calendar', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendar']);
             Route::get('review-queue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reviewQueue']);
             Route::get('reports/summary', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reportsSummary']);
             Route::get('weekly-summary-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'weeklySummaryFeed']);
@@ -1281,6 +1297,14 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/summary', [$register, 'reportSummary']);
             Route::get('settings/numbering', [$register, 'numberingPolicy']);
             Route::put('settings/numbering', [$register, 'updateNumberingPolicy']);
+
+            $mailbox = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceMailboxController::class;
+            Route::get('mailbox/settings', [$mailbox, 'settings']);
+            Route::put('mailbox/settings', [$mailbox, 'updateSettings']);
+            Route::get('mailbox/suggestions', [$mailbox, 'indexSuggestions']);
+            Route::post('mailbox/suggestions/import', [$mailbox, 'importSuggestion']);
+            Route::post('mailbox/suggestions/{suggestion}/register', [$mailbox, 'registerSuggestion']);
+            Route::post('mailbox/suggestions/{suggestion}/dismiss', [$mailbox, 'dismissSuggestion']);
 
             Route::get('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'index']);
             Route::post('contacts', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceContactController::class, 'store']);

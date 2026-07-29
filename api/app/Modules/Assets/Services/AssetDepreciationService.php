@@ -76,10 +76,17 @@ class AssetDepreciationService
                 }
                 $salvage = (float) ($asset->salvage_value ?? 0);
                 $purchase = (float) $asset->purchase_value;
-                $annual = $years > 0 ? ($purchase - $salvage) / $years : 0;
-                // Monthly slice for this run
-                $amount = round($annual / 12, 2);
+                $method = $asset->depreciation_method ?: 'straight_line';
                 $opening = $asset->book_value !== null ? (float) $asset->book_value : $purchase;
+
+                if ($method === 'declining_balance' && $years > 0) {
+                    $monthlyRate = (2 / $years) / 12;
+                    $amount = round($opening * $monthlyRate, 2);
+                } else {
+                    $annual = $years > 0 ? ($purchase - $salvage) / $years : 0;
+                    $amount = round($annual / 12, 2);
+                }
+
                 $closing = max($salvage, round($opening - $amount, 2));
                 $actual = round($opening - $closing, 2);
                 $accum = ($asset->accumulated_depreciation !== null ? (float) $asset->accumulated_depreciation : 0) + $actual;

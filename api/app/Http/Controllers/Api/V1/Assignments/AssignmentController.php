@@ -56,6 +56,54 @@ class AssignmentController extends Controller
         return response()->json($this->service->list($filters, $request->user()));
     }
 
+    /**
+     * In-app deadline calendar (not external Google sync).
+     */
+    public function calendar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'scope' => ['nullable', 'string', 'in:mine,team,register'],
+        ]);
+        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $data['to'] ?? now()->endOfMonth()->toDateString();
+        $scope = $data['scope'] ?? 'mine';
+
+        $query = Assignment::query()
+            ->with(['assignee:id,name'])
+            ->where('tenant_id', $user->tenant_id)
+            ->where('is_template', false)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '>=', $from)
+            ->whereDate('due_date', '<=', $to)
+            ->orderBy('due_date');
+
+        if ($scope === 'mine') {
+            $query->where('assigned_to', $user->id);
+        } elseif ($scope === 'team' && $user->department_id) {
+            $query->where('department_id', $user->department_id);
+        }
+
+        $items = $query->limit(500)->get()->map(fn (Assignment $a) => [
+            'id' => $a->id,
+            'title' => $a->title,
+            'status' => $a->status,
+            'priority' => $a->priority,
+            'start_date' => $a->start_date?->toDateString(),
+            'due_date' => $a->due_date?->toDateString(),
+            'assigned_to' => $a->assignee?->name,
+        ]);
+
+        return response()->json([
+            'from' => $from,
+            'to' => $to,
+            'scope' => $scope,
+            'data' => $items,
+        ]);
+    }
+
     public function stats(Request $request): JsonResponse
     {
         return response()->json($this->service->stats($request->user()));

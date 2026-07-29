@@ -1449,7 +1449,53 @@ export const assetsApi = {
     formData.append("invoice", file);
     return api.post<Asset>(`/assets/${assetId}/invoice`, formData);
   },
+  insurancePolicies: (params?: Record<string, string | number>) =>
+    api.get<{ success: boolean; data: AssetInsurancePolicy[] }>("/assets-meta/insurance/policies", { params }),
+  createInsurancePolicy: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: AssetInsurancePolicy }>("/assets-meta/insurance/policies", data),
+  updateInsurancePolicy: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: AssetInsurancePolicy }>(`/assets-meta/insurance/policies/${id}`, data),
+  insuranceClaims: (params?: Record<string, string | number>) =>
+    api.get<{ success: boolean; data: AssetInsuranceClaim[] }>("/assets-meta/insurance/claims", { params }),
+  createInsuranceClaim: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: AssetInsuranceClaim }>("/assets-meta/insurance/claims", data),
+  updateInsuranceClaim: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: AssetInsuranceClaim }>(`/assets-meta/insurance/claims/${id}`, data),
 };
+
+export interface AssetInsurancePolicy {
+  id: number;
+  policy_number: string;
+  insurer_name: string;
+  coverage_type: string;
+  effective_from: string;
+  effective_to: string;
+  sum_insured?: number | null;
+  premium_amount?: number | null;
+  currency: string;
+  status: string;
+  asset_id?: number | null;
+  notes?: string | null;
+  asset?: { id: number; asset_code: string; name: string } | null;
+  claims?: AssetInsuranceClaim[];
+}
+
+export interface AssetInsuranceClaim {
+  id: number;
+  policy_id: number;
+  asset_id?: number | null;
+  claim_number: string;
+  incident_date: string;
+  filed_at?: string | null;
+  claim_amount?: number | null;
+  settled_amount?: number | null;
+  currency: string;
+  status: string;
+  description?: string | null;
+  outcome_notes?: string | null;
+  policy?: { id: number; policy_number: string; insurer_name: string } | null;
+  asset?: { id: number; asset_code: string; name: string } | null;
+}
 
 export const assetRequestsApi = {
   list: (params?: { per_page?: number; page?: number }) =>
@@ -1684,6 +1730,30 @@ export const stockLocationsApi = {
   update: (id: number, data: Partial<{ code: string; name: string; description: string; is_active: boolean; sort_order: number }>) =>
     api.put<{ data: StockLocation; message: string }>(`/stock/locations/${id}`, data),
   delete: (id: number) => api.delete<{ message: string }>(`/stock/locations/${id}`),
+};
+
+export interface StockDemandRow {
+  stock_item_id: number;
+  item_code: string;
+  name: string;
+  unit?: string | null;
+  location?: string | null;
+  available_quantity: number;
+  reorder_level: number;
+  lookback_days: number;
+  usage_qty: number;
+  avg_daily_usage: number;
+  days_of_cover: number | null;
+  suggested_reorder_qty: number;
+  needs_reorder: boolean;
+}
+
+export const stockDemandApi = {
+  forecast: (params?: { lookback_days?: number }) =>
+    api.get<{ success: boolean; data: StockDemandRow[]; meta?: { lookback_days: number } }>(
+      "/stock/demand-forecast",
+      { params },
+    ),
 };
 
 export const stockItemsApi = {
@@ -2124,6 +2194,8 @@ export const leaveApi = {
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/certify`, data),
   teamCalendar: (params?: { from?: string; to?: string; department_id?: number }) =>
     api.get<{ from: string; to: string; data: Array<Record<string, unknown>> }>("/leave/team-calendar", { params }),
+  registerExport: (params?: { from?: string; to?: string; status?: string; department_id?: number }) =>
+    api.get<Blob>("/leave/register/export", { params, responseType: "blob" }),
   // Attachments
   listAttachments: (id: number) =>
     api.get<{ data: ModuleAttachment[] }>(`/leave/requests/${id}/attachments`),
@@ -2652,6 +2724,29 @@ export const budgetApi = {
 
   cashflowForecast: (params: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: CashflowForecast }>("/budget/cashflow/forecast", { params }),
+  cashflowForecastExportUrl: (params: Record<string, string | number | boolean>) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => q.set(k, String(v)));
+    return `/budget/cashflow/forecast/export?${q.toString()}`;
+  },
+  cashflowCompare: (params: Record<string, string | number | boolean | number[]>) =>
+    api.get<{ success: boolean; data: CashflowCompareResult }>("/budget/cashflow/compare", { params }),
+  cashflowCompareExportUrl: (params: Record<string, string | number | boolean | number[]>) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (Array.isArray(v)) v.forEach((x) => q.append(`${k}[]`, String(x)));
+      else q.set(k, String(v));
+    });
+    return `/budget/cashflow/compare/export?${q.toString()}`;
+  },
+  cashflowInflows: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ success: boolean; data: CashflowInflow[] }>("/budget/cashflow/inflows", { params }),
+  createCashflowInflow: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: CashflowInflow }>("/budget/cashflow/inflows", data),
+  updateCashflowInflow: (id: number, data: Record<string, unknown>) =>
+    api.put<{ success: boolean; data: CashflowInflow }>(`/budget/cashflow/inflows/${id}`, data),
+  deleteCashflowInflow: (id: number) =>
+    api.delete<{ success: boolean }>(`/budget/cashflow/inflows/${id}`),
   cashflowScenarios: (params?: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: CashflowScenario[] }>("/budget/cashflow/scenarios", { params }),
   getCashflowScenario: (id: number) =>
@@ -2795,12 +2890,43 @@ export interface CashflowScenario {
 
 export interface CashflowForecastPeriod {
   period: string;
+  structured_inflow: number;
   actual_outflow: number;
   projected_outflow: number;
   scenario_inflow: number;
   scenario_outflow: number;
   net: number;
   closing_balance: number;
+}
+
+export interface CashflowInflow {
+  id: number;
+  financial_year_id: number;
+  source_type: "membership" | "donor" | "other" | string;
+  label: string;
+  counterparty_name?: string | null;
+  period: string;
+  amount: number;
+  currency: string;
+  status: "planned" | "confirmed" | "received" | "cancelled" | string;
+  funding_source_id?: number | null;
+  notes?: string | null;
+}
+
+export interface CashflowCompareResult {
+  financial_year_id: number;
+  scenarios: Array<{
+    id: number;
+    name: string;
+    kind: string;
+    status: string;
+    opening_balance: number;
+    currency: string;
+  }>;
+  periods: Array<{
+    period: string;
+    scenarios: Record<string, CashflowForecastPeriod>;
+  }>;
 }
 
 export interface CashflowForecastItem {
@@ -2840,6 +2966,7 @@ export interface CashflowForecast {
   opening_balance: number;
   periods: CashflowForecastPeriod[];
   totals: {
+    structured_inflow: number;
     actual_outflow: number;
     projected_outflow: number;
     scenario_inflow: number;
@@ -2848,6 +2975,7 @@ export interface CashflowForecast {
   };
   out_of_range_projected: { count: number; amount: number };
   items: CashflowForecastItem[];
+  structured_inflows?: CashflowInflow[];
 }
 
 export interface BudgetChangeItem {
@@ -5425,6 +5553,8 @@ export const assignmentsApi = {
     api.get<PaginatedResponse<Assignment>>("/assignments/team", { params }),
   register: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Assignment>>("/assignments/register", { params }),
+  calendar: (params?: { from?: string; to?: string; scope?: string }) =>
+    api.get<{ from: string; to: string; scope: string; data: Array<Record<string, unknown>> }>("/assignments/calendar", { params }),
   reviewQueue: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Assignment>>("/assignments/review-queue", { params }),
   reportsSummary: () => api.get<{ stats: AssignmentStats; by_source: Record<string, number>; blockers: Record<string, number>; performance_scoring: string }>("/assignments/reports/summary"),
@@ -5874,6 +6004,25 @@ export interface CorrespondenceContact {
   tags: string[];
 }
 
+export interface CorrespondenceMailboxSettings {
+  id?: number;
+  mailbox_address?: string | null;
+  enabled?: boolean;
+  notes?: string | null;
+}
+
+export interface CorrespondenceMailboxSuggestion {
+  id: number;
+  message_id: string;
+  subject?: string | null;
+  from_address?: string | null;
+  from_name?: string | null;
+  received_at?: string | null;
+  body_preview?: string | null;
+  status: string;
+  correspondence_id?: number | null;
+}
+
 export interface ContactGroup {
   id: number;
   name: string;
@@ -5935,6 +6084,18 @@ export const correspondenceApi = {
   linkSubjectFile: (id: number, subject_file_id: number, is_primary?: boolean) =>
     api.post(`/correspondence/letters/${id}/subject-files`, { subject_file_id, is_primary }),
   numberingPolicy: () => api.get<{ data: Record<string, unknown> }>("/correspondence/settings/numbering"),
+  mailboxSettings: () =>
+    api.get<{ success: boolean; data: CorrespondenceMailboxSettings }>("/correspondence/mailbox/settings"),
+  updateMailboxSettings: (data: Partial<CorrespondenceMailboxSettings>) =>
+    api.put<{ success: boolean; data: CorrespondenceMailboxSettings }>("/correspondence/mailbox/settings", data),
+  mailboxSuggestions: (params?: { status?: string }) =>
+    api.get<{ success: boolean; data: CorrespondenceMailboxSuggestion[] }>("/correspondence/mailbox/suggestions", { params }),
+  importMailboxSuggestion: (data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: CorrespondenceMailboxSuggestion }>("/correspondence/mailbox/suggestions/import", data),
+  registerMailboxSuggestion: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: CorrespondenceLetter }>(`/correspondence/mailbox/suggestions/${id}/register`, data ?? {}),
+  dismissMailboxSuggestion: (id: number) =>
+    api.post<{ success: boolean; data: CorrespondenceMailboxSuggestion }>(`/correspondence/mailbox/suggestions/${id}/dismiss`),
 
   // Contacts
   listContacts: (params?: Record<string, string | number>) =>

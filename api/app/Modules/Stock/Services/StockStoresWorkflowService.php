@@ -25,7 +25,10 @@ use Illuminate\Validation\ValidationException;
  */
 class StockStoresWorkflowService
 {
-    public function __construct(private readonly StockService $stockService) {}
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly StockFefoService $fefoService,
+    ) {}
 
     /**
      * @param  array{
@@ -278,48 +281,69 @@ class StockStoresWorkflowService
                     $againstReservation = true;
                 }
 
-                $txn = $this->stockService->recordTransaction($item, [
-                    'type'                    => StockTransaction::TYPE_OUT,
-                    'quantity'                => $qty,
-                    'issued_to_user_id'       => $issue->issued_to_user_id,
-                    'issued_to_department_id' => $issue->issued_to_department_id,
-                    'issued_to_other'         => $issue->issued_to_other,
-                    'reference'               => $issue->voucher_number,
-                    'reason'                  => 'Stock issue voucher',
-                    'reason_code'             => StockTransaction::REASON_ISSUE,
-                    'stock_request_id'        => $request?->id,
-                    'stock_issue_id'          => $issue->id,
-                    'stock_batch_id'          => $payload['stock_batch_id'] ?? null,
-                    'notes'                   => $payload['notes'] ?? null,
-                    'transaction_date'        => $data['issue_date'],
-                    'allow_from_reserved'     => $againstReservation,
-                ], $user);
+                $explicitBatchId = isset($payload['stock_batch_id']) ? (int) $payload['stock_batch_id'] : null;
+                $picks = $this->fefoService->allocate(
+                    $item,
+                    $qty,
+                    $explicitBatchId ?: null,
+                );
 
-                if ($againstReservation && $requestLine) {
-                    $this->stockService->releaseReserved($item, $qty, $user);
-                    $reservation = StockReservation::where('stock_request_line_id', $requestLine->id)
-                        ->where('status', StockReservation::STATUS_ACTIVE)
-                        ->first();
-                    if ($reservation) {
-                        $reservation->quantity_released = (int) $reservation->quantity_released + $qty;
-                        if ($reservation->remaining() === 0) {
-                            $reservation->status = StockReservation::STATUS_FULFILLED;
-                        }
-                        $reservation->save();
-                    }
-                    $requestLine->quantity_issued = (int) $requestLine->quantity_issued + $qty;
-                    $requestLine->save();
+                // Non-batch items (or when tracks_batches is false and no batch provided): single pick without batch.
+                if ($picks === []) {
+                    $picks = [['batch' => null, 'quantity' => $qty]];
                 }
 
-                StockIssueLine::create([
-                    'stock_issue_id'        => $issue->id,
-                    'stock_item_id'         => $item->id,
-                    'stock_request_line_id' => $requestLine?->id,
-                    'stock_batch_id'        => $payload['stock_batch_id'] ?? null,
-                    'stock_transaction_id'  => $txn->id,
-                    'quantity'              => $qty,
-                    'notes'                 => $payload['notes'] ?? null,
-                ]);
+                foreach ($picks as $pick) {
+                    $batch = $pick['batch'];
+                    $pickQty = (int) $pick['quantity'];
+
+                    $txn = $this->stockService->recordTransaction($item, [
+                        'type'                    => StockTransaction::TYPE_OUT,
+                        'quantity'                => $pickQty,
+                        'issued_to_user_id'       => $issue->issued_to_user_id,
+                        'issued_to_department_id' => $issue->issued_to_department_id,
+                        'issued_to_other'         => $issue->issued_to_other,
+                        'reference'               => $issue->voucher_number,
+                        'reason'                  => 'Stock issue voucher',
+                        'reason_code'             => StockTransaction::REASON_ISSUE,
+                        'stock_request_id'        => $request?->id,
+                        'stock_issue_id'          => $issue->id,
+                        'stock_batch_id'          => $batch?->id,
+                        'notes'                   => $payload['notes'] ?? null,
+                        'transaction_date'        => $data['issue_date'],
+                        'allow_from_reserved'     => $againstReservation,
+                    ], $user);
+
+                    if ($batch) {
+                        $this->fefoService->decrement($batch, $pickQty);
+                    }
+
+                    if ($againstReservation && $requestLine) {
+                        $this->stockService->releaseReserved($item, $pickQty, $user);
+                        $reservation = StockReservation::where('stock_request_line_id', $requestLine->id)
+                            ->where('status', StockReservation::STATUS_ACTIVE)
+                            ->first();
+                        if ($reservation) {
+                            $reservation->quantity_released = (int) $reservation->quantity_released + $pickQty;
+                            if ($reservation->remaining() === 0) {
+                                $reservation->status = StockReservation::STATUS_FULFILLED;
+                            }
+                            $reservation->save();
+                        }
+                        $requestLine->quantity_issued = (int) $requestLine->quantity_issued + $pickQty;
+                        $requestLine->save();
+                    }
+
+                    StockIssueLine::create([
+                        'stock_issue_id'        => $issue->id,
+                        'stock_item_id'         => $item->id,
+                        'stock_request_line_id' => $requestLine?->id,
+                        'stock_batch_id'        => $batch?->id,
+                        'stock_transaction_id'  => $txn->id,
+                        'quantity'              => $pickQty,
+                        'notes'                 => $payload['notes'] ?? null,
+                    ]);
+                }
             }
 
             if ($request) {

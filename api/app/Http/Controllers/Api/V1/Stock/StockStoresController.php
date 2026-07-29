@@ -22,6 +22,7 @@ class StockStoresController extends Controller
     public function __construct(
         private readonly StockStoresWorkflowService $workflow,
         private readonly StockService $stockService,
+        private readonly \App\Modules\Stock\Services\StockDemandForecastService $demandForecast,
     ) {}
 
     // ── Availability (PIF / Procurement) ─────────────────────────────────────
@@ -395,6 +396,17 @@ class StockStoresController extends Controller
         StockItem::whereKey($data['stock_item_id'])->update(['tracks_batches' => true]);
 
         return response()->json(['message' => 'Batch registered.', 'data' => $batch], 201);
+    }
+
+    public function demandForecast(Request $request): JsonResponse
+    {
+        $lookback = max(14, min(365, $request->integer('lookback_days', 90)));
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->demandForecast->suggest((int) $request->user()->tenant_id, $lookback),
+            'meta' => ['lookback_days' => $lookback],
+        ]);
     }
 
     // ── Auth helpers ─────────────────────────────────────────────────────────

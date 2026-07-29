@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { stockItemsApi, type StockCategory, type StockItem, type StockItemInput } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { stockItemsApi, stockLocationsApi, stockUnitsApi, type StockCategory, type StockItem, type StockItemInput } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 interface ApiError {
@@ -31,15 +32,26 @@ export function StockItemFormModal({
 }) {
   const { toast } = useToast();
   const editing = !!item;
+  const unitsQuery = useQuery({
+    queryKey: ["stock-units"],
+    queryFn: () => stockUnitsApi.list().then((r) => r.data.data ?? []),
+  });
+  const locationsQuery = useQuery({
+    queryKey: ["stock-locations"],
+    queryFn: () => stockLocationsApi.list().then((r) => r.data.data ?? []),
+  });
+
   const [form, setForm] = useState({
     item_code: item?.item_code ?? "",
     name: item?.name ?? "",
     stock_category_id: item?.stock_category_id != null ? String(item.stock_category_id) : "",
     unit: item?.unit ?? "",
+    stock_unit_id: item?.stock_unit_id != null ? String(item.stock_unit_id) : "",
     unit_cost: item?.unit_cost != null ? String(item.unit_cost) : "",
     opening_balance: "",
     reorder_level: item?.reorder_level != null ? String(item.reorder_level) : "0",
     storage_location: item?.storage_location ?? "",
+    stock_location_id: item?.stock_location_id != null ? String(item.stock_location_id) : "",
     description: item?.description ?? "",
   });
   const [saving, setSaving] = useState(false);
@@ -54,14 +66,18 @@ export function StockItemFormModal({
     }
     setSaving(true);
     setError(null);
+    const selectedUnit = (unitsQuery.data ?? []).find((u) => String(u.id) === form.stock_unit_id);
+    const selectedLoc = (locationsQuery.data ?? []).find((l) => String(l.id) === form.stock_location_id);
     const payload: StockItemInput = {
       item_code: form.item_code.trim(),
       name: form.name.trim(),
       stock_category_id: form.stock_category_id ? Number(form.stock_category_id) : null,
-      unit: form.unit.trim() || null,
+      unit: selectedUnit?.code || form.unit.trim() || null,
+      stock_unit_id: form.stock_unit_id ? Number(form.stock_unit_id) : null,
       unit_cost: form.unit_cost !== "" ? Number(form.unit_cost) : null,
       reorder_level: form.reorder_level !== "" ? Number(form.reorder_level) : 0,
-      storage_location: form.storage_location.trim() || null,
+      storage_location: selectedLoc?.name || form.storage_location.trim() || null,
+      stock_location_id: form.stock_location_id ? Number(form.stock_location_id) : null,
       description: form.description.trim() || null,
     };
     if (!editing && form.opening_balance !== "") {
@@ -125,7 +141,12 @@ export function StockItemFormModal({
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit of Measure</label>
-              <input className="form-input" placeholder="each, box, ream…" value={form.unit} onChange={(e) => set("unit", e.target.value)} />
+              <select className="form-input" value={form.stock_unit_id} onChange={(e) => set("stock_unit_id", e.target.value)}>
+                <option value="">Select unit…</option>
+                {(unitsQuery.data ?? []).map((u) => (
+                  <option key={u.id} value={u.id}>{u.code} — {u.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit Cost</label>
@@ -144,7 +165,12 @@ export function StockItemFormModal({
             )}
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Storage Location</label>
-              <input className="form-input" placeholder="e.g. Store Room A, Shelf 3" value={form.storage_location} onChange={(e) => set("storage_location", e.target.value)} />
+              <select className="form-input" value={form.stock_location_id} onChange={(e) => set("stock_location_id", e.target.value)}>
+                <option value="">Select location…</option>
+                {(locationsQuery.data ?? []).map((l) => (
+                  <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
+                ))}
+              </select>
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>

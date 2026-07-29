@@ -4,6 +4,7 @@ namespace App\Modules\Budget\Services;
 
 use App\Models\BudgetActualTransaction;
 use App\Models\BudgetReservation;
+use App\Models\CashflowInflow;
 use App\Models\CashflowScenario;
 use App\Models\FinancialYear;
 use App\Models\ImprestRequest;
@@ -13,6 +14,7 @@ use App\Models\TravelRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Response;
 
 class CashflowForecastService
 {
@@ -58,6 +60,7 @@ class CashflowForecastService
         foreach ($periods as $period) {
             $periodMap[$period] = [
                 'period' => $period,
+                'structured_inflow' => 0.0,
                 'actual_outflow' => 0.0,
                 'projected_outflow' => 0.0,
                 'scenario_inflow' => 0.0,
@@ -65,6 +68,15 @@ class CashflowForecastService
                 'net' => 0.0,
                 'closing_balance' => 0.0,
             ];
+        }
+
+        $structuredInflows = $this->loadStructuredInflows($tenantId, $fy);
+        foreach ($structuredInflows as $inflow) {
+            $period = (string) $inflow->period;
+            if (! isset($periodMap[$period])) {
+                continue;
+            }
+            $periodMap[$period]['structured_inflow'] += (float) $inflow->amount;
         }
 
         $actuals = $this->loadActuals($tenantId, $fy, $filters);
@@ -127,6 +139,7 @@ class CashflowForecastService
         $opening = $scenario ? (float) $scenario->opening_balance : 0.0;
         $running = $opening;
         $totals = [
+            'structured_inflow' => 0.0,
             'actual_outflow' => 0.0,
             'projected_outflow' => 0.0,
             'scenario_inflow' => 0.0,
@@ -136,12 +149,14 @@ class CashflowForecastService
 
         $periodRows = [];
         foreach ($periodMap as $row) {
-            $net = $row['scenario_inflow']
+            $net = $row['structured_inflow']
+                + $row['scenario_inflow']
                 - $row['actual_outflow']
                 - $row['projected_outflow']
                 - $row['scenario_outflow'];
             $running += $net;
             $row['net'] = round($net, 2);
+            $row['structured_inflow'] = round($row['structured_inflow'], 2);
             $row['actual_outflow'] = round($row['actual_outflow'], 2);
             $row['projected_outflow'] = round($row['projected_outflow'], 2);
             $row['scenario_inflow'] = round($row['scenario_inflow'], 2);
@@ -149,12 +164,14 @@ class CashflowForecastService
             $row['closing_balance'] = round($running, 2);
             $periodRows[] = $row;
 
+            $totals['structured_inflow'] += $row['structured_inflow'];
             $totals['actual_outflow'] += $row['actual_outflow'];
             $totals['projected_outflow'] += $row['projected_outflow'];
             $totals['scenario_inflow'] += $row['scenario_inflow'];
             $totals['scenario_outflow'] += $row['scenario_outflow'];
         }
         $totals['closing_balance'] = round($running, 2);
+        $totals['structured_inflow'] = round($totals['structured_inflow'], 2);
         $totals['actual_outflow'] = round($totals['actual_outflow'], 2);
         $totals['projected_outflow'] = round($totals['projected_outflow'], 2);
         $totals['scenario_inflow'] = round($totals['scenario_inflow'], 2);
@@ -184,7 +201,146 @@ class CashflowForecastService
             'totals' => $totals,
             'out_of_range_projected' => $outOfRange,
             'items' => $items,
+            'structured_inflows' => $structuredInflows->map(fn (CashflowInflow $i) => [
+                'id' => $i->id,
+                'source_type' => $i->source_type,
+                'label' => $i->label,
+                'counterparty_name' => $i->counterparty_name,
+                'period' => $i->period,
+                'amount' => (float) $i->amount,
+                'currency' => $i->currency,
+                'status' => $i->status,
+            ])->values()->all(),
         ];
+    }
+
+    /**
+     * @param  array{financial_year_id:int, scenario_ids:list<int>, department_id?:int|null, funding_source_id?:int|null, as_of?:string|null}  $filters
+     * @return array<string, mixed>
+     */
+    public function compare(int $tenantId, array $filters): array
+    {
+        $scenarioIds = array_values(array_unique(array_map('intval', $filters['scenario_ids'] ?? [])));
+        if (count($scenarioIds) < 2) {
+            throw ValidationException::withMessages([
+                'scenario_ids' => ['Select at least two scenarios to compare.'],
+            ]);
+        }
+        if (count($scenarioIds) > 5) {
+            throw ValidationException::withMessages([
+                'scenario_ids' => ['Compare supports at most five scenarios.'],
+            ]);
+        }
+
+        $scenarios = [];
+        $periodMaps = [];
+        foreach ($scenarioIds as $scenarioId) {
+            $forecast = $this->forecast($tenantId, array_merge($filters, ['scenario_id' => $scenarioId]));
+            $scenarios[] = $forecast['scenario'];
+            foreach ($forecast['periods'] as $row) {
+                $periodMaps[$row['period']][$scenarioId] = $row;
+            }
+        }
+
+        $periods = [];
+        foreach ($periodMaps as $period => $byScenario) {
+            $entry = ['period' => $period, 'scenarios' => []];
+            foreach ($scenarioIds as $scenarioId) {
+                $entry['scenarios'][(string) $scenarioId] = $byScenario[$scenarioId] ?? [
+                    'period' => $period,
+                    'structured_inflow' => 0.0,
+                    'actual_outflow' => 0.0,
+                    'projected_outflow' => 0.0,
+                    'scenario_inflow' => 0.0,
+                    'scenario_outflow' => 0.0,
+                    'net' => 0.0,
+                    'closing_balance' => 0.0,
+                ];
+            }
+            $periods[] = $entry;
+        }
+
+        return [
+            'financial_year_id' => (int) $filters['financial_year_id'],
+            'scenarios' => $scenarios,
+            'periods' => $periods,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function exportForecastCsv(int $tenantId, array $filters): \Illuminate\Http\Response
+    {
+        $forecast = $this->forecast($tenantId, $filters);
+        $filename = 'cashflow-forecast-'.($forecast['financial_year']['code'] ?? 'fy').'.csv';
+
+        $lines = [];
+        $lines[] = 'period,structured_inflow,scenario_inflow,actual_outflow,projected_outflow,scenario_outflow,net,closing_balance';
+        foreach ($forecast['periods'] as $row) {
+            $lines[] = implode(',', [
+                $row['period'],
+                $row['structured_inflow'],
+                $row['scenario_inflow'],
+                $row['actual_outflow'],
+                $row['projected_outflow'],
+                $row['scenario_outflow'],
+                $row['net'],
+                $row['closing_balance'],
+            ]);
+        }
+
+        return response(implode("\n", $lines)."\n", 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function exportCompareCsv(int $tenantId, array $filters): \Illuminate\Http\Response
+    {
+        $compare = $this->compare($tenantId, $filters);
+        $filename = 'cashflow-compare.csv';
+
+        $headers = ['period'];
+        foreach ($compare['scenarios'] as $scenario) {
+            $safe = preg_replace('/[^A-Za-z0-9]+/', '_', (string) $scenario['name']);
+            $headers[] = $safe.'_closing_balance';
+            $headers[] = $safe.'_net';
+            $headers[] = $safe.'_scenario_inflow';
+        }
+
+        $lines = [implode(',', $headers)];
+        foreach ($compare['periods'] as $row) {
+            $line = [$row['period']];
+            foreach ($compare['scenarios'] as $scenario) {
+                $cell = $row['scenarios'][(string) $scenario['id']] ?? [];
+                $line[] = $cell['closing_balance'] ?? 0;
+                $line[] = $cell['net'] ?? 0;
+                $line[] = $cell['scenario_inflow'] ?? 0;
+            }
+            $lines[] = implode(',', $line);
+        }
+
+        return response(implode("\n", $lines)."\n", 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    /**
+     * @return Collection<int, CashflowInflow>
+     */
+    private function loadStructuredInflows(int $tenantId, FinancialYear $fy): Collection
+    {
+        return CashflowInflow::query()
+            ->where('tenant_id', $tenantId)
+            ->where('financial_year_id', $fy->id)
+            ->whereIn('status', ['planned', 'confirmed', 'received'])
+            ->orderBy('period')
+            ->get();
     }
 
     /**

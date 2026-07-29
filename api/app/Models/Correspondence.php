@@ -33,6 +33,7 @@ class Correspondence extends Model
         'submitted_at', 'reviewed_at', 'approved_at', 'sent_at',
         'correspondence_date', 'received_at', 'channel',
         'sender_name', 'sender_organisation', 'sender_country', 'sender_reference',
+        'message_id', 'mailbox_source',
         'sender_contact_id', 'attention_to', 'summary', 'confidentiality',
         'content_restricted', 'primary_owner_id', 'response_required',
         'sender_deadline', 'internal_deadline', 'final_deadline',

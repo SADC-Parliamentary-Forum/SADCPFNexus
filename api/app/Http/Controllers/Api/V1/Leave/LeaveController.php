@@ -129,6 +129,77 @@ class LeaveController extends Controller
         return response()->json(['from' => $from, 'to' => $to, 'data' => $rows]);
     }
 
+    /**
+     * HR leave register CSV export (approved/submitted/rejected in range).
+     */
+    public function registerExport(Request $request): Response
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('hr.admin')
+                || $user->can('hr.view')
+                || $user->can('leave.approve')
+                || $user->hasAnyRole(['HR Manager', 'HR Administrator', 'Secretary General', 'System Admin']),
+            403
+        );
+
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'status' => ['nullable', 'string'],
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        $from = $data['from'] ?? now()->startOfYear()->toDateString();
+        $to = $data['to'] ?? now()->endOfYear()->toDateString();
+
+        $query = LeaveRequest::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereDate('start_date', '<=', $to)
+            ->whereDate('end_date', '>=', $from)
+            ->with(['requester:id,name,employee_number,department_id,job_title'])
+            ->orderBy('start_date');
+
+        if (! empty($data['status'])) {
+            $query->where('status', $data['status']);
+        }
+        if (! empty($data['department_id'])) {
+            $query->whereHas('requester', fn ($q) => $q->where('department_id', $data['department_id']));
+        }
+
+        $rows = $query->get();
+        $csv = "reference,employee,employee_number,leave_type,start_date,end_date,days,status,recommended_at,approved_at\n";
+        foreach ($rows as $leave) {
+            $csv .= implode(',', [
+                $this->csvEscape($leave->reference_number),
+                $this->csvEscape($leave->requester?->name),
+                $this->csvEscape((string) ($leave->requester?->employee_number ?? '')),
+                $this->csvEscape($leave->leave_type),
+                $leave->start_date?->toDateString(),
+                $leave->end_date?->toDateString(),
+                $leave->days_requested,
+                $leave->status,
+                optional($leave->recommended_at)?->toDateString(),
+                optional($leave->approved_at)?->toDateString(),
+            ])."\n";
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="leave-register.csv"',
+        ]);
+    }
+
+    private function csvEscape(?string $value): string
+    {
+        $value = (string) ($value ?? '');
+        if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, "\n")) {
+            return '"'.str_replace('"', '""', $value).'"';
+        }
+
+        return $value;
+    }
+
     public function preview(Request $request): JsonResponse
     {
         $data = $request->validate([

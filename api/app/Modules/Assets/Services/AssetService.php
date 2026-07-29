@@ -96,7 +96,7 @@ class AssetService
         $tag = $data['tag_number'] ?? $asset->tag_number ?? $this->generateTag($user->tenant_id, $category);
         $this->assertTagUnique($user->tenant_id, $tag, $asset->id);
 
-        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $purchaseDate);
+        $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $purchaseDate, $method);
 
         return DB::transaction(function () use ($asset, $data, $user, $category, $purchaseValue, $usefulLife, $salvage, $purchaseDate, $method, $computedValue, $policy, $assetClass, $serial, $tag) {
             $old = $asset->only(['status', 'category', 'purchase_date', 'purchase_value', 'value', 'asset_class']);

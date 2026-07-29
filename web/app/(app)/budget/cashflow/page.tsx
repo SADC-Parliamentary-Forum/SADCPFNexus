@@ -29,6 +29,14 @@ export default function BudgetCashflowPage() {
     amount: "",
     label: "",
   });
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [inflowForm, setInflowForm] = useState({
+    source_type: "membership",
+    label: "",
+    period: "",
+    amount: "",
+    status: "planned",
+  });
   const [formError, setFormError] = useState<string | null>(null);
 
   const yearsQuery = useQuery({
@@ -113,6 +121,44 @@ export default function BudgetCashflowPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["budget", "cashflow"] }),
   });
 
+  const inflowsQuery = useQuery({
+    queryKey: ["budget", "cashflow", "inflows", effectiveFyId],
+    enabled: !!effectiveFyId,
+    queryFn: () =>
+      budgetApi.cashflowInflows({ financial_year_id: Number(effectiveFyId) }).then((r) => r.data.data ?? []),
+  });
+
+  const compareQuery = useQuery({
+    queryKey: ["budget", "cashflow", "compare", effectiveFyId, compareIds.join(",")],
+    enabled: !!effectiveFyId && compareIds.length >= 2,
+    queryFn: () =>
+      budgetApi
+        .cashflowCompare({
+          financial_year_id: Number(effectiveFyId),
+          scenario_ids: compareIds.map(Number),
+        })
+        .then((r) => r.data.data),
+  });
+
+  const createInflow = useMutation({
+    mutationFn: () =>
+      budgetApi.createCashflowInflow({
+        financial_year_id: Number(effectiveFyId),
+        source_type: inflowForm.source_type,
+        label: inflowForm.label,
+        period: inflowForm.period,
+        amount: Number(inflowForm.amount),
+        status: inflowForm.status,
+        currency: "NAD",
+      }),
+    onSuccess: () => {
+      setFormError(null);
+      setInflowForm({ source_type: "membership", label: "", period: "", amount: "", status: "planned" });
+      qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
+    },
+    onError: () => setFormError("Could not create structured inflow."),
+  });
+
   const forecast = forecastQuery.data as CashflowForecast | undefined;
   const adjustments = scenarioDetailQuery.data?.adjustments ?? [];
 
@@ -127,6 +173,17 @@ export default function BudgetCashflowPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {effectiveFyId && (
+            <a
+              className="btn-secondary text-sm"
+              href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}${budgetApi.cashflowForecastExportUrl({
+                financial_year_id: Number(effectiveFyId),
+                ...(scenarioId ? { scenario_id: Number(scenarioId) } : {}),
+              })}`}
+            >
+              Export CSV
+            </a>
+          )}
           <Link href="/budget/reports" className="btn-secondary text-sm">
             Budget reports
           </Link>
@@ -330,6 +387,7 @@ export default function BudgetCashflowPage() {
             <thead className="border-b border-[var(--border)] text-neutral-600">
               <tr>
                 <th className="py-2 pr-3 font-medium">Period</th>
+                <th className="py-2 pr-3 font-medium text-right">Structured in</th>
                 <th className="py-2 pr-3 font-medium text-right">Actual out</th>
                 <th className="py-2 pr-3 font-medium text-right">Projected out</th>
                 <th className="py-2 pr-3 font-medium text-right">Scenario in</th>
@@ -342,6 +400,7 @@ export default function BudgetCashflowPage() {
               {forecast.periods.map((p) => (
                 <tr key={p.period} className="border-b border-[var(--border)]/60">
                   <td className="py-2 pr-3 font-medium">{p.period}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{money(p.structured_inflow ?? 0)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{money(p.actual_outflow)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{money(p.projected_outflow)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{money(p.scenario_inflow)}</td>
@@ -354,6 +413,7 @@ export default function BudgetCashflowPage() {
             <tfoot>
               <tr className="font-semibold">
                 <td className="py-2 pr-3">Totals</td>
+                <td className="py-2 pr-3 text-right tabular-nums">{money(forecast.totals.structured_inflow ?? 0)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{money(forecast.totals.actual_outflow)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{money(forecast.totals.projected_outflow)}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">{money(forecast.totals.scenario_inflow)}</td>
@@ -407,6 +467,82 @@ export default function BudgetCashflowPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="card space-y-3 p-4">
+        <h2 className="text-base font-semibold text-neutral-900">Structured membership / donor inflows</h2>
+        <p className="text-sm text-neutral-600">Planned receipts outside scenario overlays (membership contributions, donor tranches).</p>
+        <div className="grid gap-3 md:grid-cols-5">
+          <select className="form-input" value={inflowForm.source_type} onChange={(e) => setInflowForm((f) => ({ ...f, source_type: e.target.value }))}>
+            <option value="membership">Membership</option>
+            <option value="donor">Donor</option>
+            <option value="other">Other</option>
+          </select>
+          <input className="form-input" placeholder="Label" value={inflowForm.label} onChange={(e) => setInflowForm((f) => ({ ...f, label: e.target.value }))} />
+          <input className="form-input" placeholder="YYYY-MM" value={inflowForm.period} onChange={(e) => setInflowForm((f) => ({ ...f, period: e.target.value }))} />
+          <input className="form-input" type="number" placeholder="Amount" value={inflowForm.amount} onChange={(e) => setInflowForm((f) => ({ ...f, amount: e.target.value }))} />
+          <button type="button" className="btn-primary text-sm" disabled={!inflowForm.label || !inflowForm.period || !inflowForm.amount || createInflow.isPending} onClick={() => createInflow.mutate()}>
+            Add inflow
+          </button>
+        </div>
+        <ul className="divide-y divide-[var(--border)] text-sm">
+          {(inflowsQuery.data ?? []).map((row) => (
+            <li key={row.id} className="flex justify-between gap-2 py-2">
+              <span>{row.period} · {row.source_type} · {row.label} · {money(Number(row.amount))} ({row.status})</span>
+            </li>
+          ))}
+          {(inflowsQuery.data ?? []).length === 0 && <li className="py-2 text-neutral-400">No structured inflows yet.</li>}
+        </ul>
+      </div>
+
+      <div className="card space-y-3 p-4">
+        <h2 className="text-base font-semibold text-neutral-900">Scenario compare</h2>
+        <p className="text-sm text-neutral-600">Select 2–5 scenarios for side-by-side closing balances.</p>
+        <div className="flex flex-wrap gap-3">
+          {(scenariosQuery.data ?? []).map((s: CashflowScenario) => {
+            const checked = compareIds.includes(String(s.id));
+            return (
+              <label key={s.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() =>
+                    setCompareIds((prev) =>
+                      checked ? prev.filter((id) => id !== String(s.id)) : [...prev, String(s.id)].slice(0, 5),
+                    )
+                  }
+                />
+                {s.name}
+              </label>
+            );
+          })}
+        </div>
+        {compareQuery.data && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr>
+                  <th className="py-2 text-left">Period</th>
+                  {compareQuery.data.scenarios.map((s) => (
+                    <th key={s.id} className="py-2 text-right">{s.name} closing</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {compareQuery.data.periods.map((row) => (
+                  <tr key={row.period} className="border-t border-[var(--border)]">
+                    <td className="py-2">{row.period}</td>
+                    {compareQuery.data!.scenarios.map((s) => (
+                      <td key={s.id} className="py-2 text-right tabular-nums">
+                        {money(Number(row.scenarios[String(s.id)]?.closing_balance ?? 0))}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
