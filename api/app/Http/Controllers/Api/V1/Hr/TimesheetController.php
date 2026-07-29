@@ -623,6 +623,7 @@ class TimesheetController extends Controller
             'period_id' => ['required', 'integer', 'exists:timesheet_periods,id'],
             'idempotency_key' => ['nullable', 'string', 'max:80'],
             'mark_included' => ['nullable', 'boolean'],
+            'lock_period' => ['nullable', 'boolean'],
         ]);
 
         $batch = $this->payrollExportService->stageFromPeriod(
@@ -630,12 +631,22 @@ class TimesheetController extends Controller
             (int) $data['period_id'],
             $data['idempotency_key'] ?? null,
             (bool) ($data['mark_included'] ?? true),
+            (bool) ($data['lock_period'] ?? false),
         );
 
         return response()->json([
             'message' => 'Payroll export batch staged.',
             'data' => $batch,
         ], 201);
+    }
+
+    public function listPayrollExports(Request $request): JsonResponse
+    {
+        $periodId = $request->integer('period_id') ?: null;
+
+        return response()->json([
+            'data' => $this->payrollExportService->listBatches($request->user(), $periodId),
+        ]);
     }
 
     public function downloadPayrollExport(Request $request, PayrollExportBatch $payrollExport): StreamedResponse

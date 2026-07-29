@@ -3,7 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { riskApi, type RiskBcpLink, type RiskDependency } from "@/lib/api";
+import {
+  riskApi,
+  type AssetInsurancePolicyLite,
+  type RiskBcpExercise,
+  type RiskBcpLink,
+  type RiskDependency,
+} from "@/lib/api";
 
 export default function RiskBcpPage() {
   const qc = useQueryClient();
@@ -14,6 +20,9 @@ export default function RiskBcpPage() {
   const [linkType, setLinkType] = useState<"bcp_note" | "insurance_policy">("bcp_note");
   const [policyId, setPolicyId] = useState("");
   const [relatedRiskId, setRelatedRiskId] = useState("");
+  const [exerciseTitle, setExerciseTitle] = useState("");
+  const [exerciseAt, setExerciseAt] = useState("");
+  const [exerciseType, setExerciseType] = useState("tabletop");
 
   const linksQuery = useQuery({
     queryKey: ["risk", "bcp-links"],
@@ -22,6 +31,14 @@ export default function RiskBcpPage() {
   const depsQuery = useQuery({
     queryKey: ["risk", "dependencies"],
     queryFn: () => riskApi.listRiskDependencies().then((r) => r.data.data ?? []),
+  });
+  const exercisesQuery = useQuery({
+    queryKey: ["risk", "bcp-exercises"],
+    queryFn: () => riskApi.listBcpExercises().then((r) => r.data.data ?? []),
+  });
+  const renewalsQuery = useQuery({
+    queryKey: ["risk", "insurance-renewals"],
+    queryFn: () => riskApi.listInsuranceRenewals({ within_days: 120 }).then((r) => r.data.data ?? []),
   });
 
   const createLink = useMutation({
@@ -57,36 +74,80 @@ export default function RiskBcpPage() {
     onError: () => setError("Could not link related risk."),
   });
 
+  const createExercise = useMutation({
+    mutationFn: () =>
+      riskApi.createBcpExercise({
+        risk_id: riskId ? Number(riskId) : null,
+        title: exerciseTitle,
+        scheduled_at: exerciseAt || null,
+        exercise_type: exerciseType,
+      }),
+    onSuccess: () => {
+      setError(null);
+      setExerciseTitle("");
+      qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] });
+    },
+    onError: () => setError("Could not schedule BCP exercise."),
+  });
+
+  const completeExercise = useMutation({
+    mutationFn: (id: number) =>
+      riskApi.completeBcpExercise(id, { result: "pass", outcome_notes: "Completed via ops UI" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] }),
+    onError: () => setError("Could not complete exercise."),
+  });
+
+  const renewPolicy = useMutation({
+    mutationFn: (policy: AssetInsurancePolicyLite) => {
+      const nextFrom = new Date(policy.effective_to);
+      nextFrom.setDate(nextFrom.getDate() + 1);
+      const nextTo = new Date(nextFrom);
+      nextTo.setFullYear(nextTo.getFullYear() + 1);
+      return riskApi.renewInsurancePolicy(policy.id, {
+        effective_from: nextFrom.toISOString().slice(0, 10),
+        effective_to: nextTo.toISOString().slice(0, 10),
+      });
+    },
+    onSuccess: () => {
+      setError(null);
+      qc.invalidateQueries({ queryKey: ["risk", "insurance-renewals"] });
+    },
+    onError: () => setError("Could not renew insurance policy."),
+  });
+
   const links = (linksQuery.data ?? []) as RiskBcpLink[];
   const deps = (depsQuery.data ?? []) as RiskDependency[];
-
-  function onLink(e: FormEvent) {
-    e.preventDefault();
-    createLink.mutate();
-  }
-
-  function onDep(e: FormEvent) {
-    e.preventDefault();
-    createDep.mutate();
-  }
+  const exercises = (exercisesQuery.data ?? []) as RiskBcpExercise[];
+  const renewals = (renewalsQuery.data ?? []) as AssetInsurancePolicyLite[];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="page-title">BCP / Insurance Linkage</h1>
+          <h1 className="page-title">BCP / Insurance Ops</h1>
           <p className="page-subtitle">
-            Light linkage from risks to BCP notes and Fixed Asset insurance policies — not a full BCP module. Map simple risk interdependencies below.
+            BCP linkage, exercises, and insurance renewal queue on existing risk/FA insurance data.
           </p>
         </div>
-        <Link href="/risk/control-testing" className="btn-secondary">
-          Control testing
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/assets/insurance" className="btn-secondary">
+            FA insurance
+          </Link>
+          <Link href="/risk/control-testing" className="btn-secondary">
+            Control testing
+          </Link>
+        </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
-      <form onSubmit={onLink} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2">
+      <form
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          createLink.mutate();
+        }}
+        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2"
+      >
         <label className="space-y-1">
           <span className="text-sm font-medium">Risk ID</span>
           <input className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
@@ -149,7 +210,124 @@ export default function RiskBcpPage() {
         </table>
       </div>
 
-      <form onSubmit={onDep} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3">
+      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4">
+        <h2 className="text-lg font-semibold">BCP exercises</h2>
+        <form
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            createExercise.mutate();
+          }}
+          className="grid gap-3 md:grid-cols-4"
+        >
+          <label className="space-y-1 md:col-span-2">
+            <span className="text-sm font-medium">Title</span>
+            <input className="input w-full" required value={exerciseTitle} onChange={(e) => setExerciseTitle(e.target.value)} />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">Type</span>
+            <select className="input w-full" value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
+              <option value="tabletop">Tabletop</option>
+              <option value="drill">Drill</option>
+              <option value="full">Full</option>
+            </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium">Scheduled</span>
+            <input className="input w-full" type="datetime-local" value={exerciseAt} onChange={(e) => setExerciseAt(e.target.value)} />
+          </label>
+          <div className="md:col-span-4">
+            <button type="submit" className="btn-primary" disabled={createExercise.isPending}>
+              Schedule exercise
+            </button>
+          </div>
+        </form>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-neutral-50 text-left text-neutral-600">
+              <tr>
+                <th className="px-3 py-2">Title</th>
+                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Result</th>
+                <th className="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {exercises.map((ex) => (
+                <tr key={ex.id} className="border-t border-neutral-100">
+                  <td className="px-3 py-2">{ex.title}</td>
+                  <td className="px-3 py-2">{ex.exercise_type}</td>
+                  <td className="px-3 py-2">{ex.status}</td>
+                  <td className="px-3 py-2">{ex.result ?? "—"}</td>
+                  <td className="px-3 py-2 text-right">
+                    {ex.status !== "completed" && (
+                      <button type="button" className="text-primary underline" onClick={() => completeExercise.mutate(ex.id)}>
+                        Complete
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {exercises.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
+                    No exercises scheduled.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4">
+        <h2 className="text-lg font-semibold">Insurance renewals due</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-neutral-50 text-left text-neutral-600">
+              <tr>
+                <th className="px-3 py-2">Policy</th>
+                <th className="px-3 py-2">Insurer</th>
+                <th className="px-3 py-2">Effective to</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {renewals.map((p) => (
+                <tr key={p.id} className="border-t border-neutral-100">
+                  <td className="px-3 py-2">{p.policy_number}</td>
+                  <td className="px-3 py-2">{p.insurer_name}</td>
+                  <td className="px-3 py-2">{String(p.effective_to).slice(0, 10)}</td>
+                  <td className="px-3 py-2">{p.status}</td>
+                  <td className="px-3 py-2 text-right">
+                    {p.status === "active" && (
+                      <button type="button" className="text-primary underline" onClick={() => renewPolicy.mutate(p)}>
+                        Renew +1y
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {renewals.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
+                    No policies due within 120 days.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <form
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          createDep.mutate();
+        }}
+        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3"
+      >
         <h2 className="md:col-span-3 text-lg font-semibold">Interdependency mapping</h2>
         <label className="space-y-1">
           <span className="text-sm font-medium">Risk A (depends)</span>

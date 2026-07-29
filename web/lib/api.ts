@@ -1555,6 +1555,29 @@ export interface FleetServiceSchedule {
   notes?: string | null;
 }
 
+export interface FleetDriver {
+  id: number;
+  user_id: number;
+  licence_number?: string | null;
+  licence_expires_on?: string | null;
+  status: string;
+  notes?: string | null;
+  user?: { id: number; name: string; email?: string };
+}
+
+export interface FleetBooking {
+  id: number;
+  asset_id: number;
+  driver_id?: number | null;
+  starts_at: string;
+  ends_at: string;
+  purpose?: string | null;
+  destination?: string | null;
+  status: string;
+  asset?: { id: number; asset_code: string; name: string };
+  driver?: FleetDriver | null;
+}
+
 export const fleetApi = {
   listVehicles: () => api.get<{ data: FleetVehicle[] }>("/fleet/vehicles"),
   getVehicle: (id: number) =>
@@ -1572,6 +1595,13 @@ export const fleetApi = {
     api.post<{ data: FleetFuelLog }>(`/fleet/vehicles/${assetId}/fuel-logs`, data),
   createServiceSchedule: (assetId: number, data: Record<string, unknown>) =>
     api.post<{ data: FleetServiceSchedule }>(`/fleet/vehicles/${assetId}/service-schedules`, data),
+  listDrivers: () => api.get<{ data: FleetDriver[] }>("/fleet/drivers"),
+  createDriver: (data: Record<string, unknown>) =>
+    api.post<{ data: FleetDriver }>("/fleet/drivers", data),
+  listBookings: (params?: Record<string, string | number>) =>
+    api.get<{ data: FleetBooking[] }>("/fleet/bookings", { params }),
+  createBooking: (data: Record<string, unknown>) =>
+    api.post<{ data: FleetBooking }>("/fleet/bookings", data),
 };
 
 // ─── Asset Movements ──────────────────────────────────────────────────────────
@@ -2793,6 +2823,16 @@ export const budgetApi = {
     api.get<{ success: boolean; data: BudgetChangeRegisterReport }>("/budget/reports/change-register", { params }),
   reportCycleStatus: (params?: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: BudgetCycleStatusReport }>("/budget/reports/cycle-status", { params }),
+  reportExportUrl: (
+    report: "utilisation" | "commitment-ageing" | "change-register" | "cycle-status",
+    format: "xlsx" | "pdf",
+    params?: Record<string, string | number | boolean>,
+  ) => {
+    const q = new URLSearchParams();
+    q.set("format", format);
+    Object.entries(params ?? {}).forEach(([k, v]) => q.set(k, String(v)));
+    return `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/budget/reports/${report}/export?${q.toString()}`;
+  },
 
   cashflowForecast: (params: Record<string, string | number | boolean>) =>
     api.get<{ success: boolean; data: CashflowForecast }>("/budget/cashflow/forecast", { params }),
@@ -4341,11 +4381,23 @@ export const hrApi = {
     period_id: number;
     idempotency_key?: string;
     mark_included?: boolean;
+    lock_period?: boolean;
   }) =>
     api.post<{ message: string; data: { id: number; batch_reference: string; status: string } }>(
       "/hr/timesheets/payroll-exports/stage",
       data,
     ),
+  listPayrollExports: (params?: { period_id?: number }) =>
+    api.get<{
+      data: Array<{
+        id: number;
+        batch_reference: string;
+        status: string;
+        exported_at?: string | null;
+        lines_count?: number;
+        period?: { id: number; label: string; status: string };
+      }>;
+    }>("/hr/timesheets/payroll-exports", { params }),
   payrollExportDownloadUrl: (batchId: number, format: "csv" | "xlsx" = "csv") =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/hr/timesheets/payroll-exports/${batchId}/download?format=${format}`,
   exportTimesheetUrl: (id: number, format: "pdf" | "csv" | "excel" = "csv") =>
@@ -6975,6 +7027,16 @@ export const riskApi = {
     api.get<{ data: RiskBcpLink[] }>("/risk/bcp-links", { params }),
   createBcpLink: (data: Record<string, unknown>) =>
     api.post<{ message: string; data: RiskBcpLink }>("/risk/bcp-links", data),
+  listBcpExercises: (params?: { risk_id?: number }) =>
+    api.get<{ data: RiskBcpExercise[] }>("/risk/bcp-exercises", { params }),
+  createBcpExercise: (data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskBcpExercise }>("/risk/bcp-exercises", data),
+  completeBcpExercise: (id: number, data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskBcpExercise }>(`/risk/bcp-exercises/${id}/complete`, data),
+  listInsuranceRenewals: (params?: { within_days?: number }) =>
+    api.get<{ data: AssetInsurancePolicyLite[] }>("/risk/insurance-renewals", { params }),
+  renewInsurancePolicy: (id: number, data: Record<string, unknown>) =>
+    api.post<{ success: boolean; data: AssetInsurancePolicyLite }>(`/assets-meta/insurance/policies/${id}/renew`, data),
   listRiskDependencies: (params?: { risk_id?: number }) =>
     api.get<{ data: RiskDependency[] }>("/risk/dependencies", { params }),
   createRiskDependency: (data: Record<string, unknown>) =>
@@ -7017,6 +7079,31 @@ export interface RiskBcpLink {
   asset_insurance_policy_id?: number | null;
   risk?: { id: number; risk_code: string; title: string };
   insurance_policy?: { id: number; policy_number: string; insurer_name: string; status: string } | null;
+}
+
+export interface RiskBcpExercise {
+  id: number;
+  risk_id?: number | null;
+  title: string;
+  exercise_type: string;
+  status: string;
+  scheduled_at?: string | null;
+  completed_at?: string | null;
+  result?: string | null;
+  outcome_notes?: string | null;
+  risk?: { id: number; risk_code: string; title: string } | null;
+}
+
+export interface AssetInsurancePolicyLite {
+  id: number;
+  policy_number: string;
+  insurer_name: string;
+  coverage_type?: string | null;
+  effective_from: string;
+  effective_to: string;
+  status: string;
+  premium_amount?: number | null;
+  asset?: { id: number; asset_code: string; name: string } | null;
 }
 
 export interface RiskDependency {

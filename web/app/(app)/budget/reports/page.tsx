@@ -102,6 +102,30 @@ export default function BudgetReportsPage() {
           <Link href="/budget/cashflow" className="btn-secondary text-sm">
             Cashflow
           </Link>
+          <a
+            className="btn-secondary text-sm"
+            href={budgetApi.reportExportUrl(
+              tab === "ageing" ? "commitment-ageing" : tab === "changes" ? "change-register" : tab === "cycles" ? "cycle-status" : "utilisation",
+              "xlsx",
+              { ...filterParams, ...(tab === "utilisation" ? { group_by: groupBy } : {}) },
+            )}
+          >
+            Export XLSX
+          </a>
+          <a
+            className="btn-secondary text-sm"
+            href={budgetApi.reportExportUrl(
+              tab === "ageing" ? "commitment-ageing" : tab === "changes" ? "change-register" : tab === "cycles" ? "cycle-status" : "utilisation",
+              "pdf",
+              { ...filterParams, ...(tab === "utilisation" ? { group_by: groupBy } : {}) },
+            )}
+          >
+            Export PDF
+          </a>
+        </div>
+          <Link href="/budget/cashflow" className="btn-secondary text-sm">
+            Cashflow
+          </Link>
           <Link href="/budget/variance" className="btn-secondary text-sm">
             Variance
           </Link>

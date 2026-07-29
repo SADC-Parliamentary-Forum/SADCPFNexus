@@ -143,6 +143,18 @@ export default function TeamTimesheetsPage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [payrollStaging, setPayrollStaging] = useState(false);
   const [lastBatch, setLastBatch] = useState<{ id: number; batch_reference: string } | null>(null);
+  const [exportHistory, setExportHistory] = useState<
+    Array<{ id: number; batch_reference: string; status: string; exported_at?: string | null; lines_count?: number; period?: { id: number; label: string; status: string } }>
+  >([]);
+
+  const loadExportHistory = useCallback(async () => {
+    try {
+      const res = await hrApi.listPayrollExports();
+      setExportHistory(res.data.data ?? []);
+    } catch {
+      /* optional panel */
+    }
+  }, []);
 
   // Initialise on client only to prevent SSR/client hydration mismatch
   useEffect(() => {
@@ -160,6 +172,7 @@ export default function TeamTimesheetsPage() {
         }
       })
       .catch(() => setPeriods([]));
+    void loadExportHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load periods once on mount
   }, []);
 
@@ -257,11 +270,14 @@ export default function TeamTimesheetsPage() {
         period_id: Number(selectedPeriodId),
         idempotency_key: `team-ui-${selectedPeriodId}-${Date.now()}`,
         mark_included: true,
+        lock_period: true,
       });
       const batch = (res.data as { data?: { id: number; batch_reference: string } }).data;
       if (batch?.id) {
         setLastBatch({ id: batch.id, batch_reference: batch.batch_reference });
-        showToast(`Payroll staged: ${batch.batch_reference}. TOIL payable hours stay 0.`);
+        showToast(`Payroll staged & period locked: ${batch.batch_reference}. TOIL payable hours stay 0.`);
+        await load();
+        await loadExportHistory();
       } else {
         showToast("Payroll export staged.");
       }
@@ -448,6 +464,54 @@ export default function TeamTimesheetsPage() {
           Current week
         </button>
       </div>
+
+      {exportHistory.length > 0 && (
+        <div className="rounded-lg border border-neutral-200 bg-white p-4" data-testid="team-payroll-export-history">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-neutral-800">Payroll export history</h2>
+            <button type="button" className="text-xs text-primary hover:underline" onClick={() => void loadExportHistory()}>
+              Refresh
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead className="bg-neutral-50 text-left text-neutral-600">
+                <tr>
+                  <th className="px-2 py-1.5">Batch</th>
+                  <th className="px-2 py-1.5">Period</th>
+                  <th className="px-2 py-1.5">Status</th>
+                  <th className="px-2 py-1.5">Exported</th>
+                  <th className="px-2 py-1.5">Lines</th>
+                  <th className="px-2 py-1.5" />
+                </tr>
+              </thead>
+              <tbody>
+                {exportHistory.slice(0, 8).map((b) => (
+                  <tr key={b.id} className="border-t border-neutral-100">
+                    <td className="px-2 py-1.5 font-medium">{b.batch_reference}</td>
+                    <td className="px-2 py-1.5">{b.period?.label ?? "—"} ({b.period?.status ?? "—"})</td>
+                    <td className="px-2 py-1.5">{b.status}</td>
+                    <td className="px-2 py-1.5">{b.exported_at ? new Date(b.exported_at).toLocaleString() : "—"}</td>
+                    <td className="px-2 py-1.5">{b.lines_count ?? "—"}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      <button
+                        type="button"
+                        className="text-primary underline"
+                        onClick={() => {
+                          setLastBatch({ id: b.id, batch_reference: b.batch_reference });
+                          void handleDownloadPayroll("csv");
+                        }}
+                      >
+                        CSV
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex items-center gap-2 flex-wrap">

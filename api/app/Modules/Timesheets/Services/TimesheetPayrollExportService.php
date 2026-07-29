@@ -28,6 +28,7 @@ class TimesheetPayrollExportService
         int $periodId,
         ?string $idempotencyKey = null,
         bool $markIncluded = true,
+        bool $lockPeriod = false,
     ): PayrollExportBatch {
         $this->assertCanStage($actor);
 
@@ -40,6 +41,12 @@ class TimesheetPayrollExportService
         $existing = PayrollExportBatch::where('idempotency_key', $key)->first();
         if ($existing) {
             return $existing->load(['lines.user', 'period']);
+        }
+
+        if (in_array($period->status, [TimesheetPeriod::CLOSED, TimesheetPeriod::PAYROLL_EXPORTED], true)) {
+            throw ValidationException::withMessages([
+                'period_id' => ['Period is locked for payroll; cannot stage a new export batch.'],
+            ]);
         }
 
         $timesheets = Timesheet::query()
@@ -57,7 +64,7 @@ class TimesheetPayrollExportService
             ]);
         }
 
-        return DB::transaction(function () use ($actor, $period, $timesheets, $key, $markIncluded) {
+        return DB::transaction(function () use ($actor, $period, $timesheets, $key, $markIncluded, $lockPeriod) {
             $batch = PayrollExportBatch::create([
                 'tenant_id' => $actor->tenant_id,
                 'batch_reference' => 'PAY-TS-'.strtoupper(Str::random(6)),
@@ -136,6 +143,14 @@ class TimesheetPayrollExportService
                 }
             }
 
+            if ($lockPeriod) {
+                $period->update([
+                    'status' => TimesheetPeriod::PAYROLL_EXPORTED,
+                    'closed_at' => now(),
+                    'closed_by' => $actor->id,
+                ]);
+            }
+
             TimesheetAuditEvent::create([
                 'tenant_id' => $actor->tenant_id,
                 'actor_id' => $actor->id,
@@ -144,11 +159,30 @@ class TimesheetPayrollExportService
                     'batch_id' => $batch->id,
                     'period_id' => $period->id,
                     'timesheet_ids' => $timesheets->pluck('id')->all(),
+                    'locked' => $lockPeriod,
                 ],
             ]);
 
             return $batch->load(['lines.user', 'period']);
         });
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, PayrollExportBatch>
+     */
+    public function listBatches(User $actor, ?int $periodId = null): \Illuminate\Support\Collection
+    {
+        $this->assertCanStage($actor);
+
+        return PayrollExportBatch::query()
+            ->with(['period:id,label,period_start,period_end,status', 'exportedBy:id,name'])
+            ->withCount('lines')
+            ->where('tenant_id', $actor->tenant_id)
+            ->when($periodId, fn ($q) => $q->where('period_id', $periodId))
+            ->orderByDesc('exported_at')
+            ->orderByDesc('id')
+            ->limit(100)
+            ->get();
     }
 
     public function exportCsv(PayrollExportBatch $batch): string

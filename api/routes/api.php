@@ -636,6 +636,8 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/commitment-ageing', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'commitmentAgeing']);
             Route::get('reports/change-register', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'changeRegister']);
             Route::get('reports/cycle-status', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'cycleStatus']);
+            Route::get('reports/{report}/export', [\App\Http\Controllers\Api\V1\Budget\BudgetReportController::class, 'export'])
+                ->where('report', 'utilisation|commitment-ageing|change-register|cycle-status');
 
             // Cashflow / scenario planning
             Route::get('cashflow/forecast', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'forecast']);
@@ -744,6 +746,7 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'store']);
             Route::post('timesheets/schedules/assign', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'assign']);
             Route::post('timesheets/payroll-exports', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'exportPayroll']);
+            Route::get('timesheets/payroll-exports', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'listPayrollExports']);
             Route::post('timesheets/payroll-exports/stage', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'stagePayrollExport']);
             Route::get('timesheets/payroll-exports/{payrollExport}/download', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'downloadPayrollExport']);
             Route::get('timesheets/{timesheet}/export', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'export']);
@@ -1057,6 +1060,10 @@ Route::prefix('v1')->group(function () {
             $fleet = \App\Http\Controllers\Api\V1\Fleet\FleetController::class;
             Route::get('vehicles', [$fleet, 'index']);
             Route::get('vehicles/{asset}', [$fleet, 'show']);
+            Route::get('drivers', [$fleet, 'listDrivers']);
+            Route::post('drivers', [$fleet, 'storeDriver']);
+            Route::get('bookings', [$fleet, 'listBookings']);
+            Route::post('bookings', [$fleet, 'storeBooking']);
             Route::post('vehicles/{asset}/trips', [$fleet, 'storeTrip']);
             Route::post('vehicles/{asset}/fuel-logs', [$fleet, 'storeFuelLog']);
             Route::post('vehicles/{asset}/service-schedules', [$fleet, 'storeServiceSchedule']);
@@ -1080,6 +1087,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets-meta/insurance/policies', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'indexPolicies']);
         Route::post('assets-meta/insurance/policies', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'storePolicy']);
         Route::put('assets-meta/insurance/policies/{policy}', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'updatePolicy']);
+        Route::post('assets-meta/insurance/policies/{policy}/renew', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'renewPolicy']);
         Route::get('assets-meta/insurance/claims', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'indexClaims']);
         Route::post('assets-meta/insurance/claims', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'storeClaim']);
         Route::put('assets-meta/insurance/claims/{claim}', [\App\Http\Controllers\Api\V1\Assets\AssetInsuranceController::class, 'updateClaim']);
@@ -1456,6 +1464,10 @@ Route::prefix('v1')->group(function () {
             Route::post('control-testing/mark-overdue', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'markOverdue']);
             Route::get('bcp-links', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listBcpLinks']);
             Route::post('bcp-links', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeBcpLink']);
+            Route::get('bcp-exercises', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listBcpExercises']);
+            Route::post('bcp-exercises', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeBcpExercise']);
+            Route::post('bcp-exercises/{bcpExercise}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'completeBcpExercise']);
+            Route::get('insurance-renewals', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listInsuranceRenewals']);
             Route::get('dependencies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listDependencies']);
             Route::post('dependencies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeDependency']);
 

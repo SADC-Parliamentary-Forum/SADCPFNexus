@@ -99,4 +99,64 @@ class FleetController extends Controller
 
         return response()->json(['data' => $schedule], 201);
     }
+
+    public function listDrivers(Request $request): JsonResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+
+        return response()->json([
+            'data' => $this->fleet->listDrivers((int) $request->user()->tenant_id),
+        ]);
+    }
+
+    public function storeDriver(Request $request): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'licence_number' => ['nullable', 'string', 'max:64'],
+            'licence_expires_on' => ['nullable', 'date'],
+            'status' => ['nullable', 'in:active,inactive,suspended'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $driver = $this->fleet->createDriver($request->user(), $data);
+
+        return response()->json(['data' => $driver], 201);
+    }
+
+    public function listBookings(Request $request): JsonResponse
+    {
+        abort_unless($this->canView($request->user()), 403);
+
+        $filters = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'asset_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $this->fleet->listBookings((int) $request->user()->tenant_id, $filters),
+        ]);
+    }
+
+    public function storeBooking(Request $request): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'asset_id' => ['required', 'integer', 'exists:assets,id'],
+            'driver_id' => ['nullable', 'integer', 'exists:fleet_drivers,id'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
+            'purpose' => ['nullable', 'string', 'max:255'],
+            'destination' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $booking = $this->fleet->createBooking($request->user(), $data);
+
+        return response()->json(['data' => $booking], 201);
+    }
 }

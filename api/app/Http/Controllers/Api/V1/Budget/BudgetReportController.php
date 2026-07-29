@@ -73,4 +73,31 @@ class BudgetReportController extends Controller
             'data' => $this->reports->cycleStatus((int) $request->user()->tenant_id, $filters),
         ]);
     }
+
+    public function export(Request $request, string $report): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless(in_array($report, ['utilisation', 'commitment-ageing', 'change-register', 'cycle-status'], true), 404);
+
+        $filters = $request->validate([
+            'financial_year_id' => ['nullable', 'integer'],
+            'department_id' => ['nullable', 'integer'],
+            'funding_source_id' => ['nullable', 'integer'],
+            'group_by' => ['nullable', Rule::in(['line', 'department', 'funding_source'])],
+            'active_only' => ['nullable', 'boolean'],
+            'as_of' => ['nullable', 'date'],
+            'status' => ['nullable', 'string', 'max:40'],
+            'type' => ['nullable', Rule::in(BudgetChangeRequest::TYPES)],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'format' => ['nullable', Rule::in(['xlsx', 'excel', 'pdf'])],
+        ]);
+
+        $format = strtolower((string) ($filters['format'] ?? 'xlsx'));
+        if ($format === 'excel') {
+            $format = 'xlsx';
+        }
+        unset($filters['format']);
+
+        return $this->reports->export((int) $request->user()->tenant_id, $report, $format, $filters);
+    }
 }

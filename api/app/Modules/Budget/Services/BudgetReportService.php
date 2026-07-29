@@ -10,6 +10,7 @@ use App\Models\BudgetSubmission;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class BudgetReportService
 {
@@ -398,5 +399,77 @@ class BudgetReportService
         }
 
         return $path;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function export(int $tenantId, string $report, string $format, array $filters = []): \Symfony\Component\HttpFoundation\Response
+    {
+        $payload = match ($report) {
+            'utilisation' => $this->utilisation($tenantId, $filters),
+            'commitment-ageing' => $this->commitmentAgeing($tenantId, $filters),
+            'change-register' => $this->changeRegister($tenantId, $filters),
+            'cycle-status' => $this->cycleStatus($tenantId, $filters),
+            default => throw ValidationException::withMessages(['report' => ['Unknown report.']]),
+        };
+
+        $rows = $payload['rows'] ?? [];
+        $filename = 'budget-'.$report.'-'.now()->format('Ymd-His');
+
+        if ($format === 'pdf') {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.budget_report', [
+                'title' => 'Budget '.str_replace('-', ' ', $report),
+                'report' => $report,
+                'rows' => $rows,
+                'totals' => $payload['totals'] ?? [],
+                'generatedAt' => now()->toDateTimeString(),
+            ]);
+
+            return $pdf->download($filename.'.pdf');
+        }
+
+        return response()->streamDownload(function () use ($rows, $report) {
+            $writer = new \OpenSpout\Writer\XLSX\Writer();
+            $writer->openToFile('php://output');
+
+            $headers = $this->exportHeaders($report, $rows);
+            $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($headers));
+
+            foreach ($rows as $row) {
+                $values = [];
+                foreach ($headers as $key) {
+                    $val = $row[$key] ?? '';
+                    if (is_array($val)) {
+                        $val = json_encode($val);
+                    }
+                    $values[] = $val;
+                }
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues($values));
+            }
+
+            $writer->close();
+        }, $filename.'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return list<string>
+     */
+    private function exportHeaders(string $report, array $rows): array
+    {
+        if ($rows !== []) {
+            return array_keys($rows[0]);
+        }
+
+        return match ($report) {
+            'utilisation' => ['code', 'name', 'approved', 'actual', 'committed', 'available', 'pct_utilised'],
+            'commitment-ageing' => ['source_key', 'amount', 'age_days', 'bucket'],
+            'change-register' => ['reference', 'type', 'status', 'requested_amount'],
+            'cycle-status' => ['name', 'status', 'opens_at', 'closes_at'],
+            default => ['id'],
+        };
     }
 }

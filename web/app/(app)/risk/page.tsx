@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
@@ -8,6 +8,12 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToXls } from "@/lib/csvExport";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import {
+  BulkSelectionBar,
+  SelectAllCheckbox,
+  RowCheckbox,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -91,6 +97,12 @@ export default function RiskRegisterPage() {
     ? risks.filter((r) => r.likelihood === matrixFilter.likelihood && r.impact === matrixFilter.impact)
     : risks;
 
+  const getId = useCallback((row: Risk) => row.id, []);
+  const selection = useRowSelection({
+    rows: displayRisks,
+    getId,
+  });
+
   const open     = risks.filter((r) => !["closed", "archived"].includes(r.status)).length;
   const critical = risks.filter((r) => r.risk_level === "critical").length;
   const high     = risks.filter((r) => r.risk_level === "high").length;
@@ -165,6 +177,37 @@ export default function RiskRegisterPage() {
       density={density}
       onDensityChange={setDensity}
       loading={isLoading}
+      bulkBar={
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={selection.selectedCount === 0}
+            onClick={() => {
+              const selected = displayRisks.filter((r) => selection.isSelected(r.id));
+              exportToXls(
+                "risk-register-selected",
+                selected.map((r) => ({
+                  risk_code: r.risk_code,
+                  title: r.title,
+                  category: r.category,
+                  status: r.status,
+                  risk_level: r.risk_level ?? "",
+                })),
+                [
+                  { key: "risk_code", header: "Risk Code" },
+                  { key: "title", header: "Title" },
+                  { key: "category", header: "Category" },
+                  { key: "status", header: "Status" },
+                  { key: "risk_level", header: "Level" },
+                ],
+              );
+            }}
+          >
+            Export selected
+          </button>
+        </BulkSelectionBar>
+      }
       actions={
         <div className="flex items-center gap-2">
           <button
@@ -386,6 +429,13 @@ export default function RiskRegisterPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th className="w-10">
+                  <SelectAllCheckbox
+                    checked={selection.allSelectableSelected}
+                    indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                    onChange={selection.toggleAllSelectable}
+                  />
+                </th>
                 <th>Code</th>
                 <th>Title</th>
                 <th>Category</th>
@@ -405,6 +455,13 @@ export default function RiskRegisterPage() {
                 const cat = CATEGORY_CONFIG[risk.category] ?? CATEGORY_CONFIG.other;
                 return (
                   <tr key={risk.id}>
+                    <td>
+                      <RowCheckbox
+                        checked={selection.isSelected(risk.id)}
+                        onChange={() => selection.toggle(risk.id)}
+                        label={`Select ${risk.risk_code}`}
+                      />
+                    </td>
                     <td>
                       <Link href={`/risk/${risk.id}`} className="font-mono text-xs text-primary hover:underline">
                         {risk.risk_code}

@@ -32,4 +32,9 @@ class PayrollExportBatch extends Model
     {
         return $this->belongsTo(TimesheetPeriod::class, 'period_id');
     }
+
+    public function exportedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'exported_by');
+    }
 }

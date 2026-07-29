@@ -73,6 +73,40 @@ class AssetInsuranceService
     }
 
     /**
+     * Renew creates a successor policy and marks the current one expired.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function renewPolicy(AssetInsurancePolicy $policy, array $data, User $user): AssetInsurancePolicy
+    {
+        $from = $data['effective_from'] ?? optional($policy->effective_to)->copy()->addDay()->toDateString();
+        $to = $data['effective_to'] ?? null;
+        if (! $to) {
+            throw ValidationException::withMessages(['effective_to' => ['New effective_to is required for renewal.']]);
+        }
+
+        $renewed = AssetInsurancePolicy::create([
+            'tenant_id' => $policy->tenant_id,
+            'policy_number' => $data['policy_number'] ?? ($policy->policy_number.'-R'),
+            'insurer_name' => $data['insurer_name'] ?? $policy->insurer_name,
+            'coverage_type' => $data['coverage_type'] ?? $policy->coverage_type,
+            'effective_from' => $from,
+            'effective_to' => $to,
+            'sum_insured' => $data['sum_insured'] ?? $policy->sum_insured,
+            'premium_amount' => $data['premium_amount'] ?? $policy->premium_amount,
+            'currency' => strtoupper($data['currency'] ?? $policy->currency ?? 'NAD'),
+            'status' => 'active',
+            'asset_id' => $data['asset_id'] ?? $policy->asset_id,
+            'notes' => $data['notes'] ?? ('Renewed from policy #'.$policy->id),
+            'created_by' => $user->id,
+        ]);
+
+        $policy->update(['status' => 'expired']);
+
+        return $renewed->fresh(['asset:id,asset_code,name', 'claims']);
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      * @return Collection<int, AssetInsuranceClaim>
      */

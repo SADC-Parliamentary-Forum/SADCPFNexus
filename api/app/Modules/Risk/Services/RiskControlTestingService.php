@@ -214,4 +214,69 @@ class RiskControlTestingService
             ]
         )->load(['risk:id,risk_code,title', 'relatedRisk:id,risk_code,title']);
     }
+
+    public function listBcpExercises(int $tenantId, ?int $riskId = null): array
+    {
+        $q = \App\Models\RiskBcpExercise::query()
+            ->where('tenant_id', $tenantId)
+            ->with(['risk:id,risk_code,title'])
+            ->orderByDesc('scheduled_at')
+            ->orderByDesc('id');
+
+        if ($riskId) {
+            $q->where('risk_id', $riskId);
+        }
+
+        return $q->get()->all();
+    }
+
+    public function createBcpExercise(array $data, User $user): \App\Models\RiskBcpExercise
+    {
+        if (! empty($data['risk_id'])) {
+            Risk::query()
+                ->where('tenant_id', $user->tenant_id)
+                ->whereKey((int) $data['risk_id'])
+                ->firstOrFail();
+        }
+
+        return \App\Models\RiskBcpExercise::create([
+            'tenant_id' => $user->tenant_id,
+            'risk_id' => $data['risk_id'] ?? null,
+            'bcp_link_id' => $data['bcp_link_id'] ?? null,
+            'title' => $data['title'],
+            'exercise_type' => $data['exercise_type'] ?? 'tabletop',
+            'status' => 'planned',
+            'scheduled_at' => $data['scheduled_at'] ?? null,
+            'facilitator_id' => $data['facilitator_id'] ?? $user->id,
+            'created_by' => $user->id,
+        ])->load(['risk:id,risk_code,title']);
+    }
+
+    public function completeBcpExercise(\App\Models\RiskBcpExercise $exercise, array $data, User $user): \App\Models\RiskBcpExercise
+    {
+        abort_unless((int) $exercise->tenant_id === (int) $user->tenant_id, 404);
+
+        $exercise->update([
+            'status' => \App\Models\RiskBcpExercise::COMPLETED,
+            'result' => $data['result'],
+            'outcome_notes' => $data['outcome_notes'] ?? null,
+            'completed_at' => $data['completed_at'] ?? now(),
+        ]);
+
+        return $exercise->fresh(['risk:id,risk_code,title']);
+    }
+
+    public function listInsuranceRenewals(int $tenantId, int $withinDays = 90): array
+    {
+        $until = now()->addDays($withinDays)->toDateString();
+
+        return AssetInsurancePolicy::query()
+            ->with(['asset:id,asset_code,name'])
+            ->where('tenant_id', $tenantId)
+            ->whereIn('status', ['active', 'expired'])
+            ->whereDate('effective_to', '<=', $until)
+            ->orderBy('effective_to')
+            ->get()
+            ->all();
+    }
 }

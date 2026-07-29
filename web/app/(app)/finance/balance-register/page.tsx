@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { bcreApi, type BcreDashboard, type BalanceRegister } from "@/lib/api";
+import { bcreApi, programmeApi, type BcreDashboard, type BalanceRegister, type Programme } from "@/lib/api";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -33,6 +33,7 @@ export default function BcreDashboardPage() {
   const [dashboard, setDashboard] = useState<BcreDashboard | null>(null);
   const [recentSA, setRecentSA]   = useState<BalanceRegister[]>([]);
   const [recentIMP, setRecentIMP] = useState<BalanceRegister[]>([]);
+  const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
 
@@ -42,12 +43,15 @@ export default function BcreDashboardPage() {
       bcreApi.dashboard(),
       bcreApi.list({ module_type: "salary_advance", per_page: 5 }),
       bcreApi.list({ module_type: "imprest", per_page: 5 }),
+      programmeApi.list({ per_page: 5 }).catch(() => ({ data: { data: [] } })),
     ])
-      .then(([dashRes, saRes, impRes]) => {
+      .then(([dashRes, saRes, impRes, progRes]) => {
         const d = (dashRes.data as any).data ?? dashRes.data;
         setDashboard(d);
         setRecentSA(getListData<BalanceRegister>(saRes.data));
         setRecentIMP(getListData<BalanceRegister>(impRes.data));
+        const progPayload = (progRes as any)?.data;
+        setProgrammes(getListData<Programme>(progPayload));
       })
       .catch(() => setError("Failed to load dashboard."))
       .finally(() => setLoading(false));
@@ -128,6 +132,36 @@ export default function BcreDashboardPage() {
                 )}
               </div>
               <p className="text-xs text-neutral-400 mt-1">employee disputes open</p>
+            </div>
+          </div>
+
+          </div>
+
+          {/* Programme snapshot (existing PIF/programme data) */}
+          <div className="card">
+            <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-lg">folder_special</span>
+                <h2 className="font-semibold text-neutral-800">Programme snapshot</h2>
+              </div>
+              <Link href="/pif" className="text-xs text-primary hover:underline">Open programmes</Link>
+            </div>
+            <div className="divide-y divide-neutral-50">
+              {programmes.length === 0 ? (
+                <p className="px-5 py-6 text-sm text-neutral-400 text-center">No recent programmes to surface beside BCRE.</p>
+              ) : programmes.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/pif/${p.id}`}
+                  className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-neutral-800">{p.title ?? p.reference_number ?? `Programme #${p.id}`}</p>
+                    <p className="text-xs text-neutral-500">{p.status ?? "—"}</p>
+                  </div>
+                  <span className="material-symbols-outlined text-neutral-400 text-base">chevron_right</span>
+                </Link>
+              ))}
             </div>
           </div>
 

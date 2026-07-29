@@ -142,4 +142,61 @@ class RiskPhase3Controller extends Controller
 
         return response()->json(['message' => 'Overdue items refreshed.', 'updated' => $count]);
     }
+
+    public function listBcpExercises(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('risk.view') || $user->can('risk.manage') || $user->can('risk.admin'), 403);
+
+        $riskId = $request->integer('risk_id') ?: null;
+
+        return response()->json(['data' => $this->service->listBcpExercises((int) $user->tenant_id, $riskId)]);
+    }
+
+    public function storeBcpExercise(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('risk.manage') || $user->can('risk.admin'), 403);
+
+        $data = $request->validate([
+            'risk_id' => ['nullable', 'integer', 'exists:risks,id'],
+            'bcp_link_id' => ['nullable', 'integer', 'exists:risk_bcp_links,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'exercise_type' => ['nullable', 'in:tabletop,drill,full'],
+            'scheduled_at' => ['nullable', 'date'],
+            'facilitator_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $exercise = $this->service->createBcpExercise($data, $user);
+
+        return response()->json(['message' => 'BCP exercise scheduled.', 'data' => $exercise], 201);
+    }
+
+    public function completeBcpExercise(Request $request, \App\Models\RiskBcpExercise $bcpExercise): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('risk.manage') || $user->can('risk.admin'), 403);
+
+        $data = $request->validate([
+            'result' => ['required', 'in:pass,fail,partial'],
+            'outcome_notes' => ['nullable', 'string'],
+            'completed_at' => ['nullable', 'date'],
+        ]);
+
+        $updated = $this->service->completeBcpExercise($bcpExercise, $data, $user);
+
+        return response()->json(['message' => 'BCP exercise completed.', 'data' => $updated]);
+    }
+
+    public function listInsuranceRenewals(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('risk.view') || $user->can('risk.manage') || $user->can('risk.admin'), 403);
+
+        $within = (int) ($request->integer('within_days') ?: 90);
+
+        return response()->json([
+            'data' => $this->service->listInsuranceRenewals((int) $user->tenant_id, max(1, min($within, 730))),
+        ]);
+    }
 }

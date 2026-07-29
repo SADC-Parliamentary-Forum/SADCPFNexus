@@ -3,6 +3,8 @@
 namespace App\Modules\Fleet\Services;
 
 use App\Models\Asset;
+use App\Models\FleetBooking;
+use App\Models\FleetDriver;
 use App\Models\FleetFuelLog;
 use App\Models\FleetServiceSchedule;
 use App\Models\FleetTripLog;
@@ -157,5 +159,111 @@ class FleetService
             'notes' => $data['notes'] ?? null,
             'created_by' => $user->id,
         ]);
+    }
+
+    /**
+     * @return Collection<int, FleetDriver>
+     */
+    public function listDrivers(int $tenantId): Collection
+    {
+        return FleetDriver::query()
+            ->with('user:id,name,email')
+            ->where('tenant_id', $tenantId)
+            ->orderBy('status')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createDriver(User $actor, array $data): FleetDriver
+    {
+        $userId = (int) $data['user_id'];
+        if (! User::query()->where('tenant_id', $actor->tenant_id)->whereKey($userId)->exists()) {
+            throw ValidationException::withMessages(['user_id' => ['User not found for this tenant.']]);
+        }
+
+        return FleetDriver::create([
+            'tenant_id' => $actor->tenant_id,
+            'user_id' => $userId,
+            'licence_number' => $data['licence_number'] ?? null,
+            'licence_expires_on' => $data['licence_expires_on'] ?? null,
+            'status' => $data['status'] ?? 'active',
+            'notes' => $data['notes'] ?? null,
+            'created_by' => $actor->id,
+        ])->load('user:id,name,email');
+    }
+
+    /**
+     * @param  array{from?:string|null,to?:string|null,asset_id?:int|null}  $filters
+     * @return Collection<int, FleetBooking>
+     */
+    public function listBookings(int $tenantId, array $filters = []): Collection
+    {
+        return FleetBooking::query()
+            ->with(['asset:id,asset_code,name', 'driver.user:id,name'])
+            ->where('tenant_id', $tenantId)
+            ->when(! empty($filters['asset_id']), fn ($q) => $q->where('asset_id', (int) $filters['asset_id']))
+            ->when(! empty($filters['from']), fn ($q) => $q->where('ends_at', '>=', Carbon::parse($filters['from'])->startOfDay()))
+            ->when(! empty($filters['to']), fn ($q) => $q->where('starts_at', '<=', Carbon::parse($filters['to'])->endOfDay()))
+            ->where('status', '!=', FleetBooking::CANCELLED)
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createBooking(User $actor, array $data): FleetBooking
+    {
+        $asset = Asset::query()->findOrFail((int) $data['asset_id']);
+        $this->assertFleetVehicle($asset, (int) $actor->tenant_id);
+
+        $startsAt = Carbon::parse($data['starts_at']);
+        $endsAt = Carbon::parse($data['ends_at']);
+        if ($endsAt->lte($startsAt)) {
+            throw ValidationException::withMessages([
+                'ends_at' => ['Booking end must be after start.'],
+            ]);
+        }
+
+        $conflict = FleetBooking::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('asset_id', $asset->id)
+            ->where('status', '!=', FleetBooking::CANCELLED)
+            ->where('starts_at', '<', $endsAt)
+            ->where('ends_at', '>', $startsAt)
+            ->exists();
+
+        if ($conflict) {
+            throw ValidationException::withMessages([
+                'starts_at' => ['Vehicle already booked for overlapping time.'],
+            ]);
+        }
+
+        if (! empty($data['driver_id'])) {
+            $driverOk = FleetDriver::query()
+                ->where('tenant_id', $actor->tenant_id)
+                ->whereKey((int) $data['driver_id'])
+                ->exists();
+            if (! $driverOk) {
+                throw ValidationException::withMessages(['driver_id' => ['Driver not found.']]);
+            }
+        }
+
+        return FleetBooking::create([
+            'tenant_id' => $actor->tenant_id,
+            'asset_id' => $asset->id,
+            'driver_id' => $data['driver_id'] ?? null,
+            'requested_by' => $actor->id,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'purpose' => $data['purpose'] ?? null,
+            'destination' => $data['destination'] ?? null,
+            'status' => FleetBooking::CONFIRMED,
+            'notes' => $data['notes'] ?? null,
+            'created_by' => $actor->id,
+        ])->load(['asset:id,asset_code,name', 'driver.user:id,name']);
     }
 }

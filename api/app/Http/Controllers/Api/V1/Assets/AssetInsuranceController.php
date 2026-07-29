@@ -71,6 +71,28 @@ class AssetInsuranceController extends Controller
         ]);
     }
 
+    public function renewPolicy(Request $request, AssetInsurancePolicy $policy): JsonResponse
+    {
+        $this->assertTenant($request, (int) $policy->tenant_id);
+        $data = $request->validate([
+            'policy_number' => ['nullable', 'string', 'max:120'],
+            'insurer_name' => ['nullable', 'string', 'max:255'],
+            'coverage_type' => ['nullable', 'string', 'max:64'],
+            'effective_from' => ['nullable', 'date'],
+            'effective_to' => ['required', 'date'],
+            'sum_insured' => ['nullable', 'numeric', 'min:0'],
+            'premium_amount' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'asset_id' => ['nullable', 'integer'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->insurance->renewPolicy($policy, $data, $request->user()),
+        ]);
+    }
+
     public function indexClaims(Request $request): JsonResponse
     {
         $filters = $request->validate([
