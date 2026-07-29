@@ -77,6 +77,20 @@ import '../../features/assets/presentation/screens/asset_request_screen.dart';
 import '../../features/assets/presentation/screens/my_assigned_assets_screen.dart';
 import '../../features/assets/presentation/screens/asset_condition_report_screen.dart';
 import '../../features/assets/presentation/screens/fleet_transport_screen.dart';
+import '../../features/assets/presentation/screens/fleet_vehicle_detail_screen.dart';
+
+// Gap Pack 2 parity modules
+import '../../features/assignments/presentation/screens/assignments_list_screen.dart';
+import '../../features/assignments/presentation/screens/assignment_detail_screen.dart';
+import '../../features/assignments/presentation/screens/assignment_create_screen.dart';
+import '../../features/risk/presentation/screens/risk_register_screen.dart';
+import '../../features/risk/presentation/screens/risk_detail_screen.dart';
+import '../../features/correspondence/presentation/screens/correspondence_register_screen.dart';
+import '../../features/correspondence/presentation/screens/correspondence_detail_screen.dart';
+import '../../features/stock/presentation/screens/stock_scan_screen.dart';
+import '../../features/weekly_summaries/presentation/screens/weekly_summaries_screen.dart';
+import '../../features/weekly_summaries/presentation/screens/weekly_summary_detail_screen.dart';
+import '../../features/finance/presentation/screens/budget_cashflow_screen.dart';
 
 // Procurement detail + vendor screens
 import '../../features/procurement/presentation/screens/procurement_detail_screen.dart';
@@ -562,6 +576,78 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/assets/fleet',
         name: 'assets-fleet',
         builder: (context, state) => const FleetTransportScreen(),
+      ),
+      GoRoute(
+        path: '/fleet/:id',
+        name: 'fleet-vehicle-detail',
+        builder: (context, state) => FleetVehicleDetailScreen(
+          vehicleId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+
+      // ─── Gap Pack 2 modules ────────────────────────────────────────────────
+      GoRoute(
+        path: '/assignments',
+        name: 'assignments',
+        builder: (context, state) => const AssignmentsListScreen(),
+      ),
+      GoRoute(
+        path: '/assignments/create',
+        name: 'assignments-create',
+        builder: (context, state) => const AssignmentCreateScreen(),
+      ),
+      GoRoute(
+        path: '/assignments/:id',
+        name: 'assignments-detail',
+        builder: (context, state) => AssignmentDetailScreen(
+          assignmentId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/risk',
+        name: 'risk-register',
+        builder: (context, state) => const RiskRegisterScreen(),
+      ),
+      GoRoute(
+        path: '/risk/:id',
+        name: 'risk-detail',
+        builder: (context, state) => RiskDetailScreen(
+          riskId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/correspondence',
+        name: 'correspondence',
+        builder: (context, state) => const CorrespondenceRegisterScreen(),
+      ),
+      GoRoute(
+        path: '/correspondence/:id',
+        name: 'correspondence-detail',
+        builder: (context, state) => CorrespondenceDetailScreen(
+          letterId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/stock/scan',
+        name: 'stock-scan',
+        builder: (context, state) => const StockScanScreen(),
+      ),
+      GoRoute(
+        path: '/weekly-summaries',
+        name: 'weekly-summaries',
+        builder: (context, state) => const WeeklySummariesScreen(),
+      ),
+      GoRoute(
+        path: '/weekly-summaries/:id',
+        name: 'weekly-summary-detail',
+        builder: (context, state) => WeeklySummaryDetailScreen(
+          reportId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/budget/cashflow',
+        name: 'budget-cashflow',
+        builder: (context, state) => const BudgetCashflowScreen(),
       ),
 
       // ─── PIF ───────────────────────────────────────────────────────────────

@@ -3672,6 +3672,11 @@ export const tendersApi = {
     api.post<{ data: ProcurementTender; message: string }>(`/procurement/tenders/${id}/cancel`, { reason }),
   comparisonSummary: (id: number) =>
     api.post<{ data: Record<string, unknown>; message: string }>(`/procurement/tenders/${id}/comparison-summary`),
+  confirmComparisonSummary: (id: number, payload: { confirm: boolean; summary_fingerprint?: string }) =>
+    api.post<{ data: Record<string, unknown>; message: string }>(
+      `/procurement/tenders/${id}/comparison-summary/confirm`,
+      payload,
+    ),
   evaluations: () => api.get<{ data: ProcurementTender[] }>("/procurement/evaluations"),
   bidSubmissions: () => api.get<{ data: Record<string, unknown>[] }>("/procurement/bid-submissions"),
 };

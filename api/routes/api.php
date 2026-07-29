@@ -498,6 +498,8 @@ Route::prefix('v1')->group(function () {
             Route::post('tenders/{tender}/award', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'award']);
             Route::post('tenders/{tender}/cancel', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'cancel']);
             Route::post('tenders/{tender}/comparison-summary', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'comparisonSummary']);
+            Route::post('tenders/{tender}/comparison-summary/confirm', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'confirmComparisonSummary']);
+
             Route::get('evaluations', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'evaluations']);
             Route::get('bid-submissions', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'bidSubmissions']);
             Route::get('notice-board', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'staffIndex']);

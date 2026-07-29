@@ -97,6 +97,16 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
     mutationFn: () => tendersApi.comparisonSummary(tenderId).then((r) => r.data.data),
   });
 
+  const confirmSummaryMut = useMutation({
+    mutationFn: () =>
+      tendersApi
+        .confirmComparisonSummary(tenderId, {
+          confirm: true,
+          summary_fingerprint: String(summaryMut.data?.summary ?? "").slice(0, 64),
+        })
+        .then((r) => r.data.data),
+  });
+
   if (isLoading || !tender) {
     return <div className="card p-8 text-center text-sm text-neutral-400">Loading…</div>;
   }
@@ -259,6 +269,28 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
               <p className="text-xs font-semibold text-neutral-800">Assistive summary (not an award)</p>
               <p className="text-sm text-neutral-700 whitespace-pre-wrap">{String(summaryMut.data.summary ?? "")}</p>
               <p className="text-[11px] text-neutral-500">{String(summaryMut.data.disclaimer ?? "")}</p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  className="btn-secondary text-xs"
+                  disabled={confirmSummaryMut.isPending || confirmSummaryMut.isSuccess}
+                  onClick={() => confirmSummaryMut.mutate()}
+                >
+                  {confirmSummaryMut.isSuccess
+                    ? "Review confirmed"
+                    : confirmSummaryMut.isPending
+                      ? "Confirming…"
+                      : "Confirm human review"}
+                </button>
+                <span className="text-[11px] text-neutral-500">
+                  Confirmation is audit-only and never awards a supplier.
+                </span>
+              </div>
+              {confirmSummaryMut.isError && (
+                <p className="text-[11px] text-amber-800">
+                  Confirm failed. Enable AI comparison and ensure bids are opened.
+                </p>
+              )}
             </div>
           )}
 

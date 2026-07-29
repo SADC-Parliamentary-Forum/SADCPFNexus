@@ -23,6 +23,9 @@ class _ProcurementTenderDetailScreenState
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _tender;
+  Map<String, dynamic>? _comparison;
+  bool _aiBusy = false;
+  bool _aiConfirmed = false;
 
   @override
   void initState() {
@@ -50,6 +53,63 @@ class _ProcurementTenderDetailScreenState
         _error = 'Failed to load tender.';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _runComparison() async {
+    setState(() => _aiBusy = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.post(
+          '/procurement/tenders/${widget.tenderId}/comparison-summary');
+      if (!mounted) return;
+      setState(() {
+        _comparison = extractObjectData(res.data);
+        _aiConfirmed = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'AI comparison unavailable. Enable in settings or open bids first.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _aiBusy = false);
+    }
+  }
+
+  Future<void> _confirmComparison() async {
+    setState(() => _aiBusy = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      await dio.post(
+        '/procurement/tenders/${widget.tenderId}/comparison-summary/confirm',
+        data: {
+          'confirm': true,
+          'summary_fingerprint':
+              (_comparison?['summary']?.toString() ?? '').substring(
+                  0,
+                  ((_comparison?['summary']?.toString() ?? '').length)
+                      .clamp(0, 64)),
+        },
+      );
+      if (!mounted) return;
+      setState(() => _aiConfirmed = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Human review confirmed. No award action taken.')),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Confirm failed.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _aiBusy = false);
     }
   }
 
@@ -263,6 +323,68 @@ class _ProcurementTenderDetailScreenState
                     ),
                   );
                 }),
+              ],
+            ),
+          ),
+        ],
+        if (['opened', 'evaluating'].contains(status) && !sealed) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.bgSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('AI comparison (assistive)',
+                    style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 6),
+                const Text(
+                  'Never auto-awards. Human confirm is audit-only.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _aiBusy ? null : _runComparison,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary),
+                      child: Text(_aiBusy ? 'Working…' : 'Generate',
+                          style: const TextStyle(color: Colors.white)),
+                    ),
+                    ElevatedButton(
+                      onPressed: _aiBusy ||
+                              _comparison == null ||
+                              _aiConfirmed
+                          ? null
+                          : _confirmComparison,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.bgSurface),
+                      child: Text(
+                          _aiConfirmed ? 'Review confirmed' : 'Confirm review',
+                          style:
+                              const TextStyle(color: AppColors.textPrimary)),
+                    ),
+                  ],
+                ),
+                if (_comparison != null) ...[
+                  const SizedBox(height: 12),
+                  Text(_comparison!['summary']?.toString() ?? '',
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, height: 1.35)),
+                  const SizedBox(height: 8),
+                  Text(_comparison!['disclaimer']?.toString() ?? '',
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 11)),
+                ],
               ],
             ),
           ),

@@ -231,4 +231,30 @@ class TenderController extends Controller
             'data'    => $this->comparisonSummaryService->summarize($tender, $request->user()),
         ]);
     }
+
+    /**
+     * Human confirm that an assistive comparison was reviewed.
+     * Never awards and never mutates quote recommendations.
+     */
+    public function confirmComparisonSummary(Request $request, Tender $tender): JsonResponse
+    {
+        $this->gate($request);
+        if ((int) $tender->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'confirm' => ['required', 'accepted'],
+            'summary_fingerprint' => ['nullable', 'string', 'max:128'],
+        ]);
+
+        return response()->json([
+            'message' => 'Human review of assistive comparison acknowledged. No award action taken.',
+            'data'    => $this->comparisonSummaryService->confirmReview(
+                $tender,
+                $request->user(),
+                (string) ($data['summary_fingerprint'] ?? '')
+            ),
+        ]);
+    }
 }

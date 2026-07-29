@@ -48,6 +48,13 @@ const _moduleEntries = [
   _DrawerEntry(path: '/pif/form', label: 'PIF', icon: Icons.description_outlined),
   _DrawerEntry(path: '/governance/meetings', label: 'Governance', icon: Icons.gavel_outlined),
   _DrawerEntry(path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
+  _DrawerEntry(path: '/assets/fleet', label: 'Fleet', icon: Icons.directions_car_outlined),
+  _DrawerEntry(path: '/assignments', label: 'Assignments', icon: Icons.assignment_outlined),
+  _DrawerEntry(path: '/risk', label: 'Risk', icon: Icons.warning_amber_outlined),
+  _DrawerEntry(path: '/correspondence', label: 'Correspondence', icon: Icons.mail_outline),
+  _DrawerEntry(path: '/stock/scan', label: 'Stock scan', icon: Icons.qr_code_scanner),
+  _DrawerEntry(path: '/weekly-summaries', label: 'Weekly summaries', icon: Icons.summarize_outlined),
+  _DrawerEntry(path: '/budget/cashflow', label: 'Budget cashflow', icon: Icons.waterfall_chart),
 ];
 
 class _AppDrawerState extends ConsumerState<AppDrawer> {

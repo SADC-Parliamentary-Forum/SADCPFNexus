@@ -35,8 +35,15 @@ final _routeAccess = <String, List<String>>{
   '/salary/advances': ['finance.view'],
   '/salary/advance/new': ['finance.view'],
   '/assets/fleet': ['assets.view'],
+  '/fleet': ['assets.view'],
   '/calendar': [],
   '/search': [],
+  '/assignments': [],
+  '/risk': ['risk.view', 'governance.view'],
+  '/correspondence': ['correspondence.view', 'governance.view'],
+  '/stock/scan': ['stock.view', 'assets.view'],
+  '/weekly-summaries': [],
+  '/budget/cashflow': ['finance.view'],
 };
 
 bool _isSystemAdmin(List<String> roles) {
