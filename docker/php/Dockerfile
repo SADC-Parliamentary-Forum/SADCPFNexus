@@ -1,5 +1,6 @@
 FROM php:8.4-fpm-alpine
 
+# PHP 8.4 moved ext-imap from core to PECL — install via pecl, not docker-php-ext-install.
 RUN set -eux; \
     apk add --no-cache \
         curl \
@@ -18,10 +19,10 @@ RUN set -eux; \
         imap-dev \
         krb5-dev \
         openssl-dev; \
-    docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
-    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl imap; \
+    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl; \
     pecl install redis; \
-    docker-php-ext-enable redis; \
+    printf '\n' | pecl install imap; \
+    docker-php-ext-enable redis imap; \
     apk del .build-deps
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
