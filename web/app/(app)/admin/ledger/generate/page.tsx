@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { auditApi, type AuditLogEntry } from "@/lib/api";
+import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-// ─── Config ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MODULES = [
   { value: "",             label: "All modules" },
   { value: "admin",        label: "Admin" },
@@ -38,7 +38,7 @@ const FORMATS = [
 
 const STEPS = ["Parameters", "Preview", "Export"];
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function formatTs(ts: string) {
   return new Date(ts).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
@@ -49,7 +49,7 @@ function entryHash(e: AuditLogEntry): string {
   for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
   const hex = Math.abs(h).toString(16).padStart(8, "0");
   const exp = (hex + hex.split("").reverse().join("")).slice(0, 16);
-  return `${exp.slice(0, 8)}…${exp.slice(-4)}`;
+  return `${exp.slice(0, 8)}â€¦${exp.slice(-4)}`;
 }
 
 function exportCsv(logs: AuditLogEntry[], title: string) {
@@ -81,9 +81,9 @@ function exportPdf(logs: AuditLogEntry[], title: string, dateFrom: string, dateT
       <td style="padding:6px 8px;font-size:11px;color:#9ca3af">${i + 1}</td>
       <td style="padding:6px 8px;font-size:11px;font-family:monospace">${formatTs(l.created_at)}</td>
       <td style="padding:6px 8px;font-size:11px">${l.user_name ?? "System"}</td>
-      <td style="padding:6px 8px;font-size:11px">${l.module ?? "—"}</td>
+      <td style="padding:6px 8px;font-size:11px">${l.module ?? "â€”"}</td>
       <td style="padding:6px 8px;font-size:11px;font-weight:600">${l.action}</td>
-      <td style="padding:6px 8px;font-size:11px;font-family:monospace;color:#6b7280">${l.record_id ?? "—"}</td>
+      <td style="padding:6px 8px;font-size:11px;font-family:monospace;color:#6b7280">${l.record_id ?? "â€”"}</td>
       <td style="padding:6px 8px;font-size:11px;font-family:monospace;color:#9ca3af">${entryHash(l)}</td>
     </tr>`).join("");
 
@@ -93,14 +93,14 @@ function exportPdf(logs: AuditLogEntry[], title: string, dateFrom: string, dateT
 thead{background:#f9fafb}th{padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;text-align:left;border-bottom:2px solid #e5e7eb}
 tfoot td{font-size:11px;color:#9ca3af;padding:8px}@media print{body{margin:8px}}</style></head>
 <body>
-<h1>SADCPFNexus — ${title}</h1>
-<div class="meta">Generated: ${new Date().toLocaleString("en-GB")} &nbsp;·&nbsp; Period: ${dateFrom || "All time"} – ${dateTo || "Present"} &nbsp;·&nbsp; Total entries: ${logs.length}</div>
+<h1>SADCPFNexus â€” ${title}</h1>
+<div class="meta">Generated: ${new Date().toLocaleString("en-GB")} &nbsp;Â·&nbsp; Period: ${dateFrom || "All time"} â€“ ${dateTo || "Present"} &nbsp;Â·&nbsp; Total entries: ${logs.length}</div>
 <table>
 <thead><tr>
   <th>#</th><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Record Ref</th><th>Hash</th>
 </tr></thead>
 <tbody>${rows}</tbody>
-<tfoot><tr><td colspan="7">SHA-256 · WORM Storage · 7-Year Retention Policy — SADCPFNexus ERP</td></tr></tfoot>
+<tfoot><tr><td colspan="7">SHA-256 Â· WORM Storage Â· 7-Year Retention Policy â€” SADCPFNexus ERP</td></tr></tfoot>
 </table>
 </body></html>`;
 
@@ -121,7 +121,7 @@ tfoot td{font-size:11px;color:#9ca3af;padding:8px}@media print{body{margin:8px}}
   setTimeout(cleanup, 60_000);
 }
 
-// ─── Page ───────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function GenerateLedgerReportPage() {
   const [step, setStep] = useState(0);
 
@@ -159,7 +159,7 @@ export default function GenerateLedgerReportPage() {
     if (scope === "user" && userFilter) params.user = userFilter;
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo)   params.date_to   = dateTo;
-    // Action filter — collect all actions for selected event types
+    // Action filter â€” collect all actions for selected event types
     const actions = EVENT_TYPES.filter((et) => eventTypes.includes(et.value)).flatMap((et) => et.actions);
     if (actions.length > 0 && actions.length < EVENT_TYPES.flatMap((e) => e.actions).length) {
       params.action = actions.join(",");
@@ -171,7 +171,7 @@ export default function GenerateLedgerReportPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await auditApi.list(buildParams());
+      const res = await auditLogsApi.list(buildParams());
       setPreviewLogs(res.data.data ?? []);
       setPreviewTotal(res.data.total ?? 0);
       setStep(1);
@@ -191,7 +191,7 @@ export default function GenerateLedgerReportPage() {
     setStep(2);
   };
 
-  // ─── Step 0: Parameters ──────────────────────────────────────────────────────
+  // â”€â”€â”€ Step 0: Parameters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderStep0 = () => (
     <div className="space-y-8">
       {/* 1. Scope */}
@@ -226,7 +226,7 @@ export default function GenerateLedgerReportPage() {
         {scope === "user" && (
           <div className="mt-2 rounded-lg bg-neutral-50 border border-neutral-200 p-4">
             <label className="block text-xs font-semibold text-neutral-600 mb-1.5">User (name or email)</label>
-            <input className="form-input" placeholder="Search by name or email…"
+            <input className="form-input" placeholder="Search by name or emailâ€¦"
               value={userFilter} onChange={(e) => setUserFilter(e.target.value)} />
           </div>
         )}
@@ -295,7 +295,7 @@ export default function GenerateLedgerReportPage() {
     </div>
   );
 
-  // ─── Step 1: Preview ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ Step 1: Preview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderStep1 = () => (
     <div className="space-y-5">
       <div className="rounded-xl bg-primary/5 border border-primary/20 px-5 py-4">
@@ -304,10 +304,10 @@ export default function GenerateLedgerReportPage() {
           <div>
             <p className="text-sm font-bold text-neutral-900">{reportTitle}</p>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {previewTotal.toLocaleString()} entries · {dateFrom || "All time"} – {dateTo || "Present"}
-              {selectedModule && ` · ${MODULES.find((m) => m.value === selectedModule)?.label}`}
-              {scope === "user" && userFilter && ` · User: ${userFilter}`}
-              {" · "}
+              {previewTotal.toLocaleString()} entries Â· {dateFrom || "All time"} â€“ {dateTo || "Present"}
+              {selectedModule && ` Â· ${MODULES.find((m) => m.value === selectedModule)?.label}`}
+              {scope === "user" && userFilter && ` Â· User: ${userFilter}`}
+              {" Â· "}
               <span className="font-medium">{FORMATS.find((f) => f.value === format)?.label}</span>
             </p>
           </div>
@@ -323,7 +323,7 @@ export default function GenerateLedgerReportPage() {
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-600">Preview (first {Math.min(previewLogs.length, 100)} of {previewTotal.toLocaleString()} entries)</span>
-            <span className="text-xs text-neutral-400 font-mono">SHA-256 · WORM</span>
+            <span className="text-xs text-neutral-400 font-mono">SHA-256 Â· WORM</span>
           </div>
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table className="data-table w-full">
@@ -344,9 +344,9 @@ export default function GenerateLedgerReportPage() {
                     <td className="text-[11px] text-neutral-300 font-mono text-right">{idx + 1}</td>
                     <td className="font-mono text-[11px] text-neutral-400 whitespace-nowrap">{formatTs(l.created_at)}</td>
                     <td className="text-xs">{l.user_name ?? "System"}</td>
-                    <td><span className="text-[11px] bg-neutral-100 text-neutral-600 rounded-full px-2 py-0.5 capitalize">{l.module ?? "—"}</span></td>
+                    <td><span className="text-[11px] bg-neutral-100 text-neutral-600 rounded-full px-2 py-0.5 capitalize">{l.module ?? "â€”"}</span></td>
                     <td><span className="text-[11px] font-semibold text-neutral-700">{l.action}</span></td>
-                    <td className="font-mono text-[11px] text-primary">{l.record_id ?? "—"}</td>
+                    <td className="font-mono text-[11px] text-primary">{l.record_id ?? "â€”"}</td>
                     <td className="font-mono text-[11px] text-neutral-400">{entryHash(l)}</td>
                   </tr>
                 ))}
@@ -358,7 +358,7 @@ export default function GenerateLedgerReportPage() {
     </div>
   );
 
-  // ─── Step 2: Export complete ─────────────────────────────────────────────────
+  // â”€â”€â”€ Step 2: Export complete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const renderStep2 = () => (
     <div className="flex flex-col items-center gap-5 py-10 text-center">
       <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -446,7 +446,7 @@ export default function GenerateLedgerReportPage() {
           {stepContent[step]?.()}
         </div>
 
-        {/* Policy sidebar — only on step 0 */}
+        {/* Policy sidebar â€” only on step 0 */}
         {step === 0 && (
           <aside className="lg:w-72 space-y-4">
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
@@ -499,7 +499,7 @@ export default function GenerateLedgerReportPage() {
               <button type="button" onClick={handlePreview} disabled={loading}
                 className="btn-primary flex items-center gap-2 disabled:opacity-60">
                 {loading ? <span className="material-symbols-outlined text-[18px] animate-spin">sync</span> : null}
-                {loading ? "Loading…" : "Preview Report"}
+                {loading ? "Loadingâ€¦" : "Preview Report"}
                 {!loading && <span className="material-symbols-outlined text-[18px]">arrow_forward</span>}
               </button>
             )}

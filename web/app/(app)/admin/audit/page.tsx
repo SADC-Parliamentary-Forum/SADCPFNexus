@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { auditApi, type AuditLogEntry } from "@/lib/api";
+import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { AUDIT_ACTION_BADGE, ADMIN_MODULES } from "@/lib/constants";
 import { formatDateShort } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export default function AuditPage() {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    auditApi.list({
+    auditLogsApi.list({
       ...(filterUser ? { user: filterUser } : {}),
       ...(filterModule !== "All" ? { module: filterModule } : {}),
       ...(filterAction !== "All" ? { action: filterAction } : {}),
@@ -62,14 +62,14 @@ export default function AuditPage() {
 
       <div>
         <h1 className="page-title">Audit Logs</h1>
-        <p className="page-subtitle">Full activity trail — all user actions with timestamps, module, and IP address.</p>
+        <p className="page-subtitle">Full activity trail â€” all user actions with timestamps, module, and IP address.</p>
       </div>
 
       {/* Filters */}
       <div className="card p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div>
           <label className="block text-xs font-semibold text-neutral-600 mb-1">User</label>
-          <input className="form-input text-xs" placeholder="Filter by user…" value={filterUser} onChange={handleFilterChange(setFilterUser)} />
+          <input className="form-input text-xs" placeholder="Filter by userâ€¦" value={filterUser} onChange={handleFilterChange(setFilterUser)} />
         </div>
         <div>
           <label className="block text-xs font-semibold text-neutral-600 mb-1">Module</label>
@@ -103,7 +103,7 @@ export default function AuditPage() {
       <div className="card overflow-hidden">
         <div className="card-header">
           <h2 className="text-sm font-semibold text-neutral-900">Activity Log</h2>
-          <span className="text-xs text-neutral-400">{loading ? "Loading…" : `${total} entries`}</span>
+          <span className="text-xs text-neutral-400">{loading ? "Loadingâ€¦" : `${total} entries`}</span>
         </div>
 
         {loading ? (
@@ -140,7 +140,7 @@ export default function AuditPage() {
                     <td><span className={`badge ${ACTION_BADGE[l.action as keyof typeof ACTION_BADGE] ?? "badge-muted"}`}>{l.action}</span></td>
                     <td className="text-neutral-600">{l.module}</td>
                     <td className="font-mono text-xs text-neutral-500">{l.record_id}</td>
-                    <td className="font-mono text-xs text-neutral-400">{l.ip_address ?? "—"}</td>
+                    <td className="font-mono text-xs text-neutral-400">{l.ip_address ?? "â€”"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -152,7 +152,7 @@ export default function AuditPage() {
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
             <span className="text-xs text-neutral-400">
-              Page {page} of {lastPage} · {total} total
+              Page {page} of {lastPage} Â· {total} total
             </span>
             <div className="flex gap-1">
               <button type="button" disabled={page === 1} onClick={() => setPage(p => p - 1)}

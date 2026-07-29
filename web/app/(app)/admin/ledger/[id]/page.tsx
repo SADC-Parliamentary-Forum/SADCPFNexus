@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
-import { ledgerVerificationsApi, auditApi, type LedgerVerification, type AuditLogEntry } from "@/lib/api";
+import { ledgerVerificationsApi, auditLogsApi, type LedgerVerification, type AuditLogEntry } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
 
   const loadLogs = useCallback((p: number) => {
     setLogsLoading(true);
-    auditApi.list({ page: p, per_page: 50 })
+    auditLogsApi.list({ page: p, per_page: 50 })
       .then((res) => {
         setLogs(res.data.data);
         setPage(res.data.current_page);

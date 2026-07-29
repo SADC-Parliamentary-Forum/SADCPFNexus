@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { governanceConfigApi, auditApi, type GovernanceConfig, type AuditLogEntry } from "@/lib/api";
+import { governanceConfigApi, auditLogsApi, type GovernanceConfig, type AuditLogEntry } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -43,7 +43,7 @@ export default function AdminGovernanceConfigPage() {
       .catch(() => { /* use defaults */ })
       .finally(() => setLoading(false));
 
-    auditApi.list({ per_page: 4 })
+    auditLogsApi.list({ per_page: 4 })
       .then((res) => setRecentLogs(res.data.data))
       .catch(() => {});
   }, []);

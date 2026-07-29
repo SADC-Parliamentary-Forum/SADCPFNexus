@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { auditApi, type AuditLogEntry } from "@/lib/api";
+import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const STATIC_HASH = "e3b0c44298fc1c149afbf4c8996fb924";
-const HASH_DISPLAY = `${STATIC_HASH.slice(0, 12)}…${STATIC_HASH.slice(-6)}`;
+const HASH_DISPLAY = `${STATIC_HASH.slice(0, 12)}â€¦${STATIC_HASH.slice(-6)}`;
 
 const ACTION_COLORS: Record<string, string> = {
   created:   "badge-success",
@@ -64,7 +64,7 @@ function entryHash(entry: AuditLogEntry): string {
   }
   const hex = Math.abs(h).toString(16).padStart(8, "0");
   const expanded = (hex + hex.split("").reverse().join("")).slice(0, 16);
-  return `${expanded.slice(0, 8)}…${expanded.slice(-4)}`;
+  return `${expanded.slice(0, 8)}â€¦${expanded.slice(-4)}`;
 }
 
 // CSV export
@@ -95,7 +95,7 @@ function exportCsv(logs: AuditLogEntry[]) {
 
 const PAGE_SIZE = 20;
 
-// ─── Page ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function AdminLedgerPage() {
   const [logs, setLogs]         = useState<AuditLogEntry[]>([]);
@@ -123,7 +123,7 @@ export default function AdminLedgerPage() {
     if (dateFrom)     params.date_from = dateFrom;
     if (dateTo)       params.date_to   = dateTo;
 
-    auditApi.list(params)
+    auditLogsApi.list(params)
       .then((res) => {
         setLogs(res.data.data ?? []);
         setLastPage(res.data.last_page ?? 1);
@@ -178,7 +178,7 @@ export default function AdminLedgerPage() {
         <div>
           <h1 className="page-title">Ledger Verification</h1>
           <p className="page-subtitle">
-            Cryptographic audit trail verification — tamper-evident record of all admin operations.
+            Cryptographic audit trail verification â€” tamper-evident record of all admin operations.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function AdminLedgerPage() {
           className="btn-primary flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shrink-0"
         >
           <span className={cn("material-symbols-outlined text-[18px]", verifying ? "animate-spin" : "")}>sync</span>
-          {verifying ? "Verifying…" : "Verify Ledger Integrity"}
+          {verifying ? "Verifyingâ€¦" : "Verify Ledger Integrity"}
         </button>
       </div>
 
@@ -315,7 +315,7 @@ export default function AdminLedgerPage() {
             <input
               type="text"
               className="form-input py-1.5 pl-8 text-sm"
-              placeholder="Search user…"
+              placeholder="Search userâ€¦"
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
             />
@@ -369,7 +369,7 @@ export default function AdminLedgerPage() {
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            Live · {timeAgo(lastVerified)}
+            Live Â· {timeAgo(lastVerified)}
           </div>
         </div>
 
@@ -459,7 +459,7 @@ export default function AdminLedgerPage() {
                         {/* Module */}
                         <td>
                           <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-600 capitalize">
-                            {l.module ?? "—"}
+                            {l.module ?? "â€”"}
                           </span>
                         </td>
 
@@ -473,15 +473,15 @@ export default function AdminLedgerPage() {
                           {l.record_id ? (
                             <span className="text-primary">{l.record_id}</span>
                           ) : l.description ? (
-                            <span className="text-neutral-400">{l.description.slice(0, 40)}{l.description.length > 40 ? "…" : ""}</span>
+                            <span className="text-neutral-400">{l.description.slice(0, 40)}{l.description.length > 40 ? "â€¦" : ""}</span>
                           ) : (
-                            <span className="text-neutral-200">—</span>
+                            <span className="text-neutral-200">â€”</span>
                           )}
                         </td>
 
                         {/* IP Address */}
                         <td className="font-mono text-[11px] text-neutral-400">
-                          {l.ip_address ?? "—"}
+                          {l.ip_address ?? "â€”"}
                         </td>
 
                         {/* Entry Hash */}
@@ -509,7 +509,7 @@ export default function AdminLedgerPage() {
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
             <span className="text-xs text-neutral-400">
-              Page {page} of {lastPage} · {total.toLocaleString()} entries
+              Page {page} of {lastPage} Â· {total.toLocaleString()} entries
             </span>
             <div className="flex gap-1">
               <button
@@ -537,7 +537,7 @@ export default function AdminLedgerPage() {
                 );
               })}
               {lastPage > 7 && (
-                <span className="px-1 text-neutral-400 text-sm self-center">… {lastPage}</span>
+                <span className="px-1 text-neutral-400 text-sm self-center">â€¦ {lastPage}</span>
               )}
               <button
                 type="button"
@@ -567,7 +567,7 @@ export default function AdminLedgerPage() {
               </span>
             )}
           </div>
-          <span className="font-mono text-neutral-300">SHA-256 · WORM · 7yr retention</span>
+          <span className="font-mono text-neutral-300">SHA-256 Â· WORM Â· 7yr retention</span>
         </div>
       )}
     </div>

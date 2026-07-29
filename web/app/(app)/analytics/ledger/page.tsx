@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { auditApi, type AuditLogEntry } from "@/lib/api";
+import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export default function AuditLedgerPage() {
       if (userFilter)   params.user      = userFilter;
       if (dateFrom)     params.date_from = dateFrom;
       if (dateTo)       params.date_to   = dateTo;
-      const res  = await auditApi.list(params);
+      const res  = await auditLogsApi.list(params);
       const data = res.data;
       setLogs(data.data ?? []);
       setTotal(data.total ?? 0);

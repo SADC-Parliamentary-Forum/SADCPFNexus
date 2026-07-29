@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { adminApi, auditApi, type Department, type User, type AuditLogEntry } from "@/lib/api";
+import { adminApi, auditLogsApi, type Department, type User, type AuditLogEntry } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
@@ -271,7 +271,7 @@ export default function OrganogramPage() {
   const loadHistory = async () => {
     setHistoryLoading(true);
     try {
-      const res = await auditApi.list({ module: "Department", per_page: 50 });
+      const res = await auditLogsApi.list({ module: "Department", per_page: 50 });
       setHistory(res.data.data ?? []);
     } catch { /* ignore */ }
     finally { setHistoryLoading(false); }
