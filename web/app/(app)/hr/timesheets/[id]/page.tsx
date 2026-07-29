@@ -215,6 +215,22 @@ export default function TimesheetDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href={hrApi.exportTimesheetUrl(timesheet.id, "pdf")}
+            className="btn-secondary text-sm"
+            target="_blank"
+            rel="noreferrer"
+          >
+            PDF
+          </a>
+          <a
+            href={hrApi.exportTimesheetUrl(timesheet.id, "csv")}
+            className="btn-secondary text-sm"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Excel / CSV
+          </a>
           {timesheet.status === "draft" && (
             <Link href="/hr/timesheets" className="btn-secondary">Edit</Link>
           )}

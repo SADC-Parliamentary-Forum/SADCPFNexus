@@ -63,10 +63,11 @@ class TravelService
             $this->applyQueueFilter($query, $filters['queue'], $user);
         }
         if (! empty($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('reference_number', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('purpose', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('destination_country', 'ilike', "%{$filters['search']}%");
+            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], (string) $filters['search']).'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(reference_number) LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER(purpose) LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER(destination_country) LIKE LOWER(?)', [$term]);
             });
         }
 
@@ -889,25 +890,97 @@ class TravelService
         $travel->delete();
     }
 
+    /**
+     * Travel register export rows. Uses a dedicated query (not list()->through arrays)
+     * so CSV/JSON export never treats array rows as models.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     public function exportRegister(User $user, array $filters = []): array
     {
-        $paginator = $this->list(array_merge($filters, ['per_page' => 500]), $user);
+        $query = TravelRequest::with(['requester:id,name'])
+            ->orderByDesc('created_at');
+
+        $canViewAll = $user->isSystemAdmin()
+            || $user->hasAnyRole(['Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD'])
+            || $user->can('travel.admin')
+            || $user->can('travel.finance-review')
+            || $user->can('travel.approve')
+            || $user->can('travel.export');
+
+        if (! $canViewAll) {
+            $query->where(function ($q) use ($user) {
+                $q->where('requester_id', $user->id)
+                    ->orWhere('prepared_by', $user->id)
+                    ->orWhere('prepared_on_behalf_of', $user->id);
+            });
+        } elseif (! empty($filters['scope']) && $filters['scope'] === 'mine') {
+            $query->where('requester_id', $user->id);
+        }
+
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (! empty($filters['search'])) {
+            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], (string) $filters['search']).'%';
+            $query->where(function ($q) use ($term) {
+                $q->whereRaw('LOWER(reference_number) LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER(purpose) LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER(destination_country) LIKE LOWER(?)', [$term])
+                    ->orWhereRaw('LOWER(COALESCE(destination_city, \'\')) LIKE LOWER(?)', [$term]);
+            });
+        }
+
         $rows = [];
-        foreach ($paginator->items() as $t) {
+        foreach ($query->limit(5000)->get() as $t) {
             $rows[] = [
                 'reference' => $t->reference_number,
                 'requester' => $t->requester?->name,
-                'purpose'   => $t->purpose,
-                'destination' => trim(($t->destination_city ?? '') . ', ' . $t->destination_country, ', '),
+                'purpose' => $t->purpose,
+                'destination' => trim(($t->destination_city ?? '').', '.$t->destination_country, ', '),
                 'departure' => $t->departure_date?->toDateString(),
-                'return'    => $t->return_date?->toDateString(),
-                'status'    => $t->status,
+                'return' => $t->return_date?->toDateString(),
+                'status' => $t->status,
                 'dsa_total' => $t->finance_dsa_total ?? $t->actual_dsa ?? $t->estimated_dsa,
-                'currency'  => $t->currency,
+                'currency' => $t->currency,
             ];
         }
 
         return $rows;
+    }
+
+    public function exportRegisterCsv(User $user, array $filters = []): \Illuminate\Http\Response
+    {
+        $rows = $this->exportRegister($user, $filters);
+        $csv = "reference,requester,purpose,destination,departure,return,status,dsa_total,currency\n";
+        foreach ($rows as $row) {
+            $csv .= implode(',', [
+                $this->csvEscape((string) ($row['reference'] ?? '')),
+                $this->csvEscape((string) ($row['requester'] ?? '')),
+                $this->csvEscape((string) ($row['purpose'] ?? '')),
+                $this->csvEscape((string) ($row['destination'] ?? '')),
+                $this->csvEscape((string) ($row['departure'] ?? '')),
+                $this->csvEscape((string) ($row['return'] ?? '')),
+                $this->csvEscape((string) ($row['status'] ?? '')),
+                $this->csvEscape((string) ($row['dsa_total'] ?? '')),
+                $this->csvEscape((string) ($row['currency'] ?? '')),
+            ])."\n";
+        }
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="travel-register-'.now()->format('Ymd').'.csv"',
+        ]);
+    }
+
+    private function csvEscape(?string $value): string
+    {
+        $value = (string) ($value ?? '');
+        if (str_contains($value, ',') || str_contains($value, '"') || str_contains($value, "\n")) {
+            return '"'.str_replace('"', '""', $value).'"';
+        }
+
+        return $value;
     }
 
     public function authorisationPdf(TravelRequest $travel)

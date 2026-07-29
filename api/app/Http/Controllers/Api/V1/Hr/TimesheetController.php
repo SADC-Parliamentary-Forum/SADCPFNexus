@@ -7,17 +7,22 @@ use App\Models\LeaveRequest;
 use App\Models\PerformanceTracker;
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
+use App\Models\TimesheetTemplate;
+use App\Modules\Timesheets\Services\TimesheetExportService;
 use App\Modules\Timesheets\Services\TimesheetService;
 use App\Services\WorkflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TimesheetController extends Controller
 {
     public function __construct(
         private readonly TimesheetService $timesheetService,
+        private readonly TimesheetExportService $exportService,
         private readonly WorkflowService  $workflowService,
     ) {}
 
@@ -511,6 +516,90 @@ class TimesheetController extends Controller
             'imported' => $imported,
             'errors'   => array_slice($errors, 0, 20),
         ]);
+    }
+
+    public function templates(Request $request): JsonResponse
+    {
+        $templates = TimesheetTemplate::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $templates]);
+    }
+
+    public function storeTemplate(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('timesheets.admin')
+                || $user->can('hr.admin')
+                || $user->isSystemAdmin(),
+            403
+        );
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:200'],
+            'code' => ['required', 'string', 'max:64'],
+            'donor_name' => ['nullable', 'string', 'max:200'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'defaults' => ['nullable', 'array'],
+            'defaults.project_id' => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'defaults.work_bucket' => ['nullable', 'string', 'in:'.implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'defaults.activity_type' => ['nullable', 'string', 'max:100'],
+            'defaults.entry_category' => ['nullable', 'string', 'max:64'],
+            'defaults.programme_id' => ['nullable', 'integer'],
+            'defaults.pif_id' => ['nullable', 'integer'],
+            'defaults.description' => ['nullable', 'string', 'max:500'],
+            'defaults.hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
+        ]);
+
+        $template = TimesheetTemplate::create([
+            'tenant_id' => $user->tenant_id,
+            'name' => $data['name'],
+            'code' => $data['code'],
+            'donor_name' => $data['donor_name'] ?? null,
+            'description' => $data['description'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
+            'sort_order' => $data['sort_order'] ?? 0,
+            'defaults' => $data['defaults'] ?? [],
+        ]);
+
+        return response()->json(['message' => 'Template created.', 'data' => $template], 201);
+    }
+
+    public function applyTemplate(Request $request, TimesheetTemplate $template): JsonResponse
+    {
+        $data = $request->validate([
+            'week_start' => ['required', 'date'],
+            'week_end' => ['required', 'date', 'after_or_equal:week_start'],
+        ]);
+
+        $timesheet = $this->exportService->applyTemplate(
+            $request->user(),
+            $template,
+            $data['week_start'],
+            $data['week_end']
+        );
+
+        return response()->json([
+            'message' => 'Template applied.',
+            'data' => [
+                'template' => $template,
+                'timesheet' => $timesheet,
+            ],
+        ], 201);
+    }
+
+    public function export(Request $request, Timesheet $timesheet): Response|StreamedResponse
+    {
+        $format = strtolower((string) $request->query('format', 'csv'));
+
+        return $this->exportService->export($timesheet, $request->user(), $format);
     }
 
     private function canManageTimesheets($user): bool

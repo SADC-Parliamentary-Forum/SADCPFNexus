@@ -408,9 +408,26 @@ class TravelController extends Controller
         return response()->json(['message' => 'Amendment approved.', 'data' => $travel]);
     }
 
-    public function registerExport(Request $request): JsonResponse
+    public function registerExport(Request $request): JsonResponse|\Illuminate\Http\Response
     {
-        $rows = $this->travelService->exportRegister($request->user(), $request->only(['status', 'search']));
+        $user = $request->user();
+        abort_unless(
+            $user->can('travel.export')
+                || $user->can('travel.view')
+                || $user->can('travel.admin')
+                || $user->can('travel.finance-review')
+                || $user->isSystemAdmin()
+                || $user->hasAnyRole(['Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD']),
+            403
+        );
+
+        $filters = $request->only(['status', 'search', 'scope']);
+        if ($request->query('format') === 'csv') {
+            return $this->travelService->exportRegisterCsv($user, $filters);
+        }
+
+        $rows = $this->travelService->exportRegister($user, $filters);
+
         return response()->json(['data' => $rows]);
     }
 

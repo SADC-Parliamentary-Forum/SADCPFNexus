@@ -1222,6 +1222,10 @@ export const travelApi = {
     api.patch<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/visa`, data),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<{ data: Record<string, unknown>[] }>("/travel/register/export", { params }),
+  registerExportCsvUrl: (params?: Record<string, string | number>) => {
+    const qs = new URLSearchParams({ format: "csv", ...(params as Record<string, string>) }).toString();
+    return `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/travel/register/export?${qs}`;
+  },
   listDsaRates: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<unknown>>("/travel/dsa-rates", { params }),
   saveDsaRate: (data: Record<string, unknown>) =>
@@ -4284,9 +4288,38 @@ export const hrApi = {
       "/hr/timesheets/holiday-dates",
       { params: { start, end } }
     ),
+  listTimesheetTemplates: () =>
+    api.get<{ data: TimesheetTemplate[] }>("/hr/timesheets/templates"),
+  applyTimesheetTemplate: (templateId: number, data: { week_start: string; week_end: string }) =>
+    api.post<{
+      message: string;
+      data: { template: TimesheetTemplate; timesheet: Timesheet };
+    }>(`/hr/timesheets/templates/${templateId}/apply`, data),
+  exportTimesheetUrl: (id: number, format: "pdf" | "csv" | "excel" = "csv") =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/hr/timesheets/${id}/export?format=${format}`,
   confirmPayslip: (id: number, data: { confirmation_status: "confirmed" | "rejected"; confirmation_notes?: string }) =>
     api.post<{ message: string; payslip: Payslip }>(`/hr/payslips/${id}/confirm`, data),
 };
+
+export interface TimesheetTemplate {
+  id: number;
+  tenant_id: number;
+  name: string;
+  code: string;
+  donor_name?: string | null;
+  description?: string | null;
+  is_active: boolean;
+  sort_order: number;
+  defaults?: {
+    project_id?: number | null;
+    work_bucket?: string | null;
+    activity_type?: string | null;
+    entry_category?: string | null;
+    programme_id?: number | null;
+    description?: string | null;
+    hours?: number | null;
+  } | null;
+}
 
 // ─── Holiday Calendars ───────────────────────────────────────────────────────
 

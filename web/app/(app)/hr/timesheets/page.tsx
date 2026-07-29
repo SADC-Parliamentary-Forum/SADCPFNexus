@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { hrApi, adminApi, type Timesheet, type TimesheetEntry, type TimesheetProject, type AuthUser } from "@/lib/api";
+import { hrApi, adminApi, type Timesheet, type TimesheetEntry, type TimesheetProject, type TimesheetTemplate, type AuthUser } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { QuickEntrySlideOver } from "@/components/timesheets/QuickEntrySlideOver";
 import { USER_KEY } from "@/lib/constants";
@@ -248,6 +248,9 @@ export default function TimesheetsPage() {
   const [travelDays, setTravelDays] = useState<Record<string, { purpose: string; destination: string; reference: string }>>({});
   const [holidayDates, setHolidayDates] = useState<Record<string, { name: string; is_paid: boolean }>>({});
   const [projects, setProjects] = useState<TimesheetProject[]>([]);
+  const [templates, setTemplates] = useState<TimesheetTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -283,7 +286,7 @@ export default function TimesheetsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tsRes, ldRes, tdRes, hdRes, projRes] = await Promise.all([
+      const [tsRes, ldRes, tdRes, hdRes, projRes, tmplRes] = await Promise.all([
         hrApi.listTimesheets({ week_start: weekStart }),
         hrApi.getTimesheetLeaveDays(weekStart, weekEnd),
         hrApi.getTimesheetTravelDays(weekStart, weekEnd),
@@ -291,6 +294,9 @@ export default function TimesheetsPage() {
         projects.length === 0
           ? adminApi.listTimesheetProjects().then((r) => r.data)
           : Promise.resolve({ data: projects }),
+        templates.length === 0
+          ? hrApi.listTimesheetTemplates().then((r) => r.data).catch(() => ({ data: [] }))
+          : Promise.resolve({ data: templates }),
       ]);
 
       const tsData = (tsRes.data as any).data ?? [];
@@ -302,6 +308,9 @@ export default function TimesheetsPage() {
       setHolidayDates((hdRes.data as any).data ?? {});
       if (projects.length === 0) {
         setProjects((projRes as any).data ?? []);
+      }
+      if (templates.length === 0) {
+        setTemplates((tmplRes as any).data ?? []);
       }
     } catch {
       setError("Failed to load timesheet data.");
@@ -316,6 +325,32 @@ export default function TimesheetsPage() {
 
   const handlePrevWeek = () => setWeekStartDate((d) => addDays(d ?? new Date(), -7));
   const handleNextWeek = () => setWeekStartDate((d) => addDays(d ?? new Date(), 7));
+
+  const handleApplyTemplate = async () => {
+    if (!weekStart || !weekEnd || !selectedTemplateId) return;
+    setApplyingTemplate(true);
+    setError(null);
+    try {
+      const { data } = await hrApi.applyTimesheetTemplate(Number(selectedTemplateId), {
+        week_start: weekStart,
+        week_end: weekEnd,
+      });
+      const ts = data.data.timesheet;
+      setTimesheet(ts);
+      setEntries(ts.entries ?? []);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
+          ?.message ||
+        Object.values(
+          (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {},
+        ).flat()[0] ||
+        "Failed to apply template.";
+      setError(msg);
+    } finally {
+      setApplyingTemplate(false);
+    }
+  };
 
   const handleAddEntry = (incoming: TimesheetEntry[]) => {
     setEntries((prev) => {
@@ -418,7 +453,7 @@ export default function TimesheetsPage() {
     }
   };
 
-  const isDraft = !timesheet || timesheet.status === "draft";
+  const isDraft = !timesheet || timesheet.status === "draft" || timesheet.status === "returned";
 
   // Compute daily totals
   const dailyTotals: Record<string, number> = {};
@@ -451,6 +486,31 @@ export default function TimesheetsPage() {
             <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", STATUS_CONFIG[timesheet.status]?.cls ?? "badge-muted")}>
               {STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
             </span>
+          )}
+          {isDraft && templates.length > 0 && (
+            <>
+              <select
+                className="form-input text-sm py-1.5 max-w-[200px]"
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+                aria-label="Donor or project template"
+              >
+                <option value="">Donor / project template…</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.donor_name ? `${t.donor_name} — ${t.name}` : t.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn-secondary text-sm disabled:opacity-50"
+                disabled={!selectedTemplateId || applyingTemplate}
+                onClick={() => void handleApplyTemplate()}
+              >
+                {applyingTemplate ? "Applying…" : "Apply"}
+              </button>
+            </>
           )}
           {isDraft && (
             <button
