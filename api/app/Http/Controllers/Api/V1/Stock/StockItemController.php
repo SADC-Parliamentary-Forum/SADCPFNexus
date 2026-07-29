@@ -36,7 +36,8 @@ class StockItemController extends Controller
         if ($search = $request->string('search')->toString()) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('item_code', 'like', "%{$search}%");
+                  ->orWhere('item_code', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
             });
         }
         if ($request->boolean('low_stock')) {
@@ -46,6 +47,28 @@ class StockItemController extends Controller
         $perPage = min((int) $request->input('per_page', 50), 100);
 
         return response()->json($query->paginate($perPage));
+    }
+
+    /**
+     * Scan-to-find: lookup a stock item by barcode (exact match, tenant-scoped).
+     */
+    public function byBarcode(Request $request, string $barcode): JsonResponse
+    {
+        $barcode = trim(urldecode($barcode));
+        if ($barcode === '') {
+            abort(404);
+        }
+
+        $item = StockItem::where('tenant_id', $request->user()->tenant_id)
+            ->where('barcode', $barcode)
+            ->with(['category:id,name,code', 'location:id,code,name', 'unitOfMeasure:id,code,name'])
+            ->first();
+
+        if (! $item) {
+            abort(404, 'No stock item matches this barcode.');
+        }
+
+        return response()->json(['data' => $item]);
     }
 
     /**

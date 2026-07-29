@@ -1101,10 +1101,18 @@ Route::prefix('v1')->group(function () {
         // Disposal workflow
         Route::get('asset-disposals', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'index']);
         Route::post('asset-disposals', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'store']);
+        Route::get('asset-disposals/{assetDisposal}', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'show']);
         Route::post('asset-disposals/{assetDisposal}/recommend', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'recommend']);
         Route::post('asset-disposals/{assetDisposal}/finance-review', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'financeReview']);
         Route::post('asset-disposals/{assetDisposal}/approve', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'approve']);
         Route::post('asset-disposals/{assetDisposal}/complete', [\App\Http\Controllers\Api\V1\Assets\AssetDisposalController::class, 'complete']);
+
+        // Revaluation workflow
+        Route::get('asset-revaluations', [\App\Http\Controllers\Api\V1\Assets\AssetRevaluationController::class, 'index']);
+        Route::post('asset-revaluations', [\App\Http\Controllers\Api\V1\Assets\AssetRevaluationController::class, 'store']);
+        Route::get('asset-revaluations/{assetRevaluation}', [\App\Http\Controllers\Api\V1\Assets\AssetRevaluationController::class, 'show']);
+        Route::post('asset-revaluations/{assetRevaluation}/approve', [\App\Http\Controllers\Api\V1\Assets\AssetRevaluationController::class, 'approve']);
+        Route::post('asset-revaluations/{assetRevaluation}/reject', [\App\Http\Controllers\Api\V1\Assets\AssetRevaluationController::class, 'reject']);
 
         // Asset Movements
         Route::get('assets/movements/list', [\App\Http\Controllers\Api\V1\Assets\AssetMovementController::class, 'index']);
@@ -1196,6 +1204,8 @@ Route::prefix('v1')->group(function () {
             // Stock items (§17.2)
             Route::get('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'index']);
             Route::post('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'store']);
+            Route::get('stock/items/by-barcode/{barcode}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'byBarcode'])
+                ->where('barcode', '.*');
             Route::get('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'show']);
             Route::put('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'update']);
             Route::delete('stock/items/{stockItem}', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'destroy']);
@@ -1339,6 +1349,12 @@ Route::prefix('v1')->group(function () {
             Route::post('letters/{correspondence}/void-reference', [$register, 'voidReference']);
             Route::post('letters/{correspondence}/assignments', [$register, 'linkAssignment']);
             Route::post('letters/{correspondence}/subject-files', [$register, 'linkSubjectFile']);
+
+            $retention = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceRetentionController::class;
+            Route::get('legal-holds', [$retention, 'indexHolds']);
+            Route::put('letters/{correspondence}/retention', [$retention, 'update']);
+            Route::post('letters/{correspondence}/release-hold', [$retention, 'releaseHold']);
+            Route::post('letters/{correspondence}/purge', [$retention, 'purge']);
 
             Route::patch('dispatches/{dispatch}/delivery', [$register, 'updateDelivery']);
 

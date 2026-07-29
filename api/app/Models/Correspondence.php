@@ -42,6 +42,8 @@ class Correspondence extends Model
         'voided_at', 'void_reason', 'thread_root_id', 'physical_location',
         'registered_by', 'registered_at', 'sg_instruction', 'sg_action',
         'ai_draft_subject', 'ai_draft_body', 'ai_draft_confirmed_at', 'ai_draft_confirmed_by',
+        'retention_policy', 'retain_until', 'legal_hold', 'legal_hold_reason',
+        'legal_hold_set_by', 'legal_hold_set_at', 'purged_at', 'purged_by',
     ];
 
     protected $casts = [
@@ -63,6 +65,10 @@ class Correspondence extends Model
         'size_bytes'   => 'integer',
         'content_restricted' => 'boolean',
         'response_required' => 'boolean',
+        'legal_hold' => 'boolean',
+        'retain_until' => 'date',
+        'legal_hold_set_at' => 'datetime',
+        'purged_at' => 'datetime',
     ];
 
     public function creator(): BelongsTo

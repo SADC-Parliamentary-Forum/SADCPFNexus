@@ -27,6 +27,10 @@ class StoreStockItemRequest extends FormRequest
                 'required', 'string', 'max:64',
                 Rule::unique('stock_items', 'item_code')->where('tenant_id', $tenantId),
             ],
+            'barcode'                => [
+                'nullable', 'string', 'max:128',
+                Rule::unique('stock_items', 'barcode')->where('tenant_id', $tenantId),
+            ],
             'name'                   => ['required', 'string', 'max:255'],
             'description'            => ['nullable', 'string', 'max:2000'],
             'unit'                   => ['nullable', 'string', 'max:32'],

@@ -36,11 +36,11 @@ class LeaveService
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $query = LeaveRequest::with(['requester', 'segments'])
+        $query = LeaveRequest::with(['requester', 'segments', 'holderUser:id,name'])
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff')) {
+        if ($user->hasRole('staff') && empty($filters['queue'])) {
             $query->where('requester_id', $user->id);
         }
 
@@ -50,6 +50,30 @@ class LeaveService
 
         if (! empty($filters['leave_type'])) {
             $query->where('leave_type', $filters['leave_type']);
+        }
+
+        if (($filters['queue'] ?? null) === 'certify') {
+            $query->where('status', 'submitted')
+                ->where('recommendation_status', 'recommended')
+                ->where(function ($q) {
+                    $q->whereNull('certification_status')
+                        ->orWhere('certification_status', 'pending')
+                        ->orWhere('certification_status', '');
+                });
+        }
+
+        if (($filters['queue'] ?? null) === 'recommend') {
+            $query->where('status', 'submitted')
+                ->where(function ($q) {
+                    $q->whereNull('recommendation_status')
+                        ->orWhere('recommendation_status', 'pending')
+                        ->orWhere('recommendation_status', '');
+                });
+        }
+
+        if (($filters['queue'] ?? null) === 'mine-inbox') {
+            $query->where('current_holder_user_id', $user->id)
+                ->whereIn('status', ['submitted', 'returned_for_correction']);
         }
 
         return $query->paginate($filters['per_page'] ?? 20);
@@ -249,19 +273,31 @@ class LeaveService
         }
         $this->validateSegmentsForSubmission($leave);
 
+        $leave->loadMissing(['requester.department.supervisor']);
+        $holder = $this->resolveStageHolder($leave->requester, 'recommend');
+
         $leave->update([
             'status' => 'submitted',
             'submitted_at' => now(),
             'current_stage' => 'Supervisor/HOD Recommendation',
-            'current_holder' => 'Supervisor/HOD',
+            'current_holder' => $holder['label'],
+            'current_holder_user_id' => $holder['user_id'],
         ]);
 
         $this->workflowService->initiate($leave, 'leave', $user);
 
-        $approvers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
+        $approvers = collect();
+        if ($holder['user_id']) {
+            $holderUser = User::find($holder['user_id']);
+            if ($holderUser) {
+                $approvers = $approvers->push($holderUser);
+            }
+        }
+        $roleApprovers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
             ->where('tenant_id', $user->tenant_id)
             ->where('id', '!=', $user->id)
             ->get();
+        $approvers = $approvers->merge($roleApprovers)->unique('id');
         $this->notificationService->dispatchToMany($approvers, 'leave.submitted', [
             'reference' => $leave->reference_number,
             'requester' => $user->name,
@@ -297,6 +333,7 @@ class LeaveService
             'approved_at' => now(),
             'current_stage' => 'Approved',
             'current_holder' => null,
+            'current_holder_user_id' => null,
         ]);
 
         $this->balanceService->postLeaveTaken($leave, $approver);
@@ -318,6 +355,7 @@ class LeaveService
             'rejection_reason' => $reason,
             'current_stage' => 'Rejected',
             'current_holder' => null,
+            'current_holder_user_id' => null,
         ]);
 
         AuditLog::record('leave.rejected', [
@@ -369,13 +407,18 @@ class LeaveService
             throw ValidationException::withMessages(['comment' => 'A reason is required for this recommendation action.']);
         }
 
+        $certHolder = $status === 'returned'
+            ? ['label' => $leave->requester?->name, 'user_id' => $leave->requester_id]
+            : $this->resolveStageHolder($leave->requester, 'certify');
+
         $leave->update([
             'recommendation_status' => $status,
             'recommended_by' => $actor->id,
             'recommended_at' => now(),
             'recommendation_comments' => $comment,
             'current_stage' => $status === 'returned' ? 'Returned for Correction' : 'Administration/HR Certification',
-            'current_holder' => $status === 'returned' ? $leave->requester?->name : 'HR/Admin',
+            'current_holder' => $certHolder['label'],
+            'current_holder_user_id' => $certHolder['user_id'],
             'status' => $status === 'returned' ? 'returned_for_correction' : $leave->status,
         ]);
 
@@ -438,6 +481,12 @@ class LeaveService
                 ]);
             }
 
+            $authHolder = match ($status) {
+                'returned' => ['label' => $leave->requester?->name, 'user_id' => $leave->requester_id],
+                'ineligible' => $this->resolveStageHolder($leave->requester, 'certify'),
+                default => $this->resolveStageHolder($leave->requester, 'authorise'),
+            };
+
             $leave->update([
                 'certification_status' => $status,
                 'certified_by' => $actor->id,
@@ -448,11 +497,8 @@ class LeaveService
                     'ineligible' => 'Administration/HR Marked Ineligible',
                     default => 'Head of Institution Authorisation',
                 },
-                'current_holder' => match ($status) {
-                    'returned' => $leave->requester?->name,
-                    'ineligible' => 'HR/Admin',
-                    default => 'Secretary General / Head of Institution',
-                },
+                'current_holder' => $authHolder['label'],
+                'current_holder_user_id' => $authHolder['user_id'],
                 'status' => $status === 'returned' ? 'returned_for_correction' : $leave->status,
             ]);
         });
@@ -480,6 +526,7 @@ class LeaveService
             'approved_at' => now(),
             'current_stage' => 'Approved',
             'current_holder' => null,
+            'current_holder_user_id' => null,
         ]);
 
         $this->balanceService->postLeaveTaken($leave, $approver);
@@ -495,6 +542,7 @@ class LeaveService
             'rejection_reason' => $reason,
             'current_stage' => 'Rejected',
             'current_holder' => null,
+            'current_holder_user_id' => null,
         ]);
 
         $leave->loadMissing('requester');
@@ -901,5 +949,46 @@ class LeaveService
             'leave' => $leave,
             'generatedAt' => now(),
         ]);
+    }
+
+    /**
+     * Resolve a stage-holder user from department supervisor / role fallbacks.
+     *
+     * @return array{label: string, user_id: int|null}
+     */
+    private function resolveStageHolder(?User $requester, string $stage): array
+    {
+        $requester?->loadMissing('department.supervisor');
+
+        if ($stage === 'recommend') {
+            $supervisor = $requester?->department?->supervisor;
+            if ($supervisor && (int) $supervisor->id !== (int) $requester?->id) {
+                return ['label' => $supervisor->name, 'user_id' => $supervisor->id];
+            }
+
+            return ['label' => 'Supervisor/HOD', 'user_id' => null];
+        }
+
+        if ($stage === 'certify') {
+            $hr = User::role(['HR Manager', 'HR Administrator'])
+                ->where('tenant_id', $requester?->tenant_id)
+                ->orderBy('id')
+                ->first();
+
+            return [
+                'label' => $hr?->name ?? 'HR/Admin',
+                'user_id' => $hr?->id,
+            ];
+        }
+
+        $sg = User::role(['Secretary General'])
+            ->where('tenant_id', $requester?->tenant_id)
+            ->orderBy('id')
+            ->first();
+
+        return [
+            'label' => $sg?->name ?? 'Secretary General / Head of Institution',
+            'user_id' => $sg?->id,
+        ];
     }
 }

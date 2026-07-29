@@ -70,7 +70,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'correspondence.view', 'correspondence.create', 'correspondence.review',
             'correspondence.approve', 'correspondence.send', 'correspondence.admin',
             'correspondence.registry', 'correspondence.route', 'correspondence.dispatch',
-            'correspondence.confidential.view',
+            'correspondence.confidential.view', 'correspondence.manage-retention',
             'srhr.view', 'srhr.create', 'srhr.manage', 'srhr.admin',
             'parliaments.view', 'parliaments.manage',
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',

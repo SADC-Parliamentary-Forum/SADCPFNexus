@@ -14,6 +14,7 @@ class StocktakeLine extends Model
         'counted_qty',
         'variance',
         'notes',
+        'client_line_key',
     ];
 
     protected function casts(): array

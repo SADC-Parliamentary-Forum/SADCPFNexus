@@ -73,10 +73,11 @@ class StocktakeController extends Controller
         $this->authorizeIssue($request);
 
         $data = $request->validate([
-            'lines'               => ['required', 'array', 'min:1'],
-            'lines.*.id'          => ['required', 'integer'],
-            'lines.*.counted_qty' => ['nullable', 'integer', 'min:0'],
-            'lines.*.notes'       => ['nullable', 'string', 'max:1000'],
+            'lines'                     => ['required', 'array', 'min:1'],
+            'lines.*.id'                => ['required', 'integer'],
+            'lines.*.counted_qty'       => ['nullable', 'integer', 'min:0'],
+            'lines.*.notes'             => ['nullable', 'string', 'max:1000'],
+            'lines.*.client_line_key'   => ['nullable', 'string', 'max:64'],
         ]);
 
         $updated = $this->stocktakeService->updateCounts($stocktake, $data['lines'], $request->user());

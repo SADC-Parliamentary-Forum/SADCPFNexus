@@ -99,12 +99,23 @@ class WeeklyAiDraftService
             'ai_draft_confirmed_by' => null,
         ]);
 
+        $provider = strtolower((string) config('weekly_reports.ai_provider', 'stub'));
+        // Real LLM endpoint is optional and never auto-submits. Without credentials we stay on stub.
+        if ($provider === 'llm' && config('weekly_reports.ai_llm_endpoint') && config('weekly_reports.ai_llm_api_key')) {
+            // Provider hook reserved — credentials present but we still return the deterministic draft
+            // until a vetted vendor integration is configured. Human confirm remains mandatory.
+            $provider = 'llm-passthrough-stub';
+        } else {
+            $provider = 'stub';
+        }
+
         return [
             'draft' => $text,
             'sections' => $sectionPayload,
             'requires_human_confirm' => true,
             'auto_submit' => false,
             'confirmed' => false,
+            'provider' => $provider === 'llm-passthrough-stub' ? 'stub' : $provider,
         ];
     }
 

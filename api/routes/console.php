@@ -77,3 +77,6 @@ Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->at('16:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+// Compliance digests for missing individual weekly summaries (Mon after weekend close).
+Schedule::command('weekly-reports:send-compliance-digest')->mondays()->at('08:40');

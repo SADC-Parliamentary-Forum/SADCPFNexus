@@ -1,39 +1,56 @@
-# SADC PF Nexus - Remaining Work (production readiness)
+# SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-07-27  
-**Status:** Fixed Asset + Stock Phase 1 capitalisation slice on `feat/fixed-asset-stock` (from budget worktree). Leave Phase 1 remains local on `main` WIP.
-
----
-
-## In progress - Fixed Asset + Stock Phase 1 (2026-07-27)
-
-- Design: `docs/superpowers/specs/2026-07-27-fixed-asset-stock-phase1-design.md`
-- Plan: `docs/superpowers/plans/2026-07-27-fixed-asset-stock-phase1.md`
-- Slice: pending FA capitalise/reject + stock GRN inbound ledger + pending UI
-
-**Still next for FA/Stock:**
-- [ ] Declining-balance NBV parity on API
-- [ ] Disposal / revaluation workflows
-- [ ] Optional budget-line link (only if product requires)
+**Last updated:** 2026-07-29  
+**Baseline tip:** `9be4ef4` (fleet vendor telematics live) + Gap Pack 1 follow-ons on `feat/gap-pack-1`.
 
 ---
 
-## Done recently - Budget (live through edaa54c)
+## Landed (Gap Pack 1)
 
-- Phase 1 foundation + variance
-- Phase 2 annual cycle, institutional decisions, mid-year changes
-- Imprest wiring
-- Budget reports pack
+| Area | Status |
+|------|--------|
+| Live fleet vendor telematics | Shipped (`9be4ef4`) — pluggable `null\|generic_http`, webhook, `fleet:sync-telematics`, UI status |
+| FA disposal UX | Create / detail / complete polish on `/assets/disposal` |
+| FA revaluation | Request → approve → book value update (`/assets/revaluation`, no GL posting) |
+| Timesheet payroll operator UX | `/hr/timesheets/payroll` — period select → stage batch → export history (no paste IDs) |
+| Leave stage-holder mapping | `current_holder_user_id` from dept supervisor / HR / SG fallbacks |
+| Leave certify + TOIL nav | `/leave/queues/certify`, `/leave/toil`, richer Leave sidebar |
+| Correspondence retention / legal holds | Retention fields, hold/release/purge-block, `/correspondence/retention` |
+| Stock barcode + offline stocktake foundation | `barcode` on items, `GET …/by-barcode/{code}`, `client_line_key`, `/stock/scan` local queue |
+| Weekly compliance digests | `weekly-reports:send-compliance-digest` (Mon 08:40), richer compliance page, `WEEKLY_AI_PROVIDER` stub/LLM hook (human confirm only) |
+| RiskPhaseStub | Removed (orphan) |
+| Procurement AI compare | Already gated stub on tender detail + settings — human confirm, never auto-award |
 
-**Optional Budget follow-ons:**
-- [ ] Cashflow / scenario forecasting
-- [ ] UX polish on budget pickers
+---
+
+## Deferred to Pack 2 / later
+
+- Full **mobile parity** for many modules
+- Prod IMAP password installation (enablement only — document in ops; no secrets in repo)
+- FA ↔ Stock merge
+- Bank GL ownership / FA accounting GL posting
+- Auto-award / invented OT rates / paid GDS marketplace
+- All-employee email ingest / AI auto-submit
+- Full ML stock forecasting
+- Real LLM vendor credentials for weekly/procurement AI (env hooks only; stub default)
+
+---
+
+## Optional / light follow-ons
+
+- [ ] Wire offline stocktake queue auto-apply UI onto stocktake detail (API already accepts `client_line_key`)
+- [ ] BCP/KRI light polish (already implemented; no stub)
+- [ ] Cashflow / scenario forecasting UX depth
 
 ---
 
 ## Reference
 
 - Deploy: `scripts/deploy.sh`
-- Budget API: `/api/v1/budget`
-- Assets: `/assets` (capitalise pending via `/api/v1/assets/{id}/capitalise`)
-- Stock: `/stock`
+- Health: API `200`, Web `307` (auth redirect)
+- Assets: `/assets`, disposals `/assets/disposal`, revaluations `/assets/revaluation`
+- Stock: `/stock`, barcode `/stock/scan`
+- Leave: `/leave`, certify `/leave/queues/certify`, TOIL `/leave/toil`
+- Correspondence retention: `/correspondence/retention`
+- Weekly compliance: `/weekly-summaries/compliance`
+- Payroll export: `/hr/timesheets/payroll`

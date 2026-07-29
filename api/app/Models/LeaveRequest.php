@@ -17,7 +17,7 @@ class LeaveRequest extends Model
         'leave_address', 'contact_number', 'emergency_contact',
         'handover_required', 'handover_notes',
         'status', 'rejection_reason', 'has_lil_linking',
-        'current_stage', 'current_holder',
+        'current_stage', 'current_holder', 'current_holder_user_id',
         'recommendation_status', 'recommended_by', 'recommended_at', 'recommendation_comments',
         'certification_status', 'certified_by', 'certified_at', 'certification_comments',
         'lil_hours_required', 'lil_hours_linked', 'submitted_at', 'approved_at',
@@ -34,6 +34,11 @@ class LeaveRequest extends Model
         'has_lil_linking' => 'boolean',
         'handover_required' => 'boolean',
     ];
+
+    public function holderUser()
+    {
+        return $this->belongsTo(User::class, 'current_holder_user_id');
+    }
 
     public function requester()
     {

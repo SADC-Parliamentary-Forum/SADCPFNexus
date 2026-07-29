@@ -18,6 +18,7 @@ class StockItem extends Model
         'tenant_id',
         'stock_category_id',
         'item_code',
+        'barcode',
         'name',
         'description',
         'unit',

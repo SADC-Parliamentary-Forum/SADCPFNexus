@@ -115,6 +115,9 @@ class StocktakeService
                 if (array_key_exists('notes', $payload)) {
                     $line->notes = $payload['notes'];
                 }
+                if (! empty($payload['client_line_key'])) {
+                    $line->client_line_key = (string) $payload['client_line_key'];
+                }
                 $line->save();
             }
 

@@ -367,7 +367,7 @@ class LeaveController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'leave_type', 'per_page']);
+        $filters = $request->only(['status', 'leave_type', 'per_page', 'queue']);
         return response()->json($this->leaveService->list($filters, $request->user()));
     }
 

@@ -42,6 +42,20 @@ class AssetDisposalController extends Controller
         return response()->json(['data' => $disposal, 'message' => 'Disposal requested.'], 201);
     }
 
+    public function show(Request $request, AssetDisposal $assetDisposal): JsonResponse
+    {
+        if ((int) $assetDisposal->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+
+        return response()->json([
+            'data' => $assetDisposal->load([
+                'asset:id,asset_code,name,status,book_value,purchase_value',
+                'requester:id,name',
+            ]),
+        ]);
+    }
+
     public function recommend(Request $request, AssetDisposal $assetDisposal): JsonResponse
     {
         $validated = $request->validate(['comments' => ['nullable', 'string', 'max:2000']]);
