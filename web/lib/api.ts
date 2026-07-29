@@ -4235,7 +4235,7 @@ export interface Timesheet {
   week_end: string;
   total_hours: number;
   overtime_hours: number;
-  status: "draft" | "submitted" | "approved" | "rejected";
+  status: "draft" | "submitted" | "approved" | "rejected" | "returned";
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
