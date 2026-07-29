@@ -15,6 +15,7 @@ class Timesheet extends Model
         'reconciliation_status', 'status', 'version', 'rejection_reason',
         'returned_at', 'return_reason', 'submitted_at', 'declaration_accepted_at',
         'approved_at', 'approved_by', 'hr_validated_at', 'hr_validated_by',
+        'payroll_export_batch_id',
     ];
 
     protected $casts = [

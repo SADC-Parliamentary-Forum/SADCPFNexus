@@ -185,6 +185,40 @@ class TenderController extends Controller
         ]);
     }
 
+    public function award(Request $request, Tender $tender): JsonResponse
+    {
+        $this->gate($request);
+        $data = $request->validate([
+            'quote_id'   => ['required', 'integer'],
+            'start_date' => ['required', 'date'],
+            'end_date'   => ['required', 'date', 'after:start_date'],
+            'title'      => ['nullable', 'string', 'max:255'],
+            'notes'      => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = $this->tenderService->award($tender, $data, $request->user());
+
+        return response()->json([
+            'message' => 'Tender awarded and draft contract created.',
+            'data'    => array_merge($result['tender']->toArray(), [
+                'contract' => $result['contract'],
+            ]),
+        ]);
+    }
+
+    public function cancel(Request $request, Tender $tender): JsonResponse
+    {
+        $this->gate($request);
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        return response()->json([
+            'message' => 'Tender cancelled.',
+            'data'    => $this->tenderService->cancel($tender, $data['reason'], $request->user()),
+        ]);
+    }
+
     public function comparisonSummary(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);

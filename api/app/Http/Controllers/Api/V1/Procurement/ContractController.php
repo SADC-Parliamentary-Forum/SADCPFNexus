@@ -51,6 +51,7 @@ class ContractController extends Controller
 
         $data = $request->validate([
             'procurement_request_id' => ['nullable', 'integer', 'exists:procurement_requests,id'],
+            'tender_id'              => ['nullable', 'integer', 'exists:tenders,id'],
             'vendor_id'              => ['required', 'integer', 'exists:vendors,id'],
             'purchase_order_id'      => ['nullable', 'integer', 'exists:purchase_orders,id'],
             'title'                  => ['required', 'string', 'max:255'],
@@ -59,6 +60,7 @@ class ContractController extends Controller
             'end_date'               => ['required', 'date', 'after:start_date'],
             'value'                  => ['required', 'numeric', 'min:0'],
             'currency'               => ['nullable', 'string', 'max:10'],
+            'budget_line'            => ['nullable', 'string', 'max:255'],
         ]);
 
         $contract = Contract::create(array_merge($data, [

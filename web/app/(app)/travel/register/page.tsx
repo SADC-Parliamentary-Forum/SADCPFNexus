@@ -14,6 +14,8 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -98,6 +100,8 @@ export default function TravelRegisterPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
+  const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -155,6 +159,12 @@ export default function TravelRegisterPage() {
     });
   }, [rows, filter, search]);
 
+  const pageCount = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const pageRows = useMemo(
+    () => slicePage(filtered, page, DEFAULT_PAGE_SIZE),
+    [filtered, page],
+  );
+
   const getId = useCallback((row: TravelRequest) => row.id, []);
   const canSelectRow = useCallback(
     (row: TravelRequest) =>
@@ -162,7 +172,7 @@ export default function TravelRegisterPage() {
     [user?.id, admin],
   );
   const selection = useRowSelection({
-    rows: filtered,
+    rows: pageRows,
     getId,
     canSelect: canSelectRow,
   });
@@ -361,22 +371,21 @@ export default function TravelRegisterPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/travel" className="transition-colors hover:text-neutral-700">
-              Travel
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Register</span>
-          </div>
-          <h1 className="page-title">Travel Register</h1>
-          <p className="page-subtitle">
-            Organisation-wide travel register with DSA totals, status filters, and row actions.
-          </p>
+    <>
+    <RegisterShell
+      title="Travel Register"
+      subtitle="Organisation-wide travel register with DSA totals, status filters, and row actions."
+      breadcrumbs={
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+          <Link href="/travel" className="transition-colors hover:text-neutral-700">
+            Travel
+          </Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-neutral-700">Register</span>
         </div>
-        <div className="flex flex-wrap gap-2">
+      }
+      actions={
+        <>
           <Link href="/travel/reports" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">summarize</span>
             Reports
@@ -396,49 +405,59 @@ export default function TravelRegisterPage() {
             <span className="material-symbols-outlined text-[18px]">add</span>
             New request
           </Link>
-        </div>
-      </div>
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {toast}
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {!loading && rows.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Approved", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Upcoming", value: stats.upcoming, icon: "flight_takeoff", color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
-          ].map((s) => (
-            <div key={s.label} className="card p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-neutral-500">{s.label}</p>
-                  <p className="mt-0.5 text-lg font-bold text-neutral-900">{s.value}</p>
-                </div>
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
-                  <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
-                </div>
-              </div>
+        </>
+      }
+      density={density}
+      onDensityChange={setDensity}
+      page={page}
+      pageCount={pageCount}
+      total={filtered.length}
+      onPageChange={(p) => {
+        setPage(p);
+        selection.clear();
+      }}
+      loading={loading}
+      stats={
+        <>
+          {toast && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {toast}
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="card flex flex-col gap-3 p-3">
+          )}
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span className="material-symbols-outlined text-[16px]">error_outline</span>
+              <span className="flex-1">{error}</span>
+              <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+                Dismiss
+              </button>
+            </div>
+          )}
+          {!loading && rows.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
+                { label: "Approved", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+                { label: "Upcoming", value: stats.upcoming, icon: "flight_takeoff", color: "text-amber-600", bg: "bg-amber-50" },
+                { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
+              ].map((s) => (
+                <div key={s.label} className="card p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-neutral-500">{s.label}</p>
+                      <p className="mt-0.5 text-lg font-bold text-neutral-900">{s.value}</p>
+                    </div>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
+                      <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      }
+      filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
             <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
@@ -450,7 +469,10 @@ export default function TravelRegisterPage() {
                 className="form-input pl-8 text-sm"
                 placeholder="Reference, purpose, traveller, destination…"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
           </div>
@@ -461,6 +483,7 @@ export default function TravelRegisterPage() {
                 type="button"
                 onClick={() => {
                   setFilter(tab.key);
+                  setPage(1);
                   selection.clear();
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
@@ -470,6 +493,8 @@ export default function TravelRegisterPage() {
             ))}
           </div>
         </div>
+      }
+      bulkBar={
         <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
           <button
             type="button"
@@ -481,46 +506,26 @@ export default function TravelRegisterPage() {
             {bulkLoading ? "Deleting…" : "Delete selected"}
           </button>
         </BulkSelectionBar>
-      </div>
-
-      {loading ? (
-        <div className="card space-y-3 p-6">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-12 animate-pulse rounded-lg bg-neutral-100" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card px-5 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <span className="material-symbols-outlined text-[28px] text-primary">flight</span>
+      }
+      empty={
+        !loading && filtered.length === 0 ? (
+          <div className="card px-5 py-16 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <span className="material-symbols-outlined text-[28px] text-primary">flight</span>
+            </div>
+            <p className="text-sm font-semibold text-neutral-700">
+              {rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              {rows.length === 0
+                ? "Approved and in-flight missions will appear here as requests are created."
+                : "Try another status filter or clear the search."}
+            </p>
           </div>
-          <p className="text-sm font-semibold text-neutral-700">
-            {rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
-            {rows.length === 0
-              ? "Approved and in-flight missions will appear here as requests are created."
-              : "Try another status filter or clear the search."}
-          </p>
-          {rows.length > 0 ? (
-            <button
-              type="button"
-              className="mt-4 text-xs font-semibold text-primary hover:underline"
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-              }}
-            >
-              Clear filters
-            </button>
-          ) : (
-            <Link href="/travel/create" className="btn-primary mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm">
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              New request
-            </Link>
-          )}
-        </div>
-      ) : (
+        ) : undefined
+      }
+    >
+      {!loading && filtered.length > 0 && (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table w-full">
@@ -547,7 +552,7 @@ export default function TravelRegisterPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((row) => {
+                {pageRows.map((row) => {
                   const sc = STATUS_CONFIG[row.status] ?? { label: row.status, badge: "badge-muted" };
                   const mutable = canMutateRow(row, user?.id, admin);
                   const canEdit =
@@ -682,7 +687,7 @@ export default function TravelRegisterPage() {
           </div>
           <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-3 text-xs text-neutral-500">
             <span>
-              Showing {filtered.length} of {rows.length} row(s)
+              Showing {pageRows.length} of {filtered.length} row(s) on this page
             </span>
             <button type="button" className="font-medium text-primary hover:underline" onClick={() => void load()}>
               Refresh
@@ -690,6 +695,7 @@ export default function TravelRegisterPage() {
           </div>
         </div>
       )}
+    </RegisterShell>
 
       {editRow && editForm && (
         <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/50 p-4">
@@ -849,6 +855,6 @@ export default function TravelRegisterPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

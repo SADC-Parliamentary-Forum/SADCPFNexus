@@ -9,7 +9,9 @@ use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
 use App\Models\TimesheetTemplate;
 use App\Modules\Timesheets\Services\TimesheetExportService;
+use App\Modules\Timesheets\Services\TimesheetPayrollExportService;
 use App\Modules\Timesheets\Services\TimesheetService;
+use App\Models\PayrollExportBatch;
 use App\Services\WorkflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +25,7 @@ class TimesheetController extends Controller
     public function __construct(
         private readonly TimesheetService $timesheetService,
         private readonly TimesheetExportService $exportService,
+        private readonly TimesheetPayrollExportService $payrollExportService,
         private readonly WorkflowService  $workflowService,
     ) {}
 
@@ -612,6 +615,34 @@ class TimesheetController extends Controller
         $format = strtolower((string) $request->query('format', 'csv'));
 
         return $this->exportService->export($timesheet, $request->user(), $format);
+    }
+
+    public function stagePayrollExport(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'period_id' => ['required', 'integer', 'exists:timesheet_periods,id'],
+            'idempotency_key' => ['nullable', 'string', 'max:80'],
+            'mark_included' => ['nullable', 'boolean'],
+        ]);
+
+        $batch = $this->payrollExportService->stageFromPeriod(
+            $request->user(),
+            (int) $data['period_id'],
+            $data['idempotency_key'] ?? null,
+            (bool) ($data['mark_included'] ?? true),
+        );
+
+        return response()->json([
+            'message' => 'Payroll export batch staged.',
+            'data' => $batch,
+        ], 201);
+    }
+
+    public function downloadPayrollExport(Request $request, PayrollExportBatch $payrollExport): StreamedResponse
+    {
+        $format = strtolower((string) $request->query('format', 'csv'));
+
+        return $this->payrollExportService->download($payrollExport, $request->user(), $format);
     }
 
     private function canManageTimesheets($user): bool

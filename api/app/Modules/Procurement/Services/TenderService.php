@@ -3,9 +3,12 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\AuditLog;
+use App\Models\Contract;
+use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Models\Tender;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class TenderService
@@ -130,6 +133,126 @@ class TenderService
         $tender->update([
             'status'                => Tender::STATUS_EVALUATING,
             'evaluation_started_at' => now(),
+        ]);
+
+        return $tender->fresh(['procurementRequest', 'committee']);
+    }
+
+    /**
+     * Award an evaluating tender to an assessed quote and stage a draft contract.
+     * Does not invent pricing — contract value comes from the quote.
+     *
+     * @param  array{quote_id:int,start_date:string,end_date:string,title?:string,notes?:string}  $data
+     * @return array{tender: Tender, contract: Contract}
+     */
+    public function award(Tender $tender, array $data, User $actor): array
+    {
+        $this->assertTenant($tender, $actor);
+
+        if ($tender->status !== Tender::STATUS_EVALUATING) {
+            throw ValidationException::withMessages([
+                'status' => 'Only tenders in evaluation can be awarded.',
+            ]);
+        }
+
+        $request = $tender->procurementRequest;
+        if (! $request || (int) $request->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        /** @var ProcurementQuote|null $quote */
+        $quote = $request->quotes()->whereKey($data['quote_id'])->first();
+        if (! $quote) {
+            throw ValidationException::withMessages([
+                'quote_id' => 'The selected quote does not belong to this tender request.',
+            ]);
+        }
+        if (! $quote->vendor_id) {
+            throw ValidationException::withMessages([
+                'quote_id' => 'Only quotes from registered suppliers can be awarded.',
+            ]);
+        }
+        if (! $quote->assessed_at || $quote->compliance_passed !== true) {
+            throw ValidationException::withMessages([
+                'quote_id' => 'Only assessed and compliant quotes can be awarded.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($tender, $request, $quote, $data, $actor) {
+            $tender->update(['status' => Tender::STATUS_AWARDED]);
+
+            if ($request->status !== 'awarded') {
+                $request->update([
+                    'status'           => 'awarded',
+                    'awarded_quote_id' => $quote->id,
+                    'awarded_at'       => now(),
+                    'award_notes'      => $data['notes'] ?? null,
+                ]);
+                $request->quotes()->where('id', '!=', $quote->id)->update(['is_recommended' => false]);
+                $quote->update(['is_recommended' => true]);
+            }
+
+            $existing = Contract::query()
+                ->where('tenant_id', $actor->tenant_id)
+                ->where('tender_id', $tender->id)
+                ->first();
+
+            if ($existing) {
+                $contract = $existing;
+            } else {
+                $contract = Contract::create([
+                    'tenant_id'              => $actor->tenant_id,
+                    'procurement_request_id' => $request->id,
+                    'tender_id'              => $tender->id,
+                    'vendor_id'              => $quote->vendor_id,
+                    'title'                  => $data['title'] ?? ($tender->title.' — '.$quote->vendor_name),
+                    'description'            => $data['notes'] ?? null,
+                    'start_date'             => $data['start_date'],
+                    'end_date'               => $data['end_date'],
+                    'value'                  => $quote->quoted_amount,
+                    'currency'               => $quote->currency ?? $request->currency ?? 'NAD',
+                    'budget_line'            => $request->budget_line,
+                    'status'                 => 'draft',
+                    'created_by'             => $actor->id,
+                ]);
+            }
+
+            AuditLog::record('procurement.tender_awarded', [
+                'auditable_type' => Tender::class,
+                'auditable_id'   => $tender->id,
+                'new_values'     => [
+                    'quote_id'    => $quote->id,
+                    'contract_id' => $contract->id,
+                    'vendor_id'   => $quote->vendor_id,
+                    'value'       => $quote->quoted_amount,
+                ],
+                'tags' => ['procurement', 'tender', 'contract'],
+            ]);
+
+            return [
+                'tender'   => $tender->fresh(['procurementRequest', 'committee']),
+                'contract' => $contract->fresh(['vendor', 'procurementRequest']),
+            ];
+        });
+    }
+
+    public function cancel(Tender $tender, string $reason, User $actor): Tender
+    {
+        $this->assertTenant($tender, $actor);
+
+        if (in_array($tender->status, [Tender::STATUS_AWARDED, Tender::STATUS_CANCELLED], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Awarded or already cancelled tenders cannot be cancelled.',
+            ]);
+        }
+
+        $tender->update(['status' => Tender::STATUS_CANCELLED]);
+
+        AuditLog::record('procurement.tender_cancelled', [
+            'auditable_type' => Tender::class,
+            'auditable_id'   => $tender->id,
+            'new_values'     => ['reason' => $reason],
+            'tags'           => ['procurement', 'tender'],
         ]);
 
         return $tender->fresh(['procurementRequest', 'committee']);

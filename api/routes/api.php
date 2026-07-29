@@ -490,6 +490,8 @@ Route::prefix('v1')->group(function () {
             Route::post('tenders/{tender}/close', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'close']);
             Route::post('tenders/{tender}/open-bids', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'openBids']);
             Route::post('tenders/{tender}/start-evaluation', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'startEvaluation']);
+            Route::post('tenders/{tender}/award', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'award']);
+            Route::post('tenders/{tender}/cancel', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'cancel']);
             Route::post('tenders/{tender}/comparison-summary', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'comparisonSummary']);
             Route::get('evaluations', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'evaluations']);
             Route::get('bid-submissions', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'bidSubmissions']);
@@ -741,6 +743,8 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'store']);
             Route::post('timesheets/schedules/assign', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'assign']);
             Route::post('timesheets/payroll-exports', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'exportPayroll']);
+            Route::post('timesheets/payroll-exports/stage', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'stagePayrollExport']);
+            Route::get('timesheets/payroll-exports/{payrollExport}/download', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'downloadPayrollExport']);
             Route::get('timesheets/{timesheet}/export', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'export']);
             Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);

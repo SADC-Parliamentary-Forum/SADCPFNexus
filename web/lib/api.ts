@@ -3590,6 +3590,12 @@ export const tendersApi = {
   close: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/close`),
   openBids: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/open-bids`),
   startEvaluation: (id: number) => api.post<{ data: ProcurementTender }>(`/procurement/tenders/${id}/start-evaluation`),
+  award: (
+    id: number,
+    data: { quote_id: number; start_date: string; end_date: string; title?: string; notes?: string },
+  ) => api.post<{ data: ProcurementTender & { contract?: Contract }; message: string }>(`/procurement/tenders/${id}/award`, data),
+  cancel: (id: number, reason: string) =>
+    api.post<{ data: ProcurementTender; message: string }>(`/procurement/tenders/${id}/cancel`, { reason }),
   comparisonSummary: (id: number) =>
     api.post<{ data: Record<string, unknown>; message: string }>(`/procurement/tenders/${id}/comparison-summary`),
   evaluations: () => api.get<{ data: ProcurementTender[] }>("/procurement/evaluations"),
@@ -4320,6 +4326,17 @@ export const hrApi = {
       message: string;
       data: { template: TimesheetTemplate; timesheet: Timesheet };
     }>(`/hr/timesheets/templates/${templateId}/apply`, data),
+  stagePayrollExport: (data: {
+    period_id: number;
+    idempotency_key?: string;
+    mark_included?: boolean;
+  }) =>
+    api.post<{ message: string; data: { id: number; batch_reference: string; status: string } }>(
+      "/hr/timesheets/payroll-exports/stage",
+      data,
+    ),
+  payrollExportDownloadUrl: (batchId: number, format: "csv" | "xlsx" = "csv") =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/hr/timesheets/payroll-exports/${batchId}/download?format=${format}`,
   exportTimesheetUrl: (id: number, format: "pdf" | "csv" | "excel" = "csv") =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/hr/timesheets/${id}/export?format=${format}`,
   confirmPayslip: (id: number, data: { confirmation_status: "confirmed" | "rejected"; confirmation_notes?: string }) =>

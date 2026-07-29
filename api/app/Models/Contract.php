@@ -12,9 +12,9 @@ class Contract extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'procurement_request_id', 'vendor_id', 'purchase_order_id',
+        'tenant_id', 'procurement_request_id', 'tender_id', 'vendor_id', 'purchase_order_id',
         'reference_number', 'title', 'description',
-        'start_date', 'end_date', 'value', 'currency',
+        'start_date', 'end_date', 'value', 'currency', 'budget_line',
         'status', 'signed_at', 'terminated_at', 'termination_reason',
         'created_by',
     ];
@@ -41,6 +41,7 @@ class Contract extends Model
     // ── Relations ─────────────────────────────────────────────────────────────
 
     public function procurementRequest() { return $this->belongsTo(ProcurementRequest::class); }
+    public function tender()             { return $this->belongsTo(Tender::class); }
     public function vendor()             { return $this->belongsTo(Vendor::class); }
     public function purchaseOrder()      { return $this->belongsTo(PurchaseOrder::class); }
     public function createdBy()          { return $this->belongsTo(User::class, 'created_by'); }

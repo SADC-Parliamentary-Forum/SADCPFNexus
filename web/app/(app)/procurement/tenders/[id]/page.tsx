@@ -3,12 +3,19 @@
 import { use } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { tendersApi } from "@/lib/api";
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const tenderId = Number(id);
   const qc = useQueryClient();
+  const [awardQuoteId, setAwardQuoteId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: tender, isLoading } = useQuery({
     queryKey: ["procurement", "tender", tenderId],
@@ -32,8 +39,57 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       return tendersApi.startEvaluation(tenderId);
     },
     onSuccess: () => {
+      setError(null);
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "evaluations"] });
+      qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
+    },
+    onError: (e: unknown) => {
+      setError(
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Action failed.",
+      );
+    },
+  });
+
+  const awardMut = useMutation({
+    mutationFn: () =>
+      tendersApi.award(tenderId, {
+        quote_id: Number(awardQuoteId),
+        start_date: startDate,
+        end_date: endDate,
+      }),
+    onSuccess: (res) => {
+      setMessage("Tender awarded — draft contract created.");
+      setError(null);
+      qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
+      qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
+      const contractId = (res.data.data as { contract?: { id?: number } }).contract?.id;
+      if (contractId) {
+        window.location.href = `/procurement/contracts/${contractId}`;
+      }
+    },
+    onError: (e: unknown) => {
+      setError(
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Award failed.",
+      );
+    },
+  });
+
+  const cancelMut = useMutation({
+    mutationFn: () => tendersApi.cancel(tenderId, cancelReason || "Cancelled by officer"),
+    onSuccess: () => {
+      setMessage("Tender cancelled.");
+      setError(null);
+      qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
+      qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
+    },
+    onError: (e: unknown) => {
+      setError(
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Cancel failed.",
+      );
     },
   });
 
@@ -49,10 +105,23 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
   const finW = tender.financial_weight ?? 20;
   const minTech = tender.min_technical_score ?? 70;
   const sealed = tender.sealed_mode && !tender.bids_opened_at;
+  const quotes =
+    (tender as { procurement_request?: { quotes?: Array<{ id: number; vendor_name: string; quoted_amount?: number }> } })
+      .procurement_request?.quotes ?? [];
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <Link href="/procurement/tenders" className="text-sm text-neutral-500 hover:text-neutral-800">← Tenders</Link>
+      <Link href="/procurement/tenders" className="text-sm text-neutral-500 hover:text-neutral-800">
+        ← Tenders
+      </Link>
+      {message && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+      )}
       <div className="card p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -68,19 +137,98 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           {tender.status === "draft" && (
-            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("publish")}>Publish</button>
+            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("publish")}>
+              Publish
+            </button>
           )}
           {tender.status === "published" && (
-            <button type="button" className="btn-secondary text-sm" onClick={() => act.mutate("close")}>Close submissions</button>
+            <button type="button" className="btn-secondary text-sm" onClick={() => act.mutate("close")}>
+              Close submissions
+            </button>
           )}
           {tender.status === "closed" && (
-            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("openBids")}>Open bids</button>
+            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("openBids")}>
+              Open bids
+            </button>
           )}
           {tender.status === "opened" && (
-            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("startEvaluation")}>Start evaluation</button>
+            <button type="button" className="btn-primary text-sm" onClick={() => act.mutate("startEvaluation")}>
+              Start evaluation
+            </button>
           )}
         </div>
       </div>
+
+      {tender.status === "evaluating" && (
+        <div className="card p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-neutral-900">Award & create contract</h2>
+          <p className="text-xs text-neutral-500">
+            Award creates a draft contract from the selected quote value (no invented rates). Budget line is
+            copied from the procurement request when present.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-semibold">Winning quote</label>
+              <select
+                className="form-input"
+                value={awardQuoteId}
+                onChange={(e) => setAwardQuoteId(e.target.value)}
+              >
+                <option value="">Select…</option>
+                {quotes.map((q) => (
+                  <option key={q.id} value={q.id}>
+                    {q.vendor_name}
+                    {q.quoted_amount != null ? ` — ${q.quoted_amount}` : ""}
+                  </option>
+                ))}
+                {scoring.map((row) => (
+                  <option key={`score-${row.quote_id}`} value={row.quote_id}>
+                    {row.vendor_name}
+                    {row.quoted_amount != null ? ` — ${row.quoted_amount}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div />
+            <div>
+              <label className="mb-1 block text-xs font-semibold">Contract start</label>
+              <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold">Contract end</label>
+              <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-primary text-sm"
+            disabled={!awardQuoteId || !startDate || !endDate || awardMut.isPending}
+            onClick={() => awardMut.mutate()}
+          >
+            {awardMut.isPending ? "Awarding…" : "Award & create draft contract"}
+          </button>
+        </div>
+      )}
+
+      {!["awarded", "cancelled"].includes(tender.status) && (
+        <div className="card p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-neutral-900">Cancel tender</h2>
+          <input
+            className="form-input"
+            placeholder="Cancellation reason"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn-secondary text-sm text-red-700"
+            disabled={!cancelReason.trim() || cancelMut.isPending}
+            onClick={() => cancelMut.mutate()}
+          >
+            Cancel tender
+          </button>
+        </div>
+      )}
 
       {["opened", "evaluating"].includes(tender.status) && (
         <div className="card p-5 space-y-3">
@@ -131,7 +279,11 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
                     <td className="py-2 pr-3">{row.vendor_name}</td>
                     <td className="py-2 pr-3">{row.technical_score ?? "—"}</td>
                     <td className="py-2 pr-3">
-                      {row.financials_sealed ? <span className="italic text-neutral-400">Sealed</span> : (row.financial_score ?? "—")}
+                      {row.financials_sealed ? (
+                        <span className="italic text-neutral-400">Sealed</span>
+                      ) : (
+                        (row.financial_score ?? "—")
+                      )}
                     </td>
                     <td className="py-2 pr-3">{row.combined_score ?? "—"}</td>
                     <td className="py-2">
@@ -141,7 +293,9 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
                 ))}
                 {scoring.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-4 text-center text-neutral-400 text-xs">No scored bids yet.</td>
+                    <td colSpan={5} className="py-4 text-center text-neutral-400 text-xs">
+                      No scored bids yet.
+                    </td>
                   </tr>
                 )}
               </tbody>
