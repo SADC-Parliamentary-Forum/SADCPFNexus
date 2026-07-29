@@ -96,6 +96,7 @@ class TravelQueueFilterTest extends TestCase
             'return_date' => now()->addDays(5)->toDateString(),
         ]);
 
+        // Backward compat: raw status keys still filter the queue.
         $submittedOnly = $this->actingAs($approver, 'sanctum')
             ->getJson('/api/v1/travel/requests?queue=approval&stage=submitted&per_page=100')
             ->assertOk()
@@ -114,5 +115,73 @@ class TravelQueueFilterTest extends TestCase
         $sortedDates = $dates;
         sort($sortedDates);
         $this->assertSame($sortedDates, $dates);
+    }
+
+    public function test_queue_list_filters_by_computed_workflow_stage_label(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff = User::factory()->create(['tenant_id' => $tenant->id]);
+        $staff->assignRole('staff');
+        $approver = User::factory()->create(['tenant_id' => $tenant->id]);
+        $approver->assignRole('Director');
+
+        TravelRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
+            'status' => 'submitted',
+            'purpose' => 'Label Submitted trip',
+            'departure_date' => now()->addDays(7)->toDateString(),
+            'return_date' => now()->addDays(9)->toDateString(),
+        ]);
+        TravelRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
+            'status' => 'resubmitted',
+            'purpose' => 'Label Resubmitted trip',
+            'departure_date' => now()->addDays(11)->toDateString(),
+            'return_date' => now()->addDays(13)->toDateString(),
+        ]);
+        TravelRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
+            'status' => 'returned_for_correction',
+            'purpose' => 'Label Returned trip',
+            'departure_date' => now()->addDays(15)->toDateString(),
+            'return_date' => now()->addDays(17)->toDateString(),
+        ]);
+
+        // Without an approvalRequest, Stage column uses status-derived labels.
+        $byLabel = $this->actingAs($approver, 'sanctum')
+            ->getJson('/api/v1/travel/requests?queue=approval&stage='.urlencode('Submitted').'&per_page=100')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertNotEmpty($byLabel);
+        $this->assertTrue(collect($byLabel)->every(fn ($r) => ($r['workflow_stage'] ?? null) === 'Submitted'));
+        $this->assertTrue(collect($byLabel)->contains(fn ($r) => $r['purpose'] === 'Label Submitted trip'));
+        $this->assertFalse(collect($byLabel)->contains(fn ($r) => $r['purpose'] === 'Label Resubmitted trip'));
+
+        $resubmitted = $this->actingAs($approver, 'sanctum')
+            ->getJson('/api/v1/travel/requests?queue=approval&stage='.urlencode('Resubmitted').'&per_page=100')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertTrue(collect($resubmitted)->every(fn ($r) => ($r['workflow_stage'] ?? null) === 'Resubmitted'));
+        $this->assertTrue(collect($resubmitted)->contains(fn ($r) => $r['purpose'] === 'Label Resubmitted trip'));
+
+        // Approval queue excludes returned_for_correction — label filter on full list via status scope.
+        $returned = $this->actingAs($approver, 'sanctum')
+            ->getJson('/api/v1/travel/requests?stage='.urlencode('Returned for correction').'&per_page=100')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertTrue(collect($returned)->contains(fn ($r) => $r['purpose'] === 'Label Returned trip'));
+        $this->assertTrue(collect($returned)->every(
+            fn ($r) => ($r['workflow_stage'] ?? null) === 'Returned for correction'
+                || $r['purpose'] !== 'Label Returned trip'
+        ));
+        $this->assertTrue(
+            collect($returned)->firstWhere('purpose', 'Label Returned trip')['workflow_stage'] === 'Returned for correction'
+        );
     }
 }

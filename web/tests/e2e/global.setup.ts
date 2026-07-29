@@ -44,9 +44,36 @@ async function loginAndSave(
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
-    await page.waitForURL(/\/(dashboard|setup|reset-password)(\?.*)?$/, {
-      timeout: 20_000,
+    await page.waitForURL(
+      /\/(dashboard|setup|reset-password|profile)(\/.*)?(\?.*)?$/,
+      {
+        timeout: 20_000,
+      }
+    );
+
+    // Auth user lives in sessionStorage (`sadcpf_user`), which Playwright's
+    // storageState does not persist. Mirror into localStorage so the fixture
+    // restores it; `readStoredUser` migrates legacy localStorage → sessionStorage.
+    await page.waitForFunction(
+      () => {
+        try {
+          return Boolean(sessionStorage.getItem("sadcpf_user"));
+        } catch {
+          return false;
+        }
+      },
+      { timeout: 15_000 }
+    ).catch(() => undefined);
+
+    await page.evaluate(() => {
+      try {
+        const raw = sessionStorage.getItem("sadcpf_user");
+        if (raw) localStorage.setItem("sadcpf_user", raw);
+      } catch {
+        /* ignore */
+      }
     });
+
     await writeState(fileName, page);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

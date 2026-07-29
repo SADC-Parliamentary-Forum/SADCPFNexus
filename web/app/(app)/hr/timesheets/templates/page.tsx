@@ -224,13 +224,20 @@ export default function TimesheetTemplatesAdminPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="page-title">Timesheet templates</h1>
+          <h1 className="page-title" data-testid="timesheet-templates-title">
+            Timesheet templates
+          </h1>
           <p className="page-subtitle">
             Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours.
           </p>
         </div>
         {allowed && (
-          <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openCreate}
+            className="btn-primary flex items-center gap-2"
+            data-testid="timesheet-templates-new"
+          >
             <span className="material-symbols-outlined text-[18px]">add</span>
             New template
           </button>
@@ -251,7 +258,7 @@ export default function TimesheetTemplatesAdminPage() {
       )}
 
       {showForm && allowed && (
-        <div className="card space-y-4 p-5">
+        <div className="card space-y-4 p-5" data-testid="timesheet-templates-form">
           <h2 className="text-sm font-semibold text-neutral-900">
             {editId == null ? "Create template" : "Edit template"}
           </h2>
@@ -263,6 +270,7 @@ export default function TimesheetTemplatesAdminPage() {
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. Sida weekly"
+                data-testid="timesheet-template-name"
               />
             </div>
             <div>
@@ -272,6 +280,7 @@ export default function TimesheetTemplatesAdminPage() {
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
                 placeholder="SIDA-WK"
+                data-testid="timesheet-template-code"
               />
             </div>
             <div>
@@ -378,6 +387,7 @@ export default function TimesheetTemplatesAdminPage() {
               className="btn-primary disabled:opacity-50"
               disabled={saving}
               onClick={() => void handleSave()}
+              data-testid="timesheet-template-save"
             >
               {saving ? "Saving…" : editId == null ? "Create" : "Save changes"}
             </button>
@@ -395,14 +405,14 @@ export default function TimesheetTemplatesAdminPage() {
         </div>
       )}
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-hidden" data-testid="timesheet-templates-list">
         {loading ? (
           <div className="flex items-center justify-center gap-2 p-8 text-sm text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
             Loading…
           </div>
         ) : list.length === 0 ? (
-          <div className="px-5 py-16 text-center">
+          <div className="px-5 py-16 text-center" data-testid="timesheet-templates-empty">
             <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
               description
             </span>

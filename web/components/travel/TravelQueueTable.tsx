@@ -25,14 +25,41 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   amendment_pending: { label: "Amendment", badge: "badge-warning" },
 };
 
-const STAGE_OPTIONS = [
+/** Canonical labels — same strings `workflow_stage` / Stage column show (not raw status keys). */
+const CANONICAL_STAGE_OPTIONS = [
   { value: "", label: "All stages" },
-  { value: "submitted", label: "Submitted" },
-  { value: "resubmitted", label: "Resubmitted" },
-  { value: "approved", label: "Approved" },
-  { value: "returned_for_correction", label: "Returned" },
-  { value: "rejected", label: "Rejected" },
+  { value: "Draft", label: "Draft" },
+  { value: "Submitted", label: "Submitted" },
+  { value: "Resubmitted", label: "Resubmitted" },
+  { value: "Direct Supervisor", label: "Direct Supervisor" },
+  { value: "Administration Officer", label: "Administration Officer" },
+  { value: "Finance Controller", label: "Finance Controller" },
+  { value: "Director", label: "Director" },
+  { value: "Secretary General", label: "Secretary General" },
+  { value: "Returned for correction", label: "Returned for correction" },
+  { value: "Approved", label: "Approved" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Cancelled", label: "Cancelled" },
+  { value: "Withdrawn", label: "Withdrawn" },
 ];
+
+/** Migrate older localStorage prefs that stored raw status keys. */
+const LEGACY_STAGE_STATUS_TO_LABEL: Record<string, string> = {
+  draft: "Draft",
+  submitted: "Submitted",
+  resubmitted: "Resubmitted",
+  approved: "Approved",
+  rejected: "Rejected",
+  cancelled: "Cancelled",
+  withdrawn: "Withdrawn",
+  returned_for_correction: "Returned for correction",
+  Returned: "Returned for correction",
+};
+
+function normalizeStagePref(raw: string): string {
+  if (!raw) return "";
+  return LEGACY_STAGE_STATUS_TO_LABEL[raw] ?? raw;
+}
 
 const SORT_OPTIONS = [
   { value: "created_at:desc", label: "Newest first" },
@@ -125,7 +152,7 @@ export function TravelQueueTable({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initial.search);
-  const [stage, setStage] = useState(initial.stage);
+  const [stage, setStage] = useState(() => normalizeStagePref(initial.stage));
   const [requesterId, setRequesterId] = useState(initial.requesterId);
   const [dateFrom, setDateFrom] = useState(initial.dateFrom);
   const [dateTo, setDateTo] = useState(initial.dateTo);
@@ -136,7 +163,7 @@ export function TravelQueueTable({
   useEffect(() => {
     const prefs = loadPrefs(queue);
     setSearch(prefs.search);
-    setStage(prefs.stage);
+    setStage(normalizeStagePref(prefs.stage));
     setRequesterId(prefs.requesterId);
     setDateFrom(prefs.dateFrom);
     setDateTo(prefs.dateTo);
@@ -207,6 +234,19 @@ export function TravelQueueTable({
     () => rows.filter((r) => holdingUrgent(r)).length,
     [rows],
   );
+
+  const stageOptions = useMemo(() => {
+    const seen = new Set(CANONICAL_STAGE_OPTIONS.map((o) => o.value));
+    const extras = rows
+      .map((r) => stageOf(r))
+      .filter((s) => Boolean(s) && s !== "—" && !seen.has(s))
+      .filter((s, i, arr) => arr.indexOf(s) === i)
+      .map((s) => ({ value: s, label: s }));
+    if (stage && !seen.has(stage) && !extras.some((e) => e.value === stage)) {
+      extras.push({ value: stage, label: stage });
+    }
+    return [...CANONICAL_STAGE_OPTIONS, ...extras];
+  }, [rows, stage]);
 
   const clearFilters = () => {
     setSearch("");
@@ -333,7 +373,7 @@ export function TravelQueueTable({
         </div>
       )}
 
-      <div className="card space-y-3 p-4">
+      <div className="card space-y-3 p-4" data-testid="travel-queue-filters">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <div className="relative xl:col-span-2">
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[20px]">
@@ -345,6 +385,7 @@ export function TravelQueueTable({
               placeholder="Search reference, purpose…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-testid="travel-queue-search"
             />
           </div>
           <div>
@@ -353,8 +394,9 @@ export function TravelQueueTable({
               value={stage}
               onChange={(e) => setStage(e.target.value)}
               aria-label="Filter by stage"
+              data-testid="travel-queue-stage-filter"
             >
-              {STAGE_OPTIONS.map((o) => (
+              {stageOptions.map((o) => (
                 <option key={o.value || "all"} value={o.value}>
                   {o.label}
                 </option>
@@ -367,6 +409,7 @@ export function TravelQueueTable({
               value={requesterId}
               onChange={(e) => setRequesterId(e.target.value)}
               aria-label="Filter by requester"
+              data-testid="travel-queue-requester-filter"
             >
               <option value="">All requesters</option>
               {travellers.map((t) => (
@@ -384,6 +427,7 @@ export function TravelQueueTable({
               onChange={(e) => setDateFrom(e.target.value)}
               aria-label="Departure from"
               title="Departure from"
+              data-testid="travel-queue-date-from"
             />
           </div>
           <div>
@@ -394,6 +438,7 @@ export function TravelQueueTable({
               onChange={(e) => setDateTo(e.target.value)}
               aria-label="Departure to"
               title="Departure to"
+              data-testid="travel-queue-date-to"
             />
           </div>
         </div>

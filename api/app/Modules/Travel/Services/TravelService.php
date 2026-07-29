@@ -56,9 +56,6 @@ class TravelService
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (! empty($filters['stage'])) {
-            $query->where('status', $filters['stage']);
-        }
         if (! empty($filters['requester_id'])) {
             $query->where('requester_id', (int) $filters['requester_id']);
         }
@@ -81,6 +78,11 @@ class TravelService
                     ->orWhereRaw('LOWER(purpose) LIKE LOWER(?)', [$term])
                     ->orWhereRaw('LOWER(destination_country) LIKE LOWER(?)', [$term]);
             });
+        }
+
+        // Stage filter after other scopes so label matching uses the same candidate set as the queue.
+        if (! empty($filters['stage'])) {
+            $this->applyStageFilter($query, (string) $filters['stage']);
         }
 
         $sort = (string) ($filters['sort'] ?? 'created_at');
@@ -110,6 +112,104 @@ class TravelService
         });
     }
 
+    /**
+     * Filter by computed workflow-stage labels (same strings the UI shows), with
+     * backward compatibility for raw request status keys (e.g. submitted).
+     */
+    protected function applyStageFilter($query, string $stage): void
+    {
+        $stage = trim($stage);
+        if ($stage === '') {
+            return;
+        }
+
+        $statusKeys = [
+            'draft',
+            'submitted',
+            'resubmitted',
+            'approved',
+            'rejected',
+            'cancelled',
+            'withdrawn',
+            'returned_for_correction',
+            'amendment_pending',
+        ];
+
+        if (in_array($stage, $statusKeys, true)) {
+            $query->where('status', $stage);
+
+            return;
+        }
+
+        $matchingIds = (clone $query)
+            ->with([
+                'requester',
+                'approvalRequest.workflow.steps.role',
+                'approvalRequest.workflow.steps.user',
+                'approvalRequest.history.user',
+            ])
+            ->get()
+            ->filter(fn (TravelRequest $travel) => $this->stageLabelMatches($travel, $stage))
+            ->pluck('id')
+            ->all();
+
+        $query->whereIn('id', $matchingIds !== [] ? $matchingIds : [0]);
+    }
+
+    protected function stageLabelMatches(TravelRequest $travel, string $wanted): bool
+    {
+        $label = $this->workflowStageLabel($travel);
+        if (strcasecmp($label, $wanted) === 0) {
+            return true;
+        }
+
+        // Canonical "Approved" also matches finance sub-labels shown in the Stage column.
+        if (strcasecmp($wanted, 'Approved') === 0 && str_starts_with($label, 'Approved')) {
+            return true;
+        }
+
+        // Legacy UI short label for returned_for_correction.
+        if (strcasecmp($wanted, 'Returned') === 0
+            && strcasecmp($label, 'Returned for correction') === 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Same label computation used for list payloads and Stage column display.
+     */
+    public function workflowStageLabel(TravelRequest $travel): string
+    {
+        $travel->loadMissing([
+            'requester',
+            'approvalRequest.workflow.steps.role',
+            'approvalRequest.workflow.steps.user',
+            'approvalRequest.history.user',
+        ]);
+
+        $approval = $travel->approvalRequest;
+        if ($approval) {
+            $snap = $this->workflowService->snapshot($approval);
+            $label = $snap['current_stage']['label'] ?? null;
+            if (is_string($label) && $label !== '') {
+                return $label;
+            }
+        }
+
+        return match ($travel->status) {
+            'draft' => 'Draft',
+            'returned_for_correction' => 'Returned for correction',
+            'approved' => $travel->finance_status
+                ? 'Approved · '.str_replace('_', ' ', (string) $travel->finance_status)
+                : 'Approved',
+            'rejected' => 'Rejected',
+            'cancelled', 'withdrawn' => ucfirst(str_replace('_', ' ', $travel->status)),
+            default => ucfirst(str_replace('_', ' ', (string) $travel->status)),
+        };
+    }
+
     protected function appendWorkflowSummary(TravelRequest $travel): TravelRequest
     {
         $approval = $travel->approvalRequest;
@@ -120,7 +220,7 @@ class TravelService
                 ->filter()
                 ->values()
                 ->all();
-            $travel->setAttribute('workflow_stage', $snap['current_stage']['label'] ?? null);
+            $travel->setAttribute('workflow_stage', $snap['current_stage']['label'] ?? $this->workflowStageLabel($travel));
             $travel->setAttribute('workflow_status', $snap['status'] ?? $approval->status);
             $travel->setAttribute('pending_with', $pendingNames);
             $travel->setAttribute(
@@ -128,17 +228,7 @@ class TravelService
                 ! empty($pendingNames) ? implode(', ', $pendingNames) : null
             );
         } else {
-            $stage = match ($travel->status) {
-                'draft' => 'Draft',
-                'returned_for_correction' => 'Returned for correction',
-                'approved' => $travel->finance_status
-                    ? 'Approved · ' . str_replace('_', ' ', (string) $travel->finance_status)
-                    : 'Approved',
-                'rejected' => 'Rejected',
-                'cancelled', 'withdrawn' => ucfirst(str_replace('_', ' ', $travel->status)),
-                default => ucfirst(str_replace('_', ' ', (string) $travel->status)),
-            };
-            $travel->setAttribute('workflow_stage', $stage);
+            $travel->setAttribute('workflow_stage', $this->workflowStageLabel($travel));
             $travel->setAttribute('workflow_status', $travel->status);
             $travel->setAttribute('pending_with', []);
             $travel->setAttribute('pending_with_label', $travel->status === 'draft' ? $travel->requester?->name : null);
