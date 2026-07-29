@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { useState } from "react";
 
 const priorityConfig: Record<string, { label: string; cls: string }> = {
   low: { label: "Low", cls: "badge-muted" },
@@ -43,6 +45,8 @@ export function AssignmentFilteredList({
   fetcher: Fetcher;
   fixedParams?: Record<string, string>;
 }) {
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["assignments", queryKey, fixedParams],
     queryFn: async () => {
@@ -57,25 +61,27 @@ export function AssignmentFilteredList({
   const assignments = data ?? [];
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">{subtitle}</p>
-        </div>
+    <RegisterShell
+      title={title}
+      subtitle={subtitle}
+      density={density}
+      onDensityChange={setDensity}
+      loading={isLoading}
+      actions={
         <Link href="/assignments/create" className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add_task</span>
           New Assignment
         </Link>
-      </div>
-
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load assignments.</p>}
-
-      {!isLoading && !isError && assignments.length === 0 && (
-        <div className="card p-8 text-center text-neutral-500 text-sm">No assignments in this view.</div>
-      )}
-
+      }
+      stats={
+        isError ? <p className="text-sm text-red-600">Failed to load assignments.</p> : null
+      }
+      empty={
+        !isLoading && !isError && assignments.length === 0 ? (
+          <div className="card p-8 text-center text-neutral-500 text-sm">No assignments in this view.</div>
+        ) : null
+      }
+    >
       <div className="space-y-3">
         {assignments.map((a) => {
           const p = priorityConfig[a.priority] ?? { label: a.priority, cls: "badge-muted" };
@@ -116,7 +122,7 @@ export function AssignmentFilteredList({
           );
         })}
       </div>
-    </div>
+    </RegisterShell>
   );
 }
 

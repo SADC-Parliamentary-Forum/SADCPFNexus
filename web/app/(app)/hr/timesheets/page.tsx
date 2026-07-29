@@ -539,6 +539,7 @@ export default function TimesheetsPage() {
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
                 aria-label="Donor or project template"
+                data-testid="timesheet-apply-template-select"
               >
                 <option value="">Donor / project template…</option>
                 {templates.map((t) => (
@@ -552,6 +553,7 @@ export default function TimesheetsPage() {
                 className="btn-secondary text-sm disabled:opacity-50"
                 disabled={!selectedTemplateId || applyingTemplate}
                 onClick={() => void handleApplyTemplate()}
+                data-testid="timesheet-apply-template-btn"
               >
                 {applyingTemplate ? "Applying…" : "Apply"}
               </button>

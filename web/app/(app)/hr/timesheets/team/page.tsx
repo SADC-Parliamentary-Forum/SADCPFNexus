@@ -139,10 +139,28 @@ export default function TeamTimesheetsPage() {
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [periods, setPeriods] = useState<Array<{ id: number; label: string; period_start: string; period_end: string; status: string }>>([]);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
+  const [payrollStaging, setPayrollStaging] = useState(false);
+  const [lastBatch, setLastBatch] = useState<{ id: number; batch_reference: string } | null>(null);
 
   // Initialise on client only to prevent SSR/client hydration mismatch
   useEffect(() => {
     setWeekStartDate(getWeekStart(new Date()));
+  }, []);
+
+  useEffect(() => {
+    hrApi
+      .listTimesheetPeriods()
+      .then((res) => {
+        const list = (res.data as { data?: typeof periods }).data ?? [];
+        setPeriods(list);
+        if (list.length > 0 && !selectedPeriodId) {
+          setSelectedPeriodId(String(list[0].id));
+        }
+      })
+      .catch(() => setPeriods([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load periods once on mount
   }, []);
 
   const weekStart = weekStartDate ? toYMD(weekStartDate) : null;
@@ -228,6 +246,54 @@ export default function TeamTimesheetsPage() {
     }
   };
 
+  const handleStagePayroll = async () => {
+    if (!selectedPeriodId) {
+      showToast("Select a timesheet period first.", "error");
+      return;
+    }
+    setPayrollStaging(true);
+    try {
+      const res = await hrApi.stagePayrollExport({
+        period_id: Number(selectedPeriodId),
+        idempotency_key: `team-ui-${selectedPeriodId}-${Date.now()}`,
+        mark_included: true,
+      });
+      const batch = (res.data as { data?: { id: number; batch_reference: string } }).data;
+      if (batch?.id) {
+        setLastBatch({ id: batch.id, batch_reference: batch.batch_reference });
+        showToast(`Payroll staged: ${batch.batch_reference}. TOIL payable hours stay 0.`);
+      } else {
+        showToast("Payroll export staged.");
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
+          ?.message ||
+        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors?.period_id?.[0] ||
+        "Failed to stage payroll export.";
+      showToast(msg, "error");
+    } finally {
+      setPayrollStaging(false);
+    }
+  };
+
+  const handleDownloadPayroll = async (format: "csv" | "xlsx" = "csv") => {
+    if (!lastBatch) return;
+    try {
+      const res = await hrApi.downloadPayrollExport(lastBatch.id, format);
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payroll-${lastBatch.batch_reference}.${format === "xlsx" ? "xlsx" : "csv"}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${format.toUpperCase()} for ${lastBatch.batch_reference}.`);
+    } catch {
+      showToast("Failed to download payroll export.", "error");
+    }
+  };
+
   const pendingCount = timesheets.filter((t) => t.status === "submitted").length;
   const weekLabel    = weekStart ? formatWeekLabel(weekStart) : "";
   const totalHours   = timesheets.reduce((s, t) => s + Number(t.total_hours ?? 0), 0);
@@ -297,6 +363,59 @@ export default function TeamTimesheetsPage() {
               Export Week
             </button>
           )}
+          <div
+            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2 py-1"
+            data-testid="team-payroll-stage"
+          >
+            <select
+              className="form-input text-xs py-1.5 max-w-[180px] border-0 shadow-none"
+              value={selectedPeriodId}
+              onChange={(e) => setSelectedPeriodId(e.target.value)}
+              aria-label="Timesheet period for payroll"
+              data-testid="team-payroll-period"
+            >
+              <option value="">Period…</option>
+              {periods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label || `${p.period_start} → ${p.period_end}`}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => void handleStagePayroll()}
+              disabled={payrollStaging || !selectedPeriodId}
+              className="btn-primary py-1.5 px-2.5 text-xs flex items-center gap-1 disabled:opacity-50"
+              data-testid="team-payroll-stage-btn"
+              title="Stage HR-validated approved timesheets for payroll (TOIL payable_hours = 0)"
+            >
+              <span className="material-symbols-outlined text-[14px]">
+                {payrollStaging ? "progress_activity" : "account_balance_wallet"}
+              </span>
+              {payrollStaging ? "Staging…" : "Stage payroll"}
+            </button>
+            {lastBatch && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleDownloadPayroll("csv")}
+                  className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1"
+                  data-testid="team-payroll-download-csv"
+                >
+                  <span className="material-symbols-outlined text-[14px]">download</span>
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDownloadPayroll("xlsx")}
+                  className="btn-secondary py-1.5 px-2.5 text-xs flex items-center gap-1"
+                  data-testid="team-payroll-download-xlsx"
+                >
+                  XLSX
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

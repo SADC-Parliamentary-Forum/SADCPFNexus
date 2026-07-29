@@ -157,4 +157,52 @@ class CorrespondenceMailboxImapPhase2Test extends TestCase
         $this->assertSame(0, $result['imported']);
         $this->assertSame('disabled', $result['status']);
     }
+
+    public function test_live_poll_degrades_gracefully_when_imap_not_configured(): void
+    {
+        $tenant = Tenant::factory()->create();
+        CorrespondenceMailboxSetting::create([
+            'tenant_id' => $tenant->id,
+            'mailbox_address' => 'registry@sadcpf.org',
+            'enabled' => true,
+            'imap_host' => null,
+            'imap_username' => null,
+        ]);
+
+        $result = app(CorrespondenceMailboxService::class)->pollMailbox((int) $tenant->id, [
+            'dry_run' => false,
+        ]);
+
+        $this->assertSame('degraded', $result['status']);
+        $this->assertSame(0, $result['imported']);
+        $this->assertNotEmpty($result['errors']);
+        $this->assertSame(0, CorrespondenceMailboxSuggestion::where('tenant_id', $tenant->id)->count());
+        $this->assertSame('degraded', CorrespondenceMailboxSetting::where('tenant_id', $tenant->id)->value('last_poll_status'));
+    }
+
+    public function test_live_poll_degrades_when_ext_imap_missing_even_with_credentials(): void
+    {
+        if (function_exists('imap_open')) {
+            $this->markTestSkipped('ext-imap is present; degrade path for missing extension is covered in CI without the extension.');
+        }
+
+        $tenant = Tenant::factory()->create();
+        $settings = CorrespondenceMailboxSetting::create([
+            'tenant_id' => $tenant->id,
+            'mailbox_address' => 'registry@sadcpf.org',
+            'enabled' => true,
+            'imap_host' => 'imap.example.org',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_username' => 'registry@sadcpf.org',
+        ]);
+        $settings->setImapPassword('secret-not-used');
+        $settings->save();
+
+        $result = app(CorrespondenceMailboxService::class)->pollMailbox((int) $tenant->id);
+
+        $this->assertSame('degraded', $result['status']);
+        $this->assertSame(0, $result['imported']);
+        $this->assertTrue(collect($result['errors'])->contains(fn ($e) => str_contains(strtolower($e), 'ext-imap')));
+    }
 }

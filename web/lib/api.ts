@@ -4279,6 +4279,15 @@ export const hrApi = {
   },
   listTeamTimesheets: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Timesheet>>("/hr/timesheets/team", { params }),
+  listTimesheetPeriods: () =>
+    api.get<{ data: Array<{ id: number; label: string; period_start: string; period_end: string; status: string }> }>(
+      "/hr/timesheets/periods",
+    ),
+  downloadPayrollExport: (batchId: number, format: "csv" | "xlsx" = "csv") =>
+    api.get<Blob>(`/hr/timesheets/payroll-exports/${batchId}/download`, {
+      params: { format },
+      responseType: "blob",
+    }),
   getTimesheetLeaveDays: (weekStart: string, weekEnd: string) =>
     api.get<{ data: Record<string, { leave_type: string; status: string }> }>(
       "/hr/timesheets/leave-days",

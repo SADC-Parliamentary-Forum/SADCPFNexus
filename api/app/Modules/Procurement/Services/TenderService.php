@@ -178,7 +178,11 @@ class TenderService
             ]);
         }
 
+        // SoD, budget line, confirmed reservation, and availability cover.
+        $this->procurementService->assertAwardGates($request, $actor, (float) $quote->quoted_amount);
+
         return DB::transaction(function () use ($tender, $request, $quote, $data, $actor) {
+            $this->procurementService->adjustCommitmentToAwardAmount($request, (float) $quote->quoted_amount, $actor);
             $tender->update(['status' => Tender::STATUS_AWARDED]);
 
             if ($request->status !== 'awarded') {

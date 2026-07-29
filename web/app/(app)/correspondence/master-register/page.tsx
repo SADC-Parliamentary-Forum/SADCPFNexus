@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 
 export default function MasterRegisterPage() {
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   useEffect(() => {
     setLoading(true);
@@ -19,19 +21,28 @@ export default function MasterRegisterPage() {
   }, [search]);
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="page-title">Master Register</h1>
-        <p className="page-subtitle">Chronological institutional register — one authoritative document per entry, linked to subject files.</p>
-      </div>
-
-      <input
-        className="form-input max-w-md"
-        placeholder="Search reference, subject, sender…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
+    <RegisterShell
+      title="Master Register"
+      subtitle="Chronological institutional register — one authoritative document per entry, linked to subject files."
+      density={density}
+      onDensityChange={setDensity}
+      loading={loading}
+      filters={
+        <input
+          className="form-input max-w-md"
+          placeholder="Search reference, subject, sender…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      }
+      empty={
+        !loading && items.length === 0 ? (
+          <div className="card px-5 py-16 text-center text-sm text-neutral-500">
+            No correspondence entries in the master register.
+          </div>
+        ) : null
+      }
+    >
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
@@ -45,8 +56,7 @@ export default function MasterRegisterPage() {
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={6} className="px-4 py-8 text-center text-neutral-400">Loading…</td></tr>}
-            {!loading && items.map((item) => (
+            {items.map((item) => (
               <tr key={item.id} className="border-t border-neutral-100">
                 <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">
                   {(item.received_at || item.approved_at || item.created_at || "").slice(0, 10)}
@@ -59,12 +69,14 @@ export default function MasterRegisterPage() {
                 <td className="px-4 py-3 capitalize">{item.direction}</td>
                 <td className="px-4 py-3">{item.subject}</td>
                 <td className="px-4 py-3">{item.primary_owner?.name || "—"}</td>
-                <td className="px-4 py-3"><span className="badge-muted">{item.status}</span></td>
+                <td className="px-4 py-3">
+                  <span className="badge-muted">{item.status}</span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </RegisterShell>
   );
 }

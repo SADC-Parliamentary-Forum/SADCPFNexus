@@ -10,6 +10,7 @@ use App\Models\SupplierCategory;
 use App\Models\Vendor;
 use App\Models\User;
 use App\Mail\ModuleNotificationMail;
+use App\Modules\Budget\Services\BudgetAvailabilityService;
 use App\Modules\Budget\Services\BudgetCommitmentService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
@@ -25,6 +26,7 @@ class ProcurementService
         protected NotificationService $notificationService,
         protected WorkflowService $workflowService,
         protected BudgetCommitmentService $commitments,
+        protected BudgetAvailabilityService $budgetAvailability,
     ) {}
     public function list(array $filters, User $user): LengthAwarePaginator
     {
@@ -416,11 +418,60 @@ class ProcurementService
     }
 
     /**
+     * Shared award gates: SoD (awarder ≠ requester), budget line, confirmed reservation,
+     * and reservation/availability cover for the award amount.
+     */
+    public function assertAwardGates(ProcurementRequest $request, User $awarder, float $awardAmount): void
+    {
+        if ((int) $request->requester_id === (int) $awarder->id) {
+            throw ValidationException::withMessages([
+                'award' => 'You cannot award a request you originated (segregation of duties).',
+            ]);
+        }
+
+        if (blank($request->budget_line)) {
+            throw ValidationException::withMessages([
+                'budget_line' => 'A budget line is required before award.',
+            ]);
+        }
+
+        $this->assertBudgetConfirmed($request);
+
+        $reservation = $request->budgetReservations()
+            ->whereNull('released_at')
+            ->where(function ($q) {
+                $q->whereNull('status')
+                    ->orWhereIn('status', BudgetReservation::ACTIVE_STATUSES);
+            })
+            ->latest('id')
+            ->first();
+
+        $reserved = round((float) ($reservation?->current_amount ?? $reservation?->reserved_amount ?? 0), 2);
+        $awardAmount = round($awardAmount, 2);
+
+        if ($reserved + 1e-9 >= $awardAmount) {
+            return;
+        }
+
+        if ($reservation?->budget_line_id) {
+            $shortfall = round($awardAmount - $reserved, 2);
+            $check = $this->budgetAvailability->check((int) $reservation->budget_line_id, $shortfall);
+            if ($check['sufficient']) {
+                return;
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'budget' => 'Insufficient budget availability for the award amount.',
+        ]);
+    }
+
+    /**
      * Align the procurement commitment to the awarded quote amount.
      * Savings (award < reserved) are released back to available budget.
      * Increases require remaining available funds.
      */
-    protected function adjustCommitmentToAwardAmount(ProcurementRequest $request, float $awardAmount, User $actor): void
+    public function adjustCommitmentToAwardAmount(ProcurementRequest $request, float $awardAmount, User $actor): void
     {
         $awardAmount = round($awardAmount, 2);
         if ($awardAmount <= 0) {

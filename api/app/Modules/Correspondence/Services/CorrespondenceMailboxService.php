@@ -84,13 +84,42 @@ class CorrespondenceMailboxService
             $messages = $this->loadFixtureMessages((string) $options['fixture']);
         }
 
+        $errors = [];
         if ($messages === null) {
-            $messages = $this->fetchImapMessages($settings);
+            try {
+                $messages = $this->fetchImapMessages($settings);
+            } catch (ValidationException $e) {
+                $flat = collect($e->errors())->flatten()->all();
+                $settings->update([
+                    'last_polled_at' => now(),
+                    'last_poll_status' => 'degraded',
+                ]);
+
+                return [
+                    'status' => 'degraded',
+                    'imported' => 0,
+                    'skipped' => 0,
+                    'dry_run' => $dryRun,
+                    'errors' => array_values(array_map('strval', $flat)),
+                ];
+            } catch (\Throwable $e) {
+                $settings->update([
+                    'last_polled_at' => now(),
+                    'last_poll_status' => 'degraded',
+                ]);
+
+                return [
+                    'status' => 'degraded',
+                    'imported' => 0,
+                    'skipped' => 0,
+                    'dry_run' => $dryRun,
+                    'errors' => [$e->getMessage()],
+                ];
+            }
         }
 
         $imported = 0;
         $skipped = 0;
-        $errors = [];
 
         foreach ($messages as $message) {
             try {

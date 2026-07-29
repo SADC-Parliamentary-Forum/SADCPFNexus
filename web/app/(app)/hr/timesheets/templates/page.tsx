@@ -459,6 +459,7 @@ export default function TimesheetTemplatesAdminPage() {
                         <button
                           type="button"
                           className="mr-2 text-xs font-medium text-primary hover:underline"
+                          data-testid="timesheet-template-edit"
                           onClick={() => openEdit(t)}
                         >
                           Edit

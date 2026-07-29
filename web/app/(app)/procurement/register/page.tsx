@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
-import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -45,6 +45,7 @@ export default function ProcurementRegisterPage() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["procurement", "register"],
@@ -76,10 +77,10 @@ export default function ProcurementRegisterPage() {
     });
   }, [rows, filter, search]);
 
-  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const pageCount = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
   const paged = useMemo(
-    () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
-    [filtered, page, lastPage],
+    () => slicePage(filtered, Math.min(page, pageCount), DEFAULT_PAGE_SIZE),
+    [filtered, page, pageCount],
   );
 
   const stats = useMemo(
@@ -128,20 +129,20 @@ export default function ProcurementRegisterPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">
-              Procurement
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Register</span>
-          </div>
-          <h1 className="page-title">Procurement Register</h1>
-          <p className="page-subtitle">Full tenant register of procurement requests.</p>
+    <RegisterShell
+      title="Procurement Register"
+      subtitle="Full tenant register of procurement requests."
+      breadcrumbs={
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+          <Link href="/procurement" className="transition-colors hover:text-neutral-700">
+            Procurement
+          </Link>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="text-neutral-700">Register</span>
         </div>
-        <div className="flex flex-wrap gap-2">
+      }
+      actions={
+        <>
           <button
             type="button"
             className="btn-secondary text-sm disabled:opacity-50"
@@ -155,43 +156,51 @@ export default function ProcurementRegisterPage() {
             <span className="material-symbols-outlined text-[18px]">add</span>
             New request
           </Link>
-        </div>
-      </div>
-
-      {isError && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">Failed to load register.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {!isLoading && rows.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
-            { label: "Submitted", value: stats.submitted, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Approved / Awarded", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
-          ].map((s) => (
-            <div key={s.label} className="card p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-neutral-500">{s.label}</p>
-                  <p className="mt-0.5 text-lg font-bold text-neutral-900">{s.value}</p>
-                </div>
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
-                  <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
-                </div>
-              </div>
+        </>
+      }
+      density={density}
+      onDensityChange={setDensity}
+      page={Math.min(page, pageCount)}
+      pageCount={pageCount}
+      total={filtered.length}
+      onPageChange={setPage}
+      loading={isLoading}
+      stats={
+        <>
+          {isError ? (
+            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span className="material-symbols-outlined text-[16px]">error_outline</span>
+              <span className="flex-1">Failed to load register.</span>
+              <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+                Retry
+              </button>
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="card p-4">
+          ) : null}
+          {!isLoading && rows.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Register rows", value: stats.total, icon: "menu_book", color: "text-primary", bg: "bg-primary/10" },
+                { label: "Submitted", value: stats.submitted, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50" },
+                { label: "Approved / Awarded", value: stats.approved, icon: "check_circle", color: "text-green-600", bg: "bg-green-50" },
+                { label: "Drafts", value: stats.drafts, icon: "edit_note", color: "text-neutral-600", bg: "bg-neutral-100" },
+              ].map((s) => (
+                <div key={s.label} className="card p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-neutral-500">{s.label}</p>
+                      <p className="mt-0.5 text-lg font-bold text-neutral-900">{s.value}</p>
+                    </div>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
+                      <span className={`material-symbols-outlined text-[18px] ${s.color}`}>{s.icon}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </>
+      }
+      filters={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-md flex-1">
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
@@ -224,17 +233,10 @@ export default function ProcurementRegisterPage() {
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="card overflow-hidden">
-        {isLoading ? (
-          <div className="space-y-3 p-5">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="px-5 py-16 text-center">
+      }
+      empty={
+        !isLoading && filtered.length === 0 ? (
+          <div className="card px-5 py-16 text-center">
             <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">shopping_cart</span>
             <p className="text-sm font-semibold text-neutral-600">No procurement requests found</p>
             <p className="mt-1 text-xs text-neutral-400">
@@ -243,76 +245,72 @@ export default function ProcurementRegisterPage() {
                 : "No rows match the current filters."}
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="data-table w-full">
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Method</th>
-                  <th>Status</th>
-                  <th>Value</th>
-                  <th>PIF</th>
-                  <th>Submitted</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((row) => {
-                  const sc = STATUS_CONFIG[row.status] ?? {
-                    label: row.status.replace(/_/g, " "),
-                    badge: "badge-muted",
-                  };
-                  return (
-                    <tr key={row.id}>
-                      <td className="font-mono text-xs">{row.reference_number}</td>
-                      <td className="max-w-xs truncate font-medium">{row.title}</td>
-                      <td className="text-xs capitalize">{row.category}</td>
-                      <td className="text-xs">{row.procurement_method}</td>
-                      <td>
-                        <span className={`badge text-xs capitalize ${sc.badge}`}>{sc.label}</span>
-                      </td>
-                      <td className="whitespace-nowrap font-mono text-sm">
-                        {row.currency} {Number(row.estimated_value ?? 0).toLocaleString()}
-                      </td>
-                      <td className="font-mono text-xs">{row.programme?.reference_number ?? "—"}</td>
-                      <td className="text-xs text-neutral-500">
-                        {row.submitted_at ? formatDateShort(row.submitted_at) : "—"}
-                      </td>
-                      <td>
-                        <div className="flex flex-wrap gap-2">
+        ) : null
+      }
+    >
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="data-table w-full">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Value</th>
+                <th>PIF</th>
+                <th>Submitted</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((row) => {
+                const sc = STATUS_CONFIG[row.status] ?? {
+                  label: row.status.replace(/_/g, " "),
+                  badge: "badge-muted",
+                };
+                return (
+                  <tr key={row.id}>
+                    <td className="font-mono text-xs">{row.reference_number}</td>
+                    <td className="max-w-xs truncate font-medium">{row.title}</td>
+                    <td className="text-xs capitalize">{row.category}</td>
+                    <td className="text-xs">{row.procurement_method}</td>
+                    <td>
+                      <span className={`badge text-xs capitalize ${sc.badge}`}>{sc.label}</span>
+                    </td>
+                    <td className="whitespace-nowrap font-mono text-sm">
+                      {row.currency} {Number(row.estimated_value ?? 0).toLocaleString()}
+                    </td>
+                    <td className="font-mono text-xs">{row.programme?.reference_number ?? "—"}</td>
+                    <td className="text-xs text-neutral-500">
+                      {row.submitted_at ? formatDateShort(row.submitted_at) : "—"}
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        <Link
+                          href={`/procurement/${row.id}`}
+                          className="text-xs font-medium text-primary hover:underline"
+                        >
+                          View
+                        </Link>
+                        {row.status === "draft" && (
                           <Link
                             href={`/procurement/${row.id}`}
-                            className="text-xs font-medium text-primary hover:underline"
+                            className="text-xs font-medium text-neutral-600 hover:underline"
                           >
-                            View
+                            Edit
                           </Link>
-                          {row.status === "draft" && (
-                            <Link
-                              href={`/procurement/${row.id}`}
-                              className="text-xs font-medium text-neutral-600 hover:underline"
-                            >
-                              Edit
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <ListPagination
-          page={Math.min(page, lastPage)}
-          lastPage={lastPage}
-          total={filtered.length}
-          onPageChange={setPage}
-        />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </RegisterShell>
   );
 }

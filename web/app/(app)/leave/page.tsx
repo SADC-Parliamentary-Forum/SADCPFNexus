@@ -7,8 +7,8 @@ import { leaveApi, type LeaveRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import {
   BulkSelectionBar,
   RowCheckbox,
@@ -77,6 +77,7 @@ export default function LeavePage() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -234,15 +235,22 @@ export default function LeavePage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <span className="text-neutral-700">Leave</span>
-          </div>
-          <h1 className="page-title">Leave Requests</h1>
-          <p className="page-subtitle">Manage leave applications, balances, and LIL linkings.</p>
+    <RegisterShell
+      title="Leave Requests"
+      subtitle="Manage leave applications, balances, and LIL linkings."
+      breadcrumbs={
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+          <span className="text-neutral-700">Leave</span>
         </div>
+      }
+      density={density}
+      onDensityChange={setDensity}
+      page={Math.min(page, lastPage)}
+      pageCount={lastPage}
+      total={filtered.length}
+      onPageChange={setPage}
+      loading={loading}
+      actions={
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -262,28 +270,31 @@ export default function LeavePage() {
             New Request
           </Link>
         </div>
-      </div>
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-      )}
-
-      {(isError || actionError) && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
-          {isError ? (
-            <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-              Retry
-            </button>
-          ) : (
-            <button type="button" className="text-xs font-semibold underline" onClick={() => setActionError(null)}>
-              Dismiss
-            </button>
+      }
+      stats={
+        <>
+          {toast && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
           )}
-        </div>
-      )}
-
+          {(isError || actionError) && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span className="material-symbols-outlined text-[16px]">error_outline</span>
+              <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
+              {isError ? (
+                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+                  Retry
+                </button>
+              ) : (
+                <button type="button" className="text-xs font-semibold underline" onClick={() => setActionError(null)}>
+                  Dismiss
+                </button>
+              )}
+            </div>
+          )}
+        </>
+      }
+    >
+    <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {[
           {
@@ -513,13 +524,8 @@ export default function LeavePage() {
             </table>
           </div>
         )}
-        <ListPagination
-          page={Math.min(page, lastPage)}
-          lastPage={lastPage}
-          total={filtered.length}
-          onPageChange={setPage}
-        />
       </div>
     </div>
+    </RegisterShell>
   );
 }

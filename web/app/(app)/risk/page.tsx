@@ -7,6 +7,7 @@ import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToXls } from "@/lib/csvExport";
 import { loadPdfLibs } from "@/lib/pdf-libs";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ const filterMap: Record<string, string | undefined> = {
 export default function RiskRegisterPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [matrixFilter, setMatrixFilter] = useState<{ likelihood?: number; impact?: number } | null>(null);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   const { data: pageData, isLoading, isError } = useQuery({
     queryKey: ["risk", "list", statusFilter],
@@ -157,13 +159,13 @@ export default function RiskRegisterPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Risk Register</h1>
-          <p className="page-subtitle">Institutional risk management — identify, assess, and mitigate risks across all departments.</p>
-        </div>
+    <RegisterShell
+      title="Risk Register"
+      subtitle="Institutional risk management — identify, assess, and mitigate risks across all departments."
+      density={density}
+      onDensityChange={setDensity}
+      loading={isLoading}
+      actions={
         <div className="flex items-center gap-2">
           <button
             onClick={() => exportToXls("risk-register", buildExportRows(), EXPORT_COLUMNS)}
@@ -188,15 +190,17 @@ export default function RiskRegisterPage() {
             Log Risk
           </Link>
         </div>
-      </div>
-
-      {isError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          Failed to load risk register.
-        </div>
-      )}
-
+      }
+      stats={
+        isError ? (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">error_outline</span>
+            Failed to load risk register.
+          </div>
+        ) : null
+      }
+    >
+    <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
@@ -459,5 +463,6 @@ export default function RiskRegisterPage() {
         )}
       </div>
     </div>
+    </RegisterShell>
   );
 }
