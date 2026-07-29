@@ -234,6 +234,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/mande/indicators", permission: ["mande.view", "mande.create"] },
   { path: "/mande/reports", permission: ["mande.view"] },
   { path: "/mande", permission: "mande.view" },
+  // Audit Management Module (Phase 1)
+  { path: "/audit", permission: ["audit.view", "audit.findings.view", "audit.dashboard.auditor", "audit.dashboard.management", "audit.dashboard.sg", "audit.admin"] },
 ];
 
 /**

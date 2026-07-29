@@ -76,6 +76,16 @@ class RolesAndPermissionsSeeder extends Seeder
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
             'reports.view', 'reports.export', 'reports.audit',
             'audit.view', 'audit.export',
+            // Audit Management Module (Phase 1) — distinct from platform audit.view/export
+            'audit.universe.manage', 'audit.plan.manage', 'audit.plan.approve',
+            'audit.engagement.manage', 'audit.engagement.fieldwork',
+            'audit.findings.issue', 'audit.findings.view',
+            'audit.response.manage', 'audit.corrective.manage', 'audit.corrective.verify',
+            'audit.workpapers.manage', 'audit.workpapers.review',
+            'audit.report.draft', 'audit.report.issue',
+            'audit.external.coordinate',
+            'audit.dashboard.auditor', 'audit.dashboard.management', 'audit.dashboard.sg',
+            'audit.settings.view', 'audit.events.view', 'audit.confidential.view', 'audit.admin',
             'system.admin',
             // Risk Register
             'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve', 'risk.manage', 'risk.admin', 'risk.accept', 'risk.confidential',
@@ -155,6 +165,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'governance.view', 'governance.create', 'governance.approve', 'governance.admin',
                     'decisions.view', 'decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin', 'decisions.confidential',
                     'reports.view', 'reports.export',
+                    'audit.view', 'audit.plan.approve', 'audit.findings.view',
+                    'audit.dashboard.management', 'audit.settings.view',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -191,6 +203,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'overtime.request',
                     'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
                     'weekly-reports.submit', 'weekly-reports.export',
+                    'audit.view', 'audit.findings.view',
+                    'audit.response.manage', 'audit.corrective.manage',
+                    'audit.dashboard.management',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -212,6 +227,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'weekly-reports.publish-department', 'weekly-reports.record-decision',
                     'weekly-reports.create-assignment', 'weekly-reports.create-risk',
                     'weekly-reports.export',
+                    'audit.view', 'audit.findings.view',
+                    'audit.response.manage', 'audit.corrective.manage',
+                    'audit.dashboard.management',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -260,6 +278,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'hr.view', 'hr.approve',
                     'reports.view', 'reports.export',
                     'audit.view',
+                    'audit.plan.approve', 'audit.findings.view',
+                    'audit.dashboard.sg', 'audit.dashboard.management',
+                    'audit.settings.view', 'audit.events.view',
                     'risk.view', 'risk.review', 'risk.approve',
                     'correspondence.view', 'correspondence.create', 'correspondence.review',
                     'correspondence.approve', 'correspondence.send', 'correspondence.route',
@@ -355,6 +376,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'weekly-reports.accept', 'weekly-reports.view-department', 'weekly-reports.view-management',
                     'weekly-reports.publish-institutional', 'weekly-reports.record-decision',
                     'weekly-reports.create-assignment', 'weekly-reports.create-risk', 'weekly-reports.export',
+                    'audit.view', 'audit.findings.view',
+                    'audit.response.manage', 'audit.corrective.manage',
+                    'audit.dashboard.management',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -373,6 +397,17 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'leave.view', 'imprest.view', 'finance.view',
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'mande.view', 'mande.review',
+                    'audit.view', 'audit.export',
+                    'audit.universe.manage', 'audit.plan.manage',
+                    'audit.engagement.manage', 'audit.engagement.fieldwork',
+                    'audit.findings.issue', 'audit.findings.view',
+                    'audit.workpapers.manage', 'audit.workpapers.review',
+                    'audit.report.draft', 'audit.report.issue',
+                    'audit.corrective.verify',
+                    'audit.external.coordinate',
+                    'audit.dashboard.auditor',
+                    'audit.settings.view', 'audit.events.view',
+                    'audit.confidential.view',
                 ])->where('guard_name', $guard)->get()
             );
 

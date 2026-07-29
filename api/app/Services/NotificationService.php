@@ -192,6 +192,20 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nYour travel request {{reference}} was returned for correction:\n\n{{comment}}\n\nPlease revise and resubmit.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Audit Management — privacy-safe (no confidential detail in subject/body)
+            'audit.engagement_notified' => [
+                'subject' => 'Audit engagement update',
+                'body'    => "Dear {{name}},\n\nAn audit engagement requires your attention. Sign in to Nexus to view details.\n\nRegards,\nSADC-PF Internal Audit",
+            ],
+            'audit.evidence_requested' => [
+                'subject' => 'Audit evidence request',
+                'body'    => "Dear {{name}},\n\nAn evidence request has been issued. Sign in to Nexus to respond.\n\nRegards,\nSADC-PF Internal Audit",
+            ],
+            'audit.finding_issued' => [
+                'subject' => 'Audit finding requires response',
+                'body'    => "Dear {{name}},\n\nAn audit finding requires a management response. Sign in to Nexus for details.\n\nRegards,\nSADC-PF Internal Audit",
+            ],
+
             // Leave
             'leave.submitted' => [
                 'subject' => 'Leave request submitted — Action required',

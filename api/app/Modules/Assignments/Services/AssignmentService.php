@@ -678,6 +678,12 @@ class AssignmentService
             ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
         }
 
+        // Audit corrective actions: assignment completion ≠ finding closure.
+        if ($assignment->source_type === 'audit_finding') {
+            app(\App\Modules\Audit\Services\AuditFindingService::class)
+                ->syncFromAssignmentCompletion($assignment);
+        }
+
         return $assignment->fresh(['creator', 'assignee', 'department', 'reviewer', 'updates.submitter']);
     }
 

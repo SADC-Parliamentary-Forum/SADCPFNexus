@@ -1618,6 +1618,71 @@ Route::prefix('v1')->group(function () {
         Route::post('weekly-summary-items/{weeklySummaryItem}/carry-forward', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'carryForward']);
         Route::post('weekly-report-risks/{weeklyReportRisk}/create-risk', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'createRiskFromWeekly']);
 
+        // Audit Management Module (Phase 1) — Internal Audit ≠ platform AuditLog
+        Route::prefix('audit-management')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\Audit\AuditManagementController::class;
+
+            Route::get('dashboard', [$c, 'dashboard']);
+            Route::get('lookups', [$c, 'lookups']);
+            Route::get('settings', [$c, 'settings']);
+            Route::middleware('can:audit.events.view')->get('events', [$c, 'events']);
+
+            Route::get('universe', [$c, 'universeIndex']);
+            Route::post('universe', [$c, 'universeStore']);
+            Route::put('universe/{universe}', [$c, 'universeUpdate']);
+
+            Route::get('plans', [$c, 'plansIndex']);
+            Route::post('plans', [$c, 'plansStore']);
+            Route::get('plans/{plan}', [$c, 'plansShow']);
+            Route::put('plans/{plan}', [$c, 'plansUpdate']);
+            Route::post('plans/{plan}/submit', [$c, 'plansSubmit']);
+            Route::post('plans/{plan}/approve', [$c, 'plansApprove']);
+            Route::post('plans/{plan}/reject', [$c, 'plansReject']);
+            Route::post('plans/{plan}/amend', [$c, 'plansAmend']);
+
+            Route::get('engagements', [$c, 'engagementsIndex']);
+            Route::post('engagements', [$c, 'engagementsStore']);
+            Route::get('engagements/{engagement}', [$c, 'engagementsShow']);
+            Route::post('engagements/{engagement}/notify', [$c, 'engagementsNotify']);
+            Route::post('engagements/{engagement}/independence', [$c, 'independenceDeclare']);
+            Route::post('engagements/{engagement}/fieldwork', [$c, 'engagementsFieldwork']);
+            Route::post('engagements/{engagement}/evidence-requests', [$c, 'evidenceStore']);
+            Route::post('engagements/{engagement}/workpapers', [$c, 'workpapersStore']);
+            Route::post('engagements/{engagement}/samples', [$c, 'samplesStore']);
+            Route::post('engagements/{engagement}/observations', [$c, 'observationsStore']);
+
+            Route::post('evidence-requests/{evidenceRequest}/respond', [$c, 'evidenceRespond']);
+            Route::post('workpapers/{workpaper}/review-notes', [$c, 'workpapersReview']);
+            Route::post('workpapers/{workpaper}/finalise', [$c, 'workpapersFinalise']);
+            Route::post('observations/{observation}/convert', [$c, 'observationsConvert']);
+
+            Route::get('findings', [$c, 'findingsIndex']);
+            Route::post('findings', [$c, 'findingsStore']);
+            Route::get('findings/{finding}', [$c, 'findingsShow']);
+            Route::put('findings/{finding}', [$c, 'findingsUpdate']);
+            Route::post('findings/{finding}/issue', [$c, 'findingsIssue']);
+            Route::post('findings/{finding}/responses', [$c, 'findingsRespond']);
+            Route::post('findings/{finding}/recommendations', [$c, 'findingsRecommend']);
+            Route::post('findings/{finding}/corrective-actions', [$c, 'correctiveStore']);
+            Route::post('findings/{finding}/link-risk', [$c, 'findingsLinkRisk']);
+            Route::post('findings/{finding}/risk-acceptance-path', [$c, 'findingsRiskAcceptance']);
+
+            Route::post('corrective-actions/{correctiveAction}/complete', [$c, 'correctiveComplete']);
+            Route::post('corrective-actions/{correctiveAction}/verify', [$c, 'correctiveVerify']);
+
+            Route::post('reports', [$c, 'reportsStore']);
+            Route::put('reports/{report}', [$c, 'reportsUpdate']);
+            Route::post('reports/{report}/issue', [$c, 'reportsIssue']);
+            Route::post('reports/{report}/distribute', [$c, 'reportsDistribute']);
+
+            Route::get('external', [$c, 'externalIndex']);
+            Route::post('external', [$c, 'externalStore']);
+            Route::post('external/{external}/activate', [$c, 'externalActivate']);
+            Route::post('external/{external}/revoke', [$c, 'externalRevoke']);
+            Route::post('external/{external}/requests', [$c, 'externalRequest']);
+            Route::post('external/{external}/findings', [$c, 'externalFinding']);
+        });
+
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
              Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);

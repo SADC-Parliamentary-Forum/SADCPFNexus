@@ -8183,3 +8183,64 @@ export interface MeetingAgendaItem {
   presenter_id?: number | null;
 }
 
+
+export const auditApi = {
+  dashboard: (view?: string) =>
+    api.get<{ data: Record<string, unknown> }>("/audit-management/dashboard", { params: view ? { view } : undefined }),
+  lookups: () => api.get<{ data: Record<string, unknown> }>("/audit-management/lookups"),
+  settings: () => api.get<{ data: Record<string, unknown> }>("/audit-management/settings"),
+  events: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/events", { params }),
+
+  listUniverse: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/universe", { params }),
+  createUniverse: (data: Record<string, unknown>) =>
+    api.post("/audit-management/universe", data),
+  updateUniverse: (id: number, data: Record<string, unknown>) =>
+    api.put(`/audit-management/universe/${id}`, data),
+
+  listPlans: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/plans", { params }),
+  createPlan: (data: Record<string, unknown>) =>
+    api.post("/audit-management/plans", data),
+  getPlan: (id: number) => api.get(`/audit-management/plans/${id}`),
+  updatePlan: (id: number, data: Record<string, unknown>) =>
+    api.put(`/audit-management/plans/${id}`, data),
+  submitPlan: (id: number, data?: Record<string, unknown>) =>
+    api.post(`/audit-management/plans/${id}/submit`, data),
+  approvePlan: (id: number, data?: Record<string, unknown>) =>
+    api.post(`/audit-management/plans/${id}/approve`, data),
+  amendPlan: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/plans/${id}/amend`, data),
+
+  listEngagements: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/engagements", { params }),
+  createEngagement: (data: Record<string, unknown>) =>
+    api.post("/audit-management/engagements", data),
+  getEngagement: (id: number) => api.get(`/audit-management/engagements/${id}`),
+  notifyEngagement: (id: number) => api.post(`/audit-management/engagements/${id}/notify`),
+  declareIndependence: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/engagements/${id}/independence`, data),
+  startFieldwork: (id: number) => api.post(`/audit-management/engagements/${id}/fieldwork`),
+
+  listFindings: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/findings", { params }),
+  createFinding: (data: Record<string, unknown>) =>
+    api.post("/audit-management/findings", data),
+  getFinding: (id: number) => api.get(`/audit-management/findings/${id}`),
+  issueFinding: (id: number) => api.post(`/audit-management/findings/${id}/issue`),
+  respondFinding: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/findings/${id}/responses`, data),
+  createCorrective: (findingId: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/findings/${findingId}/corrective-actions`, data),
+  completeCorrective: (id: number) => api.post(`/audit-management/corrective-actions/${id}/complete`),
+  verifyCorrective: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/corrective-actions/${id}/verify`, data),
+
+  listExternal: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/external", { params }),
+  createExternal: (data: Record<string, unknown>) =>
+    api.post("/audit-management/external", data),
+  activateExternal: (id: number) => api.post(`/audit-management/external/${id}/activate`),
+  revokeExternal: (id: number) => api.post(`/audit-management/external/${id}/revoke`),
+};
