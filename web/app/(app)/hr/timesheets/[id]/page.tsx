@@ -224,12 +224,20 @@ export default function TimesheetDetailPage() {
             PDF
           </a>
           <a
+            href={hrApi.exportTimesheetUrl(timesheet.id, "excel")}
+            className="btn-secondary text-sm"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Excel
+          </a>
+          <a
             href={hrApi.exportTimesheetUrl(timesheet.id, "csv")}
             className="btn-secondary text-sm"
             target="_blank"
             rel="noreferrer"
           >
-            Excel / CSV
+            CSV
           </a>
           {timesheet.status === "draft" && (
             <Link href="/hr/timesheets" className="btn-secondary">Edit</Link>

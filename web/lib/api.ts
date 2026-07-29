@@ -4288,8 +4288,33 @@ export const hrApi = {
       "/hr/timesheets/holiday-dates",
       { params: { start, end } }
     ),
-  listTimesheetTemplates: () =>
-    api.get<{ data: TimesheetTemplate[] }>("/hr/timesheets/templates"),
+  listTimesheetTemplates: (params?: { include_inactive?: boolean | number | string }) =>
+    api.get<{ data: TimesheetTemplate[] }>("/hr/timesheets/templates", { params }),
+  createTimesheetTemplate: (data: {
+    name: string;
+    code: string;
+    donor_name?: string | null;
+    description?: string | null;
+    is_active?: boolean;
+    sort_order?: number;
+    defaults?: TimesheetTemplate["defaults"];
+  }) =>
+    api.post<{ message: string; data: TimesheetTemplate }>("/hr/timesheets/templates", data),
+  updateTimesheetTemplate: (
+    id: number,
+    data: Partial<{
+      name: string;
+      code: string;
+      donor_name: string | null;
+      description: string | null;
+      is_active: boolean;
+      sort_order: number;
+      defaults: TimesheetTemplate["defaults"];
+    }>,
+  ) =>
+    api.put<{ message: string; data: TimesheetTemplate }>(`/hr/timesheets/templates/${id}`, data),
+  deactivateTimesheetTemplate: (id: number) =>
+    api.post<{ message: string; data: TimesheetTemplate }>(`/hr/timesheets/templates/${id}/deactivate`),
   applyTimesheetTemplate: (templateId: number, data: { week_start: string; week_end: string }) =>
     api.post<{
       message: string;

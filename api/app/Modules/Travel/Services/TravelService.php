@@ -56,6 +56,18 @@ class TravelService
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+        if (! empty($filters['stage'])) {
+            $query->where('status', $filters['stage']);
+        }
+        if (! empty($filters['requester_id'])) {
+            $query->where('requester_id', (int) $filters['requester_id']);
+        }
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('departure_date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('departure_date', '<=', $filters['date_to']);
+        }
         if (! empty($filters['scope']) && $filters['scope'] === 'mine') {
             $query->where('requester_id', $user->id);
         }
@@ -70,6 +82,19 @@ class TravelService
                     ->orWhereRaw('LOWER(destination_country) LIKE LOWER(?)', [$term]);
             });
         }
+
+        $sort = (string) ($filters['sort'] ?? 'created_at');
+        $sortDir = strtolower((string) ($filters['sort_dir'] ?? 'desc')) === 'asc' ? 'asc' : 'desc';
+        $allowedSorts = [
+            'created_at' => 'created_at',
+            'departure_date' => 'departure_date',
+            'return_date' => 'return_date',
+            'status' => 'status',
+            'reference_number' => 'reference_number',
+            'requester' => 'requester_id',
+        ];
+        $sortColumn = $allowedSorts[$sort] ?? 'created_at';
+        $query->reorder($sortColumn, $sortDir);
 
         $paginator = $query->paginate($filters['per_page'] ?? 20);
 

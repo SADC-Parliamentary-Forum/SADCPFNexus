@@ -520,43 +520,28 @@ class TimesheetController extends Controller
 
     public function templates(Request $request): JsonResponse
     {
-        $templates = TimesheetTemplate::query()
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $user = $request->user();
+        $includeInactive = filter_var($request->query('include_inactive'), FILTER_VALIDATE_BOOLEAN);
+        $canAdminTemplates = $this->canAdministerTemplates($user);
 
-        return response()->json(['data' => $templates]);
+        $query = TimesheetTemplate::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->orderBy('sort_order')
+            ->orderBy('name');
+
+        if (! ($includeInactive && $canAdminTemplates)) {
+            $query->where('is_active', true);
+        }
+
+        return response()->json(['data' => $query->get()]);
     }
 
     public function storeTemplate(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless(
-            $user->can('timesheets.admin')
-                || $user->can('hr.admin')
-                || $user->isSystemAdmin(),
-            403
-        );
+        abort_unless($this->canAdministerTemplates($user), 403);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:200'],
-            'code' => ['required', 'string', 'max:64'],
-            'donor_name' => ['nullable', 'string', 'max:200'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'is_active' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-            'defaults' => ['nullable', 'array'],
-            'defaults.project_id' => ['nullable', 'integer', 'exists:timesheet_projects,id'],
-            'defaults.work_bucket' => ['nullable', 'string', 'in:'.implode(',', TimesheetEntry::WORK_BUCKETS)],
-            'defaults.activity_type' => ['nullable', 'string', 'max:100'],
-            'defaults.entry_category' => ['nullable', 'string', 'max:64'],
-            'defaults.programme_id' => ['nullable', 'integer'],
-            'defaults.pif_id' => ['nullable', 'integer'],
-            'defaults.description' => ['nullable', 'string', 'max:500'],
-            'defaults.hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
-        ]);
+        $data = $request->validate($this->templateValidationRules(requiredCode: true));
 
         $template = TimesheetTemplate::create([
             'tenant_id' => $user->tenant_id,
@@ -570,6 +555,33 @@ class TimesheetController extends Controller
         ]);
 
         return response()->json(['message' => 'Template created.', 'data' => $template], 201);
+    }
+
+    public function updateTemplate(Request $request, TimesheetTemplate $template): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->canAdministerTemplates($user), 403);
+        abort_unless((int) $template->tenant_id === (int) $user->tenant_id, 404);
+
+        $data = $request->validate($this->templateValidationRules(requiredCode: false));
+
+        $template->fill(collect($data)->only([
+            'name', 'code', 'donor_name', 'description', 'is_active', 'sort_order', 'defaults',
+        ])->all());
+        $template->save();
+
+        return response()->json(['message' => 'Template updated.', 'data' => $template->fresh()]);
+    }
+
+    public function deactivateTemplate(Request $request, TimesheetTemplate $template): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($this->canAdministerTemplates($user), 403);
+        abort_unless((int) $template->tenant_id === (int) $user->tenant_id, 404);
+
+        $template->update(['is_active' => false]);
+
+        return response()->json(['message' => 'Template deactivated.', 'data' => $template->fresh()]);
     }
 
     public function applyTemplate(Request $request, TimesheetTemplate $template): JsonResponse
@@ -607,5 +619,36 @@ class TimesheetController extends Controller
         return $user->hasPermissionTo('hr.admin')
             || $user->hasPermissionTo('hr.approve')
             || $user->hasPermissionTo('hr.edit');
+    }
+
+    private function canAdministerTemplates($user): bool
+    {
+        return $user->can('timesheets.admin')
+            || $user->can('hr.admin')
+            || $user->isSystemAdmin();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function templateValidationRules(bool $requiredCode): array
+    {
+        return [
+            'name' => [$requiredCode ? 'required' : 'sometimes', 'string', 'max:200'],
+            'code' => [$requiredCode ? 'required' : 'sometimes', 'string', 'max:64'],
+            'donor_name' => ['nullable', 'string', 'max:200'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+            'defaults' => ['nullable', 'array'],
+            'defaults.project_id' => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'defaults.work_bucket' => ['nullable', 'string', 'in:'.implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'defaults.activity_type' => ['nullable', 'string', 'max:100'],
+            'defaults.entry_category' => ['nullable', 'string', 'max:64'],
+            'defaults.programme_id' => ['nullable', 'integer'],
+            'defaults.pif_id' => ['nullable', 'integer'],
+            'defaults.description' => ['nullable', 'string', 'max:500'],
+            'defaults.hours' => ['nullable', 'numeric', 'min:0', 'max:24'],
+        ];
     }
 }

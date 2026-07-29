@@ -198,6 +198,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/imprest", permission: "imprest.view" },
   { path: "/pif", permission: "governance.view" },
   { path: "/workplan" },
+  { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/team", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },

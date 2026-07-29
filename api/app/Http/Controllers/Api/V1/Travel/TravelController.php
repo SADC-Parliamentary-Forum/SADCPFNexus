@@ -54,7 +54,10 @@ class TravelController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['status', 'search', 'per_page', 'scope', 'queue']);
+        $filters = $request->only([
+            'status', 'search', 'per_page', 'scope', 'queue',
+            'stage', 'requester_id', 'date_from', 'date_to', 'sort', 'sort_dir',
+        ]);
         return response()->json($this->travelService->list($filters, $request->user()));
     }
 

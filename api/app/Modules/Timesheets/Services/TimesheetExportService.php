@@ -12,6 +12,8 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer as XlsxWriter;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TimesheetExportService
@@ -132,7 +134,8 @@ class TimesheetExportService
 
         return match ($format) {
             'pdf' => $this->pdf($timesheet, $actor),
-            'excel', 'xlsx', 'csv' => $this->csv($timesheet, $actor, $format === 'excel' || $format === 'xlsx'),
+            'excel', 'xlsx' => $this->xlsx($timesheet, $actor),
+            'csv' => $this->csv($timesheet, $actor, false),
             default => throw ValidationException::withMessages(['format' => 'Supported formats: pdf, csv, excel.']),
         };
     }
@@ -170,38 +173,72 @@ class TimesheetExportService
 
         return response()->streamDownload(function () use ($timesheet, $actor) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, [
-                'employee', 'employee_id', 'department', 'week_start', 'week_end', 'status',
-                'work_date', 'hours', 'overtime_hours', 'project', 'work_bucket', 'activity_type',
-                'entry_category', 'description', 'source_type',
-                'generated_by', 'generated_at', 'confidentiality',
-            ]);
+            fputcsv($out, $this->exportHeaders());
             foreach ($timesheet->entries as $entry) {
-                fputcsv($out, [
-                    $timesheet->user?->name,
-                    $timesheet->user_id,
-                    $timesheet->user?->department?->name,
-                    $timesheet->week_start?->toDateString(),
-                    $timesheet->week_end?->toDateString(),
-                    $timesheet->status,
-                    $entry->work_date?->toDateString(),
-                    $entry->hours,
-                    $entry->overtime_hours,
-                    $entry->project?->label,
-                    $entry->work_bucket,
-                    $entry->activity_type,
-                    $entry->entry_category,
-                    $entry->description,
-                    $entry->source_type,
-                    $actor->name,
-                    now()->toIso8601String(),
-                    'internal',
-                ]);
+                fputcsv($out, $this->exportRow($timesheet, $entry, $actor));
             }
             fclose($out);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'X-Timesheet-Export' => $excelFriendly ? 'excel-csv' : 'csv',
         ]);
+    }
+
+    private function xlsx(Timesheet $timesheet, User $actor): StreamedResponse
+    {
+        $filename = 'timesheet-'.$timesheet->id.'-'.$timesheet->week_start->format('Ymd').'.xlsx';
+
+        return response()->streamDownload(function () use ($timesheet, $actor) {
+            $writer = new XlsxWriter();
+            $writer->openToFile('php://output');
+            $writer->addRow(Row::fromValues($this->exportHeaders()));
+            foreach ($timesheet->entries as $entry) {
+                $writer->addRow(Row::fromValues($this->exportRow($timesheet, $entry, $actor)));
+            }
+            $writer->close();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'X-Timesheet-Export' => 'xlsx',
+        ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function exportHeaders(): array
+    {
+        return [
+            'employee', 'employee_id', 'department', 'week_start', 'week_end', 'status',
+            'work_date', 'hours', 'overtime_hours', 'project', 'work_bucket', 'activity_type',
+            'entry_category', 'description', 'source_type',
+            'generated_by', 'generated_at', 'confidentiality',
+        ];
+    }
+
+    /**
+     * @return list<string|int|float|null>
+     */
+    private function exportRow(Timesheet $timesheet, TimesheetEntry $entry, User $actor): array
+    {
+        return [
+            $timesheet->user?->name,
+            $timesheet->user_id,
+            $timesheet->user?->department?->name,
+            $timesheet->week_start?->toDateString(),
+            $timesheet->week_end?->toDateString(),
+            $timesheet->status,
+            $entry->work_date?->toDateString(),
+            $entry->hours,
+            $entry->overtime_hours,
+            $entry->project?->label,
+            $entry->work_bucket,
+            $entry->activity_type,
+            $entry->entry_category,
+            $entry->description,
+            $entry->source_type,
+            $actor->name,
+            now()->toIso8601String(),
+            'internal',
+        ];
     }
 }

@@ -25,6 +25,24 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   amendment_pending: { label: "Amendment", badge: "badge-warning" },
 };
 
+const STAGE_OPTIONS = [
+  { value: "", label: "All stages" },
+  { value: "submitted", label: "Submitted" },
+  { value: "resubmitted", label: "Resubmitted" },
+  { value: "approved", label: "Approved" },
+  { value: "returned_for_correction", label: "Returned" },
+  { value: "rejected", label: "Rejected" },
+];
+
+const SORT_OPTIONS = [
+  { value: "created_at:desc", label: "Newest first" },
+  { value: "created_at:asc", label: "Oldest first" },
+  { value: "departure_date:asc", label: "Departure ↑" },
+  { value: "departure_date:desc", label: "Departure ↓" },
+  { value: "requester:asc", label: "Requester A–Z" },
+  { value: "status:asc", label: "Status" },
+];
+
 export type TravelQueueVariant = "approval" | "finance" | "admin" | "director-finance" | "retirement";
 
 function destinationOf(row: TravelRequest): string {
@@ -55,6 +73,40 @@ function holdingOf(row: TravelRequest): string {
   return "—";
 }
 
+function holdingUrgent(row: TravelRequest): boolean {
+  if (row.retirement_status === "overdue") return true;
+  if (row.status === "returned_for_correction") return true;
+  if (Array.isArray(row.pending_with) && row.pending_with.length > 0) return true;
+  if (row.pending_with_label && row.pending_with_label !== "—") return true;
+  return false;
+}
+
+function storageKey(queue: string) {
+  return `travel-queue-prefs:${queue}`;
+}
+
+type QueuePrefs = {
+  search: string;
+  stage: string;
+  requesterId: string;
+  dateFrom: string;
+  dateTo: string;
+  sort: string;
+};
+
+function loadPrefs(queue: string): QueuePrefs {
+  if (typeof window === "undefined") {
+    return { search: "", stage: "", requesterId: "", dateFrom: "", dateTo: "", sort: "created_at:desc" };
+  }
+  try {
+    const raw = localStorage.getItem(storageKey(queue));
+    if (!raw) return { search: "", stage: "", requesterId: "", dateFrom: "", dateTo: "", sort: "created_at:desc" };
+    return { search: "", stage: "", requesterId: "", dateFrom: "", dateTo: "", sort: "created_at:desc", ...JSON.parse(raw) };
+  } catch {
+    return { search: "", stage: "", requesterId: "", dateFrom: "", dateTo: "", sort: "created_at:desc" };
+  }
+}
+
 export function TravelQueueTable({
   queue,
   title,
@@ -68,17 +120,65 @@ export function TravelQueueTable({
   variant: TravelQueueVariant;
   emptyHint?: string;
 }) {
+  const initial = useMemo(() => loadPrefs(queue), [queue]);
   const [rows, setRows] = useState<TravelRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initial.search);
+  const [stage, setStage] = useState(initial.stage);
+  const [requesterId, setRequesterId] = useState(initial.requesterId);
+  const [dateFrom, setDateFrom] = useState(initial.dateFrom);
+  const [dateTo, setDateTo] = useState(initial.dateTo);
+  const [sort, setSort] = useState(initial.sort);
   const [page, setPage] = useState(1);
+  const [travellers, setTravellers] = useState<Array<{ id: number; name: string }>>([]);
+
+  useEffect(() => {
+    const prefs = loadPrefs(queue);
+    setSearch(prefs.search);
+    setStage(prefs.stage);
+    setRequesterId(prefs.requesterId);
+    setDateFrom(prefs.dateFrom);
+    setDateTo(prefs.dateTo);
+    setSort(prefs.sort);
+  }, [queue]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        storageKey(queue),
+        JSON.stringify({ search, stage, requesterId, dateFrom, dateTo, sort }),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [queue, search, stage, requesterId, dateFrom, dateTo, sort]);
+
+  useEffect(() => {
+    travelApi
+      .travellers()
+      .then((res) => setTravellers((res.data as { data?: Array<{ id: number; name: string }> })?.data ?? []))
+      .catch(() => setTravellers([]));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await travelApi.list({ queue, per_page: 100 });
+      const [sortField, sortDir] = (sort || "created_at:desc").split(":");
+      const params: Record<string, string | number> = {
+        queue,
+        per_page: 100,
+        sort: sortField || "created_at",
+        sort_dir: sortDir || "desc",
+      };
+      if (search.trim()) params.search = search.trim();
+      if (stage) params.stage = stage;
+      if (requesterId) params.requester_id = Number(requesterId);
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+
+      const res = await travelApi.list(params);
       setRows(getListData<TravelRequest>(res.data));
     } catch {
       setError("Failed to load this queue.");
@@ -86,7 +186,7 @@ export function TravelQueueTable({
     } finally {
       setLoading(false);
     }
-  }, [queue]);
+  }, [queue, search, stage, requesterId, dateFrom, dateTo, sort]);
 
   useEffect(() => {
     void load();
@@ -94,44 +194,36 @@ export function TravelQueueTable({
 
   useEffect(() => {
     setPage(1);
-  }, [search, queue]);
+  }, [search, stage, requesterId, dateFrom, dateTo, sort, queue]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => {
-      const hay = [
-        row.reference_number,
-        row.purpose,
-        row.destination_country,
-        row.destination_city,
-        row.requester?.name,
-        row.status,
-        row.finance_status,
-        row.retirement_status,
-        row.workflow_stage,
-        row.pending_with_label,
-        ...(Array.isArray(row.pending_with) ? row.pending_with : []),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [rows, search]);
-
-  const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
+  const lastPage = clientPageCount(rows.length, DEFAULT_PAGE_SIZE);
   const safePage = Math.min(page, lastPage);
   const paged = useMemo(
-    () => slicePage(filtered, safePage, DEFAULT_PAGE_SIZE),
-    [filtered, safePage],
+    () => slicePage(rows, safePage, DEFAULT_PAGE_SIZE),
+    [rows, safePage],
   );
 
+  const holdingCount = useMemo(
+    () => rows.filter((r) => holdingUrgent(r)).length,
+    [rows],
+  );
+
+  const clearFilters = () => {
+    setSearch("");
+    setStage("");
+    setRequesterId("");
+    setDateFrom("");
+    setDateTo("");
+    setSort("created_at:desc");
+  };
+
+  const hasFilters = Boolean(search || stage || requesterId || dateFrom || dateTo || sort !== "created_at:desc");
+
   const handleExport = () => {
-    if (filtered.length === 0) return;
+    if (rows.length === 0) return;
     exportToCsv(
       `travel-queue-${queue}-${new Date().toISOString().slice(0, 10)}.csv`,
-      filtered.map((r) => ({
+      rows.map((r) => ({
         reference: r.reference_number,
         purpose: r.purpose,
         destination: destinationOf(r),
@@ -167,7 +259,7 @@ export function TravelQueueTable({
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
@@ -184,7 +276,7 @@ export function TravelQueueTable({
           <button
             type="button"
             className="btn-secondary text-sm disabled:opacity-50"
-            disabled={filtered.length === 0}
+            disabled={rows.length === 0}
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
@@ -207,26 +299,26 @@ export function TravelQueueTable({
         </div>
       )}
 
-      {!loading && rows.length > 0 && (
+      {!loading && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {[
             { label: "In queue", value: rows.length, icon: "inbox", color: "text-primary", bg: "bg-primary/10" },
             {
-              label: "Matching filter",
-              value: filtered.length,
-              icon: "filter_alt",
+              label: "Holding attention",
+              value: holdingCount,
+              icon: "hourglass_top",
               color: "text-amber-600",
               bg: "bg-amber-50",
             },
             {
               label: "DSA total (shown)",
-              value: formatCurrency(filtered.reduce((sum, r) => sum + dsaOf(r), 0)),
+              value: formatCurrency(rows.reduce((sum, r) => sum + dsaOf(r), 0)),
               icon: "payments",
               color: "text-green-600",
               bg: "bg-green-50",
             },
           ].map((s) => (
-            <div key={s.label} className="card p-4">
+            <div key={s.label} className="card p-3.5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-neutral-500">{s.label}</p>
@@ -241,18 +333,89 @@ export function TravelQueueTable({
         </div>
       )}
 
-      <div className="card p-4">
-        <div className="relative max-w-md">
-          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[20px]">
-            search
-          </span>
-          <input
-            type="search"
-            className="form-input pl-10"
-            placeholder="Search reference, requester, stage…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="card space-y-3 p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          <div className="relative xl:col-span-2">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[20px]">
+              search
+            </span>
+            <input
+              type="search"
+              className="form-input pl-10"
+              placeholder="Search reference, purpose…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div>
+            <select
+              className="form-input"
+              value={stage}
+              onChange={(e) => setStage(e.target.value)}
+              aria-label="Filter by stage"
+            >
+              {STAGE_OPTIONS.map((o) => (
+                <option key={o.value || "all"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <select
+              className="form-input"
+              value={requesterId}
+              onChange={(e) => setRequesterId(e.target.value)}
+              aria-label="Filter by requester"
+            >
+              <option value="">All requesters</option>
+              {travellers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <input
+              type="date"
+              className="form-input"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              aria-label="Departure from"
+              title="Departure from"
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              className="form-input"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              aria-label="Departure to"
+              title="Departure to"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="form-input max-w-xs"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label="Sort queue"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {hasFilters && (
+            <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
+          <span className="text-[11px] text-neutral-400">Sort & filters persist for this queue</span>
         </div>
       </div>
 
@@ -263,106 +426,127 @@ export function TravelQueueTable({
               <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">inbox</span>
+            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
+              {hasFilters ? "filter_alt_off" : "inbox"}
+            </span>
             <p className="text-sm font-semibold text-neutral-600">
-              {rows.length === 0 ? "No items in this queue" : "No matches for your search"}
+              {hasFilters ? "No matches for these filters" : "No items in this queue"}
             </p>
             <p className="mt-1 text-xs text-neutral-400">
-              {emptyHint ?? (rows.length === 0 ? "Nothing awaiting action right now." : "Try a different search term.")}
+              {hasFilters
+                ? "Try clearing stage, requester, or date range."
+                : emptyHint ?? "Nothing awaiting action right now."}
             </p>
+            {hasFilters && (
+              <button type="button" className="btn-secondary mt-4 text-sm" onClick={clearFilters}>
+                Clear filters
+              </button>
+            )}
           </div>
         ) : (
           <>
-          <div className="overflow-x-auto">
-            <table className="data-table w-full">
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Purpose</th>
-                  <th>Destination</th>
-                  <th>Requester</th>
-                  <th>Stage</th>
-                  <th>Holding up</th>
-                  {variant === "finance" && <th>Est. DSA</th>}
-                  {variant === "finance" && <th>Finance</th>}
-                  {variant === "director-finance" && <th>DSA total</th>}
-                  {variant === "retirement" && <th>Retirement</th>}
-                  {variant === "retirement" && <th>Due</th>}
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {paged.map((t) => {
-                  const sc = STATUS_CONFIG[t.status] ?? { label: t.status || "Unknown", badge: "badge-muted" };
-                  return (
-                    <tr key={t.id}>
-                      <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">{t.reference_number ?? "—"}</td>
-                      <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose ?? "—"}</td>
-                      <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(t)}</td>
-                      <td className="text-sm text-neutral-700 whitespace-nowrap">{t.requester?.name ?? "—"}</td>
-                      <td>
-                        <span className="badge badge-muted text-xs">{stageOf(t)}</span>
-                      </td>
-                      <td className="text-sm text-neutral-700 max-w-[160px]">
-                        <span className="line-clamp-2" title={holdingOf(t)}>
-                          {holdingOf(t)}
-                        </span>
-                      </td>
-                      {variant === "finance" && (
-                        <td className="whitespace-nowrap text-sm">
-                          {formatCurrency(Number(t.estimated_dsa ?? 0))} {t.currency ?? ""}
+            <div className="overflow-x-auto">
+              <table className="data-table w-full">
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Purpose</th>
+                    <th>Destination</th>
+                    <th>Requester</th>
+                    <th>Stage</th>
+                    <th>Holding up</th>
+                    {variant === "finance" && <th>Est. DSA</th>}
+                    {variant === "finance" && <th>Finance</th>}
+                    {variant === "director-finance" && <th>DSA total</th>}
+                    {variant === "retirement" && <th>Retirement</th>}
+                    {variant === "retirement" && <th>Due</th>}
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paged.map((t) => {
+                    const sc = STATUS_CONFIG[t.status] ?? { label: t.status || "Unknown", badge: "badge-muted" };
+                    const holding = holdingOf(t);
+                    const urgent = holdingUrgent(t);
+                    return (
+                      <tr key={t.id} className={urgent ? "bg-amber-50/40" : undefined}>
+                        <td className="font-mono text-xs text-neutral-600 whitespace-nowrap">
+                          {t.reference_number ?? "—"}
                         </td>
-                      )}
-                      {variant === "finance" && (
+                        <td className="max-w-[200px] truncate font-medium text-neutral-900">{t.purpose ?? "—"}</td>
+                        <td className="text-sm text-neutral-600 whitespace-nowrap">{destinationOf(t)}</td>
+                        <td className="text-sm text-neutral-700 whitespace-nowrap">{t.requester?.name ?? "—"}</td>
                         <td>
-                          <span className="badge badge-warning text-xs capitalize">
-                            {(t.finance_status ?? "awaiting").replace(/_/g, " ")}
+                          <span className="badge badge-muted text-xs">{stageOf(t)}</span>
+                        </td>
+                        <td className="text-sm text-neutral-700 max-w-[180px]">
+                          <span
+                            className={`inline-flex items-start gap-1 line-clamp-2 ${urgent ? "font-semibold text-amber-800" : ""}`}
+                            title={holding}
+                          >
+                            {urgent && (
+                              <span className="material-symbols-outlined mt-0.5 text-[14px] text-amber-600">
+                                hourglass_top
+                              </span>
+                            )}
+                            {holding}
                           </span>
                         </td>
-                      )}
-                      {variant === "director-finance" && (
-                        <td className="whitespace-nowrap font-semibold text-sm">
-                          {formatCurrency(dsaOf(t))}
-                        </td>
-                      )}
-                      {variant === "retirement" && (
+                        {variant === "finance" && (
+                          <td className="whitespace-nowrap text-sm">
+                            {formatCurrency(Number(t.estimated_dsa ?? 0))} {t.currency ?? ""}
+                          </td>
+                        )}
+                        {variant === "finance" && (
+                          <td>
+                            <span className="badge badge-warning text-xs capitalize">
+                              {(t.finance_status ?? "awaiting").replace(/_/g, " ")}
+                            </span>
+                          </td>
+                        )}
+                        {variant === "director-finance" && (
+                          <td className="whitespace-nowrap font-semibold text-sm">
+                            {formatCurrency(dsaOf(t))}
+                          </td>
+                        )}
+                        {variant === "retirement" && (
+                          <td>
+                            <span className="badge badge-warning text-xs capitalize">
+                              {(t.retirement_status ?? "pending").replace(/_/g, " ")}
+                            </span>
+                          </td>
+                        )}
+                        {variant === "retirement" && (
+                          <td className="text-xs text-neutral-500 whitespace-nowrap">
+                            {t.retirement_due_at ? formatDateShort(t.retirement_due_at) : "—"}
+                          </td>
+                        )}
                         <td>
-                          <span className="badge badge-warning text-xs capitalize">
-                            {(t.retirement_status ?? "pending").replace(/_/g, " ")}
-                          </span>
+                          <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
                         </td>
-                      )}
-                      {variant === "retirement" && (
-                        <td className="text-xs text-neutral-500 whitespace-nowrap">
-                          {t.retirement_due_at ? formatDateShort(t.retirement_due_at) : "—"}
+                        <td>
+                          <Link
+                            href={`/travel/${t.id}`}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            Open
+                          </Link>
                         </td>
-                      )}
-                      <td>
-                        <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
-                      </td>
-                      <td>
-                        <Link
-                          href={`/travel/${t.id}`}
-                          className="text-xs font-medium text-primary hover:underline"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <ListPagination
-            page={safePage}
-            lastPage={lastPage}
-            total={filtered.length}
-            onPageChange={setPage}
-          />
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <ListPagination
+              page={safePage}
+              lastPage={lastPage}
+              total={rows.length}
+              onPageChange={setPage}
+            />
           </>
         )}
       </div>

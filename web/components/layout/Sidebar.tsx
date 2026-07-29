@@ -216,6 +216,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Work Schedules", href: "/hr/timesheets/schedules", icon: "event_available" },
       { label: "OT Validation", href: "/hr/timesheets/overtime?queue=hr", icon: "verified" },
       { label: "Payroll Export", href: "/hr/timesheets/payroll", icon: "payments" },
+      { label: "Templates", href: "/hr/timesheets/templates", icon: "description" },
       { label: "History", href: "/hr/timesheets/history", icon: "history" },
     ],
   },

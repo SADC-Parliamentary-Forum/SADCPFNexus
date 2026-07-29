@@ -54,14 +54,6 @@ const BUCKET_ICONS: Record<string, string> = {
   other: "category",
 };
 
-const BUCKET_COLORS: Record<string, string> = {
-  delivery: "text-blue-600",
-  meeting: "text-violet-600",
-  communication: "text-sky-600",
-  administration: "text-amber-600",
-  other: "text-neutral-500",
-};
-
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
   draft: { label: "Draft", cls: "badge-muted", icon: "edit_note" },
   submitted: { label: "Pending Approval", cls: "badge-warning", icon: "pending" },
@@ -455,11 +447,64 @@ export default function TimesheetsPage() {
 
   const isDraft = !timesheet || timesheet.status === "draft" || timesheet.status === "returned";
 
-  // Compute daily totals
+  // Compute daily totals + validation
   const dailyTotals: Record<string, number> = {};
   for (const e of entries) {
     dailyTotals[e.work_date] = (dailyTotals[e.work_date] ?? 0) + e.hours;
   }
+  const weekTotal = entries.reduce((s, e) => s + e.hours, 0);
+  const otTotal = entries.reduce((s, e) => s + (e.overtime_hours ?? 0), 0);
+  const rowErrors: Record<number, string> = {};
+  entries.forEach((e, idx) => {
+    if (!e.work_date) rowErrors[idx] = "Date required";
+    else if (e.hours == null || Number.isNaN(Number(e.hours))) rowErrors[idx] = "Hours required";
+    else if (e.hours < 0 || e.hours > 24) rowErrors[idx] = "Hours must be 0–24";
+    else if ((e.overtime_hours ?? 0) < 0 || (e.overtime_hours ?? 0) > 24) rowErrors[idx] = "OT hours must be 0–24";
+    else if (!e.project_id) rowErrors[idx] = "Select a project";
+    else if (!e.work_bucket) rowErrors[idx] = "Select a work bucket";
+  });
+  const hasRowErrors = Object.keys(rowErrors).length > 0;
+
+  const updateEntryField = <K extends keyof TimesheetEntry>(
+    idx: number,
+    key: K,
+    value: TimesheetEntry[K],
+  ) => {
+    setEntries((prev) => prev.map((e, i) => (i === idx ? { ...e, [key]: value } : e)));
+  };
+
+  const handleAddBlankRow = () => {
+    const firstWorking = weekDates[0] ? toYMD(weekDates[0]) : weekStart ?? "";
+    setEntries((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        work_date: firstWorking,
+        hours: 8,
+        overtime_hours: 0,
+        description: "",
+        project_id: null,
+        work_bucket: "delivery",
+        activity_type: "",
+      },
+    ]);
+  };
+
+  const handleSaveGuarded = async () => {
+    if (hasRowErrors) {
+      setError("Fix highlighted rows before saving (project, bucket, and hours are required).");
+      return;
+    }
+    await handleSave();
+  };
+
+  const handleSubmitGuarded = async () => {
+    if (hasRowErrors) {
+      setError("Fix highlighted rows before submitting.");
+      return;
+    }
+    await handleSubmit();
+  };
 
   return (
     <>
@@ -513,14 +558,24 @@ export default function TimesheetsPage() {
             </>
           )}
           {isDraft && (
-            <button
-              type="button"
-              onClick={() => { setEditingEntry(null); setShowQuickEntry(true); }}
-              className="btn-primary flex items-center gap-1.5"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Add Entry
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleAddBlankRow}
+                className="btn-secondary flex items-center gap-1.5 text-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">playlist_add</span>
+                Add row
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditingEntry(null); setShowQuickEntry(true); }}
+                className="btn-primary flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                Quick entry
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -540,51 +595,50 @@ export default function TimesheetsPage() {
         <div className="flex gap-6 items-start">
           {/* LEFT — Weekly Grid */}
           <div className="flex-1 min-w-0">
-            <div className="card overflow-hidden">
-              {/* Column headers */}
-              <div className="grid border-b border-neutral-100" style={{ gridTemplateColumns: "1fr repeat(5, 80px) 80px" }}>
-                <div className="px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Work / Project</div>
-                {weekDates.map((d) => {
-                  const ymd = toYMD(d);
-                  const hasLeave   = !!leaveDays[ymd];
-                  const hasTravel  = !!travelDays[ymd];
-                  const hasHoliday = !!holidayDates[ymd];
-                  const headerBg   = hasHoliday ? "bg-neutral-100 text-neutral-500"
-                                   : hasTravel  ? "bg-teal-50 text-teal-700"
-                                   : hasLeave   ? "bg-amber-50 text-amber-700"
-                                   : "text-neutral-500";
-                  return (
-                    <div key={ymd} className={cn("py-3 text-center text-xs font-semibold", headerBg)}>
-                      <div>{d.toLocaleDateString("en-GB", { weekday: "short" })}</div>
-                      <div className="text-[11px] font-normal opacity-75">{d.getDate()} {d.toLocaleDateString("en-GB", { month: "short" })}</div>
-                      {hasHoliday && (
-                        <div className="mt-1">
-                          <span className="inline-block rounded-full bg-neutral-300 px-1.5 py-0.5 text-[9px] font-semibold text-neutral-700 uppercase tracking-wide">
-                            holiday
-                          </span>
-                        </div>
-                      )}
-                      {!hasHoliday && hasTravel && (
-                        <div className="mt-1">
-                          <span className="inline-block rounded-full bg-teal-200 px-1.5 py-0.5 text-[9px] font-semibold text-teal-800 uppercase tracking-wide">
-                            mission
-                          </span>
-                        </div>
-                      )}
-                      {!hasHoliday && !hasTravel && hasLeave && (
-                        <div className="mt-1">
-                          <span className="inline-block rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800 uppercase tracking-wide">
-                            {leaveDays[ymd].leave_type.replace(/_/g, " ")}
-                          </span>
-                        </div>
-                      )}
+            {/* Day chips / totals strip */}
+            <div className="mb-3 grid grid-cols-5 gap-2">
+              {weekDates.map((d) => {
+                const ymd = toYMD(d);
+                const total = dailyTotals[ymd] ?? 0;
+                const over = total > 8;
+                return (
+                  <div
+                    key={ymd}
+                    className={cn(
+                      "rounded-lg border px-2 py-1.5 text-center",
+                      holidayDates[ymd] ? "border-neutral-200 bg-neutral-50"
+                        : travelDays[ymd] ? "border-teal-200 bg-teal-50/50"
+                        : leaveDays[ymd] ? "border-amber-200 bg-amber-50/50"
+                        : "border-neutral-100 bg-white",
+                    )}
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                      {d.toLocaleDateString("en-GB", { weekday: "short" })} {d.getDate()}
                     </div>
-                  );
-                })}
-                <div className="py-3 text-center text-xs font-semibold text-neutral-500">Total</div>
+                    <div className={cn("text-sm font-bold tabular-nums", over ? "text-amber-600" : total > 0 ? "text-neutral-900" : "text-neutral-300")}>
+                      {total > 0 ? `${total}h` : "—"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="card overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900">Draft entry grid</p>
+                  <p className="text-xs text-neutral-500">
+                    Tab through fields · totals {weekTotal}h ordinary
+                    {otTotal > 0
+                      ? ` · ${otTotal}h OT (pay XOR TOIL settled separately — no rates invented)`
+                      : ""}
+                  </p>
+                </div>
+                {hasRowErrors && (
+                  <span className="badge badge-warning text-xs">{Object.keys(rowErrors).length} row issue(s)</span>
+                )}
               </div>
 
-              {/* Entry rows */}
               {entries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-100">
@@ -592,125 +646,232 @@ export default function TimesheetsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-neutral-700">No entries yet</p>
-                    <p className="text-xs text-neutral-400 mt-1">Click "Add Entry" to log your work for this week</p>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Apply a template, add a row, or use Quick entry
+                    </p>
                   </div>
+                  {isDraft && (
+                    <div className="flex gap-2">
+                      <button type="button" className="btn-secondary text-sm" onClick={handleAddBlankRow}>
+                        Add row
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary text-sm"
+                        onClick={() => { setEditingEntry(null); setShowQuickEntry(true); }}
+                      >
+                        Quick entry
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                entries.map((entry, idx) => {
-                  const bucket = entry.work_bucket ?? "other";
-                  const icon = BUCKET_ICONS[bucket] ?? "category";
-                  const iconColor = BUCKET_COLORS[bucket] ?? "text-neutral-500";
-                  const projectLabel = entry.project?.label ?? projects.find((p) => p.id === entry.project_id)?.label;
-
-                  return (
-                    <div
-                      key={entry.id ?? idx}
-                      className={cn(
-                        "grid items-center border-b border-neutral-50 hover:bg-neutral-50/50 group",
-                        holidayDates[entry.work_date] ? "bg-neutral-50/60"
-                          : travelDays[entry.work_date] ? "bg-teal-50/30"
-                          : leaveDays[entry.work_date] ? "bg-amber-50/30"
-                          : ""
-                      )}
-                      style={{ gridTemplateColumns: "1fr repeat(5, 80px) 80px" }}
-                    >
-                      {/* Entry info */}
-                      <div className="flex items-center gap-2.5 px-4 py-3">
-                        <span className={cn("material-symbols-outlined text-[18px] flex-shrink-0", iconColor)}>{icon}</span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-neutral-800 truncate">
-                            {entry.activity_type || bucket}
-                          </p>
-                          {projectLabel ? (
-                            <p className="text-[11px] text-neutral-400 truncate">{projectLabel}</p>
-                          ) : (
-                            <span className="inline-block rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] text-neutral-500">No Project</span>
-                          )}
-                        </div>
-                        {isDraft && (
-                          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              type="button"
-                              onClick={() => { setEditingEntry(entry); setShowQuickEntry(true); }}
-                              className="flex h-6 w-6 items-center justify-center rounded text-neutral-400 hover:text-primary"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteEntry(entry.id, idx)}
-                              className="flex h-6 w-6 items-center justify-center rounded text-neutral-400 hover:text-red-500"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">delete</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Hours per day */}
-                      {weekDates.map((d) => {
-                        const ymd = toYMD(d);
-                        const isEntryDay = entry.work_date === ymd;
-                        const dayCellBg  = holidayDates[ymd] ? "bg-neutral-100/40"
-                                         : travelDays[ymd]  ? "bg-teal-50/40"
-                                         : leaveDays[ymd]   ? "bg-amber-50/40"
-                                         : "";
+                <div className="overflow-x-auto">
+                  <table className="data-table w-full min-w-[880px]">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Project</th>
+                        <th>Bucket</th>
+                        <th>Category / activity</th>
+                        <th className="text-right">Hours</th>
+                        <th className="text-right">OT hrs</th>
+                        <th>Notes</th>
+                        {isDraft && <th className="w-16" />}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entries.map((entry, idx) => {
+                        const err = rowErrors[idx];
                         return (
-                          <div key={ymd} className={cn("text-center py-3 text-sm", dayCellBg)}>
-                            {isEntryDay ? (
-                              <span className={cn("font-semibold", entry.hours > 8 ? "text-amber-600" : "text-neutral-800")}>
-                                {entry.hours}h
-                              </span>
-                            ) : (
-                              <span className="text-neutral-200">—</span>
+                          <tr
+                            key={entry.id ?? `row-${idx}`}
+                            className={cn(err && "bg-red-50/60")}
+                          >
+                            <td className="align-top">
+                              {isDraft ? (
+                                <input
+                                  type="date"
+                                  className="form-input py-1.5 text-sm"
+                                  value={entry.work_date}
+                                  onChange={(e) => updateEntryField(idx, "work_date", e.target.value)}
+                                  aria-label={`Row ${idx + 1} date`}
+                                />
+                              ) : (
+                                <span className="text-sm">{formatDayShort(new Date(entry.work_date + "T12:00:00"))}</span>
+                              )}
+                            </td>
+                            <td className="align-top min-w-[160px]">
+                              {isDraft ? (
+                                <select
+                                  className="form-input py-1.5 text-sm"
+                                  value={entry.project_id ?? ""}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      idx,
+                                      "project_id",
+                                      e.target.value ? Number(e.target.value) : null,
+                                    )
+                                  }
+                                  aria-label={`Row ${idx + 1} project`}
+                                >
+                                  <option value="">Select project…</option>
+                                  {projects.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                      {p.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-sm">
+                                  {entry.project?.label ??
+                                    projects.find((p) => p.id === entry.project_id)?.label ??
+                                    "—"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="align-top">
+                              {isDraft ? (
+                                <select
+                                  className="form-input py-1.5 text-sm capitalize"
+                                  value={entry.work_bucket ?? ""}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      idx,
+                                      "work_bucket",
+                                      (e.target.value || null) as TimesheetEntry["work_bucket"],
+                                    )
+                                  }
+                                  aria-label={`Row ${idx + 1} bucket`}
+                                >
+                                  <option value="">Bucket…</option>
+                                  {Object.keys(BUCKET_ICONS).map((b) => (
+                                    <option key={b} value={b}>
+                                      {b}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-xs capitalize text-neutral-600">
+                                  {entry.work_bucket ?? "—"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="align-top min-w-[140px]">
+                              {isDraft ? (
+                                <input
+                                  className="form-input py-1.5 text-sm"
+                                  value={entry.activity_type ?? ""}
+                                  onChange={(e) => updateEntryField(idx, "activity_type", e.target.value)}
+                                  placeholder="Activity / category"
+                                  aria-label={`Row ${idx + 1} activity`}
+                                />
+                              ) : (
+                                <span className="text-sm text-neutral-700">{entry.activity_type || "—"}</span>
+                              )}
+                            </td>
+                            <td className="align-top text-right">
+                              {isDraft ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={24}
+                                  step={0.25}
+                                  className="form-input py-1.5 text-sm text-right w-20 ml-auto"
+                                  value={entry.hours}
+                                  onChange={(e) =>
+                                    updateEntryField(idx, "hours", Number(e.target.value) || 0)
+                                  }
+                                  aria-label={`Row ${idx + 1} hours`}
+                                />
+                              ) : (
+                                <span className="tabular-nums font-medium">{entry.hours}h</span>
+                              )}
+                            </td>
+                            <td className="align-top text-right">
+                              {isDraft ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={24}
+                                  step={0.25}
+                                  className="form-input py-1.5 text-sm text-right w-20 ml-auto"
+                                  value={entry.overtime_hours ?? 0}
+                                  onChange={(e) =>
+                                    updateEntryField(idx, "overtime_hours", Number(e.target.value) || 0)
+                                  }
+                                  aria-label={`Row ${idx + 1} overtime hours`}
+                                  title="OT hours only — settlement is pay XOR TOIL elsewhere; no rates"
+                                />
+                              ) : (
+                                <span className="tabular-nums text-neutral-600">
+                                  {entry.overtime_hours ? `${entry.overtime_hours}h` : "—"}
+                                </span>
+                              )}
+                            </td>
+                            <td className="align-top min-w-[140px]">
+                              {isDraft ? (
+                                <input
+                                  className="form-input py-1.5 text-sm"
+                                  value={entry.description ?? ""}
+                                  onChange={(e) => updateEntryField(idx, "description", e.target.value)}
+                                  placeholder="Notes"
+                                  aria-label={`Row ${idx + 1} notes`}
+                                />
+                              ) : (
+                                <span className="text-sm text-neutral-600">{entry.description || "—"}</span>
+                              )}
+                              {err && (
+                                <p className="mt-1 text-[11px] font-medium text-red-600">{err}</p>
+                              )}
+                            </td>
+                            {isDraft && (
+                              <td className="align-top whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => handleDeleteEntry(entry.id, idx)}
+                                  aria-label={`Remove row ${idx + 1}`}
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                              </td>
                             )}
-                          </div>
+                          </tr>
                         );
                       })}
-
-                      {/* Row total */}
-                      <div className="text-center py-3 text-sm font-medium text-neutral-700">
-                        {entry.hours}h
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-
-              {/* Daily totals row */}
-              {entries.length > 0 && (
-                <div
-                  className="grid bg-neutral-50 border-t border-neutral-200"
-                  style={{ gridTemplateColumns: "1fr repeat(5, 80px) 80px" }}
-                >
-                  <div className="px-4 py-2.5 text-xs font-semibold text-neutral-500">Daily Total</div>
-                  {weekDates.map((d) => {
-                    const ymd = toYMD(d);
-                    const total = dailyTotals[ymd] ?? 0;
-                    return (
-                      <div key={ymd} className="py-2.5 text-center text-xs font-semibold">
-                        <span className={cn(total > 8 ? "text-amber-600" : total > 0 ? "text-neutral-800" : "text-neutral-300")}>
-                          {total > 0 ? `${total}h` : "—"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  <div className="py-2.5 text-center text-xs font-bold text-neutral-800">
-                    {entries.reduce((s, e) => s + e.hours, 0)}h
-                  </div>
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-neutral-50">
+                        <td colSpan={4} className="px-3 py-2 text-xs font-semibold text-neutral-500">
+                          Week total
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm font-bold tabular-nums text-neutral-900">
+                          {weekTotal}h
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm font-semibold tabular-nums text-neutral-700">
+                          {otTotal > 0 ? `${otTotal}h` : "—"}
+                        </td>
+                        <td colSpan={isDraft ? 2 : 1} />
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               )}
 
-              {/* Add entry button */}
-              {isDraft && (
-                <div className="px-4 py-3 border-t border-neutral-100">
+              {isDraft && entries.length > 0 && (
+                <div className="flex flex-wrap gap-2 border-t border-neutral-100 px-4 py-3">
+                  <button type="button" onClick={handleAddBlankRow} className="btn-secondary flex items-center gap-1.5 text-sm">
+                    <span className="material-symbols-outlined text-[16px]">playlist_add</span>
+                    Add row
+                  </button>
                   <button
                     type="button"
                     onClick={() => { setEditingEntry(null); setShowQuickEntry(true); }}
                     className="btn-secondary flex items-center gap-1.5 text-sm"
                   >
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                    Add Entry
+                    <span className="material-symbols-outlined text-[16px]">bolt</span>
+                    Quick entry
                   </button>
                 </div>
               )}
@@ -721,9 +882,14 @@ export default function TimesheetsPage() {
               <Link href="/hr/timesheets/monthly" className="text-xs text-primary hover:underline">
                 ← Monthly view
               </Link>
-              <Link href="/hr/timesheets/history" className="text-xs text-primary hover:underline">
-                View all timesheets →
-              </Link>
+              <div className="flex gap-3">
+                <Link href="/hr/timesheets/templates" className="text-xs text-primary hover:underline">
+                  Manage templates
+                </Link>
+                <Link href="/hr/timesheets/history" className="text-xs text-primary hover:underline">
+                  View all timesheets →
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -735,8 +901,8 @@ export default function TimesheetsPage() {
               projects={projects}
               saving={saving}
               isAdmin={isAdmin}
-              onSave={handleSave}
-              onSubmit={handleSubmit}
+              onSave={handleSaveGuarded}
+              onSubmit={handleSubmitGuarded}
               onApprove={handleApprove}
               onReject={() => setShowRejectModal(true)}
             />
