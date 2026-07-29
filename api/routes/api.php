@@ -364,6 +364,7 @@ Route::prefix('v1')->group(function () {
             Route::get('toil', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'toil']);
             Route::post('toil/{toilCredit}/extend', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'extendToil']);
             Route::get('team-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'teamCalendar']);
+            Route::get('my-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'myCalendar']);
             Route::get('register/export', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'registerExport']);
             Route::get('requests/{badLeaveRequest}', fn () => abort(404))->where('badLeaveRequest', '[^0-9]+');
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
@@ -1195,6 +1196,9 @@ Route::prefix('v1')->group(function () {
             Route::get('team', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'team']);
             Route::get('register', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'register']);
             Route::get('calendar', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendar']);
+            Route::get('calendar.ics', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarIcs']);
+            Route::get('calendar-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarFeed']);
+            Route::get('capacity', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'capacity']);
             Route::get('review-queue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reviewQueue']);
             Route::get('reports/summary', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reportsSummary']);
             Route::get('weekly-summary-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'weeklySummaryFeed']);
@@ -1302,6 +1306,14 @@ Route::prefix('v1')->group(function () {
             Route::post('letters/{correspondence}/approve', [$letters, 'approve']);
             Route::post('letters/{correspondence}/send', [$letters, 'send']);
             Route::get('letters/{correspondence}/download', [$letters, 'download']);
+
+            $merge = \App\Http\Controllers\Api\V1\Correspondence\CorrespondenceMailMergeController::class;
+            Route::get('templates', [$merge, 'indexTemplates']);
+            Route::post('templates', [$merge, 'storeTemplate']);
+            Route::post('mail-merge/preview', [$merge, 'preview']);
+            Route::post('mail-merge/create', [$merge, 'createFromTemplate']);
+            Route::post('letters/{correspondence}/ai-assist', [$merge, 'aiAssist']);
+            Route::post('letters/{correspondence}/ai-assist/confirm', [$merge, 'confirmAiAssist']);
 
             Route::post('letters/{correspondence}/sg-route', [$register, 'sgRoute']);
             Route::post('letters/{correspondence}/acknowledge', [$register, 'acknowledge']);

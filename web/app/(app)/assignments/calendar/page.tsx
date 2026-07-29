@@ -53,9 +53,25 @@ export default function AssignmentsCalendarPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Assignment Calendar</h1>
-          <p className="page-subtitle">In-app due-date calendar for {bounds.label}. External Google sync remains deferred.</p>
+          <p className="page-subtitle">In-app due-date calendar for {bounds.label}. Download ICS for Google Calendar / Outlook when API credentials are absent.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <a className="btn-secondary text-sm" href="/assignments/capacity">Capacity</a>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={async () => {
+              const res = await assignmentsApi.calendarIcs({ from: bounds.from, to: bounds.to, scope });
+              const url = URL.createObjectURL(res.data as Blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "assignments.ics";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Download ICS
+          </button>
           <select className="form-input w-36" value={scope} onChange={(e) => setScope(e.target.value as typeof scope)}>
             <option value="mine">Mine</option>
             <option value="team">Team</option>

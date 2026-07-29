@@ -5,13 +5,20 @@ namespace App\Http\Controllers\Api\V1\Assignments;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentChecklistItem;
+use App\Modules\Assignments\Services\AssignmentCapacityService;
+use App\Modules\Assignments\Services\AssignmentIcsExportService;
 use App\Modules\Assignments\Services\AssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class AssignmentController extends Controller
 {
-    public function __construct(private readonly AssignmentService $service) {}
+    public function __construct(
+        private readonly AssignmentService $service,
+        private readonly AssignmentIcsExportService $ics,
+        private readonly AssignmentCapacityService $capacity,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -101,6 +108,51 @@ class AssignmentController extends Controller
             'to' => $to,
             'scope' => $scope,
             'data' => $items,
+        ]);
+    }
+
+    /**
+     * Google-ready ICS feed (works without Google OAuth credentials).
+     */
+    public function calendarIcs(Request $request): Response
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'scope' => ['nullable', 'string', 'in:mine,team,register'],
+        ]);
+        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $data['to'] ?? now()->addMonths(3)->endOfMonth()->toDateString();
+        $scope = $data['scope'] ?? 'mine';
+
+        $assignments = $this->ics->buildCalendarQuery($user, $scope, $from, $to)->limit(500)->get();
+        $ics = $this->ics->toIcs($assignments);
+
+        return response($ics, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="assignments.ics"',
+        ]);
+    }
+
+    public function calendarFeed(Request $request): JsonResponse
+    {
+        $googlePresent = filled(config('services.google.calendar_client_id'))
+            && filled(config('services.google.calendar_client_secret'));
+
+        return response()->json([
+            'data' => $this->ics->feedMeta($request->user(), $googlePresent),
+        ]);
+    }
+
+    public function capacity(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $this->capacity->capacity($request->user(), $data['department_id'] ?? null),
         ]);
     }
 

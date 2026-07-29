@@ -172,13 +172,39 @@ export default function CorrespondenceDetailPage() {
               </button>
             )}
             {letter.status === "draft" && canCreate && (
-              <button
-                onClick={() => runAction(() => correspondenceApi.submit(letter.id), "")}
-                disabled={actionLoading}
-                className="btn-primary text-sm"
-              >
-                Submit for Review
-              </button>
+              <>
+                <button
+                  onClick={() =>
+                    runAction(
+                      () => correspondenceApi.aiAssist(letter.id, { intent: "Draft a courteous official reply." }),
+                      "AI draft ready — confirm to apply (never auto-sends).",
+                    )
+                  }
+                  disabled={actionLoading}
+                  className="btn-secondary text-sm"
+                >
+                  AI Assist
+                </button>
+                <button
+                  onClick={() =>
+                    runAction(
+                      () => correspondenceApi.confirmAiAssist(letter.id),
+                      "AI draft confirmed into body. Still a draft — not sent.",
+                    )
+                  }
+                  disabled={actionLoading}
+                  className="btn-secondary text-sm"
+                >
+                  Confirm AI Draft
+                </button>
+                <button
+                  onClick={() => runAction(() => correspondenceApi.submit(letter.id), "")}
+                  disabled={actionLoading}
+                  className="btn-primary text-sm"
+                >
+                  Submit for Review
+                </button>
+              </>
             )}
             {letter.status === "pending_review" && canReview && (
               <>

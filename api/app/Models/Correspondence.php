@@ -41,6 +41,7 @@ class Correspondence extends Model
         'signature_event_id', 'letterhead_applied_at',
         'voided_at', 'void_reason', 'thread_root_id', 'physical_location',
         'registered_by', 'registered_at', 'sg_instruction', 'sg_action',
+        'ai_draft_subject', 'ai_draft_body', 'ai_draft_confirmed_at', 'ai_draft_confirmed_by',
     ];
 
     protected $casts = [
@@ -54,6 +55,7 @@ class Correspondence extends Model
         'signed_immutable_at' => 'datetime',
         'letterhead_applied_at' => 'datetime',
         'voided_at' => 'datetime',
+        'ai_draft_confirmed_at' => 'datetime',
         'correspondence_date' => 'date',
         'sender_deadline' => 'date',
         'internal_deadline' => 'date',

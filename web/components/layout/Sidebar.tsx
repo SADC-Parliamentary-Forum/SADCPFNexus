@@ -51,7 +51,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Recurring Tasks", href: "/assignments/recurring", icon: "event_repeat" },
       { label: "Completed", href: "/assignments/completed", icon: "task" },
       { label: "Reports", href: "/assignments/reports", icon: "analytics" },
-      { label: "Calendar (Phase 2)", href: "/assignments/calendar", icon: "calendar_month" },
+      { label: "Calendar & ICS", href: "/assignments/calendar", icon: "calendar_month" },
+      { label: "Capacity", href: "/assignments/capacity", icon: "group_work" },
     ],
   },
   {
@@ -361,6 +362,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Register Incoming", href: "/correspondence/incoming", icon: "move_to_inbox" },
       { label: "Incoming Register", href: "/correspondence/registry?direction=incoming", icon: "inbox" },
       { label: "Draft Outgoing", href: "/correspondence/create", icon: "edit_square" },
+      { label: "Mail Merge", href: "/correspondence/mail-merge", icon: "merge_type" },
       { label: "Outgoing Register", href: "/correspondence/registry?direction=outgoing", icon: "outbox" },
       { label: "My Action Items", href: "/correspondence/my-actions", icon: "assignment_ind" },
       { label: "Pending SG Routing", href: "/correspondence/pending-routing", icon: "route" },

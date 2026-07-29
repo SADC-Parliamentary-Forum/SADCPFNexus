@@ -146,7 +146,7 @@ class WeeklyReportController extends Controller
             ->generateStub($weeklySummary, $request->user(), $suggestions);
 
         return response()->json([
-            'message' => 'AI draft stub generated. Human confirmation required before submit — never auto-submitted.',
+            'message' => 'AI draft generated from suggestions. Human confirmation required before submit — never auto-submitted.',
             'data' => $draft,
         ]);
     }

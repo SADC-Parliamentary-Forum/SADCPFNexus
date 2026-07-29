@@ -7,6 +7,7 @@ use App\Models\LeaveRequest;
 use App\Models\OvertimeAccrual;
 use App\Models\ToilCredit;
 use App\Modules\Leave\Services\LeaveBalanceService;
+use App\Modules\Leave\Services\LeaveCalendarPrivacyService;
 use App\Modules\Leave\Services\LeavePolicyService;
 use App\Modules\Leave\Services\LeaveService;
 use App\Modules\Leave\Services\LeaveToilCreditService;
@@ -26,6 +27,7 @@ class LeaveController extends Controller
         private readonly LeavePolicyService $policyService,
         private readonly LeaveBalanceService $balanceService,
         private readonly LeaveToilCreditService $toilCreditService,
+        private readonly LeaveCalendarPrivacyService $calendarPrivacy,
         private readonly \App\Services\WorkflowService $workflowService,
         private readonly \App\Services\DelegationService $delegationService,
     ) {}
@@ -75,7 +77,7 @@ class LeaveController extends Controller
     }
 
     /**
-     * Basic team leave calendar: approved leave overlapping [from, to].
+     * Team leave calendar with medical privacy masking for non-HR viewers.
      */
     public function teamCalendar(Request $request): JsonResponse
     {
@@ -92,14 +94,18 @@ class LeaveController extends Controller
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'department_id' => ['nullable', 'integer'],
+            'status' => ['nullable', 'string', 'in:approved,submitted,certified,recommended'],
         ]);
 
         $from = $data['from'] ?? now()->startOfMonth()->toDateString();
         $to = $data['to'] ?? now()->endOfMonth()->toDateString();
+        $statuses = isset($data['status'])
+            ? [$data['status']]
+            : ['approved'];
 
         $query = LeaveRequest::query()
             ->where('tenant_id', $user->tenant_id)
-            ->where('status', 'approved')
+            ->whereIn('status', $statuses)
             ->whereDate('start_date', '<=', $to)
             ->whereDate('end_date', '>=', $from)
             ->with(['requester:id,name,department_id,job_title'])
@@ -111,20 +117,44 @@ class LeaveController extends Controller
             $query->whereHas('requester', fn ($q) => $q->where('department_id', $user->department_id));
         }
 
-        $rows = $query->get()->map(fn (LeaveRequest $leave) => [
-            'id' => $leave->id,
-            'reference' => $leave->reference_number,
-            'leave_type' => $leave->leave_type,
-            'start_date' => $leave->start_date?->toDateString(),
-            'end_date' => $leave->end_date?->toDateString(),
-            'days_requested' => $leave->days_requested,
-            'requester' => $leave->requester ? [
-                'id' => $leave->requester->id,
-                'name' => $leave->requester->name,
-                'job_title' => $leave->requester->job_title,
-                'department_id' => $leave->requester->department_id,
-            ] : null,
+        $rows = $query->get()->map(
+            fn (LeaveRequest $leave) => $this->calendarPrivacy->present($leave, $user)
+        );
+
+        return response()->json([
+            'from' => $from,
+            'to' => $to,
+            'privacy' => [
+                'medical_masked_for_viewer' => ! $this->calendarPrivacy->canViewUnmaskedMedical($user),
+            ],
+            'data' => $rows,
         ]);
+    }
+
+    /**
+     * Personal leave calendar (own requests, unmasked).
+     */
+    public function myCalendar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        $from = $data['from'] ?? now()->startOfMonth()->toDateString();
+        $to = $data['to'] ?? now()->endOfMonth()->toDateString();
+
+        $rows = LeaveRequest::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('requester_id', $user->id)
+            ->whereIn('status', ['approved', 'submitted', 'certified', 'recommended', 'draft'])
+            ->whereDate('start_date', '<=', $to)
+            ->whereDate('end_date', '>=', $from)
+            ->with(['requester:id,name,department_id,job_title'])
+            ->orderBy('start_date')
+            ->get()
+            ->map(fn (LeaveRequest $leave) => $this->calendarPrivacy->present($leave, $user, forceOwn: true));
 
         return response()->json(['from' => $from, 'to' => $to, 'data' => $rows]);
     }

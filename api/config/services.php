@@ -54,4 +54,10 @@ return [
         'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
     ],
 
+    // Optional Google Calendar OAuth (absent → ICS subscribe/download feed)
+    'google' => [
+        'calendar_client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'),
+        'calendar_client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'),
+    ],
+
 ];

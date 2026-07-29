@@ -2262,8 +2262,10 @@ export const leaveApi = {
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/recommend`, data),
   certify: (id: number, data: { action: "certify" | "certify_with_condition" | "return" | "mark_ineligible"; comment?: string; segments?: Array<Record<string, unknown>> }) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/certify`, data),
-  teamCalendar: (params?: { from?: string; to?: string; department_id?: number }) =>
-    api.get<{ from: string; to: string; data: Array<Record<string, unknown>> }>("/leave/team-calendar", { params }),
+  teamCalendar: (params?: { from?: string; to?: string; department_id?: number; status?: string }) =>
+    api.get<{ from: string; to: string; privacy?: { medical_masked_for_viewer?: boolean }; data: Array<Record<string, unknown>> }>("/leave/team-calendar", { params }),
+  myCalendar: (params?: { from?: string; to?: string }) =>
+    api.get<{ from: string; to: string; data: Array<Record<string, unknown>> }>("/leave/my-calendar", { params }),
   registerExport: (params?: { from?: string; to?: string; status?: string; department_id?: number }) =>
     api.get<Blob>("/leave/register/export", { params, responseType: "blob" }),
   // Attachments
@@ -5705,6 +5707,12 @@ export const assignmentsApi = {
     api.get<PaginatedResponse<Assignment>>("/assignments/register", { params }),
   calendar: (params?: { from?: string; to?: string; scope?: string }) =>
     api.get<{ from: string; to: string; scope: string; data: Array<Record<string, unknown>> }>("/assignments/calendar", { params }),
+  calendarIcs: (params?: { from?: string; to?: string; scope?: string }) =>
+    api.get<Blob>("/assignments/calendar.ics", { params, responseType: "blob" }),
+  calendarFeed: () =>
+    api.get<{ data: { provider: string; google_credentials_present: boolean; download_url: string; subscribe_url: string; instructions: string } }>("/assignments/calendar-feed"),
+  capacity: (params?: { department_id?: number }) =>
+    api.get<{ data: { department_id?: number | null; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/capacity", { params }),
   reviewQueue: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Assignment>>("/assignments/review-queue", { params }),
   reportsSummary: () => api.get<{ stats: AssignmentStats; by_source: Record<string, number>; blockers: Record<string, number>; performance_scoring: string }>("/assignments/reports/summary"),
@@ -6256,6 +6264,19 @@ export const correspondenceApi = {
     api.post<{ success: boolean; data: CorrespondenceLetter }>(`/correspondence/mailbox/suggestions/${id}/register`, data ?? {}),
   dismissMailboxSuggestion: (id: number) =>
     api.post<{ success: boolean; data: CorrespondenceMailboxSuggestion }>(`/correspondence/mailbox/suggestions/${id}/dismiss`),
+
+  listTemplates: () =>
+    api.get<{ data: Array<{ id: number; name: string; code: string; subject_template: string; body_template: string }> }>("/correspondence/templates"),
+  createTemplate: (data: { name: string; code: string; subject_template: string; body_template: string }) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/correspondence/templates", data),
+  mailMergePreview: (data: { template_id: number; fields: Record<string, string> }) =>
+    api.post<{ data: { subject: string; body: string; title: string } }>("/correspondence/mail-merge/preview", data),
+  mailMergeCreate: (data: { template_id: number; fields: Record<string, string>; type?: string }) =>
+    api.post<{ data: CorrespondenceLetter; message: string }>("/correspondence/mail-merge/create", data),
+  aiAssist: (id: number, data?: { intent?: string }) =>
+    api.post<{ data: { draft_subject: string; draft_body: string; requires_human_confirm: boolean; auto_send: boolean } }>(`/correspondence/letters/${id}/ai-assist`, data ?? {}),
+  confirmAiAssist: (id: number) =>
+    api.post<{ data: CorrespondenceLetter; message: string }>(`/correspondence/letters/${id}/ai-assist/confirm`, { confirm: true }),
 
   // Contacts
   listContacts: (params?: Record<string, string | number>) =>

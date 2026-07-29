@@ -32,11 +32,15 @@ export default function LeaveTeamCalendarPage() {
   const rows = (data?.data ?? []) as Array<{
     id: number;
     leave_type?: string;
+    display_label?: string;
+    is_masked?: boolean;
+    color_key?: string;
     start_date?: string;
     end_date?: string;
     days_requested?: number | string;
     requester?: { name?: string; job_title?: string | null };
   }>;
+  const medicalMasked = Boolean((data as { privacy?: { medical_masked_for_viewer?: boolean } } | undefined)?.privacy?.medical_masked_for_viewer);
 
   const byDay = useMemo(() => {
     const map = new Map<string, typeof rows>();
@@ -81,7 +85,7 @@ export default function LeaveTeamCalendarPage() {
             <span className="text-neutral-700">Team Calendar</span>
           </div>
           <h1 className="page-title">Team Leave Calendar</h1>
-          <p className="page-subtitle">Approved leave overlapping {bounds.label}.</p>
+          <p className="page-subtitle">{medicalMasked ? "Medical leave types are masked for non-HR viewers. " : ""}Approved leave overlapping {bounds.label}.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={view === "grid" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setView("grid")}>Month grid</button>
@@ -111,7 +115,7 @@ export default function LeaveTeamCalendarPage() {
                 <ul className="space-y-1">
                   {dayRows.slice(0, 3).map((row) => (
                     <li key={`${row.id}-${iso}`} className="truncate rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] text-emerald-800">
-                      {row.requester?.name?.split(" ")[0]} · {row.leave_type}
+                      {row.requester?.name?.split(" ")[0]} · {row.display_label ?? row.leave_type}{row.is_masked ? " - private" : ""}
                     </li>
                   ))}
                   {dayRows.length > 3 && <li className="text-[11px] text-neutral-400">+{dayRows.length - 3}</li>}
@@ -144,7 +148,7 @@ export default function LeaveTeamCalendarPage() {
                       <div className="font-medium">{row.requester?.name ?? "—"}</div>
                       <div className="text-xs text-neutral-500">{row.requester?.job_title}</div>
                     </td>
-                    <td className="px-4 py-3 capitalize">{row.leave_type}</td>
+                    <td className="px-4 py-3 capitalize">{row.display_label ?? row.leave_type}{row.is_masked ? " - private" : ""}</td>
                     <td className="px-4 py-3">{formatDateShort(row.start_date)} – {formatDateShort(row.end_date)}</td>
                     <td className="px-4 py-3">{row.days_requested}</td>
                   </tr>
