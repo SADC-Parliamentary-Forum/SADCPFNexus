@@ -13,11 +13,15 @@ class CorrespondenceDispatch extends Model
         'correspondence_id', 'dispatched_by', 'channel', 'dispatched_at',
         'tracking_reference', 'delivery_status', 'delivered_at',
         'recipient_name', 'evidence_notes', 'evidence_path',
+        'courier_carrier', 'tracking_number', 'tracking_status',
+        'tracking_checked_at', 'tracking_payload',
     ];
 
     protected $casts = [
         'dispatched_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'tracking_checked_at' => 'datetime',
+        'tracking_payload' => 'array',
     ];
 
     public function correspondence(): BelongsTo

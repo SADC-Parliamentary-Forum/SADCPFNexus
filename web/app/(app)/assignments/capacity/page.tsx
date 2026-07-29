@@ -35,7 +35,10 @@ export default function AssignmentsCapacityPage() {
             Open workload by assignee (priority-weighted). Not a performance score.
           </p>
         </div>
-        <Link href="/assignments/calendar" className="btn-secondary text-sm">Calendar &amp; ICS</Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/assignments/calendar" className="btn-secondary text-sm">Calendar &amp; ICS</Link>
+          <Link href="/assignments/workload" className="btn-secondary text-sm">Workload forecast</Link>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-neutral-500">Loading capacity…</p>}

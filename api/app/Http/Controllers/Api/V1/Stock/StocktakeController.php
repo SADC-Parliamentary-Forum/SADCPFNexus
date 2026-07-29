@@ -118,6 +118,29 @@ class StocktakeController extends Controller
         return response()->json(['message' => 'Stocktake cancelled.', 'data' => $cancelled]);
     }
 
+    public function syncOffline(Request $request, Stocktake $stocktake): JsonResponse
+    {
+        $this->authorizeIssue($request);
+
+        $data = $request->validate([
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.client_line_key' => ['nullable', 'string', 'max:64'],
+            'lines.*.stock_item_id' => ['nullable', 'integer'],
+            'lines.*.barcode' => ['nullable', 'string', 'max:128'],
+            'lines.*.counted_qty' => ['nullable', 'integer', 'min:0'],
+            'lines.*.notes' => ['nullable', 'string', 'max:1000'],
+            'force' => ['nullable', 'boolean'],
+        ]);
+
+        $result = app(\App\Modules\Stock\Services\StocktakeOfflineSyncService::class)
+            ->sync($stocktake, $data['lines'], $request->user(), (bool) ($data['force'] ?? false));
+
+        return response()->json([
+            'message' => 'Offline queue sync processed.',
+            'data' => $result,
+        ]);
+    }
+
     private function authorizeIssue(Request $request): void
     {
         $user = $request->user();

@@ -5802,6 +5802,16 @@ export const assignmentsApi = {
     api.get<{ data: { provider: string; google_credentials_present: boolean; download_url: string; subscribe_url: string; instructions: string } }>("/assignments/calendar-feed"),
   capacity: (params?: { department_id?: number }) =>
     api.get<{ data: { department_id?: number | null; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/capacity", { params }),
+  workloadForecast: (params?: { weeks?: number; department_id?: number }) =>
+    api.get<{ data: { weeks: number; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/workload-forecast", { params }),
+  importIcs: (data: { ics: string }) =>
+    api.post<{ data: { created: Array<Record<string, unknown>>; skipped: number }; message: string }>("/assignments/calendar/import-ics", data),
+  dependencies: (id: number) =>
+    api.get<{ data: { blocked_by: Array<Record<string, unknown>>; blocks: Array<Record<string, unknown>> } }>(`/assignments/${id}/dependencies`),
+  addDependency: (id: number, data: { depends_on_assignment_id: number; notes?: string }) =>
+    api.post<{ data: Record<string, unknown>; message: string }>(`/assignments/${id}/dependencies`, data),
+  removeDependency: (id: number, dependencyId: number) =>
+    api.delete(`/assignments/${id}/dependencies/${dependencyId}`),
   reviewQueue: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Assignment>>("/assignments/review-queue", { params }),
   reportsSummary: () => api.get<{ stats: AssignmentStats; by_source: Record<string, number>; blockers: Record<string, number>; performance_scoring: string }>("/assignments/reports/summary"),

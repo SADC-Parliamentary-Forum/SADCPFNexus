@@ -7,13 +7,19 @@ RUN set -eux; \
         unzip \
         libpq \
         libzip \
-        oniguruma; \
+        oniguruma \
+        c-client \
+        krb5-libs; \
     apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         libpq-dev \
         libzip-dev \
-        oniguruma-dev; \
-    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl; \
+        oniguruma-dev \
+        imap-dev \
+        krb5-dev \
+        openssl-dev; \
+    docker-php-ext-configure imap --with-kerberos --with-imap-ssl; \
+    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl imap; \
     pecl install redis; \
     docker-php-ext-enable redis; \
     apk del .build-deps

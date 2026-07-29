@@ -661,6 +661,14 @@ Route::prefix('v1')->group(function () {
             Route::delete('cashflow/scenarios/{scenario}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'destroyScenario']);
             Route::post('cashflow/scenarios/{scenario}/adjustments', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'storeAdjustment']);
             Route::delete('cashflow/scenarios/{scenario}/adjustments/{adjustment}', [\App\Http\Controllers\Api\V1\Budget\CashflowController::class, 'destroyAdjustment']);
+
+            // Gap pack 3 — FX + donor contribution calendars (no bank/GL)
+            Route::get('fx-rates', [\App\Http\Controllers\Api\V1\Budget\BudgetFxRateController::class, 'index']);
+            Route::post('fx-rates', [\App\Http\Controllers\Api\V1\Budget\BudgetFxRateController::class, 'store']);
+            Route::post('fx-rates/convert', [\App\Http\Controllers\Api\V1\Budget\BudgetFxRateController::class, 'convert']);
+            Route::get('contribution-schedules', [\App\Http\Controllers\Api\V1\Budget\BudgetContributionScheduleController::class, 'index']);
+            Route::post('contribution-schedules', [\App\Http\Controllers\Api\V1\Budget\BudgetContributionScheduleController::class, 'store']);
+            Route::get('contribution-schedules/{contributionSchedule}/upcoming', [\App\Http\Controllers\Api\V1\Budget\BudgetContributionScheduleController::class, 'upcoming']);
         });
 
         // Finance - Salary Advances, Payslips, Summary, and Budgets
@@ -670,6 +678,10 @@ Route::prefix('v1')->group(function () {
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'index']);
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'show']);
             Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Finance\PayslipController::class, 'download']);
+            Route::get('payroll/imports', [\App\Http\Controllers\Api\V1\Finance\PayrollImportController::class, 'index']);
+            Route::post('payroll/imports', [\App\Http\Controllers\Api\V1\Finance\PayrollImportController::class, 'store']);
+            Route::get('payroll/imports/{payrollImportBatch}', [\App\Http\Controllers\Api\V1\Finance\PayrollImportController::class, 'show']);
+            Route::post('payroll/imports/{payrollImportBatch}/stage', [\App\Http\Controllers\Api\V1\Finance\PayrollImportController::class, 'stage']);
             Route::get('advances/eligibility', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'eligibility']);
             Route::get('advances/dashboard', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'dashboard']);
             Route::get('advances/employee-summary', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'employeeSummary']);
@@ -930,9 +942,12 @@ Route::prefix('v1')->group(function () {
 
             // Indicators (§10.6)
             Route::middleware('can:mande.view')->get('indicators', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'index']);
+            Route::middleware('can:mande.view')->get('indicators/aggregation', [\App\Http\Controllers\Api\V1\MAndE\MeAiAssistController::class, 'aggregation']);
             Route::middleware('can:mande.view')->get('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'show']);
             Route::middleware('can:mande.view')->get('indicators/{indicator}/versions', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'versions']);
             Route::middleware('can:mande.view')->get('calendar', [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'calendar']);
+            Route::middleware('can:mande.view')->post('ai-assist', [\App\Http\Controllers\Api\V1\MAndE\MeAiAssistController::class, 'draft']);
+            Route::middleware('can:mande.view')->post('ai-assist/confirm', [\App\Http\Controllers\Api\V1\MAndE\MeAiAssistController::class, 'confirm']);
             Route::middleware('can:mande.create')->group(function () {
                 Route::post('indicators',               [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'store']);
                 Route::put('indicators/{indicator}',    [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'update']);
@@ -1075,6 +1090,7 @@ Route::prefix('v1')->group(function () {
             Route::post('vehicles/{asset}/trips', [$fleet, 'storeTrip']);
             Route::post('vehicles/{asset}/fuel-logs', [$fleet, 'storeFuelLog']);
             Route::post('vehicles/{asset}/service-schedules', [$fleet, 'storeServiceSchedule']);
+            Route::get('utilisation', \App\Http\Controllers\Api\V1\Fleet\FleetUtilisationController::class);
         });
 
         // Asset lifecycle: locations, policies, verification, maintenance, depreciation
@@ -1157,6 +1173,7 @@ Route::prefix('v1')->group(function () {
             Route::post('stock/stocktakes', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'store']);
             Route::get('stock/stocktakes/{stocktake}', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'show']);
             Route::put('stock/stocktakes/{stocktake}/counts', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'updateCounts']);
+            Route::post('stock/stocktakes/{stocktake}/sync-offline', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'syncOffline']);
             Route::post('stock/stocktakes/{stocktake}/complete', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'complete']);
             Route::post('stock/stocktakes/{stocktake}/approve-variances', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'approveVariances']);
             Route::post('stock/stocktakes/{stocktake}/cancel', [\App\Http\Controllers\Api\V1\Stock\StocktakeController::class, 'cancel']);
@@ -1223,8 +1240,10 @@ Route::prefix('v1')->group(function () {
             Route::get('register', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'register']);
             Route::get('calendar', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendar']);
             Route::get('calendar.ics', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarIcs']);
+            Route::post('calendar/import-ics', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'importIcs']);
             Route::get('calendar-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarFeed']);
             Route::get('capacity', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'capacity']);
+            Route::get('workload-forecast', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'workloadForecast']);
             Route::get('review-queue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reviewQueue']);
             Route::get('reports/summary', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reportsSummary']);
             Route::get('weekly-summary-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'weeklySummaryFeed']);
@@ -1251,6 +1270,9 @@ Route::prefix('v1')->group(function () {
             Route::post('{assignment}/checklist', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addChecklistItem']);
             Route::post('{assignment}/checklist/{checklistItem}/toggle', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'toggleChecklistItem']);
             Route::post('{assignment}/subtasks', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'createSubtask']);
+            Route::get('{assignment}/dependencies', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'dependencies']);
+            Route::post('{assignment}/dependencies', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addDependency']);
+            Route::delete('{assignment}/dependencies/{dependency}', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'removeDependency']);
             Route::post('{assignment}/generate', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'generateFromTemplate']);
         });
 
@@ -1359,6 +1381,8 @@ Route::prefix('v1')->group(function () {
             Route::post('letters/{correspondence}/purge', [$retention, 'purge']);
 
             Route::patch('dispatches/{dispatch}/delivery', [$register, 'updateDelivery']);
+            Route::post('dispatches/{dispatch}/refresh-tracking', [\App\Http\Controllers\Api\V1\Correspondence\CourierTrackingController::class, 'refresh']);
+            Route::post('archive/import', [\App\Http\Controllers\Api\V1\Correspondence\CorrespondenceArchiveImportController::class, 'store']);
 
             Route::get('subject-files', [$register, 'subjectFiles']);
             Route::post('subject-files', [$register, 'storeSubjectFile']);
@@ -1563,6 +1587,7 @@ Route::prefix('v1')->group(function () {
         // Weekly Summary Reports (operational progress reporting — PRD Phase 1)
         Route::prefix('weekly-summaries')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'dashboard']);
+            Route::get('trends', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'trends']);
             Route::get('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'periods']);
             Route::post('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'storePeriod']);
             Route::get('current', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'current']);

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -57,6 +57,7 @@ export default function AssignmentsCalendarPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <a className="btn-secondary text-sm" href="/assignments/capacity">Capacity</a>
+          <a className="btn-secondary text-sm" href="/assignments/workload">Workload</a>
           <button
             type="button"
             className="btn-secondary text-sm"
@@ -112,3 +113,4 @@ export default function AssignmentsCalendarPage() {
     </div>
   );
 }
+

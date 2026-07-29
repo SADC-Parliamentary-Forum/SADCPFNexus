@@ -1,5 +1,6 @@
-name: Mobile — Flutter Tests
+﻿name: Mobile — Flutter Tests & Store Artifacts
 
+# Builds Android APK/AAB artifacts for PR/main. Does NOT submit to Play Store or App Store.
 on:
   push:
     branches: [main]
@@ -52,7 +53,7 @@ jobs:
           retention-days: 7
 
   build-android:
-    name: Build Android APK (debug)
+    name: Build Android APK + AAB (debug)
     runs-on: ubuntu-latest
     needs: test
 
@@ -85,9 +86,52 @@ jobs:
       - name: Build APK (debug)
         run: flutter build apk --debug
 
+      - name: Build App Bundle (debug)
+        run: flutter build appbundle --debug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-${{ github.sha }}
+          name: app-debug-apk-${{ github.sha }}
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-aab-${{ github.sha }}
+          path: mobile/build/app/outputs/bundle/debug/app-debug.aab
+          retention-days: 14
+
+  # iOS store builds require macOS runners. Disabled by default — enable via repo variable IOS_BUILD_ENABLED=true.
+  build-ios:
+    name: Build iOS (macOS — optional)
+    if: ${{ vars.IOS_BUILD_ENABLED == 'true' }}
+    runs-on: macos-latest
+    needs: test
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run code generator
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --debug --no-codesign
+
+      - name: Note
+        run: echo "iOS artifact is unsigned; store submission is out of scope for CI."

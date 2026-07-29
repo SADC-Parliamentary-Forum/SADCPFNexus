@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,6 +83,7 @@ import '../../features/assets/presentation/screens/fleet_vehicle_detail_screen.d
 import '../../features/assignments/presentation/screens/assignments_list_screen.dart';
 import '../../features/assignments/presentation/screens/assignment_detail_screen.dart';
 import '../../features/assignments/presentation/screens/assignment_create_screen.dart';
+import '../../features/assignments/presentation/screens/assignments_calendar_screen.dart';
 import '../../features/risk/presentation/screens/risk_register_screen.dart';
 import '../../features/risk/presentation/screens/risk_detail_screen.dart';
 import '../../features/correspondence/presentation/screens/correspondence_register_screen.dart';
@@ -134,7 +135,7 @@ import '../../core/auth/auth_session_controller.dart';
 import '../../core/auth/feature_access.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // ref.READ (not watch) — the router is created once.
+  // ref.READ (not watch) â€” the router is created once.
   // refreshListenable handles all subsequent session changes reactively.
   // Using ref.watch here would recreate the entire GoRouter on every
   // auth state change, resetting navigation and breaking the dashboard.
@@ -155,7 +156,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isSplash ? null : '/splash';
       }
 
-      // Bootstrap complete — always move off the splash screen.
+      // Bootstrap complete â€” always move off the splash screen.
       if (isSplash) {
         return session.isAuthenticated ? '/dashboard' : '/login';
       }
@@ -175,28 +176,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      // ─── Splash ────────────────────────────────────────────────────────────
+      // â”€â”€â”€ Splash â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
 
-      // ─── Auth ──────────────────────────────────────────────────────────────
+      // â”€â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
 
-      // ─── Biometric Entry (pre-auth) ─────────────────────────────────────────
+      // â”€â”€â”€ Biometric Entry (pre-auth) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/biometric-entry',
         name: 'biometric-entry',
         builder: (context, state) => const BiometricEntryScreen(),
       ),
 
-      // ─── App shell with bottom navigation ──────────────────────────────────
+      // â”€â”€â”€ App shell with bottom navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
         routes: [
@@ -302,7 +303,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ─── Finance ───────────────────────────────────────────────────────────
+      // â”€â”€â”€ Finance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/finance/command-center',
         name: 'finance-command-center',
@@ -319,7 +320,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AuditComplianceScreen(),
       ),
 
-      // ─── Procurement ───────────────────────────────────────────────────────
+      // â”€â”€â”€ Procurement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/procurement',
         name: 'procurement-hub',
@@ -384,7 +385,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ─── Imprest ───────────────────────────────────────────────────────────
+      // â”€â”€â”€ Imprest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/imprest/form',
         name: 'imprest-form',
@@ -411,7 +412,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ─── Salary Advance ────────────────────────────────────────────────────
+      // â”€â”€â”€ Salary Advance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/salary/advances',
         name: 'salary-advances-hub',
@@ -463,7 +464,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ─── HR ────────────────────────────────────────────────────────────────
+      // â”€â”€â”€ HR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/hr/dashboard',
         name: 'hr-dashboard',
@@ -534,7 +535,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const OvertimeClaimFormScreen(),
       ),
 
-      // ─── SADC Calendar & Holidays ─────────────────────────────────────────
+      // â”€â”€â”€ SADC Calendar & Holidays â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/calendar',
         name: 'calendar-holidays',
@@ -551,7 +552,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ─── Assets ────────────────────────────────────────────────────────────
+      // â”€â”€â”€ Assets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/assets/inventory',
         name: 'assets-inventory',
@@ -585,7 +586,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ─── Gap Pack 2 modules ────────────────────────────────────────────────
+      // â”€â”€â”€ Gap Pack 2 modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/assignments',
         name: 'assignments',
@@ -595,6 +596,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/assignments/create',
         name: 'assignments-create',
         builder: (context, state) => const AssignmentCreateScreen(),
+      GoRoute(
+        path: '/assignments/calendar',
+        name: 'assignments-calendar',
+        builder: (context, state) => const AssignmentsCalendarScreen(),
+      ),
       ),
       GoRoute(
         path: '/assignments/:id',
@@ -650,7 +656,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const BudgetCashflowScreen(),
       ),
 
-      // ─── PIF ───────────────────────────────────────────────────────────────
+      // â”€â”€â”€ PIF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/pif/form',
         name: 'pif-form',
@@ -691,7 +697,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ─── Governance ────────────────────────────────────────────────────────
+      // â”€â”€â”€ Governance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/governance/meetings',
         name: 'governance-meetings',
@@ -721,7 +727,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const RegionalComplianceTrackerScreen(),
       ),
 
-      // ─── Approvals & Security ──────────────────────────────────────────────
+      // â”€â”€â”€ Approvals & Security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/approvals/secure-executive',
         name: 'secure-executive-approval',
@@ -738,21 +744,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const BiometricSignatureScreen(),
       ),
 
-      // ─── Search ────────────────────────────────────────────────────────────
+      // â”€â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/search',
         name: 'search',
         builder: (context, state) => const SearchReportingScreen(),
       ),
 
-      // ─── Offline Drafts ────────────────────────────────────────────────────
+      // â”€â”€â”€ Offline Drafts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/offline/drafts',
         name: 'offline-drafts',
         builder: (context, state) => const OfflineDraftsScreen(),
       ),
 
-      // ─── Executive & Analytics ─────────────────────────────────────────────
+      // â”€â”€â”€ Executive & Analytics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/dashboard/executive-cockpit',
         name: 'executive-cockpit',
@@ -764,14 +770,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const GlobalExecutiveSummaryScreen(),
       ),
 
-      // ─── Support ───────────────────────────────────────────────────────────
+      // â”€â”€â”€ Support â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/support',
         name: 'support',
         builder: (context, state) => const UserSupportHealthScreen(),
       ),
 
-      // ─── HR Performance & Files ────────────────────────────────────────────
+      // â”€â”€â”€ HR Performance & Files â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/hr/performance',
         name: 'hrPerformance',
@@ -820,14 +826,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SupervisorTeamDetailScreen(),
       ),
 
-      // ─── Profile Security ──────────────────────────────────────────────────
+      // â”€â”€â”€ Profile Security â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/profile/security',
         name: 'profile-security',
         builder: (context, state) => const UserProfileSecurityScreen(),
       ),
 
-      // ─── Notifications ─────────────────────────────────────────────────────
+      // â”€â”€â”€ Notifications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/notifications',
         name: 'notifications',
@@ -837,3 +843,4 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
   return router;
 });
+

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
@@ -16,7 +17,10 @@ class StockScanScreen extends ConsumerStatefulWidget {
 class _StockScanScreenState extends ConsumerState<StockScanScreen> {
   final _barcodeCtrl = TextEditingController();
   final _qtyCtrl = TextEditingController(text: '1');
+  final _stocktakeIdCtrl = TextEditingController();
   bool _lookingUp = false;
+  bool _cameraOn = false;
+  bool _syncing = false;
   String? _error;
   Map<String, dynamic>? _item;
   List<StocktakeDraftLine> _queue = [];
@@ -31,6 +35,7 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
   void dispose() {
     _barcodeCtrl.dispose();
     _qtyCtrl.dispose();
+    _stocktakeIdCtrl.dispose();
     super.dispose();
   }
 
@@ -39,9 +44,10 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
     if (mounted) setState(() => _queue = q);
   }
 
-  Future<void> _lookup() async {
-    final barcode = _barcodeCtrl.text.trim();
+  Future<void> _lookup([String? override]) async {
+    final barcode = (override ?? _barcodeCtrl.text).trim();
     if (barcode.isEmpty) return;
+    if (override != null) _barcodeCtrl.text = barcode;
     setState(() {
       _lookingUp = true;
       _error = null;
@@ -55,6 +61,7 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
       setState(() {
         _item = extractObjectData(res.data);
         _lookingUp = false;
+        _cameraOn = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -87,6 +94,46 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
     }
   }
 
+  Future<void> _syncOffline() async {
+    final id = int.tryParse(_stocktakeIdCtrl.text.trim());
+    if (id == null || _queue.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Enter a draft stocktake id and queue at least one line.')),
+      );
+      return;
+    }
+    setState(() => _syncing = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      await dio.post('/stock/stocktakes/$id/sync-offline', data: {
+        'lines': _queue
+            .map((l) => {
+                  'client_line_key': l.clientLineKey,
+                  'stock_item_id': l.stockItemId,
+                  'barcode': l.barcode,
+                  'counted_qty': l.countedQty.round(),
+                })
+            .toList(),
+      });
+      await StocktakeDraftQueue.clear();
+      await _reloadQueue();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Offline queue synced to server.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sync failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,16 +143,40 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
         title: const Text('Stock scan',
             style: TextStyle(
                 color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
+        actions: [
+          TextButton(
+            onPressed: () => setState(() => _cameraOn = !_cameraOn),
+            child: Text(_cameraOn ? 'Manual' : 'Camera',
+                style: const TextStyle(color: AppColors.primary)),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_cameraOn) ...[
+            SizedBox(
+              height: 220,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MobileScanner(
+                  onDetect: (capture) {
+                    final code = (capture.barcodes.isNotEmpty ? capture.barcodes.first.rawValue : null);
+                    if (code != null && code.isNotEmpty && !_lookingUp) {
+                      _lookup(code);
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           TextField(
             controller: _barcodeCtrl,
             style: const TextStyle(color: AppColors.textPrimary),
             decoration: const InputDecoration(
               labelText: 'Barcode',
-              hintText: 'Scan or type barcode',
+              hintText: 'Scan with camera or type barcode',
             ),
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _lookup(),
@@ -114,7 +185,7 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
           ElevatedButton(
             onPressed: _lookingUp ? null : _lookup,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text(_lookingUp ? 'Looking up…' : 'Lookup barcode',
+            child: Text(_lookingUp ? 'Looking upâ€¦' : 'Lookup barcode',
                 style: const TextStyle(color: Colors.white)),
           ),
           if (_error != null) ...[
@@ -140,7 +211,7 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
                           fontSize: 16)),
                   const SizedBox(height: 6),
                   Text(
-                    'SKU ${_item!['sku'] ?? '—'} · on hand ${_item!['quantity_on_hand'] ?? _item!['qty_on_hand'] ?? '—'}',
+                    'SKU ${_item!['sku'] ?? 'â€”'} Â· on hand ${_item!['quantity_on_hand'] ?? _item!['qty_on_hand'] ?? 'â€”'}',
                     style: const TextStyle(
                         color: AppColors.textMuted, fontSize: 12),
                   ),
@@ -191,14 +262,31 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
                   title: Text(line.name ?? line.barcode,
                       style: const TextStyle(color: AppColors.textPrimary)),
                   subtitle: Text(
-                    'qty ${line.countedQty} · ${line.clientLineKey}',
+                    'qty ${line.countedQty} Â· ${line.clientLineKey}',
                     style: const TextStyle(
                         color: AppColors.textMuted, fontSize: 11),
                   ),
                 )),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _stocktakeIdCtrl,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: AppColors.textPrimary),
+            decoration: const InputDecoration(
+              labelText: 'Draft stocktake ID',
+              hintText: 'Required to auto-apply queue to server',
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: _syncing || _queue.isEmpty ? null : _syncOffline,
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: Text(_syncing ? 'Syncingâ€¦' : 'Sync offline queue to server',
+                style: const TextStyle(color: Colors.white)),
+          ),
           const SizedBox(height: 8),
           const Text(
-            'Queue is stored on-device. Sync to a draft stocktake from web when ready.',
+            'Camera scan preferred; manual entry always available. Conflicts on the server require force from web if counts already differ.',
             style: TextStyle(color: AppColors.textMuted, fontSize: 11),
           ),
         ],
@@ -206,3 +294,4 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
     );
   }
 }
+

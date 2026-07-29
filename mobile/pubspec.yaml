@@ -1,4 +1,4 @@
-name: sadcpf_nexus
+﻿name: sadcpf_nexus
 description: SADC Parliamentary Forum Nexus Mobile Application
 publish_to: 'none'
 version: 1.0.0+1
@@ -28,7 +28,7 @@ dependencies:
   hive_flutter: ^1.1.0
   hive: ^2.2.3
   # Pin drift_flutter below 0.2.7: 0.2.7 passes isolateDebugLog which drift 2.26
-  # (max resolvable under current SDK) does not accept — breaks flutter test.
+  # (max resolvable under current SDK) does not accept â€” breaks flutter test.
   drift: ^2.14.1
   drift_flutter: 0.2.6
   sqlite3_flutter_libs: ^0.5.20
@@ -52,6 +52,7 @@ dependencies:
   cached_network_image: ^3.3.1
   intl: ^0.19.0
   shared_preferences: ^2.2.2
+  mobile_scanner: ^5.1.1
   google_fonts: ^6.1.0
 
   # Push Notifications (Firebase Cloud Messaging)
@@ -78,3 +79,4 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+

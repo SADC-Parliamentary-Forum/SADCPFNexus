@@ -26,7 +26,7 @@ class Correspondence extends Model
     protected $fillable = [
         'tenant_id', 'created_by', 'reviewed_by', 'approved_by',
         'reference_number', 'registry_reference', 'title', 'subject', 'body',
-        'type', 'priority', 'language', 'status', 'direction',
+        'type', 'priority', 'language', 'language_tags', 'status', 'direction',
         'file_code', 'signatory_code', 'department_id', 'programme_id',
         'file_path', 'original_filename', 'mime_type', 'size_bytes',
         'review_comment', 'rejection_reason',
@@ -69,6 +69,7 @@ class Correspondence extends Model
         'retain_until' => 'date',
         'legal_hold_set_at' => 'datetime',
         'purged_at' => 'datetime',
+        'language_tags' => 'array',
     ];
 
     public function creator(): BelongsTo

@@ -87,6 +87,7 @@ class Assignment extends Model
         'department_claim_due_at',
         'claimed_at',
         'due_date',
+        'estimated_hours',
         'start_date',
         'checkin_frequency',
         'linked_programme_id',

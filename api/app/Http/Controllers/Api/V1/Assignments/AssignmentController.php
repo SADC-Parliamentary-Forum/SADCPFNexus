@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentChecklistItem;
 use App\Modules\Assignments\Services\AssignmentCapacityService;
+use App\Modules\Assignments\Services\AssignmentDependencyService;
 use App\Modules\Assignments\Services\AssignmentIcsExportService;
+use App\Modules\Assignments\Services\AssignmentIcsImportService;
 use App\Modules\Assignments\Services\AssignmentService;
+use App\Modules\Assignments\Services\AssignmentWorkloadForecastService;
+use App\Models\AssignmentDependency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,6 +22,9 @@ class AssignmentController extends Controller
         private readonly AssignmentService $service,
         private readonly AssignmentIcsExportService $ics,
         private readonly AssignmentCapacityService $capacity,
+        private readonly AssignmentWorkloadForecastService $workload,
+        private readonly AssignmentDependencyService $dependencies,
+        private readonly AssignmentIcsImportService $icsImport,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -154,6 +161,71 @@ class AssignmentController extends Controller
         return response()->json([
             'data' => $this->capacity->capacity($request->user(), $data['department_id'] ?? null),
         ]);
+    }
+
+    public function workloadForecast(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'weeks' => ['nullable', 'integer', 'min:1', 'max:26'],
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $this->workload->forecast(
+                $request->user(),
+                (int) ($data['weeks'] ?? 4),
+                $data['department_id'] ?? null
+            ),
+        ]);
+    }
+
+    public function importIcs(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ics' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:2048'],
+        ]);
+
+        $ics = $data['ics'] ?? null;
+        if (! $ics && $request->hasFile('file')) {
+            $ics = file_get_contents($request->file('file')->getRealPath()) ?: '';
+        }
+        if (! $ics) {
+            return response()->json(['message' => 'Provide ics text or file.'], 422);
+        }
+
+        $result = $this->icsImport->import($ics, $request->user());
+
+        return response()->json(['message' => 'ICS import complete.', 'data' => $result], 201);
+    }
+
+    public function dependencies(Request $request, Assignment $assignment): JsonResponse
+    {
+        return response()->json(['data' => $this->dependencies->listFor($assignment, $request->user())]);
+    }
+
+    public function addDependency(Request $request, Assignment $assignment): JsonResponse
+    {
+        $data = $request->validate([
+            'depends_on_assignment_id' => ['required', 'integer'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $dep = $this->dependencies->add(
+            $assignment,
+            (int) $data['depends_on_assignment_id'],
+            $request->user(),
+            $data['notes'] ?? null
+        );
+
+        return response()->json(['message' => 'Dependency added.', 'data' => $dep], 201);
+    }
+
+    public function removeDependency(Request $request, Assignment $assignment, AssignmentDependency $dependency): JsonResponse
+    {
+        $this->dependencies->remove($assignment, $dependency, $request->user());
+
+        return response()->json(['message' => 'Dependency removed.']);
     }
 
     public function stats(Request $request): JsonResponse

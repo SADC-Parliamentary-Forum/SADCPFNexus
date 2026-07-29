@@ -12,6 +12,7 @@ use App\Modules\WeeklyReports\Services\WeeklyConsolidationService;
 use App\Modules\WeeklyReports\Services\WeeklyExportService;
 use App\Modules\WeeklyReports\Services\WeeklyPeriodService;
 use App\Modules\WeeklyReports\Services\WeeklyReportService;
+use App\Modules\WeeklyReports\Services\WeeklyTrendAnalyticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,11 +23,24 @@ class WeeklyReportController extends Controller
         private readonly WeeklyPeriodService $periods,
         private readonly WeeklyConsolidationService $consolidation,
         private readonly WeeklyExportService $exports,
+        private readonly WeeklyTrendAnalyticsService $trends,
     ) {}
 
     public function dashboard(Request $request): JsonResponse
     {
         return response()->json(['data' => $this->reports->dashboard($request->user())]);
+    }
+
+    public function trends(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+        ]);
+
+        return response()->json([
+            'data' => $this->trends->trends($request->user(), $data['from'] ?? null, $data['to'] ?? null),
+        ]);
     }
 
     public function periods(Request $request): JsonResponse
@@ -357,6 +371,7 @@ class WeeklyReportController extends Controller
             'pdf' => $this->exports->pdf($weeklySummary, $request->user())->download($weeklySummary->reference.'.pdf'),
             'excel', 'csv' => $this->exports->excelCsv($weeklySummary, $request->user()),
             'word', 'doc' => $this->exports->wordDoc($weeklySummary, $request->user()),
+            'docx' => $this->exports->wordDocx($weeklySummary, $request->user()),
             default => response()->json(['message' => 'Unsupported format'], 422),
         };
     }
