@@ -52,6 +52,12 @@ Schedule::command('assignments:process-reminders')->hourly();
 // Evaluate automated Key Risk Indicators and raise in-app breach alerts.
 Schedule::command('risk:evaluate-kris')->weekdays()->at('07:20');
 
+// Mark overdue control-testing campaign items.
+Schedule::command('risk:mark-control-tests-overdue')->weekdays()->at('07:25');
+
+// Idempotent weekly promote of open decisions/resolutions into Assignments feed.
+Schedule::command('decisions:promote-weekly-assignments')->mondays()->at('07:35');
+
 // Correspondence deadline overdue notifications + HOD escalation after 3 days.
 Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
 

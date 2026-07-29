@@ -256,8 +256,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Policy Library",href: "/risk/policies",    icon: "policy"           },
       { label: "Log Risk",      href: "/risk/create",      icon: "add_circle"       },
       { label: "KRI Automation", href: "/risk/kri", icon: "speed" },
-      { label: "Control Testing (Phase 2)", href: "/risk/control-testing", icon: "fact_check" },
-      { label: "BCP / Insurance (Phase 3)", href: "/risk/bcp", icon: "health_and_safety" },
+        { label: "Control Testing", href: "/risk/control-testing", icon: "fact_check" },
+        { label: "BCP / Insurance", href: "/risk/bcp", icon: "health_and_safety" },
     ],
   },
   {

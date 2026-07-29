@@ -1249,9 +1249,15 @@ Route::prefix('v1')->group(function () {
         Route::delete('governance/minutes/{meetingMinute}/action-items/{actionItem}', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'deleteActionItem']);
         Route::post('governance/minutes/{meetingMinute}/action-items/{actionItem}/assign', [\App\Http\Controllers\Api\V1\Governance\MeetingMinutesController::class, 'assignActionItem']);
 
-        // Meeting Resolutions / Decision Register (Phase 1)
+        // Meeting Resolutions / Decision Register (Phase 1 + Phase 3)
         Route::prefix('decisions')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'dashboard']);
+            Route::get('owners', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'ownerOptions']);
+            Route::get('minutes-options', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'minutesOptions']);
+            Route::get('agenda-items', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'index']);
+            Route::post('agenda-items', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'store']);
+            Route::post('agenda-items/{agendaItem}/link-decision', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'linkDecision']);
+            Route::post('promote-weekly-assignments', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'promoteWeekly']);
             Route::get('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'index']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'store']);
             Route::get('{decision}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'show']);
@@ -1420,6 +1426,17 @@ Route::prefix('v1')->group(function () {
             Route::post('kris/evaluate', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'evaluate']);
             Route::patch('kris/{kri}', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'update']);
 
+            // Phase 3 — control testing, BCP/insurance, interdependencies
+            Route::get('control-testing/campaigns', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listCampaigns']);
+            Route::post('control-testing/campaigns', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeCampaign']);
+            Route::get('control-testing/campaigns/{campaign}', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'showCampaign']);
+            Route::post('control-testing/items/{item}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'completeItem']);
+            Route::post('control-testing/mark-overdue', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'markOverdue']);
+            Route::get('bcp-links', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listBcpLinks']);
+            Route::post('bcp-links', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeBcpLink']);
+            Route::get('dependencies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'listDependencies']);
+            Route::post('dependencies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeDependency']);
+
             Route::apiResource('risks', \App\Http\Controllers\Api\V1\Risk\RiskController::class);
             Route::post('risks/{risk}/submit',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
             Route::post('risks/{risk}/start-review', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'startReview']);
@@ -1505,6 +1522,8 @@ Route::prefix('v1')->group(function () {
             Route::post('{weeklySummary}/reopen', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'reopen']);
             Route::post('{weeklySummary}/include-suggestion', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'includeSuggestion']);
             Route::post('{weeklySummary}/exclude-suggestion', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'excludeSuggestion']);
+            Route::post('{weeklySummary}/ai-draft', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'generateAiDraft']);
+            Route::post('{weeklySummary}/ai-draft/confirm', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'confirmAiDraft']);
             Route::post('{weeklySummary}/consolidate-item', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'consolidateItem']);
             Route::post('{weeklySummary}/publish', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'publish']);
             Route::post('{weeklySummary}/extend-deadline', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'extendDeadline']);

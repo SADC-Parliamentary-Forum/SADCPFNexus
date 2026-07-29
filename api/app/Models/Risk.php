@@ -162,6 +162,21 @@ class Risk extends Model
             ->withPivot('effectiveness_rating', 'notes', 'linked_by', 'created_at');
     }
 
+    public function bcpLinks(): HasMany
+    {
+        return $this->hasMany(RiskBcpLink::class);
+    }
+
+    public function dependencies(): HasMany
+    {
+        return $this->hasMany(RiskDependency::class, 'risk_id');
+    }
+
+    public function dependents(): HasMany
+    {
+        return $this->hasMany(RiskDependency::class, 'related_risk_id');
+    }
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');

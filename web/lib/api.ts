@@ -6854,7 +6854,75 @@ export const riskApi = {
     api.post<{ data: RiskKri[]; message: string }>("/risk/kris/evaluate"),
   updateKri: (id: number, data: Partial<RiskKri>) =>
     api.patch<{ data: RiskKri }>(`/risk/kris/${id}`, data),
+
+  // Phase 3 — control testing / BCP / dependencies
+  listControlTestingCampaigns: () =>
+    api.get<{ data: RiskControlTestingCampaign[] }>("/risk/control-testing/campaigns"),
+  createControlTestingCampaign: (data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskControlTestingCampaign }>("/risk/control-testing/campaigns", data),
+  getControlTestingCampaign: (id: number) =>
+    api.get<{ data: RiskControlTestingCampaign }>(`/risk/control-testing/campaigns/${id}`),
+  completeControlTestItem: (id: number, data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskControlTestingItem }>(`/risk/control-testing/items/${id}/complete`, data),
+  markControlTestsOverdue: () =>
+    api.post<{ message: string; updated: number }>("/risk/control-testing/mark-overdue"),
+  listBcpLinks: (params?: { risk_id?: number }) =>
+    api.get<{ data: RiskBcpLink[] }>("/risk/bcp-links", { params }),
+  createBcpLink: (data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskBcpLink }>("/risk/bcp-links", data),
+  listRiskDependencies: (params?: { risk_id?: number }) =>
+    api.get<{ data: RiskDependency[] }>("/risk/dependencies", { params }),
+  createRiskDependency: (data: Record<string, unknown>) =>
+    api.post<{ message: string; data: RiskDependency }>("/risk/dependencies", data),
 };
+
+export interface RiskControlTestingCampaign {
+  id: number;
+  campaign_code: string;
+  title: string;
+  description?: string | null;
+  status: string;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
+  items_count?: number;
+  overdue_items_count?: number;
+  open_items_count?: number;
+  items?: RiskControlTestingItem[];
+}
+
+export interface RiskControlTestingItem {
+  id: number;
+  campaign_id: number;
+  control_id: number;
+  risk_id?: number | null;
+  status: string;
+  due_at?: string | null;
+  result?: string | null;
+  checklist_notes?: string | null;
+  evidence_notes?: string | null;
+  control?: { id: number; control_code: string; title: string };
+}
+
+export interface RiskBcpLink {
+  id: number;
+  risk_id: number;
+  link_type: string;
+  title: string;
+  notes?: string | null;
+  asset_insurance_policy_id?: number | null;
+  risk?: { id: number; risk_code: string; title: string };
+  insurance_policy?: { id: number; policy_number: string; insurer_name: string; status: string } | null;
+}
+
+export interface RiskDependency {
+  id: number;
+  risk_id: number;
+  related_risk_id: number;
+  relation_type: string;
+  notes?: string | null;
+  risk?: { id: number; risk_code: string; title: string };
+  related_risk?: { id: number; risk_code: string; title: string };
+}
 
 export interface RiskKri {
   id: number;
@@ -7249,6 +7317,12 @@ export const weeklyReportsApi = {
     api.post(`/weekly-summaries/${id}/include-suggestion`, data),
   excludeSuggestion: (id: number, data: Record<string, unknown>) =>
     api.post(`/weekly-summaries/${id}/exclude-suggestion`, data),
+  generateAiDraft: (id: number) =>
+    api.post<{ message: string; data: { draft: string; requires_human_confirm: boolean; auto_submit: boolean; confirmed: boolean } }>(
+      `/weekly-summaries/${id}/ai-draft`,
+    ),
+  confirmAiDraft: (id: number) =>
+    api.post<{ message: string; data: WeeklyOpsReport }>(`/weekly-summaries/${id}/ai-draft/confirm`, { confirm: true }),
   department: (periodId: number, departmentId?: number) =>
     api.post<{ data: WeeklyOpsReport }>("/weekly-summaries/department", {
       period_id: periodId,
@@ -7844,5 +7918,29 @@ export const decisionsApi = {
     api.get<{ data: Array<{ id: number; change_type: string; from_status?: string; to_status?: string; notes?: string; created_at: string; actor?: { id: number; name: string } }> }>(`/decisions/${id}/history`),
   dashboard: () =>
     api.get<{ data: MeetingDecisionDashboard }>("/decisions/dashboard"),
+  listOwners: () =>
+    api.get<{ data: Array<{ id: number; name: string; email?: string }> }>("/decisions/owners"),
+  listMinutesOptions: () =>
+    api.get<{ data: Array<{ id: number; title: string; meeting_date?: string; status?: string }> }>("/decisions/minutes-options"),
+  listAgendaItems: (params?: Record<string, string | number>) =>
+    api.get<{ data: MeetingAgendaItem[] }>("/decisions/agenda-items", { params }),
+  createAgendaItem: (data: Partial<MeetingAgendaItem>) =>
+    api.post<{ message: string; data: MeetingAgendaItem }>("/decisions/agenda-items", data),
+  linkAgendaDecision: (agendaId: number, meeting_decision_id: number) =>
+    api.post<{ message: string; data: MeetingAgendaItem }>(`/decisions/agenda-items/${agendaId}/link-decision`, { meeting_decision_id }),
+  promoteWeeklyAssignments: () =>
+    api.post<{ message: string; data: { promoted: number; skipped: number } }>("/decisions/promote-weekly-assignments"),
 };
+
+export interface MeetingAgendaItem {
+  id: number;
+  title: string;
+  description?: string | null;
+  sequence: number;
+  status: string;
+  workplan_event_id?: number | null;
+  meeting_minutes_id?: number | null;
+  meeting_decision_id?: number | null;
+  presenter_id?: number | null;
+}
 

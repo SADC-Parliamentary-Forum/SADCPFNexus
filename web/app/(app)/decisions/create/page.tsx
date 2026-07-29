@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { decisionsApi } from "@/lib/api";
@@ -12,8 +12,18 @@ export default function CreateDecisionPage() {
   const [decisionType, setDecisionType] = useState<"resolution" | "management_decision">("resolution");
   const [dueDate, setDueDate] = useState("");
   const [confidential, setConfidential] = useState(false);
+  const [ownerId, setOwnerId] = useState("");
+  const [minutesId, setMinutesId] = useState("");
+  const [agendaTitle, setAgendaTitle] = useState("");
+  const [owners, setOwners] = useState<Array<{ id: number; name: string }>>([]);
+  const [minutes, setMinutes] = useState<Array<{ id: number; title: string; meeting_date?: string }>>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    decisionsApi.listOwners().then((r) => setOwners(r.data.data ?? [])).catch(() => undefined);
+    decisionsApi.listMinutesOptions().then((r) => setMinutes(r.data.data ?? [])).catch(() => undefined);
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -26,8 +36,19 @@ export default function CreateDecisionPage() {
         decision_type: decisionType,
         due_date: dueDate || null,
         is_confidential: confidential,
+        owner_id: ownerId ? Number(ownerId) : null,
+        meeting_minutes_id: minutesId ? Number(minutesId) : null,
       });
-      router.push(`/decisions/${res.data.data.id}`);
+      const decisionId = res.data.data.id;
+      if (agendaTitle.trim()) {
+        const agenda = await decisionsApi.createAgendaItem({
+          title: agendaTitle.trim(),
+          meeting_minutes_id: minutesId ? Number(minutesId) : null,
+          meeting_decision_id: decisionId,
+        });
+        await decisionsApi.linkAgendaDecision(agenda.data.data.id, decisionId);
+      }
+      router.push(`/decisions/${decisionId}`);
     } catch {
       setError("Could not create the decision. Check required fields and try again.");
       setSaving(false);
@@ -59,6 +80,33 @@ export default function CreateDecisionPage() {
         <label className="block space-y-1">
           <span className="text-sm font-medium">Decision text</span>
           <textarea className="input w-full min-h-32" value={body} onChange={(e) => setBody(e.target.value)} />
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Owner</span>
+          <select className="input w-full" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+            <option value="">Select owner…</option>
+            {owners.map((o) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Meeting minutes</span>
+          <select className="input w-full" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
+            <option value="">Optional minutes link…</option>
+            {minutes.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}{m.meeting_date ? ` (${m.meeting_date})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Agenda item (optional)</span>
+          <input className="input w-full" placeholder="Create and link an agenda item title" value={agendaTitle} onChange={(e) => setAgendaTitle(e.target.value)} />
         </label>
 
         <label className="block space-y-1">

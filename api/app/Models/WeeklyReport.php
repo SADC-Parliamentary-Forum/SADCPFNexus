@@ -19,9 +19,11 @@ class WeeklyReport extends Model
     protected $fillable = [
         'uuid', 'tenant_id', 'reference', 'period_id', 'report_type',
         'employee_id', 'department_id', 'programme_id', 'project_id',
+        'donor_code', 'donor_name', 'template_key',
         'supervisor_id', 'owner_id', 'prepared_by_id', 'status', 'version',
         'confidentiality', 'declaration_confirmed', 'declaration_confirmed_at',
         'no_activity', 'additional_notes', 'work_location_status',
+        'ai_draft_text', 'ai_draft_confirmed_at', 'ai_draft_confirmed_by',
         'submitted_at', 'reviewed_at', 'accepted_at', 'published_at', 'employee_due_at',
     ];
 
@@ -31,6 +33,7 @@ class WeeklyReport extends Model
             'declaration_confirmed' => 'boolean',
             'declaration_confirmed_at' => 'datetime',
             'no_activity' => 'boolean',
+            'ai_draft_confirmed_at' => 'datetime',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'accepted_at' => 'datetime',

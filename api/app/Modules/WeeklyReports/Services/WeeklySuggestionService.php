@@ -77,6 +77,8 @@ class WeeklySuggestionService
             $this->correspondenceSuggestions($employee, $period),
             $this->pifSuggestions($employee, $period),
             $this->timesheetSuggestions($employee, $period),
+            $this->calendarMeetingSuggestions($employee, $period),
+            $this->decisionSuggestions($employee, $period),
         );
 
         $deferred = array_values(array_filter($suggestions, fn ($s) => ! empty($s['is_placeholder'])));
@@ -289,6 +291,106 @@ class WeeklySuggestionService
             'confidentiality' => 'internal',
             'decision' => null,
             'meta' => [],
+        ])->all();
+    }
+
+    private function calendarMeetingSuggestions(User $employee, WeeklyReportingPeriod $period): array
+    {
+        if (! Schema::hasTable('workplan_events')) {
+            return [];
+        }
+
+        try {
+            $rows = DB::table('workplan_events')
+                ->where('tenant_id', $employee->tenant_id)
+                ->whereNull('deleted_at')
+                ->where(function ($q) use ($period) {
+                    $q->whereBetween('date', [$period->start_date->toDateString(), $period->end_date->toDateString()]);
+                    if (Schema::hasColumn('workplan_events', 'end_date')) {
+                        $q->orWhere(function ($q2) use ($period) {
+                            $q2->where('date', '<=', $period->end_date->toDateString())
+                                ->where('end_date', '>=', $period->start_date->toDateString());
+                        });
+                    }
+                })
+                ->where(function ($q) use ($employee) {
+                    $q->where('created_by', $employee->id);
+                    if (Schema::hasTable('workplan_event_responsible')) {
+                        $q->orWhereIn('id', function ($sub) use ($employee) {
+                            $sub->select('workplan_event_id')
+                                ->from('workplan_event_responsible')
+                                ->where('user_id', $employee->id);
+                        });
+                    }
+                })
+                ->orderBy('date')
+                ->limit(40)
+                ->get(['id', 'title', 'type', 'date', 'end_date']);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return $rows->map(fn ($e) => [
+            'source_type' => 'calendar_meeting',
+            'source_id' => $e->id,
+            'reference' => 'EVT-'.$e->id,
+            'title' => ($e->type ? ucfirst((string) $e->type).': ' : 'Meeting: ').($e->title ?? ('#'.$e->id)),
+            'status' => 'scheduled',
+            'suggested_section' => 'meeting',
+            'confidentiality' => 'internal',
+            'decision' => null,
+            'chip_label' => 'Meeting',
+            'meta' => [
+                'date' => $e->date,
+                'end_date' => $e->end_date ?? null,
+            ],
+        ])->all();
+    }
+
+    private function decisionSuggestions(User $employee, WeeklyReportingPeriod $period): array
+    {
+        if (! Schema::hasTable('meeting_decisions')) {
+            return [];
+        }
+
+        try {
+            $rows = DB::table('meeting_decisions')
+                ->where('tenant_id', $employee->tenant_id)
+                ->whereNull('deleted_at')
+                ->where(function ($q) use ($employee) {
+                    $q->where('owner_id', $employee->id)->orWhere('created_by', $employee->id);
+                })
+                ->whereIn('status', ['adopted', 'in_progress', 'implemented'])
+                ->where(function ($q) use ($period) {
+                    $q->whereBetween('updated_at', [
+                        $period->start_date->copy()->startOfDay(),
+                        $period->end_date->copy()->endOfDay(),
+                    ]);
+                    if (Schema::hasColumn('meeting_decisions', 'due_date')) {
+                        $q->orWhereBetween('due_date', [
+                            $period->start_date->toDateString(),
+                            $period->end_date->toDateString(),
+                        ]);
+                    }
+                })
+                ->orderByDesc('updated_at')
+                ->limit(30)
+                ->get(['id', 'reference_number', 'title', 'status', 'due_date']);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return $rows->map(fn ($d) => [
+            'source_type' => 'meeting_decision',
+            'source_id' => $d->id,
+            'reference' => $d->reference_number,
+            'title' => 'Decision: '.$d->title,
+            'status' => $d->status,
+            'suggested_section' => 'decision',
+            'confidentiality' => 'internal',
+            'decision' => null,
+            'chip_label' => 'Decision',
+            'meta' => ['due_date' => $d->due_date],
         ])->all();
     }
 

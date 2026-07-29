@@ -82,6 +82,11 @@ class WeeklyReportController extends Controller
             'no_activity' => 'nullable|boolean',
             'confidentiality' => 'nullable|string|max:40',
             'status' => 'nullable|string|max:40',
+            'programme_id' => 'nullable|integer',
+            'project_id' => 'nullable|integer',
+            'donor_code' => 'nullable|string|max:64',
+            'donor_name' => 'nullable|string|max:255',
+            'template_key' => 'nullable|string|max:64',
         ]);
 
         return response()->json(['data' => $this->reports->update($weeklySummary, $request->user(), $data)]);
@@ -130,6 +135,33 @@ class WeeklyReportController extends Controller
         $request->validate(['declaration_confirmed' => 'required|accepted']);
 
         return response()->json(['data' => $this->reports->submit($weeklySummary, $request->user())]);
+    }
+
+    public function generateAiDraft(Request $request, WeeklyReport $weeklySummary): JsonResponse
+    {
+        $suggestions = app(\App\Modules\WeeklyReports\Services\WeeklySuggestionService::class)
+            ->suggestions($request->user(), $weeklySummary->period, $weeklySummary);
+
+        $draft = app(\App\Modules\WeeklyReports\Services\WeeklyAiDraftService::class)
+            ->generateStub($weeklySummary, $request->user(), $suggestions);
+
+        return response()->json([
+            'message' => 'AI draft stub generated. Human confirmation required before submit — never auto-submitted.',
+            'data' => $draft,
+        ]);
+    }
+
+    public function confirmAiDraft(Request $request, WeeklyReport $weeklySummary): JsonResponse
+    {
+        $request->validate(['confirm' => 'required|accepted']);
+
+        $report = app(\App\Modules\WeeklyReports\Services\WeeklyAiDraftService::class)
+            ->confirm($weeklySummary, $request->user());
+
+        return response()->json([
+            'message' => 'AI draft confirmed by human. Report not submitted.',
+            'data' => $report,
+        ]);
     }
 
     public function returnReport(Request $request, WeeklyReport $weeklySummary): JsonResponse

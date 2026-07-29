@@ -181,6 +181,7 @@ class WeeklyReportService
 
         $report->fill(collect($data)->only([
             'additional_notes', 'work_location_status', 'no_activity', 'confidentiality',
+            'programme_id', 'project_id', 'donor_code', 'donor_name', 'template_key',
         ])->all());
 
         if (($data['status'] ?? null) === 'ready' && $report->status === 'draft') {

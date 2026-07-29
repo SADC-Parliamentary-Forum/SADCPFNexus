@@ -34,6 +34,7 @@ class MeetingDecision extends Model
         'due_date',
         'meeting_minutes_id',
         'workplan_event_id',
+        'agenda_item_id',
         'is_confidential',
         'created_by',
         'adopted_by',
@@ -47,6 +48,7 @@ class MeetingDecision extends Model
         'source_type',
         'source_id',
         'source_purpose',
+        'last_promoted_at',
     ];
 
     protected $casts = [
@@ -55,6 +57,7 @@ class MeetingDecision extends Model
         'adopted_at' => 'datetime',
         'implemented_at' => 'datetime',
         'closed_at' => 'datetime',
+        'last_promoted_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -119,6 +122,11 @@ class MeetingDecision extends Model
     public function minutes(): BelongsTo
     {
         return $this->belongsTo(MeetingMinutes::class, 'meeting_minutes_id');
+    }
+
+    public function agendaItem(): BelongsTo
+    {
+        return $this->belongsTo(MeetingAgendaItem::class, 'agenda_item_id');
     }
 
     public function supersededBy(): BelongsTo
