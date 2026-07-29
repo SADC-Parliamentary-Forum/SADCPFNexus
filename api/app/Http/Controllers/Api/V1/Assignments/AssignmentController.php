@@ -144,11 +144,14 @@ class AssignmentController extends Controller
 
     public function calendarFeed(Request $request): JsonResponse
     {
-        $googlePresent = filled(config('services.google.calendar_client_id'))
-            && filled(config('services.google.calendar_client_secret'));
+        $sync = app(\App\Modules\Assignments\Services\AssignmentGoogleCalendarSyncService::class);
+        $googlePresent = $sync->credentialsPresent();
 
         return response()->json([
-            'data' => $this->ics->feedMeta($request->user(), $googlePresent),
+            'data' => array_merge(
+                $this->ics->feedMeta($request->user(), $googlePresent),
+                ['sync_status' => $sync->syncStatus()]
+            ),
         ]);
     }
 

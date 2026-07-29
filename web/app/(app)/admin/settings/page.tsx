@@ -19,8 +19,19 @@ const DEFAULTS: SystemSettings = {
   letterhead_website: "www.sadcpf.org",
 };
 
+type CredentialRow = {
+  key: string;
+  label: string;
+  configured: boolean;
+  driver?: string | null;
+  secret_source: string;
+  guidance: string;
+  details?: Record<string, unknown>;
+};
+
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULTS);
+  const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
@@ -31,10 +42,10 @@ export default function AdminSettingsPage() {
   };
 
   useEffect(() => {
-    settingsApi.get()
-      .then((res) => setSettings({ ...DEFAULTS, ...res.data }))
-      .catch(() => { /* use defaults silently */ })
-      .finally(() => setLoading(false));
+    Promise.all([
+      settingsApi.get().then((res) => setSettings({ ...DEFAULTS, ...res.data })).catch(() => {}),
+      settingsApi.operatorCredentials().then((res) => setCredentials(res.data.data ?? [])).catch(() => setCredentials([])),
+    ]).finally(() => setLoading(false));
   }, []);
 
   const handleSave = async () => {
@@ -81,7 +92,6 @@ export default function AdminSettingsPage() {
         </div>
       ) : (
         <>
-          {/* Organisation */}
           <div className="card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -109,7 +119,6 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Fiscal Year */}
           <div className="card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
@@ -117,54 +126,88 @@ export default function AdminSettingsPage() {
               </div>
               <h2 className="text-sm font-semibold text-neutral-900">Fiscal Year & Locale</h2>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fiscal Year Start Month</label>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fiscal start month</label>
                 <select className="form-input" value={settings.fiscal_start_month} onChange={(e) => setSettings({ ...settings, fiscal_start_month: e.target.value })}>
-                  {MONTHS.map((m) => <option key={m}>{m}</option>)}
+                  {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Default Currency</label>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1">Currency</label>
                 <select className="form-input" value={settings.default_currency} onChange={(e) => setSettings({ ...settings, default_currency: e.target.value })}>
-                  {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Timezone</label>
                 <select className="form-input" value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}>
-                  {TIMEZONES.map((t) => <option key={t}>{t}</option>)}
+                  {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
               </div>
             </div>
           </div>
 
-          {/* Letterhead & Branding */}
           <div className="card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50">
-                <span className="material-symbols-outlined text-sky-600 text-[18px]">mark_email_read</span>
+                <span className="material-symbols-outlined text-sky-700 text-[18px]">description</span>
               </div>
-              <h2 className="text-sm font-semibold text-neutral-900">Letterhead &amp; Branding</h2>
+              <h2 className="text-sm font-semibold text-neutral-900">Letterhead</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
-                <input className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} placeholder="Enhancing Parliamentary Democracy…" />
+                <input className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
-                <input className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} placeholder="+264 61 287 2158" />
+                <input className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
-                <input className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} placeholder="+264 61 254 642" />
+                <input className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} />
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
-                <input className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} placeholder="www.sadcpf.org" />
+                <input className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} />
               </div>
             </div>
+          </div>
+
+          <div className="card p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
+                <span className="material-symbols-outlined text-emerald-700 text-[18px]">vpn_key</span>
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-900">Operator credentials</h2>
+            </div>
+            <p className="text-xs text-neutral-500">
+              Secrets stay in server env only. Non-secret org settings save above; integration keys are never shown here.
+            </p>
+            <ul className="divide-y divide-neutral-100">
+              {credentials.map((row) => (
+                <li key={row.key} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-neutral-900">{row.label}</div>
+                    <div className="text-xs text-neutral-500">{row.guidance}</div>
+                    {row.driver ? (
+                      <div className="mt-1 text-xs text-neutral-400">Driver: {row.driver}</div>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`mt-1 inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      row.configured ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    {row.configured ? "Configured" : "Not configured — set via server env"}
+                  </span>
+                </li>
+              ))}
+              {credentials.length === 0 ? (
+                <li className="py-3 text-sm text-neutral-500">Credential status unavailable.</li>
+              ) : null}
+            </ul>
           </div>
 
           <div className="flex justify-end">

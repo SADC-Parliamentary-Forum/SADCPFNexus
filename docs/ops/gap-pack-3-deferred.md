@@ -1,5 +1,7 @@
 # Gap Pack 3 — deferred
 
-- **Leave workflow variants (Finance-first / Director-principal):** not implemented — older leave plans do not specify selectable workflow modes like salary advance; leave remains recommend → HR certify → SG. Salary-advance Finance-first + Director principal already landed in prior packs.
-- **Google Calendar two-way sync:** ICS import/export + webhook-ready `GOOGLE_CALENDAR_*` stubs only; full OAuth two-way deferred until credentials are provisioned (pattern already in `config/services.php`).
-- **Store submission:** CI builds Android APK/AAB artifacts only; iOS job gated by `IOS_BUILD_ENABLED`; no Play/App Store submission.
+Superseded by Gap Pack 4 for the items below. See `docs/ops/gap-pack-4-deferred.md`.
+
+- **Leave workflow variants (Finance-first / Director-principal):** landed in Gap Pack 4.
+- **Google Calendar two-way sync:** landed in Gap Pack 4 (still requires operator credentials).
+- **Store submission:** gated CI jobs landed in Gap Pack 4 (skipped when secrets absent).

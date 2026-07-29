@@ -78,8 +78,9 @@ class AssignmentIcsExportService
             'download_url' => $base.'/calendar.ics?scope=mine',
             'subscribe_url' => $base.'/calendar.ics?scope=mine',
             'instructions' => $googleCredentialsPresent
-                ? 'Google Calendar API credentials detected. You may still subscribe via the ICS URL.'
-                : 'Google credentials absent — use the ICS subscribe/download URL in Google Calendar (Add by URL) or Outlook.',
+                ? 'Google Calendar two-way sync is configured. Run assignments:sync-google-calendar or use the webhook. ICS subscribe URL remains available.'
+                : 'Google credentials absent (not configured) — use the ICS subscribe/download URL in Google Calendar (Add by URL) or Outlook.',
+            'sync_status' => $googleCredentialsPresent ? 'configured' : 'not_configured',
         ];
     }
 

@@ -76,6 +76,57 @@ class LeaveController extends Controller
         ]);
     }
 
+    public function policies(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('hr.admin')
+            || $request->user()->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin']),
+            403
+        );
+
+        return response()->json([
+            'data' => $this->policyService->listPolicies($request->user()),
+        ]);
+    }
+
+    public function activePolicy(Request $request): JsonResponse
+    {
+        $policy = $this->policyService->activePolicyForTenant($request->user()->tenant_id);
+
+        return response()->json([
+            'data' => [
+                'policy' => $policy,
+                'stages' => $this->policyService->resolveApprovalStages($policy, $request->user()),
+                'workflow_mode' => $this->policyService->workflowMode($policy),
+            ],
+        ]);
+    }
+
+    public function storePolicy(Request $request): JsonResponse
+    {
+        abort_unless(
+            $request->user()->can('hr.admin')
+            || $request->user()->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin']),
+            403
+        );
+
+        $data = $request->validate([
+            'version' => ['nullable', 'string', 'max:40'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'effective_from' => ['nullable', 'date'],
+            'workflow_mode' => ['required', 'string', 'in:standard,finance_first,director_principal'],
+            'admin_review_required' => ['nullable', 'boolean'],
+            'principal_role' => ['nullable', 'string', 'max:80'],
+            'final_approver_role' => ['nullable', 'string', 'max:80'],
+            'change_reason' => ['required', 'string', 'max:500'],
+            'rules' => ['nullable', 'array'],
+        ]);
+
+        $policy = $this->policyService->createPolicyVersion($request->user(), $data);
+
+        return response()->json(['data' => $policy], 201);
+    }
+
     /**
      * Team leave calendar with medical privacy masking for non-HR viewers.
      */

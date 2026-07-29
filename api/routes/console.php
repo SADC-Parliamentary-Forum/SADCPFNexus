@@ -48,6 +48,8 @@ Schedule::command('leave:manage-toil-expiry')->dailyAt('08:20');
 
 // Assignment reminders + unclaimed/overdue escalations.
 Schedule::command('assignments:process-reminders')->hourly();
+// Google Calendar two-way sync (no-op when GOOGLE_CALENDAR_* credentials absent).
+Schedule::command('assignments:sync-google-calendar')->hourly()->withoutOverlapping();
 
 // Evaluate automated Key Risk Indicators and raise in-app breach alerts.
 Schedule::command('risk:evaluate-kris')->weekdays()->at('07:20');

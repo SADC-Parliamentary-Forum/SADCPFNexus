@@ -273,13 +273,16 @@ class LeaveService
         }
         $this->validateSegmentsForSubmission($leave);
 
-        $leave->loadMissing(['requester.department.supervisor']);
-        $holder = $this->resolveStageHolder($leave->requester, 'recommend');
+        $leave->loadMissing(['requester.department.supervisor', 'policyVersion']);
+        $policy = $leave->policyVersion
+            ?? $this->policyService->activePolicyForTenant((int) $leave->tenant_id);
+        $firstStage = $this->policyService->firstStage($policy, $leave->requester);
+        $holder = $this->resolveStageHolder($leave->requester, $firstStage, $policy);
 
         $leave->update([
             'status' => 'submitted',
             'submitted_at' => now(),
-            'current_stage' => 'Supervisor/HOD Recommendation',
+            'current_stage' => $this->policyService->stageLabel($firstStage),
             'current_holder' => $holder['label'],
             'current_holder_user_id' => $holder['user_id'],
         ]);
@@ -293,7 +296,7 @@ class LeaveService
                 $approvers = $approvers->push($holderUser);
             }
         }
-        $roleApprovers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
+        $roleApprovers = User::role(['HR Manager', 'HR Administrator', 'Secretary General', 'Finance Controller', 'Director'])
             ->where('tenant_id', $user->tenant_id)
             ->where('id', '!=', $user->id)
             ->get();
@@ -390,8 +393,19 @@ class LeaveService
             abort(403, 'You cannot recommend your own leave request.');
         }
 
+        $leave->loadMissing(['requester', 'policyVersion']);
+        $policy = $leave->policyVersion
+            ?? $this->policyService->activePolicyForTenant((int) $leave->tenant_id);
+
+        $isFinanceStage = str_contains((string) $leave->current_stage, 'Finance');
+        $isPrincipalStage = str_contains((string) $leave->current_stage, 'Principal');
+
         abort_unless(
-            $actor->can('leave.approve') || $actor->can('hr.approve') || $actor->hasAnyRole(['HOD', 'HR Manager', 'HR Administrator', 'Secretary General', 'System Admin']),
+            $actor->can('leave.approve')
+            || $actor->can('hr.approve')
+            || $actor->hasAnyRole(['HOD', 'HR Manager', 'HR Administrator', 'Secretary General', 'System Admin'])
+            || ($isFinanceStage && ($actor->can('finance.approve') || $actor->hasRole('Finance Controller')))
+            || ($isPrincipalStage && $actor->hasAnyRole([$policy->principal_role ?: 'Director', 'Director', 'System Admin'])),
             403,
             'You are not authorised to recommend this leave request.'
         );
@@ -407,18 +421,27 @@ class LeaveService
             throw ValidationException::withMessages(['comment' => 'A reason is required for this recommendation action.']);
         }
 
-        $certHolder = $status === 'returned'
-            ? ['label' => $leave->requester?->name, 'user_id' => $leave->requester_id]
-            : $this->resolveStageHolder($leave->requester, 'certify');
+        if ($status === 'returned') {
+            $nextHolder = ['label' => $leave->requester?->name, 'user_id' => $leave->requester_id];
+            $nextStageLabel = 'Returned for Correction';
+        } elseif ($isPrincipalStage) {
+            $nextHolder = $this->resolveStageHolder($leave->requester, 'authorise', $policy);
+            $nextStageLabel = $this->policyService->stageLabel('authorise');
+        } else {
+            $fromStage = $isFinanceStage ? 'finance' : 'recommend';
+            $nextKey = $this->policyService->stageAfter($policy, $fromStage, $leave->requester) ?? 'certify';
+            $nextHolder = $this->resolveStageHolder($leave->requester, $nextKey, $policy);
+            $nextStageLabel = $this->policyService->stageLabel($nextKey);
+        }
 
         $leave->update([
             'recommendation_status' => $status,
             'recommended_by' => $actor->id,
             'recommended_at' => now(),
             'recommendation_comments' => $comment,
-            'current_stage' => $status === 'returned' ? 'Returned for Correction' : 'Administration/HR Certification',
-            'current_holder' => $certHolder['label'],
-            'current_holder_user_id' => $certHolder['user_id'],
+            'current_stage' => $status === 'returned' ? 'Returned for Correction' : $nextStageLabel,
+            'current_holder' => $nextHolder['label'],
+            'current_holder_user_id' => $nextHolder['user_id'],
             'status' => $status === 'returned' ? 'returned_for_correction' : $leave->status,
         ]);
 
@@ -460,10 +483,12 @@ class LeaveService
             throw ValidationException::withMessages(['comment' => 'A reason is required for this certification action.']);
         }
 
-        $leave->loadMissing(['requester', 'segments']);
+        $leave->loadMissing(['requester', 'segments', 'policyVersion']);
+        $policy = $leave->policyVersion
+            ?? $this->policyService->activePolicyForTenant((int) $leave->tenant_id);
         $segmentPayloads = collect($segments)->keyBy(fn ($row) => (int) ($row['id'] ?? $row['segment_id'] ?? 0));
 
-        DB::transaction(function () use ($leave, $actor, $status, $segmentPayloads, $comment) {
+        DB::transaction(function () use ($leave, $actor, $status, $segmentPayloads, $comment, $policy) {
             foreach ($leave->segments as $segment) {
                 $payload = $segmentPayloads->get($segment->id, []);
                 $eligibleDays = array_key_exists('eligible_days', $payload)
@@ -481,10 +506,16 @@ class LeaveService
                 ]);
             }
 
+            $nextKey = match ($status) {
+                'returned' => null,
+                'ineligible' => 'certify',
+                default => $this->policyService->stageAfter($policy, 'certify', $leave->requester) ?? 'authorise',
+            };
+
             $authHolder = match ($status) {
                 'returned' => ['label' => $leave->requester?->name, 'user_id' => $leave->requester_id],
-                'ineligible' => $this->resolveStageHolder($leave->requester, 'certify'),
-                default => $this->resolveStageHolder($leave->requester, 'authorise'),
+                'ineligible' => $this->resolveStageHolder($leave->requester, 'certify', $policy),
+                default => $this->resolveStageHolder($leave->requester, $nextKey ?? 'authorise', $policy),
             };
 
             $leave->update([
@@ -495,7 +526,7 @@ class LeaveService
                 'current_stage' => match ($status) {
                     'returned' => 'Returned for Correction',
                     'ineligible' => 'Administration/HR Marked Ineligible',
-                    default => 'Head of Institution Authorisation',
+                    default => $this->policyService->stageLabel($nextKey ?? 'authorise'),
                 },
                 'current_holder' => $authHolder['label'],
                 'current_holder_user_id' => $authHolder['user_id'],
@@ -956,9 +987,12 @@ class LeaveService
      *
      * @return array{label: string, user_id: int|null}
      */
-    private function resolveStageHolder(?User $requester, string $stage): array
+    public function resolveStageHolder(?User $requester, string $stage, ?\App\Models\LeavePolicyVersion $policy = null): array
     {
         $requester?->loadMissing('department.supervisor');
+        $policy ??= $requester
+            ? $this->policyService->activePolicyForTenant((int) $requester->tenant_id)
+            : null;
 
         if ($stage === 'recommend') {
             $supervisor = $requester?->department?->supervisor;
@@ -967,6 +1001,18 @@ class LeaveService
             }
 
             return ['label' => 'Supervisor/HOD', 'user_id' => null];
+        }
+
+        if ($stage === 'finance') {
+            $finance = User::role(['Finance Controller'])
+                ->where('tenant_id', $requester?->tenant_id)
+                ->orderBy('id')
+                ->first();
+
+            return [
+                'label' => $finance?->name ?? 'Finance Controller',
+                'user_id' => $finance?->id,
+            ];
         }
 
         if ($stage === 'certify') {
@@ -981,7 +1027,22 @@ class LeaveService
             ];
         }
 
-        $sg = User::role(['Secretary General'])
+        if ($stage === 'principal') {
+            $roleName = $policy?->principal_role ?: 'Director';
+            $director = User::role([$roleName, 'Director'])
+                ->where('tenant_id', $requester?->tenant_id)
+                ->where('id', '!=', $requester?->id)
+                ->orderBy('id')
+                ->first();
+
+            return [
+                'label' => $director?->name ?? $roleName,
+                'user_id' => $director?->id,
+            ];
+        }
+
+        $finalRole = $policy?->final_approver_role ?: 'Secretary General';
+        $sg = User::role([$finalRole, 'Secretary General'])
             ->where('tenant_id', $requester?->tenant_id)
             ->orderBy('id')
             ->first();

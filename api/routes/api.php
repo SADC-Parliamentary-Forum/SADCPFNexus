@@ -58,6 +58,10 @@ Route::prefix('v1')->group(function () {
     Route::post('fleet/telematics/webhook', \App\Http\Controllers\Api\V1\Fleet\FleetTelematicsWebhookController::class)
         ->middleware('throttle:60,1');
 
+    // Google Calendar push notifications (token auth via GOOGLE_CALENDAR_WEBHOOK_SECRET).
+    Route::post('assignments/google-calendar/webhook', \App\Http\Controllers\Api\V1\Assignments\AssignmentGoogleCalendarWebhookController::class)
+        ->middleware('throttle:60,1');
+
     // Authenticated routes
     Route::middleware([
         'auth:sanctum',
@@ -218,6 +222,7 @@ Route::prefix('v1')->group(function () {
             // System Settings
             Route::get('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'index']);
             Route::put('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'update']);
+            Route::get('operator-credentials', \App\Http\Controllers\Api\V1\Admin\OperatorCredentialStatusController::class);
 
             // Notification Templates
             Route::get('notification-templates', [\App\Http\Controllers\Api\V1\Admin\NotificationTemplateController::class, 'index']);
@@ -358,6 +363,9 @@ Route::prefix('v1')->group(function () {
         Route::pattern('leaveRequest', '[0-9]+');
         Route::prefix('leave')->group(function () {
             Route::get('types', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'types']);
+            Route::get('policies', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'policies']);
+            Route::get('policies/active', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'activePolicy']);
+            Route::post('policies', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'storePolicy']);
             Route::post('preview', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'preview']);
             Route::get('balances', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'balances']);
             // HR Admin: all-staff leave balance management

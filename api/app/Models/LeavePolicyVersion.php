@@ -14,6 +14,10 @@ class LeavePolicyVersion extends Model
         'effective_from',
         'effective_to',
         'rules',
+        'workflow_mode',
+        'admin_review_required',
+        'principal_role',
+        'final_approver_role',
         'is_active',
         'approved_by',
     ];
@@ -23,6 +27,7 @@ class LeavePolicyVersion extends Model
         'effective_to' => 'date',
         'rules' => 'array',
         'is_active' => 'boolean',
+        'admin_review_required' => 'boolean',
     ];
 
     public function types(): HasMany

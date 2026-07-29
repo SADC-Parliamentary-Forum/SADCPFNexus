@@ -2214,6 +2214,13 @@ export interface LeavePolicyVersion {
   id: number;
   name: string;
   version: string;
+  workflow_mode?: "standard" | "finance_first" | "director_principal" | string;
+  admin_review_required?: boolean;
+  principal_role?: string;
+  final_approver_role?: string;
+  is_active?: boolean;
+  effective_from?: string;
+  effective_to?: string | null;
 }
 
 export interface LeaveSegment {
@@ -2293,6 +2300,20 @@ export const leaveApi = {
     api.get<PaginatedResponse<LeaveRequest>>("/leave/requests", { params }),
   get: (id: number) => api.get<{ data: LeaveRequest } | LeaveRequest>(`/leave/requests/${id}`),
   types: () => api.get<{ policy: LeavePolicyVersion; data: LeaveType[] }>("/leave/types"),
+  listPolicies: () => api.get<{ data: LeavePolicyVersion[] }>("/leave/policies"),
+  activePolicy: () =>
+    api.get<{ data: { policy: LeavePolicyVersion; stages: string[]; workflow_mode: string } }>("/leave/policies/active"),
+  createPolicy: (data: {
+    version?: string;
+    name?: string;
+    effective_from?: string;
+    workflow_mode: string;
+    admin_review_required?: boolean;
+    principal_role?: string;
+    final_approver_role?: string;
+    change_reason: string;
+    rules?: Record<string, unknown>;
+  }) => api.post<{ data: LeavePolicyVersion }>("/leave/policies", data),
   preview: (segments: LeaveSegmentInput[]) =>
     api.post<{ data: LeavePreviewResponse }>("/leave/preview", { segments }),
   create: (data: LeaveCreatePayload) =>
@@ -5500,6 +5521,18 @@ export interface SystemSettings {
 export const settingsApi = {
   get: () => api.get<SystemSettings>("/admin/settings"),
   update: (data: Partial<SystemSettings>) => api.put<SystemSettings>("/admin/settings", data),
+  operatorCredentials: () =>
+    api.get<{
+      data: Array<{
+        key: string;
+        label: string;
+        configured: boolean;
+        driver?: string | null;
+        secret_source: string;
+        guidance: string;
+        details?: Record<string, unknown>;
+      }>;
+    }>("/admin/operator-credentials"),
 };
 
 // ─── Notification Templates ───────────────────────────────────────────────────
