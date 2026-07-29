@@ -61,6 +61,25 @@ class FleetController extends Controller
         ]);
     }
 
+    /**
+     * Map external telematics device id on a fleet vehicle (never auto-creates).
+     */
+    public function updateTelematics(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'telematics_device_id' => ['nullable', 'string', 'max:128'],
+        ]);
+
+        $vehicle = $this->fleet->updateTelematicsMapping($asset, $request->user(), $data);
+
+        return response()->json([
+            'message' => 'Telematics device mapping saved.',
+            'data' => $vehicle,
+        ]);
+    }
+
     public function storeTrip(Request $request, Asset $asset): JsonResponse
     {
         abort_unless($this->canManage($request->user()), 403);

@@ -22,6 +22,8 @@ class Asset extends Model
         'currency', 'last_verified_at', 'acknowledgement_at', 'acknowledged_by',
         'serial_duplicate_override',
         'gps_lat', 'gps_lng', 'gps_recorded_at',
+        'telematics_device_id', 'telematics_provider', 'telematics_raw_payload',
+        'telematics_synced_at', 'telematics_sync_status', 'telematics_sync_error',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
@@ -40,6 +42,8 @@ class Asset extends Model
             'last_verified_at' => 'datetime',
             'acknowledgement_at' => 'datetime',
             'gps_recorded_at' => 'datetime',
+            'telematics_synced_at' => 'datetime',
+            'telematics_raw_payload' => 'array',
             'serial_duplicate_override' => 'boolean',
             'purchase_value' => 'decimal:2',
             'value' => 'decimal:2',

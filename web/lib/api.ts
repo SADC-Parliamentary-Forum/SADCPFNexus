@@ -1516,10 +1516,23 @@ export interface FleetVehicle {
   name: string;
   category: string;
   status: string;
-  /** Manual last-known GPS stub — not live telematics. */
+  /** Last-known GPS (manual stub and/or telematics sync). */
   gps_lat?: number | string | null;
   gps_lng?: number | string | null;
   gps_recorded_at?: string | null;
+  telematics_device_id?: string | null;
+  telematics_provider?: string | null;
+  telematics_synced_at?: string | null;
+  telematics_sync_status?: string | null;
+  telematics_sync_error?: string | null;
+}
+
+export interface FleetTelematicsStatus {
+  driver: string;
+  enabled: boolean;
+  webhook_configured: boolean;
+  schedule_enabled: boolean;
+  base_url_configured: boolean;
 }
 
 export interface FleetTripLog {
@@ -1588,17 +1601,26 @@ export const fleetApi = {
     api.get<{
       data: {
         vehicle: FleetVehicle;
+        telematics?: FleetTelematicsStatus;
         trips: FleetTripLog[];
         fuel_logs: FleetFuelLog[];
         service_schedules: FleetServiceSchedule[];
       };
     }>(`/fleet/vehicles/${id}`),
-  /** Manual last-known GPS stub (not live telematics). */
+  /** Manual last-known GPS stub (still usable when telematics disabled or as override). */
   updateGps: (
     assetId: number,
     data: { gps_lat: number; gps_lng: number; gps_recorded_at?: string | null },
   ) =>
     api.put<{ data: FleetVehicle; message: string }>(`/fleet/vehicles/${assetId}/gps`, data),
+  updateTelematics: (
+    assetId: number,
+    data: { telematics_device_id?: string | null },
+  ) =>
+    api.put<{ data: FleetVehicle; message: string }>(
+      `/fleet/vehicles/${assetId}/telematics`,
+      data,
+    ),
   createTrip: (assetId: number, data: Record<string, unknown>) =>
     api.post<{ data: FleetTripLog }>(`/fleet/vehicles/${assetId}/trips`, data),
   createFuelLog: (assetId: number, data: Record<string, unknown>) =>

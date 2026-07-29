@@ -93,7 +93,7 @@ export default function FleetListPage() {
         <h1 className="page-title">Fleet</h1>
         <p className="page-subtitle">
           Ops layer on Fixed Assets with category <code>fleet</code> — vehicles, drivers roster, and booking calendar.
-          Last-known GPS is a manual stub only (no live telematics vendor).
+          GPS uses a pluggable telematics provider when configured; otherwise the manual last-known stub remains available.
         </p>
       </div>
 

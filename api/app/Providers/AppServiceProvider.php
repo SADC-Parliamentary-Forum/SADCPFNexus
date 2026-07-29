@@ -34,6 +34,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
 use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Modules\Finance\Services\PayrollRecoveryAdapterFactory;
+use App\Modules\Fleet\Contracts\TelematicsProvider;
+use App\Modules\Fleet\Telematics\TelematicsProviderFactory;
 use App\Modules\Travel\Contracts\AirlineItineraryParserInterface;
 use App\Modules\Travel\Contracts\FxRateFeedInterface;
 use App\Modules\Travel\Contracts\HttpFxRateProviderInterface;
@@ -54,6 +56,13 @@ class AppServiceProvider extends ServiceProvider
         // Unknown / unconfigured vendor drivers fail closed at resolve time.
         $this->app->bind(PayrollRecoveryAdapterInterface::class, function ($app) {
             return $app->make(PayrollRecoveryAdapterFactory::class)->make();
+        });
+
+        // Fleet telematics — default null/disabled keeps manual GPS stub usable.
+        // API keys / webhook tokens come from env only (never hardcoded).
+        $this->app->singleton(TelematicsProviderFactory::class);
+        $this->app->bind(TelematicsProvider::class, function ($app) {
+            return $app->make(TelematicsProviderFactory::class)->make();
         });
 
         // Travel Phase 3 — practical local parser + configurable FX (manual table + optional HTTP).

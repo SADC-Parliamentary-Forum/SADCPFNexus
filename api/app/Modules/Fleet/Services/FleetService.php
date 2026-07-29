@@ -9,6 +9,7 @@ use App\Models\FleetFuelLog;
 use App\Models\FleetServiceSchedule;
 use App\Models\FleetTripLog;
 use App\Models\User;
+use App\Modules\Fleet\Telematics\TelematicsSyncService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 class FleetService
 {
     public const VEHICLE_CATEGORIES = ['fleet', 'vehicles'];
+
+    public function __construct(private readonly TelematicsSyncService $telematics) {}
 
     /**
      * @return Collection<int, Asset>
@@ -55,6 +58,7 @@ class FleetService
 
         return [
             'vehicle' => $asset,
+            'telematics' => $this->telematics->status(),
             'trips' => FleetTripLog::query()
                 ->where('asset_id', $asset->id)
                 ->orderByDesc('started_at')
@@ -70,6 +74,25 @@ class FleetService
                 ->orderBy('next_due_at')
                 ->get(),
         ];
+    }
+
+    /**
+     * Map / clear external telematics device id (never creates vehicles).
+     *
+     * @param  array{telematics_device_id?:string|null}  $data
+     */
+    public function updateTelematicsMapping(Asset $asset, User $user, array $data): Asset
+    {
+        $this->assertFleetVehicle($asset, (int) $user->tenant_id);
+
+        $deviceId = array_key_exists('telematics_device_id', $data)
+            ? trim((string) ($data['telematics_device_id'] ?? ''))
+            : (string) ($asset->telematics_device_id ?? '');
+
+        $asset->telematics_device_id = $deviceId === '' ? null : $deviceId;
+        $asset->save();
+
+        return $asset->fresh();
     }
 
     /**

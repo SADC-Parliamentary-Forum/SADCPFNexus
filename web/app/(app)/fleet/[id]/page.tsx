@@ -13,6 +13,7 @@ export default function FleetVehicleDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [gpsToast, setGpsToast] = useState<string | null>(null);
   const [gps, setGps] = useState({ lat: "", lng: "" });
+  const [deviceId, setDeviceId] = useState("");
   const [trip, setTrip] = useState({
     started_at: "",
     ended_at: "",
@@ -48,6 +49,7 @@ export default function FleetVehicleDetailPage() {
 
   const data = detailQuery.data;
   const vehicle = data?.vehicle;
+  const telematics = data?.telematics;
 
   useEffect(() => {
     if (!vehicle) return;
@@ -55,7 +57,8 @@ export default function FleetVehicleDetailPage() {
       lat: vehicle.gps_lat != null ? String(vehicle.gps_lat) : "",
       lng: vehicle.gps_lng != null ? String(vehicle.gps_lng) : "",
     });
-  }, [vehicle?.id, vehicle?.gps_lat, vehicle?.gps_lng]);
+    setDeviceId(vehicle.telematics_device_id != null ? String(vehicle.telematics_device_id) : "");
+  }, [vehicle?.id, vehicle?.gps_lat, vehicle?.gps_lng, vehicle?.telematics_device_id]);
 
   const createTrip = useMutation({
     mutationFn: () =>
@@ -120,16 +123,33 @@ export default function FleetVehicleDetailPage() {
       }),
     onSuccess: () => {
       setError(null);
-      setGpsToast("Last-known GPS saved (manual stub — not live telematics).");
+      setGpsToast("Last-known GPS saved (manual override).");
       invalidate();
     },
     onError: () => setError("Could not save GPS location."),
+  });
+
+  const updateTelematics = useMutation({
+    mutationFn: () =>
+      fleetApi.updateTelematics(id, {
+        telematics_device_id: deviceId.trim() || null,
+      }),
+    onSuccess: () => {
+      setError(null);
+      setGpsToast("Telematics device mapping saved.");
+      invalidate();
+    },
+    onError: () => setError("Could not save telematics device id."),
   });
 
   const mapsHref =
     vehicle?.gps_lat != null && vehicle?.gps_lng != null
       ? `https://www.openstreetmap.org/?mlat=${vehicle.gps_lat}&mlon=${vehicle.gps_lng}#map=15/${vehicle.gps_lat}/${vehicle.gps_lng}`
       : null;
+
+  const providerLabel = telematics?.enabled
+    ? `Provider: ${telematics.driver}`
+    : "Provider: disabled (manual stub)";
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -138,7 +158,7 @@ export default function FleetVehicleDetailPage() {
           ← Fleet
         </Link>
         <h1 className="page-title mt-2">{vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}</h1>
-        <p className="page-subtitle">Trip / mileage, fuel, service due, and manual last-known GPS stub for this Fixed Asset vehicle.</p>
+        <p className="page-subtitle">Trip / mileage, fuel, service due, GPS, and telematics mapping for this Fixed Asset vehicle.</p>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
@@ -152,13 +172,15 @@ export default function FleetVehicleDetailPage() {
           <section className="card space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <h2 className="font-semibold">Last-known GPS (manual stub)</h2>
+                <h2 className="font-semibold">GPS & telematics</h2>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  Not connected to a telematics vendor. Enter coordinates manually when known.
+                  {providerLabel}
+                  {telematics?.webhook_configured ? " · webhook configured" : ""}
+                  {telematics?.schedule_enabled ? " · scheduled sync on" : ""}
                 </p>
               </div>
               <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
-                Stub / manual
+                {telematics?.enabled ? telematics.driver : "Stub / manual"}
               </span>
             </div>
             {vehicle?.gps_lat != null && vehicle?.gps_lng != null ? (
@@ -169,6 +191,13 @@ export default function FleetVehicleDetailPage() {
                 </span>
                 {vehicle.gps_recorded_at ? (
                   <span className="text-neutral-500"> · recorded {String(vehicle.gps_recorded_at).slice(0, 19).replace("T", " ")}</span>
+                ) : null}
+                {vehicle.telematics_synced_at ? (
+                  <span className="text-neutral-500">
+                    {" "}
+                    · last sync {String(vehicle.telematics_synced_at).slice(0, 19).replace("T", " ")}
+                    {vehicle.telematics_sync_status ? ` (${vehicle.telematics_sync_status})` : ""}
+                  </span>
                 ) : null}
                 {mapsHref ? (
                   <>
@@ -183,6 +212,28 @@ export default function FleetVehicleDetailPage() {
             ) : (
               <p className="text-sm text-neutral-500">No last-known location recorded yet.</p>
             )}
+            {vehicle?.telematics_sync_error ? (
+              <p className="text-xs text-red-700">Last sync error: {vehicle.telematics_sync_error}</p>
+            ) : null}
+            <div className="grid gap-2 sm:grid-cols-3">
+              <input
+                className="input sm:col-span-1"
+                placeholder="Telematics device id"
+                value={deviceId}
+                onChange={(e) => setDeviceId(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={updateTelematics.isPending}
+                onClick={() => updateTelematics.mutate()}
+              >
+                {updateTelematics.isPending ? "Saving…" : "Save device id"}
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500">
+              Manual coordinates remain editable when the provider is disabled, or as an override.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <input
                 className="input"

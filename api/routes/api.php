@@ -54,6 +54,10 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:60,1');
     });
 
+    // Fleet telematics vendor webhook (token auth; never auto-creates vehicles).
+    Route::post('fleet/telematics/webhook', \App\Http\Controllers\Api\V1\Fleet\FleetTelematicsWebhookController::class)
+        ->middleware('throttle:60,1');
+
     // Authenticated routes
     Route::middleware([
         'auth:sanctum',
@@ -1061,6 +1065,7 @@ Route::prefix('v1')->group(function () {
             Route::get('vehicles', [$fleet, 'index']);
             Route::get('vehicles/{asset}', [$fleet, 'show']);
             Route::put('vehicles/{asset}/gps', [$fleet, 'updateGps']);
+            Route::put('vehicles/{asset}/telematics', [$fleet, 'updateTelematics']);
             Route::get('drivers', [$fleet, 'listDrivers']);
             Route::post('drivers', [$fleet, 'storeDriver']);
             Route::get('bookings', [$fleet, 'listBookings']);

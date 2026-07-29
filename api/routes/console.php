@@ -64,6 +64,13 @@ Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
 // Poll designated registry mailbox into suggestions only (requires IMAP config or is a no-op when disabled).
 Schedule::command('correspondence:poll-mailbox')->everyFifteenMinutes()->withoutOverlapping();
 
+// Fleet telematics poll — only when schedule flag + a poll-capable driver are enabled.
+if (config('fleet_telematics.schedule_enabled')
+    && in_array(strtolower((string) config('fleet_telematics.driver', 'null')), ['generic_http'], true)
+) {
+    Schedule::command('fleet:sync-telematics')->everyFifteenMinutes()->withoutOverlapping();
+}
+
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
 Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
     ->fridays()
