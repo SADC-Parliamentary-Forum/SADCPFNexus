@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csvExport";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
-import { useState } from "react";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+  selectionColumnClass,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 const priorityConfig: Record<string, { label: string; cls: string }> = {
   low: { label: "Low", cls: "badge-muted" },
@@ -59,6 +67,37 @@ export function AssignmentFilteredList({
   });
 
   const assignments = data ?? [];
+  const getId = useCallback((row: Assignment) => row.id, []);
+  const selection = useRowSelection({
+    rows: assignments,
+    getId,
+  });
+
+  const handleExportSelected = () => {
+    const selected = assignments.filter((row) => selection.isSelected(row.id));
+    if (selected.length === 0) return;
+    exportToCsv(
+      `assignments-selected-${new Date().toISOString().slice(0, 10)}.csv`,
+      selected.map((a) => ({
+        reference: a.reference_number,
+        title: a.title,
+        status: a.status,
+        priority: a.priority,
+        assignee: a.assignee?.name ?? "",
+        due_date: a.due_date ?? "",
+        progress: a.progress_percent ?? "",
+      })),
+      [
+        { key: "reference", header: "Reference" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "priority", header: "Priority" },
+        { key: "assignee", header: "Assignee" },
+        { key: "due_date", header: "Due date" },
+        { key: "progress", header: "Progress %" },
+      ],
+    );
+  };
 
   return (
     <RegisterShell
@@ -76,51 +115,83 @@ export function AssignmentFilteredList({
       stats={
         isError ? <p className="text-sm text-red-600">Failed to load assignments.</p> : null
       }
+      bulkBar={
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={selection.selectedCount === 0}
+            onClick={handleExportSelected}
+          >
+            Export selected
+          </button>
+        </BulkSelectionBar>
+      }
       empty={
         !isLoading && !isError && assignments.length === 0 ? (
           <div className="card p-8 text-center text-neutral-500 text-sm">No assignments in this view.</div>
         ) : null
       }
     >
-      <div className="space-y-3">
-        {assignments.map((a) => {
-          const p = priorityConfig[a.priority] ?? { label: a.priority, cls: "badge-muted" };
-          const s = statusConfig[a.status] ?? { label: a.status, cls: "badge-muted" };
-          const overdue = a.is_overdue_flag || a.deadline_state === "overdue";
-          return (
-            <Link
-              key={a.id}
-              href={`/assignments/${a.id}`}
-              className="card block p-4 hover:border-primary/30 hover:shadow-elevated transition-all"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono text-neutral-400">{a.reference_number}</span>
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
+            <tr>
+              <th className={selectionColumnClass.th}>
+                <SelectAllCheckbox
+                  checked={selection.allSelectableSelected}
+                  indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                  onChange={selection.toggleAllSelectable}
+                />
+              </th>
+              <th className="px-4 py-3">Reference</th>
+              <th className="px-4 py-3">Title</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Priority</th>
+              <th className="px-4 py-3">Assignee</th>
+              <th className="px-4 py-3">Due</th>
+              <th className="px-4 py-3">Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map((a) => {
+              const p = priorityConfig[a.priority] ?? { label: a.priority, cls: "badge-muted" };
+              const s = statusConfig[a.status] ?? { label: a.status, cls: "badge-muted" };
+              const overdue = a.is_overdue_flag || a.deadline_state === "overdue";
+              return (
+                <tr key={a.id} className="border-t border-neutral-100 hover:bg-neutral-50/80">
+                  <td className={selectionColumnClass.td}>
+                    <RowCheckbox
+                      checked={selection.isSelected(a.id)}
+                      onChange={() => selection.toggle(a.id)}
+                      label={`Select ${a.reference_number}`}
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[10px] text-neutral-400">
+                    <Link href={`/assignments/${a.id}`} className="text-primary hover:underline">
+                      {a.reference_number}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link href={`/assignments/${a.id}`} className="font-semibold text-neutral-900 hover:underline">
+                      {a.title}
+                    </Link>
+                    {overdue ? <span className="ml-2 badge badge-danger">Overdue</span> : null}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`badge ${s.cls}`}>{s.label}</span>
+                  </td>
+                  <td className="px-4 py-3">
                     <span className={`badge ${p.cls}`}>{p.label}</span>
-                    {overdue && <span className="badge badge-danger">Overdue</span>}
-                    {a.deadline_state && a.deadline_state !== "overdue" && (
-                      <span className="badge badge-muted">{a.deadline_state.replaceAll("_", " ")}</span>
-                    )}
-                    {a.source_type && a.source_type !== "manual" && (
-                      <span className="badge badge-primary">{a.source_type}</span>
-                    )}
-                  </div>
-                  <p className="text-sm font-semibold text-neutral-900 truncate">{a.title}</p>
-                  <div className="flex flex-wrap gap-3 mt-1.5 text-xs text-neutral-500">
-                    {a.assignee && <span>{a.assignee.name}</span>}
-                    <span>Due {formatDateShort(a.due_date)}</span>
-                    {a.review_status && a.review_status !== "none" && (
-                      <span>Review: {a.review_status}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="text-xs text-neutral-400">{a.progress_percent}%</span>
-              </div>
-            </Link>
-          );
-        })}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-neutral-500">{a.assignee?.name ?? "—"}</td>
+                  <td className="px-4 py-3 text-xs text-neutral-500">{formatDateShort(a.due_date)}</td>
+                  <td className="px-4 py-3 text-xs text-neutral-400">{a.progress_percent}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </RegisterShell>
   );

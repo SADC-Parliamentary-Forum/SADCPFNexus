@@ -40,6 +40,27 @@ class FleetController extends Controller
         ]);
     }
 
+    /**
+     * Manual last-known GPS stub — not a live telematics vendor feed.
+     */
+    public function updateGps(Request $request, Asset $asset): JsonResponse
+    {
+        abort_unless($this->canManage($request->user()), 403);
+
+        $data = $request->validate([
+            'gps_lat' => ['required', 'numeric', 'between:-90,90'],
+            'gps_lng' => ['required', 'numeric', 'between:-180,180'],
+            'gps_recorded_at' => ['nullable', 'date'],
+        ]);
+
+        $vehicle = $this->fleet->updateGpsStub($asset, $request->user(), $data);
+
+        return response()->json([
+            'message' => 'Last-known GPS location saved (manual stub — not live telematics).',
+            'data' => $vehicle,
+        ]);
+    }
+
     public function storeTrip(Request $request, Asset $asset): JsonResponse
     {
         abort_unless($this->canManage($request->user()), 403);

@@ -93,7 +93,7 @@ export default function FleetListPage() {
         <h1 className="page-title">Fleet</h1>
         <p className="page-subtitle">
           Ops layer on Fixed Assets with category <code>fleet</code> — vehicles, drivers roster, and booking calendar.
-          GPS telematics not included in this slice.
+          Last-known GPS is a manual stub only (no live telematics vendor).
         </p>
       </div>
 

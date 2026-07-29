@@ -1,13 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+  selectionColumnClass,
+} from "@/components/ui/BulkSelectionBar";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useRowSelection } from "@/lib/useRowSelection";
+import {
+  PROCUREMENT_EXPORT_COLUMNS,
+  buildProcurementExportRows,
+  draftIdsForBulkCancel,
+  selectedProcurementRows,
+} from "@/lib/procurementRegisterBulk";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -42,10 +56,15 @@ function getListData(payload: unknown): ProcurementRequest[] {
 }
 
 export default function ProcurementRegisterPage() {
+  const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
+  const [toast, setToast] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["procurement", "register"],
@@ -83,6 +102,12 @@ export default function ProcurementRegisterPage() {
     [filtered, page, pageCount],
   );
 
+  const getId = useCallback((row: ProcurementRequest) => row.id, []);
+  const selection = useRowSelection({
+    rows: paged,
+    getId,
+  });
+
   const stats = useMemo(
     () => ({
       total: rows.length,
@@ -93,39 +118,63 @@ export default function ProcurementRegisterPage() {
     [rows],
   );
 
+  const exportColumns = [...PROCUREMENT_EXPORT_COLUMNS];
+
   const handleExport = () => {
     if (filtered.length === 0) return;
     exportToCsv(
       `procurement-register-${new Date().toISOString().slice(0, 10)}.csv`,
-      filtered.map((r) => ({
-        reference: r.reference_number,
-        title: r.title,
-        category: r.category,
-        method: r.procurement_method,
-        status: r.status,
-        currency: r.currency,
-        estimated_value: r.estimated_value,
-        budget_line: r.budget_line ?? "",
-        pif: r.programme?.reference_number ?? "",
-        requester: r.requester?.name ?? "",
-        submitted_at: r.submitted_at ?? "",
-        approved_at: r.approved_at ?? "",
-      })),
-      [
-        { key: "reference", header: "Reference" },
-        { key: "title", header: "Title" },
-        { key: "category", header: "Category" },
-        { key: "method", header: "Method" },
-        { key: "status", header: "Status" },
-        { key: "currency", header: "Currency" },
-        { key: "estimated_value", header: "Estimated Value" },
-        { key: "budget_line", header: "Budget Line" },
-        { key: "pif", header: "PIF Reference" },
-        { key: "requester", header: "Requester" },
-        { key: "submitted_at", header: "Submitted" },
-        { key: "approved_at", header: "Approved" },
-      ],
+      buildProcurementExportRows(filtered),
+      exportColumns,
     );
+  };
+
+  const handleExportSelected = () => {
+    const selected = selectedProcurementRows(filtered, selection.selectedIds);
+    if (selected.length === 0) return;
+    exportToCsv(
+      `procurement-register-selected-${new Date().toISOString().slice(0, 10)}.csv`,
+      buildProcurementExportRows(selected),
+      exportColumns,
+    );
+  };
+
+  const cancelMut = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const results = await Promise.allSettled(ids.map((id) => procurementApi.delete(id)));
+      return results;
+    },
+    onSuccess: (results) => {
+      const ok = results.filter((r) => r.status === "fulfilled").length;
+      const fail = results.length - ok;
+      setToast(fail ? `Cancelled ${ok} draft(s); ${fail} failed.` : `Cancelled ${ok} draft(s).`);
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: ["procurement", "register"] });
+    },
+    onError: () => setBulkError("Bulk cancel failed."),
+    onSettled: () => setBulkLoading(false),
+  });
+
+  const handleBulkCancelDrafts = async () => {
+    const ids = draftIdsForBulkCancel(filtered, selection.selectedIds);
+    if (ids.length === 0) {
+      setBulkError("Select at least one draft to cancel. Non-draft rows can only be exported.");
+      return;
+    }
+    if (
+      !(await confirm({
+        title: "Cancel draft requests",
+        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
+        confirmText: "Cancel drafts",
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setBulkError(null);
+    setToast(null);
+    cancelMut.mutate(ids);
   };
 
   return (
@@ -163,17 +212,25 @@ export default function ProcurementRegisterPage() {
       page={Math.min(page, pageCount)}
       pageCount={pageCount}
       total={filtered.length}
-      onPageChange={setPage}
+      onPageChange={(p) => {
+        setPage(p);
+        selection.clear();
+      }}
       loading={isLoading}
       stats={
         <>
-          {isError ? (
+          {toast ? (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
+          ) : null}
+          {bulkError || isError ? (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">Failed to load register.</span>
-              <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                Retry
-              </button>
+              <span className="flex-1">{bulkError ?? "Failed to load register."}</span>
+              {isError ? (
+                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+                  Retry
+                </button>
+              ) : null}
             </div>
           ) : null}
           {!isLoading && rows.length > 0 ? (
@@ -214,6 +271,7 @@ export default function ProcurementRegisterPage() {
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
+                selection.clear();
               }}
             />
           </div>
@@ -225,6 +283,7 @@ export default function ProcurementRegisterPage() {
                 onClick={() => {
                   setFilter(tab.key);
                   setPage(1);
+                  selection.clear();
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
@@ -233,6 +292,26 @@ export default function ProcurementRegisterPage() {
             ))}
           </div>
         </div>
+      }
+      bulkBar={
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={selection.selectedCount === 0 || bulkLoading}
+            onClick={handleExportSelected}
+          >
+            Export selected
+          </button>
+          <button
+            type="button"
+            disabled={bulkLoading}
+            onClick={() => void handleBulkCancelDrafts()}
+            className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 disabled:opacity-50"
+          >
+            {bulkLoading ? "Cancelling…" : "Cancel selected drafts"}
+          </button>
+        </BulkSelectionBar>
       }
       empty={
         !isLoading && filtered.length === 0 ? (
@@ -253,6 +332,13 @@ export default function ProcurementRegisterPage() {
           <table className="data-table w-full">
             <thead>
               <tr>
+                <th className={selectionColumnClass.th}>
+                  <SelectAllCheckbox
+                    checked={selection.allSelectableSelected}
+                    indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                    onChange={selection.toggleAllSelectable}
+                  />
+                </th>
                 <th>Reference</th>
                 <th>Title</th>
                 <th>Category</th>
@@ -272,6 +358,13 @@ export default function ProcurementRegisterPage() {
                 };
                 return (
                   <tr key={row.id}>
+                    <td className={selectionColumnClass.td}>
+                      <RowCheckbox
+                        checked={selection.isSelected(row.id)}
+                        onChange={() => selection.toggle(row.id)}
+                        label={`Select ${row.reference_number}`}
+                      />
+                    </td>
                     <td className="font-mono text-xs">{row.reference_number}</td>
                     <td className="max-w-xs truncate font-medium">{row.title}</td>
                     <td className="text-xs capitalize">{row.category}</td>

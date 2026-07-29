@@ -1516,6 +1516,10 @@ export interface FleetVehicle {
   name: string;
   category: string;
   status: string;
+  /** Manual last-known GPS stub — not live telematics. */
+  gps_lat?: number | string | null;
+  gps_lng?: number | string | null;
+  gps_recorded_at?: string | null;
 }
 
 export interface FleetTripLog {
@@ -1589,6 +1593,12 @@ export const fleetApi = {
         service_schedules: FleetServiceSchedule[];
       };
     }>(`/fleet/vehicles/${id}`),
+  /** Manual last-known GPS stub (not live telematics). */
+  updateGps: (
+    assetId: number,
+    data: { gps_lat: number; gps_lng: number; gps_recorded_at?: string | null },
+  ) =>
+    api.put<{ data: FleetVehicle; message: string }>(`/fleet/vehicles/${assetId}/gps`, data),
   createTrip: (assetId: number, data: Record<string, unknown>) =>
     api.post<{ data: FleetTripLog }>(`/fleet/vehicles/${assetId}/trips`, data),
   createFuelLog: (assetId: number, data: Record<string, unknown>) =>

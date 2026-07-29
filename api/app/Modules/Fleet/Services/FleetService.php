@@ -73,6 +73,34 @@ class FleetService
     }
 
     /**
+     * Manual last-known GPS stub (not live telematics).
+     *
+     * @param  array{gps_lat:float|int|string,gps_lng:float|int|string,gps_recorded_at?:string|null}  $data
+     */
+    public function updateGpsStub(Asset $asset, User $user, array $data): Asset
+    {
+        $this->assertFleetVehicle($asset, (int) $user->tenant_id);
+
+        $lat = (float) $data['gps_lat'];
+        $lng = (float) $data['gps_lng'];
+        if ($lat < -90 || $lat > 90) {
+            throw ValidationException::withMessages(['gps_lat' => ['Latitude must be between -90 and 90.']]);
+        }
+        if ($lng < -180 || $lng > 180) {
+            throw ValidationException::withMessages(['gps_lng' => ['Longitude must be between -180 and 180.']]);
+        }
+
+        $asset->fill([
+            'gps_lat' => $lat,
+            'gps_lng' => $lng,
+            'gps_recorded_at' => $data['gps_recorded_at'] ?? now(),
+        ]);
+        $asset->save();
+
+        return $asset->fresh();
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function createTrip(Asset $asset, User $user, array $data): FleetTripLog

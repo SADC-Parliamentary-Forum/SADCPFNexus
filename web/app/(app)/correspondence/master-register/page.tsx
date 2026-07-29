@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+  selectionColumnClass,
+} from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 
 export default function MasterRegisterPage() {
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
@@ -20,6 +28,36 @@ export default function MasterRegisterPage() {
       .finally(() => setLoading(false));
   }, [search]);
 
+  const getId = useCallback((row: CorrespondenceLetter) => row.id, []);
+  const selection = useRowSelection({
+    rows: items,
+    getId,
+  });
+
+  const handleExportSelected = () => {
+    const selected = items.filter((row) => selection.isSelected(row.id));
+    if (selected.length === 0) return;
+    exportToCsv(
+      `correspondence-master-selected-${new Date().toISOString().slice(0, 10)}.csv`,
+      selected.map((item) => ({
+        date: (item.received_at || item.approved_at || item.created_at || "").slice(0, 10),
+        reference: item.registry_reference || item.reference_number || `#${item.id}`,
+        direction: item.direction,
+        subject: item.subject,
+        owner: item.primary_owner?.name || "",
+        status: item.status,
+      })),
+      [
+        { key: "date", header: "Date" },
+        { key: "reference", header: "Reference" },
+        { key: "direction", header: "Direction" },
+        { key: "subject", header: "Subject" },
+        { key: "owner", header: "Owner" },
+        { key: "status", header: "Status" },
+      ],
+    );
+  };
+
   return (
     <RegisterShell
       title="Master Register"
@@ -32,8 +70,23 @@ export default function MasterRegisterPage() {
           className="form-input max-w-md"
           placeholder="Search reference, subject, sender…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            selection.clear();
+          }}
         />
+      }
+      bulkBar={
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={selection.selectedCount === 0}
+            onClick={handleExportSelected}
+          >
+            Export selected
+          </button>
+        </BulkSelectionBar>
       }
       empty={
         !loading && items.length === 0 ? (
@@ -47,6 +100,13 @@ export default function MasterRegisterPage() {
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
             <tr>
+              <th className={selectionColumnClass.th}>
+                <SelectAllCheckbox
+                  checked={selection.allSelectableSelected}
+                  indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                  onChange={selection.toggleAllSelectable}
+                />
+              </th>
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Reference</th>
               <th className="px-4 py-3">Direction</th>
@@ -58,6 +118,13 @@ export default function MasterRegisterPage() {
           <tbody>
             {items.map((item) => (
               <tr key={item.id} className="border-t border-neutral-100">
+                <td className={selectionColumnClass.td}>
+                  <RowCheckbox
+                    checked={selection.isSelected(item.id)}
+                    onChange={() => selection.toggle(item.id)}
+                    label={`Select ${item.registry_reference || item.reference_number || item.id}`}
+                  />
+                </td>
                 <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">
                   {(item.received_at || item.approved_at || item.created_at || "").slice(0, 10)}
                 </td>

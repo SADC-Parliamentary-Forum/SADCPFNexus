@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fleetApi } from "@/lib/api";
 
 export default function FleetVehicleDetailPage() {
@@ -11,6 +11,8 @@ export default function FleetVehicleDetailPage() {
   const id = Number(params.id);
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [gpsToast, setGpsToast] = useState<string | null>(null);
+  const [gps, setGps] = useState({ lat: "", lng: "" });
   const [trip, setTrip] = useState({
     started_at: "",
     ended_at: "",
@@ -43,6 +45,17 @@ export default function FleetVehicleDetailPage() {
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["fleet", "vehicles", id] });
+
+  const data = detailQuery.data;
+  const vehicle = data?.vehicle;
+
+  useEffect(() => {
+    if (!vehicle) return;
+    setGps({
+      lat: vehicle.gps_lat != null ? String(vehicle.gps_lat) : "",
+      lng: vehicle.gps_lng != null ? String(vehicle.gps_lng) : "",
+    });
+  }, [vehicle?.id, vehicle?.gps_lat, vehicle?.gps_lng]);
 
   const createTrip = useMutation({
     mutationFn: () =>
@@ -99,8 +112,24 @@ export default function FleetVehicleDetailPage() {
     onError: () => setError("Could not create service schedule."),
   });
 
-  const data = detailQuery.data;
-  const vehicle = data?.vehicle;
+  const updateGps = useMutation({
+    mutationFn: () =>
+      fleetApi.updateGps(id, {
+        gps_lat: Number(gps.lat),
+        gps_lng: Number(gps.lng),
+      }),
+    onSuccess: () => {
+      setError(null);
+      setGpsToast("Last-known GPS saved (manual stub — not live telematics).");
+      invalidate();
+    },
+    onError: () => setError("Could not save GPS location."),
+  });
+
+  const mapsHref =
+    vehicle?.gps_lat != null && vehicle?.gps_lng != null
+      ? `https://www.openstreetmap.org/?mlat=${vehicle.gps_lat}&mlon=${vehicle.gps_lng}#map=15/${vehicle.gps_lat}/${vehicle.gps_lng}`
+      : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -109,14 +138,77 @@ export default function FleetVehicleDetailPage() {
           ← Fleet
         </Link>
         <h1 className="page-title mt-2">{vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}</h1>
-        <p className="page-subtitle">Trip / mileage, fuel, and service due for this Fixed Asset vehicle.</p>
+        <p className="page-subtitle">Trip / mileage, fuel, service due, and manual last-known GPS stub for this Fixed Asset vehicle.</p>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+      {gpsToast && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{gpsToast}</div>
+      )}
       {detailQuery.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
 
       {data && (
         <>
+          <section className="card space-y-3 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="font-semibold">Last-known GPS (manual stub)</h2>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  Not connected to a telematics vendor. Enter coordinates manually when known.
+                </p>
+              </div>
+              <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-600">
+                Stub / manual
+              </span>
+            </div>
+            {vehicle?.gps_lat != null && vehicle?.gps_lng != null ? (
+              <p className="text-sm text-neutral-700">
+                Current:{" "}
+                <span className="font-mono">
+                  {Number(vehicle.gps_lat).toFixed(5)}, {Number(vehicle.gps_lng).toFixed(5)}
+                </span>
+                {vehicle.gps_recorded_at ? (
+                  <span className="text-neutral-500"> · recorded {String(vehicle.gps_recorded_at).slice(0, 19).replace("T", " ")}</span>
+                ) : null}
+                {mapsHref ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a href={mapsHref} target="_blank" rel="noreferrer" className="text-primary underline">
+                      Open map
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            ) : (
+              <p className="text-sm text-neutral-500">No last-known location recorded yet.</p>
+            )}
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                className="input"
+                placeholder="Latitude (e.g. -22.5609)"
+                value={gps.lat}
+                onChange={(e) => setGps({ ...gps, lat: e.target.value })}
+                inputMode="decimal"
+              />
+              <input
+                className="input"
+                placeholder="Longitude (e.g. 17.0658)"
+                value={gps.lng}
+                onChange={(e) => setGps({ ...gps, lng: e.target.value })}
+                inputMode="decimal"
+              />
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={updateGps.isPending || !gps.lat.trim() || !gps.lng.trim()}
+              onClick={() => updateGps.mutate()}
+            >
+              {updateGps.isPending ? "Saving…" : "Save last-known GPS"}
+            </button>
+          </section>
+
           <div className="grid gap-4 md:grid-cols-3">
             <section className="card space-y-2 p-4">
               <h2 className="font-semibold">Log trip</h2>

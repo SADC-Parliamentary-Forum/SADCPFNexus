@@ -21,6 +21,7 @@ class Asset extends Model
         'capitalisation_policy_id', 'accumulated_depreciation', 'book_value',
         'currency', 'last_verified_at', 'acknowledgement_at', 'acknowledged_by',
         'serial_duplicate_override',
+        'gps_lat', 'gps_lng', 'gps_recorded_at',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
@@ -38,12 +39,15 @@ class Asset extends Model
             'warranty_expiry' => 'date',
             'last_verified_at' => 'datetime',
             'acknowledgement_at' => 'datetime',
+            'gps_recorded_at' => 'datetime',
             'serial_duplicate_override' => 'boolean',
             'purchase_value' => 'decimal:2',
             'value' => 'decimal:2',
             'salvage_value' => 'decimal:2',
             'accumulated_depreciation' => 'decimal:2',
             'book_value' => 'decimal:2',
+            'gps_lat' => 'decimal:7',
+            'gps_lng' => 'decimal:7',
         ];
     }
 

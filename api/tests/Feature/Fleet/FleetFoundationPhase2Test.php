@@ -137,4 +137,50 @@ class FleetFoundationPhase2Test extends TestCase
             ])
             ->assertStatus(422);
     }
+
+    public function test_can_save_manual_gps_stub_on_fleet_vehicle(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        $vehicle = $this->makeFleetVehicle($tenant);
+
+        $data = $this->asUser($admin)
+            ->putJson("/api/v1/fleet/vehicles/{$vehicle->id}/gps", [
+                'gps_lat' => -22.5609,
+                'gps_lng' => 17.0658,
+                'gps_recorded_at' => '2026-07-29T10:00:00Z',
+            ])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertEqualsWithDelta(-22.5609, (float) $data['gps_lat'], 0.0001);
+        $this->assertEqualsWithDelta(17.0658, (float) $data['gps_lng'], 0.0001);
+        $this->assertNotNull($data['gps_recorded_at']);
+
+        $this->assertDatabaseHas('assets', [
+            'id' => $vehicle->id,
+            'gps_lat' => -22.5609,
+            'gps_lng' => 17.0658,
+        ]);
+    }
+
+    public function test_gps_stub_rejects_non_fleet_asset(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        $it = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'IT-'.uniqid(),
+            'name' => 'Laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+
+        $this->asUser($admin)
+            ->putJson("/api/v1/fleet/vehicles/{$it->id}/gps", [
+                'gps_lat' => -22.5,
+                'gps_lng' => 17.0,
+            ])
+            ->assertStatus(422);
+    }
 }

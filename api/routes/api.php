@@ -1060,6 +1060,7 @@ Route::prefix('v1')->group(function () {
             $fleet = \App\Http\Controllers\Api\V1\Fleet\FleetController::class;
             Route::get('vehicles', [$fleet, 'index']);
             Route::get('vehicles/{asset}', [$fleet, 'show']);
+            Route::put('vehicles/{asset}/gps', [$fleet, 'updateGps']);
             Route::get('drivers', [$fleet, 'listDrivers']);
             Route::post('drivers', [$fleet, 'storeDriver']);
             Route::get('bookings', [$fleet, 'listBookings']);
