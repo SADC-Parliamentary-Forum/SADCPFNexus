@@ -50,6 +50,7 @@ const _moduleEntries = [
   _DrawerEntry(path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
   _DrawerEntry(path: '/assets/fleet', label: 'Fleet', icon: Icons.directions_car_outlined),
   _DrawerEntry(path: '/assignments', label: 'Assignments', icon: Icons.assignment_outlined),
+  _DrawerEntry(path: '/audit', label: 'Audit', icon: Icons.policy_outlined),
   _DrawerEntry(path: '/risk', label: 'Risk', icon: Icons.warning_amber_outlined),
   _DrawerEntry(path: '/correspondence', label: 'Correspondence', icon: Icons.mail_outline),
   _DrawerEntry(path: '/stock/scan', label: 'Stock scan', icon: Icons.qr_code_scanner),

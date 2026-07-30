@@ -90,6 +90,15 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
                 fontSize: 18)),
         actions: [
           IconButton(
+            tooltip: 'Audit',
+            icon: const Icon(Icons.policy_outlined, color: AppColors.textSecondary),
+            onPressed: () => context.push('/audit'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary),
+            onPressed: () => context.push('/assignments/calendar'),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
             onPressed: _load,
           ),

@@ -1689,6 +1689,29 @@ Route::prefix('v1')->group(function () {
             Route::post('external/{external}/revoke', [$c, 'externalRevoke']);
             Route::post('external/{external}/requests', [$c, 'externalRequest']);
             Route::post('external/{external}/findings', [$c, 'externalFinding']);
+
+            // Phase 2 / Phase 3
+            $p23 = \App\Http\Controllers\Api\V1\Audit\AuditPhase23Controller::class;
+            Route::get('analytics', [$p23, 'analytics']);
+            Route::post('engagements/{engagement}/samples/extract', [$p23, 'extractSample']);
+            Route::post('samples/{sample}/adjust', [$p23, 'adjustSample']);
+            Route::get('campaigns', [$p23, 'listCampaigns']);
+            Route::post('campaigns', [$p23, 'storeCampaign']);
+            Route::get('effort/capacity', [$p23, 'capacity']);
+            Route::post('effort/budgets', [$p23, 'storeEffortBudget']);
+            Route::post('effort/entries', [$p23, 'storeEffortEntry']);
+            Route::get('qa-reviews', [$p23, 'listQa']);
+            Route::post('qa-reviews', [$p23, 'storeQa']);
+            Route::get('templates', [$p23, 'listTemplates']);
+            Route::post('templates/apply', [$p23, 'applyTemplate']);
+            Route::post('governance-packs', [$p23, 'storeGovernancePack']);
+            Route::get('appointments', [$p23, 'listAppointments']);
+            Route::post('appointments', [$p23, 'storeAppointment']);
+            Route::post('appointments/{appointment}/renewals', [$p23, 'renewAppointment']);
+            Route::post('external/{external}/auto-revoke-check', [$p23, 'autoRevokeCheck']);
+            Route::post('external/{external}/evidence-downloads', [$p23, 'evidenceDownload']);
+            Route::post('ai/suggestions', [$p23, 'aiSuggest']);
+            Route::post('ai/suggestions/{suggestion}/apply', [$p23, 'aiApply']);
         });
 
         // People & Authority Module (Phase 1)

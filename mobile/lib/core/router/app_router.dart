@@ -84,6 +84,7 @@ import '../../features/assignments/presentation/screens/assignments_list_screen.
 import '../../features/assignments/presentation/screens/assignment_detail_screen.dart';
 import '../../features/assignments/presentation/screens/assignment_create_screen.dart';
 import '../../features/assignments/presentation/screens/assignments_calendar_screen.dart';
+import '../../features/audit/presentation/screens/audit_management_screen.dart';
 import '../../features/risk/presentation/screens/risk_register_screen.dart';
 import '../../features/risk/presentation/screens/risk_detail_screen.dart';
 import '../../features/correspondence/presentation/screens/correspondence_register_screen.dart';
@@ -591,6 +592,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/assignments',
         name: 'assignments',
         builder: (context, state) => const AssignmentsListScreen(),
+      ),
+      GoRoute(
+        path: '/audit',
+        name: 'audit-management',
+        builder: (context, state) => const AuditManagementScreen(),
       ),
       GoRoute(
         path: '/assignments/create',

@@ -38,8 +38,11 @@ use App\Modules\Fleet\Contracts\TelematicsProvider;
 use App\Modules\Fleet\Telematics\TelematicsProviderFactory;
 use App\Modules\Travel\Contracts\AirlineItineraryParserInterface;
 use App\Modules\Travel\Contracts\FxRateFeedInterface;
+use App\Modules\Travel\Contracts\GdsProviderInterface;
 use App\Modules\Travel\Contracts\HttpFxRateProviderInterface;
 use App\Modules\Travel\Services\ConfigurableFxRateFeed;
+use App\Modules\Travel\Services\GdsAwareAirlineItineraryParser;
+use App\Modules\Travel\Services\GdsProviderFactory;
 use App\Modules\Travel\Services\OptionalHttpFxRateProvider;
 use App\Modules\Travel\Services\PracticalAirlineItineraryParser;
 
@@ -65,9 +68,14 @@ class AppServiceProvider extends ServiceProvider
             return $app->make(TelematicsProviderFactory::class)->make();
         });
 
-        // Travel Phase 3 — practical local parser + configurable FX (manual table + optional HTTP).
+        // Travel Phase 3 — practical local parser + optional GDS-aware wrapper + configurable FX.
         // Null stubs retained for tests that bind them explicitly; no paid GDS/FX keys.
-        $this->app->bind(AirlineItineraryParserInterface::class, PracticalAirlineItineraryParser::class);
+        $this->app->singleton(GdsProviderFactory::class);
+        $this->app->bind(GdsProviderInterface::class, function ($app) {
+            return $app->make(GdsProviderFactory::class)->make();
+        });
+        $this->app->bind(PracticalAirlineItineraryParser::class);
+        $this->app->bind(AirlineItineraryParserInterface::class, GdsAwareAirlineItineraryParser::class);
         $this->app->bind(HttpFxRateProviderInterface::class, OptionalHttpFxRateProvider::class);
         $this->app->bind(FxRateFeedInterface::class, ConfigurableFxRateFeed::class);
     }

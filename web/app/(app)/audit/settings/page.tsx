@@ -1,13 +1,11 @@
 "use client";
 
-import React, { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 
-function SettingsInner() {
-  const params = useSearchParams();
-  const stub = params.get("stub");
+export default function AuditSettingsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "settings"],
     queryFn: async () => (await auditApi.settings()).data.data,
@@ -16,16 +14,11 @@ function SettingsInner() {
   return (
     <div className="p-6 space-y-4 max-w-3xl">
       <h1 className="text-2xl font-semibold">Audit Settings / Charter</h1>
-      {stub === "qa" && (
-        <div className="border border-amber-300 bg-amber-50 text-amber-900 text-sm p-3 rounded">
-          QA peer reviews are Phase 2 — stub only.
-        </div>
-      )}
-      {stub === "ai" && (
-        <div className="border border-amber-300 bg-amber-50 text-amber-900 text-sm p-3 rounded">
-          AI assistance is Phase 3 and must not issue findings, verify, close, or blame — stub only.
-        </div>
-      )}
+      <div className="flex flex-wrap gap-3 text-sm">
+        <Link className="underline" href="/audit/qa">QA reviews</Link>
+        <Link className="underline" href="/audit/ai">AI assist</Link>
+        <Link className="underline" href="/audit/templates">Donor templates</Link>
+      </div>
       {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : (
         <div className="border rounded p-4 bg-white space-y-2 text-sm">
           <div className="font-medium text-amber-800">Governance Configuration Pending</div>
@@ -38,13 +31,5 @@ function SettingsInner() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function AuditSettingsPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-neutral-500">Loading settings…</div>}>
-      <SettingsInner />
-    </Suspense>
   );
 }

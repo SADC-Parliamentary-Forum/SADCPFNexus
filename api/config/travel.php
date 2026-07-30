@@ -23,6 +23,15 @@ return [
     /** Optional HTTP FX feed — leave empty for manual/admin table only. Never hardcode paid API keys. */
     'fx_http_url' => env('TRAVEL_FX_HTTP_URL'),
     'fx_http_token' => env('TRAVEL_FX_HTTP_TOKEN'),
+    /**
+     * Optional GDS adapter (not a marketplace).
+     * TRAVEL_GDS_DRIVER=null|disabled|generic_http
+     * TRAVEL_GDS_HTTP_URL=   optional bridge endpoint
+     * TRAVEL_GDS_HTTP_TOKEN= optional bearer from secrets / env only
+     */
+    'gds_driver' => env('TRAVEL_GDS_DRIVER', 'null'),
+    'gds_http_url' => env('TRAVEL_GDS_HTTP_URL'),
+    'gds_http_token' => env('TRAVEL_GDS_HTTP_TOKEN'),
     'attachment_requirements' => [
         'submit' => ['invitation', 'agenda'],
         'admin_complete' => ['travel_itinerary'],

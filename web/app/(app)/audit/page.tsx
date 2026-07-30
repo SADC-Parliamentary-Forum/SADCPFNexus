@@ -52,12 +52,20 @@ export default function AuditDashboardPage() {
       )}
 
       <div className="flex flex-wrap gap-3 text-sm">
+        <Link className="underline" href="/audit/analytics">Analytics</Link>
         <Link className="underline" href="/audit/universe">Universe</Link>
         <Link className="underline" href="/audit/plans">Plans</Link>
         <Link className="underline" href="/audit/engagements">Engagements</Link>
         <Link className="underline" href="/audit/findings">Findings</Link>
         <Link className="underline" href="/audit/corrective-actions">Corrective Actions</Link>
+        <Link className="underline" href="/audit/campaigns">Campaigns</Link>
+        <Link className="underline" href="/audit/resources">Resources</Link>
+        <Link className="underline" href="/audit/qa">QA Reviews</Link>
+        <Link className="underline" href="/audit/templates">Templates</Link>
+        <Link className="underline" href="/audit/governance-packs">Governance Packs</Link>
+        <Link className="underline" href="/audit/appointments">Appointments</Link>
         <Link className="underline" href="/audit/external">External Audit</Link>
+        <Link className="underline" href="/audit/ai">AI Assist</Link>
         <Link className="underline" href="/audit/settings">Settings / Charter</Link>
       </div>
     </div>

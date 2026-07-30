@@ -8220,6 +8220,8 @@ export interface MeetingAgendaItem {
 export const auditApi = {
   dashboard: (view?: string) =>
     api.get<{ data: Record<string, unknown> }>("/audit-management/dashboard", { params: view ? { view } : undefined }),
+  analytics: () =>
+    api.get<{ data: Record<string, unknown> }>("/audit-management/analytics"),
   lookups: () => api.get<{ data: Record<string, unknown> }>("/audit-management/lookups"),
   settings: () => api.get<{ data: Record<string, unknown> }>("/audit-management/settings"),
   events: (params?: Record<string, string | number>) =>
@@ -8255,6 +8257,10 @@ export const auditApi = {
   declareIndependence: (id: number, data: Record<string, unknown>) =>
     api.post(`/audit-management/engagements/${id}/independence`, data),
   startFieldwork: (id: number) => api.post(`/audit-management/engagements/${id}/fieldwork`),
+  extractSample: (engagementId: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/engagements/${engagementId}/samples/extract`, data),
+  adjustSample: (sampleId: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/samples/${sampleId}/adjust`, data),
 
   listFindings: (params?: Record<string, string | number>) =>
     api.get("/audit-management/findings", { params }),
@@ -8276,6 +8282,40 @@ export const auditApi = {
     api.post("/audit-management/external", data),
   activateExternal: (id: number) => api.post(`/audit-management/external/${id}/activate`),
   revokeExternal: (id: number) => api.post(`/audit-management/external/${id}/revoke`),
+  autoRevokeExternal: (id: number) =>
+    api.post(`/audit-management/external/${id}/auto-revoke-check`),
+  logExternalDownload: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/external/${id}/evidence-downloads`, data),
+
+  listCampaigns: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/campaigns", { params }),
+  createCampaign: (data: Record<string, unknown>) =>
+    api.post("/audit-management/campaigns", data),
+  capacity: () => api.get<{ data: Record<string, unknown> }>("/audit-management/effort/capacity"),
+  createEffortBudget: (data: Record<string, unknown>) =>
+    api.post("/audit-management/effort/budgets", data),
+  logEffort: (data: Record<string, unknown>) =>
+    api.post("/audit-management/effort/entries", data),
+  listQaReviews: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/qa-reviews", { params }),
+  createQaReview: (data: Record<string, unknown>) =>
+    api.post("/audit-management/qa-reviews", data),
+  listTemplates: () => api.get<{ data: unknown[] }>("/audit-management/templates"),
+  applyTemplate: (data: Record<string, unknown>) =>
+    api.post("/audit-management/templates/apply", data),
+  createGovernancePack: (data: Record<string, unknown>) =>
+    api.post("/audit-management/governance-packs", data),
+  listAppointments: (params?: Record<string, string | number>) =>
+    api.get("/audit-management/appointments", { params }),
+  createAppointment: (data: Record<string, unknown>) =>
+    api.post("/audit-management/appointments", data),
+  renewAppointment: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/appointments/${id}/renewals`, data),
+
+  aiSuggest: (data: Record<string, unknown>) =>
+    api.post("/audit-management/ai/suggestions", data),
+  aiApply: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-management/ai/suggestions/${id}/apply`, data),
 };
 
 

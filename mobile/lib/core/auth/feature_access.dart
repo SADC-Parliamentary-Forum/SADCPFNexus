@@ -39,6 +39,7 @@ final _routeAccess = <String, List<String>>{
   '/calendar': [],
   '/search': [],
   '/assignments': [],
+  '/audit': ['audit.view', 'audit.findings.view', 'audit.dashboard.auditor', 'governance.view'],
   '/risk': ['risk.view', 'governance.view'],
   '/correspondence': ['correspondence.view', 'governance.view'],
   '/stock/scan': ['stock.view', 'assets.view'],
