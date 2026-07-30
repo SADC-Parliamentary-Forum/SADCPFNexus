@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { leaveApi, type LeavePolicyVersion } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection } from "@/components/ui/FormSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const MODES = [
   { value: "standard", label: "Standard (HOD → HR → SG)" },
@@ -71,25 +74,23 @@ export default function LeaveSettingsPage() {
   const active = policies.find((p) => p.is_active);
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/leave" className="hover:text-primary transition-colors">
-          Leave
-        </Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Workflow settings</span>
-      </div>
-
-      <div>
-        <h1 className="page-title">Leave workflow settings</h1>
-        <p className="page-subtitle">
-          Configure Finance-first and Director-principal routing. Versions are immutable — create a new
-          version to change mode.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <ModulePageHeader
+        title="Leave workflow settings"
+        subtitle="Configure Finance-first and Director-principal routing. Versions are immutable — create a new version to change mode."
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Workflow settings" }]} />
+        }
+        actions={
+          <Link href="/leave" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back
+          </Link>
+        }
+      />
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -98,8 +99,7 @@ export default function LeaveSettingsPage() {
         <div className="h-40 animate-pulse rounded-xl bg-neutral-100" />
       ) : (
         <>
-          <div className="card space-y-2 p-6">
-            <h2 className="text-sm font-semibold text-neutral-900">Active policy</h2>
+          <FormSection title="Active policy" icon="verified">
             {active ? (
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -122,12 +122,12 @@ export default function LeaveSettingsPage() {
                 </div>
               </dl>
             ) : (
-              <p className="text-sm text-neutral-500">No active policy yet.</p>
+              <EmptyState icon="policy" title="No active policy yet" className="min-h-0 py-6" />
             )}
-          </div>
+          </FormSection>
 
-          <form onSubmit={createVersion} className="card space-y-4 p-6">
-            <h2 className="text-sm font-semibold text-neutral-900">Create new policy version</h2>
+          <FormSection title="Create new policy version" icon="add_circle" description="Activating a version retires the previous active policy.">
+            <form onSubmit={createVersion} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-neutral-700">Version</label>
@@ -176,6 +176,7 @@ export default function LeaveSettingsPage() {
                     checked={form.admin_review_required || form.workflow_mode === "director_principal"}
                     onChange={(e) => setForm({ ...form, admin_review_required: e.target.checked })}
                     disabled={form.workflow_mode === "director_principal"}
+                    className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                   />
                   Principal review required (Director)
                 </label>
@@ -194,24 +195,30 @@ export default function LeaveSettingsPage() {
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? "Saving…" : "Activate new version"}
             </button>
-          </form>
+            </form>
+          </FormSection>
 
-          <div className="card p-6">
-            <h2 className="mb-3 text-sm font-semibold text-neutral-900">Version history</h2>
-            <ul className="divide-y divide-neutral-100 text-sm">
-              {policies.map((p) => (
-                <li key={p.id} className="flex items-center justify-between py-2">
-                  <span>
-                    {p.version} · {p.workflow_mode ?? "standard"}
-                    {p.is_active ? " · active" : ""}
-                  </span>
-                  <span className="text-neutral-500">
-                    {p.effective_from ? formatDate(p.effective_from) : "—"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <FormSection title="Version history" icon="history">
+            {policies.length === 0 ? (
+              <p className="text-sm text-neutral-500">No versions recorded.</p>
+            ) : (
+              <ul className="divide-y divide-neutral-100 text-sm">
+                {policies.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between py-2">
+                    <span>
+                      {p.version} · {p.workflow_mode ?? "standard"}
+                      {p.is_active ? (
+                        <span className="badge-success ml-2">active</span>
+                      ) : null}
+                    </span>
+                    <span className="text-neutral-500">
+                      {p.effective_from ? formatDate(p.effective_from) : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </FormSection>
         </>
       )}
     </div>

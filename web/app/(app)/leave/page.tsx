@@ -265,6 +265,14 @@ export default function LeavePage() {
             <span className="material-symbols-outlined text-[18px]">calendar_month</span>
             Team Calendar
           </Link>
+          <Link href="/leave/toil" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">schedule</span>
+            TOIL
+          </Link>
+          <Link href="/leave/queues/certify" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">fact_check</span>
+            Certify
+          </Link>
           <Link href="/leave/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
             New Request
@@ -291,77 +299,74 @@ export default function LeavePage() {
               )}
             </div>
           )}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            {[
+              {
+                label: "Annual Leave",
+                sub: "days remaining",
+                value: balances ? `${balances.annual_balance_days}` : "—",
+                icon: "event_available",
+                color: "text-green-600",
+                bg: "bg-green-50",
+              },
+              {
+                label: "Leave in Lieu",
+                sub: "hours available",
+                value: balances ? `${balances.lil_hours_available}` : "—",
+                icon: "schedule",
+                color: "text-primary",
+                bg: "bg-primary/10",
+              },
+              {
+                label: "Sick Leave",
+                sub: "days used",
+                value: balances ? `${balances.sick_leave_used_days}` : "—",
+                icon: "sick",
+                color: "text-red-600",
+                bg: "bg-red-50",
+              },
+              {
+                label: "Special Leave",
+                sub: "days used",
+                value: balances ? `${balances.special_leave_days_used ?? 0}` : "—",
+                icon: "star",
+                color: "text-amber-600",
+                bg: "bg-amber-50",
+              },
+              {
+                label: "Maternity Leave",
+                sub: "days used",
+                value: balances ? `${balances.maternity_leave_days_used ?? 0}` : "—",
+                icon: "pregnant_woman",
+                color: "text-neutral-700",
+                bg: "bg-neutral-100",
+              },
+              {
+                label: "Paternity Leave",
+                sub: "days used",
+                value: balances ? `${balances.paternity_leave_days_used ?? 0}` : "—",
+                icon: "man",
+                color: "text-neutral-700",
+                bg: "bg-neutral-100",
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="card p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-neutral-700">{stat.label}</p>
+                    <p className="mt-1 text-2xl font-bold text-neutral-900">{stat.value}</p>
+                    <p className="mt-0.5 text-[11px] text-neutral-400">{stat.sub}</p>
+                  </div>
+                  <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
+                    <span className={`material-symbols-outlined text-[20px] ${stat.color}`}>{stat.icon}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       }
-    >
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {[
-          {
-            label: "Annual Leave",
-            sub: "days remaining",
-            value: balances ? `${balances.annual_balance_days}` : "—",
-            icon: "event_available",
-            color: "text-green-600",
-            bg: "bg-green-50",
-          },
-          {
-            label: "Leave in Lieu",
-            sub: "hours available",
-            value: balances ? `${balances.lil_hours_available}` : "—",
-            icon: "schedule",
-            color: "text-primary",
-            bg: "bg-primary/10",
-          },
-          {
-            label: "Sick Leave",
-            sub: "days used",
-            value: balances ? `${balances.sick_leave_used_days}` : "—",
-            icon: "sick",
-            color: "text-red-600",
-            bg: "bg-red-50",
-          },
-          {
-            label: "Special Leave",
-            sub: "days used",
-            value: balances ? `${balances.special_leave_days_used ?? 0}` : "—",
-            icon: "star",
-            color: "text-amber-600",
-            bg: "bg-amber-50",
-          },
-          {
-            label: "Maternity Leave",
-            sub: "days used",
-            value: balances ? `${balances.maternity_leave_days_used ?? 0}` : "—",
-            icon: "pregnant_woman",
-            color: "text-pink-600",
-            bg: "bg-pink-50",
-          },
-          {
-            label: "Paternity Leave",
-            sub: "days used",
-            value: balances ? `${balances.paternity_leave_days_used ?? 0}` : "—",
-            icon: "man",
-            color: "text-teal-600",
-            bg: "bg-teal-50",
-          },
-        ].map((stat) => (
-          <div key={stat.label} className="card p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-neutral-700">{stat.label}</p>
-                <p className="mt-1 text-2xl font-bold text-neutral-900">{stat.value}</p>
-                <p className="mt-0.5 text-[11px] text-neutral-400">{stat.sub}</p>
-              </div>
-              <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
-                <span className={`material-symbols-outlined text-[20px] ${stat.color}`}>{stat.icon}</span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card p-4">
+      filters={
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-md flex-1">
             <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
@@ -395,6 +400,8 @@ export default function LeavePage() {
             ))}
           </div>
         </div>
+      }
+      bulkBar={
         <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
           <button
             type="button"
@@ -406,30 +413,28 @@ export default function LeavePage() {
             {bulkLoading ? "Deleting…" : "Delete selected"}
           </button>
         </BulkSelectionBar>
-      </div>
-
+      }
+      empty={
+        !loading && filtered.length === 0 ? (
+          <div className="card overflow-hidden">
+            <div className="px-5 py-16 text-center">
+              <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">event_available</span>
+              <p className="text-sm font-semibold text-neutral-600">No leave requests found</p>
+              <p className="mt-1 text-xs text-neutral-400">
+                {filter === "all" && !search
+                  ? "Submit your first leave application."
+                  : "No rows match the current filters."}
+              </p>
+              <Link href="/leave/create" className="btn-primary mt-5 inline-flex text-sm">
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                Apply for Leave
+              </Link>
+            </div>
+          </div>
+        ) : undefined
+      }
+    >
       <div className="card overflow-hidden">
-        {loading ? (
-          <div className="space-y-3 p-5">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">event_available</span>
-            <p className="text-sm font-semibold text-neutral-600">No leave requests found</p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {filter === "all" && !search
-                ? "Submit your first leave application."
-                : "No rows match the current filters."}
-            </p>
-            <Link href="/leave/create" className="btn-primary mt-5 inline-flex text-sm">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Apply for Leave
-            </Link>
-          </div>
-        ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
               <thead>
@@ -523,9 +528,7 @@ export default function LeavePage() {
               </tbody>
             </table>
           </div>
-        )}
       </div>
-    </div>
     </RegisterShell>
   );
 }

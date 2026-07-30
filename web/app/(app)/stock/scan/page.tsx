@@ -75,9 +75,14 @@ export default function StockBarcodeScanPage() {
   }
 
   return (
-    <div className="page-container space-y-4">
-      <div className="page-header flex items-start justify-between gap-3">
+    <div className="page-container">
+      <div className="page-header">
         <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/stock" className="hover:text-primary">Stock</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Barcode scan</span>
+          </div>
           <h1 className="page-title">Barcode Scan</h1>
           <p className="page-subtitle">
             Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync.
@@ -89,8 +94,8 @@ export default function StockBarcodeScanPage() {
       {err && <div className="alert alert-error">{err}</div>}
 
       <form onSubmit={lookup} className="card flex flex-wrap items-end gap-3 p-4">
-        <label className="block flex-1 text-sm min-w-[220px]">
-          Barcode
+        <label className="block min-w-[220px] flex-1 text-sm">
+          <span className="text-xs font-semibold text-neutral-700">Barcode</span>
           <input
             className="form-input mt-1 w-full"
             value={barcode}
@@ -105,12 +110,12 @@ export default function StockBarcodeScanPage() {
 
       {item && (
         <div className="card space-y-3 p-4">
-          <h2 className="text-lg font-semibold">{item.name}</h2>
-          <p className="text-sm">Code: {item.item_code} · Barcode: {item.barcode ?? "—"}</p>
-          <p className="text-sm">On hand: {item.current_balance ?? "—"} · Available: {item.available_quantity ?? "—"} {item.unit ?? ""}</p>
+          <h2 className="text-sm font-semibold text-neutral-900">{item.name}</h2>
+          <p className="text-sm text-neutral-600">Code: {item.item_code} · Barcode: {item.barcode ?? "—"}</p>
+          <p className="text-sm text-neutral-600">On hand: {item.current_balance ?? "—"} · Available: {item.available_quantity ?? "—"} {item.unit ?? ""}</p>
           <div className="flex flex-wrap items-end gap-2">
             <label className="block text-sm">
-              Count
+              <span className="text-xs font-semibold text-neutral-700">Count</span>
               <input type="number" min="0" className="form-input mt-1 w-28" value={count} onChange={(e) => setCount(e.target.value)} />
             </label>
             <button type="button" className="btn btn-secondary btn-sm" onClick={queueOffline}>Queue offline</button>
@@ -120,9 +125,9 @@ export default function StockBarcodeScanPage() {
 
       <div className="card space-y-2 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Offline draft queue ({queue.length})</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">Offline draft queue ({queue.length})</h2>
           {queue.length > 0 && (
-            <button type="button" className="btn btn-sm" onClick={clearQueue}>Clear</button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={clearQueue}>Clear</button>
           )}
         </div>
         <p className="text-xs text-neutral-500">
@@ -130,7 +135,7 @@ export default function StockBarcodeScanPage() {
         </p>
         <ul className="space-y-1 text-sm">
           {queue.map((q) => (
-            <li key={q.client_line_key} className="font-mono text-xs">
+            <li key={q.client_line_key} className="font-mono text-xs text-neutral-700">
               {q.barcode ?? q.stock_item_id} → qty {q.counted_qty} · {q.client_line_key}
             </li>
           ))}

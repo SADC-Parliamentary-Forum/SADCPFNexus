@@ -5,13 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import { programmeApi, type Programme } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
-import { ListPagination } from "@/components/ui/ListPagination";
 import {
   DEFAULT_PAGE_SIZE,
   clientPageCount,
   getListData,
   slicePage,
 } from "@/lib/listPagination";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUS_BADGE: Record<string, string> = {
   draft: "badge-muted",
@@ -25,18 +27,6 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const STATUS_LABELS = ["All", "draft", "submitted", "approved", "active", "on_hold", "completed"] as const;
-
-function SkeletonRow() {
-  return (
-    <tr>
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <td key={i}>
-          <div className="h-4 bg-neutral-100 rounded animate-pulse w-full max-w-[120px]" />
-        </td>
-      ))}
-    </tr>
-  );
-}
 
 function formatBudget(currency: string | null | undefined, amount: number | null | undefined): string {
   const code = currency?.trim() || "—";
@@ -56,6 +46,7 @@ export default function PifPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [page, setPage] = useState(1);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   useEffect(() => {
     let cancelled = false;
@@ -141,172 +132,162 @@ export default function PifPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <span className="text-neutral-700">Programmes (PIF)</span>
-          </div>
-          <h1 className="page-title">Programmes</h1>
-          <p className="page-subtitle">
-            Programme Implementation Framework — manage and track all funded programmes.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 self-start">
+    <RegisterShell
+      title="Programmes"
+      subtitle="Programme Implementation Framework — manage and track all funded programmes."
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "Programmes (PIF)" }]} />}
+      density={density}
+      onDensityChange={setDensity}
+      page={safePage}
+      pageCount={lastPage}
+      total={filtered.length}
+      onPageChange={setPage}
+      loading={loading}
+      actions={
+        <>
           <button
             type="button"
-            className="btn-secondary px-4 py-2 text-sm disabled:opacity-50"
+            className="btn-secondary text-sm disabled:opacity-50"
             disabled={filtered.length === 0}
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export CSV
           </button>
-          <Link href="/pif/create" className="btn-primary px-4 py-2 text-sm flex items-center gap-2">
-            <span
-              className="material-symbols-outlined text-[18px]"
-              style={{ fontVariationSettings: "'FILL' 0, 'wght' 400" }}
-            >
-              add
-            </span>
+          <Link href="/pif/create" className="btn-primary text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
             New Programme
           </Link>
-        </div>
-      </div>
-
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {stats.map(({ status, count }) => (
-          <div key={status} className="card p-4 text-center">
-            <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : count}</p>
-            <p className="text-xs text-neutral-500 mt-0.5 capitalize">{status.replace("_", " ")}</p>
+        </>
+      }
+      stats={
+        <>
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <span className="material-symbols-outlined text-[18px]">error_outline</span>
+              {error}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {stats.map(({ status, count }) => (
+              <div key={status} className="card p-4 text-center">
+                <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : count}</p>
+                <p className="mt-0.5 text-xs capitalize text-neutral-500">{status.replace("_", " ")}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div className="card p-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <span
-            className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
-            style={{ fontSize: "20px" }}
-          >
-            search
-          </span>
-          <input
-            type="search"
-            placeholder="Search programmes…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="form-input pl-10"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_LABELS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setFilterStatus(s);
+        </>
+      }
+      filters={
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="relative max-w-sm flex-1">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
+              search
+            </span>
+            <input
+              type="search"
+              placeholder="Search programmes…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
                 setPage(1);
               }}
-              className={`filter-tab capitalize ${filterStatus === s ? "active" : ""}`}
-            >
-              {s === "All" ? "All" : s.replace("_", " ")}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error}
-        </div>
-      )}
-
-      <div className="card overflow-hidden">
-        {!loading && filtered.length === 0 && !error ? (
-          <div className="min-h-[200px] flex flex-col items-center justify-center gap-2 py-12">
-            <span className="material-symbols-outlined text-5xl text-neutral-200">account_tree</span>
-            <p className="text-sm font-medium text-neutral-500">No programmes found</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Title</th>
-                    <th>Status</th>
-                    <th>Funding Source</th>
-                    <th>Budget</th>
-                    <th>Responsible</th>
-                    <th>End Date</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading
-                    ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
-                    : paged.map((p) => (
-                        <tr key={p.id}>
-                          <td className="font-mono text-xs text-neutral-600">
-                            {p.reference_number || "—"}
-                          </td>
-                          <td className="font-medium text-neutral-900 max-w-[220px]">
-                            <p className="truncate">{p.title || "—"}</p>
-                          </td>
-                          <td>
-                            <span
-                              className={`badge ${STATUS_BADGE[p.status] ?? "badge-muted"} capitalize`}
-                            >
-                              {statusLabel(p.status)}
-                            </span>
-                          </td>
-                          <td className="text-neutral-600">{p.funding_source || "—"}</td>
-                          <td className="text-neutral-700 font-medium">
-                            {formatBudget(p.primary_currency, p.total_budget)}
-                          </td>
-                          <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
-                          <td className="text-neutral-500 text-xs">
-                            {formatDateShort(p.end_date)}
-                          </td>
-                          <td>
-                            <div className="flex flex-wrap gap-2">
-                              <Link
-                                href={`/pif/${p.id}`}
-                                className="text-primary hover:underline text-xs font-medium"
-                              >
-                                View
-                              </Link>
-                              {p.status === "draft" && (
-                                <Link
-                                  href={`/pif/${p.id}/edit`}
-                                  className="text-neutral-600 hover:underline text-xs font-medium"
-                                >
-                                  Edit
-                                </Link>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
-            </div>
-            <ListPagination
-              page={safePage}
-              lastPage={lastPage}
-              total={filtered.length}
-              onPageChange={setPage}
-              disabled={loading}
+              className="form-input pl-10"
             />
-          </>
-        )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_LABELS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setFilterStatus(s);
+                  setPage(1);
+                }}
+                className={`filter-tab capitalize ${filterStatus === s ? "active" : ""}`}
+              >
+                {s === "All" ? "All" : s.replace("_", " ")}
+              </button>
+            ))}
+          </div>
+        </div>
+      }
+      empty={
+        !loading && filtered.length === 0 && !error ? (
+          <div className="card overflow-hidden">
+            <EmptyState
+              icon="account_tree"
+              title="No programmes found"
+              description={
+                filterStatus === "All" && !search
+                  ? "Start a Programme Implementation Form to track activities, budget, and approvals."
+                  : "No rows match the current filters."
+              }
+              action={
+                <Link href="/pif/create" className="btn-primary text-sm">
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  New Programme
+                </Link>
+              }
+            />
+          </div>
+        ) : undefined
+      }
+    >
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Funding Source</th>
+                <th>Budget</th>
+                <th>Responsible</th>
+                <th>End Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((p) => (
+                <tr key={p.id}>
+                  <td className="font-mono text-xs text-neutral-600">{p.reference_number || "—"}</td>
+                  <td className="max-w-[220px] font-medium text-neutral-900">
+                    <p className="truncate">{p.title || "—"}</p>
+                  </td>
+                  <td>
+                    <span className={`badge capitalize ${STATUS_BADGE[p.status] ?? "badge-muted"}`}>
+                      {statusLabel(p.status)}
+                    </span>
+                  </td>
+                  <td className="text-neutral-600">{p.funding_source || "—"}</td>
+                  <td className="font-medium text-neutral-700">
+                    {formatBudget(p.primary_currency, p.total_budget)}
+                  </td>
+                  <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
+                  <td className="text-xs text-neutral-500">{formatDateShort(p.end_date)}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href={`/pif/${p.id}`} className="text-xs font-medium text-primary hover:underline">
+                        View
+                      </Link>
+                      {(p.status === "draft" || p.status === "amendment_draft") && (
+                        <Link
+                          href={`/pif/${p.id}/edit`}
+                          className="text-xs font-medium text-neutral-600 hover:underline"
+                        >
+                          Edit
+                        </Link>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </RegisterShell>
   );
 }

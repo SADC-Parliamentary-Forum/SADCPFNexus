@@ -11,6 +11,8 @@ import {
   type ToilCredit,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection } from "@/components/ui/FormSection";
 
 type SegmentDraft = LeaveSegmentInput & { uid: string };
 
@@ -29,17 +31,18 @@ const TYPE_ICONS: Record<string, string> = {
   special: "star",
 };
 
+/** Brand-aligned type chips — avoid ad-hoc purple / rainbow marketing colors. */
 const TYPE_COLORS: Record<string, string> = {
   annual: "text-green-700 bg-green-50 border-green-200",
   sick: "text-red-700 bg-red-50 border-red-200",
-  lil: "text-purple-700 bg-purple-50 border-purple-200",
-  unpaid: "text-slate-700 bg-slate-50 border-slate-200",
-  study: "text-indigo-700 bg-indigo-50 border-indigo-200",
-  home: "text-cyan-700 bg-cyan-50 border-cyan-200",
-  maternity: "text-pink-700 bg-pink-50 border-pink-200",
-  paternity: "text-teal-700 bg-teal-50 border-teal-200",
-  compassionate: "text-rose-700 bg-rose-50 border-rose-200",
-  special: "text-orange-700 bg-orange-50 border-orange-200",
+  lil: "text-primary bg-primary/10 border-primary/20",
+  unpaid: "text-neutral-700 bg-neutral-50 border-neutral-200",
+  study: "text-primary bg-primary/5 border-primary/20",
+  home: "text-neutral-700 bg-neutral-50 border-neutral-200",
+  maternity: "text-neutral-800 bg-neutral-50 border-neutral-200",
+  paternity: "text-neutral-800 bg-neutral-50 border-neutral-200",
+  compassionate: "text-amber-800 bg-amber-50 border-amber-200",
+  special: "text-amber-800 bg-amber-50 border-amber-200",
 };
 
 function blankSegment(): SegmentDraft {
@@ -182,42 +185,38 @@ export default function LeaveCreatePage() {
   };
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <nav className="mb-2 flex items-center gap-1.5 text-xs text-neutral-400">
-            <Link href="/leave" className="font-medium hover:text-primary">Leave</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-600">New request</span>
-          </nav>
-          <h1 className="page-title">New Leave Request</h1>
-          <p className="page-subtitle">Create one application with one or more leave segments.</p>
-        </div>
-        <Link href="/leave" className="btn-secondary">
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Back
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="New Leave Request"
+        subtitle="Create one application with one or more leave segments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "New request" }]} />}
+        actions={
+          <Link href="/leave" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back
+          </Link>
+        }
+      />
 
       {(previewError || submitError) && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {submitError ?? previewError}
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
-          <div className="card p-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-bold text-neutral-900">Segments</h2>
-                <p className="mt-0.5 text-xs text-neutral-500">Dates are calculated by the server.</p>
-              </div>
+          <FormSection
+            title="Segments"
+            description="Working days are calculated by the server from the dates you enter."
+            icon="view_week"
+            actions={
               <button type="button" onClick={addSegment} className="btn-secondary py-2 text-xs">
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 Add Segment
               </button>
-            </div>
+            }
+          >
 
             <div className="space-y-4">
               {segments.map((segment, index) => {
@@ -358,10 +357,9 @@ export default function LeaveCreatePage() {
                 );
               })}
             </div>
-          </div>
+          </FormSection>
 
-          <div className="card p-5">
-            <h2 className="mb-4 text-sm font-bold text-neutral-900">Application Details</h2>
+          <FormSection title="Application details" icon="description">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-1.5 md:col-span-2">
                 <span className="text-xs font-semibold text-neutral-600">Reason</span>
@@ -401,22 +399,17 @@ export default function LeaveCreatePage() {
                 </label>
               )}
             </div>
-          </div>
+          </FormSection>
         </div>
 
         <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                <span className="material-symbols-outlined text-[20px] text-primary">fact_check</span>
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-neutral-900">Server Preview</h2>
-                <p className="text-xs text-neutral-500">{preview ? `${preview.segments.length} segment${preview.segments.length !== 1 ? "s" : ""}` : "Waiting for dates"}</p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-3">
+          <FormSection
+            title="Server preview"
+            description={preview ? `${preview.segments.length} segment${preview.segments.length !== 1 ? "s" : ""}` : "Waiting for dates"}
+            icon="fact_check"
+            dense
+          >
+            <div className="space-y-3">
               {preview?.segments.map((segment, index) => (
                 <div key={`${segment.leave_type}-${index}`} className="rounded-lg border border-neutral-100 bg-neutral-50 p-3">
                   <div className="flex items-start justify-between gap-3">
@@ -438,24 +431,23 @@ export default function LeaveCreatePage() {
                 </div>
               </div>
             </div>
-          </div>
+          </FormSection>
 
-          <div className="card p-5">
-            <h2 className="text-sm font-bold text-neutral-900">Available TOIL</h2>
-            <div className="mt-3 space-y-2">
+          <FormSection title="Available TOIL" icon="schedule" dense>
+            <div className="space-y-2">
               {availableToilCredits.length === 0 ? (
                 <p className="text-xs text-neutral-400">No available TOIL credits.</p>
               ) : availableToilCredits.slice(0, 4).map((credit) => (
-                <div key={credit.id} className="rounded-lg border border-purple-100 bg-purple-50 px-3 py-2">
+                <div key={credit.id} className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-purple-800">{credit.credit_reference}</span>
-                    <span className="text-xs font-semibold text-purple-700">{numberText(credit.remaining_balance)} days</span>
+                    <span className="text-xs font-bold text-primary">{credit.credit_reference}</span>
+                    <span className="text-xs font-semibold text-neutral-800">{numberText(credit.remaining_balance)} days</span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-purple-600">Expires {credit.expiry_date ?? "not set"}</p>
+                  <p className="mt-0.5 text-[11px] text-neutral-500">Expires {credit.expiry_date ?? "not set"}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </FormSection>
 
           <div className="flex gap-3">
             <button

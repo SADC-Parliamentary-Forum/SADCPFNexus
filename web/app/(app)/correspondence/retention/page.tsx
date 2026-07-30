@@ -61,18 +61,28 @@ export default function CorrespondenceRetentionPage() {
   }
 
   return (
-    <div className="page-container space-y-4">
+    <div className="page-container">
       <div className="page-header">
-        <h1 className="page-title">Retention & Legal Holds</h1>
-        <p className="page-subtitle">
-          Set retention schedules and legal holds. Purge is blocked while a hold is active.
-        </p>
+        <div>
+          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
+            <Link href="/correspondence" className="hover:text-primary">Correspondence</Link>
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+            <span className="text-neutral-700">Retention</span>
+          </div>
+          <h1 className="page-title">Retention & Legal Holds</h1>
+          <p className="page-subtitle">
+            Set retention schedules and legal holds. Purge is blocked while a hold is active.
+          </p>
+        </div>
+        <Link href="/correspondence/master-register" className="btn btn-secondary btn-sm">
+          Master register
+        </Link>
       </div>
       {msg && <div className="alert alert-success">{msg}</div>}
       {err && <div className="alert alert-error">{err}</div>}
 
       <form onSubmit={saveRetention} className="card space-y-3 p-4">
-        <h2 className="text-lg font-semibold">Set retention / hold</h2>
+        <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
         <label className="block text-sm">
           Letter ID
           <input className="form-input mt-1 w-full" required value={letterId} onChange={(e) => setLetterId(e.target.value)} placeholder="Correspondence id" />
@@ -133,7 +143,13 @@ export default function CorrespondenceRetentionPage() {
                 </td>
               </tr>
             ))}
-            {holds.length === 0 && <tr><td colSpan={6}>No active legal holds.</td></tr>}
+            {holds.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-5 py-10 text-center text-sm text-neutral-500">
+                  No active legal holds.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

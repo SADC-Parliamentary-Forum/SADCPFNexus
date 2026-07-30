@@ -7,21 +7,24 @@ import { leaveApi, type LeaveRequest, workflowApi, type ModuleAttachment, LEAVE_
 import { formatDateShort } from "@/lib/utils";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { unwrapEntity } from "@/lib/unwrapEntity";
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
-  annual: { label: "Annual Leave", color: "text-blue-700 bg-blue-50 border-blue-200", icon: "sunny" },
+  annual: { label: "Annual Leave", color: "text-green-700 bg-green-50 border-green-200", icon: "sunny" },
   sick: { label: "Sick Leave", color: "text-red-700 bg-red-50 border-red-200", icon: "medical_services" },
-  lil: { label: "Leave in Lieu", color: "text-purple-700 bg-purple-50 border-purple-200", icon: "swap_horiz" },
-  special: { label: "Special Leave", color: "text-orange-700 bg-orange-50 border-orange-200", icon: "star" },
-  maternity: { label: "Maternity Leave", color: "text-pink-700 bg-pink-50 border-pink-200", icon: "child_care" },
-  paternity: { label: "Paternity Leave", color: "text-teal-700 bg-teal-50 border-teal-200", icon: "family_restroom" },
-  compassionate: { label: "Compassionate Leave", color: "text-rose-700 bg-rose-50 border-rose-200", icon: "volunteer_activism" },
-  study: { label: "Study Leave", color: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "school" },
-  unpaid: { label: "Leave Without Pay", color: "text-slate-700 bg-slate-50 border-slate-200", icon: "money_off" },
-  home: { label: "Home Leave", color: "text-cyan-700 bg-cyan-50 border-cyan-200", icon: "home" },
+  lil: { label: "Leave in Lieu", color: "text-primary bg-primary/10 border-primary/20", icon: "swap_horiz" },
+  special: { label: "Special Leave", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "star" },
+  maternity: { label: "Maternity Leave", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "child_care" },
+  paternity: { label: "Paternity Leave", color: "text-neutral-800 bg-neutral-50 border-neutral-200", icon: "family_restroom" },
+  compassionate: { label: "Compassionate Leave", color: "text-amber-800 bg-amber-50 border-amber-200", icon: "volunteer_activism" },
+  study: { label: "Study Leave", color: "text-primary bg-primary/5 border-primary/20", icon: "school" },
+  unpaid: { label: "Leave Without Pay", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "money_off" },
+  home: { label: "Home Leave", color: "text-neutral-700 bg-neutral-50 border-neutral-200", icon: "home" },
 };
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -115,17 +118,20 @@ export default function LeaveDetailPage() {
     }
     leaveApi.get(id)
       .then((res) => {
-        setRequest((res.data as any).data ?? res.data);
+        const entity = unwrapEntity<LeaveRequest>(res.data);
+        if (!entity) throw new Error("not_found");
+        setRequest(entity);
         return leaveApi.listAttachments(id);
       })
-      .then((res) => setAttachments(res.data.data))
+      .then((res) => setAttachments(res.data.data ?? []))
       .catch(() => setError("Failed to load leave request."))
       .finally(() => setLoading(false));
   }, [id]);
 
   const refreshRequest = async () => {
     const res = await leaveApi.get(id);
-    setRequest((res.data as any).data ?? res.data);
+    const entity = unwrapEntity<LeaveRequest>(res.data);
+    if (entity) setRequest(entity);
   };
 
   const showToast = (message: string) => {
@@ -264,48 +270,45 @@ export default function LeaveDetailPage() {
   const isReturnedForCorrection = request.status === "returned_for_correction";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="mx-auto max-w-3xl space-y-5">
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-lg">
           <span className="material-symbols-outlined text-[18px]">check_circle</span>
           {toast}
         </div>
       )}
 
-      {/* Breadcrumb + title */}
-      <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/leave" className="hover:text-primary transition-colors font-medium">Leave</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-neutral-900">Leave Request</h1>
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${typeInfo.color}`}>
-                <span className="material-symbols-outlined text-[12px]">{typeInfo.icon}</span>
-                {typeInfo.label}
-              </span>
-            </div>
-            <p className="text-xs text-neutral-400 mt-1.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-              {formatDateShort(request.start_date)} → {formatDateShort(request.end_date)}
-              <span className="text-neutral-200">·</span>
-              <span className="font-semibold text-neutral-600">{durationDays} day{durationDays !== 1 ? "s" : ""}</span>
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+      <ModulePageHeader
+        title="Leave Request"
+        subtitle={`${formatDateShort(request.start_date)} → ${formatDateShort(request.end_date)} · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Leave", href: "/leave" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${typeInfo.color}`}>
+              <span className="material-symbols-outlined text-[12px]">{typeInfo.icon}</span>
+              {typeInfo.label}
+            </span>
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {request.status === "approved" && (
               <Link
                 href={`/leave/${request.id}/certificate`}
-                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
                 Certificate
@@ -315,7 +318,7 @@ export default function LeaveDetailPage() {
               href={leaveApi.pdfUrl(request.id)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+              className="btn-secondary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[14px]">picture_as_pdf</span>
               FORM-005
@@ -333,7 +336,7 @@ export default function LeaveDetailPage() {
                     finally { setActionLoading(false); }
                   }}
                   disabled={actionLoading}
-                  className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
+                  className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">send</span>
                   Submit
@@ -346,7 +349,7 @@ export default function LeaveDetailPage() {
                       router.push("/leave");
                     } catch { setError("Failed to delete."); }
                   }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">delete</span>
                   Delete
@@ -357,7 +360,7 @@ export default function LeaveDetailPage() {
               <button
                 onClick={handleWithdraw}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+                className="btn-secondary px-3 py-1.5 text-xs disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">block</span>
                 Withdraw
@@ -367,15 +370,15 @@ export default function LeaveDetailPage() {
               <button
                 onClick={handleResubmit}
                 disabled={actionLoading}
-                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-600 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">refresh</span>
                 Resubmit
               </button>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Duration banner */}
       <div className="grid grid-cols-3 gap-3">
@@ -386,32 +389,21 @@ export default function LeaveDetailPage() {
         ].map((item) => (
           <div key={item.label} className="card p-4 text-center">
             <span className={`material-symbols-outlined text-[22px] ${item.color}`}>{item.icon}</span>
-            <p className={`text-base font-bold mt-1 ${item.color}`}>{item.value}</p>
-            <p className="text-[10px] text-neutral-400 uppercase tracking-wide mt-0.5">{item.label}</p>
+            <p className={`mt-1 text-base font-bold ${item.color}`}>{item.value}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-neutral-400">{item.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Current workflow holder */}
-      <div className="card p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <SectionIcon icon="account_tree" color="text-indigo-600" bg="bg-indigo-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Workflow Status</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Current Stage", value: formatWorkflowStage(request.current_stage, request.status) },
-            { label: "Current Holder", value: request.current_holder ?? "Not assigned" },
-            { label: "HOD Recommendation", value: request.recommendation_status ?? "Pending" },
-            { label: "HR Certification", value: request.certification_status ?? "Pending" },
-          ].map((item) => (
-            <div key={item.label} className="rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{item.label}</p>
-              <p className="mt-1 text-sm font-semibold text-neutral-800">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <WorkflowStatusBanner
+        status={request.status}
+        currentStage={formatWorkflowStage(request.current_stage, request.status)}
+        currentHolder={request.current_holder ?? "Not assigned"}
+        extras={[
+          { label: "HOD recommendation", value: request.recommendation_status ?? "Pending" },
+          { label: "HR certification", value: request.certification_status ?? "Pending" },
+        ]}
+      />
 
       {/* HOD Recommendation / HR Certification */}
       {["submitted", "resubmitted", "pending_next_step"].includes(request.status) && (() => {

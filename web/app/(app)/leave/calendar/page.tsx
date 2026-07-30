@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { leaveApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function monthBounds(d = new Date()) {
   const from = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -24,7 +26,7 @@ export default function LeaveTeamCalendarPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const bounds = useMemo(() => monthBounds(cursor), [cursor]);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["leave-team-calendar", bounds.from, bounds.to],
     queryFn: () => leaveApi.teamCalendar({ from: bounds.from, to: bounds.to }).then((r) => r.data),
   });
@@ -40,7 +42,10 @@ export default function LeaveTeamCalendarPage() {
     days_requested?: number | string;
     requester?: { name?: string; job_title?: string | null };
   }>;
-  const medicalMasked = Boolean((data as { privacy?: { medical_masked_for_viewer?: boolean } } | undefined)?.privacy?.medical_masked_for_viewer);
+  const medicalMasked = Boolean(
+    (data as { privacy?: { medical_masked_for_viewer?: boolean } } | undefined)?.privacy
+      ?.medical_masked_for_viewer,
+  );
 
   const byDay = useMemo(() => {
     const map = new Map<string, typeof rows>();
@@ -76,34 +81,86 @@ export default function LeaveTeamCalendarPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/leave" className="hover:text-neutral-700">Leave</Link>
-            <span>/</span>
-            <span className="text-neutral-700">Team Calendar</span>
-          </div>
-          <h1 className="page-title">Team Leave Calendar</h1>
-          <p className="page-subtitle">{medicalMasked ? "Medical leave types are masked for non-HR viewers. " : ""}Approved leave overlapping {bounds.label}.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={view === "grid" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setView("grid")}>Month grid</button>
-          <button type="button" className={view === "list" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setView("list")}>List</button>
-          <button type="button" className="btn-secondary text-sm" onClick={downloadRegister}>Export register CSV</button>
-          <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}>Previous</button>
-          <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date())}>This month</button>
-          <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}>Next</button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <ModulePageHeader
+        title="Team Leave Calendar"
+        subtitle={
+          <>
+            {medicalMasked ? "Medical leave types are masked for non-HR viewers. " : null}
+            Approved leave overlapping {bounds.label}.
+          </>
+        }
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Team calendar" }]} />
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className={view === "grid" ? "btn-primary text-sm" : "btn-secondary text-sm"}
+              onClick={() => setView("grid")}
+            >
+              Month grid
+            </button>
+            <button
+              type="button"
+              className={view === "list" ? "btn-primary text-sm" : "btn-secondary text-sm"}
+              onClick={() => setView("list")}
+            >
+              List
+            </button>
+            <button type="button" className="btn-secondary text-sm" onClick={() => void downloadRegister()}>
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+            >
+              Previous
+            </button>
+            <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date())}>
+              This month
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+            >
+              Next
+            </button>
+          </>
+        }
+      />
 
-      {isLoading && <p className="text-sm text-neutral-400">Loading calendar…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load team calendar (requires HOD/HR access).</p>}
+      {isLoading && (
+        <div className="card space-y-3 p-6">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded-lg bg-neutral-100" />
+          ))}
+        </div>
+      )}
+
+      {isError && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span className="material-symbols-outlined text-[18px]">error_outline</span>
+          <span className="flex-1">Failed to load team calendar (requires HOD / HR access).</span>
+          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+            Retry
+          </button>
+        </div>
+      )}
 
       {view === "grid" && !isLoading && !isError && (
-        <div className="card grid grid-cols-7 gap-px overflow-hidden bg-[var(--border)] p-px">
+        <div className="card grid grid-cols-7 gap-px overflow-hidden border border-neutral-200 bg-neutral-200 p-px">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-            <div key={d} className="bg-neutral-50 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{d}</div>
+            <div
+              key={d}
+              className="bg-neutral-50 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
+            >
+              {d}
+            </div>
           ))}
           {cells.map((cell) => {
             if (cell.day == null) return <div key={cell.key} className="min-h-24 bg-white" />;
@@ -114,11 +171,17 @@ export default function LeaveTeamCalendarPage() {
                 <div className="mb-1 text-xs font-semibold text-neutral-700">{cell.day}</div>
                 <ul className="space-y-1">
                   {dayRows.slice(0, 3).map((row) => (
-                    <li key={`${row.id}-${iso}`} className="truncate rounded bg-emerald-50 px-1.5 py-0.5 text-[11px] text-emerald-800">
-                      {row.requester?.name?.split(" ")[0]} · {row.display_label ?? row.leave_type}{row.is_masked ? " - private" : ""}
+                    <li
+                      key={`${row.id}-${iso}`}
+                      className="truncate rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+                    >
+                      {row.requester?.name?.split(" ")[0]} · {row.display_label ?? row.leave_type}
+                      {row.is_masked ? " — private" : ""}
                     </li>
                   ))}
-                  {dayRows.length > 3 && <li className="text-[11px] text-neutral-400">+{dayRows.length - 3}</li>}
+                  {dayRows.length > 3 && (
+                    <li className="text-[11px] text-neutral-400">+{dayRows.length - 3}</li>
+                  )}
                 </ul>
               </div>
             );
@@ -126,35 +189,50 @@ export default function LeaveTeamCalendarPage() {
         </div>
       )}
 
-      {view === "list" && (
+      {view === "list" && !isLoading && !isError && (
         <div className="card overflow-hidden">
-          {!isLoading && !isError && rows.length === 0 && (
-            <p className="p-6 text-sm text-neutral-400">No approved leave in this period.</p>
-          )}
-          {rows.length > 0 && (
-            <table className="w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-3">Staff</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Dates</th>
-                  <th className="px-4 py-3">Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="border-t border-neutral-100">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{row.requester?.name ?? "—"}</div>
-                      <div className="text-xs text-neutral-500">{row.requester?.job_title}</div>
-                    </td>
-                    <td className="px-4 py-3 capitalize">{row.display_label ?? row.leave_type}{row.is_masked ? " - private" : ""}</td>
-                    <td className="px-4 py-3">{formatDateShort(row.start_date)} – {formatDateShort(row.end_date)}</td>
-                    <td className="px-4 py-3">{row.days_requested}</td>
+          {rows.length === 0 ? (
+            <EmptyState
+              icon="calendar_month"
+              title="No approved leave in this period"
+              description="Try another month or check the leave register."
+              action={
+                <Link href="/leave" className="btn-secondary text-sm">
+                  Leave register
+                </Link>
+              }
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Staff</th>
+                    <th>Type</th>
+                    <th>Dates</th>
+                    <th>Days</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <div className="font-medium text-neutral-900">{row.requester?.name ?? "—"}</div>
+                        <div className="text-xs text-neutral-500">{row.requester?.job_title}</div>
+                      </td>
+                      <td className="capitalize text-neutral-700">
+                        {row.display_label ?? row.leave_type}
+                        {row.is_masked ? " — private" : ""}
+                      </td>
+                      <td className="whitespace-nowrap text-xs text-neutral-600">
+                        {formatDateShort(row.start_date)} – {formatDateShort(row.end_date)}
+                      </td>
+                      <td>{row.days_requested}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

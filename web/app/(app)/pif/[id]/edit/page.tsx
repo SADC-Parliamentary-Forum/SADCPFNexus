@@ -6,6 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import { programmeApi, tenantUsersApi, SUPPORT_SERVICE_OPTIONS, type Programme } from "@/lib/api";
 import DocumentsSection from "./DocumentsSection";
 import ArrivalDepartureSection from "./ArrivalDepartureSection";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Stepper } from "@/components/ui/Stepper";
+import { unwrapEntity } from "@/lib/unwrapEntity";
 
 const STEPS = [
   "Overview",
@@ -125,7 +128,11 @@ export default function PifEditPage() {
       .get(Number(id))
       .then((r) => {
         if (cancelled) return;
-        const p = r.data;
+        const p = unwrapEntity<Programme>(r.data);
+        if (!p) {
+          setError("Programme not found or returned unexpected data.");
+          return;
+        }
         setProgramme(p);
         setTitle(p.title ?? "");
         setStrategicPillar(p.strategic_pillar ?? "");
@@ -485,7 +492,7 @@ export default function PifEditPage() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="mx-auto max-w-3xl space-y-6">
       {toast && (
         <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
           <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
@@ -493,80 +500,47 @@ export default function PifEditPage() {
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/pif" className="hover:text-primary transition-colors">Programmes</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href={`/pif/${programme.id}`} className="hover:text-primary transition-colors">{programme.reference_number}</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Edit</span>
-      </div>
+      <ModulePageHeader
+        title="Edit Programme Implementation Form"
+        subtitle="Complete each page in turn. Progress is saved when you continue — you can leave and return anytime."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Programmes", href: "/pif" },
+              { label: programme.reference_number ?? `PIF #${programme.id}`, href: `/pif/${programme.id}` },
+              { label: "Edit" },
+            ]}
+          />
+        }
+        actions={
+          <Link href={`/pif/${programme.id}`} className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">visibility</span>
+            View
+          </Link>
+        }
+      />
 
-      <div>
-        <h1 className="page-title">Edit Programme Implementation Form</h1>
-        <p className="page-subtitle">
-          Complete each page in turn. Progress is saved when you continue — you can leave and return anytime.
-        </p>
-      </div>
-
-      {/* Step indicator */}
-      <div className="card p-4 sm:p-5 overflow-x-auto">
-        <div className="flex items-center gap-1 sm:gap-2 min-w-[640px] sm:min-w-0">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-              <button
-                type="button"
-                onClick={() => jumpToStep(i as StepIndex)}
-                disabled={i > step}
-                className="flex items-center gap-2 min-w-0 disabled:cursor-default"
-                aria-current={i === step ? "step" : undefined}
-              >
-                <div
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-colors ${
-                    i < step
-                      ? "bg-green-500 text-white"
-                      : i === step
-                        ? "bg-primary text-white"
-                        : "bg-neutral-100 text-neutral-400"
-                  }`}
-                >
-                  {i < step ? (
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span
-                  className={`text-xs font-medium hidden md:block truncate ${
-                    i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"
-                  }`}
-                >
-                  {label}
-                </span>
-              </button>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-px mx-1 ${i < step ? "bg-green-400" : "bg-neutral-200"}`} />
-              )}
-            </div>
-          ))}
-        </div>
+      <div className="card overflow-x-auto p-4 sm:p-5">
+        <Stepper steps={STEPS.map((label) => ({ label }))} currentStep={step + 1} />
         <p className="mt-3 text-xs text-neutral-500 md:hidden">
-          Page {step + 1} of {STEPS.length}: <span className="font-semibold text-neutral-800">{STEPS[step]}</span>
+          Page {step + 1} of {STEPS.length}:{" "}
+          <span className="font-semibold text-neutral-800">{STEPS[step]}</span>
         </p>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-medium text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-700">
           {error}
         </div>
       )}
 
-      <div className="card p-6 space-y-4">
+      <div className="card space-y-4 p-6">
         {/* ── 0 Overview ─────────────────────────────────────────────────── */}
         {step === 0 && (
           <>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="mb-1 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <span className="material-symbols-outlined text-primary text-[18px]">description</span>
+                <span className="material-symbols-outlined text-[18px] text-primary">description</span>
               </div>
               <h2 className="text-sm font-bold text-neutral-900">Overview</h2>
             </div>

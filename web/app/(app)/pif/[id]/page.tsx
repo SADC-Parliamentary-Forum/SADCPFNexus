@@ -21,6 +21,9 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
 import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { unwrapEntity } from "@/lib/unwrapEntity";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -170,8 +173,20 @@ export default function PifDetailPage() {
   const load = useCallback(() => {
     setLoading(true);
     programmeApi.get(Number(id))
-      .then((r) => { setProgramme(r.data); setError(null); })
-      .catch(() => setError("Failed to load programme."))
+      .then((r) => {
+        const entity = unwrapEntity<Programme>(r.data);
+        if (!entity) {
+          setProgramme(null);
+          setError("Programme not found or returned unexpected data.");
+          return;
+        }
+        setProgramme(entity);
+        setError(null);
+      })
+      .catch(() => {
+        setProgramme(null);
+        setError("Failed to load programme. Please try again.");
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -374,12 +389,15 @@ export default function PifDetailPage() {
   }
   if (error || !programme) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+      <div className="mx-auto max-w-5xl space-y-4">
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error ?? "Programme not found."}
         </div>
-        <Link href="/pif" className="btn-secondary px-4 py-2 text-sm inline-flex items-center gap-1">
+        <button type="button" className="btn-secondary text-sm" onClick={() => load()}>
+          Retry
+        </button>
+        <Link href="/pif" className="btn-secondary inline-flex items-center gap-1 px-4 py-2 text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Back to Programmes
         </Link>
@@ -409,48 +427,47 @@ export default function PifDetailPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="mx-auto max-w-5xl space-y-6">
       {toast && <Toast msg={toast} />}
 
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/pif" className="hover:text-primary transition-colors">Programmes</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">{programme.reference_number}</span>
-      </div>
-
-      {/* Header card */}
-      <div className="card p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: "30px" }}>account_tree</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-xs text-neutral-400">{programme.reference_number}</span>
-                <span className={`badge ${STATUS_BADGE[programme.status] ?? "badge-muted"}`}>
-                  {STATUS_LABEL[programme.status] ?? programme.status}
-                </span>
-                <span
-                  className={`badge ${ME_STATUS_BADGE[programme.me_status] ?? "badge-muted"}`}
-                  title="Monitoring & Evaluation status"
-                >
-                  M&amp;E: {ME_STATUS_LABEL[programme.me_status] ?? programme.me_status}
-                </span>
-              </div>
-              <h1 className="text-xl font-bold text-neutral-900 mt-0.5">{programme.title}</h1>
-              {programme.background && (
-                <p className="text-sm text-neutral-500 mt-1 line-clamp-2">{programme.background}</p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+      <ModulePageHeader
+        title={programme.title || "Untitled programme"}
+        subtitle={
+          programme.background ? (
+            <span className="line-clamp-2">{programme.background}</span>
+          ) : (
+            "Programme Implementation Framework detail"
+          )
+        }
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Programmes", href: "/pif" },
+              { label: programme.reference_number ?? `PIF #${programme.id}` },
+            ]}
+          />
+        }
+        meta={
+          <>
+            <span className="font-mono text-xs text-neutral-400">{programme.reference_number}</span>
+            <span className={`badge ${STATUS_BADGE[programme.status] ?? "badge-muted"}`}>
+              {STATUS_LABEL[programme.status] ?? programme.status}
+            </span>
+            <span
+              className={`badge ${ME_STATUS_BADGE[programme.me_status] ?? "badge-muted"}`}
+              title="Monitoring & Evaluation status"
+            >
+              M&amp;E: {ME_STATUS_LABEL[programme.me_status] ?? programme.me_status}
+            </span>
+          </>
+        }
+        actions={
+          <>
             <a
               href={programmeApi.pdfUrl(programme.id)}
               target="_blank"
-              rel="noopener"
-              className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
+              rel="noopener noreferrer"
+              className="btn-secondary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
               <span className="hidden sm:inline">Download PDF</span>
@@ -459,7 +476,7 @@ export default function PifDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowAssignModal(true)}
-                className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
+                className="btn-secondary px-3 py-1.5 text-xs"
                 title="Create tracked follow-up / M&E assignment from this PIF"
               >
                 <span className="material-symbols-outlined text-[15px]">assignment_ind</span>
@@ -469,17 +486,14 @@ export default function PifDetailPage() {
             <button
               type="button"
               onClick={() => setTab("attachments")}
-              className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1"
+              className="btn-primary px-3 py-1.5 text-xs"
             >
               <span className="material-symbols-outlined text-[15px]">upload_file</span>
               <span className="hidden sm:inline">Submit evidence</span>
             </button>
             {programme.status === "draft" && (
               <>
-                <Link
-                  href={`/pif/${programme.id}/edit`}
-                  className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1"
-                >
+                <Link href={`/pif/${programme.id}/edit`} className="btn-secondary px-3 py-1.5 text-xs">
                   <span className="material-symbols-outlined text-[15px]">edit</span>
                   Edit
                 </Link>
@@ -494,19 +508,31 @@ export default function PifDetailPage() {
                       showToast("Failed to delete programme.");
                     }
                   }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                 >
                   <span className="material-symbols-outlined text-[15px]">delete</span>
                   Delete
                 </button>
               </>
             )}
-          </div>
-        </div>
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-neutral-100 pt-5">
+          </>
+        }
+      />
+
+      <WorkflowStatusBanner
+        status={programme.status}
+        currentStage={STATUS_LABEL[programme.status] ?? programme.status}
+        currentHolder={programme.responsible_officer ?? "Responsible officer"}
+        extras={[
+          { label: "M&E", value: ME_STATUS_LABEL[programme.me_status] ?? programme.me_status ?? "—" },
+        ]}
+      />
+
+      <div className="card p-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
             <p className="text-xs text-neutral-400">Funding Source{programme.funding_sources && programme.funding_sources.length > 1 ? "s" : ""}</p>
-            <div className="text-sm font-semibold text-neutral-800 mt-0.5">
+            <div className="mt-0.5 text-sm font-semibold text-neutral-800">
               {programme.funding_sources && programme.funding_sources.length > 0
                 ? programme.funding_sources.map((fs, i) => (
                     <p key={i}>{fs.name}{fs.budget_amount != null ? ` (${programme.primary_currency} ${Number(fs.budget_amount).toLocaleString()})` : ""}</p>
@@ -516,7 +542,7 @@ export default function PifDetailPage() {
           </div>
           <div>
             <p className="text-xs text-neutral-400">Total Budget</p>
-            <p className="text-sm font-semibold text-neutral-800 mt-0.5">
+            <p className="mt-0.5 text-sm font-semibold text-neutral-800">
               {programme.primary_currency} {Number(programme.total_budget).toLocaleString()}
             </p>
           </div>
