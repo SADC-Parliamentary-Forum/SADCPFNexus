@@ -82,3 +82,8 @@ Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
 
 // Compliance digests for missing individual weekly summaries (Mon after weekend close).
 Schedule::command('weekly-reports:send-compliance-digest')->mondays()->at('08:40');
+
+// People & Authority — automated role recertification (opens campaigns only; never auto-decides)
+if (config('people_authority.recertification_schedule_enabled')) {
+    Schedule::command('people-authority:open-recertifications')->weeklyOn(1, '07:50')->withoutOverlapping();
+}

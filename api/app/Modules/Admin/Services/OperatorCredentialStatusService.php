@@ -21,6 +21,12 @@ final class OperatorCredentialStatusService
             $this->procurementAi(),
             $this->mandeAi(),
             $this->payrollVendor(),
+            $this->peopleAuthorityM365(),
+            $this->peopleAuthorityEsign(),
+            $this->peopleAuthorityCertificate(),
+            $this->peopleAuthorityAi(),
+            $this->playStore(),
+            $this->appStoreConnect(),
         ];
     }
 
@@ -165,6 +171,127 @@ final class OperatorCredentialStatusService
             'driver' => $driver,
             'secret_source' => 'env',
             'guidance' => 'Set PAYROLL_VENDOR_DRIVER/HTTP_URL/API_KEY via server env. No vendor secrets in the repo.',
+            'details' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function peopleAuthorityM365(): array
+    {
+        $driver = (string) config('people_authority.m365_driver', 'null');
+        $configured = in_array($driver, ['microsoft_graph', 'fixture'], true) && (
+            ($driver === 'microsoft_graph'
+                && filled(config('people_authority.m365_tenant_id'))
+                && filled(config('people_authority.m365_client_id'))
+                && filled(config('people_authority.m365_client_secret')))
+            || ($driver === 'fixture' && filled(config('people_authority.m365_fixture_path')))
+        );
+
+        return [
+            'key' => 'people_m365',
+            'label' => 'Microsoft 365 / directory sync',
+            'configured' => $configured,
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Set PEOPLE_AUTHORITY_M365_DRIVER=microsoft_graph plus TENANT_ID/CLIENT_ID/CLIENT_SECRET, or DRIVER=fixture with FIXTURE_PATH. Read-only sync; dry-run default.',
+            'details' => [
+                'dry_run_default' => (bool) config('people_authority.m365_dry_run_default', true),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function peopleAuthorityEsign(): array
+    {
+        $driver = (string) config('people_authority.esign_driver', 'null');
+        $configured = $driver === 'generic_http'
+            && filled(config('people_authority.esign_http_url'))
+            && filled(config('people_authority.esign_http_token'));
+
+        return [
+            'key' => 'people_esign',
+            'label' => 'External e-sign provider',
+            'configured' => $configured,
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Set PEOPLE_AUTHORITY_ESIGN_DRIVER=generic_http plus HTTP_URL/TOKEN. Human-triggered submit only — never auto-starts.',
+            'details' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function peopleAuthorityCertificate(): array
+    {
+        $driver = (string) config('people_authority.certificate_driver', 'stub');
+        $configured = $driver === 'pkcs11_http'
+            && filled(config('people_authority.certificate_http_url'))
+            && filled(config('people_authority.certificate_http_token'));
+
+        return [
+            'key' => 'people_certificate',
+            'label' => 'Certificate signature driver',
+            'configured' => $configured || $driver === 'stub',
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Default stub. For HSM gateway set PEOPLE_AUTHORITY_CERTIFICATE_DRIVER=pkcs11_http plus HTTP_URL/TOKEN. No private keys stored in Nexus.',
+            'details' => [
+                'stub_default' => $driver === 'stub',
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function peopleAuthorityAi(): array
+    {
+        $provider = (string) config('people_authority.ai_provider', 'stub');
+        $configured = $provider === 'http'
+            && filled(config('people_authority.ai_http_url'))
+            && filled(config('people_authority.ai_http_token'));
+
+        return [
+            'key' => 'people_ai',
+            'label' => 'People & Authority AI assist',
+            'configured' => $configured,
+            'driver' => $provider,
+            'secret_source' => 'env',
+            'guidance' => 'Set PEOPLE_AUTHORITY_AI_PROVIDER=http plus HTTP_URL/TOKEN. Suggestions only — never auto-grants access/authority/delegation/signing/privileged roles.',
+            'details' => [
+                'enabled' => (bool) config('people_authority.ai_enabled', true),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function playStore(): array
+    {
+        $configured = filled(env('PLAY_STORE_SERVICE_ACCOUNT_JSON'))
+            || filled(env('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'));
+
+        return [
+            'key' => 'play_store',
+            'label' => 'Google Play Console',
+            'configured' => $configured,
+            'driver' => $configured ? 'service_account' : null,
+            'secret_source' => 'env',
+            'guidance' => 'Set PLAY_STORE_SERVICE_ACCOUNT_JSON (path) via server env for release tooling. Secrets never appear in Admin UI.',
+            'details' => [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function appStoreConnect(): array
+    {
+        $configured = filled(env('ASC_KEY_ID'))
+            && filled(env('ASC_ISSUER_ID'))
+            && (filled(env('ASC_PRIVATE_KEY_PATH')) || filled(env('ASC_PRIVATE_KEY')));
+
+        return [
+            'key' => 'app_store_connect',
+            'label' => 'App Store Connect (ASC)',
+            'configured' => $configured,
+            'driver' => $configured ? 'asc_api' : null,
+            'secret_source' => 'env',
+            'guidance' => 'Set ASC_KEY_ID, ASC_ISSUER_ID, and ASC_PRIVATE_KEY_PATH (or ASC_PRIVATE_KEY) via server env. Never commit keys.',
             'details' => [],
         ];
     }

@@ -26,7 +26,11 @@ class DocumentSignatureEvent extends Model
         'signature_enrolment_id',
         'authentication_strength',
         'signature_method',
+        'esign_provider',
+        'esign_external_id',
         'verification_reference',
+        'public_verification_token',
+        'published_for_verification_at',
         'status',
         'is_immutable',
         'signed_at',
@@ -39,5 +43,6 @@ class DocumentSignatureEvent extends Model
         'department_snapshot' => 'array',
         'is_immutable' => 'boolean',
         'signed_at' => 'datetime',
+        'published_for_verification_at' => 'datetime',
     ];
 }

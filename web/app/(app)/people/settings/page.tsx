@@ -2,38 +2,30 @@
 
 import React from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { peopleAuthorityApi } from "@/lib/api";
 
 export default function Page() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["people-authority", "people-settings"],
-    queryFn: async () => {
-      return { phase2: "Certificate e-sign / M365 sync", phase3: "AI recommendations (never auto-grant)" };
-    },
-  });
-
   return (
     <div className="p-6 space-y-6">
       <div>
         <p className="text-xs uppercase tracking-wide text-neutral-500">People &amp; Authority</p>
         <h1 className="text-2xl font-semibold text-neutral-900">People Settings</h1>
+        <p className="text-sm text-neutral-600 mt-1">
+          Phase 2/3 integrations are env-gated. Operator credential status lives under Admin → System Settings.
+        </p>
       </div>
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-      {isError && <p className="text-sm text-red-600">Unable to load.</p>}
-      {data && (
-        <pre className="text-xs bg-neutral-50 border border-neutral-200 rounded p-4 overflow-auto max-h-[70vh]">
-          {JSON.stringify(data, null, 2)}
-        </pre>
-      )}
-      <div className="flex flex-wrap gap-3 text-sm">
-        <Link className="underline" href="/people">Hub</Link>
-        <Link className="underline" href="/people/directory">Directory</Link>
-        <Link className="underline" href="/people/org-chart">Org Chart</Link>
-        <Link className="underline" href="/people/authority">Authority</Link>
-        <Link className="underline" href="/people/delegations">Delegations</Link>
-        <Link className="underline" href="/people/signatures">Signatures</Link>
-      </div>
+      <ul className="space-y-2 text-sm">
+        <li><Link className="underline" href="/people/m365">M365 / directory sync</Link></li>
+        <li><Link className="underline" href="/people/esign">External e-sign</Link></li>
+        <li><Link className="underline" href="/people/recertification">Role recertification</Link></li>
+        <li><Link className="underline" href="/people/sod">SoD analysis</Link></li>
+        <li><Link className="underline" href="/people/scenarios">Org scenarios</Link></li>
+        <li><Link className="underline" href="/people/succession">Succession</Link></li>
+        <li><Link className="underline" href="/people/skills">Skills directory</Link></li>
+        <li><Link className="underline" href="/people/analytics">Analytics</Link></li>
+        <li><Link className="underline" href="/people/ai">AI assist (never auto-grant)</Link></li>
+        <li><Link className="underline" href="/admin/settings">Operator credentials</Link></li>
+        <li><Link className="underline" href="/verify-signature">Public signature verification</Link></li>
+      </ul>
     </div>
   );
 }

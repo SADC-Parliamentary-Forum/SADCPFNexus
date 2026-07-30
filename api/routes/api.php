@@ -62,6 +62,12 @@ Route::prefix('v1')->group(function () {
     Route::post('assignments/google-calendar/webhook', \App\Http\Controllers\Api\V1\Assignments\AssignmentGoogleCalendarWebhookController::class)
         ->middleware('throttle:60,1');
 
+    // Public document-signature verification (approved metadata only; opaque token).
+    Route::get(
+        'people-authority/public/verify-signature/{token}',
+        [\App\Http\Controllers\Api\V1\PeopleAuthority\PeopleAuthorityPhase23Controller::class, 'publicVerify']
+    )->middleware('throttle:30,1');
+
     // Authenticated routes
     Route::middleware([
         'auth:sanctum',
@@ -1776,6 +1782,37 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:offboarding.manage')->post('offboarding', [$pa, 'offboardingStore']);
             Route::middleware('can:people.manage')->post('transfers', [$pa, 'transfersStore']);
             Route::middleware('can:access-reviews.manage')->post('access-reviews', [$pa, 'accessReviewsStore']);
+
+            // Phase 2 / 3
+            $pa23 = \App\Http\Controllers\Api\V1\PeopleAuthority\PeopleAuthorityPhase23Controller::class;
+            Route::middleware('can:people.certificate.enrol')->post('signatures/certificate-enrol', [$pa23, 'enrolCertificate']);
+            Route::middleware('can:people.esign.manage')->get('esign-requests', [$pa23, 'listEsign']);
+            Route::middleware('can:people.esign.manage')->post('esign-requests', [$pa23, 'storeEsign']);
+            Route::middleware('can:people.esign.manage')->post('esign-requests/{esignRequest}/submit', [$pa23, 'submitEsign']);
+            Route::middleware('can:people.m365.sync')->get('directory-sync', [$pa23, 'listDirectorySync']);
+            Route::middleware('can:people.m365.sync')->post('directory-sync', [$pa23, 'runDirectorySync']);
+            Route::middleware('can:people.recertification.manage')->post('recertification-campaigns', [$pa23, 'openRecertification']);
+            Route::middleware('can:people.sod.analyse')->get('sod-reports', [$pa23, 'listSodReports']);
+            Route::middleware('can:people.sod.analyse')->post('sod-reports', [$pa23, 'analyseSod']);
+            Route::middleware('can:people.org-scenarios.manage')->get('org-scenarios', [$pa23, 'listOrgScenarios']);
+            Route::middleware('can:people.org-scenarios.manage')->post('org-scenarios', [$pa23, 'storeOrgScenario']);
+            Route::middleware('can:people.payroll-link.manage')->post('employment/{employment}/payroll-link', [$pa23, 'linkPayroll']);
+            Route::middleware('can:people.payroll-link.manage')->post('employment/payroll-export', [$pa23, 'exportPayrollLinks']);
+            Route::middleware('can:people.signatures.publish-verify')->post('documents/signatures/{signature}/publish-verification', [$pa23, 'publishSignatureVerify']);
+
+            Route::middleware('can:people.succession.manage')->get('succession-plans', [$pa23, 'listSuccession']);
+            Route::middleware('can:people.succession.manage')->post('succession-plans', [$pa23, 'storeSuccession']);
+            Route::middleware('can:people.skills.manage')->get('skills', [$pa23, 'listSkills']);
+            Route::middleware('can:people.skills.manage')->post('skills', [$pa23, 'storeSkill']);
+            Route::middleware('can:people.skills.manage')->post('person-skills', [$pa23, 'assignSkill']);
+            Route::middleware('can:people.skills.manage')->get('people/{person}/skills', [$pa23, 'personSkills']);
+            Route::middleware('can:people.privilege-alerts.manage')->post('privilege-alerts/detect', [$pa23, 'detectAnomalies']);
+            Route::middleware('can:people.privilege-alerts.manage')->get('privilege-alerts', [$pa23, 'listPrivilegeAlerts']);
+            Route::middleware('can:people.privilege-alerts.manage')->post('privilege-alerts/{alert}/acknowledge', [$pa23, 'acknowledgePrivilegeAlert']);
+            Route::middleware('can:people.view-directory')->get('search', [$pa23, 'nlSearch']);
+            Route::middleware('can:people.analytics.view')->get('analytics', [$pa23, 'analytics']);
+            Route::middleware('can:people.ai.suggest')->post('ai/suggestions', [$pa23, 'aiSuggest']);
+            Route::middleware('can:people.ai.apply')->post('ai/suggestions/{suggestion}/apply', [$pa23, 'aiApply']);
         });
 
         // Admin Workflows

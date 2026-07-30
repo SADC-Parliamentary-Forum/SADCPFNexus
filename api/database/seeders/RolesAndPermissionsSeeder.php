@@ -112,6 +112,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
             'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
             'people.export', 'identity.audit',
+            // People & Authority Phase 2 / 3
+            'people.certificate.enrol', 'people.esign.manage', 'people.m365.sync',
+            'people.recertification.manage', 'people.sod.analyse', 'people.org-scenarios.manage',
+            'people.payroll-link.manage', 'people.signatures.publish-verify',
+            'people.succession.manage', 'people.skills.manage', 'people.analytics.view',
+            'people.ai.suggest', 'people.ai.apply', 'people.privilege-alerts.manage',
         ];
 
         foreach ($permissions as $perm) {
@@ -147,6 +153,11 @@ class RolesAndPermissionsSeeder extends Seeder
                     'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
                     'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
                     'people.export', 'identity.audit',
+                    'people.certificate.enrol', 'people.esign.manage', 'people.m365.sync',
+                    'people.recertification.manage', 'people.sod.analyse', 'people.org-scenarios.manage',
+                    'people.payroll-link.manage', 'people.signatures.publish-verify',
+                    'people.succession.manage', 'people.skills.manage', 'people.analytics.view',
+                    'people.ai.suggest', 'people.ai.apply', 'people.privilege-alerts.manage',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -322,6 +333,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'authorities.manage', 'acting-appointments.approve',
                     'delegations.approve', 'signatures.verify', 'documents.sign',
                     'access-reviews.manage', 'identity.audit',
+                    'people.sod.analyse', 'people.org-scenarios.manage',
+                    'people.succession.manage', 'people.analytics.view',
+                    'people.privilege-alerts.manage', 'people.ai.suggest',
                 ])->where('guard_name', $guard)->get()
             );
 

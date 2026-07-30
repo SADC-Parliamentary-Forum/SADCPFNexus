@@ -12,6 +12,9 @@ class EmploymentRecord extends Model
         'tenant_id',
         'person_id',
         'employee_number',
+        'payroll_identifier',
+        'payroll_export_status',
+        'payroll_last_exported_at',
         'contract_type',
         'grade',
         'hire_date',
@@ -25,6 +28,7 @@ class EmploymentRecord extends Model
         'hire_date' => 'date',
         'probation_end' => 'date',
         'termination_date' => 'date',
+        'payroll_last_exported_at' => 'datetime',
         'meta' => 'array',
     ];
 }

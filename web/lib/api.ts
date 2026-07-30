@@ -8362,4 +8362,48 @@ export const peopleAuthorityApi = {
   reports: (type: string) => api.get("/people-authority/reports", { params: { type } }),
   listJobDescriptions: () => api.get("/people-authority/job-descriptions"),
   createJobDescription: (data: Record<string, unknown>) => api.post("/people-authority/job-descriptions", data),
+
+  // Phase 2 / 3
+  enrolCertificate: (data: Record<string, unknown>) =>
+    api.post("/people-authority/signatures/certificate-enrol", data),
+  listEsign: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/esign-requests", { params }),
+  createEsign: (data: Record<string, unknown>) => api.post("/people-authority/esign-requests", data),
+  submitEsign: (id: number) => api.post(`/people-authority/esign-requests/${id}/submit`),
+  listDirectorySync: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/directory-sync", { params }),
+  runDirectorySync: (data?: Record<string, unknown>) =>
+    api.post("/people-authority/directory-sync", data ?? {}),
+  openRecertification: (data?: Record<string, unknown>) =>
+    api.post("/people-authority/recertification-campaigns", data ?? {}),
+  listSodReports: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/sod-reports", { params }),
+  analyseSod: (data?: Record<string, unknown>) => api.post("/people-authority/sod-reports", data ?? {}),
+  listOrgScenarios: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/org-scenarios", { params }),
+  createOrgScenario: (data: Record<string, unknown>) =>
+    api.post("/people-authority/org-scenarios", data),
+  linkPayroll: (employmentId: number, data: Record<string, unknown>) =>
+    api.post(`/people-authority/employment/${employmentId}/payroll-link`, data),
+  exportPayrollLinks: () => api.post("/people-authority/employment/payroll-export"),
+  publishSignatureVerify: (id: number) =>
+    api.post(`/people-authority/documents/signatures/${id}/publish-verification`),
+  listSuccession: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/succession-plans", { params }),
+  createSuccession: (data: Record<string, unknown>) =>
+    api.post("/people-authority/succession-plans", data),
+  listSkills: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/skills", { params }),
+  createSkill: (data: Record<string, unknown>) => api.post("/people-authority/skills", data),
+  assignSkill: (data: Record<string, unknown>) => api.post("/people-authority/person-skills", data),
+  detectPrivilegeAlerts: () => api.post("/people-authority/privilege-alerts/detect"),
+  listPrivilegeAlerts: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/privilege-alerts", { params }),
+  acknowledgePrivilegeAlert: (id: number) =>
+    api.post(`/people-authority/privilege-alerts/${id}/acknowledge`),
+  search: (q: string) => api.get<{ data: Record<string, unknown> }>("/people-authority/search", { params: { q } }),
+  analytics: () => api.get<{ data: Record<string, unknown> }>("/people-authority/analytics"),
+  aiSuggest: (data: Record<string, unknown>) => api.post("/people-authority/ai/suggestions", data),
+  aiApply: (id: number, data: Record<string, unknown>) =>
+    api.post(`/people-authority/ai/suggestions/${id}/apply`, data),
 };

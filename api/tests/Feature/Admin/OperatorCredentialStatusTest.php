@@ -36,6 +36,12 @@ class OperatorCredentialStatusTest extends TestCase
         $this->assertContains('procurement_ai', $keys);
         $this->assertContains('mande_ai', $keys);
         $this->assertContains('payroll_vendor', $keys);
+        $this->assertContains('people_m365', $keys);
+        $this->assertContains('people_esign', $keys);
+        $this->assertContains('people_certificate', $keys);
+        $this->assertContains('people_ai', $keys);
+        $this->assertContains('play_store', $keys);
+        $this->assertContains('app_store_connect', $keys);
 
         foreach ($items as $item) {
             $this->assertArrayHasKey('configured', $item);
