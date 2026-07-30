@@ -40,8 +40,10 @@ class LeaveService
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff') && empty($filters['queue'])) {
-            $query->where('requester_id', $user->id);
+        // Deny-by-default list scope (PRD §23.4) — elevated roles/permissions see broader sets.
+        if (empty($filters['queue'])) {
+            app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+                ->constrainQuery($query, $user, 'requester_id', ['module' => 'leave']);
         }
 
         if (! empty($filters['status'])) {
@@ -324,9 +326,12 @@ class LeaveService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
-        if ((int) $leave->requester_id === (int) $approver->id) {
-            abort(403, 'You cannot approve your own request.');
-        }
+        app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
+            $approver,
+            'leave.request.authorise.assigned',
+            $leave,
+            ['assigned' => true, 'owner_id' => $leave->requester_id]
+        );
 
         $this->checkLeaveBalance($leave, $overrideReason);
 

@@ -32,9 +32,9 @@ class ProcurementService
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff')) {
-            $query->where('requester_id', $user->id);
-        }
+        // Deny-by-default list scope (PRD §23.4).
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'requester_id', ['module' => 'procurement']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);

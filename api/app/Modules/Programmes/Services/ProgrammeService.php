@@ -32,9 +32,9 @@ class ProgrammeService
         $query = Programme::with(['creator', 'approver', 'responsibleOfficer', 'budgetLines', 'meActivityReport', 'trashedMeActivityReport'])
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff')) {
-            $query->where('created_by', $user->id);
-        }
+        // Deny-by-default list scope (PRD §23.4).
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'created_by', ['module' => 'programme']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);

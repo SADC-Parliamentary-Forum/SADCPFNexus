@@ -28,6 +28,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", i18nKey: "nav.dashboard" },
+  { label: "My Work", href: "/my-work", icon: "work", i18nKey: "nav.my_work", children: [
+      { label: "My Work Hub", href: "/my-work", icon: "work" },
+      { label: "Procurement Evaluations", href: "/my-work/procurement-evaluations", icon: "fact_check" },
+      { label: "Approvals Inbox", href: "/approvals/inbox", icon: "inbox" },
+    ] },
   { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
   { label: "My Approvals Inbox", href: "/approvals/inbox", icon: "inbox", i18nKey: "nav.approvals_inbox" },
   { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active", i18nKey: "nav.notifications" },
@@ -494,6 +499,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Overview",             href: "/admin",                  icon: "space_dashboard" },
       { label: "Users",                href: "/admin/users",            icon: "manage_accounts" },
       { label: "Roles & Permissions",  href: "/admin/roles",            icon: "security" },
+      { label: "Access Governance",    href: "/admin/access",           icon: "policy" },
       { label: "Departments",          href: "/admin/departments",      icon: "corporate_fare" },
       { label: "Portfolios",           href: "/admin/portfolios",       icon: "folder_special" },
       { label: "Approval Workflows",   href: "/admin/workflows",        icon: "account_tree" },

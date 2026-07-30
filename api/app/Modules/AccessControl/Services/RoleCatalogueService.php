@@ -1,0 +1,367 @@
+<?php
+
+namespace App\Modules\AccessControl\Services;
+
+use App\Models\AccessControl\AccessRequest;
+use App\Models\AccessControl\AccessReviewCampaign;
+use App\Models\AccessControl\AccessReviewItem;
+use App\Models\AccessControl\AccessRoleAssignment;
+use App\Models\AccessControl\AccessRoleCatalogue;
+use App\Models\AccessControl\AccessRoleVersion;
+use App\Models\AccessControl\UserPermissionDenial;
+use App\Models\AccessControl\UserPermissionGrant;
+use App\Models\AuditLog;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class RoleCatalogueService
+{
+    public function __construct(
+        private readonly PermissionRegistry $registry,
+        private readonly AccessCacheInvalidator $cache,
+        private readonly SegregationOfDutiesService $sod,
+    ) {}
+
+    public function catalogue(): array
+    {
+        return AccessRoleCatalogue::query()
+            ->with(['currentVersion'])
+            ->orderBy('name')
+            ->get()
+            ->all();
+    }
+
+    public function createDraft(array $data, User $actor): AccessRoleCatalogue
+    {
+        return DB::transaction(function () use ($data, $actor) {
+            $catalogue = AccessRoleCatalogue::create([
+                'tenant_id' => $actor->tenant_id,
+                'key' => $data['key'] ?? Str::slug($data['name'], '_'),
+                'name' => $data['name'],
+                'purpose' => $data['purpose'] ?? null,
+                'owner_user_id' => $actor->id,
+                'risk_level' => $data['risk_level'] ?? 'medium',
+                'status' => 'draft',
+                'default_scopes' => $data['default_scopes'] ?? ['organisation'],
+                'feature_only' => (bool) ($data['feature_only'] ?? false),
+                'read_only' => (bool) ($data['read_only'] ?? false),
+                'no_business_approve' => (bool) ($data['no_business_approve'] ?? false),
+            ]);
+
+            AccessRoleVersion::create([
+                'role_catalogue_id' => $catalogue->id,
+                'version' => 1,
+                'status' => 'draft',
+                'permissions' => $data['permissions'] ?? [],
+                'changelog' => $data['changelog'] ?? 'Draft created',
+            ]);
+
+            AuditLog::record('access.role_draft_created', [
+                'auditable_type' => AccessRoleCatalogue::class,
+                'auditable_id' => $catalogue->id,
+                'new_values' => ['name' => $catalogue->name],
+                'tags' => 'rbac,access-control',
+            ]);
+
+            return $catalogue->load('versions');
+        });
+    }
+
+    public function publishVersion(AccessRoleCatalogue $catalogue, array $permissions, User $actor, ?string $changelog = null): AccessRoleVersion
+    {
+        $next = ((int) $catalogue->versions()->max('version')) + 1;
+
+        $version = AccessRoleVersion::create([
+            'role_catalogue_id' => $catalogue->id,
+            'version' => $next,
+            'status' => 'active',
+            'permissions' => $permissions,
+            'changelog' => $changelog ?? "Published v{$next}",
+            'published_by' => $actor->id,
+            'published_at' => now(),
+            'approved_by' => $actor->id,
+            'approved_at' => now(),
+        ]);
+
+        $catalogue->update(['status' => 'active']);
+        $catalogue->versions()->where('id', '!=', $version->id)->where('status', 'active')->update(['status' => 'retired']);
+
+        AuditLog::record('access.role_version_published', [
+            'auditable_type' => AccessRoleVersion::class,
+            'auditable_id' => $version->id,
+            'new_values' => ['version' => $next, 'permissions' => $permissions],
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return $version;
+    }
+
+    public function assignRoleVersion(User $target, AccessRoleVersion $version, array $data, User $actor): AccessRoleAssignment
+    {
+        $sod = $this->sod->evaluate($actor, 'admin.roles.assign', null, [
+            'target_user_id' => $target->id,
+            'is_privileged' => in_array($version->catalogue?->risk_level, ['high', 'critical'], true),
+        ]);
+        if (! $sod->allowed) {
+            abort(403, $sod->reasonMessage);
+        }
+
+        $assignment = AccessRoleAssignment::create([
+            'tenant_id' => $target->tenant_id,
+            'user_id' => $target->id,
+            'role_version_id' => $version->id,
+            'assignment_type' => $data['assignment_type'] ?? 'standing',
+            'scope_type' => $data['scope_type'] ?? 'organisation',
+            'scope_reference' => $data['scope_reference'] ?? null,
+            'valid_from' => $data['valid_from'] ?? now(),
+            'valid_until' => $data['valid_until'] ?? null,
+            'status' => $data['status'] ?? 'active',
+            'reason' => $data['reason'] ?? null,
+            'requested_by' => $actor->id,
+            'approved_by' => $data['approved_by'] ?? $actor->id,
+            'review_due_at' => $data['review_due_at'] ?? now()->addMonths(6),
+        ]);
+
+        // Sync Spatie role by catalogue name for compatibility.
+        $roleName = $version->catalogue?->name;
+        if ($roleName) {
+            $target->assignRole($roleName);
+        }
+
+        $this->cache->invalidate($target);
+
+        AuditLog::record('access.role_assigned', [
+            'auditable_type' => User::class,
+            'auditable_id' => $target->id,
+            'new_values' => [
+                'role_version_id' => $version->id,
+                'scope_type' => $assignment->scope_type,
+            ],
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return $assignment;
+    }
+
+    public function userAccessProfile(User $user): array
+    {
+        $pdp = app(PolicyDecisionPoint::class);
+
+        return [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'account_status' => $user->account_status,
+                'mfa_enabled' => (bool) $user->mfa_enabled,
+            ],
+            'spatie_roles' => $user->getRoleNames()->values()->all(),
+            'effective_permissions' => $pdp->effectivePermissions($user),
+            'role_assignments' => AccessRoleAssignment::query()
+                ->with('roleVersion.catalogue')
+                ->where('user_id', $user->id)
+                ->orderByDesc('id')
+                ->get(),
+            'direct_grants' => UserPermissionGrant::query()->where('user_id', $user->id)->get(),
+            'denials' => UserPermissionDenial::query()->where('user_id', $user->id)->where('status', 'active')->get(),
+            'upcoming_expiries' => AccessRoleAssignment::query()
+                ->where('user_id', $user->id)
+                ->whereNotNull('valid_until')
+                ->where('valid_until', '>', now())
+                ->where('valid_until', '<=', now()->addDays(30))
+                ->get(),
+        ];
+    }
+
+    public function simulate(User $user): array
+    {
+        $pdp = app(PolicyDecisionPoint::class);
+        $nav = app(NavigationManifestService::class);
+        $effective = $pdp->effectivePermissions($user);
+
+        AuditLog::record('access.simulation_run', [
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'new_values' => ['permission_count' => count($effective)],
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return [
+            'user_id' => $user->id,
+            'effective_permissions' => $effective,
+            'navigation' => $nav->forUser($user),
+            'note' => 'Simulation only — no live impersonation session was created.',
+        ];
+    }
+
+    public function explorePermission(string $permissionKey): array
+    {
+        $roles = [];
+        foreach ($this->registry->roleTemplates() as $name => $meta) {
+            $perms = $meta['permissions'] ?? [];
+            foreach ($meta['inherits'] ?? [] as $parent) {
+                $perms = array_merge($perms, $this->registry->roleTemplates()[$parent]['permissions'] ?? []);
+            }
+            if (in_array($permissionKey, $perms, true)) {
+                $roles[] = $name;
+            }
+        }
+
+        $meta = $this->registry->get($permissionKey);
+
+        return [
+            'permission' => $permissionKey,
+            'registry' => $meta,
+            'roles_containing' => array_values(array_unique($roles)),
+            'direct_grants' => UserPermissionGrant::query()->where('permission_key', $permissionKey)->where('status', 'active')->get(),
+            'denials' => UserPermissionDenial::query()->where('permission_key', $permissionKey)->where('status', 'active')->get(),
+        ];
+    }
+
+    public function createAccessRequest(User $requester, array $data): AccessRequest
+    {
+        $request = AccessRequest::create([
+            'tenant_id' => $requester->tenant_id,
+            'requester_id' => $requester->id,
+            'permission_key' => $data['permission_key'] ?? null,
+            'role_catalogue_key' => $data['role_catalogue_key'] ?? null,
+            'scope_type' => $data['scope_type'] ?? 'self',
+            'scope_reference' => $data['scope_reference'] ?? null,
+            'business_reason' => $data['business_reason'],
+            'sensitivity' => $data['sensitivity'] ?? 'Internal',
+            'valid_from' => $data['valid_from'] ?? now(),
+            'valid_until' => $data['valid_until'] ?? null,
+            'status' => 'pending_supervisor',
+            'supervisor_id' => $data['supervisor_id'] ?? null,
+            'sod_result' => ['status' => 'pending_check'],
+        ]);
+
+        AuditLog::record('access.request_created', [
+            'auditable_type' => AccessRequest::class,
+            'auditable_id' => $request->id,
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return $request;
+    }
+
+    public function decideAccessRequest(AccessRequest $request, User $actor, string $decision, string $stage = 'supervisor'): AccessRequest
+    {
+        if ($stage === 'supervisor') {
+            $request->update([
+                'supervisor_id' => $actor->id,
+                'supervisor_decision' => $decision,
+                'supervisor_decided_at' => now(),
+                'status' => $decision === 'approve' ? 'pending_approver' : 'rejected',
+            ]);
+        } else {
+            $request->update([
+                'approver_id' => $actor->id,
+                'approver_decision' => $decision,
+                'approver_decided_at' => now(),
+                'status' => $decision === 'approve' ? 'approved' : 'rejected',
+            ]);
+
+            if ($decision === 'approve' && $request->permission_key) {
+                UserPermissionGrant::create([
+                    'tenant_id' => $request->tenant_id,
+                    'user_id' => $request->requester_id,
+                    'permission_key' => $request->permission_key,
+                    'scope_type' => $request->scope_type,
+                    'scope_reference' => $request->scope_reference,
+                    'valid_from' => $request->valid_from,
+                    'valid_until' => $request->valid_until,
+                    'status' => 'active',
+                    'reason' => $request->business_reason,
+                    'granted_by' => $actor->id,
+                    'approved_by' => $actor->id,
+                ]);
+                $this->cache->invalidateUserId((int) $request->requester_id, $request->tenant_id);
+            }
+        }
+
+        AuditLog::record('access.request_decided', [
+            'auditable_type' => AccessRequest::class,
+            'auditable_id' => $request->id,
+            'new_values' => ['stage' => $stage, 'decision' => $decision],
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function createReviewCampaign(array $data, User $actor): AccessReviewCampaign
+    {
+        // Uses People & Authority access_review_* tables (shared schema).
+        $campaign = AccessReviewCampaign::create([
+            'tenant_id' => $actor->tenant_id,
+            'name' => $data['name'],
+            'campaign_type' => $data['campaign_type'] ?? 'rbac',
+            'recurrence' => $data['cadence'] ?? $data['recurrence'] ?? 'quarterly',
+            'status' => 'open',
+            'due_date' => isset($data['due_at']) ? date('Y-m-d', strtotime((string) $data['due_at'])) : now()->addDays(30)->toDateString(),
+            'created_by' => $actor->id,
+            'opened_at' => now(),
+        ]);
+
+        $userIds = $data['user_ids'] ?? User::query()->where('tenant_id', $actor->tenant_id)->limit(50)->pluck('id');
+        foreach ($userIds as $userId) {
+            $user = User::find($userId);
+            if (! $user) {
+                continue;
+            }
+            foreach ($user->getRoleNames() as $roleName) {
+                AccessReviewItem::create([
+                    'tenant_id' => $actor->tenant_id,
+                    'campaign_id' => $campaign->id,
+                    'user_id' => $user->id,
+                    'review_type' => 'role',
+                    'subject_snapshot' => ['role' => $roleName],
+                    'status' => 'pending',
+                ]);
+            }
+        }
+
+        return $campaign->load('items');
+    }
+
+    public function decideReviewItem(AccessReviewItem $item, User $actor, string $decision, ?string $reason = null): AccessReviewItem
+    {
+        $mapped = match ($decision) {
+            'confirm' => 'confirm',
+            'revoke' => 'revoke',
+            'reduce', 'extend' => 'modify',
+            default => $decision,
+        };
+
+        $item->update([
+            'status' => 'reviewed',
+            'decision' => $mapped,
+            'reviewed_by' => $actor->id,
+            'reviewed_at' => now(),
+            'subject_snapshot' => array_merge($item->subject_snapshot ?? [], [
+                'decision_reason' => $reason,
+                'ui_decision' => $decision,
+            ]),
+        ]);
+
+        if ($decision === 'revoke') {
+            $user = User::find($item->user_id);
+            $roleName = $item->roleNameFromSnapshot();
+            if ($user && $roleName) {
+                $user->removeRole($roleName);
+                $this->cache->invalidate($user);
+            }
+        }
+
+        AuditLog::record('access.review_item_decided', [
+            'auditable_type' => AccessReviewItem::class,
+            'auditable_id' => $item->id,
+            'new_values' => ['decision' => $decision, 'reason' => $reason],
+            'tags' => 'rbac,access-control',
+        ]);
+
+        return $item->fresh();
+    }
+}

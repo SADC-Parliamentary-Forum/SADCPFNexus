@@ -37,11 +37,11 @@ class ProgrammeFinanceReviewTest extends TestCase
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
             'budget_availability_status' => 'available',
-        ])->assertOk();
+        ])->assertForbidden();
 
         $this->assertDatabaseHas('programmes', [
-            'id'                          => $programmeId,
-            'budget_availability_status'  => 'not_checked', // unchanged — field is silently ignored, not validated on this endpoint
+            'id'                         => $programmeId,
+            'budget_availability_status' => 'not_checked',
         ]);
     }
 

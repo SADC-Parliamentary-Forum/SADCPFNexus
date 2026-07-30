@@ -85,8 +85,19 @@ trait AuthorizesRequestRecords
             abort(403, 'You cannot approve or reject your own request.');
         }
 
+        // Prefer central PDP when a permission is supplied (deny/SoD/expiry aware).
+        if ($permission) {
+            app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
+                $actor,
+                $permission,
+                $record,
+                ['assigned' => true, 'owner_id' => $record->getAttribute('requester_id')]
+            );
+
+            return;
+        }
+
         $allowed = $actor->isSystemAdmin()
-            || ($permission && $actor->can($permission))
             || ($privilegedRoles !== [] && $actor->hasAnyRole($privilegedRoles));
 
         abort_unless($allowed, 403, 'You are not authorised to approve this request.');

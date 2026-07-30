@@ -86,6 +86,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AirlineItineraryParserInterface::class, GdsAwareAirlineItineraryParser::class);
         $this->app->bind(HttpFxRateProviderInterface::class, OptionalHttpFxRateProvider::class);
         $this->app->bind(FxRateFeedInterface::class, ConfigurableFxRateFeed::class);
+
+        // Access Control PDP / registry (PRD Roles & Permissions re-engineering).
+        $this->app->singleton(\App\Modules\AccessControl\Services\PermissionRegistry::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\AccessCacheInvalidator::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\SegregationOfDutiesService::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\AccessScopeResolver::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\NavigationManifestService::class);
+        $this->app->singleton(\App\Modules\AccessControl\Services\RoleCatalogueService::class);
     }
 
     /**

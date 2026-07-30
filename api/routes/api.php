@@ -261,6 +261,11 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
         Route::get('dashboard/upcoming-social', [\App\Http\Controllers\Api\V1\DashboardController::class, 'upcomingSocial']);
 
+        // Access-control navigation + PDP check (authenticated)
+        Route::get('access/navigation', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'navigation']);
+        Route::post('access/authorize', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'authorizeCheck']);
+        Route::post('access/requests', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'storeAccessRequest']);
+
         Route::get('lookups', [\App\Http\Controllers\Api\V1\LookupsController::class, 'index']);
         Route::get('tenant-users', [\App\Http\Controllers\Api\V1\TenantUsersController::class, 'index']);
 
@@ -303,6 +308,28 @@ Route::prefix('v1')->group(function () {
             Route::put('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'update']);
             Route::delete('roles/{role}', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'destroy']);
             Route::put('roles/{role}/permissions', [\App\Http\Controllers\Api\V1\Admin\RolesController::class, 'syncPermissions']);
+
+            // Access Control Governance (PRD Phases 1–6)
+            Route::prefix('access')->group(function () {
+                $ac = \App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class;
+                Route::get('registry', [$ac, 'registry']);
+                Route::get('roles', [$ac, 'roleCatalogue']);
+                Route::post('roles', [$ac, 'createRoleDraft']);
+                Route::post('roles/{catalogue}/publish', [$ac, 'publishRoleVersion']);
+                Route::get('users/{user}/profile', [$ac, 'userProfile']);
+                Route::post('users/{user}/simulate', [$ac, 'simulate']);
+                Route::post('users/{user}/grants', [$ac, 'grantPermission']);
+                Route::post('users/{user}/denials', [$ac, 'denyPermission']);
+                Route::post('users/{user}/role-versions/{version}', [$ac, 'assignRoleVersion']);
+                Route::get('explore', [$ac, 'explore']);
+                Route::get('requests', [$ac, 'accessRequests']);
+                Route::post('requests', [$ac, 'storeAccessRequest']);
+                Route::post('requests/{accessRequest}/decide', [$ac, 'decideAccessRequest']);
+                Route::get('reviews', [$ac, 'reviewCampaigns']);
+                Route::post('reviews', [$ac, 'storeReviewCampaign']);
+                Route::post('reviews/items/{item}/decide', [$ac, 'decideReviewItem']);
+                Route::get('governance', [$ac, 'governanceChecklist']);
+            });
 
             // Payslips (list, show, download, upload, delete, refresh auto-fill)
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'index']);
@@ -531,6 +558,9 @@ Route::prefix('v1')->group(function () {
 
         // Procurement Module
         Route::prefix('procurement')->group(function () {
+            // Feature-only committee evaluations (distinct from tender board /evaluations).
+            Route::get('committee-evaluations', [\App\Http\Controllers\Api\V1\Procurement\ProcurementEvaluationController::class, 'index']);
+            Route::get('committee-evaluations/{procurementRequest}', [\App\Http\Controllers\Api\V1\Procurement\ProcurementEvaluationController::class, 'show']);
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Procurement\ProcurementController::class)
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');

@@ -43,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission'     => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'mfa.privileged' => \App\Http\Middleware\RequireMfaForPrivileged::class,
+            'access' => \App\Http\Middleware\EnforceAccessPermission::class,
         ]);
 
         // Exclude email-approval POST routes from CSRF: the token in the URL path

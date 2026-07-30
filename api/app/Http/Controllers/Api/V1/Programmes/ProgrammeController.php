@@ -276,6 +276,11 @@ class ProgrammeController extends Controller
 
     public function update(Request $request, Programme $programme): JsonResponse
     {
+        // Finance-only fields must never be mass-assigned via the general update (PRD §13.4).
+        if ($request->hasAny(['budget_availability_status', 'finance_comments'])) {
+            abort(403, 'Finance-only PIF fields must be updated via the finance-review endpoint.');
+        }
+
         $data = $request->validate([
             'title'                     => ['sometimes', 'string', 'max:500'],
             'strategic_pillar'          => ['nullable', 'string', 'max:255'],
@@ -312,6 +317,13 @@ class ProgrammeController extends Controller
 
     public function updateFinanceReview(Request $request, Programme $programme): JsonResponse
     {
+        app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
+            $request->user(),
+            'programme.finance_review.update.assigned',
+            $programme,
+            ['assigned' => true, 'elevated' => true]
+        );
+
         $data = $request->validate([
             'budget_availability_status' => ['required', 'string', Rule::in([
                 'not_checked', 'available', 'partially_available', 'unavailable', 'confirmed_with_conditions',

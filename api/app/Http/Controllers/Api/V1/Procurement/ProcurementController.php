@@ -176,11 +176,12 @@ class ProcurementController extends Controller
             abort(404);
         }
 
-        if ($request->user()->hasRole('staff') && !$request->user()->hasAnyRole([
-            'Procurement Officer', 'Finance Controller', 'Secretary General', 'System Admin', 'super-admin', 'HOD',
-        ])) {
-            abort(403);
-        }
+        app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
+            $request->user(),
+            'procurement.request.approve.assigned',
+            $procurementRequest,
+            ['assigned' => true, 'owner_id' => $procurementRequest->requester_id]
+        );
 
         // Phase 1 hard gate: Finance budget confirmation required before approve.
         if (!$procurementRequest->budgetReservations()->whereNull('released_at')->exists()) {
