@@ -219,7 +219,7 @@
   }
 
   .table-wrap {
-    @apply card overflow-hidden;
+    @apply overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-card;
   }
 
   .table-wrap > .data-table,
