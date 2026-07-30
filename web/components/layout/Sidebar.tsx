@@ -29,6 +29,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard", i18nKey: "nav.dashboard" },
   { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
+  { label: "My Approvals Inbox", href: "/approvals/inbox", icon: "inbox", i18nKey: "nav.approvals_inbox" },
   { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active", i18nKey: "nav.notifications" },
   {
     label: "Assignments",
@@ -496,6 +497,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Departments",          href: "/admin/departments",      icon: "corporate_fare" },
       { label: "Portfolios",           href: "/admin/portfolios",       icon: "folder_special" },
       { label: "Approval Workflows",   href: "/admin/workflows",        icon: "account_tree" },
+      { label: "Workflow Designer (Phase 2)", href: "/admin/workflows", icon: "schema" },
       { label: "System Settings",      href: "/admin/settings",         icon: "settings" },
       { label: "HR Settings",          href: "/settings/hr",            icon: "tune" },
       { label: "Notifications",        href: "/admin/notifications",    icon: "notifications" },

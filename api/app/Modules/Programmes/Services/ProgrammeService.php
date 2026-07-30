@@ -450,6 +450,23 @@ class ProgrammeService
             'tags'           => 'programme',
         ]);
 
+        // Migrate PIF onto shared Workflow Engine (PRD §80 / §111) — no parallel engine
+        try {
+            app(WorkflowService::class)->initiate(
+                $programme->fresh(),
+                'programmes',
+                $user,
+                'pif-submit-'.$programme->id.'-'.($programme->fresh()->submitted_at?->timestamp ?? time()),
+                [
+                    'amount' => $programme->total_budget ?? null,
+                    'currency' => $programme->currency ?? 'NAD',
+                    'department_id' => $user->department_id,
+                ]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return $programme->fresh();
     }
 

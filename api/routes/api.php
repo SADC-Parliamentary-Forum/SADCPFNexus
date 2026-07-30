@@ -1442,10 +1442,32 @@ Route::prefix('v1')->group(function () {
         // Approval Workflows
         Route::prefix('approvals')->group(function () {
             Route::get('pending', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'pending']);
+            Route::get('inbox', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'inbox']);
             Route::post('{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve']);
             Route::post('{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject']);
             Route::get('{approvalRequest}/history', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'history']);
             Route::get('{approvalRequest}/snapshot', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'snapshot']);
+            Route::get('{approvalRequest}/certificate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'certificate']);
+        });
+
+        // Workflow Engine Phase 1 (PRD §100)
+        Route::prefix('workflow-engine')->group(function () {
+            Route::get('definitions', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'definitions']);
+            Route::post('definitions/{workflow}/versions', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'createVersion']);
+            Route::post('versions/{version}/validate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'validateVersion']);
+            Route::post('versions/{version}/approve', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'approveVersion']);
+            Route::post('versions/{version}/publish', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'publishVersion']);
+            Route::post('versions/{version}/retire', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'retireVersion']);
+
+            Route::post('workflows/start', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'start']);
+            Route::get('workflows/{approvalRequest}', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'show']);
+            Route::get('workflows/{approvalRequest}/timeline', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'timeline']);
+            Route::post('workflows/{approvalRequest}/withdraw', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'withdraw']);
+            Route::post('workflows/{approvalRequest}/cancel', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'cancel']);
+            Route::post('workflows/{approvalRequest}/retry-release', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'retryRelease']);
+
+            Route::get('approval-tasks', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'inbox']);
+            Route::post('approval-tasks/{task}/decide', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'decide']);
         });
 
         // SAAM — Signature & Approval Authentication Module

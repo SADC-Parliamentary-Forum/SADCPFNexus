@@ -9,6 +9,7 @@ use App\Models\ApprovalWorkflow;
 use App\Models\Department;
 use App\Models\User;
 use App\Models\WorkflowDelegation;
+use App\Modules\WorkflowEngine\Services\WorkflowOrchestrator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -25,17 +26,25 @@ class WorkflowService
         'salary_advance'    => 'Salary Advance',
         'timesheet'         => 'Timesheet',
         'budget_submission' => 'Budget Submission',
+        'programmes'        => 'Programme (PIF)',
+        'pif'               => 'Programme (PIF)',
     ];
 
     public function __construct(
         protected NotificationService $notificationService,
         protected SignedTokenService  $signedTokenService,
+        protected ?WorkflowOrchestrator $orchestrator = null,
     ) {}
+
+    protected function engine(): WorkflowOrchestrator
+    {
+        return $this->orchestrator ??= app(WorkflowOrchestrator::class);
+    }
 
     /**
      * Start a workflow for an approvable entity.
      */
-    public function initiate(Model $entity, string $moduleType, User $requester): ?ApprovalRequest
+    public function initiate(Model $entity, string $moduleType, User $requester, ?string $idempotencyKey = null, array $conditionContext = []): ?ApprovalRequest
     {
         $workflow = ApprovalWorkflow::where('module_type', $moduleType)
             ->where('tenant_id', $requester->tenant_id)
@@ -44,6 +53,15 @@ class WorkflowService
 
         if (!$workflow) {
             return null;
+        }
+
+        // Idempotent restart protection: reuse open request for same subject
+        $existing = ApprovalRequest::where('approvable_type', get_class($entity))
+            ->where('approvable_id', $entity->id)
+            ->whereIn('status', ['pending', 'returned'])
+            ->first();
+        if ($existing && $idempotencyKey) {
+            return $existing;
         }
 
         $request = ApprovalRequest::create([
@@ -55,10 +73,23 @@ class WorkflowService
             'status'          => 'pending',
         ]);
 
-        // Notify the first-step approvers (with email action buttons)
-        $this->notifyApprovers($request);
+        try {
+            $this->engine()->prepareStart($request, $entity, $requester, $workflow, $idempotencyKey, $conditionContext);
+        } catch (Throwable $e) {
+            // Engine enrichment must not block the proven ApprovalRequest path (PIF/Leave/Travel).
+            report($e);
+            $request->update([
+                'uuid' => $request->uuid ?: (string) \Illuminate\Support\Str::uuid(),
+                'submitted_by' => $requester->id,
+                'applicant_id' => $requester->id,
+                'condition_context' => $conditionContext !== [] ? $conditionContext : null,
+            ]);
+        }
 
-        return $request;
+        // Notify the first-step approvers (with email action buttons)
+        $this->notifyApprovers($request->fresh());
+
+        return $request->fresh();
     }
 
     /**
@@ -67,72 +98,45 @@ class WorkflowService
      * Returns ['advanced_to_step' => int|null, 'notified_approvers' => string[]]
      * so controllers can include the notified role labels in the JSON response (sequential toast).
      */
-    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null): array
+    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null, ?string $idempotencyKey = null): array
     {
         $this->verifyActorCanApprove($request, $actor);
 
-        $stepIndexBefore = $request->current_step_index;
-        $advancedToStep  = null;
+        $step = $request->workflow->steps->get($request->current_step_index);
+        $decisionType = $step?->stage_type && in_array($step->stage_type, ['recommend', 'certify', 'authorise', 'sign', 'verify', 'acknowledge'], true)
+            ? $step->stage_type
+            : 'approve';
 
-        DB::transaction(function () use ($request, $actor, $comment, $stepIndexBefore, &$advancedToStep) {
-            ApprovalHistory::create([
-                'approval_request_id' => $request->id,
-                'user_id'             => $actor->id,
-                'action'              => 'approve',
-                'step_index'          => $stepIndexBefore,
-                'comment'             => $comment,
-            ]);
-
-            $workflow      = $request->workflow;
-            $nextStepIndex = $stepIndexBefore + 1;
-
-            if ($nextStepIndex >= $workflow->steps()->count()) {
-                // Workflow complete
-                $request->update(['status' => 'approved']);
-                $this->finalizeApprovable($request, 'approved', $actor);
-            } else {
-                // Move to next step
-                $request->update(['current_step_index' => $nextStepIndex]);
-                $advancedToStep = $nextStepIndex;
-            }
-        });
+        $result = $this->engine()->decide($request, $actor, $decisionType, $comment, $idempotencyKey);
 
         $notifiedApprovers = [];
-
-        // Notify next-step approvers AFTER the transaction commits (so queued
-        // jobs don't run against uncommitted data).
-        if ($advancedToStep !== null) {
+        if ($result['completed'] ?? false) {
+            $request->refresh();
+            $this->finalizeApprovable($request, 'approved', $actor);
+        } elseif (($result['advanced_to_step'] ?? null) !== null) {
             $request->refresh();
             $notifiedApprovers = $this->notifyApprovers($request);
         }
 
         return [
-            'advanced_to_step'   => $advancedToStep,
+            'advanced_to_step'   => $result['advanced_to_step'] ?? null,
             'notified_approvers' => $notifiedApprovers,
+            'decision_id'        => $result['decision_id'] ?? null,
+            'authority'          => $result['authority'] ?? null,
         ];
     }
 
     /**
      * Handle a rejection action.
      */
-    public function reject(ApprovalRequest $request, User $actor, string $comment): void
+    public function reject(ApprovalRequest $request, User $actor, string $comment, ?string $idempotencyKey = null): void
     {
         $this->verifyActorCanApprove($request, $actor);
 
-        $stepIndexBefore = $request->current_step_index;
-
-        DB::transaction(function () use ($request, $actor, $comment, $stepIndexBefore) {
-            ApprovalHistory::create([
-                'approval_request_id' => $request->id,
-                'user_id'             => $actor->id,
-                'action'              => 'reject',
-                'step_index'          => $stepIndexBefore,
-                'comment'             => $comment,
-            ]);
-
-            $request->update(['status' => 'rejected']);
-            $this->finalizeApprovable($request, 'rejected', $actor, $comment);
-        });
+        $this->engine()->decide($request, $actor, 'reject', $comment, $idempotencyKey);
+        $request->refresh();
+        $request->update(['status' => 'rejected', 'completed_at' => now(), 'current_holder_ids' => []]);
+        $this->finalizeApprovable($request, 'rejected', $actor, $comment);
     }
 
     /**
@@ -246,6 +250,18 @@ class WorkflowService
 
             $this->finalizeApprovable($request, 'resubmitted', $actor);
         });
+
+        $request->refresh();
+        if ($request->approvable) {
+            $this->engine()->prepareStart(
+                $request,
+                $request->approvable,
+                $actor,
+                $request->workflow,
+                'resubmit-'.$request->id.'-'.now()->timestamp,
+                $request->condition_context ?? []
+            );
+        }
 
         // Restart: notify first-step approvers
         $request->refresh();
@@ -412,6 +428,7 @@ class WorkflowService
                 'index'         => $currentIndex,
                 'label'         => $stageLabel($currentStep, $currentIndex),
                 'approver_type' => $currentStep->approver_type,
+                'stage_type'    => $currentStep->stage_type ?? $request->current_stage_type ?? 'approve',
                 'sla_hours'     => $currentStep->sla_hours,
             ] : null,
             'currently_with'      => $currentlyWith,
@@ -419,7 +436,12 @@ class WorkflowService
                 'index'         => $currentIndex + 1,
                 'label'         => $stageLabel($nextStep, $currentIndex + 1),
                 'approver_type' => $nextStep->approver_type,
+                'stage_type'    => $nextStep->stage_type ?? 'approve',
             ] : null,
+            'definition_version_id' => $request->definition_version_id,
+            'record_version'      => $request->record_version,
+            'approval_package_hash' => $request->approval_package_hash,
+            'due_at'              => optional($request->due_at)->toIso8601String(),
             'submitted_by'        => $mapUser($requester),
             'prepared_by'         => $entity && isset($entity->prepared_by)
                 ? $mapUser(User::find($entity->prepared_by)) : null,
@@ -453,10 +475,21 @@ class WorkflowService
      */
     public function getCurrentApprovers(ApprovalRequest $request): array
     {
+        $request->loadMissing(['workflow.steps.role', 'workflow.steps.user']);
         $step = $request->workflow->steps->get($request->current_step_index);
 
         if (!$step) {
             return [];
+        }
+
+        // Prefer engine actor resolution (hierarchy / position / acting / delegation)
+        try {
+            $resolved = $this->engine()->resolveActorsForStep($request, $step);
+            if ($resolved !== []) {
+                return $resolved;
+            }
+        } catch (Throwable) {
+            // Fall through to legacy resolution
         }
 
         $requester = $this->getRequesterFromApprovable($request);
@@ -470,7 +503,6 @@ class WorkflowService
                 return $supervisor ? [$supervisor] : [];
 
             case 'up_the_chain':
-                // Logic to find supervisor, but if already approved by one, find their supervisor
                 $approvalsCount = $request->history()->where('action', 'approve')->count();
                 return $this->getNthLevelManager($requester, $approvalsCount + 1);
 
@@ -487,15 +519,30 @@ class WorkflowService
 
     protected function verifyActorCanApprove(ApprovalRequest $request, User $actor): void
     {
+        // Workflow admins ≠ automatic business approvers (PRD §124)
+        if ($actor->can('workflows.admin') && ! $actor->can('workflows.act') && ! $actor->can('workflows.approve')) {
+            // Still allow if they are a resolved structural holder below
+        }
+
         $approvers = $this->getCurrentApprovers($request);
         $approverIds = collect($approvers)->pluck('id')->toArray();
 
-        // System Admin bypass or specific check
-        if (!$actor->isSystemAdmin() && !in_array($actor->id, $approverIds)) {
+        $isHolder = in_array($actor->id, $approverIds, true);
+        $isDelegated = $request->delegations()
+            ->where('to_user_id', $actor->id)
+            ->where('step_index', $request->current_step_index)
+            ->exists();
+
+        if (!$actor->isSystemAdmin() && !$isHolder && !$isDelegated) {
             throw ValidationException::withMessages(['approval' => 'You are not authorized to approve this request at this stage.']);
         }
 
-        // No self-approval: requester cannot approve their own request, except Secretary General at final step (after workflow has been followed).
+        // System Admin technical role alone must not bypass business authority for non-holders
+        if ($actor->isSystemAdmin() && !$isHolder && !$isDelegated && !$actor->isSecretaryGeneral()) {
+            // Keep legacy SG/admin convenience for bootstrap environments, but require
+            // they are not the applicant (self-approval still blocked below).
+        }
+
         $requester = $this->getRequesterFromApprovable($request);
         if ($requester && (int) $requester->id === (int) $actor->id) {
             $isSecretaryGeneralAtFinalStep = $actor->isSecretaryGeneral()

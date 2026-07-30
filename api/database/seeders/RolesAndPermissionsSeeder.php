@@ -118,6 +118,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'people.payroll-link.manage', 'people.signatures.publish-verify',
             'people.succession.manage', 'people.skills.manage', 'people.analytics.view',
             'people.ai.suggest', 'people.ai.apply', 'people.privilege-alerts.manage',
+            // Workflow Engine Phase 1 (PRD §104)
+            'workflows.view-own', 'workflows.view-department', 'workflows.view-all',
+            'workflows.submit', 'workflows.act', 'workflows.recommend', 'workflows.certify',
+            'workflows.authorise', 'workflows.approve', 'workflows.sign', 'workflows.release',
+            'workflows.withdraw', 'workflows.cancel', 'workflows.reassign',
+            'workflows.resolve-exception', 'workflows.manage-definitions',
+            'workflows.approve-definitions', 'workflows.publish-definitions',
+            'workflows.view-audit', 'workflows.export', 'workflows.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -242,6 +250,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'delegations.create', 'delegations.revoke',
                     'signatures.enrol', 'documents.sign',
                     'roles.view',
+                    'workflows.view-own', 'workflows.submit', 'workflows.act', 'workflows.withdraw',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -336,6 +345,10 @@ class RolesAndPermissionsSeeder extends Seeder
                     'people.sod.analyse', 'people.org-scenarios.manage',
                     'people.succession.manage', 'people.analytics.view',
                     'people.privilege-alerts.manage', 'people.ai.suggest',
+                    'workflows.view-all', 'workflows.act', 'workflows.approve', 'workflows.authorise',
+                    'workflows.sign', 'workflows.recommend', 'workflows.certify',
+                    'workflows.manage-definitions', 'workflows.approve-definitions',
+                    'workflows.publish-definitions', 'workflows.admin', 'workflows.view-audit',
                 ])->where('guard_name', $guard)->get()
             );
 

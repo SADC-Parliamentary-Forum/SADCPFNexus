@@ -261,6 +261,43 @@ class Programme extends Model
     public function isSubmitted(): bool { return $this->status === 'submitted'; }
     public function isApproved(): bool { return $this->status === 'approved'; }
 
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\Programmes\Services\ProgrammeService::class)->approve($this, $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        $this->update([
+            'status' => 'rejected',
+            'rejection_reason' => $reason,
+        ]);
+        AuditLog::record('programme.rejected', [
+            'auditable_type' => self::class,
+            'auditable_id' => $this->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => 'programme',
+        ]);
+    }
+
+    public function onWorkflowReturned(User $approver, ?string $comment = null): void
+    {
+        $this->update([
+            'status' => 'returned_for_correction',
+            'rejection_reason' => $comment,
+        ]);
+    }
+
+    public function onWorkflowWithdrawn(): void
+    {
+        $this->update(['status' => 'withdrawn']);
+    }
+
+    public function onWorkflowResubmitted(): void
+    {
+        $this->update(['status' => 'submitted', 'submitted_at' => now()]);
+    }
+
     /**
      * Next PIF reference for the current year, e.g. PIF-2026-006.
      *

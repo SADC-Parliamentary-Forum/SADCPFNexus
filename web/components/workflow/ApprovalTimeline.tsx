@@ -54,7 +54,12 @@ export function ApprovalTimeline({ request }: Props) {
     };
 
     const getStageLabel = (step: ApprovalStep, index: number) => {
-        return step.step_name ?? `Stage ${index + 1}: ${step.approver_type.replace(/_/g, " ")}`;
+        const stageType = (step as any).stage_type as string | undefined;
+        const meaning = stageType
+            ? stageType.charAt(0).toUpperCase() + stageType.slice(1)
+            : null;
+        const base = step.step_name ?? `Stage ${index + 1}: ${step.approver_type.replace(/_/g, " ")}`;
+        return meaning ? `${base} (${meaning})` : base;
     };
 
     return (
