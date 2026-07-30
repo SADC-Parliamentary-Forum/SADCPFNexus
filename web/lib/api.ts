@@ -957,9 +957,16 @@ export const governanceMeetingTypeApi = {
 
 export const workflowApi = {
   getPending: () => api.get<{ data: ApprovalRequest[] }>("/approvals/pending"),
-  approve: (id: number, comment?: string) => api.post(`/approvals/${id}/approve`, { comment }),
-  reject: (id: number, comment: string) => api.post(`/approvals/${id}/reject`, { comment }),
+  getInbox: (params?: { status?: string; module?: string }) =>
+    api.get<{ data: unknown[] }>("/approvals/inbox", { params }),
+  approve: (id: number, comment?: string, idempotencyKey?: string) =>
+    api.post(`/approvals/${id}/approve`, { comment, idempotency_key: idempotencyKey }),
+  reject: (id: number, comment: string, idempotencyKey?: string) =>
+    api.post(`/approvals/${id}/reject`, { comment, idempotency_key: idempotencyKey }),
   getHistory: (id: number) => api.get<{ data: ApprovalHistory[] }>(`/approvals/${id}/history`),
+  getSnapshot: (id: number) => api.get<{ data: Record<string, unknown> }>(`/approvals/${id}/snapshot`),
+  decideTask: (taskId: number, data: { decision_type: string; comment?: string | null; idempotency_key?: string }) =>
+    api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
 };
 
 // ─── Travel ──────────────────────────────────────────────────────────────────

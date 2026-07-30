@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, workflowApi, type ApprovalRequest } from '@/lib/api';
+import { workflowApi, type ApprovalRequest } from '@/lib/api';
 import { formatDateShort } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 
@@ -27,7 +27,7 @@ export default function ApprovalsInboxPage() {
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['approvals', 'inbox', tab],
     queryFn: async () => {
-      const res = await api.get<{ data: any[] }>('/approvals/inbox', { params: { status: tab } });
+      const res = await workflowApi.getInbox({ status: tab });
       return res.data.data ?? [];
     },
     staleTime: 20_000,
@@ -62,7 +62,7 @@ export default function ApprovalsInboxPage() {
         if (decision === 'approve') await workflowApi.approve(task.approval_request_id);
         else await workflowApi.reject(task.approval_request_id, 'Rejected from inbox');
       } else {
-        await api.post(`/workflow-engine/approval-tasks/${task.id}/decide`, {
+        await workflowApi.decideTask(task.id, {
           decision_type: decision,
           comment: decision === 'reject' ? 'Rejected from inbox' : null,
           idempotency_key: `inbox-${task.id}-${decision}-${Date.now()}`,
