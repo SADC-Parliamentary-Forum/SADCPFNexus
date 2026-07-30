@@ -120,7 +120,7 @@ export default function WorkflowDesignerPage() {
           ))}
         </select>
         <button disabled={!versionId || busy} onClick={saveAndLint} className="px-3 py-2 border rounded">Save & lint</button>
-        <button disabled={!versionId || busy || (lint && !lint.valid)} onClick={publish} className="px-3 py-2 border rounded">Approve & publish</button>
+        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="px-3 py-2 border rounded">Approve & publish</button>
       </div>
 
       {lint && (
