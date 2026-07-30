@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Correspondence;
 use App\Models\CorrespondenceRecipient;
 use App\Modules\Correspondence\Services\CorrespondenceRegisterService;
+use App\Modules\Documents\Services\DocumentStorageService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class CorrespondenceController extends Controller
 {
     public function __construct(
         private readonly CorrespondenceRegisterService $register,
+        private readonly DocumentStorageService $documents,
     ) {}
 
     private function checkPerm(Request $request, string $permission): void
@@ -109,13 +111,25 @@ class CorrespondenceController extends Controller
         $originalFilename = null;
         $mimeType = null;
         $sizeBytes = null;
+        $contentHash = null;
+        $managedDocumentId = null;
+        $documentVersionId = null;
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');
-            $mimeType = UploadContentSniffer::assertAllowed($file);
-            $filePath = $file->store('correspondence/' . $user->tenant_id . '/drafts', ['disk' => 'local']);
-            $originalFilename = $file->getClientOriginalName();
-            $sizeBytes = $file->getSize();
+            $stored = $this->documents->storeForModule($user, $file, [
+                'title' => $data['title'] ?? $file->getClientOriginalName(),
+                'module' => 'correspondence',
+                'document_type' => 'correspondence_draft',
+                'classification' => strtoupper((string) ($data['confidentiality'] ?? 'UNCLASSIFIED')),
+            ]);
+            $filePath = $stored['storage_path'];
+            $originalFilename = $stored['original_filename'];
+            $mimeType = $stored['mime_type'];
+            $sizeBytes = $stored['size_bytes'];
+            $contentHash = $stored['content_hash'];
+            $managedDocumentId = $stored['managed_document_id'];
+            $documentVersionId = $stored['document_version_id'];
         }
 
         $correspondence = Correspondence::create([
@@ -141,6 +155,9 @@ class CorrespondenceController extends Controller
             'original_filename' => $originalFilename,
             'mime_type'         => $mimeType,
             'size_bytes'        => $sizeBytes,
+            'content_hash'      => $contentHash,
+            'managed_document_id' => $managedDocumentId,
+            'document_version_id' => $documentVersionId,
             'status'            => 'draft',
         ]);
 

@@ -135,9 +135,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'notifications.manage-policies', 'notifications.send-broadcast', 'notifications.approve-broadcast',
             'notifications.retry', 'notifications.suppress', 'notifications.manage-providers',
             'notifications.view-failures', 'notifications.view-audit', 'notifications.export', 'notifications.admin',
-            // Document Service Phase 1
+            // Document Service Phase 1–2
             'documents.upload', 'documents.view', 'documents.download', 'documents.finalize',
-            'documents.view-audit', 'documents.admin',
+            'documents.view-audit', 'documents.admin', 'documents.legal-hold',
         ];
 
         foreach ($permissions as $perm) {

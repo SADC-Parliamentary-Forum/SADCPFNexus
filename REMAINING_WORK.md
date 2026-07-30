@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
 **Last updated:** 2026-07-30  
-**Baseline tip:** Notifications Phase 1–3 live (`9ec4cbd`) + producer migration residual pack.
+**Baseline tip:** Document Service PRD Phase 1–3 pack (`feat/next-continuation-pack`).
 
 ---
 
@@ -9,32 +9,41 @@
 
 | Area | Status |
 |------|--------|
-| Notifications Phase 1–3 | Shipped (`9ec4cbd`) — outbox, push/ack/broadcast, AI assists (guarded) |
-| Notification producer migration | Residual pack — Leave/Travel/Procurement/Correspondence/Risk/Audit/People/Budget/Stock/Timesheets/Weekly/Salary Advance via outbox; external emails + tracked mailables; no business-module `Mail::` |
+| Document Service Phase 1 | Shipped earlier (`abe49e3`) — versioning, hashing, tokens, Null AV |
+| Document Repository PRD Phase 1–3 | This pack — file objects, links, holds, quarantine semantics, module wiring, Phase 2 slices, Phase 3 AI stubs, §125 governance UI |
+| Notifications Phase 1–3 + producer migration | Shipped — outbox path; no business-module `Mail::` |
 
 ---
 
-## Deferred / OOS
+## Ops-only / Governance Pending (not inventable in code)
+
+- Prod IMAP password installation
+- Live SMS/WhatsApp — **Governance Configuration Pending** (Null stubs remain)
+- Approved AV product credentials (`DOCUMENT_AV_DRIVER` + ClamAV/HTTP env)
+- OCR vendor credentials (`DOCUMENT_OCR_DRIVER`)
+- SharePoint/OneDrive migration credentials
+- Real LLM vendor credentials (weekly/procurement AI — stub default)
+- Document §125 / Notifications §124 checklist answers — record in admin UIs only
+
+---
+
+## Explicit OOS
 
 - Full **mobile parity** for many modules
-- Prod IMAP password installation (enablement only — document in ops; no secrets in repo)
 - FA ↔ Stock merge
 - Bank GL ownership / FA accounting GL posting
 - Auto-award / invented OT rates / paid GDS marketplace
 - All-employee email ingest / AI auto-submit
 - Full ML stock forecasting
-- Real LLM vendor credentials for weekly/procurement AI (env hooks only; stub default)
-- Live SMS/WhatsApp — **Governance Configuration Pending**
-- Notifications governance checklist UI (PRD §124 decisions) — do not invent policy answers
-- Document Service Phase 1 depth (versioning / hashing / immutable signed binaries) if still thin vs Workflow/People signing
+- Fabricating hours / surveillance rankings
 
 ---
 
-## Optional / light follow-ons
+## Optional light follow-ons
 
-- [ ] Wire offline stocktake queue auto-apply UI onto stocktake detail (API already accepts `client_line_key`)
-- [ ] BCP/KRI light polish (already implemented; no stub)
+- [ ] Wire offline stocktake queue auto-apply UI onto stocktake detail
 - [ ] Cashflow / scenario forecasting UX depth
+- [ ] Watermarked download binary transform (filename marker shipped; visual watermark optional)
 
 ---
 
@@ -42,4 +51,5 @@
 
 - Deploy: `scripts/deploy.sh`
 - Health: API `200`, Web `307` (auth redirect)
-- Notifications: `/notifications`, `/admin/notifications`
+- Documents: `/admin/documents`, `/admin/documents/governance`, `/admin/documents/retention`
+- Notifications: `/notifications`, `/admin/notifications`, `/admin/notifications/governance`

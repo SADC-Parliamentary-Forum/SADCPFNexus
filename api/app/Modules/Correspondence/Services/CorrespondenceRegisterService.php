@@ -17,6 +17,7 @@ use App\Models\CorrespondenceSubjectFile;
 use App\Models\SignatureEvent;
 use App\Models\User;
 use App\Modules\Assignments\Services\AssignmentService;
+use App\Modules\Documents\Services\DocumentStorageService;
 use App\Services\NotificationService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -31,6 +32,7 @@ class CorrespondenceRegisterService
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly AssignmentService $assignments,
+        private readonly DocumentStorageService $documents,
     ) {}
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -131,15 +133,24 @@ class CorrespondenceRegisterService
             $originalFilename = null;
             $mimeType = null;
             $sizeBytes = null;
+            $contentHash = null;
+            $managedDocumentId = null;
+            $documentVersionId = null;
 
             if ($file) {
-                $mimeType = UploadContentSniffer::assertAllowed($file);
-                $filePath = $file->store(
-                    'correspondence/' . $user->tenant_id . '/registered',
-                    ['disk' => 'local']
-                );
-                $originalFilename = $file->getClientOriginalName();
-                $sizeBytes = $file->getSize();
+                $stored = $this->documents->storeForModule($user, $file, [
+                    'title' => $data['title'] ?? $file->getClientOriginalName(),
+                    'module' => 'correspondence',
+                    'document_type' => 'correspondence_original',
+                    'classification' => strtoupper((string) ($data['confidentiality'] ?? 'UNCLASSIFIED')),
+                ]);
+                $filePath = $stored['storage_path'];
+                $originalFilename = $stored['original_filename'];
+                $mimeType = $stored['mime_type'];
+                $sizeBytes = $stored['size_bytes'];
+                $contentHash = $stored['content_hash'];
+                $managedDocumentId = $stored['managed_document_id'];
+                $documentVersionId = $stored['document_version_id'];
             }
 
             $ledger = $this->allocateReference($user, 'incoming', 'default', [
@@ -191,6 +202,9 @@ class CorrespondenceRegisterService
                 'original_filename' => $originalFilename,
                 'mime_type' => $mimeType,
                 'size_bytes' => $sizeBytes,
+                'content_hash' => $contentHash,
+                'managed_document_id' => $managedDocumentId,
+                'document_version_id' => $documentVersionId,
                 'original_immutable_at' => $filePath ? now() : null,
             ]);
 

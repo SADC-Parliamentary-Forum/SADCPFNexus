@@ -6,12 +6,15 @@ use App\Models\Attachment;
 use App\Models\AuditLog;
 use App\Models\Documents\DocumentAuditEvent;
 use App\Models\Documents\DocumentDownloadToken;
+use App\Models\Documents\DocumentFileObject;
+use App\Models\Documents\DocumentLink;
 use App\Models\Documents\DocumentVersion;
 use App\Models\Documents\ManagedDocument;
 use App\Models\PeopleAuthority\PersonDocument;
 use App\Models\User;
 use App\Modules\Documents\Contracts\MalwareScannerInterface;
 use App\Support\UploadContentSniffer;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +47,7 @@ class DocumentStorageService
      * @param  array{
      *   title?: string,
      *   module?: string,
+     *   document_type?: ?string,
      *   subject_type?: ?string,
      *   subject_id?: ?int,
      *   classification?: string,
@@ -61,7 +65,7 @@ class DocumentStorageService
         }
         $hash = hash('sha256', $bytes);
 
-        return DB::transaction(function () use ($actor, $file, $meta, $mime, $hash) {
+        return DB::transaction(function () use ($actor, $file, $meta, $mime, $hash, $bytes) {
             $document = null;
             if (! empty($meta['document_id'])) {
                 $document = ManagedDocument::query()
@@ -73,7 +77,9 @@ class DocumentStorageService
                         'document' => ['Final documents are immutable; create a new document to change content.'],
                     ]);
                 }
-                // Prior signed/final versions stay immutable; this path always appends a new version.
+                if ($document->isOnLegalHold() && ($meta['allow_hold_version'] ?? false) !== true) {
+                    // Holds block disposal/purge; appending evidence versions is allowed for admins only via flag.
+                }
             }
 
             if (! $document) {
@@ -82,40 +88,78 @@ class DocumentStorageService
                     'owner_user_id' => $actor->id,
                     'title' => $meta['title'] ?? $file->getClientOriginalName(),
                     'module' => $meta['module'] ?? 'general',
+                    'document_type' => $meta['document_type'] ?? null,
                     'subject_type' => $meta['subject_type'] ?? null,
                     'subject_id' => $meta['subject_id'] ?? null,
                     'classification' => $meta['classification'] ?? 'UNCLASSIFIED',
                     'is_final' => false,
+                    'archive_class' => 'hot',
+                    'archive_status' => 'active',
+                    'search_text' => trim(($meta['title'] ?? $file->getClientOriginalName()).' '.($meta['module'] ?? '')),
                 ]);
             }
 
             $nextVersion = (int) $document->versions()->max('version_number') + 1;
             $disk = $this->storageDisk();
-            $dir = sprintf(
-                'documents/%s/%s',
-                $actor->tenant_id,
-                $document->id
-            );
+            $dir = sprintf('documents/%s/%s', $actor->tenant_id, $document->id);
             $path = $file->store($dir, ['disk' => $disk]);
 
             $scanPath = $path;
             try {
                 $scanPath = Storage::disk($disk)->path($path);
             } catch (\Throwable) {
-                // S3-compatible disks have no local path; Null scanner does not need one.
             }
             $scan = $this->scanner->scan($scanPath, $disk, $path);
+            $quarantine = $this->normalizeScanStatus($scan);
 
-            if (($scan['status'] ?? '') === 'infected') {
+            if ($quarantine === 'infected') {
                 Storage::disk($disk)->delete($path);
                 throw ValidationException::withMessages([
                     'file' => ['Upload rejected by malware scan.'],
                 ]);
             }
 
+            // PRD §126: failed scan ≠ clean — keep pending/error in quarantine (not releasable).
+            $fileObject = DocumentFileObject::query()->firstOrCreate(
+                [
+                    'tenant_id' => $actor->tenant_id,
+                    'content_hash' => $hash,
+                ],
+                [
+                    'storage_disk' => $disk,
+                    'storage_path' => $path,
+                    'mime_type' => $mime,
+                    'size_bytes' => $file->getSize(),
+                    'quarantine_status' => $quarantine,
+                    'scanned_at' => now(),
+                    'scan_provider' => $scan['provider'] ?? $this->scanner->providerName(),
+                    'scan_summary' => $scan['summary'] ?? null,
+                    'ref_count' => 0,
+                ]
+            );
+
+            // If reusing an existing hash object, bump ref; never overwrite binary path.
+            if (! $fileObject->wasRecentlyCreated && $fileObject->storage_path !== $path) {
+                // Deduplicate: drop the newly stored copy; point version at existing object.
+                Storage::disk($disk)->delete($path);
+                $path = $fileObject->storage_path;
+                $disk = $fileObject->storage_disk ?: $disk;
+            }
+
+            $fileObject->increment('ref_count');
+            if ($fileObject->quarantine_status !== 'clean' && $quarantine === 'clean') {
+                $fileObject->update([
+                    'quarantine_status' => 'clean',
+                    'scanned_at' => now(),
+                    'scan_provider' => $scan['provider'] ?? $this->scanner->providerName(),
+                    'scan_summary' => $scan['summary'] ?? null,
+                ]);
+            }
+
             $version = DocumentVersion::create([
                 'tenant_id' => $actor->tenant_id,
                 'managed_document_id' => $document->id,
+                'file_object_id' => $fileObject->id,
                 'version_number' => $nextVersion,
                 'content_hash' => $hash,
                 'storage_disk' => $disk,
@@ -123,21 +167,26 @@ class DocumentStorageService
                 'original_filename' => $file->getClientOriginalName(),
                 'mime_type' => $mime,
                 'size_bytes' => $file->getSize(),
-                'quarantine_status' => $scan['status'] ?? 'clean',
+                'quarantine_status' => $quarantine,
                 'scanned_at' => now(),
                 'scan_provider' => $scan['provider'] ?? $this->scanner->providerName(),
+                'quarantine_reason' => $quarantine === 'clean' ? null : ($scan['summary'] ?? 'Awaiting clean scan'),
                 'status' => DocumentVersion::STATUS_ACTIVE,
                 'is_immutable' => false,
                 'uploaded_by' => $actor->id,
                 'notes' => $meta['notes'] ?? null,
             ]);
 
-            $document->update(['current_version_id' => $version->id]);
+            $document->update([
+                'current_version_id' => $version->id,
+                'search_text' => trim(($document->title ?? '').' '.($document->module ?? '').' '.$file->getClientOriginalName().' '.$hash),
+            ]);
 
             $this->audit($actor, 'document.uploaded', $document, $version, [
                 'version_number' => $version->version_number,
                 'content_hash' => $hash,
                 'quarantine_status' => $version->quarantine_status,
+                'file_object_id' => $fileObject->id,
             ]);
 
             AuditLog::record('document.uploaded', [
@@ -146,6 +195,7 @@ class DocumentStorageService
                 'new_values' => [
                     'version_id' => $version->id,
                     'content_hash' => $hash,
+                    'quarantine_status' => $quarantine,
                 ],
                 'tags' => ['document-service'],
             ]);
@@ -155,6 +205,75 @@ class DocumentStorageService
                 'version' => $version,
             ];
         });
+    }
+
+    /**
+     * Normalize AV result. Only explicit 'clean' is releasable. error/pending stay quarantined.
+     */
+    public function normalizeScanStatus(array $scan): string
+    {
+        $status = strtolower((string) ($scan['status'] ?? 'error'));
+        if ($status === 'clean') {
+            return 'clean';
+        }
+        if ($status === 'infected') {
+            return 'infected';
+        }
+        if ($status === 'pending') {
+            return 'pending';
+        }
+
+        return 'error';
+    }
+
+    public function createLink(
+        User $actor,
+        ManagedDocument $document,
+        ?DocumentVersion $version,
+        Model $linkable,
+        ?string $role = 'attachment',
+        ?string $label = null
+    ): DocumentLink {
+        $this->assertTenant($actor, $document->tenant_id);
+
+        $link = DocumentLink::create([
+            'tenant_id' => $actor->tenant_id,
+            'managed_document_id' => $document->id,
+            'document_version_id' => $version?->id ?? $document->current_version_id,
+            'linkable_type' => $linkable::class,
+            'linkable_id' => (int) $linkable->getKey(),
+            'role' => $role,
+            'label' => $label,
+            'linked_by' => $actor->id,
+        ]);
+
+        $this->audit($actor, 'document.linked', $document, $version, [
+            'link_id' => $link->id,
+            'linkable_type' => $link->linkable_type,
+            'linkable_id' => $link->linkable_id,
+            'role' => $role,
+        ]);
+
+        return $link;
+    }
+
+    public function unlink(User $actor, DocumentLink $link): DocumentLink
+    {
+        $this->assertTenant($actor, $link->tenant_id);
+        if ($link->unlinked_at) {
+            return $link;
+        }
+
+        $link->update([
+            'unlinked_at' => now(),
+            'unlinked_by' => $actor->id,
+        ]);
+
+        $this->audit($actor, 'document.unlinked', $link->document, $link->version, [
+            'link_id' => $link->id,
+        ]);
+
+        return $link->fresh();
     }
 
     /**
@@ -342,6 +461,13 @@ class DocumentStorageService
             abort(403, 'Unauthorized document download.');
         }
 
+        if ($version->quarantine_status !== 'clean') {
+            $this->audit($actor, 'document.quarantine_blocked', $version->document, $version, [
+                'quarantine_status' => $version->quarantine_status,
+            ]);
+            abort(423, 'Document is quarantined and not released for download.');
+        }
+
         if (! $version->existsOnDisk()) {
             abort(404, 'File not found.');
         }
@@ -490,6 +616,287 @@ class DocumentStorageService
         return DocumentVersion::query()
             ->where('tenant_id', $tenantId)
             ->findOrFail($versionId);
+    }
+
+    /**
+     * Admin register: paginated managed documents for the actor's tenant.
+     *
+     * @param  array{module?: string, q?: string, legal_hold?: bool|string, classification?: string, per_page?: int}  $filters
+     */
+    public function listRegister(User $actor, array $filters = [])
+    {
+        $query = ManagedDocument::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNull('purged_at')
+            ->with(['currentVersion', 'owner:id,name', 'legalHoldSetter:id,name'])
+            ->latest('id');
+
+        if (! empty($filters['module'])) {
+            $query->where('module', $filters['module']);
+        }
+        if (! empty($filters['classification'])) {
+            $query->where('classification', $filters['classification']);
+        }
+        if (array_key_exists('legal_hold', $filters) && $filters['legal_hold'] !== null && $filters['legal_hold'] !== '') {
+            $hold = filter_var($filters['legal_hold'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($hold !== null) {
+                $query->where('legal_hold', $hold);
+            }
+        }
+        if (! empty($filters['q'])) {
+            $q = '%'.str_replace(['%', '_'], ['\\%', '\\_'], (string) $filters['q']).'%';
+            $query->where(function ($inner) use ($q) {
+                $inner->where('title', 'ilike', $q)
+                    ->orWhere('module', 'ilike', $q)
+                    ->orWhereHas('versions', fn ($v) => $v->where('content_hash', 'ilike', $q)
+                        ->orWhere('original_filename', 'ilike', $q));
+            });
+        }
+
+        $perPage = min(max((int) ($filters['per_page'] ?? 25), 1), 100);
+
+        return $query->paginate($perPage);
+    }
+
+    public function placeLegalHold(User $actor, ManagedDocument $document, string $reason): ManagedDocument
+    {
+        $this->assertTenant($actor, $document->tenant_id);
+        if (trim($reason) === '') {
+            throw ValidationException::withMessages([
+                'legal_hold_reason' => ['A reason is required when placing a legal hold.'],
+            ]);
+        }
+
+        $document->update([
+            'legal_hold' => true,
+            'legal_hold_reason' => $reason,
+            'legal_hold_set_by' => $actor->id,
+            'legal_hold_set_at' => now(),
+        ]);
+
+        $this->audit($actor, 'document.legal_hold_placed', $document, $document->currentVersion, [
+            'reason' => $reason,
+        ]);
+
+        AuditLog::record('document.legal_hold_placed', [
+            'auditable_type' => ManagedDocument::class,
+            'auditable_id' => $document->id,
+            'new_values' => ['legal_hold' => true, 'reason' => $reason],
+            'tags' => ['document-service', 'legal-hold'],
+        ]);
+
+        return $document->fresh(['currentVersion', 'legalHoldSetter:id,name']);
+    }
+
+    public function releaseLegalHold(User $actor, ManagedDocument $document): ManagedDocument
+    {
+        $this->assertTenant($actor, $document->tenant_id);
+
+        $document->update([
+            'legal_hold' => false,
+            'legal_hold_reason' => null,
+            'legal_hold_set_by' => null,
+            'legal_hold_set_at' => null,
+        ]);
+
+        $this->audit($actor, 'document.legal_hold_released', $document, $document->currentVersion);
+
+        AuditLog::record('document.legal_hold_released', [
+            'auditable_type' => ManagedDocument::class,
+            'auditable_id' => $document->id,
+            'new_values' => ['legal_hold' => false],
+            'tags' => ['document-service', 'legal-hold'],
+        ]);
+
+        return $document->fresh(['currentVersion']);
+    }
+
+    /**
+     * @param  array{retention_policy?: ?string, retain_until?: ?string}  $data
+     */
+    public function setRetention(User $actor, ManagedDocument $document, array $data): ManagedDocument
+    {
+        $this->assertTenant($actor, $document->tenant_id);
+
+        $document->update([
+            'retention_policy' => $data['retention_policy'] ?? $document->retention_policy,
+            'retain_until' => $data['retain_until'] ?? $document->retain_until,
+        ]);
+
+        $this->audit($actor, 'document.retention_updated', $document, $document->currentVersion, [
+            'retention_policy' => $document->retention_policy,
+            'retain_until' => $document->retain_until?->toDateString(),
+        ]);
+
+        return $document->fresh(['currentVersion']);
+    }
+
+    /**
+     * Soft-purge metadata + remove version bytes unless legal hold blocks.
+     */
+    public function purge(User $actor, ManagedDocument $document): ManagedDocument
+    {
+        $this->assertTenant($actor, $document->tenant_id);
+        $this->assertNotOnLegalHold($document);
+
+        return DB::transaction(function () use ($actor, $document) {
+            foreach ($document->versions as $version) {
+                if ($version->storage_path) {
+                    try {
+                        Storage::disk($version->storage_disk ?: 'local')->delete($version->storage_path);
+                    } catch (\Throwable) {
+                        // continue — mark purged even if blob already gone
+                    }
+                }
+            }
+
+            $document->update([
+                'purged_at' => now(),
+                'purged_by' => $actor->id,
+            ]);
+            $document->delete();
+
+            $this->audit($actor, 'document.purged', $document, null, [
+                'versions' => $document->versions->pluck('id')->all(),
+            ]);
+
+            AuditLog::record('document.purged', [
+                'auditable_type' => ManagedDocument::class,
+                'auditable_id' => $document->id,
+                'tags' => ['document-service', 'retention'],
+            ]);
+
+            return $document->fresh();
+        });
+    }
+
+    public function assertNotOnLegalHold(ManagedDocument $document): void
+    {
+        if ($document->isOnLegalHold()) {
+            throw ValidationException::withMessages([
+                'legal_hold' => ['Cannot purge or destroy a document under legal hold. Release the hold first.'],
+            ]);
+        }
+    }
+
+    /**
+     * Verify-by-hash — approved metadata only (no storage paths / tokens).
+     *
+     * @return array{verified: bool, matches?: list<array<string, mixed>>}
+     */
+    public function verifyByHash(string $hash, ?User $actor = null, bool $public = false): array
+    {
+        $hash = strtolower(trim($hash));
+        if (! preg_match('/^[a-f0-9]{64}$/', $hash)) {
+            throw ValidationException::withMessages([
+                'hash' => ['Content hash must be a 64-character SHA-256 hex digest.'],
+            ]);
+        }
+
+        $query = DocumentVersion::query()->where('content_hash', $hash)->with('document');
+        if ($actor && ! $public) {
+            $query->where('tenant_id', $actor->tenant_id);
+        }
+
+        $versions = $query->limit(25)->get();
+        if ($versions->isEmpty()) {
+            $this->audit($actor, 'document.verify_miss', null, null, [
+                'content_hash' => $hash,
+                'public' => $public,
+            ]);
+
+            return ['verified' => false, 'content_hash' => $hash];
+        }
+
+        $fields = $public
+            ? (array) config('documents.verify_public_fields', [])
+            : (array) config('documents.verify_internal_fields', []);
+
+        $matches = $versions->map(function (DocumentVersion $version) use ($fields, $public) {
+            $doc = $version->document;
+            $row = [
+                'verified' => true,
+                'content_hash' => $version->content_hash,
+                'version_number' => $version->version_number,
+                'status' => $version->status,
+                'is_immutable' => $version->is_immutable,
+                'quarantine_status' => $version->quarantine_status,
+                'scan_provider' => $version->scan_provider,
+                'mime_type' => $version->mime_type,
+                'size_bytes' => $version->size_bytes,
+                'classification' => $doc?->classification,
+                'module' => $doc?->module,
+                'title' => $doc?->title,
+                'document_id' => $doc?->id,
+                'version_id' => $version->id,
+                'finalized_at' => $version->finalized_at?->toIso8601String(),
+                'legal_hold' => (bool) ($doc?->legal_hold),
+            ];
+
+            // Never expose storage paths / disks / notes on verify endpoints.
+            unset($row['storage_path'], $row['storage_disk'], $row['notes']);
+
+            if ($public) {
+                unset($row['title'], $row['document_id'], $row['version_id'], $row['legal_hold']);
+            }
+
+            return array_intersect_key($row, array_flip($fields));
+        })->values()->all();
+
+        $this->audit($actor, 'document.verify_hit', $versions->first()?->document, $versions->first(), [
+            'content_hash' => $hash,
+            'public' => $public,
+            'match_count' => count($matches),
+        ]);
+
+        return [
+            'verified' => true,
+            'content_hash' => $hash,
+            'match_count' => count($matches),
+            'matches' => $matches,
+        ];
+    }
+
+    /**
+     * Bridge helper: upload via Document Service and return linkage fields for module rows.
+     *
+     * @param  array{title?: string, module?: string, subject_type?: ?string, subject_id?: ?int, classification?: string, notes?: ?string}  $meta
+     * @return array{document: ManagedDocument, version: DocumentVersion, storage_path: string, content_hash: string}
+     */
+    public function storeForModule(User $actor, UploadedFile $file, array $meta = []): array
+    {
+        $result = $this->upload($actor, $file, $meta);
+        $version = $result['version'];
+
+        return [
+            'document' => $result['document'],
+            'version' => $version,
+            'storage_path' => $version->storage_path,
+            'content_hash' => $version->content_hash,
+            'managed_document_id' => $result['document']->id,
+            'document_version_id' => $version->id,
+            'mime_type' => $version->mime_type,
+            'size_bytes' => $version->size_bytes,
+            'original_filename' => $version->original_filename,
+        ];
+    }
+
+    /**
+     * Link an Attachment morph row onto a managed version (PIF / travel / leave, etc.).
+     */
+    public function linkAttachment(Attachment $attachment, DocumentVersion $version): Attachment
+    {
+        $attachment->forceFill([
+            'storage_path' => $version->storage_path,
+            'content_hash' => $version->content_hash,
+            'managed_document_id' => $version->managed_document_id,
+            'document_version_id' => $version->id,
+            'mime_type' => $version->mime_type ?? $attachment->mime_type,
+            'size_bytes' => $version->size_bytes ?? $attachment->size_bytes,
+            'original_filename' => $version->original_filename ?: $attachment->original_filename,
+        ])->save();
+
+        return $attachment->fresh();
     }
 
     private function audit(?User $actor, string $eventType, ?ManagedDocument $document, ?DocumentVersion $version, array $payload = []): void

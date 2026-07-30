@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\Contract;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
 use Illuminate\Http\JsonResponse;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ContractAttachmentController extends Controller
 {
+    public function __construct(private readonly ModuleDocumentBridge $bridge) {}
+
     public function index(Request $request, Contract $contract): JsonResponse
     {
         $this->ensureCanAccess($request, $contract);
@@ -28,18 +31,11 @@ class ContractAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::CONTRACT_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
-        $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('attachments/contracts/' . $contract->id, ['disk' => 'local']);
-        $attachment = $contract->attachments()->create([
-            'tenant_id'         => $contract->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_SIGNED_CONTRACT),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
+        UploadContentSniffer::assertAllowed($file);
+        $attachment = $this->bridge->storeAttachment($request->user(), $contract, $file, [
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_SIGNED_CONTRACT),
+            'module' => 'procurement',
         ]);
-        $attachment->load('uploader:id,name');
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -49,11 +45,8 @@ class ContractAttachmentController extends Controller
         if ($attachment->attachable_type !== Contract::class || (int) $attachment->attachable_id !== (int) $contract->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
-        return response()->json(['message' => 'Attachment deleted.']);
+        $this->bridge->unlinkAttachment($request->user(), $attachment);
+        return response()->json(['message' => 'Attachment unlinked.']);
     }
 
     public function download(Request $request, Contract $contract, Attachment $attachment): StreamedResponse|JsonResponse

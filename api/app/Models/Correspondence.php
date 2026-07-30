@@ -29,6 +29,7 @@ class Correspondence extends Model
         'type', 'priority', 'language', 'language_tags', 'status', 'direction',
         'file_code', 'signatory_code', 'department_id', 'programme_id',
         'file_path', 'original_filename', 'mime_type', 'size_bytes',
+        'content_hash', 'managed_document_id', 'document_version_id',
         'review_comment', 'rejection_reason',
         'submitted_at', 'reviewed_at', 'approved_at', 'sent_at',
         'correspondence_date', 'received_at', 'channel',

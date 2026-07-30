@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\ProcurementRequest;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProcurementRequestAttachmentController extends Controller
 {
+    public function __construct(
+        private readonly ModuleDocumentBridge $bridge,
+    ) {}
+
     public function index(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
         $this->ensureCanAccess($request, $procurementRequest);
@@ -28,18 +33,12 @@ class ProcurementRequestAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::PROCUREMENT_REQUEST_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
-        $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('attachments/procurement-requests/' . $procurementRequest->id, ['disk' => 'local']);
-        $attachment = $procurementRequest->attachments()->create([
-            'tenant_id'         => $procurementRequest->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_RFQ_DOCUMENT),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
+        UploadContentSniffer::assertAllowed($file);
+        $attachment = $this->bridge->storeAttachment($request->user(), $procurementRequest, $file, [
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_RFQ_DOCUMENT),
+            'module' => 'procurement',
         ]);
-        $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -49,11 +48,9 @@ class ProcurementRequestAttachmentController extends Controller
         if ($attachment->attachable_type !== ProcurementRequest::class || (int) $attachment->attachable_id !== (int) $procurementRequest->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
-        return response()->json(['message' => 'Attachment deleted.']);
+        $this->bridge->unlinkAttachment($request->user(), $attachment);
+
+        return response()->json(['message' => 'Attachment unlinked.']);
     }
 
     public function download(Request $request, ProcurementRequest $procurementRequest, Attachment $attachment): StreamedResponse|JsonResponse

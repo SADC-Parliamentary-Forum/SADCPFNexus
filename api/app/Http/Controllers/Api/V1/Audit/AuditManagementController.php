@@ -273,9 +273,17 @@ class AuditManagementController extends Controller
         $data = $request->validate([
             'response_text' => ['nullable', 'string'],
             'attachment_path' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:51200'],
         ]);
 
-        return response()->json(['data' => $this->engagements->respondEvidence($evidenceRequest, $data, $request->user())], 201);
+        return response()->json([
+            'data' => $this->engagements->respondEvidence(
+                $evidenceRequest,
+                $data,
+                $request->user(),
+                $request->file('file')
+            ),
+        ], 201);
     }
 
     public function workpapersStore(Request $request, AuditEngagement $engagement): JsonResponse
@@ -285,9 +293,17 @@ class AuditManagementController extends Controller
             'reference' => ['nullable', 'string', 'max:64'],
             'content' => ['nullable', 'string'],
             'confidentiality_level' => ['nullable', 'string', 'in:standard,restricted,confidential,secret'],
+            'file' => ['nullable', 'file', 'max:51200'],
         ]);
 
-        return response()->json(['data' => $this->engagements->createWorkpaper($engagement, $data, $request->user())], 201);
+        return response()->json([
+            'data' => $this->engagements->createWorkpaper(
+                $engagement,
+                $data,
+                $request->user(),
+                $request->file('file')
+            ),
+        ], 201);
     }
 
     public function workpapersReview(Request $request, AuditWorkpaper $workpaper): JsonResponse

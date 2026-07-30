@@ -11,6 +11,8 @@ class AuditWorkpaper extends Model
     protected $fillable = [
         'tenant_id', 'engagement_id', 'reference', 'title', 'content', 'status',
         'prepared_by', 'reviewed_by', 'reviewed_at', 'is_immutable', 'confidentiality_level',
+        'storage_path', 'original_filename', 'mime_type', 'size_bytes',
+        'content_hash', 'managed_document_id', 'document_version_id',
     ];
 
     protected $casts = [

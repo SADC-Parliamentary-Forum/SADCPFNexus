@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Travel;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\TravelRequest;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
 use App\Support\AuthorizesRequestRecords;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,10 @@ class TravelAttachmentController extends Controller
         'HOD',
     ];
 
+    public function __construct(
+        private readonly ModuleDocumentBridge $bridge,
+    ) {}
+
     public function index(Request $request, TravelRequest $travelRequest): JsonResponse
     {
         $this->ensureCanView($request, $travelRequest);
@@ -36,25 +41,16 @@ class TravelAttachmentController extends Controller
     {
         $this->ensureCanManage($request, $travelRequest);
         $request->validate([
-            'file'          => ['required', 'file', 'max:25600'], // 25 MB
+            'file'          => ['required', 'file', 'max:25600'],
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::TRAVEL_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
-        $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store(
-            'attachments/travel/' . $travelRequest->id,
-            ['disk' => 'local']
-        );
-        $attachment = $travelRequest->attachments()->create([
-            'tenant_id'         => $travelRequest->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
+        UploadContentSniffer::assertAllowed($file);
+        $attachment = $this->bridge->storeAttachment($request->user(), $travelRequest, $file, [
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
+            'module' => 'travel',
         ]);
-        $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -64,11 +60,9 @@ class TravelAttachmentController extends Controller
         if ($attachment->attachable_type !== TravelRequest::class || (int) $attachment->attachable_id !== (int) $travelRequest->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
-        return response()->json(['message' => 'Attachment deleted.']);
+        $this->bridge->unlinkAttachment($request->user(), $attachment);
+
+        return response()->json(['message' => 'Attachment unlinked.']);
     }
 
     public function download(Request $request, TravelRequest $travelRequest, Attachment $attachment): StreamedResponse|JsonResponse

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Leave;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\LeaveRequest;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeaveAttachmentController extends Controller
 {
+    public function __construct(
+        private readonly ModuleDocumentBridge $bridge,
+    ) {}
+
     public function index(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
         $this->ensureCanView($request, $leaveRequest);
@@ -30,7 +35,7 @@ class LeaveAttachmentController extends Controller
     {
         $this->ensureCanView($request, $leaveRequest);
         $request->validate([
-            'file'          => ['required', 'file', 'max:25600'], // 25 MB
+            'file'          => ['required', 'file', 'max:25600'],
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::LEAVE_DOCUMENT_TYPES)],
         ]);
         if (
@@ -41,21 +46,15 @@ class LeaveAttachmentController extends Controller
         }
 
         $file = $request->file('file');
-        $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store(
-            'attachments/leave/' . $leaveRequest->id,
-            ['disk' => 'local']
-        );
-        $attachment = $leaveRequest->attachments()->create([
-            'tenant_id'         => $leaveRequest->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
+        UploadContentSniffer::assertAllowed($file);
+        $attachment = $this->bridge->storeAttachment($request->user(), $leaveRequest, $file, [
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
+            'module' => 'leave',
+            'classification' => $request->input('document_type') === Attachment::DOCUMENT_TYPE_MEDICAL_CERTIFICATE
+                ? 'CONFIDENTIAL'
+                : 'UNCLASSIFIED',
         ]);
-        $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -69,11 +68,9 @@ class LeaveAttachmentController extends Controller
             abort(403, 'You are not authorised to manage medical leave documents.');
         }
 
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
-        return response()->json(['message' => 'Attachment deleted.']);
+        $this->bridge->unlinkAttachment($request->user(), $attachment);
+
+        return response()->json(['message' => 'Attachment unlinked.']);
     }
 
     public function download(Request $request, LeaveRequest $leaveRequest, Attachment $attachment): StreamedResponse|JsonResponse

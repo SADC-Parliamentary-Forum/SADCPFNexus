@@ -509,6 +509,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Payslip Upload",       href: "/admin/payslips",         icon: "upload_file" },
       { label: "Salary Assignments",   href: "/admin/salary-assignments", icon: "badge" },
       { label: "Audit Logs",           href: "/admin/audit",            icon: "manage_search" },
+      { label: "Document Register",    href: "/admin/documents",        icon: "folder_managed" },
       { label: "Ledger Verification",  href: "/admin/ledger",           icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",       icon: "database" },
       { label: "Weekly Summary",       href: "/admin/weekly-summary",   icon: "calendar_month" },

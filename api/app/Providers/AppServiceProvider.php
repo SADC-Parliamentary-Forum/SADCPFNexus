@@ -46,7 +46,7 @@ use App\Modules\Travel\Services\GdsProviderFactory;
 use App\Modules\Travel\Services\OptionalHttpFxRateProvider;
 use App\Modules\Travel\Services\PracticalAirlineItineraryParser;
 use App\Modules\Documents\Contracts\MalwareScannerInterface;
-use App\Modules\Documents\Drivers\NullMalwareScanner;
+use App\Modules\Documents\Drivers\MalwareScannerFactory;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -55,8 +55,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Document Service — Null malware scanner until an institutional AV product is approved.
-        $this->app->bind(MalwareScannerInterface::class, NullMalwareScanner::class);
+        // Document Service AV — factory selects null (default), clamav, or http from DOCUMENT_AV_DRIVER.
+        $this->app->singleton(MalwareScannerFactory::class);
+        $this->app->bind(MalwareScannerInterface::class, function ($app) {
+            return $app->make(MalwareScannerFactory::class)->make();
+        });
 
         $this->app->singleton(PayrollRecoveryAdapterFactory::class);
 

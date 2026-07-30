@@ -20,6 +20,7 @@ class DocumentVersion extends Model
     protected $fillable = [
         'tenant_id',
         'managed_document_id',
+        'file_object_id',
         'version_number',
         'content_hash',
         'storage_disk',
@@ -30,6 +31,7 @@ class DocumentVersion extends Model
         'quarantine_status',
         'scanned_at',
         'scan_provider',
+        'quarantine_reason',
         'status',
         'is_immutable',
         'uploaded_by',
@@ -37,6 +39,9 @@ class DocumentVersion extends Model
         'finalized_by',
         'signed_locked_at',
         'notes',
+        'is_derivative',
+        'derivative_of_version_id',
+        'derivative_kind',
     ];
 
     protected function casts(): array
@@ -45,10 +50,26 @@ class DocumentVersion extends Model
             'version_number' => 'integer',
             'size_bytes' => 'integer',
             'is_immutable' => 'boolean',
+            'is_derivative' => 'boolean',
             'scanned_at' => 'datetime',
             'finalized_at' => 'datetime',
             'signed_locked_at' => 'datetime',
         ];
+    }
+
+    public function fileObject(): BelongsTo
+    {
+        return $this->belongsTo(DocumentFileObject::class, 'file_object_id');
+    }
+
+    public function isQuarantined(): bool
+    {
+        return in_array($this->quarantine_status, ['pending', 'error', 'infected'], true);
+    }
+
+    public function isReleasedForDownload(): bool
+    {
+        return $this->quarantine_status === 'clean' && ! $this->isQuarantined();
     }
 
     public function tenant(): BelongsTo

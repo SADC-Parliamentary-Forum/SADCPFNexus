@@ -12,8 +12,10 @@ use App\Models\AuditUniverseEntity;
 use App\Models\AuditWorkpaper;
 use App\Models\AuditWorkpaperReviewNote;
 use App\Models\User;
+use App\Modules\Documents\Services\DocumentStorageService;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +26,7 @@ class AuditEngagementService
         private readonly AuditEventRecorder $events,
         private readonly AuditAccessGate $gate,
         private readonly NotificationService $notifications,
+        private readonly DocumentStorageService $documents,
     ) {}
 
     public function listUniverse(array $filters, User $user): LengthAwarePaginator
@@ -238,15 +241,47 @@ class AuditEngagementService
         return $req;
     }
 
-    public function respondEvidence(AuditEvidenceRequest $request, array $data, User $user): AuditEvidenceResponse
+    public function respondEvidence(AuditEvidenceRequest $request, array $data, User $user, ?UploadedFile $file = null): AuditEvidenceResponse
     {
         $this->assertTenant($request->tenant_id, $user);
+
+        $attachmentPath = $data['attachment_path'] ?? null;
+        $contentHash = null;
+        $managedDocumentId = null;
+        $documentVersionId = null;
+
+        if ($file) {
+            $stored = $this->documents->storeForModule($user, $file, [
+                'title' => 'Evidence: '.($request->title ?? 'response'),
+                'module' => 'audit',
+                'document_type' => 'audit_evidence',
+                'subject_type' => AuditEvidenceRequest::class,
+                'subject_id' => $request->id,
+                'classification' => strtoupper((string) ($request->confidentiality_level ?? 'RESTRICTED')),
+            ]);
+            $attachmentPath = $stored['storage_path'];
+            $contentHash = $stored['content_hash'];
+            $managedDocumentId = $stored['managed_document_id'];
+            $documentVersionId = $stored['document_version_id'];
+            $this->documents->createLink(
+                $user,
+                $stored['document'],
+                $stored['version'],
+                $request,
+                'evidence',
+                'audit_evidence'
+            );
+        }
+
         $response = AuditEvidenceResponse::create([
             'tenant_id' => $user->tenant_id,
             'evidence_request_id' => $request->id,
             'responded_by' => $user->id,
             'response_text' => $data['response_text'] ?? null,
-            'attachment_path' => $data['attachment_path'] ?? null,
+            'attachment_path' => $attachmentPath,
+            'content_hash' => $contentHash,
+            'managed_document_id' => $managedDocumentId,
+            'document_version_id' => $documentVersionId,
         ]);
         $request->update(['status' => 'responded']);
         $this->events->record('audit.evidence.responded', $user, AuditEvidenceResponse::class, $response->id);
@@ -254,10 +289,36 @@ class AuditEngagementService
         return $response;
     }
 
-    public function createWorkpaper(AuditEngagement $engagement, array $data, User $user): AuditWorkpaper
+    public function createWorkpaper(AuditEngagement $engagement, array $data, User $user, ?UploadedFile $file = null): AuditWorkpaper
     {
         $this->assertTenant($engagement->tenant_id, $user);
         $this->gate->assertCanFieldwork($engagement, $user);
+
+        $storagePath = null;
+        $originalFilename = null;
+        $mimeType = null;
+        $sizeBytes = null;
+        $contentHash = null;
+        $managedDocumentId = null;
+        $documentVersionId = null;
+
+        if ($file) {
+            $stored = $this->documents->storeForModule($user, $file, [
+                'title' => $data['title'],
+                'module' => 'audit',
+                'document_type' => 'audit_workpaper',
+                'subject_type' => AuditEngagement::class,
+                'subject_id' => $engagement->id,
+                'classification' => strtoupper((string) ($data['confidentiality_level'] ?? 'RESTRICTED')),
+            ]);
+            $storagePath = $stored['storage_path'];
+            $originalFilename = $stored['original_filename'];
+            $mimeType = $stored['mime_type'];
+            $sizeBytes = $stored['size_bytes'];
+            $contentHash = $stored['content_hash'];
+            $managedDocumentId = $stored['managed_document_id'];
+            $documentVersionId = $stored['document_version_id'];
+        }
 
         $wp = AuditWorkpaper::create([
             'tenant_id' => $user->tenant_id,
@@ -268,7 +329,26 @@ class AuditEngagementService
             'status' => 'draft',
             'prepared_by' => $user->id,
             'confidentiality_level' => $data['confidentiality_level'] ?? 'restricted',
+            'storage_path' => $storagePath,
+            'original_filename' => $originalFilename,
+            'mime_type' => $mimeType,
+            'size_bytes' => $sizeBytes,
+            'content_hash' => $contentHash,
+            'managed_document_id' => $managedDocumentId,
+            'document_version_id' => $documentVersionId,
         ]);
+
+        if ($file && isset($stored)) {
+            $this->documents->createLink(
+                $user,
+                $stored['document'],
+                $stored['version'],
+                $wp,
+                'workpaper',
+                'audit_workpaper'
+            );
+        }
+
         $this->events->record('audit.workpaper.created', $user, AuditWorkpaper::class, $wp->id);
 
         return $wp;

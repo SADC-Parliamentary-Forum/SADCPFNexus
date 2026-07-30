@@ -5685,6 +5685,9 @@ export const notificationGovernanceApi = {
 };
 
 export const documentServiceApi = {
+  list: (params?: Record<string, string | number | boolean | undefined>) =>
+    api.get("/documents", { params }),
+  search: (q: string) => api.get("/documents/search", { params: { q } }),
   upload: (formData: FormData) =>
     api.post("/documents", formData, { headers: { "Content-Type": "multipart/form-data" } }),
   get: (id: number | string) => api.get(`/documents/${id}`),
@@ -5696,6 +5699,49 @@ export const documentServiceApi = {
   finalize: (versionId: number | string) =>
     api.post(`/documents/versions/${versionId}/finalize`),
   audit: () => api.get("/documents/audit"),
+  placeLegalHold: (id: number | string, legal_hold_reason: string) =>
+    api.post(`/documents/${id}/legal-hold`, { legal_hold_reason }),
+  releaseLegalHold: (id: number | string) => api.delete(`/documents/${id}/legal-hold`),
+  setRetention: (id: number | string, payload: { retention_policy?: string; retain_until?: string }) =>
+    api.put(`/documents/${id}/retention`, payload),
+  verify: (hash: string) => api.get(`/documents/verify/${hash}`),
+  retentionDashboard: () => api.get("/documents/retention/dashboard"),
+  createRetentionCampaign: (payload: { name: string; cutoff_date?: string }) =>
+    api.post("/documents/retention/campaigns", payload),
+  backupStatus: () => api.get("/documents/backup-status"),
+};
+
+export interface ManagedDocumentRow {
+  id: number;
+  title: string;
+  module: string;
+  classification: string;
+  legal_hold?: boolean;
+  current_version?: {
+    id: number;
+    content_hash?: string;
+    quarantine_status?: string;
+    version_number?: number;
+  } | null;
+}
+
+export interface DocumentGovernanceDecision {
+  id: number;
+  decision_key: string;
+  title: string;
+  description?: string | null;
+  status: "pending" | "decided" | "not_applicable";
+  decision_notes?: string | null;
+  decided_by?: number | null;
+  decided_at?: string | null;
+  decided_by_user?: { id: number; name: string } | null;
+}
+
+export const documentGovernanceApi = {
+  list: () =>
+    api.get<{ data: DocumentGovernanceDecision[]; meta?: Record<string, unknown> }>("/documents/governance"),
+  update: (id: number | string, payload: { status: string; decision_notes?: string | null }) =>
+    api.put(`/documents/governance/${id}`, payload),
 };
 
 export const notificationsPhase23Api = {

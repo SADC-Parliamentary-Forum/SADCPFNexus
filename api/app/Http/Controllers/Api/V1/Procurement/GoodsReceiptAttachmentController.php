@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\GoodsReceiptNote;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
 use Illuminate\Http\JsonResponse;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GoodsReceiptAttachmentController extends Controller
 {
+    public function __construct(private readonly ModuleDocumentBridge $bridge) {}
+
     public function index(Request $request, GoodsReceiptNote $goodsReceiptNote): JsonResponse
     {
         $this->ensureCanAccess($request, $goodsReceiptNote);
@@ -28,18 +31,11 @@ class GoodsReceiptAttachmentController extends Controller
             'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::GOODS_RECEIPT_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
-        $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('attachments/receipts/' . $goodsReceiptNote->id, ['disk' => 'local']);
-        $attachment = $goodsReceiptNote->attachments()->create([
-            'tenant_id'         => $goodsReceiptNote->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_DELIVERY_NOTE),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
+        UploadContentSniffer::assertAllowed($file);
+        $attachment = $this->bridge->storeAttachment($request->user(), $goodsReceiptNote, $file, [
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_DELIVERY_NOTE),
+            'module' => 'procurement',
         ]);
-        $attachment->load('uploader:id,name');
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -49,11 +45,8 @@ class GoodsReceiptAttachmentController extends Controller
         if ($attachment->attachable_type !== GoodsReceiptNote::class || (int) $attachment->attachable_id !== (int) $goodsReceiptNote->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
-        return response()->json(['message' => 'Attachment deleted.']);
+        $this->bridge->unlinkAttachment($request->user(), $attachment);
+        return response()->json(['message' => 'Attachment unlinked.']);
     }
 
     public function download(Request $request, GoodsReceiptNote $goodsReceiptNote, Attachment $attachment): StreamedResponse|JsonResponse
