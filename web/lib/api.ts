@@ -8277,3 +8277,49 @@ export const auditApi = {
   activateExternal: (id: number) => api.post(`/audit-management/external/${id}/activate`),
   revokeExternal: (id: number) => api.post(`/audit-management/external/${id}/revoke`),
 };
+
+
+export const peopleAuthorityApi = {
+  me: () => api.get<{ data: Record<string, unknown> }>("/people-authority/me"),
+  listPeople: (params?: Record<string, string | number | boolean>) =>
+    api.get("/people-authority/people", { params }),
+  getPerson: (id: number) => api.get(`/people-authority/people/${id}`),
+  createPerson: (data: Record<string, unknown>) => api.post("/people-authority/people", data),
+  updatePerson: (id: number, data: Record<string, unknown>) => api.put(`/people-authority/people/${id}`, data),
+  linkAccount: (id: number, data: Record<string, unknown>) =>
+    api.post(`/people-authority/people/${id}/link-account`, data),
+  orgChart: () => api.get<{ data: Record<string, unknown> }>("/people-authority/organisation/chart"),
+  listUnits: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/organisation/units", { params }),
+  createUnit: (data: Record<string, unknown>) => api.post("/people-authority/organisation/units", data),
+  listPositions: (params?: Record<string, string | number>) =>
+    api.get("/people-authority/positions", { params }),
+  createPosition: (data: Record<string, unknown>) => api.post("/people-authority/positions", data),
+  assignPosition: (id: number, data: Record<string, unknown>) =>
+    api.post(`/people-authority/positions/${id}/assign`, data),
+  createReporting: (data: Record<string, unknown>) =>
+    api.post("/people-authority/reporting-relationships", data),
+  listAuthorities: () => api.get("/people-authority/authorities"),
+  createAuthority: (data: Record<string, unknown>) => api.post("/people-authority/authorities", data),
+  assignAuthority: (data: Record<string, unknown>) =>
+    api.post("/people-authority/authority-assignments", data),
+  checkAuthority: (data: Record<string, unknown>) =>
+    api.post<{ data: Record<string, unknown> }>("/people-authority/authority/check", data),
+  listActing: () => api.get("/people-authority/acting-appointments"),
+  createActing: (data: Record<string, unknown>) => api.post("/people-authority/acting-appointments", data),
+  approveActing: (id: number) => api.post(`/people-authority/acting-appointments/${id}/approve`),
+  listDelegations: () => api.get("/people-authority/delegations"),
+  createDelegation: (data: Record<string, unknown>) => api.post("/people-authority/delegations", data),
+  approveDelegation: (id: number) => api.post(`/people-authority/delegations/${id}/approve`),
+  revokeDelegation: (id: number, data?: Record<string, unknown>) =>
+    api.post(`/people-authority/delegations/${id}/revoke`, data ?? {}),
+  enrolSignature: (data: Record<string, unknown>) => api.post("/people-authority/signatures/enrol", data),
+  activateSignature: (id: number) => api.post(`/people-authority/signatures/${id}/activate`),
+  signDocument: (data: Record<string, unknown>) => api.post("/people-authority/documents/sign", data),
+  createOnboarding: (data: Record<string, unknown>) => api.post("/people-authority/onboarding", data),
+  createOffboarding: (data: Record<string, unknown>) => api.post("/people-authority/offboarding", data),
+  createAccessReview: (data: Record<string, unknown>) => api.post("/people-authority/access-reviews", data),
+  reports: (type: string) => api.get("/people-authority/reports", { params: { type } }),
+  listJobDescriptions: () => api.get("/people-authority/job-descriptions"),
+  createJobDescription: (data: Record<string, unknown>) => api.post("/people-authority/job-descriptions", data),
+};

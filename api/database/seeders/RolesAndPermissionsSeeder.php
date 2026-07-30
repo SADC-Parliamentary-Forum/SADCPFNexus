@@ -102,6 +102,16 @@ class RolesAndPermissionsSeeder extends Seeder
             'weekly-reports.record-decision', 'weekly-reports.create-assignment', 'weekly-reports.create-risk',
             'weekly-reports.manage-periods', 'weekly-reports.manage-templates', 'weekly-reports.manage-exemptions',
             'weekly-reports.reopen', 'weekly-reports.export', 'weekly-reports.audit', 'weekly-reports.admin',
+            // People & Authority (PRD §109)
+            'people.view-directory', 'people.view-profile', 'people.view-confidential', 'people.manage',
+            'organisation.view', 'organisation.manage', 'positions.manage', 'reporting-lines.manage',
+            'roles.view', 'roles.assign', 'roles.approve', 'roles.revoke',
+            'authorities.manage',
+            'acting-appointments.create', 'acting-appointments.approve',
+            'delegations.create', 'delegations.approve', 'delegations.revoke',
+            'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
+            'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
+            'people.export', 'identity.audit',
         ];
 
         foreach ($permissions as $perm) {
@@ -127,6 +137,16 @@ class RolesAndPermissionsSeeder extends Seeder
                     'leave.view', 'leave.approve', 'imprest.view', 'imprest.approve',
                     'governance.view',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
+                    // People & Authority
+                    'people.view-directory', 'people.view-profile', 'people.view-confidential', 'people.manage',
+                    'organisation.view', 'organisation.manage', 'positions.manage', 'reporting-lines.manage',
+                    'roles.view', 'roles.assign',
+                    'authorities.manage',
+                    'acting-appointments.create', 'acting-appointments.approve',
+                    'delegations.create', 'delegations.approve', 'delegations.revoke',
+                    'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
+                    'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
+                    'people.export', 'identity.audit',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -206,6 +226,11 @@ class RolesAndPermissionsSeeder extends Seeder
                     'audit.view', 'audit.findings.view',
                     'audit.response.manage', 'audit.corrective.manage',
                     'audit.dashboard.management',
+                    'people.view-directory', 'people.view-profile',
+                    'organisation.view',
+                    'delegations.create', 'delegations.revoke',
+                    'signatures.enrol', 'documents.sign',
+                    'roles.view',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -260,6 +285,13 @@ class RolesAndPermissionsSeeder extends Seeder
                     'conduct.view', 'conduct.create', 'conduct.admin',
                     'governance.view',
                     'reports.view',
+                    'people.view-directory', 'people.view-profile', 'people.view-confidential', 'people.manage',
+                    'organisation.view', 'organisation.manage', 'positions.manage', 'reporting-lines.manage',
+                    'roles.view', 'roles.assign',
+                    'acting-appointments.create',
+                    'delegations.create', 'delegations.approve',
+                    'signatures.enrol', 'signatures.administer', 'documents.sign',
+                    'onboarding.manage', 'offboarding.manage', 'identity.audit',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -285,6 +317,11 @@ class RolesAndPermissionsSeeder extends Seeder
                     'correspondence.view', 'correspondence.create', 'correspondence.review',
                     'correspondence.approve', 'correspondence.send', 'correspondence.route',
                     'correspondence.registry', 'correspondence.dispatch', 'correspondence.confidential.view',
+                    'people.view-directory', 'people.view-profile', 'people.view-confidential',
+                    'organisation.view', 'roles.view', 'roles.approve', 'roles.revoke',
+                    'authorities.manage', 'acting-appointments.approve',
+                    'delegations.approve', 'signatures.verify', 'documents.sign',
+                    'access-reviews.manage', 'identity.audit',
                 ])->where('guard_name', $guard)->get()
             );
 
