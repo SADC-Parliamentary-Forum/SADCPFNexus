@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { getListData } from "@/lib/listPagination";
 
@@ -835,6 +836,12 @@ export default function TravelDetailPage() {
 
       {/* Approval Timeline */}
       <ApprovalTimeline request={approvalRequest} />
+
+      <AuditTimeline
+        subjectType="TravelRequest"
+        subjectId={request.id}
+        title="Platform Audit Trail"
+      />
 
       {/* Requester */}
       {request.requester && (

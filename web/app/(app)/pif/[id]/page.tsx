@@ -24,6 +24,7 @@ import { CreateAssignmentFromSourceModal } from "@/components/assignments/Create
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { unwrapEntity } from "@/lib/unwrapEntity";
+import { AuditTimeline } from "@/components/audit/AuditTimeline";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -1408,6 +1409,12 @@ export default function PifDetailPage() {
               </div>
             </div>
           </div>
+
+          <AuditTimeline
+            subjectType="Programme"
+            subjectId={programme.id}
+            title="Platform Audit Trail"
+          />
 
           {/* Rejection reason if rejected */}
           {programme.status === "rejected" && programme.rejection_reason && (

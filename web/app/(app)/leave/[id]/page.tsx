@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { leaveApi, type LeaveRequest, workflowApi, type ModuleAttachment, LEAVE_DOCUMENT_TYPES } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -618,6 +619,12 @@ export default function LeaveDetailPage() {
 
       {/* Workflow Timeline */}
       <ApprovalTimeline request={approvalRequest} />
+
+      <AuditTimeline
+        subjectType="LeaveRequest"
+        subjectId={request.id}
+        title="Platform Audit Trail"
+      />
 
       {/* Leave Segments */}
       {segments.length > 0 && (

@@ -8582,3 +8582,82 @@ export const peopleAuthorityApi = {
   aiApply: (id: number, data: Record<string, unknown>) =>
     api.post(`/people-authority/ai/suggestions/${id}/apply`, data),
 };
+
+// --- Platform Audit Trail (NOT Internal Audit module) ---
+export interface PlatformAuditEvent {
+  id: number;
+  uuid: string;
+  sequence_number: number;
+  event_key: string;
+  category: string;
+  severity: string;
+  outcome: string;
+  occurred_at: string | null;
+  actor_type: string;
+  actor_id: number | null;
+  actor_snapshot?: { display_name?: string; department_name?: string; roles_used?: string[] } | null;
+  principal_id?: number | null;
+  delegation_id?: number | null;
+  acting_appointment_id?: number | null;
+  subject_type?: string | null;
+  subject_id?: number | null;
+  source_module?: string | null;
+  action?: string | null;
+  reason?: string | null;
+  correlation_id?: string | null;
+  retention_class?: string;
+  confidentiality?: string;
+  migration_status?: string | null;
+  event_hash?: string;
+  previous_event_hash?: string;
+  payload?: Record<string, unknown>;
+  ip_address?: string | null;
+  changes?: Array<Record<string, unknown>>;
+}
+
+export interface AuditTrailGovernanceDecision {
+  id: number;
+  decision_key: string;
+  sort_order: number;
+  title: string;
+  description?: string | null;
+  status: "pending" | "decided" | "not_applicable";
+  decision_notes?: string | null;
+  decided_by?: number | null;
+  decided_at?: string | null;
+}
+
+export const platformAuditApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<{ data: PlatformAuditEvent[]; current_page: number; last_page: number; total: number }>(
+      "/audit-events",
+      { params },
+    ),
+  get: (id: string | number) => api.get<{ data: PlatformAuditEvent }>(`/audit-events/${id}`),
+  recordHistory: (type: string, id: string | number, params?: Record<string, string | number>) =>
+    api.get<{ data: PlatformAuditEvent[]; current_page: number; last_page: number; total: number }>(
+      `/records/${encodeURIComponent(type)}/${id}/audit-history`,
+      { params },
+    ),
+  verifyIntegrity: (data?: { from_sequence?: number; to_sequence?: number }) =>
+    api.post<{ data: { valid: boolean; checked: number; message: string; alert_id?: number | null } }>(
+      "/audit-integrity/verify",
+      data ?? {},
+    ),
+  checkpoints: () => api.get<{ data: Array<Record<string, unknown>> }>("/audit-integrity/checkpoints"),
+  createCheckpoint: () => api.post<{ data: Record<string, unknown> }>("/audit-admin/checkpoints"),
+  ingestionHealth: () => api.get<{ data: Record<string, number | null> }>("/audit-admin/ingestion-health"),
+  deadLetters: (params?: Record<string, string | number>) =>
+    api.get("/audit-admin/dead-letters", { params }),
+  replayDeadLetter: (id: number) => api.post(`/audit-admin/dead-letters/${id}/replay`),
+  holds: (params?: Record<string, string | number>) => api.get("/audit-admin/holds", { params }),
+  placeHold: (data: Record<string, unknown>) => api.post("/audit-admin/holds", data),
+  releaseHold: (id: number) => api.post(`/audit-admin/holds/${id}/release`),
+  eventTypes: () => api.get<{ data: Array<Record<string, unknown>> }>("/audit-admin/event-types"),
+  governanceList: () =>
+    api.get<{ data: AuditTrailGovernanceDecision[]; meta?: Record<string, unknown> }>("/audit-admin/governance"),
+  governanceUpdate: (id: number, data: { status: string; decision_notes?: string | null }) =>
+    api.put<{ data: AuditTrailGovernanceDecision }>(`/audit-admin/governance/${id}`, data),
+  migrateLegacy: (limit?: number) =>
+    api.post<{ data: Record<string, number> }>("/audit-admin/migrate-legacy", { limit }),
+};

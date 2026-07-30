@@ -76,6 +76,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
             'reports.view', 'reports.export', 'reports.audit',
             'audit.view', 'audit.export',
+            // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
+            'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
+            'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
+            'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
+            'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
+            'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
+            'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
             // Audit Management Module (Phase 1) — distinct from platform audit.view/export
             'audit.universe.manage', 'audit.plan.manage', 'audit.plan.approve',
             'audit.engagement.manage', 'audit.engagement.fieldwork',
@@ -225,6 +232,13 @@ class RolesAndPermissionsSeeder extends Seeder
             $externalAuditor->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'salary_advance.view', 'governance.view', 'audit.view', 'audit.export',
+            // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
+            'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
+            'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
+            'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
+            'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
+            'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
+            'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
                     'travel.view', 'assets.view', 'hr.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -479,6 +493,13 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'mande.view', 'mande.review',
                     'audit.view', 'audit.export',
+            // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
+            'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
+            'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
+            'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
+            'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
+            'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
+            'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
                     'audit.universe.manage', 'audit.plan.manage',
                     'audit.engagement.manage', 'audit.engagement.fieldwork',
                     'audit.findings.issue', 'audit.findings.view',

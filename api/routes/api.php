@@ -171,6 +171,38 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'destroy']);
         });
 
+        // Platform Audit Trail (NOT Internal Audit module)
+        Route::prefix('audit-events')->middleware('throttle:180,1')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
+            Route::post('/', [$c, 'ingest']);
+            Route::post('/batch', [$c, 'ingestBatch']);
+            Route::get('/ingestion-status/{eventId}', [$c, 'ingestionStatus']);
+            Route::get('/', [$c, 'index']);
+            Route::get('/{id}', [$c, 'show']);
+            Route::get('/{id}/related', [$c, 'related']);
+        });
+        Route::get('records/{type}/{id}/audit-history', [\App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class, 'recordHistory']);
+        Route::get('users/{id}/security-events', [\App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class, 'userSecurityEvents']);
+        Route::prefix('audit-integrity')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
+            Route::get('checkpoints', [$c, 'checkpoints']);
+            Route::post('verify', [$c, 'verify']);
+            Route::post('checkpoints', [$c, 'createCheckpoint']);
+        });
+        Route::prefix('audit-admin')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
+            Route::get('ingestion-health', [$c, 'ingestionHealth']);
+            Route::get('dead-letters', [$c, 'deadLetters']);
+            Route::post('dead-letters/{id}/replay', [$c, 'replayDeadLetter']);
+            Route::get('holds', [$c, 'holds']);
+            Route::post('holds', [$c, 'placeHold']);
+            Route::post('holds/{id}/release', [$c, 'releaseHold']);
+            Route::get('event-types', [$c, 'eventTypes']);
+            Route::get('governance', [$c, 'governanceIndex']);
+            Route::put('governance/{decision}', [$c, 'governanceUpdate']);
+            Route::post('migrate-legacy', [$c, 'migrateLegacy']);
+            Route::post('checkpoints', [$c, 'createCheckpoint']);
+        });
         Route::prefix('notification-admin')->group(function () {
             Route::get('deliveries', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'deliveries']);
             Route::get('failures', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'failures']);
