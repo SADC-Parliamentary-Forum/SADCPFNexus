@@ -2,21 +2,25 @@
 
 namespace App\Modules\PeopleAuthority\Services;
 
+use App\Models\Documents\DocumentVersion;
 use App\Models\PeopleAuthority\DocumentSignatureEvent;
 use App\Models\PeopleAuthority\SignatureEnrolment;
 use App\Models\User;
+use App\Modules\Documents\Services\DocumentStorageService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
  * Secure signing binds authenticated signer to document version + hash (PRD §70–78).
  * Specimen image alone is not signing authority.
+ * When document_version_id references Document Service, the signed version is locked.
  */
 class SigningService
 {
     public function __construct(
         private readonly AuthorityCheckService $authority,
         private readonly IdentityAuditService $audit,
+        private readonly DocumentStorageService $documents,
     ) {}
 
     public function enrol(User $actor, array $data): SignatureEnrolment
@@ -108,7 +112,28 @@ class SigningService
                 ]);
             }
 
+            $managedVersion = null;
+            if (! empty($data['document_version_id']) && is_numeric($data['document_version_id'])) {
+                $managedVersion = DocumentVersion::query()
+                    ->where('tenant_id', $actor->tenant_id)
+                    ->find((int) $data['document_version_id']);
+                if (! $managedVersion) {
+                    throw ValidationException::withMessages([
+                        'document_version_id' => ['Document version not found in Document Service.'],
+                    ]);
+                }
+            }
+
             $hash = $data['document_hash'] ?? null;
+            if ($managedVersion) {
+                if ($hash && ! hash_equals($managedVersion->content_hash, (string) $hash)) {
+                    throw ValidationException::withMessages([
+                        'document_hash' => ['Provided hash does not match Document Service version hash.'],
+                    ]);
+                }
+                $hash = $managedVersion->content_hash;
+                $data['document_version_id'] = (string) $managedVersion->id;
+            }
             if (! $hash) {
                 $content = (string) ($data['document_content'] ?? '');
                 if ($content === '') {
@@ -191,6 +216,14 @@ class SigningService
                 'document_hash' => $event->document_hash,
                 'meaning' => $event->signature_meaning,
             ]);
+
+            // Document Service: signed version becomes immutable; changes require a new version.
+            if ($managedVersion) {
+                $this->documents->lockAfterSignature($actor, $managedVersion, [
+                    'signature_event_id' => $event->id,
+                    'document_type' => $event->document_type,
+                ]);
+            }
 
             return $event;
         });

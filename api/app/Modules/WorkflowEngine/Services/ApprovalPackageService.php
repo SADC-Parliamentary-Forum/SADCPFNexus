@@ -6,6 +6,7 @@ use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Models\WorkflowEngine\WorkflowApprovalPackage;
 use App\Models\WorkflowEngine\WorkflowAuditEvent;
+use App\Modules\Documents\Services\DocumentStorageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
@@ -161,13 +162,25 @@ class ApprovalPackageService
         }
 
         $docs = [];
+        $documentService = app(DocumentStorageService::class);
+
         if (method_exists($entity, 'attachments')) {
             foreach ($entity->attachments()->get() as $att) {
+                $hash = $att->content_hash ?? null;
+                if (! $hash) {
+                    try {
+                        $hash = $documentService->syncAttachmentHash($att);
+                    } catch (\Throwable) {
+                        $hash = null;
+                    }
+                }
                 $docs[] = [
                     'id' => $att->id,
                     'name' => $att->original_filename ?? $att->name ?? null,
                     'path' => $att->storage_path ?? $att->path ?? null,
-                    'hash' => $att->content_hash ?? null,
+                    'hash' => $hash,
+                    'managed_document_id' => $att->managed_document_id ?? null,
+                    'document_version_id' => $att->document_version_id ?? null,
                 ];
             }
         }
@@ -178,6 +191,8 @@ class ApprovalPackageService
                     'name' => $doc->title ?? $doc->name ?? null,
                     'path' => $doc->storage_path ?? $doc->path ?? null,
                     'hash' => $doc->content_hash ?? null,
+                    'managed_document_id' => $doc->managed_document_id ?? null,
+                    'document_version_id' => $doc->document_version_id ?? null,
                 ];
             }
         }

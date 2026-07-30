@@ -274,6 +274,9 @@ class Attachment extends Model
         'storage_path',
         'mime_type',
         'size_bytes',
+        'content_hash',
+        'managed_document_id',
+        'document_version_id',
         'is_chosen_quote',
         'selection_reason',
     ];
@@ -309,7 +312,13 @@ class Attachment extends Model
 
     public function getStorageDisk(): string
     {
-        return 'local';
+        $disk = (string) config('filesystems.default', 'local');
+        if ($disk === 'public') {
+            return 'local';
+        }
+
+        // Prefer configured private disk; fall back to local for legacy rows.
+        return $disk !== '' ? $disk : 'local';
     }
 
     public function existsOnDisk(): bool

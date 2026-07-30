@@ -75,9 +75,14 @@ export default function AdminNotificationsPage() {
             Phase 2/3 delivery health, analytics, broadcasts and ack campaigns. Provider failure never rolls back business decisions.
           </p>
         </div>
-        <Link href="/notifications" className="text-sm text-primary underline">
-          Open user inbox
-        </Link>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link href="/notifications" className="text-sm text-primary underline">
+            Open user inbox
+          </Link>
+          <Link href="/admin/notifications/governance" className="text-sm text-primary underline">
+            Governance checklist (§124)
+          </Link>
+        </div>
       </div>
 
       {toast && (

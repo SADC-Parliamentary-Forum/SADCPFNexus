@@ -179,6 +179,20 @@ Route::prefix('v1')->group(function () {
             Route::get('maintenance', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'listMaintenance']);
             Route::post('maintenance', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'scheduleMaintenance']);
             Route::get('ai/guards', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'aiGuards']);
+            Route::get('governance', [\App\Http\Controllers\Api\V1\Notifications\NotificationGovernanceController::class, 'index']);
+            Route::put('governance/{decision}', [\App\Http\Controllers\Api\V1\Notifications\NotificationGovernanceController::class, 'update']);
+        });
+
+        // Shared Document Service Phase 1 — versioned hashed private storage
+        Route::prefix('documents')->group(function () {
+            Route::post('/', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'upload']);
+            Route::get('audit', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'audit']);
+            Route::get('versions/{version}/download', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'download']);
+            Route::post('versions/{version}/download-token', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'issueToken']);
+            Route::post('versions/{version}/finalize', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'markFinal']);
+            Route::get('download-token/{token}', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'downloadViaToken']);
+            Route::get('{document}', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'show']);
+            Route::get('{document}/versions', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'versions']);
         });
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);

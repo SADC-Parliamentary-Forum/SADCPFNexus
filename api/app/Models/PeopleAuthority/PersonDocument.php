@@ -18,7 +18,17 @@ class PersonDocument extends Model
         'document_type',
         'title',
         'storage_path',
+        'content_hash',
+        'managed_document_id',
+        'document_version_id',
+        'is_immutable',
         'uploaded_by',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'is_immutable' => 'boolean',
+        ];
+    }
 }

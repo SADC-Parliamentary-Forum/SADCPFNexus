@@ -153,9 +153,44 @@ class WorkflowEngineController extends Controller
             $result = $this->workflows->returnForCorrection($approval, $request->user(), $data['comment'] ?? 'Returned');
         } else {
             $result = $this->workflows->approve($approval, $request->user(), $data['comment'] ?? null, $data['idempotency_key'] ?? null);
+            if ($data['decision_type'] === 'sign') {
+                $this->lockPackageDocumentVersions($request->user(), $approval);
+            }
         }
 
         return response()->json(['data' => $result]);
+    }
+
+    /**
+     * Workflow signature stage — lock Document Service versions referenced in the approval package.
+     */
+    private function lockPackageDocumentVersions(\App\Models\User $actor, ApprovalRequest $approval): void
+    {
+        $package = \App\Models\WorkflowEngine\WorkflowApprovalPackage::query()
+            ->where('approval_request_id', $approval->id)
+            ->orderByDesc('package_version')
+            ->first();
+        if (! $package) {
+            return;
+        }
+
+        $docs = $package->document_snapshot ?? [];
+        $storage = app(\App\Modules\Documents\Services\DocumentStorageService::class);
+        foreach ($docs as $doc) {
+            $versionId = $doc['document_version_id'] ?? null;
+            if (! $versionId) {
+                continue;
+            }
+            try {
+                $version = $storage->findVersionForTenant((int) $actor->tenant_id, (int) $versionId);
+                $storage->lockAfterSignature($actor, $version, [
+                    'approval_request_id' => $approval->id,
+                    'source' => 'workflow_sign_stage',
+                ]);
+            } catch (\Throwable) {
+                // Non-managed attachments without Document Service versions are skipped.
+            }
+        }
     }
 
     public function withdraw(Request $request, ApprovalRequest $approvalRequest): JsonResponse

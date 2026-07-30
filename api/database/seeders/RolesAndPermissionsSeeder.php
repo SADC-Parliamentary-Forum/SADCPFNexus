@@ -135,6 +135,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'notifications.manage-policies', 'notifications.send-broadcast', 'notifications.approve-broadcast',
             'notifications.retry', 'notifications.suppress', 'notifications.manage-providers',
             'notifications.view-failures', 'notifications.view-audit', 'notifications.export', 'notifications.admin',
+            // Document Service Phase 1
+            'documents.upload', 'documents.view', 'documents.download', 'documents.finalize',
+            'documents.view-audit', 'documents.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -258,6 +261,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'organisation.view',
                     'delegations.create', 'delegations.revoke',
                     'signatures.enrol', 'documents.sign',
+                    'documents.upload', 'documents.view', 'documents.download',
                     'roles.view',
                     'workflows.view-own', 'workflows.submit', 'workflows.act', 'workflows.withdraw',
                     'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',

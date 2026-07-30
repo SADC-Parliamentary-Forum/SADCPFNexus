@@ -5660,6 +5660,44 @@ export const notificationAdminApi = {
   aiGuards: () => api.get("/notification-admin/ai/guards"),
 };
 
+export interface NotificationGovernanceDecision {
+  id: number;
+  tenant_id: number;
+  decision_key: string;
+  sort_order: number;
+  title: string;
+  description?: string | null;
+  status: "pending" | "decided" | "not_applicable";
+  decision_notes?: string | null;
+  decided_by?: number | null;
+  decided_at?: string | null;
+  decided_by_user?: { id: number; name: string } | null;
+}
+
+export const notificationGovernanceApi = {
+  list: () => api.get<{ data: NotificationGovernanceDecision[]; meta?: Record<string, unknown> }>(
+    "/notification-admin/governance"
+  ),
+  update: (
+    id: number | string,
+    payload: { status: string; decision_notes?: string | null }
+  ) => api.put(`/notification-admin/governance/${id}`, payload),
+};
+
+export const documentServiceApi = {
+  upload: (formData: FormData) =>
+    api.post("/documents", formData, { headers: { "Content-Type": "multipart/form-data" } }),
+  get: (id: number | string) => api.get(`/documents/${id}`),
+  versions: (id: number | string) => api.get(`/documents/${id}/versions`),
+  downloadUrl: (versionId: number | string) =>
+    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/documents/versions/${versionId}/download`,
+  issueToken: (versionId: number | string, payload?: { ttl_seconds?: number; max_uses?: number }) =>
+    api.post(`/documents/versions/${versionId}/download-token`, payload ?? {}),
+  finalize: (versionId: number | string) =>
+    api.post(`/documents/versions/${versionId}/finalize`),
+  audit: () => api.get("/documents/audit"),
+};
+
 export const notificationsPhase23Api = {
   registerDevice: (payload: { token: string; platform?: string; device_name?: string; app_version?: string }) =>
     api.post("/notifications/devices", payload),

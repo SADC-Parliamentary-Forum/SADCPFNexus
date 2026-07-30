@@ -45,6 +45,8 @@ use App\Modules\Travel\Services\GdsAwareAirlineItineraryParser;
 use App\Modules\Travel\Services\GdsProviderFactory;
 use App\Modules\Travel\Services\OptionalHttpFxRateProvider;
 use App\Modules\Travel\Services\PracticalAirlineItineraryParser;
+use App\Modules\Documents\Contracts\MalwareScannerInterface;
+use App\Modules\Documents\Drivers\NullMalwareScanner;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,6 +55,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Document Service — Null malware scanner until an institutional AV product is approved.
+        $this->app->bind(MalwareScannerInterface::class, NullMalwareScanner::class);
+
         $this->app->singleton(PayrollRecoveryAdapterFactory::class);
 
         // Resolve from SALARY_ADVANCE_PAYROLL_DRIVER (default: manual).
