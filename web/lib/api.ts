@@ -5623,6 +5623,16 @@ export const notificationAdminApi = {
   audit: () => api.get("/notification-admin/audit"),
 };
 
+export interface GovernanceConfig {
+  datasets: Record<string, boolean>;
+  redaction: Record<string, boolean>;
+  formats: Record<string, boolean>;
+  retention_days: number;
+  min_group_size: number;
+  granularity: string;
+  variance_limit: number;
+}
+
 export const governanceConfigApi = {
   get: () => api.get<Record<string, unknown>>("/admin/settings").then((r) => {
     const s = r.data;
