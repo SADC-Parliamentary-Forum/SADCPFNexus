@@ -127,11 +127,27 @@ Route::prefix('v1')->group(function () {
 
         // User Notifications (in-app notification centre)
         Route::prefix('notifications')->group(function () {
-            Route::get('/',            [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'index']);
-            Route::get('/unread-count',[\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'unreadCount']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'index']);
+            Route::get('/unread-count', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'unreadCount']);
+            Route::get('/preferences', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'preferences']);
+            Route::put('/preferences', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'updatePreferences']);
+            Route::post('/read-all', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markAllRead']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'show']);
             Route::post('/{id}/read', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markRead']);
-            Route::post('/read-all',  [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markAllRead']);
-            Route::delete('/{id}',    [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'destroy']);
+            Route::post('/{id}/unread', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markUnread']);
+            Route::post('/{id}/acknowledge', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'acknowledge']);
+            Route::post('/{id}/archive', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'archive']);
+            Route::delete('/{id}', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'destroy']);
+        });
+
+        Route::prefix('notification-admin')->group(function () {
+            Route::get('deliveries', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'deliveries']);
+            Route::get('failures', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'failures']);
+            Route::get('dead-letters', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'deadLetters']);
+            Route::post('dead-letters/{id}/resolve', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'resolveDeadLetter']);
+            Route::post('deliveries/{id}/retry', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'retry']);
+            Route::post('deliveries/{id}/suppress', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'suppress']);
+            Route::get('audit', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'audit']);
         });
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);

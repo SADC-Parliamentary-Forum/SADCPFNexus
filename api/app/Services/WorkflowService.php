@@ -710,8 +710,6 @@ class WorkflowService
                 $notifiedLabels[] = $approver->name . ' (' . $stepLabel . ')';
 
                 try {
-                    $urls = $this->signedTokenService->createPair($request, $approver);
-
                     $vars = [
                         'name'         => $approver->name,
                         'module_label' => $label,
@@ -720,12 +718,13 @@ class WorkflowService
                         'summary'      => $summary,
                     ];
 
+                    // Authenticated inbox/approvals only — no unauthenticated approve/reject (PRD §108/§125).
                     $meta = [
-                        'module'      => $module,
-                        'record_id'   => $entity->id,
-                        'url'         => "/{$module}/" . ($entity->id ?? ''),
-                        'approve_url' => $urls['approve_url'],
-                        'reject_url'  => $urls['reject_url'],
+                        'module'           => $module,
+                        'record_id'        => $entity->id,
+                        'url'              => '/approvals',
+                        'secure_route'     => '/approvals',
+                        'idempotency_key'  => "workflow.approval_required:{$request->id}:step:{$request->current_step_index}:user:{$approver->id}",
                     ];
 
                     $this->notificationService->dispatch(
@@ -781,8 +780,6 @@ class WorkflowService
 
             if (!$entity) return;
 
-            $urls = $this->signedTokenService->createPair($request, $delegateTo);
-
             $this->notificationService->dispatch(
                 $delegateTo,
                 'workflow.approval_required',
@@ -794,11 +791,11 @@ class WorkflowService
                     'summary'      => $this->buildSummary($entity, $module),
                 ],
                 [
-                    'module'      => $module,
-                    'record_id'   => $entity->id,
-                    'url'         => "/{$module}/" . $entity->id,
-                    'approve_url' => $urls['approve_url'],
-                    'reject_url'  => $urls['reject_url'],
+                    'module'          => $module,
+                    'record_id'       => $entity->id,
+                    'url'             => '/approvals',
+                    'secure_route'    => '/approvals',
+                    'idempotency_key' => "workflow.approval_required:{$request->id}:delegate:{$delegateTo->id}",
                 ]
             );
         } catch (Throwable) {

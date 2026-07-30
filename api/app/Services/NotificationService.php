@@ -2,24 +2,18 @@
 
 namespace App\Services;
 
-use App\Mail\ModuleNotificationMail;
-use App\Models\DeviceToken;
-use App\Services\FcmService;
-use App\Models\Notification;
 use App\Models\NotificationTemplate;
 use App\Models\User;
-use Illuminate\Support\Facades\Mail;
+use App\Modules\Notifications\Services\NotificationDispatchService;
 
+/**
+ * Compatibility facade for module producers.
+ * Phase 1: dispatch() publishes through the Notifications outbox engine.
+ */
 class NotificationService
 {
     /**
      * Dispatch an in-app notification and (optionally) an email to a user.
-     *
-     * @param  User   $recipient    The user to notify.
-     * @param  string $triggerKey   e.g. 'travel.approved'
-     * @param  array  $vars         Placeholder values: ['name' => '...', 'destination' => '...', ...]
-     * @param  array  $meta         Extra data stored on the notification (module, record_id, url, etc.)
-     * @param  bool   $sendEmail    Whether to also send an email (default true).
      */
     public function dispatch(
         User $recipient,
@@ -29,58 +23,15 @@ class NotificationService
         bool $sendEmail = true,
         bool $sendPush = true
     ): void {
-        $template = $this->resolveTemplate($recipient->tenant_id, $triggerKey);
-        $subject  = $this->replacePlaceholders($template['subject'], $vars);
-        $body     = $this->replacePlaceholders($template['body'], $vars);
-
-        Notification::create([
-            'tenant_id' => $recipient->tenant_id,
-            'user_id'   => $recipient->id,
-            'type'      => 'App\\Notifications\\ModuleNotification',
-            'trigger'   => $triggerKey,
-            'subject'   => $subject,
-            'body'      => $body,
-            'meta'      => $meta ?: null,
-            'is_read'   => false,
-        ]);
-
-        // Queue email
-        if ($sendEmail && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-            $approveUrl = $meta['approve_url'] ?? null;
-            $rejectUrl  = $meta['reject_url']  ?? null;
-
-            Mail::to($recipient->email)
-                ->queue(new ModuleNotificationMail($subject, $body, $recipient->name, $approveUrl, $rejectUrl));
-        }
-
-        // FCM push notification
-        if ($sendPush) {
-            $this->sendPush($recipient, $subject, $body, $meta);
-        }
-    }
-
-    /**
-     * Send FCM push to all registered device tokens for this user.
-     */
-    private function sendPush(User $recipient, string $title, string $body, array $meta = []): void
-    {
-        $tokens = DeviceToken::where('user_id', $recipient->id)->pluck('token')->all();
-        if (empty($tokens)) {
-            return;
-        }
-
-        $fcm = app(FcmService::class);
-        if (! $fcm->isConfigured()) {
-            return;
-        }
-
-        $data = array_filter([
-            'trigger' => $meta['trigger'] ?? '',
-            'module'  => $meta['module']  ?? '',
-            'url'     => $meta['url']     ?? '',
-        ]);
-
-        $fcm->sendToTokens($tokens, $title, $body, $data);
+        app(NotificationDispatchService::class)->dispatchLegacy(
+            $recipient,
+            $triggerKey,
+            $vars,
+            $meta,
+            $sendEmail,
+            $sendPush,
+            $meta['idempotency_key'] ?? null,
+        );
     }
 
     /**
@@ -94,15 +45,16 @@ class NotificationService
         bool $sendEmail = true
     ): void {
         foreach ($recipients as $recipient) {
-            // Merge per-recipient name into vars
             $perVars = array_merge(['name' => $recipient->name], $vars);
-            $this->dispatch($recipient, $triggerKey, $perVars, $meta, $sendEmail);
+            $perMeta = $meta;
+            if (isset($meta['idempotency_key'])) {
+                $perMeta['idempotency_key'] = $meta['idempotency_key'].':user:'.$recipient->id;
+            }
+            $this->dispatch($recipient, $triggerKey, $perVars, $perMeta, $sendEmail);
         }
     }
 
-    // -------------------------------------------------------------------------
-
-    private function resolveTemplate(int $tenantId, string $triggerKey): array
+    public function resolveTemplate(int $tenantId, string $triggerKey): array
     {
         $stored = NotificationTemplate::where('tenant_id', $tenantId)
             ->where('trigger_key', $triggerKey)
@@ -115,7 +67,7 @@ class NotificationService
         return $this->defaultTemplate($triggerKey);
     }
 
-    private function replacePlaceholders(string $text, array $vars): string
+    public function replacePlaceholders(string $text, array $vars): string
     {
         foreach ($vars as $key => $value) {
             $text = str_replace('{{' . $key . '}}', (string) ($value ?? ''), $text);
@@ -123,7 +75,7 @@ class NotificationService
         return $text;
     }
 
-    private function defaultTemplate(string $triggerKey): array
+    public function defaultTemplate(string $triggerKey): array
     {
         $defaults = [
             // Travel
@@ -406,7 +358,7 @@ class NotificationService
             // Workflow — approver step assignment (sent with email action buttons)
             'workflow.approval_required' => [
                 'subject' => 'Action required: {{module_label}} request {{reference}} pending your approval',
-                'body'    => "Dear {{name}},\n\nA {{module_label}} request ({{reference}}) submitted by {{requester}} is awaiting your approval.\n\n{{summary}}\n\nPlease use the buttons below to approve or return this request, or log in to the portal to review the full details.\n\nThis action link expires in 72 hours.\n\nRegards,\nSADC-PF Nexus",
+                'body'    => "Dear {{name}},\n\nA {{module_label}} request ({{reference}}) submitted by {{requester}} is awaiting your approval.\n\n{{summary}}\n\nSign in to Nexus to review and action this request. Email links never approve or reject on their own.\n\nRegards,\nSADC-PF Nexus",
             ],
 
             // Workflow — final outcome notification (sent to HR/Directors after full approval)

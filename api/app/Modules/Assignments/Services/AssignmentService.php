@@ -453,7 +453,7 @@ class AssignmentService
                 'description' => $assignment->description ?? '',
                 'issuer' => $user->name,
                 'reference' => $assignment->reference_number,
-            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id, 'secure_route' => '/assignments/' . $assignment->id]);
         }
 
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter', 'participants.user']);
@@ -496,7 +496,7 @@ class AssignmentService
                 'assignee' => $user->name,
                 'decision' => $decision,
                 'notes' => $data['notes'] ?? '',
-            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id, 'secure_route' => '/assignments/' . $assignment->id]);
         }
 
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
@@ -675,7 +675,7 @@ class AssignmentService
                 'reference' => $assignment->reference_number,
                 'assignee' => $user->name,
                 'notes' => $data['notes'] ?? '',
-            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id, 'secure_route' => '/assignments/' . $assignment->id]);
         }
 
         // Audit corrective actions: assignment completion ≠ finding closure.
@@ -793,7 +793,7 @@ class AssignmentService
                 'reference' => $assignment->reference_number,
                 'reason' => $reason,
                 'issuer' => $user->name,
-            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+            ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id, 'secure_route' => '/assignments/' . $assignment->id]);
         }
 
         return $assignment->fresh(['creator', 'assignee', 'department', 'updates.submitter']);
@@ -1018,7 +1018,7 @@ class AssignmentService
                         'description' => 'Reminder: ' . $reminder->reminder_type,
                         'issuer' => 'System',
                         'reference' => $assignment->reference_number,
-                    ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id]);
+                    ], ['module' => 'assignments', 'record_id' => $assignment->id, 'url' => '/assignments/' . $assignment->id, 'secure_route' => '/assignments/' . $assignment->id]);
                 }
 
                 $reminder->update(['status' => 'sent', 'sent_at' => now()]);

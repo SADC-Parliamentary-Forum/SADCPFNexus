@@ -126,6 +126,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'workflows.resolve-exception', 'workflows.manage-definitions',
             'workflows.approve-definitions', 'workflows.publish-definitions',
             'workflows.view-audit', 'workflows.export', 'workflows.admin',
+            // Notifications Phase 1 (PRD §104)
+            'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',
+            'notifications.view-delivery-status', 'notifications.manage-templates', 'notifications.approve-templates',
+            'notifications.manage-policies', 'notifications.send-broadcast', 'notifications.approve-broadcast',
+            'notifications.retry', 'notifications.suppress', 'notifications.manage-providers',
+            'notifications.view-failures', 'notifications.view-audit', 'notifications.export', 'notifications.admin',
         ];
 
         foreach ($permissions as $perm) {
@@ -251,6 +257,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'signatures.enrol', 'documents.sign',
                     'roles.view',
                     'workflows.view-own', 'workflows.submit', 'workflows.act', 'workflows.withdraw',
+                    'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',
                 ])->where('guard_name', $guard)->get()
             );
 

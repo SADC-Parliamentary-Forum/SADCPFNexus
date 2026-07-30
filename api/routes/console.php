@@ -87,3 +87,9 @@ Schedule::command('weekly-reports:send-compliance-digest')->mondays()->at('08:40
 if (config('people_authority.recertification_schedule_enabled')) {
     Schedule::command('people-authority:open-recertifications')->weeklyOn(1, '07:50')->withoutOverlapping();
 }
+
+// Notifications Phase 1 — outbox consumer, retries, digests
+Schedule::command('notifications:process-outbox')->everyMinute()->withoutOverlapping();
+Schedule::command('notifications:process-deliveries --retries')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('notifications:process-deliveries --digest=daily')->dailyAt('07:10');
+Schedule::command('notifications:process-deliveries --digest=weekly')->weeklyOn(1, '07:15');

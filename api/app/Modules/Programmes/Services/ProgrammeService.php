@@ -658,7 +658,13 @@ class ProgrammeService
                     $officer,
                     'programme.approved_for_me',
                     array_merge($vars, ['name' => $officer->name]),
-                    ['module' => 'programme', 'record_id' => $programme->id, 'url' => '/pif/' . $programme->id]
+                    [
+                        'module' => 'programme',
+                        'record_id' => $programme->id,
+                        'url' => '/pif/' . $programme->id,
+                        'secure_route' => '/pif/' . $programme->id,
+                        'idempotency_key' => 'programme.approved_for_me:'.$programme->id.':user:'.$officer->id,
+                    ]
                 );
             }
 
@@ -670,7 +676,13 @@ class ProgrammeService
                 $meOfficers,
                 'programme.me_intake_available',
                 $vars,
-                ['module' => 'mande', 'record_id' => $programme->id, 'url' => '/mande/pif-linkages']
+                [
+                    'module' => 'mande',
+                    'record_id' => $programme->id,
+                    'url' => '/mande/pif-linkages',
+                    'secure_route' => '/mande/pif-linkages',
+                    'idempotency_key' => 'programme.me_intake_available:'.$programme->id,
+                ]
             );
         } catch (Throwable) {
             // Never block the approval flow due to notification failures

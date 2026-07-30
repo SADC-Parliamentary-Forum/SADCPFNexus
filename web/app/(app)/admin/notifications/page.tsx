@@ -1,317 +1,166 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
-import { notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
+import { notificationAdminApi, notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
 
-const VARS = [
-  "{{name}}", "{{reference}}", "{{requester}}", "{{destination}}", "{{date}}",
-  "{{start_date}}", "{{end_date}}", "{{leave_type}}", "{{amount}}", "{{due_date}}",
-  "{{comment}}", "{{module}}", "{{description}}", "{{task_title}}",
-];
+type Tab = "templates" | "deliveries" | "failures";
 
-const MODULE_GROUPS: { label: string; color: string; keys: string[] }[] = [
-  { label: "Travel",      color: "bg-primary/10 text-primary",       keys: ["travel.submitted", "travel.approved", "travel.rejected"] },
-  { label: "Leave",       color: "bg-green-50 text-green-700",       keys: ["leave.submitted", "leave.approved", "leave.rejected"] },
-  { label: "Imprest",     color: "bg-amber-50 text-amber-700",       keys: ["imprest.submitted", "imprest.approved", "imprest.rejected", "imprest.retirement_due"] },
-  { label: "Procurement", color: "bg-purple-50 text-purple-700",     keys: ["procurement.submitted", "procurement.approved", "procurement.rejected"] },
-  { label: "Finance",     color: "bg-emerald-50 text-emerald-700",   keys: ["finance.advance_due", "budget.warning", "budget.exceeded"] },
-  { label: "HR",          color: "bg-blue-50 text-blue-700",         keys: ["assignment.issued", "hr.task_assigned", "request.rejected"] },
-];
-
-export default function NotificationsPage() {
-  const [templates, setTemplates]   = useState<NotifTemplate[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [editKey, setEditKey]       = useState<string | null>(null);
-  const [editForm, setEditForm]     = useState<Partial<NotifTemplate>>({});
-  const [saving, setSaving]         = useState(false);
-  const [testingKey, setTestingKey] = useState<string | null>(null);
-  const [preview, setPreview]       = useState<NotifTemplate | null>(null);
-  const [toast, setToast]           = useState<{ type: "success" | "error"; msg: string } | null>(null);
-
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
-  };
+export default function AdminNotificationsPage() {
+  const [tab, setTab] = useState<Tab>("templates");
+  const [templates, setTemplates] = useState<NotifTemplate[]>([]);
+  const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [failures, setFailures] = useState<{ failed_deliveries: any[]; dead_letters: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    notificationTemplatesApi.list()
-      .then(res => setTemplates(res.data))
-      .catch(() => showToast("error", "Could not load templates."))
-      .finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    if (tab === "templates") {
+      notificationTemplatesApi.list()
+        .then((r) => setTemplates(r.data))
+        .catch(() => setToast("Could not load templates"))
+        .finally(() => setLoading(false));
+    } else if (tab === "deliveries") {
+      notificationAdminApi.deliveries({ per_page: 50 })
+        .then((r: any) => setDeliveries(r.data?.data ?? r.data ?? []))
+        .catch(() => setToast("Could not load deliveries"))
+        .finally(() => setLoading(false));
+    } else {
+      notificationAdminApi.failures()
+        .then((r: any) => setFailures(r.data?.data ?? r.data ?? null))
+        .catch(() => setToast("Could not load failures"))
+        .finally(() => setLoading(false));
+    }
+  }, [tab]);
 
-  const templateMap = useMemo(() => Object.fromEntries(templates.map(t => [t.trigger_key, t])), [templates]);
-
-  const startEdit = (t: NotifTemplate) => { setEditKey(t.trigger_key); setEditForm({ ...t }); setPreview(null); };
-  const cancelEdit = () => { setEditKey(null); setEditForm({}); };
-
-  const saveEdit = async () => {
-    if (!editForm.trigger_key || !editForm.subject || !editForm.body) return;
-    setSaving(true);
+  const retry = async (id: number) => {
     try {
-      await notificationTemplatesApi.update({
-        trigger_key: editForm.trigger_key,
-        subject: editForm.subject,
-        body: editForm.body,
-      });
-      setTemplates(prev => prev.map(t =>
-        t.trigger_key === editForm.trigger_key ? { ...t, subject: editForm.subject!, body: editForm.body!, customised: true } : t
-      ));
-      setEditKey(null);
-      showToast("success", "Template saved.");
+      await notificationAdminApi.retry(id);
+      setToast("Retry queued");
+      setTab("failures");
     } catch {
-      showToast("error", "Failed to save template.");
-    } finally {
-      setSaving(false);
+      setToast("Retry failed");
     }
   };
 
-  const handleTestSend = async (trigger_key: string) => {
-    setTestingKey(trigger_key);
+  const suppress = async (id: number) => {
     try {
-      const res = await notificationTemplatesApi.testSend({ trigger_key });
-      showToast("success", res.data.message);
+      await notificationAdminApi.suppress(id, "admin_suppressed");
+      setToast("Delivery suppressed");
     } catch {
-      showToast("error", "Failed to queue test email.");
-    } finally {
-      setTestingKey(null);
+      setToast("Suppress failed");
     }
   };
-
-  const insertVar = (v: string) => {
-    const ta = document.getElementById("template-body") as HTMLTextAreaElement | null;
-    if (!ta) return;
-    const s = ta.selectionStart, e = ta.selectionEnd;
-    const cur = editForm.body ?? "";
-    const updated = cur.slice(0, s) + v + cur.slice(e);
-    setEditForm(f => ({ ...f, body: updated }));
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(s + v.length, s + v.length); }, 0);
-  };
-
-  // Live preview: replace placeholders with sample values
-  const previewBody = useMemo(() => {
-    if (!preview) return "";
-    const samples: Record<string, string> = {
-      name: "Jane Doe", reference: "TRV-DEMO001", requester: "John Smith",
-      destination: "Windhoek, Namibia", date: "15 Apr 2026", start_date: "14 Apr 2026",
-      end_date: "18 Apr 2026", leave_type: "Annual Leave", amount: "NAD 5,000.00",
-      due_date: "30 Apr 2026", comment: "Additional justification required.", module: "Travel",
-      description: "Review Q1 programme reports.", task_title: "Quarterly Report Review",
-    };
-    let body = preview.body;
-    Object.entries(samples).forEach(([k, v]) => { body = body.replaceAll(`{{${k}}}`, v); });
-    return body;
-  }, [preview]);
 
   return (
-    <div className="space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
-
-      {/* Breadcrumb + header */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Notification Templates</span>
-      </div>
-
-      <div className="flex items-start justify-between gap-4">
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="page-title">Notification Templates</h1>
-          <p className="page-subtitle">Customise email and in-app notification content for each workflow event. Use <code className="text-xs bg-neutral-100 px-1 rounded">{"{{variable}}"}</code> placeholders for dynamic content.</p>
+          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Notifications admin</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Templates, delivery health, retries and dead letters. Provider failure never rolls back business decisions.
+          </p>
         </div>
-        <Link href="/notifications" className="btn-secondary text-sm flex items-center gap-2 flex-shrink-0">
-          <span className="material-symbols-outlined text-[18px]">inbox</span>
-          My Notifications
+        <Link href="/notifications" className="text-sm text-primary underline">
+          Open user inbox
         </Link>
       </div>
 
-      {/* Variable reference */}
-      <div className="card p-4">
-        <p className="text-xs font-semibold text-neutral-700 mb-2">Available Placeholder Variables</p>
-        <div className="flex flex-wrap gap-1.5">
-          {VARS.map(v => (
-            <code key={v} className="text-xs bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => editKey && insertVar(v)}>
-              {v}
-            </code>
-          ))}
-        </div>
-        {editKey && <p className="text-[11px] text-neutral-400 mt-2">Click a variable to insert it at the cursor position in the body.</p>}
+      {toast && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>
+      )}
+
+      <div className="flex gap-2 border-b border-[var(--border)] pb-2">
+        {([
+          ["templates", "Templates"],
+          ["deliveries", "Deliveries"],
+          ["failures", "Failures / DLQ"],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`px-3 py-1.5 text-sm rounded-md ${tab === key ? "bg-primary text-white" : "bg-[var(--muted)]"}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Email preview modal */}
-      {preview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-primary">preview</span>
-                <h3 className="text-sm font-semibold text-neutral-900">Email Preview — {preview.name}</h3>
-              </div>
-              <button onClick={() => setPreview(null)} className="text-neutral-400 hover:text-neutral-600">
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Simulated email */}
-              <div className="border border-neutral-200 rounded-xl overflow-hidden text-sm">
-                <div className="bg-primary px-4 py-2.5 flex items-center gap-2">
-                  <div className="h-6 w-6 rounded bg-white/20 flex items-center justify-center">
-                    <span className="text-white text-[10px] font-bold italic">SP</span>
-                  </div>
-                  <span className="text-white text-xs font-semibold">SADC-PF Nexus</span>
-                </div>
-                <div className="p-4 space-y-3 bg-white">
-                  <div className="text-[11px] text-neutral-400 font-mono">
-                    <span className="font-semibold text-neutral-600">Subject: </span>{preview.subject}
-                  </div>
-                  <div className="border-t border-neutral-100 pt-3">
-                    <p className="text-xs font-semibold text-primary mb-1 uppercase tracking-wider">Notification</p>
-                    <p className="text-sm font-bold text-neutral-900 mb-3">{preview.subject}</p>
-                    <pre className="text-xs text-neutral-600 whitespace-pre-wrap leading-relaxed font-sans">{previewBody}</pre>
-                  </div>
-                </div>
-              </div>
-              <p className="text-[11px] text-neutral-400 text-center">Placeholders replaced with sample values for preview.</p>
-            </div>
-          </div>
+      {loading && <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>}
+
+      {!loading && tab === "templates" && (
+        <div className="space-y-2">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            {templates.length} template(s). Edit via trigger key in the legacy editor below or publish versioned EN/FR/PT templates via API.
+          </p>
+          <ul className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
+            {templates.slice(0, 40).map((t) => (
+              <li key={t.trigger_key} className="px-3 py-2 text-sm">
+                <div className="font-medium">{t.trigger_key}</div>
+                <div className="text-[var(--muted-foreground)] truncate">{t.subject}</div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {/* Loading */}
-      {loading ? (
-        <div className="space-y-4 animate-pulse">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 bg-neutral-100 rounded-xl" />
-          ))}
+      {!loading && tab === "deliveries" && (
+        <div className="overflow-x-auto rounded-md border border-[var(--border)]">
+          <table className="min-w-full text-sm">
+            <thead className="bg-[var(--muted)] text-left">
+              <tr>
+                <th className="px-3 py-2">ID</th>
+                <th className="px-3 py-2">Channel</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Priority</th>
+                <th className="px-3 py-2">Subject</th>
+                <th className="px-3 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deliveries.map((d) => (
+                <tr key={d.id} className="border-t border-[var(--border)]">
+                  <td className="px-3 py-2">{d.id}</td>
+                  <td className="px-3 py-2">{d.channel}</td>
+                  <td className="px-3 py-2">{d.status}</td>
+                  <td className="px-3 py-2">{d.queue_priority}</td>
+                  <td className="px-3 py-2 max-w-xs truncate">{d.rendered_subject}</td>
+                  <td className="px-3 py-2 space-x-2">
+                    <button type="button" className="text-primary underline" onClick={() => retry(d.id)}>Retry</button>
+                    <button type="button" className="text-red-600 underline" onClick={() => suppress(d.id)}>Suppress</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <div className="space-y-8">
-          {MODULE_GROUPS.map(group => {
-            const groupTemplates = group.keys.map(k => templateMap[k]).filter(Boolean);
-            if (groupTemplates.length === 0) return null;
+      )}
 
-            return (
-              <div key={group.label}>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${group.color}`}>{group.label}</span>
-                  <span className="text-xs text-neutral-400">{groupTemplates.length} template{groupTemplates.length !== 1 ? "s" : ""}</span>
-                </div>
-                <div className="space-y-3">
-                  {groupTemplates.map(t => (
-                    <div key={t.trigger_key} className="card p-5">
-                      {/* Header row */}
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-sm font-semibold text-neutral-900">{t.name}</h3>
-                          <code className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded">{t.trigger_key}</code>
-                          {t.customised && (
-                            <span className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">Customised</span>
-                          )}
-                        </div>
-                        {editKey !== t.trigger_key && (
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setPreview(t)}
-                              className="text-xs font-semibold text-neutral-500 hover:text-neutral-800 flex items-center gap-1"
-                              title="Preview email"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">preview</span>
-                              Preview
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleTestSend(t.trigger_key)}
-                              disabled={testingKey === t.trigger_key}
-                              className="text-xs font-semibold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 disabled:opacity-50"
-                              title="Send test email to your address"
-                            >
-                              {testingKey === t.trigger_key
-                                ? <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-                                : <span className="material-symbols-outlined text-[14px]">send</span>}
-                              Test
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => startEdit(t)}
-                              className="text-xs font-semibold text-primary hover:underline"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Edit form */}
-                      {editKey === t.trigger_key ? (
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-neutral-700 mb-1">Subject Line</label>
-                            <input
-                              className="form-input"
-                              value={editForm.subject ?? t.subject}
-                              onChange={e => setEditForm({ ...editForm, subject: e.target.value })}
-                              placeholder="Email subject…"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-neutral-700 mb-1">Body</label>
-                            <textarea
-                              id="template-body"
-                              rows={8}
-                              className="form-input resize-none font-mono text-xs"
-                              value={editForm.body ?? t.body}
-                              onChange={e => setEditForm({ ...editForm, body: e.target.value })}
-                              placeholder="Email body…"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={saveEdit}
-                              disabled={saving}
-                              className="btn-primary px-4 py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-60"
-                            >
-                              {saving && <span className="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>}
-                              Save Template
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setPreview({ ...t, subject: editForm.subject ?? t.subject, body: editForm.body ?? t.body }); }}
-                              className="btn-secondary px-4 py-1.5 text-xs flex items-center gap-1.5"
-                            >
-                              <span className="material-symbols-outlined text-[13px]">preview</span>
-                              Preview
-                            </button>
-                            <button type="button" onClick={cancelEdit} className="btn-secondary px-4 py-1.5 text-xs">Cancel</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-xs text-neutral-500 mb-2">
-                            <span className="font-semibold text-neutral-700">Subject: </span>
-                            {t.subject}
-                          </p>
-                          <pre className="text-xs text-neutral-400 bg-neutral-50 rounded-lg p-3 whitespace-pre-wrap font-sans leading-relaxed max-h-28 overflow-y-auto">
-                            {t.body}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+      {!loading && tab === "failures" && failures && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-md border border-[var(--border)] p-3">
+            <h2 className="font-medium mb-2">Failed / retrying</h2>
+            <ul className="space-y-2 text-sm">
+              {(failures.failed_deliveries ?? []).map((d) => (
+                <li key={d.id} className="flex justify-between gap-2">
+                  <span>#{d.id} {d.channel} — {d.failure_code || d.status}</span>
+                  <button type="button" className="text-primary underline" onClick={() => retry(d.id)}>Retry</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-md border border-[var(--border)] p-3">
+            <h2 className="font-medium mb-2">Dead letters</h2>
+            <ul className="space-y-2 text-sm">
+              {(failures.dead_letters ?? []).map((d) => (
+                <li key={d.id}>
+                  #{d.id} {d.failure_code}: {d.failure_summary}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
     </div>

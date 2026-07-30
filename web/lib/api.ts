@@ -5584,24 +5584,44 @@ export interface NotificationPage {
 }
 
 export const userNotificationsApi = {
-  list: (params?: { filter?: "all" | "unread" | "read"; per_page?: number; page?: number }) =>
+  list: (params?: { filter?: "all" | "unread" | "read" | "action_required" | "archived"; per_page?: number; page?: number }) =>
     api.get<NotificationPage>("/notifications", { params }),
   unreadCount: () => api.get<{ count: number }>("/notifications/unread-count"),
   markRead: (id: string) => api.post<{ message: string }>(`/notifications/${id}/read`),
+  markUnread: (id: string) => api.post<{ message: string }>(`/notifications/${id}/unread`),
+  acknowledge: (id: string) => api.post<{ message: string }>(`/notifications/${id}/acknowledge`),
+  archive: (id: string) => api.post<{ message: string }>(`/notifications/${id}/archive`),
   markAllRead: () => api.post<{ message: string }>("/notifications/read-all"),
   destroy: (id: string) => api.delete<{ message: string }>(`/notifications/${id}`),
+  preferences: () => api.get<{ data: NotificationPreference[] }>("/notifications/preferences"),
+  updatePreferences: (preferences: Partial<NotificationPreference>[]) =>
+    api.put<{ data: NotificationPreference[]; message: string }>("/notifications/preferences", { preferences }),
 };
 
-// ─── Governance Config ───────────────────────────────────────────────────────
-export interface GovernanceConfig {
-  datasets: Record<string, boolean>;
-  redaction: Record<string, boolean>;
-  formats: Record<string, boolean>;
-  retention_days: number;
-  min_group_size: number;
-  granularity: string;
-  variance_limit: number;
+export interface NotificationPreference {
+  id?: number;
+  category: string;
+  in_app_enabled?: boolean;
+  email_enabled?: boolean;
+  push_enabled?: boolean;
+  digest_mode?: "immediate" | "daily" | "weekly" | "off";
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  preferred_language?: "en" | "fr" | "pt";
 }
+
+export const notificationAdminApi = {
+  deliveries: (params?: { status?: string; channel?: string; per_page?: number }) =>
+    api.get("/notification-admin/deliveries", { params }),
+  failures: () => api.get("/notification-admin/failures"),
+  retry: (id: string | number) => api.post(`/notification-admin/deliveries/${id}/retry`),
+  suppress: (id: string | number, reason?: string) =>
+    api.post(`/notification-admin/deliveries/${id}/suppress`, { reason }),
+  deadLetters: () => api.get("/notification-admin/dead-letters"),
+  resolveDeadLetter: (id: string | number, notes?: string) =>
+    api.post(`/notification-admin/dead-letters/${id}/resolve`, { notes }),
+  audit: () => api.get("/notification-admin/audit"),
+};
 
 export const governanceConfigApi = {
   get: () => api.get<Record<string, unknown>>("/admin/settings").then((r) => {
