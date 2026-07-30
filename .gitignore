@@ -109,3 +109,6 @@ Thumbs.db
 
 # ─── Misc local scripts ──────────────────────────────────────────────────────
 run-tests.sh
+
+# Local git worktrees
+.worktrees/
