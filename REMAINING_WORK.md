@@ -1,29 +1,20 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-07-29  
-**Baseline tip:** `9be4ef4` (fleet vendor telematics live) + Gap Pack 1 follow-ons on `feat/gap-pack-1`.
+**Last updated:** 2026-07-30  
+**Baseline tip:** Notifications Phase 1–3 live (`9ec4cbd`) + producer migration residual pack.
 
 ---
 
-## Landed (Gap Pack 1)
+## Landed (recent)
 
 | Area | Status |
 |------|--------|
-| Live fleet vendor telematics | Shipped (`9be4ef4`) — pluggable `null\|generic_http`, webhook, `fleet:sync-telematics`, UI status |
-| FA disposal UX | Create / detail / complete polish on `/assets/disposal` |
-| FA revaluation | Request → approve → book value update (`/assets/revaluation`, no GL posting) |
-| Timesheet payroll operator UX | `/hr/timesheets/payroll` — period select → stage batch → export history (no paste IDs) |
-| Leave stage-holder mapping | `current_holder_user_id` from dept supervisor / HR / SG fallbacks |
-| Leave certify + TOIL nav | `/leave/queues/certify`, `/leave/toil`, richer Leave sidebar |
-| Correspondence retention / legal holds | Retention fields, hold/release/purge-block, `/correspondence/retention` |
-| Stock barcode + offline stocktake foundation | `barcode` on items, `GET …/by-barcode/{code}`, `client_line_key`, `/stock/scan` local queue |
-| Weekly compliance digests | `weekly-reports:send-compliance-digest` (Mon 08:40), richer compliance page, `WEEKLY_AI_PROVIDER` stub/LLM hook (human confirm only) |
-| RiskPhaseStub | Removed (orphan) |
-| Procurement AI compare | Already gated stub on tender detail + settings — human confirm, never auto-award |
+| Notifications Phase 1–3 | Shipped (`9ec4cbd`) — outbox, push/ack/broadcast, AI assists (guarded) |
+| Notification producer migration | Residual pack — Leave/Travel/Procurement/Correspondence/Risk/Audit/People/Budget/Stock/Timesheets/Weekly/Salary Advance via outbox; external emails + tracked mailables; no business-module `Mail::` |
 
 ---
 
-## Deferred to Pack 2 / later
+## Deferred / OOS
 
 - Full **mobile parity** for many modules
 - Prod IMAP password installation (enablement only — document in ops; no secrets in repo)
@@ -33,6 +24,9 @@
 - All-employee email ingest / AI auto-submit
 - Full ML stock forecasting
 - Real LLM vendor credentials for weekly/procurement AI (env hooks only; stub default)
+- Live SMS/WhatsApp — **Governance Configuration Pending**
+- Notifications governance checklist UI (PRD §124 decisions) — do not invent policy answers
+- Document Service Phase 1 depth (versioning / hashing / immutable signed binaries) if still thin vs Workflow/People signing
 
 ---
 
@@ -48,9 +42,4 @@
 
 - Deploy: `scripts/deploy.sh`
 - Health: API `200`, Web `307` (auth redirect)
-- Assets: `/assets`, disposals `/assets/disposal`, revaluations `/assets/revaluation`
-- Stock: `/stock`, barcode `/stock/scan`
-- Leave: `/leave`, certify `/leave/queues/certify`, TOIL `/leave/toil`
-- Correspondence retention: `/correspondence/retention`
-- Weekly compliance: `/weekly-summaries/compliance`
-- Payroll export: `/hr/timesheets/payroll`
+- Notifications: `/notifications`, `/admin/notifications`

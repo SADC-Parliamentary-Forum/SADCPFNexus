@@ -38,21 +38,70 @@ class FailoverMailService
      */
     public function send(User $recipient, string $subject, string $body, string $secureUrl, NotificationChannelDelivery $delivery): array
     {
+        return $this->sendToAddress(
+            (string) $recipient->email,
+            (string) ($recipient->name ?? 'Recipient'),
+            $subject,
+            $body,
+            $secureUrl,
+            $delivery,
+        );
+    }
+
+    /**
+     * Queue a ModuleNotificationMail to an arbitrary address (external vendor / contact).
+     *
+     * @return array{ok: bool, provider: string, failover: bool, temporary: bool, code: string, summary: string, message_id: ?string, duration_ms: int}
+     */
+    public function sendToAddress(
+        string $email,
+        string $name,
+        string $subject,
+        string $body,
+        ?string $secureUrl,
+        NotificationChannelDelivery $delivery,
+    ): array {
         $started = microtime(true);
         $primary = $this->primaryMailer();
         $mailable = new ModuleNotificationMail(
             $subject,
             $body,
-            $recipient->name,
+            $name,
             null,
             null,
             $secureUrl,
         );
 
+        return $this->queueWithFailover($email, $mailable, $delivery, $primary, $started);
+    }
+
+    /**
+     * Queue an arbitrary Mailable (weekly summary, correspondence) with failover tracking.
+     *
+     * @return array{ok: bool, provider: string, failover: bool, temporary: bool, code: string, summary: string, message_id: ?string, duration_ms: int}
+     */
+    public function queueMailable(string $email, \Illuminate\Mail\Mailable $mailable, NotificationChannelDelivery $delivery): array
+    {
+        $started = microtime(true);
+        $primary = $this->primaryMailer();
+
+        return $this->queueWithFailover($email, $mailable, $delivery, $primary, $started);
+    }
+
+    /**
+     * @return array{ok: bool, provider: string, failover: bool, temporary: bool, code: string, summary: string, message_id: ?string, duration_ms: int}
+     */
+    private function queueWithFailover(
+        string $email,
+        \Illuminate\Mail\Mailable $mailable,
+        NotificationChannelDelivery $delivery,
+        string $primary,
+        float $started,
+    ): array {
         $mailers = config('mail.mailers', []);
         if (! array_key_exists($primary, $mailers)) {
             return $this->trySecondaryOrFail(
-                $recipient,
+                $email,
                 $mailable,
                 $delivery,
                 $primary,
@@ -62,7 +111,7 @@ class FailoverMailService
         }
 
         try {
-            Mail::mailer($primary)->to($recipient->email)->queue($mailable);
+            Mail::mailer($primary)->to($email)->queue($mailable);
 
             return [
                 'ok' => true,
@@ -77,13 +126,13 @@ class FailoverMailService
         } catch (\Throwable $primaryError) {
             Log::warning('Primary mailer failed', ['mailer' => $primary, 'error' => $primaryError->getMessage()]);
 
-            return $this->trySecondaryOrFail($recipient, $mailable, $delivery, $primary, $primaryError, $started);
+            return $this->trySecondaryOrFail($email, $mailable, $delivery, $primary, $primaryError, $started);
         }
     }
 
     private function trySecondaryOrFail(
-        User $recipient,
-        ModuleNotificationMail $mailable,
+        string $email,
+        \Illuminate\Mail\Mailable $mailable,
         NotificationChannelDelivery $delivery,
         string $primary,
         \Throwable $primaryError,
@@ -93,7 +142,7 @@ class FailoverMailService
         $mailers = config('mail.mailers', []);
         if ($this->failoverEnabled() && $secondary && $secondary !== $primary && array_key_exists($secondary, $mailers)) {
             try {
-                Mail::mailer($secondary)->to($recipient->email)->queue($mailable);
+                Mail::mailer($secondary)->to($email)->queue($mailable);
 
                 return [
                     'ok' => true,

@@ -82,20 +82,67 @@ class ChannelDeliveryService
 
     public function attemptEmail(NotificationChannelDelivery $delivery, User $recipient, string $body, string $secureUrl): NotificationChannelDelivery
     {
+        return $this->attemptEmailToAddress(
+            $delivery,
+            (string) $recipient->email,
+            (string) ($recipient->name ?? 'Recipient'),
+            $body,
+            $secureUrl,
+        );
+    }
+
+    public function attemptEmailToAddress(
+        NotificationChannelDelivery $delivery,
+        string $email,
+        string $name,
+        string $body,
+        ?string $secureUrl = null,
+    ): NotificationChannelDelivery {
         $attemptNumber = ((int) $delivery->attempt_count) + 1;
 
-        if (! filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $this->failPermanent($delivery, $attemptNumber, 'invalid_email', 'Recipient email invalid', microtime(true));
         }
 
-        $result = $this->failoverMail->send(
-            $recipient,
+        $result = $this->failoverMail->sendToAddress(
+            $email,
+            $name,
             $delivery->rendered_subject ?? 'Nexus notification',
             $body,
             $secureUrl,
             $delivery,
         );
 
+        return $this->applyMailAttemptResult($delivery, $attemptNumber, $result);
+    }
+
+    /**
+     * Queue a specialized Mailable (weekly summary / correspondence) through the shared delivery ledger.
+     */
+    public function attemptCustomMailable(
+        NotificationChannelDelivery $delivery,
+        string $email,
+        \Illuminate\Mail\Mailable $mailable,
+    ): NotificationChannelDelivery {
+        $attemptNumber = ((int) $delivery->attempt_count) + 1;
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->failPermanent($delivery, $attemptNumber, 'invalid_email', 'Recipient email invalid', microtime(true));
+        }
+
+        $result = $this->failoverMail->queueMailable($email, $mailable, $delivery);
+
+        return $this->applyMailAttemptResult($delivery, $attemptNumber, $result);
+    }
+
+    /**
+     * @param  array{ok: bool, provider: string, failover: bool, temporary: bool, code: string, summary: string, message_id: ?string, duration_ms: int}  $result
+     */
+    private function applyMailAttemptResult(
+        NotificationChannelDelivery $delivery,
+        int $attemptNumber,
+        array $result,
+    ): NotificationChannelDelivery {
         if ($result['ok']) {
             NotificationDeliveryAttempt::create([
                 'channel_delivery_id' => $delivery->id,

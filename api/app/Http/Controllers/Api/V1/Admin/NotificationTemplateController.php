@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Mail\ModuleNotificationMail;
 use App\Models\NotificationTemplate;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class NotificationTemplateController extends Controller
 {
@@ -163,8 +162,21 @@ class NotificationTemplateController extends Controller
             $body    = str_replace('{{' . $key . '}}', $value, $body);
         }
 
-        Mail::to($user->email)
-            ->queue(new ModuleNotificationMail('[TEST] ' . $subject, $body, $user->name));
+        app(NotificationService::class)->dispatch(
+            $user,
+            'notifications.template_test',
+            [
+                'name' => $user->name,
+                'subject' => $subject,
+                'body' => $body,
+            ],
+            [
+                'module' => 'notifications',
+                'idempotency_key' => 'notifications.template_test:'.$user->id.':'.now()->format('YmdHis'),
+            ],
+            true,
+            false,
+        );
 
         return response()->json(['message' => 'Test email queued to ' . $user->email]);
     }

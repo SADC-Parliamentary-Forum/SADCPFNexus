@@ -87,6 +87,15 @@ class RfqInitiationTest extends TestCase
                 && str_contains($mail->notifBody, '/supplier/register')
                 && str_contains($mail->notifBody, 'register as a supplier on SADC-PF Nexus');
         });
+
+        $this->assertDatabaseHas('notification_outbox', [
+            'source_module' => 'procurement',
+            'event_type' => 'procurement.rfq_external_invite',
+            'status' => 'published',
+        ]);
+        $this->assertDatabaseHas('notification_recipients', [
+            'external_email' => 'external@supplier.test',
+        ]);
     }
 
     public function test_supplier_quote_submission_notifies_procurement_vendor_managers(): void

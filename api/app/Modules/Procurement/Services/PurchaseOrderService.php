@@ -2,14 +2,12 @@
 
 namespace App\Modules\Procurement\Services;
 
-use App\Mail\ModuleNotificationMail;
 use App\Models\AuditLog;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class PurchaseOrderService
@@ -197,13 +195,26 @@ class PurchaseOrderService
         }
 
         if ($po->vendor?->contact_email) {
-            Mail::to($po->vendor->contact_email)->queue(new ModuleNotificationMail(
-                "Purchase Order issued - {$po->reference_number}",
-                "Purchase Order {$po->reference_number} has been issued to {$po->vendor->name}.\n\nPlease log in to the supplier portal and submit your proforma invoice so payment processing can begin.\n\nAmount: {$amount}\nExpected delivery: {$deliveryDate}",
-                $po->vendor->contact_name ?: $po->vendor->name,
-                $portalUrl,
-                null,
-            ));
+            $this->notificationService->dispatchExternal(
+                (int) $po->tenant_id,
+                (string) $po->vendor->contact_email,
+                (string) ($po->vendor->contact_name ?: $po->vendor->name),
+                'supplier.proforma_invoice_requested_external',
+                [
+                    'name' => $po->vendor->contact_name ?: $po->vendor->name,
+                    'reference' => $po->reference_number,
+                    'vendor' => $po->vendor->name,
+                    'amount' => $amount,
+                    'delivery_date' => $deliveryDate,
+                    'portal_url' => $portalUrl,
+                ],
+                [
+                    'module' => 'procurement',
+                    'record_id' => $po->id,
+                    'url' => '/supplier/invoices',
+                    'idempotency_key' => 'supplier.proforma_external:'.$po->id,
+                ],
+            );
         }
     }
 }

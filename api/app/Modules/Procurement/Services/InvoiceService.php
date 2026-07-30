@@ -2,14 +2,12 @@
 
 namespace App\Modules\Procurement\Services;
 
-use App\Mail\ModuleNotificationMail;
 use App\Models\AuditLog;
 use App\Models\Invoice;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 
 class InvoiceService
@@ -294,13 +292,24 @@ class InvoiceService
         }
 
         if ($invoice->vendor?->contact_email) {
-            Mail::to($invoice->vendor->contact_email)->queue(new ModuleNotificationMail(
-                "Payment recorded - submit final invoice documents",
-                "Payment has been recorded against purchase order {$invoice->purchaseOrder?->reference_number}.\n\nPlease upload the final invoice and proof-of-payment supporting documents in the supplier portal.\n\nAmount: {$amount}",
-                $invoice->vendor->contact_name ?: $invoice->vendor->name,
-                $portalUrl,
-                null,
-            ));
+            $this->notifications->dispatchExternal(
+                (int) $invoice->tenant_id,
+                (string) $invoice->vendor->contact_email,
+                (string) ($invoice->vendor->contact_name ?: $invoice->vendor->name),
+                'supplier.final_invoice_requested_external',
+                [
+                    'name' => $invoice->vendor->contact_name ?: $invoice->vendor->name,
+                    'reference' => $invoice->purchaseOrder?->reference_number ?? $invoice->reference_number,
+                    'amount' => $amount,
+                    'portal_url' => $portalUrl,
+                ],
+                [
+                    'module' => 'procurement',
+                    'record_id' => $invoice->id,
+                    'url' => '/supplier/invoices',
+                    'idempotency_key' => 'supplier.final_invoice_external:'.$invoice->id,
+                ],
+            );
         }
     }
 }

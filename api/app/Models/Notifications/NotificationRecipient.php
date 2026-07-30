@@ -12,6 +12,8 @@ class NotificationRecipient extends Model
         'tenant_id',
         'notification_record_id',
         'user_id',
+        'external_email',
+        'external_name',
         'recipient_role',
         'position_snapshot',
         'department_snapshot',
@@ -22,6 +24,11 @@ class NotificationRecipient extends Model
         'status',
         'in_app_notification_id',
     ];
+
+    public function isExternal(): bool
+    {
+        return $this->user_id === null && filled($this->external_email);
+    }
 
     protected $casts = [
         'resolved_at' => 'datetime',

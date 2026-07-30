@@ -9,12 +9,10 @@ use App\Models\PurchaseOrder;
 use App\Models\SupplierCategory;
 use App\Models\Vendor;
 use App\Models\User;
-use App\Mail\ModuleNotificationMail;
 use App\Modules\Budget\Services\BudgetAvailabilityService;
 use App\Modules\Budget\Services\BudgetCommitmentService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -806,13 +804,26 @@ class ProcurementService
             $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
             $quoteUrl = $frontendBase . '/external-rfq/' . $invitation->response_token;
             $registerUrl = $frontendBase . '/supplier/register';
-            Mail::to($invite['email'])->queue(new ModuleNotificationMail(
-                "RFQ Invitation — {$request->reference_number}",
-                "You have been invited to submit a quotation for {$request->title}.\n\nPlease use the secure link below to submit your quote before the deadline.\n\nWe strongly encourage you to register as a supplier on SADC-PF Nexus to view the full RFQ, receive future supplier notifications, and manage your submissions in one place.\n\nSupplier registration: {$registerUrl}",
-                $invite['name'] ?? 'Supplier',
-                $quoteUrl,
-                null,
-            ));
+            $this->notificationService->dispatchExternal(
+                (int) $actor->tenant_id,
+                (string) $invite['email'],
+                (string) ($invite['name'] ?? $invite['email']),
+                'procurement.rfq_external_invite',
+                [
+                    'name' => $invite['name'] ?? 'Supplier',
+                    'reference' => $request->reference_number,
+                    'title' => $request->title,
+                    'register_url' => $registerUrl,
+                    'quote_url' => $quoteUrl,
+                ],
+                [
+                    'module' => 'procurement',
+                    'record_id' => $request->id,
+                    'url' => '/external-rfq/' . $invitation->response_token,
+                    'secure_route' => '/external-rfq/' . $invitation->response_token,
+                    'idempotency_key' => 'procurement.rfq_external:'.$request->id.':'.strtolower($invite['email']),
+                ],
+            );
         }
 
         AuditLog::record('procurement.rfq_issued', [
@@ -849,13 +860,25 @@ class ProcurementService
         }
 
         if ($vendor->contact_email) {
-            Mail::to($vendor->contact_email)->queue(new ModuleNotificationMail(
-                "RFQ Invitation — {$request->reference_number}",
-                "An RFQ matching your supplier categories is available in the SADC-PF supplier portal.\n\nTitle: {$request->title}\nDeadline: " . ($request->rfq_deadline?->toDateString() ?? 'No deadline specified'),
-                $vendor->contact_name ?: $vendor->name,
-                $portalUrl,
-                null,
-            ));
+            $this->notificationService->dispatchExternal(
+                (int) $request->tenant_id,
+                (string) $vendor->contact_email,
+                (string) ($vendor->contact_name ?: $vendor->name),
+                'procurement.rfq_vendor_contact',
+                [
+                    'name' => $vendor->contact_name ?: $vendor->name,
+                    'reference' => $request->reference_number,
+                    'title' => $request->title,
+                    'deadline' => $request->rfq_deadline?->toDateString() ?? 'No deadline specified',
+                    'portal_url' => $portalUrl,
+                ],
+                [
+                    'module' => 'procurement',
+                    'record_id' => $request->id,
+                    'url' => '/supplier/rfqs/' . $request->id,
+                    'idempotency_key' => 'procurement.rfq_vendor:'.$request->id.':'.$vendor->id,
+                ],
+            );
         }
     }
 

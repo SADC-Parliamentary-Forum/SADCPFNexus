@@ -6,12 +6,12 @@ use App\Mail\CorrespondenceMail;
 use App\Models\Correspondence;
 use App\Models\CorrespondenceContact;
 use App\Models\CorrespondenceRecipient;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 class SendCorrespondenceMailJob implements ShouldQueue
@@ -27,10 +27,27 @@ class SendCorrespondenceMailJob implements ShouldQueue
         public readonly string $recipientType = 'to',
     ) {}
 
-    public function handle(): void
+    public function handle(NotificationService $notifications): void
     {
-        Mail::to($this->contact->email)->send(
-            new CorrespondenceMail($this->correspondence, $this->contact, $this->recipientType)
+        $mailable = new CorrespondenceMail($this->correspondence, $this->contact, $this->recipientType);
+
+        $notifications->dispatchTrackedMailable(
+            (int) $this->correspondence->tenant_id,
+            'correspondence.outbound_mail',
+            (string) $this->contact->email,
+            (string) ($this->contact->name ?: $this->contact->email),
+            $mailable,
+            [
+                'module' => 'correspondence',
+                'record_id' => $this->correspondence->id,
+                'source_type' => Correspondence::class,
+                'subject' => $this->correspondence->subject,
+                'body' => 'Correspondence letter sent — see email attachment.',
+                'idempotency_key' => 'correspondence.outbound:'.$this->correspondence->id.':'.$this->contact->id.':'.$this->recipientType,
+            ],
+            null,
+            null,
+            $this->correspondence->subject,
         );
 
         CorrespondenceRecipient::where('correspondence_id', $this->correspondence->id)

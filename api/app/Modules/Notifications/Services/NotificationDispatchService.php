@@ -236,6 +236,235 @@ class NotificationDispatchService
 
             $this->deliverToRecipient($user, $entry, $event, $record, $policy, $vars, $meta, $sendEmail, $sendPush);
         }
+
+        // External (non-user) email recipients — procurement vendors, RFQ invites, etc.
+        foreach (($instruction['external_emails'] ?? []) as $external) {
+            $email = is_array($external) ? ($external['email'] ?? null) : $external;
+            $name = is_array($external) ? ($external['name'] ?? $email) : $email;
+            if (! is_string($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+            $this->deliverToExternal(
+                (int) $outbox->tenant_id,
+                (string) $email,
+                (string) ($name ?: $email),
+                $event,
+                $record,
+                $policy,
+                $vars,
+                $meta,
+                $sendEmail,
+            );
+        }
+    }
+
+    /**
+     * Publish a notification to an external email address (no Nexus user).
+     */
+    public function dispatchExternal(
+        int $tenantId,
+        string $email,
+        string $name,
+        string $triggerKey,
+        array $vars = [],
+        array $meta = [],
+        ?string $idempotencyKey = null,
+        bool $processInline = true,
+    ): NotificationOutbox {
+        $meta = $this->links->sanitizeMeta($meta);
+        $meta['trigger'] = $triggerKey;
+        $idempotencyKey ??= 'external:'.hash('sha256', implode('|', [
+            $triggerKey,
+            strtolower($email),
+            $meta['record_id'] ?? $meta['source_id'] ?? '',
+            $meta['correlation_id'] ?? now()->format('YmdHi'),
+        ]));
+
+        return $this->publishEvent([
+            'tenant_id' => $tenantId,
+            'event_type' => $triggerKey,
+            'source_module' => $meta['module'] ?? explode('.', $triggerKey)[0] ?? 'system',
+            'source_type' => $meta['source_type'] ?? null,
+            'source_id' => $meta['record_id'] ?? $meta['source_id'] ?? null,
+            'idempotency_key' => $idempotencyKey,
+            'actor_id' => $meta['actor_id'] ?? null,
+            'correlation_id' => $meta['correlation_id'] ?? null,
+            'payload' => [
+                'trigger_key' => $triggerKey,
+                'vars' => array_merge(['name' => $name], $vars),
+                'meta' => $meta,
+                'recipient_instruction' => [
+                    'user_ids' => [],
+                    'external_emails' => [['email' => $email, 'name' => $name]],
+                    'include_acting' => false,
+                    'include_delegates' => false,
+                ],
+                'send_email' => true,
+                'send_push' => false,
+            ],
+        ], $processInline);
+    }
+
+    /**
+     * Track + queue a specialized Mailable through the outbox/delivery ledger
+     * (weekly summary HTML, correspondence with attachments).
+     */
+    public function dispatchTrackedMailable(
+        int $tenantId,
+        string $triggerKey,
+        string $email,
+        string $name,
+        \Illuminate\Mail\Mailable $mailable,
+        array $meta = [],
+        ?User $user = null,
+        ?string $idempotencyKey = null,
+        ?string $subject = null,
+    ): NotificationChannelDelivery {
+        $meta = $this->links->sanitizeMeta($meta);
+        $meta['trigger'] = $triggerKey;
+        $idempotencyKey ??= 'mailable:'.hash('sha256', implode('|', [
+            $triggerKey,
+            $user?->id ?? strtolower($email),
+            $meta['record_id'] ?? $meta['source_id'] ?? '',
+            $meta['correlation_id'] ?? now()->format('YmdHi'),
+        ]));
+
+        $this->publishEvent([
+            'tenant_id' => $tenantId,
+            'event_type' => $triggerKey,
+            'source_module' => $meta['module'] ?? explode('.', $triggerKey)[0] ?? 'system',
+            'source_type' => $meta['source_type'] ?? null,
+            'source_id' => $meta['record_id'] ?? $meta['source_id'] ?? null,
+            'idempotency_key' => $idempotencyKey,
+            'actor_id' => $meta['actor_id'] ?? null,
+            'correlation_id' => $meta['correlation_id'] ?? null,
+            'payload' => [
+                'trigger_key' => $triggerKey,
+                'vars' => array_merge(['name' => $name], [
+                    'summary' => $subject ?? ($meta['subject'] ?? $triggerKey),
+                ]),
+                'meta' => array_merge($meta, [
+                    'subject' => $subject ?? ($meta['subject'] ?? 'Nexus notification'),
+                    'body' => $meta['body'] ?? 'Sign in to Nexus for details.',
+                ]),
+                'tracked_mailable' => true,
+                'recipient_instruction' => [
+                    'user_ids' => $user ? [$user->id] : [],
+                    'external_emails' => $user ? [] : [['email' => $email, 'name' => $name]],
+                    'include_acting' => false,
+                    'include_delegates' => false,
+                ],
+                // Email body comes from the specialized Mailable; outbox only tracks ledger + in-app.
+                'send_email' => false,
+                'send_push' => false,
+            ],
+        ], true);
+
+        $event = NotificationEvent::query()
+            ->where('tenant_id', $tenantId)
+            ->where('idempotency_key', $idempotencyKey)
+            ->firstOrFail();
+
+        $record = NotificationRecord::query()->where('event_id', $event->id)->firstOrFail();
+
+        $recipientQuery = NotificationRecipient::query()->where('notification_record_id', $record->id);
+        $recipientRow = $user
+            ? $recipientQuery->where('user_id', $user->id)->first()
+            : $recipientQuery->where('external_email', $email)->first();
+
+        if (! $recipientRow) {
+            $recipientRow = NotificationRecipient::create([
+                'tenant_id' => $tenantId,
+                'notification_record_id' => $record->id,
+                'user_id' => $user?->id,
+                'external_email' => $user ? null : $email,
+                'external_name' => $user ? null : $name,
+                'recipient_role' => $user ? null : 'external',
+                'language' => 'en',
+                'resolution_reason' => $user ? 'tracked_mailable_user' : 'tracked_mailable_external',
+                'resolved_at' => now(),
+                'status' => 'active',
+            ]);
+        }
+
+        $delivery = $this->channels->createDelivery(
+            $tenantId,
+            $recipientRow->id,
+            'email',
+            [
+                'queue_priority' => $meta['queue_priority'] ?? 'normal',
+                'importance' => $meta['importance'] ?? 'normal',
+                'delivery_class' => $meta['delivery_class'] ?? 'operational',
+            ],
+            [
+                'subject' => $subject ?? ($meta['subject'] ?? 'Nexus notification'),
+                'body' => '[tracked_mailable]',
+            ],
+            $email,
+            null,
+        );
+
+        return $this->channels->attemptCustomMailable($delivery, $email, $mailable);
+    }
+
+    private function deliverToExternal(
+        int $tenantId,
+        string $email,
+        string $name,
+        NotificationEvent $event,
+        NotificationRecord $record,
+        array $policy,
+        array $vars,
+        array $meta,
+        bool $sendEmail,
+    ): void {
+        $existing = NotificationRecipient::query()
+            ->where('notification_record_id', $record->id)
+            ->where('external_email', $email)
+            ->first();
+
+        if ($existing) {
+            return;
+        }
+
+        $locale = 'en';
+        $template = $this->templates->resolve($tenantId, $policy['template_key'] ?? $event->event_key, $locale);
+        $perVars = array_merge($vars, ['name' => $name]);
+        $rendered = $this->templates->render($template, $perVars, $policy['confidentiality'] ?? 'internal');
+
+        $recipientRow = NotificationRecipient::create([
+            'tenant_id' => $tenantId,
+            'notification_record_id' => $record->id,
+            'user_id' => null,
+            'external_email' => $email,
+            'external_name' => $name,
+            'recipient_role' => 'external',
+            'language' => $locale,
+            'resolution_reason' => 'external_email',
+            'resolved_at' => now(),
+            'status' => 'active',
+        ]);
+
+        if (! $sendEmail) {
+            return;
+        }
+
+        $secureUrl = $this->links->absoluteSecureUrl($record->secure_route);
+        $emailDelivery = $this->channels->createDelivery(
+            $tenantId,
+            $recipientRow->id,
+            'email',
+            $policy,
+            $rendered,
+            $email,
+            $rendered['template_version_id'] ?? null,
+        );
+        $this->channels->attemptEmailToAddress($emailDelivery, $email, $name, $rendered['body'], $secureUrl);
+
+        $this->outbox->audit($tenantId, 'notification_recipient', $recipientRow->id, 'delivered_external', null, [
+            'email' => $email,
+            'event_key' => $event->event_key,
+        ]);
     }
 
     private function deliverToRecipient(

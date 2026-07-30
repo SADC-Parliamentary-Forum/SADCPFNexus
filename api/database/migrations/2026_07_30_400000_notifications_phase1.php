@@ -118,7 +118,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('notification_record_id')->constrained('notification_records')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->string('external_email', 191)->nullable();
+            $table->string('external_name', 191)->nullable();
             $table->string('recipient_role', 64)->nullable();
             $table->string('position_snapshot', 191)->nullable();
             $table->string('department_snapshot', 191)->nullable();
@@ -131,6 +133,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['notification_record_id', 'user_id'], 'notification_recipients_record_user_unique');
+            $table->unique(['notification_record_id', 'external_email'], 'notification_recipients_record_external_unique');
         });
 
         Schema::create('notification_channel_deliveries', function (Blueprint $table) {

@@ -8,7 +8,8 @@ use App\Modules\Notifications\Services\NotificationDispatchService;
 
 /**
  * Compatibility facade for module producers.
- * Phase 1: dispatch() publishes through the Notifications outbox engine.
+ * Phase 1+: all business notifications publish through the Notifications outbox engine.
+ * Direct Mail:: calls from business modules are forbidden — use dispatch / dispatchExternal / dispatchTrackedMailable.
  */
 class NotificationService
 {
@@ -32,6 +33,70 @@ class NotificationService
             $sendEmail,
             $sendPush,
             $idempotencyKey ?? ($meta['idempotency_key'] ?? null),
+        );
+    }
+
+    /**
+     * Alias used by People & Authority and other callers.
+     */
+    public function notifyUser(
+        User $recipient,
+        string $triggerKey,
+        array $vars = [],
+        array $meta = [],
+    ): void {
+        $meta = array_merge(['module' => $vars['module'] ?? ($meta['module'] ?? null)], $meta);
+        unset($vars['module']);
+        $this->dispatch($recipient, $triggerKey, $vars, array_filter($meta), true, true);
+    }
+
+    /**
+     * Dispatch to an external email address (vendor contact, RFQ invitee, etc.).
+     */
+    public function dispatchExternal(
+        int $tenantId,
+        string $email,
+        string $name,
+        string $triggerKey,
+        array $vars = [],
+        array $meta = [],
+        ?string $idempotencyKey = null,
+    ): void {
+        app(NotificationDispatchService::class)->dispatchExternal(
+            $tenantId,
+            $email,
+            $name,
+            $triggerKey,
+            $vars,
+            $meta,
+            $idempotencyKey ?? ($meta['idempotency_key'] ?? null),
+        );
+    }
+
+    /**
+     * Track + queue a specialized Mailable (weekly summary / correspondence) via the outbox ledger.
+     */
+    public function dispatchTrackedMailable(
+        int $tenantId,
+        string $triggerKey,
+        string $email,
+        string $name,
+        \Illuminate\Mail\Mailable $mailable,
+        array $meta = [],
+        ?User $user = null,
+        ?string $idempotencyKey = null,
+        ?string $subject = null,
+    ): void {
+        app(NotificationDispatchService::class)->dispatchTrackedMailable(
+            $tenantId,
+            $triggerKey,
+            $email,
+            $name,
+            $mailable,
+            $meta,
+            $user,
+            $idempotencyKey ?? ($meta['idempotency_key'] ?? null),
+            $subject,
         );
     }
 
@@ -227,9 +292,37 @@ class NotificationService
                 'subject' => 'RFQ invitation — {{reference}}',
                 'body'    => "Dear {{name}},\n\nAn RFQ matching your supplier profile is now open.\n\nReference: {{reference}}\nTitle: {{title}}\nDeadline: {{deadline}}\n\nPlease log in to the supplier portal to review the RFQ and submit your quotation.\n\nRegards,\nSADC-PF Procurement",
             ],
+            'procurement.rfq_external_invite' => [
+                'subject' => 'RFQ Invitation — {{reference}}',
+                'body'    => "Dear {{name}},\n\nYou have been invited to submit a quotation for {{title}}.\n\nPlease use the secure link in Nexus (or the registration link below) to submit your quote before the deadline.\n\nWe strongly encourage you to register as a supplier on SADC-PF Nexus to view the full RFQ, receive future supplier notifications, and manage your submissions in one place.\n\nSupplier registration: {{register_url}}\nQuote link: {{quote_url}}\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'procurement.rfq_vendor_contact' => [
+                'subject' => 'RFQ Invitation — {{reference}}',
+                'body'    => "Dear {{name}},\n\nAn RFQ matching your supplier categories is available in the SADC-PF supplier portal.\n\nTitle: {{title}}\nDeadline: {{deadline}}\nPortal: {{portal_url}}\n\nRegards,\nSADC-PF Procurement",
+            ],
             'supplier.proforma_invoice_requested' => [
                 'subject' => 'Purchase Order issued - submit proforma invoice',
                 'body'    => "Dear {{name}},\n\nPurchase Order {{reference}} has been issued to {{vendor}}.\n\nAmount: {{amount}}\nExpected delivery: {{delivery_date}}\n\nPlease log in to the supplier portal and submit your proforma invoice so payment processing can begin.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.proforma_invoice_requested_external' => [
+                'subject' => 'Purchase Order issued - {{reference}}',
+                'body'    => "Dear {{name}},\n\nPurchase Order {{reference}} has been issued to {{vendor}}.\n\nPlease log in to the supplier portal and submit your proforma invoice so payment processing can begin.\n\nAmount: {{amount}}\nExpected delivery: {{delivery_date}}\nPortal: {{portal_url}}\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.final_invoice_requested_external' => [
+                'subject' => 'Payment recorded - submit final invoice documents',
+                'body'    => "Dear {{name}},\n\nPayment has been recorded against purchase order {{reference}}.\n\nPlease upload the final invoice and proof-of-payment supporting documents in the supplier portal.\n\nAmount: {{amount}}\nPortal: {{portal_url}}\n\nRegards,\nSADC-PF Finance",
+            ],
+            'weekly_summary.generated' => [
+                'subject' => 'SADCPFNexus Weekly Summary — {{period}}',
+                'body'    => "Dear {{name}},\n\nYour weekly summary for {{period}} is ready. Sign in to Nexus for the full report.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'correspondence.outbound_mail' => [
+                'subject' => '{{subject}}',
+                'body'    => "Dear {{name}},\n\nCorrespondence has been sent to you. Please see the attached letter or sign in to Nexus if you have an account.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'notifications.template_test' => [
+                'subject' => '[TEST] {{subject}}',
+                'body'    => "{{body}}",
             ],
 
             // Supplier portal
