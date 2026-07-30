@@ -13,7 +13,7 @@ class RecipientResolutionService
     /**
      * Resolve recipients for a notification instruction (acting/delegation aware).
      *
-     * @param  array{user_ids?: int[], users?: iterable, roles?: string[], include_acting?: bool, include_delegates?: bool, recipient_role?: string}  $instruction
+     * @param  array{user_ids?: int[], users?: iterable, roles?: string[], group_codes?: string[], organisational_unit_ids?: int[], include_acting?: bool, include_delegates?: bool, recipient_role?: string}  $instruction
      * @return list<array{user: User, reason: string, role: ?string}>
      */
     public function resolve(int $tenantId, array $instruction): array
@@ -72,10 +72,15 @@ class RecipientResolutionService
             }
         }
 
-        foreach (($instruction['roles'] ?? []) as $roleName) {
-            $roleUsers = User::role($roleName)
-                ->where('tenant_id', $tenantId)
-                ->get();
+        $roleNames = array_merge($instruction['roles'] ?? [], $instruction['group_codes'] ?? []);
+        foreach ($roleNames as $roleName) {
+            try {
+                $roleUsers = User::role($roleName)
+                    ->where('tenant_id', $tenantId)
+                    ->get();
+            } catch (\Throwable) {
+                $roleUsers = collect();
+            }
             foreach ($roleUsers as $user) {
                 if (isset($seen[$user->id]) || ! $this->isEligible($user)) {
                     continue;
@@ -83,8 +88,31 @@ class RecipientResolutionService
                 $seen[$user->id] = true;
                 $resolved[] = [
                     'user' => $user,
-                    'reason' => 'role:'.$roleName,
+                    'reason' => 'group:'.$roleName,
                     'role' => $roleName,
+                ];
+            }
+        }
+
+        // People & Authority organisational units → users via department_id when present.
+        foreach (($instruction['organisational_unit_ids'] ?? []) as $ouId) {
+            try {
+                $ouUsers = User::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('department_id', $ouId)
+                    ->get();
+            } catch (\Throwable) {
+                $ouUsers = collect();
+            }
+            foreach ($ouUsers as $user) {
+                if (isset($seen[$user->id]) || ! $this->isEligible($user)) {
+                    continue;
+                }
+                $seen[$user->id] = true;
+                $resolved[] = [
+                    'user' => $user,
+                    'reason' => 'organisational_unit:'.$ouId,
+                    'role' => $instruction['recipient_role'] ?? 'ou_member',
                 ];
             }
         }

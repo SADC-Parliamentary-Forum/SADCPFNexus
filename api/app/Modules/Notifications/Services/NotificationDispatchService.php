@@ -215,11 +215,25 @@ class NotificationDispatchService
         $resolved = $this->recipients->resolve((int) $outbox->tenant_id, $instruction);
 
         $sendEmail = (bool) ($payload['send_email'] ?? true);
-        $sendPush = (bool) ($payload['send_push'] ?? false);
+        $sendPush = (bool) ($payload['send_push'] ?? ($policy['push_enabled'] ?? false));
 
         foreach ($resolved as $entry) {
             /** @var User $user */
             $user = $entry['user'];
+
+            // Advanced coalescing — never delay critical / action / mandatory notices.
+            $coalesce = app(CoalescingService::class);
+            if ($coalesce->shouldCoalesce($policy, $meta)) {
+                $coalesce->enqueue(
+                    $user,
+                    $triggerKey,
+                    (string) ($vars['summary'] ?? $vars['title'] ?? $triggerKey),
+                    ['meta' => $meta, 'vars' => $vars],
+                    $meta['coalesce_key'] ?? null,
+                );
+                continue;
+            }
+
             $this->deliverToRecipient($user, $entry, $event, $record, $policy, $vars, $meta, $sendEmail, $sendPush);
         }
     }
@@ -330,7 +344,33 @@ class NotificationDispatchService
             ]));
         }
 
-        // SMS / WhatsApp — Phase 2/3 stubs only
+        // SMS / WhatsApp — Null stubs only (Governance Configuration Pending). Never live without credentials.
+        if (($policy['sms_enabled'] ?? false) && config('notifications.sms_enabled')) {
+            $sms = $this->channels->createDelivery(
+                (int) $user->tenant_id,
+                $recipientRow->id,
+                'sms',
+                $policy,
+                $rendered,
+                $user->phone ?? null,
+                $rendered['template_version_id'] ?? null,
+            );
+            $this->channels->attemptSms($sms, (string) ($user->phone ?? ''), $rendered['subject'] ?? '');
+        }
+        if (($policy['whatsapp_enabled'] ?? false) && config('notifications.whatsapp_enabled')) {
+            $wa = $this->channels->createDelivery(
+                (int) $user->tenant_id,
+                $recipientRow->id,
+                'whatsapp',
+                $policy,
+                $rendered,
+                $user->phone ?? null,
+                $rendered['template_version_id'] ?? null,
+            );
+            $this->channels->attemptWhatsApp($wa, (string) ($user->phone ?? ''), $rendered['subject'] ?? '');
+        }
+
+        // SMS / WhatsApp stubs documented — not created unless explicitly enabled above.
         $this->outbox->audit($user->tenant_id, 'notification_recipient', $recipientRow->id, 'delivered', null, [
             'user_id' => $user->id,
             'event_key' => $event->event_key,

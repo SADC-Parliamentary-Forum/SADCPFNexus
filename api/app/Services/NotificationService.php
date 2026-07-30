@@ -21,7 +21,8 @@ class NotificationService
         array $vars = [],
         array $meta = [],
         bool $sendEmail = true,
-        bool $sendPush = true
+        bool $sendPush = true,
+        ?string $idempotencyKey = null,
     ): void {
         app(NotificationDispatchService::class)->dispatchLegacy(
             $recipient,
@@ -30,7 +31,7 @@ class NotificationService
             $meta,
             $sendEmail,
             $sendPush,
-            $meta['idempotency_key'] ?? null,
+            $idempotencyKey ?? ($meta['idempotency_key'] ?? null),
         );
     }
 

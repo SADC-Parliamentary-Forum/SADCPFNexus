@@ -66,11 +66,21 @@ class PolicyService
             'action_required' => $actionRequired,
             'in_app_enabled' => true,
             'email_enabled' => true,
-            'push_enabled' => false,
+            // Phase 2: push is a first-class policy channel (provider may still be Null stub).
+            'push_enabled' => $mandatory || $actionRequired || str_starts_with($eventKey, 'notifications.'),
+            'sms_enabled' => false, // Governance Configuration Pending
+            'whatsapp_enabled' => false, // Governance Configuration Pending
             'template_key' => $eventKey,
             'queue_priority' => $mandatory ? 'critical' : ($digestEligible ? 'digest' : 'normal'),
-            'channels' => ['in_app', 'email'],
+            'channels' => array_values(array_filter([
+                'in_app',
+                'email',
+                ($mandatory || $actionRequired || str_starts_with($eventKey, 'notifications.')) ? 'push' : null,
+            ])),
+            'coalesce_eligible' => $digestEligible,
             'retry_profile' => ['max_attempts' => 5, 'backoff_seconds' => [60, 300, 900, 3600, 14400]],
+            'reminder_policy' => null,
+            'escalation_policy' => null,
         ];
     }
 

@@ -3,7 +3,6 @@
 namespace App\Modules\Notifications\Services;
 
 use App\Mail\ModuleNotificationMail;
-use App\Models\DeviceToken;
 use App\Models\Notification;
 use App\Models\Notifications\NotificationChannelDelivery;
 use App\Models\Notifications\NotificationDeadLetter;
@@ -11,7 +10,6 @@ use App\Models\Notifications\NotificationDeliveryAttempt;
 use App\Models\Notifications\NotificationDigest;
 use App\Models\Notifications\NotificationDigestItem;
 use App\Models\User;
-use App\Services\FcmService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -20,6 +18,8 @@ class ChannelDeliveryService
     public function __construct(
         private readonly SecureLinkService $links,
         private readonly OutboxService $outbox,
+        private readonly FailoverMailService $failoverMail,
+        private readonly PushDeliveryService $push,
     ) {}
 
     public function deliverInApp(
@@ -82,50 +82,55 @@ class ChannelDeliveryService
 
     public function attemptEmail(NotificationChannelDelivery $delivery, User $recipient, string $body, string $secureUrl): NotificationChannelDelivery
     {
-        $started = microtime(true);
         $attemptNumber = ((int) $delivery->attempt_count) + 1;
 
-        try {
-            if (! filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
-                return $this->failPermanent($delivery, $attemptNumber, 'invalid_email', 'Recipient email invalid', $started);
-            }
+        if (! filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
+            return $this->failPermanent($delivery, $attemptNumber, 'invalid_email', 'Recipient email invalid', microtime(true));
+        }
 
-            // No approve/reject URLs — authenticated Open-in-Nexus only.
-            Mail::to($recipient->email)->queue(new ModuleNotificationMail(
-                $delivery->rendered_subject ?? 'Nexus notification',
-                $body,
-                $recipient->name,
-                null,
-                null,
-                $secureUrl,
-            ));
+        $result = $this->failoverMail->send(
+            $recipient,
+            $delivery->rendered_subject ?? 'Nexus notification',
+            $body,
+            $secureUrl,
+            $delivery,
+        );
 
+        if ($result['ok']) {
             NotificationDeliveryAttempt::create([
                 'channel_delivery_id' => $delivery->id,
                 'attempt_number' => $attemptNumber,
                 'attempted_at' => now(),
                 'result' => 'accepted',
-                'response_code' => 'queued',
-                'response_summary' => 'Accepted by mailer driver',
+                'response_code' => $result['code'],
+                'response_summary' => Str::limit($result['summary'], 500),
                 'temporary_failure' => false,
-                'duration_ms' => (int) ((microtime(true) - $started) * 1000),
+                'duration_ms' => $result['duration_ms'],
             ]);
 
             $delivery->update([
                 'status' => 'sent',
                 'sent_at' => now(),
                 'attempt_count' => $attemptNumber,
-                'provider_message_id' => 'mail-queued-'.$delivery->id.'-'.$attemptNumber,
+                'provider' => $result['provider'],
+                'failover_provider' => $result['failover'] ? $result['provider'] : null,
+                'provider_message_id' => $result['message_id'],
+                'latency_ms' => $result['duration_ms'],
             ]);
 
             $this->outbox->audit($delivery->tenant_id, 'channel_delivery', $delivery->id, 'email_sent', null, [
                 'destination' => $delivery->destination_snapshot,
+                'failover' => $result['failover'],
             ]);
 
             return $delivery->fresh();
-        } catch (\Throwable $e) {
-            return $this->failTemporary($delivery, $attemptNumber, 'provider_error', $e->getMessage(), $started);
         }
+
+        if ($result['temporary']) {
+            return $this->failTemporary($delivery, $attemptNumber, $result['code'], $result['summary'], microtime(true) - ($result['duration_ms'] / 1000));
+        }
+
+        return $this->failPermanent($delivery, $attemptNumber, $result['code'], $result['summary'], microtime(true));
     }
 
     public function attemptPush(NotificationChannelDelivery $delivery, User $recipient, array $rendered, array $meta): NotificationChannelDelivery
@@ -133,42 +138,26 @@ class ChannelDeliveryService
         $started = microtime(true);
         $attemptNumber = ((int) $delivery->attempt_count) + 1;
 
-        $tokens = DeviceToken::where('user_id', $recipient->id)->pluck('token')->all();
-        if ($tokens === []) {
-            return $this->failPermanent($delivery, $attemptNumber, 'no_device', 'No device tokens', $started);
-        }
+        $confidentiality = $meta['confidentiality'] ?? 'internal';
+        $title = $this->push->privacySafeTitle($rendered['subject'] ?? 'Nexus notification', $confidentiality);
+        $body = $this->push->privacySafeBody();
+        $deep = $this->links->structuredDeepLinks($meta['url'] ?? $meta['secure_route'] ?? null);
 
-        $fcm = app(FcmService::class);
-        if (! $fcm->isConfigured()) {
-            // Stub — mobile push depth is Phase 2. Mark suppressed rather than dead-letter.
-            $delivery->update([
-                'status' => 'suppressed',
-                'suppressed' => true,
-                'suppression_reason' => 'push_provider_not_configured_phase1',
-                'attempt_count' => $attemptNumber,
-            ]);
+        $result = $this->push->send($recipient, $title, $body, array_filter([
+            'trigger' => $meta['trigger'] ?? '',
+            'module' => $meta['module'] ?? '',
+            'web_path' => $deep['web_path'],
+            'mobile_url' => $deep['mobile_url'],
+        ]));
 
-            return $delivery->fresh();
-        }
-
-        try {
-            // Privacy-safe lock-screen title
-            $title = in_array($meta['confidentiality'] ?? 'internal', ['restricted', 'confidential', 'highly_confidential', 'security_sensitive'], true)
-                ? 'Nexus notification'
-                : ($rendered['subject'] ?? 'Nexus notification');
-
-            $fcm->sendToTokens($tokens, $title, 'Sign in to Nexus to view details.', array_filter([
-                'trigger' => $meta['trigger'] ?? '',
-                'module' => $meta['module'] ?? '',
-                'url' => $this->links->normalizeRoute($meta['url'] ?? null),
-            ]));
-
+        if ($result['ok']) {
             NotificationDeliveryAttempt::create([
                 'channel_delivery_id' => $delivery->id,
                 'attempt_number' => $attemptNumber,
                 'attempted_at' => now(),
                 'result' => 'accepted',
-                'response_code' => 'fcm_ok',
+                'response_code' => $result['code'],
+                'response_summary' => Str::limit($result['summary'], 500),
                 'temporary_failure' => false,
                 'duration_ms' => (int) ((microtime(true) - $started) * 1000),
             ]);
@@ -177,12 +166,87 @@ class ChannelDeliveryService
                 'status' => 'sent',
                 'sent_at' => now(),
                 'attempt_count' => $attemptNumber,
+                'provider' => $result['provider'],
+                'provider_message_id' => $result['message_id'],
+                'latency_ms' => (int) ((microtime(true) - $started) * 1000),
             ]);
 
             return $delivery->fresh();
-        } catch (\Throwable $e) {
-            return $this->failTemporary($delivery, $attemptNumber, 'push_error', $e->getMessage(), $started);
         }
+
+        // No device is a soft suppress — must not roll back in-app/email delivery.
+        if ($result['code'] === 'no_device') {
+            $delivery->update([
+                'status' => 'suppressed',
+                'suppressed' => true,
+                'suppression_reason' => 'no_device',
+                'attempt_count' => $attemptNumber,
+                'provider' => $result['provider'],
+            ]);
+
+            return $delivery->fresh();
+        }
+
+        if ($result['temporary']) {
+            return $this->failTemporary($delivery, $attemptNumber, $result['code'], $result['summary'], $started);
+        }
+
+        return $this->failPermanent($delivery, $attemptNumber, $result['code'], $result['summary'], $started);
+    }
+
+    public function attemptSms(NotificationChannelDelivery $delivery, string $destination, string $body): NotificationChannelDelivery
+    {
+        $attemptNumber = ((int) $delivery->attempt_count) + 1;
+        $result = app(NullSmsProvider::class)->send($destination, $body);
+        $delivery->update([
+            'status' => 'suppressed',
+            'suppressed' => true,
+            'suppression_reason' => $result['code'],
+            'attempt_count' => $attemptNumber,
+            'provider' => 'null_sms',
+        ]);
+
+        return $delivery->fresh();
+    }
+
+    public function attemptWhatsApp(NotificationChannelDelivery $delivery, string $destination, string $body): NotificationChannelDelivery
+    {
+        $attemptNumber = ((int) $delivery->attempt_count) + 1;
+        $result = app(NullWhatsAppProvider::class)->send($destination, $body);
+        $delivery->update([
+            'status' => 'suppressed',
+            'suppressed' => true,
+            'suppression_reason' => $result['code'],
+            'attempt_count' => $attemptNumber,
+            'provider' => 'null_whatsapp',
+        ]);
+
+        return $delivery->fresh();
+    }
+
+    public function processScheduled(int $limit = 50): int
+    {
+        $due = NotificationChannelDelivery::query()
+            ->where('status', 'scheduled')
+            ->where('scheduled_at', '<=', now())
+            ->where('suppressed', false)
+            ->limit($limit)
+            ->get();
+
+        $count = 0;
+        foreach ($due as $delivery) {
+            $recipientRow = \App\Models\Notifications\NotificationRecipient::find($delivery->recipient_id);
+            $user = $recipientRow ? User::find($recipientRow->user_id) : null;
+            if (! $user) {
+                continue;
+            }
+            $secureUrl = $this->links->absoluteSecureUrl('/notifications');
+            $delivery->update(['status' => 'pending']);
+            $this->retry($delivery, $user, 'Scheduled delivery — sign in to Nexus for details.', $secureUrl);
+            $count++;
+        }
+
+        return $count;
     }
 
     public function retry(NotificationChannelDelivery $delivery, User $recipient, string $body, string $secureUrl): NotificationChannelDelivery
@@ -197,6 +261,8 @@ class ChannelDeliveryService
                 'subject' => $delivery->rendered_subject,
                 'body' => $body,
             ], ['confidentiality' => 'internal']),
+            'sms' => $this->attemptSms($delivery, (string) $delivery->destination_snapshot, $body),
+            'whatsapp' => $this->attemptWhatsApp($delivery, (string) $delivery->destination_snapshot, $body),
             default => $delivery,
         };
     }
@@ -270,8 +336,22 @@ class ChannelDeliveryService
             }
 
             $lines = $items->map(fn ($i) => '- '.($i->summary ?: 'Notification #'.$i->channel_delivery_id))->implode("\n");
+            $aiSummary = null;
+            if (config('notifications.ai_enabled', true)) {
+                try {
+                    $suggestion = app(NotificationIntelligenceService::class)->summariseDigest($digest);
+                    $aiSummary = $suggestion->suggestion['summary'] ?? null;
+                } catch (\Throwable) {
+                    $aiSummary = null;
+                }
+            }
+
             $subject = 'SADC-PF Nexus — '.ucfirst($digestType).' digest ('.$digest->period_start.')';
-            $body = "Dear {$user->name},\n\nYour {$digestType} notification digest:\n\n{$lines}\n\nSign in to Nexus for details.\n\nRegards,\nSADC-PF Nexus";
+            $body = "Dear {$user->name},\n\nYour {$digestType} notification digest:\n\n{$lines}\n\n";
+            if ($aiSummary) {
+                $body .= "Summary (from existing items only):\n{$aiSummary}\n\n";
+            }
+            $body .= "Sign in to Nexus for details.\n\nRegards,\nSADC-PF Nexus";
 
             if (filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
                 Mail::to($user->email)->queue(new ModuleNotificationMail($subject, $body, $user->name));

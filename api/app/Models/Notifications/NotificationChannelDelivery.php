@@ -26,7 +26,11 @@ class NotificationChannelDelivery extends Model
         'delivered_at',
         'failed_at',
         'failure_code',
+        'bounce_class',
         'attempt_count',
+        'latency_ms',
+        'failover_provider',
+        'coalesce_bucket_id',
         'suppressed',
         'suppression_reason',
     ];

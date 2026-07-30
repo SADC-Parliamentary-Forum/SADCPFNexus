@@ -88,8 +88,9 @@ if (config('people_authority.recertification_schedule_enabled')) {
     Schedule::command('people-authority:open-recertifications')->weeklyOn(1, '07:50')->withoutOverlapping();
 }
 
-// Notifications Phase 1 — outbox consumer, retries, digests
+// Notifications Phase 1+2 — outbox, retries, digests, coalesce, ack reminders, maintenance
 Schedule::command('notifications:process-outbox')->everyMinute()->withoutOverlapping();
-Schedule::command('notifications:process-deliveries --retries')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('notifications:process-deliveries --retries --scheduled --coalesce --ack-reminders')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('notifications:process-deliveries --digest=daily')->dailyAt('07:10');
 Schedule::command('notifications:process-deliveries --digest=weekly')->weeklyOn(1, '07:15');
+Schedule::command('notifications:process-deliveries --maintenance')->hourly()->withoutOverlapping();

@@ -15,6 +15,8 @@ class NotificationDigest extends Model
         'period_start',
         'period_end',
         'status',
+        'ai_summary',
+        'ai_summary_provider',
         'sent_at',
     ];
 

@@ -12,12 +12,17 @@ class DeviceToken extends Model
         'user_id',
         'token',
         'platform',
+        'push_enabled',
         'device_name',
+        'app_version',
         'last_used_at',
+        'revoked_at',
     ];
 
     protected $casts = [
         'last_used_at' => 'datetime',
+        'revoked_at' => 'datetime',
+        'push_enabled' => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -42,6 +47,8 @@ class DeviceToken extends Model
                 'tenant_id'     => $tenantId,
                 'platform'      => $platform,
                 'device_name'   => $deviceName,
+                'push_enabled'  => true,
+                'revoked_at'    => null,
                 'last_used_at'  => now(),
             ]
         );

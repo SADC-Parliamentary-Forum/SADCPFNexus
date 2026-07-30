@@ -5649,6 +5649,32 @@ export const notificationAdminApi = {
   resolveDeadLetter: (id: string | number, notes?: string) =>
     api.post(`/notification-admin/dead-letters/${id}/resolve`, { notes }),
   audit: () => api.get("/notification-admin/audit"),
+  analytics: (params?: { from?: string; to?: string }) =>
+    api.get("/notification-admin/analytics", { params }),
+  fatigue: () => api.get("/notification-admin/fatigue"),
+  issueExternalToken: (payload: Record<string, unknown>) =>
+    api.post("/notification-admin/external-tokens", payload),
+  listMaintenance: () => api.get("/notification-admin/maintenance"),
+  scheduleMaintenance: (payload: Record<string, unknown>) =>
+    api.post("/notification-admin/maintenance", payload),
+  aiGuards: () => api.get("/notification-admin/ai/guards"),
+};
+
+export const notificationsPhase23Api = {
+  registerDevice: (payload: { token: string; platform?: string; device_name?: string; app_version?: string }) =>
+    api.post("/notifications/devices", payload),
+  refreshDevice: (payload: { old_token: string; new_token: string }) =>
+    api.post("/notifications/devices/refresh", payload),
+  revokeDevice: (token: string) => api.delete("/notifications/devices", { data: { token } }),
+  nlSearch: (q: string) => api.post("/notifications/nl-search", { q }),
+  createBroadcast: (payload: Record<string, unknown>) => api.post("/notifications/broadcasts", payload),
+  submitBroadcast: (id: number | string) => api.post(`/notifications/broadcasts/${id}/submit`),
+  approveBroadcast: (id: number | string) => api.post(`/notifications/broadcasts/${id}/approve`),
+  cancelBroadcast: (id: number | string, reason?: string) =>
+    api.post(`/notifications/broadcasts/${id}/cancel`, { reason }),
+  createAckCampaign: (payload: Record<string, unknown>) => api.post("/notifications/ack-campaigns", payload),
+  activateAckCampaign: (id: number | string) => api.post(`/notifications/ack-campaigns/${id}/activate`),
+  ackReport: (id: number | string) => api.get(`/notifications/ack-campaigns/${id}/report`),
 };
 
 export interface GovernanceConfig {

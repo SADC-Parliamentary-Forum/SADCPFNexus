@@ -62,6 +62,12 @@ Route::prefix('v1')->group(function () {
     Route::post('assignments/google-calendar/webhook', \App\Http\Controllers\Api\V1\Assignments\AssignmentGoogleCalendarWebhookController::class)
         ->middleware('throttle:60,1');
 
+    // Notifications Phase 2 — external recipient portal (opaque token; minimal content; expiry enforced).
+    Route::get(
+        'external/notifications/{token}',
+        [\App\Http\Controllers\Api\V1\Notifications\ExternalNotificationPortalController::class, 'show']
+    )->middleware('throttle:30,1');
+
     // Public document-signature verification (approved metadata only; opaque token).
     Route::get(
         'people-authority/public/verify-signature/{token}',
@@ -125,13 +131,32 @@ Route::prefix('v1')->group(function () {
             [\App\Http\Controllers\Api\V1\EmailAction\EmailActionController::class, 'process']
         );
 
-        // User Notifications (in-app notification centre)
+        // User Notifications (in-app notification centre) + Phase 2/3 extensions
         Route::prefix('notifications')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'index']);
             Route::get('/unread-count', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'unreadCount']);
             Route::get('/preferences', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'preferences']);
             Route::put('/preferences', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'updatePreferences']);
             Route::post('/read-all', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markAllRead']);
+
+            // Phase 2/3 — register before /{id} catch-all
+            Route::post('devices', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'registerDevice']);
+            Route::post('devices/refresh', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'refreshDevice']);
+            Route::delete('devices', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'revokeDevice']);
+            Route::get('deep-link', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'deepLinkPreview']);
+            Route::post('nl-search', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'nlSearch']);
+            Route::post('preference-suggestions', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'preferenceSuggestions']);
+            Route::post('predict-channels', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'predictChannels']);
+            Route::post('ai-suggestions/{id}/confirm', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'confirmSuggestion']);
+            Route::post('ack-campaigns', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'createAckCampaign']);
+            Route::post('ack-campaigns/{id}/activate', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'activateAckCampaign']);
+            Route::post('ack-campaigns/{id}/acknowledge', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'acknowledgeCampaign']);
+            Route::get('ack-campaigns/{id}/report', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'ackReport']);
+            Route::post('broadcasts', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'createBroadcast']);
+            Route::post('broadcasts/{id}/submit', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'submitBroadcast']);
+            Route::post('broadcasts/{id}/approve', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'approveBroadcast']);
+            Route::post('broadcasts/{id}/cancel', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'cancelBroadcast']);
+
             Route::get('/{id}', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'show']);
             Route::post('/{id}/read', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markRead']);
             Route::post('/{id}/unread', [\App\Http\Controllers\Api\V1\Notifications\UserNotificationController::class, 'markUnread']);
@@ -148,6 +173,12 @@ Route::prefix('v1')->group(function () {
             Route::post('deliveries/{id}/retry', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'retry']);
             Route::post('deliveries/{id}/suppress', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'suppress']);
             Route::get('audit', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'audit']);
+            Route::get('analytics', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'analytics']);
+            Route::get('fatigue', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'fatigue']);
+            Route::post('external-tokens', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'issueExternalToken']);
+            Route::get('maintenance', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'listMaintenance']);
+            Route::post('maintenance', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'scheduleMaintenance']);
+            Route::get('ai/guards', [\App\Http\Controllers\Api\V1\Notifications\NotificationPhase23Controller::class, 'aiGuards']);
         });
 
         Route::get('dashboard/stats', [\App\Http\Controllers\Api\V1\DashboardController::class, 'stats']);
