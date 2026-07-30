@@ -13,7 +13,9 @@ class WorkflowDecision extends Model
 
     protected $fillable = [
         'tenant_id', 'approval_request_id', 'workflow_task_id', 'step_index',
-        'stage_type', 'decision_type', 'actor_user_id', 'position_snapshot',
+        'stage_type', 'decision_type', 'vote_value', 'is_quorum_vote',
+        'governance_decision_id', 'external_approval_id',
+        'actor_user_id', 'position_snapshot',
         'department_snapshot', 'authority_snapshot', 'delegation_snapshot',
         'acting_appointment_snapshot', 'record_version', 'approval_package_hash',
         'comments', 'document_signature_event_id', 'authentication_strength',
@@ -26,6 +28,7 @@ class WorkflowDecision extends Model
         'authority_snapshot' => 'array',
         'delegation_snapshot' => 'array',
         'acting_appointment_snapshot' => 'array',
+        'is_quorum_vote' => 'boolean',
         'decided_at' => 'datetime',
     ];
 

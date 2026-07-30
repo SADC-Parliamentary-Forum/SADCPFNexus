@@ -13,8 +13,8 @@ class WorkflowTask extends Model
 
     protected $fillable = [
         'uuid', 'tenant_id', 'approval_request_id', 'step_index', 'stage_type',
-        'decision_type', 'assigned_user_id', 'assigned_queue', 'status',
-        'assignment_reason', 'actor_resolution_snapshot', 'delegation_id',
+        'parallel_role_key', 'decision_type', 'assigned_user_id', 'assigned_queue', 'status',
+        'assignment_reason', 'routing_strategy', 'actor_resolution_snapshot', 'delegation_id',
         'acting_appointment_id', 'authority_snapshot_id', 'assigned_at',
         'acknowledged_at', 'claimed_at', 'claimed_by', 'due_at', 'reminded_at',
         'escalated_at', 'escalation_level', 'completed_at', 'idempotency_key',

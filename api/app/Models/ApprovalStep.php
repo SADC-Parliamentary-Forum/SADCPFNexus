@@ -18,6 +18,10 @@ class ApprovalStep extends Model
         'role_id', 'user_id',
         'allow_return', 'allow_reject', 'allow_delegate', 'sla_hours', 'requires_comment',
         'escalation_hours', 'escalation_to_selector', 'reminder_hours', 'decision_meanings',
+        'completion_rule', 'quorum_count', 'quorum_percentage', 'parallel_group',
+        'parallel_role_key', 'sod_segregated', 'governance_body_name',
+        'routing_strategy', 'sla_calendar_code', 'sla_priority_variant',
+        'pause_sla_on_hold', 'high_risk',
     ];
 
     protected $casts = [
@@ -30,6 +34,9 @@ class ApprovalStep extends Model
         'allow_reject' => 'boolean',
         'allow_delegate' => 'boolean',
         'requires_comment' => 'boolean',
+        'sod_segregated' => 'boolean',
+        'pause_sla_on_hold' => 'boolean',
+        'high_risk' => 'boolean',
         'amount_threshold' => 'decimal:2',
     ];
 

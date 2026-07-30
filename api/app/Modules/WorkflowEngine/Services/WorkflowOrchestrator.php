@@ -31,6 +31,9 @@ class WorkflowOrchestrator
         private readonly DefinitionVersionService $definitions,
         private readonly ReleaseOrchestrator $releases,
         private readonly AuthorityCheckService $authority,
+        private readonly StageCompletionService $completion,
+        private readonly SlaCalendarService $sla,
+        private readonly WorkloadRoutingService $routing,
         private readonly ?SigningService $signing = null,
     ) {}
 
@@ -140,29 +143,56 @@ class WorkflowOrchestrator
         $step = $steps->get($stepIndex);
         $requester = $this->requester($request);
         $resolution = $this->actors->resolve($step, $requester ?? $actor, $context);
-        $holderIds = collect($resolution['actors'])->pluck('id')->values()->all();
 
-        $dueAt = $step->sla_hours ? now()->addHours((int) $step->sla_hours) : null;
+        $strategy = $step->routing_strategy ?: 'primary';
+        $rule = $step->completion_rule ?: 'any';
+        // Parallel-all / quorum need all eligible actors as independent task owners
+        if (in_array($rule, ['all', 'quorum', 'percentage', 'lead_plus_support'], true)) {
+            $routedActors = $this->routing->keepAllForParallel($resolution['actors']);
+            $routeMeta = ['strategy' => 'parallel_all_eligible', 'reason' => $resolution['reason']];
+        } else {
+            $routeMeta = $this->routing->route(
+                $resolution['actors'],
+                $strategy,
+                (int) $request->tenant_id,
+                [
+                    'queue' => $step->actor_selector_config['queue'] ?? null,
+                    'approval_request_id' => $request->id,
+                    'routing_key' => $request->id.'-'.$stepIndex,
+                ]
+            );
+            $routedActors = $routeMeta['actors'];
+        }
+
+        $holderIds = collect($routedActors)->pluck('id')->values()->all();
+
+        $calendar = $this->sla->resolveCalendar((int) $request->tenant_id, $step->sla_calendar_code);
+        $dueAt = $step->sla_hours
+            ? $this->sla->computeDueAt(now(), (int) $step->sla_hours, $calendar, $step->sla_priority_variant)
+            : null;
 
         // Close prior open tasks
         WorkflowTask::where('approval_request_id', $request->id)
             ->where('status', 'awaiting')
             ->update(['status' => 'cancelled', 'completed_at' => now()]);
 
-        foreach ($resolution['actors'] as $assignee) {
+        if ($strategy === 'queue_claim' && $routedActors === []) {
             WorkflowTask::create([
                 'uuid' => (string) Str::uuid(),
                 'tenant_id' => $request->tenant_id,
                 'approval_request_id' => $request->id,
                 'step_index' => $stepIndex,
                 'stage_type' => $step->stage_type ?? 'approve',
+                'parallel_role_key' => $step->parallel_role_key,
                 'decision_type' => $step->stage_type ?? 'approve',
-                'assigned_user_id' => $assignee->id,
+                'assigned_user_id' => null,
+                'assigned_queue' => $routeMeta['queue'] ?? ($step->actor_selector_config['queue'] ?? 'default'),
                 'status' => 'awaiting',
-                'assignment_reason' => $resolution['reason'],
+                'assignment_reason' => $routeMeta['reason'] ?? 'Queue claim',
+                'routing_strategy' => 'queue_claim',
                 'actor_resolution_snapshot' => [
                     'selector' => $resolution['selector'],
-                    'reason' => $resolution['reason'],
+                    'reason' => $routeMeta['reason'] ?? $resolution['reason'],
                     'snapshots' => $resolution['snapshots'],
                 ],
                 'assigned_at' => now(),
@@ -170,11 +200,67 @@ class WorkflowOrchestrator
             ]);
         }
 
+        foreach ($routedActors as $assignee) {
+            WorkflowTask::create([
+                'uuid' => (string) Str::uuid(),
+                'tenant_id' => $request->tenant_id,
+                'approval_request_id' => $request->id,
+                'step_index' => $stepIndex,
+                'stage_type' => $step->stage_type ?? 'approve',
+                'parallel_role_key' => $step->parallel_role_key,
+                'decision_type' => $step->stage_type ?? 'approve',
+                'assigned_user_id' => $assignee->id,
+                'status' => 'awaiting',
+                'assignment_reason' => $routeMeta['reason'] ?? $resolution['reason'],
+                'routing_strategy' => $routeMeta['strategy'] ?? $strategy,
+                'actor_resolution_snapshot' => [
+                    'selector' => $resolution['selector'],
+                    'reason' => $routeMeta['reason'] ?? $resolution['reason'],
+                    'snapshots' => $resolution['snapshots'],
+                ],
+                'assigned_at' => now(),
+                'due_at' => $dueAt,
+            ]);
+        }
+
+        // Activate sibling parallel_group steps
+        $parallelIndexes = [$stepIndex];
+        if ($step->parallel_group) {
+            foreach ($steps as $idx => $sibling) {
+                if ($idx === $stepIndex) {
+                    continue;
+                }
+                if (($sibling->parallel_group ?? null) === $step->parallel_group) {
+                    $parallelIndexes[] = $idx;
+                    $sibResolution = $this->actors->resolve($sibling, $requester ?? $actor, $context);
+                    foreach ($this->routing->keepAllForParallel($sibResolution['actors']) as $assignee) {
+                        WorkflowTask::create([
+                            'uuid' => (string) Str::uuid(),
+                            'tenant_id' => $request->tenant_id,
+                            'approval_request_id' => $request->id,
+                            'step_index' => $idx,
+                            'stage_type' => $sibling->stage_type ?? 'approve',
+                            'parallel_role_key' => $sibling->parallel_role_key,
+                            'decision_type' => $sibling->stage_type ?? 'approve',
+                            'assigned_user_id' => $assignee->id,
+                            'status' => 'awaiting',
+                            'assignment_reason' => 'Parallel group '.$step->parallel_group,
+                            'routing_strategy' => 'parallel_group',
+                            'assigned_at' => now(),
+                            'due_at' => $dueAt,
+                        ]);
+                        $holderIds[] = $assignee->id;
+                    }
+                }
+            }
+        }
+
         $request->update([
             'current_step_index' => $stepIndex,
-            'current_holder_ids' => $holderIds,
+            'current_holder_ids' => array_values(array_unique($holderIds)),
             'current_stage_type' => $step->stage_type ?? 'approve',
             'due_at' => $dueAt,
+            'active_parallel_steps' => $parallelIndexes,
             'status' => $request->status === 'returned' ? 'pending' : $request->status,
         ]);
 
@@ -187,10 +273,79 @@ class WorkflowOrchestrator
                 'step_index' => $stepIndex,
                 'stage_type' => $step->stage_type,
                 'holders' => $holderIds,
-                'reason' => $resolution['reason'],
+                'completion_rule' => $rule,
+                'routing' => $routeMeta['strategy'] ?? $strategy,
+                'reason' => $routeMeta['reason'] ?? $resolution['reason'],
             ],
             'occurred_at' => now(),
         ]);
+    }
+
+    public function pauseSla(ApprovalRequest $request, User $actor): ApprovalRequest
+    {
+        if ($request->sla_paused_at) {
+            return $request;
+        }
+        $request->update([
+            'held_at' => $request->held_at ?: now(),
+            'sla_paused_at' => now(),
+        ]);
+        WorkflowAuditEvent::create([
+            'tenant_id' => $request->tenant_id,
+            'approval_request_id' => $request->id,
+            'event_type' => 'WorkflowSlaPaused',
+            'actor_user_id' => $actor->id,
+            'payload' => ['due_at' => optional($request->due_at)->toIso8601String()],
+            'occurred_at' => now(),
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function resumeSla(ApprovalRequest $request, User $actor): ApprovalRequest
+    {
+        if (! $request->sla_paused_at) {
+            return $request;
+        }
+        $pausedSeconds = (int) $request->sla_paused_at->diffInSeconds(now());
+        $total = (int) $request->sla_paused_seconds + $pausedSeconds;
+        $newDue = $this->sla->extendDueForPause($request->due_at, $pausedSeconds);
+        $request->update([
+            'sla_paused_at' => null,
+            'sla_paused_seconds' => $total,
+            'held_at' => null,
+            'due_at' => $newDue,
+        ]);
+        WorkflowAuditEvent::create([
+            'tenant_id' => $request->tenant_id,
+            'approval_request_id' => $request->id,
+            'event_type' => 'WorkflowSlaResumed',
+            'actor_user_id' => $actor->id,
+            'payload' => [
+                'paused_seconds' => $pausedSeconds,
+                'due_at' => optional($newDue)->toIso8601String(),
+            ],
+            'occurred_at' => now(),
+        ]);
+
+        return $request->fresh();
+    }
+
+    public function claimQueueTask(WorkflowTask $task, User $actor): WorkflowTask
+    {
+        if ($task->status !== 'awaiting' || $task->assigned_user_id) {
+            throw ValidationException::withMessages(['task' => 'Task is not available for claim.']);
+        }
+        $task->update([
+            'assigned_user_id' => $actor->id,
+            'claimed_by' => $actor->id,
+            'claimed_at' => now(),
+            'status' => 'claimed',
+        ]);
+        // Treat claimed as awaiting decision
+        $task->update(['status' => 'awaiting']);
+
+        return $task->fresh();
     }
 
     /**
@@ -267,6 +422,16 @@ class WorkflowOrchestrator
                 ->lockForUpdate()
                 ->first();
 
+            if (in_array($decisionType, $this->completion->positiveTypes(), true) && $step) {
+                $this->completion->assertParallelSod(
+                    $locked,
+                    $step,
+                    (int) $actor->id,
+                    (int) $locked->current_step_index,
+                    $task?->id
+                );
+            }
+
             $decision = WorkflowDecision::create([
                 'tenant_id' => $locked->tenant_id,
                 'approval_request_id' => $locked->id,
@@ -308,25 +473,66 @@ class WorkflowOrchestrator
 
             $advancedTo = null;
             $completed = false;
+            $stageComplete = false;
 
-            if (in_array($decisionType, ['approve', 'recommend', 'certify', 'authorise', 'sign', 'verify', 'acknowledge'], true)) {
-                $next = $locked->current_step_index + 1;
-                if ($next >= $locked->workflow->steps()->count()) {
-                    $locked->update([
-                        'status' => 'approved',
-                        'completed_at' => now(),
-                        'current_holder_ids' => [],
-                    ]);
-                    $completed = true;
-                } else {
-                    $this->activateStage($locked->fresh(), $next, $actor);
-                    $advancedTo = $next;
+            if (in_array($decisionType, $this->completion->positiveTypes(), true)) {
+                $this->completion->recordVote(
+                    $locked,
+                    (int) $locked->current_step_index,
+                    (int) $actor->id,
+                    'approve',
+                    $decision->id,
+                    $comment
+                );
+                $decision->update([
+                    'vote_value' => 'approve',
+                    'is_quorum_vote' => in_array($step?->completion_rule, ['quorum', 'percentage'], true),
+                ]);
+
+                $stageComplete = $step
+                    ? $this->completion->isComplete($locked, $step, (int) $locked->current_step_index)
+                    : true;
+
+                // Parallel group: all sibling steps must also be complete
+                if ($stageComplete && $step?->parallel_group) {
+                    foreach ($locked->workflow->steps as $idx => $sibling) {
+                        if (($sibling->parallel_group ?? null) !== $step->parallel_group) {
+                            continue;
+                        }
+                        if (! $this->completion->isComplete($locked, $sibling, $idx)) {
+                            $stageComplete = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ($stageComplete) {
+                    // Cancel remaining awaiting tasks at this stage
+                    WorkflowTask::where('approval_request_id', $locked->id)
+                        ->where('step_index', $locked->current_step_index)
+                        ->where('status', 'awaiting')
+                        ->update(['status' => 'cancelled', 'completed_at' => now()]);
+
+                    $next = $this->nextStepAfterParallel($locked, $step);
+                    if ($next >= $locked->workflow->steps()->count()) {
+                        $locked->update([
+                            'status' => 'approved',
+                            'completed_at' => now(),
+                            'current_holder_ids' => [],
+                            'active_parallel_steps' => [],
+                        ]);
+                        $completed = true;
+                    } else {
+                        $this->activateStage($locked->fresh(), $next, $actor);
+                        $advancedTo = $next;
+                    }
                 }
             }
 
             $response = [
                 'advanced_to_step' => $advancedTo,
                 'completed' => $completed,
+                'stage_complete' => $stageComplete,
                 'decision_id' => $decision->id,
                 'authority' => $authorityResult,
             ];
@@ -413,7 +619,14 @@ class WorkflowOrchestrator
 
         // If People Authority has no assignments yet (bootstrap), fall back to
         // structural eligibility (current holder) but still block self-approval.
-        if (! $result['authorised'] && ($result['denial_reason'] ?? '') === 'No matching authority assignment found.') {
+        // Also allow structural holders who are technical admins — admin role alone
+        // never authorises, but being the resolved stage actor does (PRD §124).
+        $denial = $result['denial_reason'] ?? '';
+        $bootstrapDenials = [
+            'No matching authority assignment found.',
+            'System administration does not confer business approval authority.',
+        ];
+        if (! $result['authorised'] && in_array($denial, $bootstrapDenials, true)) {
             if ($requester && (int) $requester->id === (int) $actor->id) {
                 $result['self_approval_conflict'] = true;
                 $result['denial_reason'] = 'Self-approval is blocked by segregation of duties.';
@@ -527,5 +740,21 @@ class WorkflowOrchestrator
             'recommend', 'certify', 'authorise', 'sign', 'verify', 'acknowledge' => 'approve',
             default => $decisionType,
         };
+    }
+
+    private function nextStepAfterParallel(ApprovalRequest $request, ?ApprovalStep $step): int
+    {
+        $current = (int) $request->current_step_index;
+        if (! $step?->parallel_group) {
+            return $current + 1;
+        }
+        $maxInGroup = $current;
+        foreach ($request->workflow->steps as $idx => $sibling) {
+            if (($sibling->parallel_group ?? null) === $step->parallel_group) {
+                $maxInGroup = max($maxInGroup, $idx);
+            }
+        }
+
+        return $maxInGroup + 1;
     }
 }

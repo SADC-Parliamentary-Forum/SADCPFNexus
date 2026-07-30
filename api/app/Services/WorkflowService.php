@@ -527,7 +527,16 @@ class WorkflowService
         $approvers = $this->getCurrentApprovers($request);
         $approverIds = collect($approvers)->pluck('id')->toArray();
 
-        $isHolder = in_array($actor->id, $approverIds, true);
+        $holderIds = collect($request->current_holder_ids ?? [])->map(fn ($id) => (int) $id)->all();
+        $taskAssignee = \App\Models\WorkflowEngine\WorkflowTask::where('approval_request_id', $request->id)
+            ->where('step_index', $request->current_step_index)
+            ->where('assigned_user_id', $actor->id)
+            ->whereIn('status', ['awaiting', 'claimed'])
+            ->exists();
+
+        $isHolder = in_array($actor->id, $approverIds, true)
+            || in_array((int) $actor->id, $holderIds, true)
+            || $taskAssignee;
         $isDelegated = $request->delegations()
             ->where('to_user_id', $actor->id)
             ->where('step_index', $request->current_step_index)

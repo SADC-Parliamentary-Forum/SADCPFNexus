@@ -1484,6 +1484,22 @@ Route::prefix('v1')->group(function () {
 
             Route::get('approval-tasks', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'inbox']);
             Route::post('approval-tasks/{task}/decide', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'decide']);
+
+            // Phase 2 + Phase 3
+            Route::post('versions/{version}/lint', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'lint']);
+            Route::put('versions/{version}/draft', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'updateDraft']);
+            Route::post('definitions/{workflow}/simulate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'simulate']);
+            Route::get('analytics', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'analytics']);
+            Route::post('workflows/{approvalRequest}/governance', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'recordGovernance']);
+            Route::post('workflows/{approvalRequest}/external-approval', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'recordExternal']);
+            Route::post('workflows/{approvalRequest}/sla/pause', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'pauseSla']);
+            Route::post('workflows/{approvalRequest}/sla/resume', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'resumeSla']);
+            Route::post('approval-tasks/{task}/claim', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'claimTask']);
+            Route::get('calendars', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'calendars']);
+            Route::post('calendars', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'storeCalendar']);
+            Route::get('ai/guards', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'aiGuards']);
+            Route::post('ai/suggestions', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'aiSuggest']);
+            Route::post('ai/suggestions/{suggestion}/apply', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'aiApply']);
         });
 
         // SAAM — Signature & Approval Authentication Module

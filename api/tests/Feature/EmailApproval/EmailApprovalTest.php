@@ -287,9 +287,12 @@ class EmailApprovalTest extends TestCase
         [, $approvalRequest] = $this->makeSubmittedTravelRequest($requester, $approver);
         $tokens = $this->createTokenPair($approvalRequest, $approver);
 
+        // Phase 2: no unauthenticated one-click approve — deep-link to Nexus
         $response = $this->get("/email-approval/approve/{$tokens['approve_token']}");
-        $response->assertOk()
-                 ->assertViewIs('email-approval.confirmed');
+        $response->assertRedirect();
+        $this->assertStringContainsString('/approval?', $response->headers->get('Location'));
+        $this->assertStringContainsString('auth_required=1', $response->headers->get('Location'));
+        $this->assertSame('pending', $approvalRequest->fresh()->status);
     }
 
     public function test_web_reject_form_route_renders_form(): void
@@ -303,9 +306,11 @@ class EmailApprovalTest extends TestCase
         [, $approvalRequest] = $this->makeSubmittedTravelRequest($requester, $approver);
         $tokens = $this->createTokenPair($approvalRequest, $approver);
 
+        // Phase 2: reject form deep-links to authenticated Nexus UI
         $response = $this->get("/email-approval/reject/{$tokens['reject_token']}");
-        $response->assertOk()
-                 ->assertViewIs('email-approval.reject-form');
+        $response->assertRedirect();
+        $this->assertStringContainsString('/approval?', $response->headers->get('Location'));
+        $this->assertStringContainsString('action=reject', $response->headers->get('Location'));
     }
 
     public function test_web_reject_submit_requires_reason(): void
@@ -319,9 +324,8 @@ class EmailApprovalTest extends TestCase
         [, $approvalRequest] = $this->makeSubmittedTravelRequest($requester, $approver);
         $tokens = $this->createTokenPair($approvalRequest, $approver);
 
-        // Post to the reject.submit route without a reason
+        // Phase 2: unauthenticated reject submit is blocked when auth required
         $response = $this->post("/email-approval/reject/{$tokens['reject_token']}", []);
-        // Should re-show form with error, not 200 OK
         $this->assertNotEquals(200, $response->getStatusCode());
     }
 

@@ -19,16 +19,19 @@ class ApprovalRequest extends Model
         'uuid', 'reference', 'definition_version_id', 'record_version',
         'approval_package_hash', 'locked_at', 'submitted_by', 'applicant_id',
         'current_holder_ids', 'current_stage_type', 'due_at', 'escalated_at',
-        'held_at', 'completed_at', 'condition_context', 'idempotency_key',
+        'held_at', 'sla_paused_at', 'sla_paused_seconds', 'active_parallel_steps',
+        'completed_at', 'condition_context', 'idempotency_key',
     ];
 
     protected $casts = [
         'current_holder_ids' => 'array',
+        'active_parallel_steps' => 'array',
         'condition_context' => 'array',
         'locked_at' => 'datetime',
         'due_at' => 'datetime',
         'escalated_at' => 'datetime',
         'held_at' => 'datetime',
+        'sla_paused_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
 

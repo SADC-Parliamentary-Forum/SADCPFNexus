@@ -67,6 +67,12 @@ class EmailActionController extends Controller
 
             $summary = $this->buildSummary($entity, $approvableType);
 
+            $versionNumber = $approvalRequest->definitionVersion?->version_number
+                ?? $approvalRequest->workflow?->current_version
+                ?? null;
+            $step = $approvalRequest->workflow?->steps?->get($approvalRequest->current_step_index);
+            $highRisk = (bool) ($step?->high_risk);
+
             return response()->json([
                 'token_action'  => $record->action,
                 'expires_at'    => $record->expires_at?->toIso8601String(),
@@ -75,6 +81,15 @@ class EmailActionController extends Controller
                 'requester'     => optional($entity?->requester)->name ?? 'Staff member',
                 'summary'       => $summary,
                 'approver_id'   => $record->approver_user_id,
+                'auth_required' => (bool) config('workflow_engine.email_require_auth', true),
+                'definition_version' => $versionNumber,
+                'record_version' => $approvalRequest->record_version,
+                'package_hash' => $approvalRequest->approval_package_hash,
+                'high_risk' => $highRisk,
+                'mfa_note' => $highRisk
+                    ? (string) config('workflow_engine.email_high_risk_mfa_note')
+                    : null,
+                'current_stage' => $approvalRequest->current_stage_type,
             ]);
         } catch (ModelNotFoundException) {
             return response()->json(['error' => 'This link is invalid or has expired.', 'reason' => 'invalid'], 404);

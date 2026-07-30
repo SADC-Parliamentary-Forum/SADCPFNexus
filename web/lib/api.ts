@@ -969,6 +969,34 @@ export const workflowApi = {
     api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
 };
 
+export const workflowEngineApi = {
+  definitions: () => api.get<{ data: ApprovalWorkflow[] }>("/workflow-engine/definitions"),
+  createVersion: (workflowId: number, data?: Record<string, unknown>) =>
+    api.post(`/workflow-engine/definitions/${workflowId}/versions`, data ?? {}),
+  updateDraft: (versionId: number, data: Record<string, unknown>) =>
+    api.put(`/workflow-engine/versions/${versionId}/draft`, data),
+  lint: (versionId: number) => api.post<{ data: { hard: string[]; soft: string[]; valid: boolean } }>(`/workflow-engine/versions/${versionId}/lint`),
+  validate: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/validate`),
+  approveVersion: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/approve`),
+  publishVersion: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/publish`),
+  simulate: (workflowId: number, data?: { test_context?: Record<string, unknown>; definition_version_id?: number }) =>
+    api.post(`/workflow-engine/definitions/${workflowId}/simulate`, data ?? {}),
+  analytics: (params?: { since?: string }) => api.get<{ data: Record<string, unknown> }>("/workflow-engine/analytics", { params }),
+  recordGovernance: (approvalId: number, data: Record<string, unknown>) =>
+    api.post(`/workflow-engine/workflows/${approvalId}/governance`, data),
+  recordExternal: (approvalId: number, data: Record<string, unknown>) =>
+    api.post(`/workflow-engine/workflows/${approvalId}/external-approval`, data),
+  pauseSla: (approvalId: number) => api.post(`/workflow-engine/workflows/${approvalId}/sla/pause`),
+  resumeSla: (approvalId: number) => api.post(`/workflow-engine/workflows/${approvalId}/sla/resume`),
+  calendars: () => api.get("/workflow-engine/calendars"),
+  storeCalendar: (data: Record<string, unknown>) => api.post("/workflow-engine/calendars", data),
+  aiGuards: () => api.get<{ data: Record<string, boolean> }>("/workflow-engine/ai/guards"),
+  aiSuggest: (data: { kind: string; context?: Record<string, unknown>; definition_version_id?: number }) =>
+    api.post("/workflow-engine/ai/suggestions", data),
+  aiApply: (id: number, data: { action: string; confirmed: boolean; note?: string }) =>
+    api.post(`/workflow-engine/ai/suggestions/${id}/apply`, data),
+};
+
 // ─── Travel ──────────────────────────────────────────────────────────────────
 
 export interface TravelRequest {

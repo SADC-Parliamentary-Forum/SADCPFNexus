@@ -126,6 +126,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'workflows.resolve-exception', 'workflows.manage-definitions',
             'workflows.approve-definitions', 'workflows.publish-definitions',
             'workflows.view-audit', 'workflows.export', 'workflows.admin',
+            'workflows.simulate', 'workflows.design', 'workflows.analytics',
+            'workflows.external-approve', 'workflows.governance-record',
+            'workflows.ai.suggest', 'workflows.ai.apply', 'workflows.calendars.manage',
             // Notifications Phase 1 (PRD §104)
             'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',
             'notifications.view-delivery-status', 'notifications.manage-templates', 'notifications.approve-templates',
@@ -356,6 +359,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'workflows.sign', 'workflows.recommend', 'workflows.certify',
                     'workflows.manage-definitions', 'workflows.approve-definitions',
                     'workflows.publish-definitions', 'workflows.admin', 'workflows.view-audit',
+                    'workflows.simulate', 'workflows.design', 'workflows.analytics',
+                    'workflows.external-approve', 'workflows.governance-record',
+                    'workflows.ai.suggest', 'workflows.ai.apply', 'workflows.calendars.manage',
                 ])->where('guard_name', $guard)->get()
             );
 

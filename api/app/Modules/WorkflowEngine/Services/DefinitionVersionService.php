@@ -17,6 +17,15 @@ use Illuminate\Validation\ValidationException;
  */
 class DefinitionVersionService
 {
+    public function __construct(
+        private readonly ?DefinitionLintService $linter = null,
+    ) {}
+
+    private function linter(): DefinitionLintService
+    {
+        return $this->linter ?? app(DefinitionLintService::class);
+    }
+
     public function createVersion(ApprovalWorkflow $workflow, User $actor, ?array $overrides = null): WorkflowDefinitionVersion
     {
         $next = (int) WorkflowDefinitionVersion::where('workflow_definition_id', $workflow->id)->max('version_number') + 1;
@@ -42,6 +51,18 @@ class DefinitionVersionService
             'role_id' => $s->role_id,
             'user_id' => $s->user_id,
             'decision_meanings' => $s->decision_meanings,
+            'completion_rule' => $s->completion_rule ?? 'any',
+            'quorum_count' => $s->quorum_count,
+            'quorum_percentage' => $s->quorum_percentage,
+            'parallel_group' => $s->parallel_group,
+            'parallel_role_key' => $s->parallel_role_key,
+            'sod_segregated' => (bool) $s->sod_segregated,
+            'governance_body_name' => $s->governance_body_name,
+            'routing_strategy' => $s->routing_strategy ?? 'primary',
+            'sla_calendar_code' => $s->sla_calendar_code,
+            'sla_priority_variant' => $s->sla_priority_variant,
+            'pause_sla_on_hold' => (bool) ($s->pause_sla_on_hold ?? true),
+            'high_risk' => (bool) $s->high_risk,
         ])->all();
 
         if ($overrides) {
@@ -61,7 +82,11 @@ class DefinitionVersionService
             'transitions_snapshot' => $overrides['transitions'] ?? $this->defaultTransitions($stages),
             'conditions_snapshot' => $overrides['conditions'] ?? [],
             'actor_selectors_snapshot' => collect($stages)->pluck('actor_selector', 'step_order')->all(),
-            'sla_snapshot' => collect($stages)->mapWithKeys(fn ($s) => [$s['step_order'] => $s['sla_hours'] ?? null])->all(),
+            'sla_snapshot' => collect($stages)->mapWithKeys(fn ($s) => [$s['step_order'] => [
+                'hours' => $s['sla_hours'] ?? null,
+                'calendar' => $s['sla_calendar_code'] ?? null,
+                'priority' => $s['sla_priority_variant'] ?? null,
+            ]])->all(),
             'escalation_snapshot' => collect($stages)->mapWithKeys(fn ($s) => [$s['step_order'] => [
                 'hours' => $s['escalation_hours'] ?? null,
             ]])->all(),
@@ -75,45 +100,51 @@ class DefinitionVersionService
         return $version;
     }
 
+    /**
+     * Update a draft version's stages/transitions (visual designer save).
+     */
+    public function updateDraft(WorkflowDefinitionVersion $version, array $payload, User $actor): WorkflowDefinitionVersion
+    {
+        if ($version->status !== 'draft') {
+            throw ValidationException::withMessages(['definition' => 'Only draft versions can be edited in the designer.']);
+        }
+        $stages = $payload['stages'] ?? $version->stages_snapshot ?? [];
+        $transitions = $payload['transitions'] ?? $version->transitions_snapshot ?? $this->defaultTransitions($stages);
+        $version->update([
+            'stages_snapshot' => $stages,
+            'transitions_snapshot' => $transitions,
+            'conditions_snapshot' => $payload['conditions'] ?? $version->conditions_snapshot,
+            'configuration_hash' => hash('sha256', json_encode($stages)),
+            'actor_selectors_snapshot' => collect($stages)->pluck('actor_selector', 'step_order')->all(),
+            'policy_reference' => $payload['policy_reference'] ?? $version->policy_reference,
+        ]);
+        $this->audit($version->definition, $actor, 'DefinitionDraftUpdated', [
+            'version_id' => $version->id,
+        ]);
+
+        return $version->fresh();
+    }
+
     public function validate(WorkflowDefinitionVersion $version): array
     {
-        $errors = [];
-        $stages = $version->stages_snapshot ?? [];
-        if ($stages === []) {
-            $errors[] = 'Workflow must have at least one stage.';
-        }
-        $orders = [];
-        foreach ($stages as $stage) {
-            $order = $stage['step_order'] ?? null;
-            if ($order === null) {
-                $errors[] = 'Every stage needs step_order.';
-            } elseif (in_array($order, $orders, true)) {
-                $errors[] = "Duplicate step_order {$order}.";
-            } else {
-                $orders[] = $order;
-            }
-            if (empty($stage['actor_selector']) && empty($stage['approver_type'])) {
-                $errors[] = "Stage {$order} is missing an actor selector.";
-            }
-            if (empty($stage['stage_type'])) {
-                $errors[] = "Stage {$order} is missing stage_type.";
-            }
-            if (! empty($stage['requires_signature']) && empty($stage['authority_action'])) {
-                // soft warning — still allow
-            }
-        }
-        if (! collect($stages)->contains(fn ($s) => in_array($s['stage_type'] ?? '', ['approve', 'authorise', 'sign', 'release'], true))) {
-            $errors[] = 'Workflow must include a terminal approve/authorise/sign/release stage.';
-        }
+        $lint = $this->lint($version);
 
-        return $errors;
+        return $lint['hard'];
+    }
+
+    public function lint(WorkflowDefinitionVersion $version): array
+    {
+        return $this->linter()->lint(
+            $version->stages_snapshot ?? [],
+            $version->transitions_snapshot ?? []
+        );
     }
 
     public function approve(WorkflowDefinitionVersion $version, User $actor): WorkflowDefinitionVersion
     {
-        $errors = $this->validate($version);
-        if ($errors !== []) {
-            throw ValidationException::withMessages(['definition' => $errors]);
+        $lint = $this->lint($version);
+        if ($lint['hard'] !== []) {
+            throw ValidationException::withMessages(['definition' => $lint['hard']]);
         }
         $version->update([
             'status' => 'approved',
@@ -122,6 +153,7 @@ class DefinitionVersionService
         ]);
         $this->audit($version->definition, $actor, 'DefinitionVersionApproved', [
             'version_id' => $version->id,
+            'lint_soft' => $lint['soft'],
         ]);
 
         return $version->fresh();
@@ -132,12 +164,15 @@ class DefinitionVersionService
         if (! in_array($version->status, ['approved', 'draft'], true)) {
             throw ValidationException::withMessages(['definition' => 'Only approved (or draft for bootstrap) versions can be published.']);
         }
-        $errors = $this->validate($version);
-        if ($errors !== []) {
-            throw ValidationException::withMessages(['definition' => $errors]);
+        $lint = $this->lint($version);
+        if ($lint['hard'] !== []) {
+            throw ValidationException::withMessages([
+                'definition' => $lint['hard'],
+                'lint' => 'Publish blocked by definition lint hard failures.',
+            ]);
         }
 
-        return DB::transaction(function () use ($version, $actor) {
+        return DB::transaction(function () use ($version, $actor, $lint) {
             $workflow = ApprovalWorkflow::lockForUpdate()->findOrFail($version->workflow_definition_id);
 
             WorkflowDefinitionVersion::where('workflow_definition_id', $workflow->id)
@@ -156,6 +191,9 @@ class DefinitionVersionService
                 'effective_to' => null,
             ]);
 
+            // Sync live steps from published snapshot when designer stages provided
+            $this->syncStepsFromSnapshot($workflow, $version->stages_snapshot ?? []);
+
             $workflow->update([
                 'current_version' => $version->version_number,
                 'definition_status' => 'published',
@@ -166,6 +204,7 @@ class DefinitionVersionService
             $this->audit($workflow, $actor, 'DefinitionVersionPublished', [
                 'version_id' => $version->id,
                 'version_number' => $version->version_number,
+                'lint_soft' => $lint['soft'],
             ]);
 
             return $version->fresh();
@@ -229,6 +268,51 @@ class DefinitionVersionService
         }
 
         return $transitions;
+    }
+
+    private function syncStepsFromSnapshot(ApprovalWorkflow $workflow, array $stages): void
+    {
+        if ($stages === []) {
+            return;
+        }
+        $workflow->steps()->delete();
+        foreach ($stages as $i => $stage) {
+            $workflow->steps()->create([
+                'step_order' => $stage['step_order'] ?? $i,
+                'step_name' => $stage['step_name'] ?? null,
+                'stage_type' => $stage['stage_type'] ?? 'approve',
+                'approver_type' => $stage['approver_type'] ?? $stage['actor_selector'] ?? 'supervisor',
+                'actor_selector' => $stage['actor_selector'] ?? $stage['approver_type'] ?? 'supervisor',
+                'actor_selector_config' => $stage['actor_selector_config'] ?? null,
+                'authority_action' => $stage['authority_action'] ?? null,
+                'amount_threshold' => $stage['amount_threshold'] ?? null,
+                'currency' => $stage['currency'] ?? null,
+                'condition_expression' => $stage['condition_expression'] ?? null,
+                'skip_if_condition_false' => (bool) ($stage['skip_if_condition_false'] ?? false),
+                'requires_signature' => (bool) ($stage['requires_signature'] ?? false),
+                'allow_return' => (bool) ($stage['allow_return'] ?? true),
+                'allow_reject' => (bool) ($stage['allow_reject'] ?? true),
+                'allow_delegate' => (bool) ($stage['allow_delegate'] ?? true),
+                'sla_hours' => $stage['sla_hours'] ?? null,
+                'escalation_hours' => $stage['escalation_hours'] ?? null,
+                'reminder_hours' => $stage['reminder_hours'] ?? null,
+                'role_id' => $stage['role_id'] ?? null,
+                'user_id' => $stage['user_id'] ?? null,
+                'decision_meanings' => $stage['decision_meanings'] ?? null,
+                'completion_rule' => $stage['completion_rule'] ?? 'any',
+                'quorum_count' => $stage['quorum_count'] ?? null,
+                'quorum_percentage' => $stage['quorum_percentage'] ?? null,
+                'parallel_group' => $stage['parallel_group'] ?? null,
+                'parallel_role_key' => $stage['parallel_role_key'] ?? null,
+                'sod_segregated' => (bool) ($stage['sod_segregated'] ?? false),
+                'governance_body_name' => $stage['governance_body_name'] ?? null,
+                'routing_strategy' => $stage['routing_strategy'] ?? 'primary',
+                'sla_calendar_code' => $stage['sla_calendar_code'] ?? null,
+                'sla_priority_variant' => $stage['sla_priority_variant'] ?? null,
+                'pause_sla_on_hold' => (bool) ($stage['pause_sla_on_hold'] ?? true),
+                'high_risk' => (bool) ($stage['high_risk'] ?? false),
+            ]);
+        }
     }
 
     private function audit(?ApprovalWorkflow $workflow, User $actor, string $type, array $payload): void
