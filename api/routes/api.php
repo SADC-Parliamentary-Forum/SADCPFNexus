@@ -329,6 +329,8 @@ Route::prefix('v1')->group(function () {
                 Route::post('reviews', [$ac, 'storeReviewCampaign']);
                 Route::post('reviews/items/{item}/decide', [$ac, 'decideReviewItem']);
                 Route::get('governance', [$ac, 'governanceChecklist']);
+                Route::get('cutover', [$ac, 'cutoverStatus']);
+                Route::post('cutover/revoke-obsolete', [$ac, 'cutoverRevokeObsolete']);
             });
 
             // Payslips (list, show, download, upload, delete, refresh auto-fill)

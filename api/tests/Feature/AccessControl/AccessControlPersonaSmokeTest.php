@@ -4,6 +4,7 @@ namespace Tests\Feature\AccessControl;
 
 use App\Modules\AccessControl\Services\NavigationManifestService;
 use App\Modules\AccessControl\Services\PolicyDecisionPoint;
+use Database\Seeders\AccessControlPersonaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -23,14 +24,16 @@ class AccessControlPersonaSmokeTest extends TestCase
     {
         return [
             ['staff', ['leave.create', 'leave.view'], ['admin.roles.manage', 'salary_advance.report.export']],
+            ['HOD', ['leave.view', 'travel.view'], ['admin.roles.assign']],
             ['HR Manager', ['leave.approve'], ['admin.roles.assign']],
             ['Finance Controller', ['programme.finance_review.update.assigned'], ['procurement.evaluation.score.assigned']],
             ['Programme Officer', ['programme.module.view', 'programme.request.create'], ['programme.finance_review.update.assigned']],
             ['Procurement Evaluation Committee Member', ['procurement.evaluation.read.assigned', 'my_work.view'], ['procurement.module.view', 'procurement.approve']],
+            ['Administration Officer', ['travel.view'], ['admin.roles.assign', 'leave.request.authorise.assigned']],
             ['ICT Platform Administrator', ['admin.platform.manage'], ['leave.request.authorise.assigned', 'salary_advance.report.export', 'programme.finance_review.update.assigned']],
             ['Security and Access Administrator', ['admin.roles.view', 'admin.access.simulate'], ['leave.request.authorise.assigned']],
-            // Legacy seeder still owns Internal Auditor Spatie set; template merge is Phase 7 residual.
             ['Internal Auditor', ['leave.view', 'audit.view'], ['leave.request.authorise.assigned', 'admin.roles.assign']],
+            ['Secretary General', ['leave.view'], ['admin.roles.manage']],
         ];
     }
 
@@ -80,5 +83,20 @@ class AccessControlPersonaSmokeTest extends TestCase
         Sanctum::actingAs($admin);
         $this->getJson('/api/v1/admin/access/roles')->assertOk();
         $this->getJson('/api/v1/auth/me')->assertOk()->assertJsonPath('id', $admin->id);
+    }
+
+    public function test_persona_seeder_creates_all_pilot_accounts(): void
+    {
+        $this->seed(AccessControlPersonaSeeder::class);
+
+        foreach (AccessControlPersonaSeeder::personaMap() as $meta) {
+            $this->assertDatabaseHas('users', ['email' => $meta['email']]);
+            $user = \App\Models\User::where('email', $meta['email'])->first();
+            $this->assertNotNull($user);
+            $this->assertTrue(
+                $user->hasRole($meta['role']),
+                "Persona {$meta['persona']} should have role {$meta['role']}"
+            );
+        }
     }
 }

@@ -530,6 +530,46 @@ class RolesAndPermissionsSeeder extends Seeder
             $supplierFinance->syncPermissions(
                 Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
             );
+
+            // Phase 7: never let legacy syncPermissions clobber curated template merges.
+            $this->mergePublishedTemplatePermissions($guard);
+        }
+    }
+
+    /**
+     * Re-apply access_control role template permissions via givePermissionTo (union),
+     * so re-seeding cannot wipe curated / published catalogue merges on shared role names
+     * (e.g. Internal Auditor, HR Manager).
+     */
+    private function mergePublishedTemplatePermissions(string $guard): void
+    {
+        $templates = config('access_control.role_templates', []);
+
+        foreach ($templates as $name => $meta) {
+            $perms = $meta['permissions'] ?? [];
+            foreach ($meta['inherits'] ?? [] as $parent) {
+                $parentMeta = $templates[$parent] ?? null;
+                if ($parentMeta) {
+                    $perms = array_values(array_unique(array_merge($parentMeta['permissions'] ?? [], $perms)));
+                }
+            }
+            if ($perms === []) {
+                continue;
+            }
+
+            $permissionModels = Permission::where('guard_name', $guard)->whereIn('name', $perms)->get();
+            if ($permissionModels->isEmpty()) {
+                continue;
+            }
+
+            $targets = array_values(array_unique(array_merge([$name], $meta['legacy_roles'] ?? [])));
+            foreach ($targets as $roleName) {
+                if (in_array($roleName, ['System Admin', 'super-admin'], true)) {
+                    continue;
+                }
+                $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => $guard]);
+                $role->givePermissionTo($permissionModels);
+            }
         }
     }
 }

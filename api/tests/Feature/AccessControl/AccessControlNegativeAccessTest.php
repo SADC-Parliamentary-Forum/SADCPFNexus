@@ -260,8 +260,107 @@ class AccessControlNegativeAccessTest extends TestCase
         ]);
 
         Sanctum::actingAs($viewer);
-        $this->getJson("/api/v1/leave/requests/{$leave->id}")->assertStatus(403);
-        $this->getJson("/api/v1/leave/requests/{$leave->id}/attachments")->assertStatus(403);
+        // Safe 404 — do not confirm leave existence (Phase 7 residual).
+        $this->getJson("/api/v1/leave/requests/{$leave->id}")->assertStatus(404);
+        $this->getJson("/api/v1/leave/requests/{$leave->id}/attachments")->assertStatus(404);
+    }
+
+    public function test_employee_travel_list_is_self_scoped(): void
+    {
+        $viewer = $this->makeUser('staff');
+        $owner = $this->makeUser('staff', $viewer->tenant);
+
+        $mine = \App\Models\TravelRequest::factory()->create([
+            'tenant_id' => $viewer->tenant_id,
+            'requester_id' => $viewer->id,
+            'status' => 'submitted',
+        ]);
+        $theirs = \App\Models\TravelRequest::factory()->create([
+            'tenant_id' => $viewer->tenant_id,
+            'requester_id' => $owner->id,
+            'status' => 'submitted',
+        ]);
+
+        Sanctum::actingAs($viewer);
+        $list = $this->getJson('/api/v1/travel/requests')->assertOk()->json();
+        $ids = collect($list['data'] ?? $list)->pluck('id')->filter()->all();
+        // Paginator may wrap under data; also accept plain list shapes.
+        if ($ids === [] && isset($list['data']) && is_array($list['data'])) {
+            $ids = collect($list['data'])->pluck('id')->all();
+        }
+
+        $this->assertContains($mine->id, $ids);
+        $this->assertNotContains($theirs->id, $ids);
+    }
+
+    public function test_employee_cannot_view_unrelated_travel_detail(): void
+    {
+        $viewer = $this->makeUser('staff');
+        $owner = $this->makeUser('staff', $viewer->tenant);
+        $travel = \App\Models\TravelRequest::factory()->create([
+            'tenant_id' => $viewer->tenant_id,
+            'requester_id' => $owner->id,
+            'status' => 'submitted',
+        ]);
+
+        Sanctum::actingAs($viewer);
+        $this->getJson("/api/v1/travel/requests/{$travel->id}")->assertStatus(403);
+    }
+
+    public function test_role_revoke_forces_session_refresh(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $target = $this->makeUser('staff', $admin->tenant);
+        $target->assignRole('HOD');
+
+        $token = $target->createToken('pilot')->plainTextToken;
+        \App\Models\UserSession::create([
+            'user_id' => $target->id,
+            'token_id' => $target->tokens()->latest('id')->value('id'),
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'phpunit',
+            'last_active_at' => now(),
+        ]);
+
+        $this->assertGreaterThan(0, $target->tokens()->count());
+
+        app(\App\Modules\AccessControl\Services\AccessCacheInvalidator::class)->invalidate($target->fresh());
+
+        $this->assertSame(0, $target->fresh()->tokens()->count());
+        $this->assertSame(0, \App\Models\UserSession::where('user_id', $target->id)->count());
+        // Avoid unused-var lint; token string proves createToken worked before invalidate.
+        $this->assertNotSame('', $token);
+    }
+
+    public function test_cutover_status_endpoint_requires_admin_roles_view(): void
+    {
+        $staff = $this->makeUser('staff');
+        Sanctum::actingAs($staff);
+        $this->getJson('/api/v1/admin/access/cutover')->assertStatus(403);
+
+        $admin = $this->makeUser('Security and Access Administrator');
+        Sanctum::actingAs($admin);
+        $this->getJson('/api/v1/admin/access/cutover')->assertOk()
+            ->assertJsonStructure(['data' => ['checklist', 'validated_assignments']]);
+    }
+
+    public function test_seeder_merge_preserves_template_permissions_on_reseed(): void
+    {
+        $role = \Spatie\Permission\Models\Role::findByName('Internal Auditor', 'sanctum');
+        $templatePerm = 'audit.event.read.organisation';
+        // Ensure template merge present (migration + seeder).
+        if (! $role->hasPermissionTo($templatePerm)) {
+            $role->givePermissionTo($templatePerm);
+        }
+        $this->assertTrue($role->hasPermissionTo($templatePerm));
+
+        // Re-seed should not wipe template-merged permission.
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $role = $role->fresh();
+        $this->assertTrue(
+            $role->hasPermissionTo($templatePerm),
+            'Re-seed must preserve curated/template permission merges on Internal Auditor'
+        );
     }
 
     public function test_hidden_menu_api_still_blocked_for_evaluator(): void

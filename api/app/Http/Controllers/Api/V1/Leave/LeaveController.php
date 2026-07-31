@@ -424,9 +424,10 @@ class LeaveController extends Controller
 
     public function show(Request $request, LeaveRequest $leaveRequest): JsonResponse
     {
+        // Safe 404: leave is HR-sensitive — do not confirm existence to unauthorised callers.
         $this->authorizeRequestView($request->user(), $leaveRequest, [
             'HR Manager', 'HR Administrator', 'Secretary General',
-        ]);
+        ], safeNotFound: true);
 
         return response()->json($leaveRequest->load(['requester', 'approver', 'policyVersion', 'segments.type', 'lilLinkings', 'approvalRequest.workflow.steps', 'approvalRequest.history.user']));
     }

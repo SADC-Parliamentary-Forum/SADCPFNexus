@@ -12,11 +12,21 @@ trait AuthorizesRequestRecords
 {
     /**
      * @param  list<string>  $privilegedRoles
+     * @param  bool  $safeNotFound  When true, deny with 404 to avoid existence enumeration
+     *                              (leave / salary-sensitive records per PRD).
      */
-    protected function authorizeRequestView(User $actor, Model $record, array $privilegedRoles = []): void
-    {
+    protected function authorizeRequestView(
+        User $actor,
+        Model $record,
+        array $privilegedRoles = [],
+        bool $safeNotFound = false,
+    ): void {
         if ($this->canAccessRequest($actor, $record, $privilegedRoles, allowHistory: true)) {
             return;
+        }
+
+        if ($safeNotFound) {
+            abort(404);
         }
 
         abort(403, 'You are not authorised to view this request.');

@@ -39,6 +39,14 @@ class AccessScopeResolver
 
     /**
      * Apply deny-by-default list scoping for high-risk modules.
+     *
+     * @param  array{
+     *     organisation?: bool,
+     *     elevated?: bool,
+     *     module?: string,
+     *     department_column?: string,
+     *     owner_columns?: list<string>
+     * }  $options
      */
     public function constrainQuery(Builder $query, User $actor, string $ownerColumn = 'requester_id', array $options = []): Builder
     {
@@ -57,8 +65,18 @@ class AccessScopeResolver
             return $query;
         }
 
-        // Deny-by-default: own records only.
-        return $query->where($ownerColumn, $actor->id);
+        $ownerColumns = $options['owner_columns'] ?? [$ownerColumn];
+
+        // Deny-by-default: own records (and optional alternate owner columns) only.
+        return $query->where(function (Builder $q) use ($actor, $ownerColumns) {
+            foreach (array_values($ownerColumns) as $i => $col) {
+                if ($i === 0) {
+                    $q->where($col, $actor->id);
+                } else {
+                    $q->orWhere($col, $actor->id);
+                }
+            }
+        });
     }
 
     private function hasElevatedListAccess(User $actor, ?string $module): bool
@@ -68,6 +86,10 @@ class AccessScopeResolver
             'procurement' => ['procurement.approve', 'procurement.admin', 'procurement.request.read.assigned', 'procurement.award.approve.assigned'],
             'programme' => ['pif.approve', 'pif.admin', 'programme.finance-review', 'programme.finance_review.update.assigned', 'programme.request.read.assigned'],
             'salary_advance' => ['salary_advance.certify', 'salary_advance.approve', 'salary_advance.admin', 'salary_advance.finance_certify.assigned', 'finance.approve'],
+            'travel' => [
+                'travel.approve', 'travel.admin', 'travel.finance-review', 'travel.admin-review',
+                'travel.director-finance-confirm', 'travel.final-approve', 'travel.export',
+            ],
         ];
 
         foreach ($map[$module] ?? [] as $perm) {
@@ -76,7 +98,18 @@ class AccessScopeResolver
             }
         }
 
-        return $actor->hasAnyRole([
+        $roleMap = [
+            'leave' => ['HR Manager', 'HR Administrator', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
+            'procurement' => ['Procurement Officer', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
+            'programme' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'salary_advance' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'travel' => [
+                'Secretary General', 'HR Manager', 'Finance Controller', 'Director',
+                'Administration Officer', 'HOD', 'Internal Auditor',
+            ],
+        ];
+
+        return $actor->hasAnyRole($roleMap[$module] ?? [
             'HR Manager', 'HR Administrator', 'Finance Controller', 'Secretary General',
             'Procurement Officer', 'Director', 'HOD', 'Internal Auditor',
         ]);

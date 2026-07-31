@@ -241,9 +241,10 @@ class SalaryAdvanceController extends Controller
 
     public function show(SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
+        // Safe 404: salary advances are salary-sensitive — avoid existence enumeration.
         abort_unless(
             $this->salaryAdvanceService->canAccessAdvance(request()->user(), $salaryAdvanceRequest),
-            403
+            404
         );
 
         return response()->json(['data' => $salaryAdvanceRequest->load([

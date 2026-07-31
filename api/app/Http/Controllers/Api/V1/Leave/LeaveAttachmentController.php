@@ -109,8 +109,9 @@ class LeaveAttachmentController extends Controller
             || $user->hasPermissionTo('hr.admin')
             || $user->hasPermissionTo('leave.approve')
             || $user->hasAnyRole(['HOD', 'HR Manager', 'HR Administrator', 'Secretary General']);
+        // Safe 404: attachment listing must not confirm leave existence to outsiders.
         if (! $isAdmin && $leaveRequest->requester_id !== $user->id) {
-            abort(403);
+            abort(404);
         }
     }
 

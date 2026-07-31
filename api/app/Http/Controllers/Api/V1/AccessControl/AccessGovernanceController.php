@@ -297,6 +297,31 @@ class AccessGovernanceController extends Controller
         ]);
     }
 
+    public function cutoverStatus(Request $request): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.view');
+
+        $status = app(\App\Modules\AccessControl\Services\AccessCutoverService::class)
+            ->status($request->user()->tenant_id);
+
+        return response()->json(['data' => $status]);
+    }
+
+    public function cutoverRevokeObsolete(Request $request): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.revoke');
+        $data = $request->validate([
+            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids.*' => ['integer'],
+            'execute' => ['nullable', 'boolean'],
+        ]);
+
+        $result = app(\App\Modules\AccessControl\Services\AccessCutoverService::class)
+            ->revokeObsoleteBroadRoles($data['user_ids'], (bool) ($data['execute'] ?? false));
+
+        return response()->json(['data' => $result]);
+    }
+
     public function assignRoleVersion(Request $request, User $user, AccessRoleVersion $version): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.assign', null, [

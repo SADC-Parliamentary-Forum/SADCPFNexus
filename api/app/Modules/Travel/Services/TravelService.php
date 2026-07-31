@@ -39,18 +39,13 @@ class TravelService
             ])
             ->orderByDesc('created_at');
 
-        $canViewAll = $user->isSystemAdmin()
-            || $user->hasAnyRole(['Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'Administration Officer', 'HOD'])
-            || $user->can('travel.admin')
-            || $user->can('travel.finance-review')
-            || $user->can('travel.approve');
-
-        if (! $canViewAll) {
-            $query->where(function ($q) use ($user) {
-                $q->where('requester_id', $user->id)
-                    ->orWhere('prepared_by', $user->id)
-                    ->orWhere('prepared_on_behalf_of', $user->id);
-            });
+        // Deny-by-default list scope via AccessScopeResolver (Phase 7 residual).
+        if (empty($filters['queue'])) {
+            app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+                ->constrainQuery($query, $user, 'requester_id', [
+                    'module' => 'travel',
+                    'owner_columns' => ['requester_id', 'prepared_by', 'prepared_on_behalf_of'],
+                ]);
         }
 
         if (! empty($filters['status'])) {
