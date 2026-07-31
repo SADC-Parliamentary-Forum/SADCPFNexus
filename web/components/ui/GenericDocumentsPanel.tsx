@@ -11,7 +11,7 @@ export interface DocumentTypeOption {
 
 export interface GenericAttachment {
   id: number;
-  document_type: string;
+  document_type: string | null;
   original_filename: string;
   mime_type: string | null;
   size_bytes: number | null;
