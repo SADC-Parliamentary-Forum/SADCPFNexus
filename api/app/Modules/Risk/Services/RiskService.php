@@ -28,17 +28,13 @@ class RiskService
 
         $this->applyConfidentialityFilter($query, $user);
 
-        if ($user->hasRole('staff') && ! $user->hasAnyRole([
-            'HOD', 'Director', 'Governance Officer', 'Secretary General',
-            'Internal Auditor', 'Committee Member', 'System Admin', 'super-admin',
-        ])) {
-            $query->where(function ($q) use ($user) {
-                $q->where('submitted_by', $user->id)
-                    ->orWhere('risk_owner_id', $user->id)
-                    ->orWhere('control_owner_id', $user->id)
-                    ->orWhere('action_owner_id', $user->id);
-            });
-        }
+        // Deny-by-default list scope via AccessScopeResolver (Phase 7 residual).
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'submitted_by', [
+                'module' => 'risk',
+                'department_column' => 'department_id',
+                'owner_columns' => ['submitted_by', 'risk_owner_id', 'control_owner_id', 'action_owner_id'],
+            ]);
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -87,6 +83,45 @@ class RiskService
             'Governance Officer', 'Secretary General', 'Director',
             'Internal Auditor', 'System Admin', 'super-admin',
         ]) || $user->can('risk.confidential') || $user->can('risk.admin');
+    }
+
+    /**
+     * Deny-by-default detail access: must appear in the same scoped list query.
+     */
+    public function assertCanAccess(Risk $risk, User $user): void
+    {
+        abort_unless((int) $risk->tenant_id === (int) $user->tenant_id, 404);
+
+        $visible = Risk::query()->where('id', $risk->id)->where('tenant_id', $user->tenant_id);
+        $this->applyConfidentialityFilter($visible, $user);
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($visible, $user, 'submitted_by', [
+                'module' => 'risk',
+                'department_column' => 'department_id',
+                'owner_columns' => ['submitted_by', 'risk_owner_id', 'control_owner_id', 'action_owner_id'],
+            ]);
+
+        abort_unless($visible->exists(), 404);
+    }
+
+    /**
+     * Scoped base query for dashboards/counts (no count leak).
+     */
+    public function scopedBaseQuery(User $user)
+    {
+        $query = Risk::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereNull('deleted_at');
+
+        $this->applyConfidentialityFilter($query, $user);
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'submitted_by', [
+                'module' => 'risk',
+                'department_column' => 'department_id',
+                'owner_columns' => ['submitted_by', 'risk_owner_id', 'control_owner_id', 'action_owner_id'],
+            ]);
+
+        return $query;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────

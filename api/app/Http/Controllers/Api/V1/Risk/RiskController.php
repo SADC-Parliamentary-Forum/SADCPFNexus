@@ -20,16 +20,7 @@ class RiskController extends Controller
 
     public function show(Request $request, Risk $risk): JsonResponse
     {
-        $risk = Risk::where('id', $risk->id)
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->firstOrFail();
-
-        if ($risk->is_confidential && ! $this->riskService->canSeeConfidential($request->user())) {
-            $uid = (int) $request->user()->id;
-            if (! in_array($uid, [(int) $risk->submitted_by, (int) $risk->risk_owner_id, (int) $risk->control_owner_id], true)) {
-                abort(404);
-            }
-        }
+        $this->riskService->assertCanAccess($risk, $request->user());
 
         return response()->json([
             'data' => $risk->load([

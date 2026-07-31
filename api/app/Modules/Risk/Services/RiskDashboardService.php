@@ -11,25 +11,19 @@ class RiskDashboardService
     public function summary(User $user): array
     {
         $tid = $user->tenant_id;
+        $riskService = app(RiskService::class);
 
-        // ── KPIs ─────────────────────────────────────────────────────────────
+        // Scoped IDs — badge/KPI counts must not leak out-of-scope risks.
+        $scopedIds = $riskService->scopedBaseQuery($user)->pluck('id');
 
         $base = DB::table('risks')
             ->where('tenant_id', $tid)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->whereIn('id', $scopedIds);
 
-        if (! app(RiskService::class)->canSeeConfidential($user)) {
-            $base->where(function ($q) use ($user) {
-                $q->where('is_confidential', false)
-                    ->orWhere('submitted_by', $user->id)
-                    ->orWhere('risk_owner_id', $user->id)
-                    ->orWhere('control_owner_id', $user->id);
-            });
-        }
-
-        $open    = (clone $base)->whereNotIn('status', ['closed', 'archived'])->count();
+        $open = (clone $base)->whereNotIn('status', ['closed', 'archived'])->count();
         $critical = (clone $base)->where('risk_level', 'critical')->count();
-        $high    = (clone $base)->where('risk_level', 'high')->count();
+        $high = (clone $base)->where('risk_level', 'high')->count();
         $escalated = (clone $base)->where('status', 'escalated')->count();
 
         $reviewsDue = (clone $base)
@@ -42,16 +36,16 @@ class RiskDashboardService
             ->join('risks', 'risks.id', '=', 'risk_actions.risk_id')
             ->where('risks.tenant_id', $tid)
             ->whereNull('risks.deleted_at')
+            ->whereIn('risks.id', $scopedIds)
             ->where('risk_actions.due_date', '<', now()->toDateString())
             ->where('risk_actions.status', '!=', 'completed')
             ->count();
-
-        // ── By Department ─────────────────────────────────────────────────────
 
         $risksByDept = DB::table('risks')
             ->leftJoin('departments', 'departments.id', '=', 'risks.department_id')
             ->where('risks.tenant_id', $tid)
             ->whereNull('risks.deleted_at')
+            ->whereIn('risks.id', $scopedIds)
             ->select([
                 'risks.department_id',
                 DB::raw("COALESCE(departments.name, 'No Department') as department_name"),
@@ -63,11 +57,11 @@ class RiskDashboardService
             ->get()
             ->keyBy('department_id');
 
-        // Overdue actions per department
         $overdueByDept = DB::table('risk_actions')
             ->join('risks', 'risks.id', '=', 'risk_actions.risk_id')
             ->where('risks.tenant_id', $tid)
             ->whereNull('risks.deleted_at')
+            ->whereIn('risks.id', $scopedIds)
             ->where('risk_actions.due_date', '<', now()->toDateString())
             ->where('risk_actions.status', '!=', 'completed')
             ->select([
@@ -80,22 +74,21 @@ class RiskDashboardService
 
         $byDepartment = $risksByDept->map(function ($row) use ($overdueByDept) {
             return [
-                'department_id'   => $row->department_id,
+                'department_id' => $row->department_id,
                 'department_name' => $row->department_name,
-                'total'           => (int) $row->total,
-                'critical'        => (int) $row->critical,
-                'high'            => (int) $row->high,
+                'total' => (int) $row->total,
+                'critical' => (int) $row->critical,
+                'high' => (int) $row->high,
                 'overdue_actions' => (int) ($overdueByDept->get($row->department_id)?->overdue_actions ?? 0),
             ];
         })->values()->toArray();
-
-        // ── Recent Activity ───────────────────────────────────────────────────
 
         $recentActivity = DB::table('risk_history')
             ->join('risks', 'risks.id', '=', 'risk_history.risk_id')
             ->join('users', 'users.id', '=', 'risk_history.actor_id')
             ->where('risks.tenant_id', $tid)
             ->whereNull('risks.deleted_at')
+            ->whereIn('risks.id', $scopedIds)
             ->select([
                 'risk_history.id',
                 'risk_history.risk_id',
@@ -107,32 +100,31 @@ class RiskDashboardService
             ->orderByDesc('risk_history.created_at')
             ->limit(10)
             ->get()
-            ->map(fn($r) => (array) $r)
+            ->map(fn ($r) => (array) $r)
             ->toArray();
-
-        // ── Escalated Risks ───────────────────────────────────────────────────
 
         $escalatedRisks = DB::table('risks')
             ->where('tenant_id', $tid)
             ->whereNull('deleted_at')
+            ->whereIn('id', $scopedIds)
             ->where('status', 'escalated')
             ->select(['id', 'risk_code', 'title', 'risk_level', 'escalation_level'])
             ->orderByDesc('created_at')
             ->limit(10)
             ->get()
-            ->map(fn($r) => (array) $r)
+            ->map(fn ($r) => (array) $r)
             ->toArray();
 
         return [
             'kpis' => [
-                'open'            => $open,
-                'critical'        => $critical,
-                'high'            => $high,
+                'open' => $open,
+                'critical' => $critical,
+                'high' => $high,
                 'overdue_actions' => $overdueActions,
-                'escalated'       => $escalated,
-                'reviews_due'     => $reviewsDue,
+                'escalated' => $escalated,
+                'reviews_due' => $reviewsDue,
             ],
-            'by_department'   => $byDepartment,
+            'by_department' => $byDepartment,
             'recent_activity' => $recentActivity,
             'escalated_risks' => $escalatedRisks,
         ];

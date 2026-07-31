@@ -7,6 +7,7 @@ use App\Models\AccessControl\AccessGovernanceDecision;
 use App\Models\AccessControl\AccessRequest;
 use App\Models\AccessControl\AccessReviewCampaign;
 use App\Models\AccessControl\AccessReviewItem;
+use App\Models\AccessControl\AccessRoleAssignment;
 use App\Models\AccessControl\AccessRoleCatalogue;
 use App\Models\AccessControl\AccessRoleVersion;
 use App\Models\AccessControl\UserPermissionDenial;
@@ -143,36 +144,53 @@ class AccessGovernanceController extends Controller
             'reason' => ['required', 'string'],
         ]);
 
-        $grant = UserPermissionGrant::create([
-            'tenant_id' => $user->tenant_id,
-            'user_id' => $user->id,
-            'permission_key' => $data['permission_key'],
-            'scope_type' => $data['scope_type'] ?? 'self',
-            'scope_reference' => $data['scope_reference'] ?? null,
-            'valid_from' => $data['valid_from'] ?? now(),
-            'valid_until' => $data['valid_until'] ?? null,
-            'status' => 'active',
-            'reason' => $data['reason'],
-            'granted_by' => $request->user()->id,
-            'approved_by' => $request->user()->id,
-        ]);
+        $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+        $grant = $dual->createGrant($user, $data, $request->user());
 
-        $this->cache->invalidate($user);
+        if ($grant->status === 'active') {
+            $this->cache->invalidate($user);
+        }
 
-        AuditLog::record('access.permission.granted', [
-            'auditable_type' => User::class,
-            'auditable_id' => $user->id,
-            'new_values' => [
-                'permission_key' => $grant->permission_key,
-                'scope_type' => $grant->scope_type,
-                'scope_reference' => $grant->scope_reference,
-                'valid_until' => $grant->valid_until,
-                'reason' => $grant->reason,
+        return response()->json([
+            'data' => $grant,
+            'meta' => [
+                'dual_control_required' => $grant->status === 'pending_approval',
+                'message' => $grant->status === 'pending_approval'
+                    ? 'Privileged grant created pending second approver.'
+                    : 'Permission granted.',
             ],
-            'tags' => 'access_control',
-        ]);
+        ], 201);
+    }
 
-        return response()->json(['data' => $grant], 201);
+    public function approveGrant(Request $request, UserPermissionGrant $grant): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.approve');
+        abort_unless((int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
+
+        $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+
+        return response()->json(['data' => $dual->approveGrant($grant, $request->user())]);
+    }
+
+    public function rejectGrant(Request $request, UserPermissionGrant $grant): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.approve');
+        abort_unless((int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
+        $data = $request->validate(['reason' => ['nullable', 'string']]);
+
+        $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+
+        return response()->json(['data' => $dual->rejectGrant($grant, $request->user(), $data['reason'] ?? null)]);
+    }
+
+    public function approveRoleAssignment(Request $request, AccessRoleAssignment $assignment): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.approve');
+        abort_unless((int) $assignment->tenant_id === (int) $request->user()->tenant_id, 404);
+
+        $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+
+        return response()->json(['data' => $dual->approveRoleAssignment($assignment, $request->user())]);
     }
 
     public function denyPermission(Request $request, User $user): JsonResponse

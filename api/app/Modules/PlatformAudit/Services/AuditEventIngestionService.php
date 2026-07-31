@@ -108,6 +108,15 @@ class AuditEventIngestionService
             $outbox->last_error = null;
             $outbox->save();
 
+            try {
+                app(SecurityMonitoringService::class)->evaluateEvent($event);
+            } catch (Throwable $monitorError) {
+                Log::warning('platform_audit.monitoring_eval_failed', [
+                    'event_id' => $event->id,
+                    'error' => $monitorError->getMessage(),
+                ]);
+            }
+
             return $event;
         } catch (Throwable $e) {
             $outbox->status = 'failed';

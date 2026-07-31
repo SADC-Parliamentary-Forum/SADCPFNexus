@@ -90,6 +90,13 @@ class AccessScopeResolver
                 'travel.approve', 'travel.admin', 'travel.finance-review', 'travel.admin-review',
                 'travel.director-finance-confirm', 'travel.final-approve', 'travel.export',
             ],
+            'correspondence' => [
+                'correspondence.admin', 'correspondence.confidential.view',
+            ],
+            'risk' => [
+                'risk.admin', 'risk.confidential', 'risk.approve', 'risk.manage',
+            ],
+            'imprest' => ['imprest.approve', 'imprest.admin', 'finance.approve'],
         ];
 
         foreach ($map[$module] ?? [] as $perm) {
@@ -107,6 +114,13 @@ class AccessScopeResolver
                 'Secretary General', 'HR Manager', 'Finance Controller', 'Director',
                 'Administration Officer', 'HOD', 'Internal Auditor',
             ],
+            'correspondence' => [
+                'Secretary General', 'Director', 'Administration Officer', 'Internal Auditor', 'Governance Officer',
+            ],
+            'risk' => [
+                'Governance Officer', 'Secretary General', 'Director', 'Internal Auditor', 'HOD', 'Committee Member',
+            ],
+            'imprest' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
         ];
 
         return $actor->hasAnyRole($roleMap[$module] ?? [

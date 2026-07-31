@@ -107,41 +107,8 @@ class RoleCatalogueService
             abort(403, $sod->reasonMessage);
         }
 
-        $assignment = AccessRoleAssignment::create([
-            'tenant_id' => $target->tenant_id,
-            'user_id' => $target->id,
-            'role_version_id' => $version->id,
-            'assignment_type' => $data['assignment_type'] ?? 'standing',
-            'scope_type' => $data['scope_type'] ?? 'organisation',
-            'scope_reference' => $data['scope_reference'] ?? null,
-            'valid_from' => $data['valid_from'] ?? now(),
-            'valid_until' => $data['valid_until'] ?? null,
-            'status' => $data['status'] ?? 'active',
-            'reason' => $data['reason'] ?? null,
-            'requested_by' => $actor->id,
-            'approved_by' => $data['approved_by'] ?? $actor->id,
-            'review_due_at' => $data['review_due_at'] ?? now()->addMonths(6),
-        ]);
-
-        // Sync Spatie role by catalogue name for compatibility.
-        $roleName = $version->catalogue?->name;
-        if ($roleName) {
-            $target->assignRole($roleName);
-        }
-
-        $this->cache->invalidate($target);
-
-        AuditLog::record('access.role_assigned', [
-            'auditable_type' => User::class,
-            'auditable_id' => $target->id,
-            'new_values' => [
-                'role_version_id' => $version->id,
-                'scope_type' => $assignment->scope_type,
-            ],
-            'tags' => 'rbac,access-control',
-        ]);
-
-        return $assignment;
+        return app(PrivilegedAccessDualControlService::class)
+            ->createRoleAssignment($target, $version, $data, $actor);
     }
 
     public function userAccessProfile(User $user): array

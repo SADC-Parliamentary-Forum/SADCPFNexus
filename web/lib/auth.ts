@@ -226,6 +226,29 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
   { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
+  // Risk Register
+  { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },
+  // Notifications
+  { path: "/notifications", permission: ["notifications.view", "notifications.inbox", "alerts.view"] },
+  { path: "/alerts", permission: ["alerts.view", "notifications.view"] },
+  // Documents
+  { path: "/documents", permission: ["documents.view", "documents.manage", "documents.admin"] },
+  { path: "/admin/documents", permission: ["documents.admin", "documents.manage", "admin.roles.view"] },
+  { path: "/admin/notifications", permission: ["notifications.admin", "admin.roles.view"] },
+  { path: "/admin/audit-trail", permission: ["audit-trail.search", "audit-trail.admin", "audit-trail.manage-holds", "audit-trail.manage-alerts"] },
+  { path: "/admin/users", permission: ["users.view", "users.manage", "admin.roles.view"] },
+  { path: "/admin/roles", permission: ["roles.view", "roles.manage", "admin.roles.view"] },
+  // Profile / settings (authenticated)
+  { path: "/profile" },
+  { path: "/settings" },
+  { path: "/help" },
+  // Timesheets
+  { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "hr.view", "hr.admin"] },
+  // Decisions / meetings
+  { path: "/decisions", permission: ["decisions.view", "governance.view", "meetings.view"] },
+  { path: "/meetings", permission: ["meetings.view", "governance.view", "decisions.view"] },
+  // Workflow
+  { path: "/workflows", permission: ["workflows.view", "workflows.admin"] },
   // M&E / Results Monitoring (PRD §10) — more specific paths first
   { path: "/mande/strategic-plan", permission: ["mande.admin"] },
   { path: "/mande/results-framework", permission: ["mande.admin", "mande.view"] },
@@ -244,8 +267,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
 ];
 
 /**
- * True if the user can access the given path. Uses admin-only list and permission map,
- * while allowing route-level exceptions for areas that should stay hidden from admins.
+ * True if the user can access the given path. Uses admin-only list and permission map.
+ * Unknown / unregistered routes deny by default (Access Control Phase 7–8 residual).
  */
 export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: string): boolean {
   if (!user) return false;
@@ -257,7 +280,7 @@ export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: stri
   }
 
   const entry = ROUTE_ACCESS.find((e) => path === e.path || path.startsWith(e.path + "/"));
-  if (!entry) return true; // unknown route: allow (or tighten later)
+  if (!entry) return false; // unknown route: deny-default
   if (systemAdmin && entry.allowSystemAdmin !== false) return true;
   if (systemAdmin && entry.allowSystemAdmin === false) return false;
   if (!entry.permission) return true;

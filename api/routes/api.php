@@ -198,6 +198,15 @@ Route::prefix('v1')->group(function () {
             Route::post('holds', [$c, 'placeHold']);
             Route::post('holds/{id}/release', [$c, 'releaseHold']);
             Route::get('event-types', [$c, 'eventTypes']);
+            Route::get('monitoring-rules', [$c, 'monitoringRules']);
+            Route::get('alerts', [$c, 'alerts']);
+            Route::post('alerts/{id}/transition', [$c, 'transitionAlert']);
+            Route::get('forensic-cases', [$c, 'forensicCases']);
+            Route::post('forensic-cases', [$c, 'createForensicCase']);
+            Route::post('forensic-cases/{id}/events', [$c, 'linkForensicEvent']);
+            Route::post('forensic-cases/{id}/holds', [$c, 'forensicApplyHold']);
+            Route::post('forensic-cases/{id}/evidence-package', [$c, 'sealEvidencePackage']);
+            Route::get('forensic-packages/{id}/verify', [$c, 'verifyEvidencePackage']);
             Route::get('governance', [$c, 'governanceIndex']);
             Route::put('governance/{decision}', [$c, 'governanceUpdate']);
             Route::post('migrate-legacy', [$c, 'migrateLegacy']);
@@ -319,8 +328,11 @@ Route::prefix('v1')->group(function () {
                 Route::get('users/{user}/profile', [$ac, 'userProfile']);
                 Route::post('users/{user}/simulate', [$ac, 'simulate']);
                 Route::post('users/{user}/grants', [$ac, 'grantPermission']);
+                Route::post('grants/{grant}/approve', [$ac, 'approveGrant']);
+                Route::post('grants/{grant}/reject', [$ac, 'rejectGrant']);
                 Route::post('users/{user}/denials', [$ac, 'denyPermission']);
                 Route::post('users/{user}/role-versions/{version}', [$ac, 'assignRoleVersion']);
+                Route::post('role-assignments/{assignment}/approve', [$ac, 'approveRoleAssignment']);
                 Route::get('explore', [$ac, 'explore']);
                 Route::get('requests', [$ac, 'accessRequests']);
                 Route::post('requests', [$ac, 'storeAccessRequest']);

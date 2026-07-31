@@ -8654,6 +8654,18 @@ export const platformAuditApi = {
   placeHold: (data: Record<string, unknown>) => api.post("/audit-admin/holds", data),
   releaseHold: (id: number) => api.post(`/audit-admin/holds/${id}/release`),
   eventTypes: () => api.get<{ data: Array<Record<string, unknown>> }>("/audit-admin/event-types"),
+  monitoringRules: () => api.get<{ data: Array<Record<string, unknown>> }>("/audit-admin/monitoring-rules"),
+  alerts: (params?: Record<string, string | number>) => api.get("/audit-admin/alerts", { params }),
+  transitionAlert: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-admin/alerts/${id}/transition`, data),
+  forensicCases: (params?: Record<string, string | number>) => api.get("/audit-admin/forensic-cases", { params }),
+  createForensicCase: (data: Record<string, unknown>) => api.post("/audit-admin/forensic-cases", data),
+  linkForensicEvent: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-admin/forensic-cases/${id}/events`, data),
+  forensicApplyHold: (id: number, data: Record<string, unknown>) =>
+    api.post(`/audit-admin/forensic-cases/${id}/holds`, data),
+  sealEvidencePackage: (id: number) => api.post(`/audit-admin/forensic-cases/${id}/evidence-package`),
+  verifyEvidencePackage: (id: number) => api.get(`/audit-admin/forensic-packages/${id}/verify`),
   governanceList: () =>
     api.get<{ data: AuditTrailGovernanceDecision[]; meta?: Record<string, unknown> }>("/audit-admin/governance"),
   governanceUpdate: (id: number, data: { status: string; decision_notes?: string | null }) =>

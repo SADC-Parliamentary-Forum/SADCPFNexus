@@ -8,6 +8,8 @@ use App\Models\LeaveRequest;
 use App\Models\ProcurementRequest;
 use App\Models\TravelRequest;
 use App\Models\User;
+use App\Modules\AccessControl\Services\AccessScopeResolver;
+use App\Modules\AccessControl\Services\PolicyDecisionPoint;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,47 +18,98 @@ class DashboardController extends Controller
 {
     /**
      * Dashboard stats from API data (no hardcoded values).
+     * Counts are filtered by effective permissions and AccessScopeResolver so
+     * badge numbers cannot leak records the actor cannot list.
      */
     public function stats(Request $request): JsonResponse
     {
         $user = $request->user();
         $tenantId = $user->tenant_id;
+        $pdp = app(PolicyDecisionPoint::class);
+        $scopes = app(AccessScopeResolver::class);
 
-        $pendingTravel = TravelRequest::where('tenant_id', $tenantId)
-            ->where('status', 'submitted')
-            ->count();
+        $pendingTravel = 0;
+        if ($this->canSeeModule($pdp, $user, ['travel.view', 'travel.approve', 'travel.admin', 'travel.create'])) {
+            $q = TravelRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'travel']);
+            $pendingTravel = $q->count();
+        }
 
-        $pendingLeave = LeaveRequest::where('tenant_id', $tenantId)
-            ->where('status', 'submitted')
-            ->count();
+        $pendingLeave = 0;
+        if ($this->canSeeModule($pdp, $user, ['leave.view', 'leave.approve', 'leave.admin', 'leave.create'])) {
+            $q = LeaveRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'leave']);
+            $pendingLeave = $q->count();
+        }
 
-        $pendingImprest = ImprestRequest::where('tenant_id', $tenantId)
-            ->where('status', 'submitted')
-            ->count();
+        $pendingImprest = 0;
+        if ($this->canSeeModule($pdp, $user, ['imprest.view', 'imprest.approve', 'imprest.admin', 'imprest.create', 'finance.view'])) {
+            $q = ImprestRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'imprest']);
+            $pendingImprest = $q->count();
+        }
 
-        $pendingProcurement = ProcurementRequest::where('tenant_id', $tenantId)
-            ->where('status', 'submitted')
-            ->count();
+        $pendingProcurement = 0;
+        if ($this->canSeeModule($pdp, $user, ['procurement.view', 'procurement.approve', 'procurement.admin', 'procurement.create'])) {
+            $q = ProcurementRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'procurement']);
+            $pendingProcurement = $q->count();
+        }
 
         $pendingApprovals = $pendingTravel + $pendingLeave + $pendingImprest + $pendingProcurement;
 
-        $activeTravels = TravelRequest::where('tenant_id', $tenantId)
-            ->whereIn('status', ['submitted', 'approved'])
-            ->count();
+        $activeTravels = 0;
+        if ($this->canSeeModule($pdp, $user, ['travel.view', 'travel.approve', 'travel.admin', 'travel.create'])) {
+            $q = TravelRequest::where('tenant_id', $tenantId)->whereIn('status', ['submitted', 'approved']);
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'travel']);
+            $activeTravels = $q->count();
+        }
 
-        $leaveRequests = LeaveRequest::where('tenant_id', $tenantId)->count();
+        $leaveRequests = 0;
+        if ($this->canSeeModule($pdp, $user, ['leave.view', 'leave.approve', 'leave.admin', 'leave.create'])) {
+            $q = LeaveRequest::where('tenant_id', $tenantId);
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'leave']);
+            $leaveRequests = $q->count();
+        }
 
-        $openRequisitions = ProcurementRequest::where('tenant_id', $tenantId)
-            ->whereIn('status', ['draft', 'submitted'])
-            ->count();
+        $openRequisitions = 0;
+        if ($this->canSeeModule($pdp, $user, ['procurement.view', 'procurement.approve', 'procurement.admin', 'procurement.create'])) {
+            $q = ProcurementRequest::where('tenant_id', $tenantId)->whereIn('status', ['draft', 'submitted']);
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'procurement']);
+            $openRequisitions = $q->count();
+        }
 
         return response()->json([
-            'app_name'           => config('app.name'),
-            'pending_approvals'  => $pendingApprovals,
-            'active_travels'     => $activeTravels,
-            'leave_requests'     => $leaveRequests,
-            'open_requisitions'  => $openRequisitions,
+            'app_name' => config('app.name'),
+            'pending_approvals' => $pendingApprovals,
+            'active_travels' => $activeTravels,
+            'leave_requests' => $leaveRequests,
+            'open_requisitions' => $openRequisitions,
+            'breakdown' => [
+                'pending_travel' => $pendingTravel,
+                'pending_leave' => $pendingLeave,
+                'pending_imprest' => $pendingImprest,
+                'pending_procurement' => $pendingProcurement,
+            ],
         ]);
+    }
+
+    /**
+     * @param  list<string>  $anyOf
+     */
+    private function canSeeModule(PolicyDecisionPoint $pdp, User $user, array $anyOf): bool
+    {
+        if ($user->isSystemAdmin() || $user->hasAnyRole(['System Admin', 'super-admin'])) {
+            return true;
+        }
+
+        foreach ($anyOf as $perm) {
+            if ($pdp->can($user, $perm) || $user->can($perm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -91,10 +144,10 @@ class DashboardController extends Controller
                 if ($candidate->between($today, $end)) {
                     $dateStr = $candidate->format('Y-m-d');
                     $items[] = [
-                        'id'    => 'birthday-' . $user->id . '-' . $dateStr,
-                        'date'  => $dateStr,
-                        'title' => $user->name . "'s birthday",
-                        'type'  => 'birthday',
+                        'id' => 'birthday-'.$user->id.'-'.$dateStr,
+                        'date' => $dateStr,
+                        'title' => $user->name."'s birthday",
+                        'type' => 'birthday',
                     ];
                 }
             }

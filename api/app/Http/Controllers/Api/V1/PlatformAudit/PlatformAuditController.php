@@ -306,9 +306,21 @@ class PlatformAuditController extends Controller
         return response()->json([
             'data' => $rows,
             'meta' => [
+                'phase2_mvp' => [
+                    'security_monitoring_rules' => 'Shipped (product MVP)',
+                    'security_alert_workflow' => 'Shipped (product MVP)',
+                    'forensic_cases' => 'Shipped (product MVP)',
+                    'evidence_packages' => 'Shipped (product MVP)',
+                ],
+                'phase2_pending' => [
+                    'siem' => 'Governance Configuration Pending',
+                    'worm_archive' => 'Governance Configuration Pending',
+                    'anomaly_ai' => 'Governance Configuration Pending',
+                ],
+                // Backward-compatible alias for Phase 1 clients/tests
                 'phase2_stubs' => [
                     'siem' => 'Governance Configuration Pending',
-                    'forensic_workspace' => 'Governance Configuration Pending',
+                    'forensic_workspace' => 'Shipped (product MVP) — SIEM/WORM/AI still Pending',
                     'anomaly_ai' => 'Governance Configuration Pending',
                 ],
             ],
@@ -328,6 +340,135 @@ class PlatformAuditController extends Controller
         ]);
 
         return response()->json(['data' => $gov->update($row, $data, $request->user())]);
+    }
+
+    public function monitoringRules(Request $request, \App\Modules\PlatformAudit\Services\SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $monitoring->ensureSeeded((int) $request->user()->tenant_id);
+        $monitoring->ensureSeeded(null);
+
+        $rows = \App\Models\PlatformAudit\SecurityMonitoringRule::query()
+            ->where(function ($q) use ($request) {
+                $q->whereNull('tenant_id')->orWhere('tenant_id', $request->user()->tenant_id);
+            })
+            ->where('status', 'active')
+            ->orderBy('rule_key')
+            ->orderByDesc('version')
+            ->get()
+            ->unique('rule_key')
+            ->values();
+
+        return response()->json(['data' => $rows]);
+    }
+
+    public function alerts(Request $request): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin', 'audit-trail.search']);
+        $rows = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->with('rule')
+            ->orderByDesc('id')
+            ->paginate(50);
+
+        return response()->json($rows);
+    }
+
+    public function transitionAlert(Request $request, int $id, \App\Modules\PlatformAudit\Services\SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'workflow_status' => 'required|in:new,under_review,classified,closed',
+            'classification' => 'nullable|string|max:64',
+            'conclusion' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        return response()->json(['data' => $monitoring->transitionAlert($alert, $request->user(), $data)]);
+    }
+
+    public function forensicCases(Request $request): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.admin', 'audit-trail.search']);
+        $rows = \App\Models\PlatformAudit\ForensicCase::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->orderByDesc('id')
+            ->paginate(50);
+
+        return response()->json($rows);
+    }
+
+    public function createForensicCase(Request $request, \App\Modules\PlatformAudit\Services\ForensicCaseService $forensics): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.admin']);
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'notes' => 'nullable|string',
+            'custody_notes' => 'nullable|string',
+            'custody_holder_id' => 'nullable|integer',
+            'reference' => 'nullable|string|max:64',
+        ]);
+
+        return response()->json([
+            'data' => $forensics->create((int) $request->user()->tenant_id, $request->user(), $data),
+        ], 201);
+    }
+
+    public function linkForensicEvent(Request $request, int $id, \App\Modules\PlatformAudit\Services\ForensicCaseService $forensics): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.admin']);
+        $case = \App\Models\PlatformAudit\ForensicCase::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+        $data = $request->validate([
+            'audit_event_id' => 'required|integer',
+            'notes' => 'nullable|string',
+        ]);
+
+        return response()->json([
+            'data' => $forensics->linkEvent($case, (int) $data['audit_event_id'], $request->user(), $data['notes'] ?? null),
+        ], 201);
+    }
+
+    public function forensicApplyHold(Request $request, int $id, \App\Modules\PlatformAudit\Services\ForensicCaseService $forensics): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.admin']);
+        $case = \App\Models\PlatformAudit\ForensicCase::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+        $data = $request->validate([
+            'hold_type' => 'nullable|in:legal,audit,investigation',
+            'scope_type' => 'nullable|in:event,subject,category,tenant',
+            'scope_value' => 'nullable|string',
+            'audit_event_id' => 'nullable|integer',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        return response()->json(['data' => $forensics->applyHold($case, $request->user(), $data)], 201);
+    }
+
+    public function sealEvidencePackage(Request $request, int $id, \App\Modules\PlatformAudit\Services\ForensicCaseService $forensics): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.admin']);
+        $case = \App\Models\PlatformAudit\ForensicCase::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        return response()->json(['data' => $forensics->sealEvidencePackage($case, $request->user())], 201);
+    }
+
+    public function verifyEvidencePackage(Request $request, int $id, \App\Modules\PlatformAudit\Services\ForensicCaseService $forensics): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.create-forensic-case', 'audit-trail.admin', 'audit-trail.search']);
+        $pkg = \App\Models\PlatformAudit\ForensicEvidencePackage::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        return response()->json(['data' => $forensics->verifyPackage($pkg)]);
     }
 
     public function migrateLegacy(Request $request, LegacyAuditMigrationService $migration): JsonResponse

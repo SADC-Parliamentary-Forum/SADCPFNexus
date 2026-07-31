@@ -41,18 +41,26 @@ class CorrespondenceRegisterService
     {
         $query = Correspondence::query()->where('tenant_id', $user->tenant_id);
 
-        if ($user->isSystemAdmin()
-            || $user->hasPermissionTo('correspondence.admin', 'sanctum')
-            || $user->hasPermissionTo('correspondence.confidential.view', 'sanctum')
-        ) {
-            return $query;
+        $resolver = app(\App\Modules\AccessControl\Services\AccessScopeResolver::class);
+        $elevated = $user->isSystemAdmin()
+            || $user->can('correspondence.admin')
+            || $user->can('correspondence.confidential.view');
+
+        // Elevated registry/admin path — still deny-by-default for pure ICT via resolver.
+        // Note: correspondence.registry alone does NOT unlock the full register (staff seeder includes it).
+        if ($elevated) {
+            return $resolver->constrainQuery($query, $user, 'created_by', [
+                'module' => 'correspondence',
+                'elevated' => true,
+                'organisation' => true,
+                'department_column' => 'department_id',
+                'owner_columns' => ['created_by', 'primary_owner_id', 'registered_by', 'approved_by'],
+            ]);
         }
 
-        $open = Correspondence::OPEN_CONFIDENTIALITY;
-
-        $query->where(function (Builder $q) use ($user, $open) {
-            $q->whereIn('confidentiality', $open)
-                ->orWhere('created_by', $user->id)
+        // Party-only deny-by-default: own / owned / routed — not all open-confidentiality rows.
+        $query->where(function (Builder $q) use ($user) {
+            $q->where('created_by', $user->id)
                 ->orWhere('primary_owner_id', $user->id)
                 ->orWhere('registered_by', $user->id)
                 ->orWhere('approved_by', $user->id)
