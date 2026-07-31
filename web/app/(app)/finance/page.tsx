@@ -127,7 +127,7 @@ export default function FinancePage() {
     {
       label: "New Salary Advance",
       icon: "account_balance",
-      href: "/finance/advances/create",
+      href: "/salary-advances/create",
       color: "text-amber-600",
       bg: "bg-amber-50 dark:bg-amber-900/20",
       border: "border-amber-200 dark:border-amber-800/50",
@@ -349,8 +349,8 @@ export default function FinancePage() {
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Salary Advances</h3>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/finance/advances" className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View all</Link>
-            <Link href="/finance/advances/create" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
+            <Link href="/salary-advances" className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300">View all</Link>
+            <Link href="/salary-advances/create" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
               <span className="material-symbols-outlined text-[14px]">add</span>
               Request Advance
             </Link>

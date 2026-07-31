@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { imprestApi, type OrgBudgetLine } from "@/lib/api";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Stepper } from "@/components/ui/Stepper";
+import { FormSection } from "@/components/ui/FormSection";
 
-const STEPS = ["Request Details", "Justification", "Review & Submit"];
+const STEPS = [
+  { label: "Request Details" },
+  { label: "Justification" },
+  { label: "Review & Submit" },
+];
 
 interface FormData {
   budget_line: string;
@@ -73,56 +80,32 @@ export default function ImprestCreatePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <a href="/imprest" className="hover:text-primary transition-colors">Imprest</a>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">New Request</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">New Imprest Request</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">Initiate a new petty cash request for operational expenses.</p>
-      </div>
+      <ModulePageHeader
+        title="New Imprest Request"
+        subtitle="Initiate a new petty cash request for operational expenses."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Imprest", href: "/imprest" },
+              { label: "New Request" },
+            ]}
+          />
+        }
+      />
 
       <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-medium text-amber-700">
         <span className="material-symbols-outlined text-[16px]">info</span>
         Funds reserve from the selected budget line on approval.
       </div>
 
-      {/* Stepper */}
-      <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-5">
-        <div className="flex items-center gap-2">
-          {STEPS.map((label, i) => (
-            <div key={i} className="flex items-center gap-2 flex-1">
-              <div className="flex items-center gap-2">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  i < step ? "bg-primary text-white" :
-                  i === step ? "bg-primary text-white" :
-                  "bg-neutral-100 text-neutral-400"
-                }`}>
-                  {i < step ? <span className="material-symbols-outlined text-[14px]">check</span> : i + 1}
-                </div>
-                <span className={`text-xs font-medium hidden sm:block ${i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"}`}>
-                  {label}
-                </span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-px mx-2 ${i < step ? "bg-primary" : "bg-neutral-200"}`} />
-              )}
-            </div>
-          ))}
-        </div>
+      <div className="card p-5">
+        <Stepper steps={STEPS} currentStep={step + 1} />
       </div>
 
       {/* Step 0: Request Details */}
       {step === 0 && (
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Form */}
-          <div className="flex-1 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
-            <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">1</span>
-              General Information
-            </h3>
+          <FormSection title="General Information" icon="edit_note" className="flex-1 space-y-5">
 
             <BudgetLinePicker
               value={form.budget_line_id}
@@ -193,7 +176,7 @@ export default function ImprestCreatePage() {
                 onChange={(e) => updateField("purpose", e.target.value)}
               />
             </div>
-          </div>
+          </FormSection>
 
           {/* Sidebar */}
           <div className="lg:w-64 space-y-4">
@@ -241,11 +224,7 @@ export default function ImprestCreatePage() {
 
       {/* Step 1: Justification */}
       {step === 1 && (
-        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">2</span>
-            Supporting Justification
-          </h3>
+        <FormSection title="Supporting Justification" icon="description" className="space-y-5">
 
           <div className="space-y-2">
             <label className="block text-xs font-medium text-neutral-700">Detailed Justification</label>
@@ -262,16 +241,12 @@ export default function ImprestCreatePage() {
             <span className="material-symbols-outlined text-blue-500 text-[16px] mt-0.5">tips_and_updates</span>
             <p className="text-xs text-blue-700">A strong justification increases the likelihood of quick approval. Include details about urgency, vendor availability, and policy compliance.</p>
           </div>
-        </div>
+        </FormSection>
       )}
 
       {/* Step 2: Review */}
       {step === 2 && (
-        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
-          <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">3</span>
-            Review & Submit
-          </h3>
+        <FormSection title="Review & Submit" icon="fact_check" className="space-y-5">
 
           <div className="space-y-2">
             {[
@@ -291,7 +266,7 @@ export default function ImprestCreatePage() {
             <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">info</span>
             <p className="text-xs text-amber-700">Once submitted, this request will enter the approval workflow. Ensure all details are accurate before proceeding.</p>
           </div>
-        </div>
+        </FormSection>
       )}
 
       {/* Navigation */}
@@ -300,7 +275,7 @@ export default function ImprestCreatePage() {
           {step > 0 && (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="btn-secondary text-sm"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               Back
@@ -311,7 +286,7 @@ export default function ImprestCreatePage() {
           <button
             onClick={() => handleSubmit(true)}
             disabled={submitting}
-            className="rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="btn-secondary text-sm disabled:opacity-50"
           >
             Save Draft
           </button>
@@ -319,7 +294,7 @@ export default function ImprestCreatePage() {
             <button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="btn-primary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next Step
               <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -328,7 +303,7 @@ export default function ImprestCreatePage() {
             <button
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="btn-primary text-sm disabled:opacity-50"
             >
               {submitting ? "Submitting…" : "Submit Request"}
               <span className="material-symbols-outlined text-[18px]">send</span>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { saamApi } from "@/lib/api";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type SigType = "full" | "initials";
 
@@ -160,20 +161,18 @@ export default function DrawSignaturePage() {
 
   return (
     <div className="max-w-2xl space-y-5">
-{/* Header */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
-          <Link href="/saam" className="hover:text-neutral-600 transition-colors">
-            SAAM
-          </Link>
-          <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-          <span className="text-neutral-600 font-medium">Draw Signature</span>
-        </div>
-        <h1 className="page-title">Draw Your Signature</h1>
-        <p className="page-subtitle">
-          Use your mouse or touch to draw your signature on the canvas below.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Draw Your Signature"
+        subtitle="Use your mouse or touch to draw your signature on the canvas below."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "SAAM", href: "/saam" },
+              { label: "Draw Signature" },
+            ]}
+          />
+        }
+      />
 
       {/* Type selector */}
       <div className="card overflow-hidden">

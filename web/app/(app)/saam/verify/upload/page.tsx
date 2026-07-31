@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saamApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type SigType = "full" | "initials";
 
@@ -80,20 +81,18 @@ export default function UploadSignaturePage() {
 
   return (
     <div className="max-w-xl space-y-5">
-{/* Header */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
-          <Link href="/saam" className="hover:text-neutral-600 transition-colors">
-            SAAM
-          </Link>
-          <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-          <span className="text-neutral-600 font-medium">Upload Signature</span>
-        </div>
-        <h1 className="page-title">Upload Your Signature</h1>
-        <p className="page-subtitle">
-          Upload a PNG or SVG image of your signature. Max file size: 512 KB.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Upload Your Signature"
+        subtitle="Upload a PNG or SVG image of your signature. Max file size: 512 KB."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "SAAM", href: "/saam" },
+              { label: "Upload Signature" },
+            ]}
+          />
+        }
+      />
 
       {/* Type selector */}
       <div className="card overflow-hidden">

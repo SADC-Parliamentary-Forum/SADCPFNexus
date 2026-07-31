@@ -115,8 +115,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Recommend Inbox", href: "/leave?queue=recommend", icon: "thumb_up" },
       { label: "Certification Queue", href: "/leave/queues/certify", icon: "verified" },
       { label: "TOIL / LIL Credits", href: "/leave/toil", icon: "more_time" },
-      { label: "HR Leave Register", href: "/hr/leave", icon: "menu_book" },
-      { label: "Leave Balances", href: "/hr/leave/balances", icon: "balance" },
+      // HR register & balances live under HR nav (canonical staff vs HR split)
     ],
   },
   {
@@ -251,7 +250,7 @@ const NAV_ITEMS: NavItem[] = [
     i18nKey: "nav.hr",
     children: [
       { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
-      { label: "Leave", href: "/hr/leave", icon: "event_available" },
+      { label: "Staff Leave Register", href: "/hr/leave", icon: "menu_book" },
       { label: "Leave Balances", href: "/hr/leave/balances", icon: "balance" },
       { label: "Leave Certify Queue", href: "/leave/queues/certify", icon: "verified" },
       { label: "TOIL Credits", href: "/leave/toil", icon: "more_time" },
@@ -451,7 +450,7 @@ const NAV_ITEMS: NavItem[] = [
     section: "Intelligence",
     children: [
       { label: "Overview", href: "/analytics", icon: "bar_chart_4_bars" },
-      { label: "Audit Ledger", href: "/analytics/ledger", icon: "receipt_long" },
+      { label: "Audit Ledger", href: "/admin/ledger", icon: "receipt_long" },
     ],
   },
   {

@@ -1,7 +1,7 @@
 /**
  * Finance module E2E tests (salary advances, budgets, payslips).
  *
- * Prefer `/salary-advances` hub routes; legacy `/finance/advances` remains covered.
+ * Prefer `/salary-advances` hub routes; legacy `/finance/advances` redirects here.
  * Auth fixture skips: see helpers/auth.ts and tests/e2e/README.md.
  */
 import { test, expect } from "@playwright/test";
@@ -47,14 +47,29 @@ test.describe("Salary advances hub (/salary-advances)", () => {
   });
 });
 
-test.describe("Salary advances (legacy /finance/advances)", () => {
+test.describe("Salary advances IA redirects", () => {
+  test.beforeEach(() => {
+    skipWithoutAuth("staff");
+  });
+
+  test("legacy /finance/advances redirects to applications", async ({ page }) => {
+    await page.goto("/finance/advances");
+    await page.waitForURL("**/salary-advances/**", { timeout: 15_000 });
+    if (await landedOnLogin(page)) {
+      test.skip(true, "Staff session invalid for salary advances");
+    }
+    await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
+  });
+});
+
+test.describe("Salary advances (/salary-advances)", () => {
   test.beforeEach(async ({ page }) => {
     skipWithoutAuth("staff");
-    await page.goto("/finance/advances");
-    await page.waitForURL("**/finance/advances", { timeout: 15_000 });
+    await page.goto("/salary-advances");
+    await page.waitForURL("**/salary-advances", { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
     if (await landedOnLogin(page)) {
-      test.skip(true, "Staff session invalid for /finance/advances");
+      test.skip(true, "Staff session invalid for /salary-advances");
     }
   });
 
@@ -80,14 +95,14 @@ test.describe("Salary advances (legacy /finance/advances)", () => {
     const certify = page.getByRole("tab", { name: /pending certification/i });
     if (await certify.isVisible()) {
       await certify.click();
-      await page.waitForURL("**/finance/advances?queue=certify", { timeout: 10_000 });
+      await page.waitForURL("**/salary-advances?queue=certify", { timeout: 10_000 });
       await expect(page.getByRole("tab", { name: /pending certification/i })).toHaveAttribute("aria-selected", "true");
 
       await page.getByRole("tab", { name: /approved for payment/i }).click();
-      await page.waitForURL("**/finance/advances?queue=payment", { timeout: 10_000 });
+      await page.waitForURL("**/salary-advances?queue=payment", { timeout: 10_000 });
 
       await page.getByRole("tab", { name: /payroll recovery/i }).click();
-      await page.waitForURL("**/finance/advances?queue=recovery", { timeout: 10_000 });
+      await page.waitForURL("**/salary-advances?queue=recovery", { timeout: 10_000 });
     }
   });
 });
@@ -98,8 +113,8 @@ test.describe("Salary advance — create", () => {
   });
 
   test("create advance form is accessible with eligibility step", async ({ page }) => {
-    await page.goto("/finance/advances/create");
-    await page.waitForURL("**/finance/advances/create", { timeout: 15_000 });
+    await page.goto("/salary-advances/create");
+    await page.waitForURL("**/salary-advances/create", { timeout: 15_000 });
     await page.waitForLoadState("networkidle");
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for create form");
@@ -112,7 +127,7 @@ test.describe("Salary advance — create", () => {
   });
 
   test("form validation on empty submit", async ({ page }) => {
-    await page.goto("/finance/advances/create");
+    await page.goto("/salary-advances/create");
     await page.waitForLoadState("networkidle");
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for create form");
@@ -133,7 +148,7 @@ test.describe("Salary advance — create", () => {
   });
 
   test("can create a salary advance request", async ({ page }) => {
-    await page.goto("/finance/advances/create");
+    await page.goto("/salary-advances/create");
     await page.waitForLoadState("networkidle");
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for create form");

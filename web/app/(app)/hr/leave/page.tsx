@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { leaveApi, tenantUsersApi, type LeaveRequest, type TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
-import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
-import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -20,7 +20,7 @@ const STATUS_BADGE: Record<string, string> = {
 const LEAVE_TYPE_LABELS: Record<string, string> = {
   annual:    "Annual",
   sick:      "Sick",
-  lil:       "LIL",
+  lil:       "Leave in Lieu",
   special:   "Special",
   maternity: "Maternity",
   paternity: "Paternity",
@@ -136,6 +136,8 @@ export default function HRLeavePage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
+
 
   const load = () => {
     setLoading(true);
@@ -240,34 +242,36 @@ export default function HRLeavePage() {
   const pending = requests.filter((r) => r.status === "submitted").length;
 
   return (
-    <div className="space-y-6">
-<ModulePageHeader
-        title="Staff Leave Requests"
-        subtitle="Review and action leave applications from staff members."
-        breadcrumbs={
-          <PageBreadcrumbs
-            items={[
-              { label: "Leave", href: "/leave" },
-              { label: "HR Leave Register" },
-            ]}
-          />
-        }
-        actions={
-          <div className="flex items-center gap-3">
-            {pending > 0 && (
-              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
-                <span className="material-symbols-outlined text-[18px] text-amber-600">pending_actions</span>
-                <span className="text-sm font-semibold text-amber-800">{pending} pending</span>
-              </div>
-            )}
-            <Link href="/leave" className="btn-secondary text-sm">
-              My Leave
-            </Link>
-          </div>
-        }
-      />
-
-      <div className="flex flex-wrap items-center justify-end gap-3">
+    <>
+    <RegisterShell
+      title="Staff Leave Requests"
+      subtitle="Review and action leave applications from staff members."
+      breadcrumbs={
+        <PageBreadcrumbs
+          items={[
+            { label: "HR", href: "/hr" },
+            { label: "Staff Leave Register" },
+          ]}
+        />
+      }
+      density={density}
+      onDensityChange={setDensity}
+      page={Math.min(page, lastPage)}
+      pageCount={lastPage}
+      total={filtered.length}
+      onPageChange={setPage}
+      loading={loading}
+      actions={
+        <div className="flex flex-wrap items-center gap-3">
+          {pending > 0 && (
+            <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+              <span className="material-symbols-outlined text-[18px] text-amber-600">pending_actions</span>
+              <span className="text-sm font-semibold text-amber-800">{pending} pending</span>
+            </div>
+          )}
+          <Link href="/leave" className="btn-secondary text-sm">
+            My Leave
+          </Link>
           <button
             type="button"
             className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"
@@ -285,47 +289,57 @@ export default function HRLeavePage() {
             <span className="material-symbols-outlined text-[18px]">add</span>
             New leave request
           </button>
-      </div>
-
-      {/* Filters */}
-      <div className="card p-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" style={{ fontSize: "20px" }}>search</span>
-          <input
-            type="search"
-            placeholder="Search by name or reference…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="form-input pl-10"
-          />
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {statuses.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setFilterStatus(s);
+      }
+      filters={
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-[20px]">search</span>
+            <input
+              type="search"
+              placeholder="Search by name or reference…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
                 setPage(1);
               }}
-              className={`filter-tab ${filterStatus === s ? "active" : ""}`}
-            >
-              {s}
-            </button>
-          ))}
+              className="form-input pl-10"
+              aria-label="Search staff leave requests"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {statuses.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setFilterStatus(s);
+                  setPage(1);
+                }}
+                className={`filter-tab ${filterStatus === s ? "active" : ""}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error}
-        </div>
-      )}
-
+      }
+      stats={
+        error ? (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">error_outline</span>
+            {error}
+          </div>
+        ) : undefined
+      }
+      empty={
+        !loading && filtered.length === 0 ? (
+          <div className="card px-5 py-16 text-center text-sm text-neutral-400">
+            No leave requests found.
+          </div>
+        ) : undefined
+      }
+    >
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="card-header">
@@ -404,13 +418,8 @@ export default function HRLeavePage() {
             </tbody>
           </table>
         </div>
-        <ListPagination
-          page={Math.min(page, lastPage)}
-          lastPage={lastPage}
-          total={filtered.length}
-          onPageChange={setPage}
-        />
       </div>
+    </RegisterShell>
 
       {/* New Leave Request Modal */}
       {showNew && (
@@ -535,6 +544,6 @@ export default function HRLeavePage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { fleetApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function FleetVehicleDetailPage() {
   const params = useParams();
@@ -153,13 +154,18 @@ export default function FleetVehicleDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <Link href="/fleet" className="text-sm text-blue-700 underline">
-          ← Fleet
-        </Link>
-        <h1 className="page-title mt-2">{vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}</h1>
-        <p className="page-subtitle">Trip / mileage, fuel, service due, GPS, and telematics mapping for this Fixed Asset vehicle.</p>
-      </div>
+      <ModulePageHeader
+        title={vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}
+        subtitle="Trip / mileage, fuel, service due, GPS, and telematics mapping for this Fixed Asset vehicle."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Fleet", href: "/fleet" },
+              { label: vehicle?.asset_code ?? "Vehicle" },
+            ]}
+          />
+        }
+      />
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
       {gpsToast && (

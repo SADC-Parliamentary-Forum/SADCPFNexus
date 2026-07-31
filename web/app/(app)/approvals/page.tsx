@@ -58,14 +58,14 @@ const MODULE_CONFIG: Record<
     color: "text-primary",
     bg: "bg-primary/10",
     label: "Advance",
-    href: (id) => `/finance/advances/${id}`,
+    href: (id) => `/salary-advances/${id}`,
   },
   finance: {
     icon: "payments",
     color: "text-primary",
     bg: "bg-primary/10",
     label: "Finance",
-    href: (id) => `/finance/advances/${id}`,
+    href: (id) => `/salary-advances/${id}`,
   },
   governance: {
     icon: "gavel",

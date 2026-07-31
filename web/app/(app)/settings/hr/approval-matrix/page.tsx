@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrApprovalMatrix } from "@/lib/api";
@@ -231,7 +233,7 @@ export default function ApprovalMatrixPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <a href="/settings/hr" className="hover:text-primary">HR Administration</a>
+            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             <span className="text-neutral-700 font-medium">Approval Matrix</span>
           </div>
