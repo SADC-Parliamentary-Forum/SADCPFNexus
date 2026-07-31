@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 export default async function FinanceAdvanceDetailRedirectPage({
   params,
 }: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const resolved = await Promise.resolve(params);
-  redirect(`/salary-advances/${resolved.id}`);
+  const { id } = await params;
+  redirect(`/salary-advances/${id}`);
 }

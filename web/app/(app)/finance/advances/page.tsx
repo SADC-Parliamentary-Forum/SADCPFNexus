@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 export default async function FinanceAdvancesRedirectPage({
   searchParams,
 }: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = (await Promise.resolve(searchParams ?? {})) as Record<string, string | string[] | undefined>;
+  const sp = await searchParams;
   const queue = typeof sp.queue === "string" ? sp.queue : undefined;
   if (queue === "certify" || queue === "payment" || queue === "recovery") {
     redirect(`/salary-advances/queues/${queue}`);
