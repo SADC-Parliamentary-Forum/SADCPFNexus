@@ -427,6 +427,7 @@ export default function RiskRegisterPage() {
           </div>
         ) : (
           <table className="data-table">
+              <caption className="sr-only">Risk register</caption>
             <thead>
               <tr>
                 <th className="w-10">

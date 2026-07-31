@@ -7,6 +7,7 @@ import {
   notificationGovernanceApi,
   type NotificationGovernanceDecision,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -15,10 +16,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function NotificationsGovernancePage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<NotificationGovernanceDecision[]>([]);
   const [channelStatus, setChannelStatus] = useState<{ sms?: string; whatsapp?: string }>({});
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("pending");
@@ -32,7 +33,7 @@ export default function NotificationsGovernancePage() {
         setRows(r.data?.data ?? r.data ?? []);
         setChannelStatus(r.data?.meta?.channel_status ?? r.meta?.channel_status ?? {});
       })
-      .catch(() => setToast("Could not load governance checklist"))
+      .catch(() => error("Could not load governance checklist"))
       .finally(() => setLoading(false));
   };
 
@@ -53,11 +54,11 @@ export default function NotificationsGovernancePage() {
         status,
         decision_notes: notes || null,
       });
-      setToast("Decision saved");
+      success("Decision saved");
       setEditing(null);
       load();
     } catch {
-      setToast("Save failed");
+      error("Save failed");
     } finally {
       setSaving(false);
     }
@@ -89,14 +90,7 @@ export default function NotificationsGovernancePage() {
           and credentials are provisioned through governance — never invent secrets.
         </p>
       </div>
-
-      {toast && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
-          {toast}
-        </div>
-      )}
-
-      {loading ? (
+{loading ? (
         <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
       ) : (
         <div className="space-y-3">

@@ -16,6 +16,7 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -88,6 +89,7 @@ function downloadCsv(filename: string, content: string) {
 }
 
 export default function TravelRegisterPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const user = getStoredUser();
   const admin = isSystemAdmin(user);
@@ -97,7 +99,6 @@ export default function TravelRegisterPage() {
   const [rows, setRows] = useState<TravelRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
@@ -116,10 +117,6 @@ export default function TravelRegisterPage() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSaving, setCancelSaving] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
-  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -223,7 +220,7 @@ export default function TravelRegisterPage() {
       });
       setEditRow(null);
       setEditForm(null);
-      showToast("Travel request updated.");
+      success("Travel request updated.");
       await load();
     } catch (err: unknown) {
       const apiMessage =
@@ -256,7 +253,7 @@ export default function TravelRegisterPage() {
     setActionId(row.id);
     try {
       await travelApi.delete(row.id);
-      showToast("Draft deleted.");
+      success("Draft deleted.");
       selection.clear();
       await load();
     } catch (err: unknown) {
@@ -287,7 +284,7 @@ export default function TravelRegisterPage() {
     try {
       await Promise.all(ids.map((id) => travelApi.delete(id)));
       selection.clear();
-      showToast("Selected drafts deleted.");
+      success("Selected drafts deleted.");
       await load();
     } catch (err: unknown) {
       setError(
@@ -313,7 +310,7 @@ export default function TravelRegisterPage() {
     setActionId(row.id);
     try {
       await travelApi.withdraw(row.id);
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
       await load();
     } catch (err: unknown) {
       setError(
@@ -337,7 +334,7 @@ export default function TravelRegisterPage() {
       await travelApi.cancel(cancelRow.id, cancelReason.trim());
       setCancelRow(null);
       setCancelReason("");
-      showToast("Travel request cancelled.");
+      success("Travel request cancelled.");
       await load();
     } catch (err: unknown) {
       setCancelError(
@@ -358,11 +355,11 @@ export default function TravelRegisterPage() {
       const res = await travelApi.registerExport(params);
       const data = res.data.data ?? [];
       if (!data.length) {
-        showToast("No rows to export.");
+        success("No rows to export.");
         return;
       }
       downloadCsv(`travel-register-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(data));
-      showToast(`Exported ${data.length} row(s).`);
+      success(`Exported ${data.length} row(s).`);
     } catch {
       setError("Export failed. Check that you have travel.export or travel.view.");
     } finally {
@@ -419,12 +416,7 @@ export default function TravelRegisterPage() {
       loading={loading}
       stats={
         <>
-          {toast && (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-              {toast}
-            </div>
-          )}
-          {error && (
+{error && (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <span className="material-symbols-outlined text-[16px]">error_outline</span>
               <span className="flex-1">{error}</span>
@@ -529,6 +521,7 @@ export default function TravelRegisterPage() {
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table w-full">
+              <caption className="sr-only">Travel requisitions register</caption>
               <thead>
                 <tr>
                   <th className={selectionColumnClass.th}>

@@ -7,6 +7,7 @@ import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES }
 import { adminApi } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import type { AdminPayslip, User } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 interface PayslipRow {
   id: number;
@@ -71,10 +72,9 @@ function formatPeriod(p: { period_month: number; period_year: number }): string 
 }
 
 export default function PayslipsPage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<PayslipRow[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const [toastError, setToastError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -112,13 +112,12 @@ export default function PayslipsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
 
   const showToast = (msg: string, isError = false) => {
-    setToast(msg);
-    setToastError(isError);
-    setTimeout(() => { setToast(null); setToastError(false); }, 4000);
+    if (isError) error(msg);
+    else success(msg);
   };
 
   const handleDownload = (id: number) => {
-    adminApi.downloadPayslip(id).catch(() => showToast("Download failed.", true));
+    adminApi.downloadPayslip(id).catch(() => error("Download failed."));
   };
 
   const handleReuploadSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,12 +133,12 @@ export default function PayslipsPage() {
     adminApi
       .uploadPayslip(form)
       .then(() => {
-        showToast("Payslip re-uploaded.");
+        success("Payslip re-uploaded.");
         setSelectedPayslip(null);
         fetchList();
       })
       .catch((err: { response?: { data?: { message?: string } } }) => {
-        showToast(err?.response?.data?.message ?? "Re-upload failed.", true);
+        error(err?.response?.data?.message ?? "Re-upload failed.");
       })
       .finally(() => setReuploading(false));
   };
@@ -167,7 +166,7 @@ export default function PayslipsPage() {
   const handleUploadAll = async () => {
     if (rows.length === 0) return;
     setUploading(true);
-    let success = 0;
+    let successCount = 0;
     let failed = 0;
     // Pre-load users for employee number lookup
     let allUsers: User[] = [];
@@ -197,20 +196,19 @@ export default function PayslipsPage() {
         form.append("period_month", String(monthIdx));
         form.append("period_year", String(year));
         await adminApi.uploadPayslip(form);
-        success++;
+        successCount++;
       } catch { failed++; }
     }
 
-    if (success > 0) {
-      showToast(`${success} payslip${success !== 1 ? "s" : ""} uploaded successfully.${failed > 0 ? ` ${failed} failed.` : ""}`);
+    if (successCount > 0) {
+      success(`${successCount} payslip${successCount !== 1 ? "s" : ""} uploaded successfully.${failed > 0 ? ` ${failed} failed.` : ""}`);
       setRows([]);
       fetchList();
     } else {
-      showToast(
+      error(
         failed > 0
           ? `Upload failed for all ${failed} payslips. Check employee numbers and periods.`
-          : "Nothing to upload.",
-        true
+          : "Nothing to upload."
       );
     }
     setUploading(false);
@@ -218,14 +216,7 @@ export default function PayslipsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toastError ? "bg-red-600" : "bg-green-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>{toastError ? "error" : "check_circle"}</span>
-          {toast}
-        </div>
-      )}
-
-      {/* Modal: payslip detail + Download + Re-upload */}
+{/* Modal: payslip detail + Download + Re-upload */}
       {selectedPayslip && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedPayslip(null)}>
           <div className="card max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>

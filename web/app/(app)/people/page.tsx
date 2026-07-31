@@ -55,7 +55,7 @@ export default function PeopleAuthorityHubPage() {
             <Link
               key={l.href}
               href={l.href}
-              className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+              className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
             >
               <span className="material-symbols-outlined mt-0.5 text-primary">{l.icon}</span>
               <span>

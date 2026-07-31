@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saamApi } from "@/lib/api";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
+import { useToast } from "@/components/ui/Toast";
 
 type SigType = "full" | "initials";
 
 export default function DrawSignaturePage() {
+  const { success, error: showErrorToast, info } = useToast();
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [sigType, setSigType] = useState<SigType>("full");
@@ -17,13 +19,8 @@ export default function DrawSignaturePage() {
   const [penSize, setPenSize] = useState(2);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const lastPos = useRef<{ x: number; y: number } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const getPos = useCallback((
     canvas: HTMLCanvasElement,
@@ -149,7 +146,7 @@ export default function DrawSignaturePage() {
     try {
       const dataUrl = canvas.toDataURL("image/png");
       await saamApi.draw(sigType, dataUrl);
-      showToast("Signature saved successfully.");
+      success("Signature saved successfully.");
       setTimeout(() => router.push("/saam"), 1000);
     } catch (e: unknown) {
       const msg =
@@ -163,19 +160,7 @@ export default function DrawSignaturePage() {
 
   return (
     <div className="max-w-2xl space-y-5">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white bg-green-600 shadow-lg">
-          <span
-            className="material-symbols-outlined text-[18px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            check_circle
-          </span>
-          {toast}
-        </div>
-      )}
-
-      {/* Header */}
+{/* Header */}
       <div>
         <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
           <Link href="/saam" className="hover:text-neutral-600 transition-colors">

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { adminApi, type TimesheetProject } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AdminTimesheetProjectsPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const [list, setList] = useState<TimesheetProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [toastError, setToastError] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newLabel, setNewLabel] = useState("");
@@ -27,10 +28,10 @@ export default function AdminTimesheetProjectsPage() {
   }, []);
 
   const showToast = (msg: string, isError = false) => {
-    setToast(msg);
+    success(msg);
     setToastError(isError);
     setTimeout(() => {
-      setToast(null);
+      
       setToastError(false);
     }, 4000);
   };
@@ -58,10 +59,10 @@ export default function AdminTimesheetProjectsPage() {
       setNewLabel("");
       setNewSortOrder(0);
       setShowAdd(false);
-      showToast("Project added.");
+      success("Project added.");
       fetchList();
     } catch {
-      showToast("Failed to add project.", true);
+      showErrorToast("Failed to add project.");
     } finally {
       setSaving(false);
     }
@@ -79,10 +80,10 @@ export default function AdminTimesheetProjectsPage() {
     try {
       await adminApi.updateTimesheetProject(editId, { label: editLabel.trim() || undefined, sort_order: editSortOrder });
       setEditId(null);
-      showToast("Project updated.");
+      success("Project updated.");
       fetchList();
     } catch {
-      showToast("Failed to update project.", true);
+      showErrorToast("Failed to update project.");
     } finally {
       setSaving(false);
     }
@@ -93,27 +94,16 @@ export default function AdminTimesheetProjectsPage() {
     try {
       await adminApi.deleteTimesheetProject(deleteConfirm.id);
       setDeleteConfirm(null);
-      showToast("Project deleted.");
+      success("Project deleted.");
       fetchList();
     } catch {
-      showToast("Failed to delete project.", true);
+      showErrorToast("Failed to delete project.");
     }
   };
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toastError ? "bg-red-600" : "bg-green-600"}`}
-        >
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toastError ? "error" : "check_circle"}
-          </span>
-          {toast}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
+<div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/admin" className="hover:text-primary transition-colors">
           Admin
         </Link>

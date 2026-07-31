@@ -25,6 +25,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { unwrapEntity } from "@/lib/unwrapEntity";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -131,6 +132,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PifDetailPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { fmt: formatDateShort } = useFormatDate();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -139,7 +141,6 @@ export default function PifDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>("overview");
-  const [toast, setToast] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Modal state
@@ -169,7 +170,6 @@ export default function PifDetailPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const { confirm } = useConfirm();
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -229,14 +229,14 @@ export default function PifDetailPage() {
     try {
       if (actModal.editing) {
         await programmeApi.updateActivity(programme.id, actModal.editing.id, payload);
-        showToast("Activity updated.");
+        success("Activity updated.");
       } else {
         await programmeApi.addActivity(programme.id, payload);
-        showToast("Activity added.");
+        success("Activity added.");
       }
       setActModal({ open: false });
       load();
-    } catch { showToast("Failed to save activity."); }
+    } catch { showErrorToast("Failed to save activity."); }
     finally { setSubmitting(false); }
   };
 
@@ -244,9 +244,9 @@ export default function PifDetailPage() {
     if (!programme || !(await confirm({ title: "Delete Activity", message: "Delete this activity?", variant: "danger" }))) return;
     try {
       await programmeApi.deleteActivity(programme.id, actId);
-      showToast("Activity deleted.");
+      success("Activity deleted.");
       load();
-    } catch { showToast("Failed to delete activity."); }
+    } catch { showErrorToast("Failed to delete activity."); }
   };
 
   // ── Milestone form ─────────────────────────────────────────────────────────
@@ -268,14 +268,14 @@ export default function PifDetailPage() {
     try {
       if (msModal.editing) {
         await programmeApi.updateMilestone(programme.id, msModal.editing.id, payload);
-        showToast("Milestone updated.");
+        success("Milestone updated.");
       } else {
         await programmeApi.addMilestone(programme.id, payload);
-        showToast("Milestone added.");
+        success("Milestone added.");
       }
       setMsModal({ open: false });
       load();
-    } catch { showToast("Failed to save milestone."); }
+    } catch { showErrorToast("Failed to save milestone."); }
     finally { setSubmitting(false); }
   };
 
@@ -295,14 +295,14 @@ export default function PifDetailPage() {
     try {
       if (delModal.editing) {
         await programmeApi.updateDeliverable(programme.id, delModal.editing.id, delForm as Partial<ProgrammeDeliverable>);
-        showToast("Deliverable updated.");
+        success("Deliverable updated.");
       } else {
         await programmeApi.addDeliverable(programme.id, delForm as Partial<ProgrammeDeliverable>);
-        showToast("Deliverable added.");
+        success("Deliverable added.");
       }
       setDelModal({ open: false });
       load();
-    } catch { showToast("Failed to save deliverable."); }
+    } catch { showErrorToast("Failed to save deliverable."); }
     finally { setSubmitting(false); }
   };
 
@@ -324,11 +324,11 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.submit(programme.id, { declaration_confirmed: declarationConfirmed });
-      showToast("Programme submitted for approval.");
+      success("Programme submitted for approval.");
       setDeclarationConfirmed(false);
       load();
     } catch (err) {
-      showToast(getApiError(err) || "Failed to submit.");
+      showErrorToast(getApiError(err) || "Failed to submit.");
     }
     finally { setSubmitting(false); }
   };
@@ -338,10 +338,10 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.approve(programme.id);
-      showToast("Programme approved.");
+      success("Programme approved.");
       load();
     } catch (err) {
-      showToast(getApiError(err) || "Failed to approve.");
+      showErrorToast(getApiError(err) || "Failed to approve.");
     }
     finally { setSubmitting(false); }
   };
@@ -355,10 +355,10 @@ export default function PifDetailPage() {
     setAmending(true);
     try {
       const res = await programmeApi.amend(programme.id);
-      showToast("Amendment created.");
+      success("Amendment created.");
       router.push(`/pif/${res.data.data.id}/edit`);
     } catch (err) {
-      showToast(getApiError(err) || "Failed to create amendment.");
+      showErrorToast(getApiError(err) || "Failed to create amendment.");
     } finally {
       setAmending(false);
     }
@@ -369,12 +369,12 @@ export default function PifDetailPage() {
     setSubmitting(true);
     try {
       await programmeApi.reject(programme.id, rejectReason);
-      showToast("Programme rejected.");
+      success("Programme rejected.");
       setRejectModal(false);
       setRejectReason("");
       load();
     } catch (err) {
-      showToast(getApiError(err) || "Failed to reject.");
+      showErrorToast(getApiError(err) || "Failed to reject.");
     }
     finally { setSubmitting(false); }
   };
@@ -429,7 +429,6 @@ export default function PifDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      {toast && <Toast msg={toast} />}
 
       <ModulePageHeader
         title={programme.title || "Untitled programme"}
@@ -506,7 +505,7 @@ export default function PifDetailPage() {
                       await programmeApi.delete(programme.id);
                       router.push("/pif");
                     } catch {
-                      showToast("Failed to delete programme.");
+                      showErrorToast("Failed to delete programme.");
                     }
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
@@ -1014,12 +1013,12 @@ export default function PifDetailPage() {
                     request_title: sendProcTitle.trim(),
                     category: sendProcCategory,
                   });
-                  showToast(res.data.message ?? "Sent to procurement.");
+                  success(res.data.message ?? "Sent to procurement.");
                   setSendProcModal(false);
                   setSelectedProcIds([]);
                   load();
                 } catch {
-                  showToast("Failed to send to procurement.");
+                  showErrorToast("Failed to send to procurement.");
                 } finally {
                   setSendProcSubmitting(false);
                 }
@@ -1076,10 +1075,10 @@ export default function PifDetailPage() {
                     mission_title: missionTitle.trim() || undefined,
                     purpose: programme.title,
                   });
-                  showToast(res.data.message ?? "Sent to travel.");
+                  success(res.data.message ?? "Sent to travel.");
                   setSendTravelModal(false);
                 } catch {
-                  showToast("Failed to send to travel.");
+                  showErrorToast("Failed to send to travel.");
                 } finally {
                   setSendTravelSubmitting(false);
                 }
@@ -1126,11 +1125,11 @@ export default function PifDetailPage() {
                     is_chosen_quote: true,
                     selection_reason: chosenReason.trim() || null,
                   });
-                  showToast("Chosen quote updated.");
+                  success("Chosen quote updated.");
                   loadAttachments();
                   setChosenQuoteModal({ open: false, attachment: null });
                 } catch {
-                  showToast("Failed to update.");
+                  showErrorToast("Failed to update.");
                 } finally {
                   setChosenQuoteSubmitting(false);
                 }
@@ -1160,12 +1159,12 @@ export default function PifDetailPage() {
                 setUploadSubmitting(true);
                 try {
                   await programmeApi.uploadAttachment(programme.id, file, docType);
-                  showToast("Attachment uploaded.");
+                  success("Attachment uploaded.");
                   loadAttachments();
                   form.reset();
                   fileInput.value = "";
                 } catch {
-                  showToast("Upload failed.");
+                  showErrorToast("Upload failed.");
                 } finally {
                   setUploadSubmitting(false);
                 }
@@ -1275,10 +1274,10 @@ export default function PifDetailPage() {
                                       if (!programme) return;
                                       try {
                                         await programmeApi.updateAttachment(programme.id, a.id, { is_chosen_quote: false, selection_reason: null });
-                                        showToast("Chosen quote cleared.");
+                                        success("Chosen quote cleared.");
                                         loadAttachments();
                                       } catch {
-                                        showToast("Failed to update.");
+                                        showErrorToast("Failed to update.");
                                       }
                                     }}
                                     className="text-neutral-400 hover:text-amber-600 text-xs"
@@ -1314,10 +1313,10 @@ export default function PifDetailPage() {
                                   if (!programme || !(await confirm({ title: "Delete attachment", message: `Remove "${a.original_filename}"?`, variant: "danger" }))) return;
                                   try {
                                     await programmeApi.deleteAttachment(programme.id, a.id);
-                                    showToast("Attachment removed.");
+                                    success("Attachment removed.");
                                     loadAttachments();
                                   } catch {
-                                    showToast("Failed to delete.");
+                                    showErrorToast("Failed to delete.");
                                   }
                                 }}
                                 className="text-neutral-400 hover:text-red-500"

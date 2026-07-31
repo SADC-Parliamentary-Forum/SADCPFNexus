@@ -10,7 +10,10 @@ import { useFormatDate } from "@/lib/useFormatDate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { PrintButton } from "@/components/ui/PrintButton";
 import axios from "axios";
+import { useToast } from "@/components/ui/Toast";
 
 function canReserveBudget(): boolean {
   const u = getStoredUser();
@@ -65,6 +68,7 @@ function SkeletonCard() {
 }
 
 export default function ProcurementDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { success, error: showErrorToast, info } = useToast();
   const { id: paramId } = use(params);
   const { fmt } = useFormatDate();
   const [request, setRequest]     = useState<ProcurementRequest | null>(null);
@@ -113,7 +117,6 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading]     = useState(false);
   const [workflowLoading, setWorkflowLoading] = useState(false);
-  const [toast, setToast]                     = useState<string | null>(null);
   const { confirm } = useConfirm();
 
   useEffect(() => { setCurrentUser(getStoredUser()); }, []);
@@ -198,7 +201,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       });
       const refreshed = await procurementApi.get(request.id);
       setRequest(refreshed.data);
-      showToastMsg("Budget reserved.");
+      success("Budget reserved.");
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e)
         ? e.response?.data?.message
@@ -237,10 +240,6 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     setRequest(res.data);
   };
 
-  const showToastMsg = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 5000);
-  };
 
   async function handleWorkflowApprove() {
     if (!request) return;
@@ -250,9 +249,9 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       const notified: string[] = (res.data as any).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
-        showToastMsg(`Approved. Notified: ${notified.join(", ")}`);
+        success(`Approved. Notified: ${notified.join(", ")}`);
       } else {
-        showToastMsg("Request fully approved.");
+        success("Request fully approved.");
       }
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to approve." : "Failed to approve.";
@@ -285,7 +284,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       await procurementApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      showToastMsg("Request returned to requester for correction.");
+      success("Request returned to requester for correction.");
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to return." : "Failed to return.";
       setError(msg);
@@ -301,7 +300,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     try {
       await procurementApi.withdraw(request.id);
       await refreshRequest();
-      showToastMsg("Request withdrawn.");
+      success("Request withdrawn.");
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to withdraw." : "Failed to withdraw.";
       setError(msg);
@@ -317,7 +316,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     try {
       await procurementApi.resubmit(request.id);
       await refreshRequest();
-      showToastMsg("Request resubmitted for approval.");
+      success("Request resubmitted for approval.");
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Failed to resubmit." : "Failed to resubmit.";
       setError(msg);
@@ -372,12 +371,14 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
     <div className="max-w-3xl mx-auto space-y-5">
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {toast}
-        </div>
-      )}
+
+      <WorkflowStatusBanner
+        status={request.status}
+        currentStage={currentStep?.name ?? currentStep?.role_name ?? null}
+        currentHolder={typeof approvalRequest?.current_approver_name === 'string' ? approvalRequest.current_approver_name : null}
+      />
+
+      <div className="flex justify-end no-print"><PrintButton className="text-xs" /></div>
 
       {/* Tab Bar */}
       <div className="flex gap-1 border-b border-neutral-200">

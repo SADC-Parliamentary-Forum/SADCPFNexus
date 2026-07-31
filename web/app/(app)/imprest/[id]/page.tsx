@@ -11,7 +11,9 @@ import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { Stepper } from "@/components/ui/Stepper";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
@@ -42,6 +44,7 @@ function SkeletonCard() {
 }
 
 export default function ImprestDetailPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { fmt } = useFormatDate();
   const params = useParams();
   const id = Number(params?.id);
@@ -53,7 +56,6 @@ export default function ImprestDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const { confirm } = useConfirm();
   // Retirement wizard
   const [showWizard, setShowWizard] = useState(false);
@@ -80,10 +82,6 @@ export default function ImprestDetailPage() {
     setRequest((res.data as any).data ?? res.data);
   };
 
-  const showToastMsg = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 5000);
-  };
 
   const handleApprove = async () => {
     if (!request) return;
@@ -93,9 +91,9 @@ export default function ImprestDetailPage() {
       const notified: string[] = (res.data as any).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
-        showToastMsg(`Approved. Notified: ${notified.join(", ")}`);
+        success(`Approved. Notified: ${notified.join(", ")}`);
       } else {
-        showToastMsg("Request fully approved.");
+        success("Request fully approved.");
       }
     } catch {
       setError("Failed to approve request.");
@@ -158,7 +156,7 @@ export default function ImprestDetailPage() {
       await imprestApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      showToastMsg("Request returned to requester for correction.");
+      success("Request returned to requester for correction.");
     } catch {
       setError("Failed to return request.");
     } finally {
@@ -173,7 +171,7 @@ export default function ImprestDetailPage() {
     try {
       await imprestApi.withdraw(request.id);
       await refreshRequest();
-      showToastMsg("Request withdrawn.");
+      success("Request withdrawn.");
     } catch {
       setError("Failed to withdraw request.");
     } finally {
@@ -188,7 +186,7 @@ export default function ImprestDetailPage() {
     try {
       await imprestApi.resubmit(request.id);
       await refreshRequest();
-      showToastMsg("Request resubmitted for approval.");
+      success("Request resubmitted for approval.");
     } catch {
       setError("Failed to resubmit request.");
     } finally {
@@ -240,14 +238,11 @@ export default function ImprestDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {toast}
-        </div>
-      )}
+      <WorkflowStatusBanner
+        status={request.status}
+        currentStage={currentStep?.name ?? currentStep?.role_name ?? null}
+        currentHolder={null}
+      />
 
       {/* Breadcrumb + title */}
       <div>

@@ -143,7 +143,7 @@ function CountrySelect({ value, onChange }: { value: string; onChange: (v: strin
         <span className="material-symbols-outlined text-[16px] text-neutral-400">expand_more</span>
       </button>
       {open && (
-        <div className="absolute z-30 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg">
+        <div className="absolute z-30 mt-1 w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 shadow-lg">
           <div className="p-2 border-b border-neutral-100">
             <input
               autoFocus
@@ -243,7 +243,7 @@ function LocationCombobox({
   return (
     <div ref={ref} className="relative">
       <input
-        className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+        className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
         placeholder={placeholder ?? "Type or select..."}
         value={query}
         onChange={(e) => {
@@ -254,7 +254,7 @@ function LocationCombobox({
         onFocus={() => setOpen(true)}
       />
       {open && filtered.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full rounded-lg border border-neutral-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 shadow-lg max-h-48 overflow-y-auto">
           {filtered.map((loc) => (
             <button
               key={loc}
@@ -749,7 +749,7 @@ function TravelCreatePageInner() {
 
       {/* ── Step 0: Trip Details ────────────────────────────────────────────── */}
       {step === 0 && (
-        <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
               <span className="material-symbols-outlined text-[14px]">flight_takeoff</span>
@@ -942,7 +942,7 @@ function TravelCreatePageInner() {
       {/* ── Step 1: Itinerary ───────────────────────────────────────────────── */}
       {step === 1 && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6">
+          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -1009,7 +1009,7 @@ function TravelCreatePageInner() {
                       </label>
                       <input
                         type="date"
-                        className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.travel_date}
                         onChange={(e) => updateLeg(i, "travel_date", e.target.value)}
                       />
@@ -1017,7 +1017,7 @@ function TravelCreatePageInner() {
                     <div className="space-y-1">
                       <label className="block text-[11px] font-medium text-neutral-600">Transport Mode</label>
                       <select
-                        className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.transport_mode}
                         onChange={(e) => updateLeg(i, "transport_mode", e.target.value)}
                       >
@@ -1034,7 +1034,7 @@ function TravelCreatePageInner() {
                       <input
                         type="number"
                         min="0"
-                        className="w-full rounded-md border border-neutral-200 bg-white px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.days_count}
                         onChange={(e) => updateLeg(i, "days_count", parseInt(e.target.value) || 0)}
                       />
@@ -1049,7 +1049,7 @@ function TravelCreatePageInner() {
 
       {/* ── Step 2: Funding Details ─────────────────────────────────────────── */}
       {step === 2 && (
-        <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6 space-y-5">
           <div>
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -1124,7 +1124,7 @@ function TravelCreatePageInner() {
                         type="number"
                         min="0"
                         step="0.01"
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         placeholder="0.00"
                         value={row.forum_amount}
                         onChange={(e) => updateFundingRow(i, "forum_amount", e.target.value)}
@@ -1138,7 +1138,7 @@ function TravelCreatePageInner() {
                         type="number"
                         min="0"
                         step="0.01"
-                        className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                        className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         placeholder="0.00"
                         value={row.host_amount}
                         onChange={(e) => updateFundingRow(i, "host_amount", e.target.value)}
@@ -1181,7 +1181,7 @@ function TravelCreatePageInner() {
                       <div>
                         <label className="block text-[10px] font-medium text-neutral-500 mb-1">Funding Agency</label>
                         <input
-                          className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                          className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           placeholder="e.g. SADCPF Core Budget"
                           value={row.funding_agency}
                           onChange={(e) => updateFundingRow(i, "funding_agency", e.target.value)}
@@ -1191,7 +1191,7 @@ function TravelCreatePageInner() {
                         <div>
                           <label className="block text-[10px] font-medium text-neutral-500 mb-1">Project</label>
                           <input
-                            className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             placeholder="Project name"
                             value={row.project}
                             onChange={(e) => updateFundingRow(i, "project", e.target.value)}
@@ -1200,7 +1200,7 @@ function TravelCreatePageInner() {
                         <div>
                           <label className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line (text note)</label>
                           <input
-                            className="w-full rounded-lg border border-neutral-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             placeholder="Optional note if no institutional line"
                             value={row.budget_line}
                             onChange={(e) => updateFundingRow(i, "budget_line", e.target.value)}
@@ -1234,7 +1234,7 @@ function TravelCreatePageInner() {
 
       {/* ── Step 3: Vehicle & Driver ────────────────────────────────────────── */}
       {step === 3 && (
-        <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
               <span className="material-symbols-outlined text-[14px]">directions_car</span>
@@ -1348,7 +1348,7 @@ function TravelCreatePageInner() {
               <span>{submitError}</span>
             </div>
           )}
-          <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-4">
+          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-[14px]">attach_file</span>
@@ -1435,7 +1435,7 @@ function TravelCreatePageInner() {
       {/* ── Step 5: Review & Submit ─────────────────────────────────────────── */}
       {step === 5 && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-6 space-y-4">
+          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 shadow-card p-6 space-y-4">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="material-symbols-outlined text-[14px]">fact_check</span>
@@ -1546,7 +1546,7 @@ function TravelCreatePageInner() {
                 setStepHint(null);
                 setStep((s) => s - 1);
               }}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               Back
@@ -1557,7 +1557,7 @@ function TravelCreatePageInner() {
           <button
             onClick={() => handleSubmit(true)}
             disabled={submitting || loadingDraft}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
             Save Draft
           </button>

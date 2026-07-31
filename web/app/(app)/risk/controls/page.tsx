@@ -23,7 +23,7 @@ export default function RiskControlsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl">
       <div className="text-sm text-muted-foreground">
         <Link href="/risk" className="hover:text-primary">Risk Register</Link>
         <span className="mx-2">/</span>

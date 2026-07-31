@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { TIMEZONES, DATE_FORMATS, CURRENCIES, LANGUAGES, PREFS_KEY } from "@/lib/constants";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { useToast } from "@/components/ui/Toast";
 
 const NAV = [
   { label: "Profile",       href: "/profile",           icon: "person" },
@@ -64,9 +65,9 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 }
 
 export default function ProfileSettingsPage() {
+  const { success, error, info } = useToast();
   const { theme, setTheme } = useTheme();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -78,25 +79,17 @@ export default function ProfileSettingsPage() {
   const set = <K extends keyof Prefs>(key: K, value: Prefs[K]) =>
     setPrefs((p) => ({ ...p, [key]: value }));
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(prefs));
     window.dispatchEvent(new Event("sadcpf:prefs-updated"));
-    showToast("Preferences saved.");
+    success("Preferences saved.");
   };
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          {toast}
-        </div>
-      )}
-
-      <ModulePageHeader
+<ModulePageHeader
         title="Preferences & Settings"
         subtitle="Customise notifications, display format, language, and accessibility options."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Preferences & Settings" }]} />}

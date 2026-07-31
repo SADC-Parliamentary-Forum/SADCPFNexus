@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateShort } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 type LeaveRow = {
   id: number;
@@ -30,10 +31,10 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function LeaveCertificationQueuePage() {
+  const { success, error: showErrorToast, info } = useToast();
   const [rows, setRows] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -65,8 +66,7 @@ export default function LeaveCertificationQueuePage() {
         action: "certify",
         comment: "Certified from queue",
       });
-      setToast(`Leave request #${id} certified.`);
-      window.setTimeout(() => setToast(null), 3200);
+      success(`Leave request #${id} certified.`);
       await load();
     } catch {
       setError("Failed to certify request. You may lack HR certification permission.");
@@ -96,11 +96,7 @@ export default function LeaveCertificationQueuePage() {
           </>
         }
       />
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-      )}
-      {error && (
+{error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           <span className="flex-1">{error}</span>

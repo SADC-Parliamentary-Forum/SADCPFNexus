@@ -22,6 +22,7 @@ import {
   draftIdsForBulkCancel,
   selectedProcurementRows,
 } from "@/lib/procurementRegisterBulk";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -56,13 +57,13 @@ function getListData(payload: unknown): ProcurementRequest[] {
 }
 
 export default function ProcurementRegisterPage() {
+  const { success, error, info } = useToast();
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
-  const [toast, setToast] = useState<string | null>(null);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -147,7 +148,7 @@ export default function ProcurementRegisterPage() {
     onSuccess: (results) => {
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const fail = results.length - ok;
-      setToast(fail ? `Cancelled ${ok} draft(s); ${fail} failed.` : `Cancelled ${ok} draft(s).`);
+      error(fail ? `Cancelled ${ok} draft(s); ${fail} failed.` : `Cancelled ${ok} draft(s).`);
       selection.clear();
       void qc.invalidateQueries({ queryKey: ["procurement", "register"] });
     },
@@ -173,7 +174,7 @@ export default function ProcurementRegisterPage() {
     }
     setBulkLoading(true);
     setBulkError(null);
-    setToast(null);
+    
     cancelMut.mutate(ids);
   };
 
@@ -219,10 +220,7 @@ export default function ProcurementRegisterPage() {
       loading={isLoading}
       stats={
         <>
-          {toast ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-          ) : null}
-          {bulkError || isError ? (
+{bulkError || isError ? (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <span className="material-symbols-outlined text-[16px]">error_outline</span>
               <span className="flex-1">{bulkError ?? "Failed to load register."}</span>
@@ -330,6 +328,7 @@ export default function ProcurementRegisterPage() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table w-full">
+              <caption className="sr-only">Procurement requests register</caption>
             <thead>
               <tr>
                 <th className={selectionColumnClass.th}>

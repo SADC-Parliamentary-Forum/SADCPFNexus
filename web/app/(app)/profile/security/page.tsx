@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 import { formatDateRelative } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
 
 const NAV = [
   { label: "Profile",     href: "/profile",           icon: "person" },
@@ -18,9 +19,9 @@ const NAV = [
 ];
 
 export default function ProfileSecurityPage() {
+  const { success, error, info } = useToast();
   const { t } = useI18n();
   const router = useRouter();
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("60");
   const [forceMfaBanner, setForceMfaBanner] = useState(false);
@@ -48,10 +49,6 @@ export default function ProfileSecurityPage() {
   const [weeklyPref, setWeeklyPref] = useState<WeeklySummaryPreference | null>(null);
   const [savingWeekly, setSavingWeekly] = useState(false);
 
-  const showToast = (msg: string, type: "success" | "error" = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const loadSessions = async () => {
     try {
@@ -84,9 +81,9 @@ export default function ProfileSecurityPage() {
         detail_mode: weeklyPref.detail_mode,
       });
       setWeeklyPref(res.data.data);
-      showToast("Weekly summary preferences saved.");
+      success("Weekly summary preferences saved.");
     } catch {
-      showToast("Failed to save preferences.", "error");
+      success("Failed to save preferences.", "error");
     } finally {
       setSavingWeekly(false);
     }
@@ -124,7 +121,7 @@ export default function ProfileSecurityPage() {
       setTotpCode("");
       setShowSetupModal(true);
     } catch {
-      showToast("Failed to start 2FA setup.", "error");
+      success("Failed to start 2FA setup.", "error");
     } finally {
       setMfaActionLoading(false);
     }
@@ -145,10 +142,10 @@ export default function ProfileSecurityPage() {
       if (stored) {
         writeStoredUser({ ...stored, mfa_enabled: true });
       }
-      showToast("2FA enabled successfully. Your account is now more secure.");
+      success("2FA enabled successfully. Your account is now more secure.");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { code?: string[] }; message?: string } } };
-      showToast(ax.response?.data?.errors?.code?.[0] ?? ax.response?.data?.message ?? "Invalid code. Try again.", "error");
+      success(ax.response?.data?.errors?.code?.[0] ?? ax.response?.data?.message ?? "Invalid code. Try again.", "error");
     } finally {
       setMfaActionLoading(false);
     }
@@ -162,10 +159,10 @@ export default function ProfileSecurityPage() {
       setMfaEnabled(false);
       setShowDisableModal(false);
       setDisablePassword("");
-      showToast("2FA has been disabled.");
+      success("2FA has been disabled.");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { errors?: { password?: string[] }; message?: string } } };
-      showToast(ax.response?.data?.errors?.password?.[0] ?? ax.response?.data?.message ?? "Incorrect password.", "error");
+      success(ax.response?.data?.errors?.password?.[0] ?? ax.response?.data?.message ?? "Incorrect password.", "error");
     } finally {
       setMfaActionLoading(false);
     }
@@ -173,13 +170,13 @@ export default function ProfileSecurityPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwForm.next !== pwForm.confirm) { showToast("Passwords do not match.", "error"); return; }
-    if (pwForm.next.length < 8) { showToast("Password must be at least 8 characters.", "error"); return; }
+    if (pwForm.next !== pwForm.confirm) { success("Passwords do not match.", "error"); return; }
+    if (pwForm.next.length < 8) { success("Password must be at least 8 characters.", "error"); return; }
     setSaving(true);
     try {
       await profileApi.updatePassword(pwForm.current, pwForm.next, pwForm.confirm);
       setPwForm({ current: "", next: "", confirm: "" });
-      showToast("Password changed successfully.");
+      success("Password changed successfully.");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg =
@@ -187,7 +184,7 @@ export default function ProfileSecurityPage() {
         ax.response?.data?.message ??
         ax.message ??
         "Failed to change password.";
-      showToast(msg, "error");
+      success(msg, "error");
     } finally {
       setSaving(false);
     }
@@ -198,9 +195,9 @@ export default function ProfileSecurityPage() {
     try {
       await profileSessionsApi.revoke(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
-      showToast("Session revoked.");
+      success("Session revoked.");
     } catch {
-      showToast("Failed to revoke session.", "error");
+      success("Failed to revoke session.", "error");
     } finally {
       setRevokingId(null);
     }
@@ -211,9 +208,9 @@ export default function ProfileSecurityPage() {
     try {
       await profileSessionsApi.revokeOthers();
       setSessions((prev) => prev.filter((s) => s.is_current));
-      showToast("All other sessions signed out.");
+      success("All other sessions signed out.");
     } catch {
-      showToast("Failed to sign out other sessions.", "error");
+      success("Failed to sign out other sessions.", "error");
     } finally {
       setRevokingOthers(false);
     }
@@ -237,14 +234,6 @@ export default function ProfileSecurityPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
 
       <ModulePageHeader
         title="Security & Password"
@@ -672,7 +661,7 @@ export default function ProfileSecurityPage() {
           <p className="text-xs text-neutral-400 mt-1">You will be automatically signed out after this period of inactivity.</p>
         </div>
         <div className="flex justify-end mt-4">
-          <button type="button" onClick={() => showToast("Security settings saved.")}
+          <button type="button" onClick={() => success("Security settings saved.")}
             className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">save</span>
             Save Settings

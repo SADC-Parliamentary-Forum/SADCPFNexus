@@ -7,6 +7,7 @@ import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES }
 import { adminApi, hrApi, payslipRefreshApi } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import type { AdminPayslip, User } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 interface PayslipRow {
   id: number;
@@ -67,9 +68,9 @@ function formatPeriod(p: { period_month: number; period_year: number }): string 
 }
 
 export default function HrPayslipsPage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<PayslipRow[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [toastError, setToastError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -118,23 +119,23 @@ export default function HrPayslipsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showToast = (msg: string, isError = false) => {
-    setToast(msg);
+    success(msg);
     setToastError(isError);
-    setTimeout(() => { setToast(null); setToastError(false); }, 4000);
+    setTimeout(() => {  setToastError(false); }, 4000);
   };
 
   const handleDownload = (id: number) => {
-    adminApi.downloadPayslip(id).catch(() => showToast("Download failed.", true));
+    adminApi.downloadPayslip(id).catch(() => error("Download failed."));
   };
 
   const handleRefresh = async (id: number) => {
     setRefreshingId(id);
     try {
       await payslipRefreshApi.refresh(id);
-      showToast("Payslip auto-fill refreshed.");
+      success("Payslip auto-fill refreshed.");
       fetchList();
     } catch {
-      showToast("Refresh failed.", true);
+      error("Refresh failed.");
     } finally {
       setRefreshingId(null);
     }
@@ -152,9 +153,9 @@ export default function HrPayslipsPage() {
     form.append("period_year", String(selectedPayslip.period_year));
     adminApi
       .uploadPayslip(form)
-      .then(() => { showToast("Payslip re-uploaded."); setSelectedPayslip(null); fetchList(); })
+      .then(() => { success("Payslip re-uploaded."); setSelectedPayslip(null); fetchList(); })
       .catch((err: { response?: { data?: { message?: string } } }) => {
-        showToast(err?.response?.data?.message ?? "Re-upload failed.", true);
+        error(err?.response?.data?.message ?? "Re-upload failed.");
       })
       .finally(() => setReuploading(false));
   };
@@ -208,11 +209,11 @@ export default function HrPayslipsPage() {
     }
 
     if (success > 0) {
-      showToast(`${success} payslip${success !== 1 ? "s" : ""} uploaded.${failed > 0 ? ` ${failed} failed.` : ""}`);
+      error(`${success} payslip${success !== 1 ? "s" : ""} uploaded.${failed > 0 ? ` ${failed} failed.` : ""}`);
       setRows([]);
       fetchList();
     } else {
-      showToast(failed > 0 ? `Upload failed for all ${failed} payslips. Check employee numbers and periods.` : "Nothing to upload.", true);
+      error(failed > 0 ? `Upload failed for all ${failed} payslips. Check employee numbers and periods.` : "Nothing to upload.");
     }
     setUploading(false);
   };
@@ -222,12 +223,12 @@ export default function HrPayslipsPage() {
     setConfirmLoading(true);
     try {
       await hrApi.confirmPayslip(confirmTarget.id, { confirmation_status: confirmStatus, confirmation_notes: confirmNotes || undefined });
-      showToast(`Payslip ${confirmStatus}.`);
+      success(`Payslip ${confirmStatus}.`);
       setConfirmTarget(null);
       setConfirmNotes("");
       fetchList();
     } catch {
-      showToast("Confirmation failed. Please try again.", true);
+      error("Confirmation failed. Please try again.");
     } finally {
       setConfirmLoading(false);
     }
@@ -235,14 +236,7 @@ export default function HrPayslipsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toastError ? "bg-red-600" : "bg-green-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>{toastError ? "error" : "check_circle"}</span>
-          {toast}
-        </div>
-      )}
-
-      {selectedPayslip && (
+{selectedPayslip && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedPayslip(null)}>
           <div className="card max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">

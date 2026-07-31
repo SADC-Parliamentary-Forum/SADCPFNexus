@@ -27,7 +27,7 @@ export default function WeeklySummaryDetailPage() {
   if (!report) return <p className="p-6 text-sm text-neutral-500">Loading…</p>;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <header>
         <h1 className="text-2xl font-semibold">{report.reference}</h1>
         <p className="text-sm text-neutral-600">

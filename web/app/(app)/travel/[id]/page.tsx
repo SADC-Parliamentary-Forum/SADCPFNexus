@@ -9,9 +9,11 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { getListData } from "@/lib/listPagination";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
@@ -68,6 +70,7 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
 }
 
 export default function TravelDetailPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = Number(params?.id);
@@ -79,7 +82,6 @@ export default function TravelDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [workflowMeta, setWorkflowMeta] = useState<any>(null);
   const { confirm } = useConfirm();
 
@@ -249,10 +251,6 @@ export default function TravelDetailPage() {
     syncPhase3Fields(data);
   };
 
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 5000);
-  };
 
   const handleApprove = async () => {
     if (!request) return;
@@ -262,9 +260,9 @@ export default function TravelDetailPage() {
       const notified: string[] = (res.data as { notified_approvers?: string[] }).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
-        showToast(`Approved. Notified: ${notified.join(", ")}`);
+        success(`Approved. Notified: ${notified.join(", ")}`);
       } else {
-        showToast("Request fully approved.");
+        success("Request fully approved.");
       }
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to approve request."));
@@ -295,7 +293,7 @@ export default function TravelDetailPage() {
       await travelApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      showToast("Request returned to requester for correction.");
+      success("Request returned to requester for correction.");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to return request."));
     } finally {
@@ -310,7 +308,7 @@ export default function TravelDetailPage() {
     try {
       await travelApi.withdraw(request.id);
       await refreshRequest();
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to withdraw request."));
     } finally {
@@ -325,7 +323,7 @@ export default function TravelDetailPage() {
     try {
       await travelApi.resubmit(request.id);
       await refreshRequest();
-      showToast("Request resubmitted for approval.");
+      success("Request resubmitted for approval.");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to resubmit request."));
     } finally {
@@ -342,7 +340,7 @@ export default function TravelDetailPage() {
     try {
       await travelApi.cancel(request.id, reason.trim());
       await refreshRequest();
-      showToast("Request cancelled.");
+      success("Request cancelled.");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to cancel request."));
     } finally {
@@ -389,7 +387,7 @@ export default function TravelDetailPage() {
       });
       setShowAmendmentModal(false);
       await refreshRequest();
-      showToast("Amendment submitted for approval.");
+      success("Amendment submitted for approval.");
     } catch (err) {
       setAmendError(apiErrorMessage(err, "Failed to submit amendment. Approved requests cannot be edited silently."));
     } finally {
@@ -407,7 +405,7 @@ export default function TravelDetailPage() {
     try {
       await travelApi.approveAmendment(amendment.id);
       await refreshRequest();
-      showToast("Amendment approved and applied.");
+      success("Amendment approved and applied.");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to approve amendment."));
     } finally {
@@ -422,7 +420,7 @@ export default function TravelDetailPage() {
     try {
       await fn();
       await refreshRequest();
-      showToast(`${label} completed.`);
+      success(`${label} completed.`);
     } catch (err) {
       setError(apiErrorMessage(err, `Failed: ${label}. Check required documents and approval status.`));
     } finally {
@@ -446,7 +444,7 @@ export default function TravelDetailPage() {
         );
       }
       await refreshRequest();
-      showToast("DSA calculation saved (Finance Rate Types 1/2/3).");
+      success("DSA calculation saved (Finance Rate Types 1/2/3).");
     } catch (err) {
       setError(apiErrorMessage(err, "Failed to save DSA. Only Finance may calculate DSA, and not on their own request."));
     } finally {
@@ -466,7 +464,7 @@ export default function TravelDetailPage() {
         visa_notes: visaNotes || null,
       });
       await refreshRequest();
-      showToast("Visa details updated.");
+      success("Visa details updated.");
     } catch {
       setError("Failed to update visa details.");
     } finally {
@@ -499,7 +497,7 @@ export default function TravelDetailPage() {
     try {
       await travelApi.applyItinerary(request.id, itineraryPaste);
       await refreshRequest();
-      showToast("Itinerary legs applied (versioned).");
+      success("Itinerary legs applied (versioned).");
       setItineraryPreview(null);
     } catch {
       setError("Failed to apply itinerary. Unparseable text is rejected on apply.");
@@ -521,7 +519,7 @@ export default function TravelDetailPage() {
         health_notes: healthNotes || null,
       });
       await refreshRequest();
-      showToast("Health pack updated.");
+      success("Health pack updated.");
     } catch {
       setError("Failed to update health pack (restricted to HR/Admin).");
     } finally {
@@ -539,7 +537,7 @@ export default function TravelDetailPage() {
         procurement_link_required: procRequired,
       });
       await refreshRequest();
-      showToast("Procurement link updated.");
+      success("Procurement link updated.");
     } catch {
       setError("Failed to update procurement link.");
     } finally {
@@ -593,15 +591,6 @@ export default function TravelDetailPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg animate-in slide-in-from-top-2">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {toast}
-        </div>
-      )}
-
       {(request as any).prepared_on_behalf_of && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           Prepared on behalf of {(request as any).prepared_on_behalf_of?.name ?? preparedOnBehalf?.name ?? "principal"}
@@ -611,26 +600,15 @@ export default function TravelDetailPage() {
         </div>
       )}
 
-      {(workflowMeta || approvalRequest) && (
-        <div className="card p-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm" data-testid="travel-workflow-tracker">
-          <div>
-            <p className="text-xs text-neutral-400">Current Stage</p>
-            <p className="font-semibold text-neutral-800">{workflowMeta?.current_stage_label ?? workflowMeta?.current_stage ?? request.status}</p>
-          </div>
-          <div>
-            <p className="text-xs text-neutral-400">Currently With</p>
-            <p className="font-semibold text-neutral-800">{currentlyWith || "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-neutral-400">Next Stage</p>
-            <p className="font-semibold text-neutral-800">{workflowMeta?.next_stage_label ?? workflowMeta?.next_stage ?? "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-neutral-400">Submitted On</p>
-            <p className="font-semibold text-neutral-800">{request.submitted_at ? formatDateShort(request.submitted_at) : "—"}</p>
-          </div>
-        </div>
-      )}
+      <WorkflowStatusBanner
+        status={request.status}
+        currentStage={workflowMeta?.current_stage_label ?? workflowMeta?.current_stage ?? request.status}
+        currentHolder={currentlyWith || "—"}
+        extras={[
+          { label: "Next stage", value: String(workflowMeta?.next_stage_label ?? workflowMeta?.next_stage ?? "—") },
+          { label: "Submitted on", value: request.submitted_at ? formatDateShort(request.submitted_at) : "—" },
+        ]}
+      />
 
       {/* Breadcrumb + title */}
       <div>
@@ -696,7 +674,7 @@ export default function TravelDetailPage() {
                     try {
                       await travelApi.submit(request.id);
                       await refreshRequest();
-                      showToast("Request submitted.");
+                      success("Request submitted.");
                     } catch (err: unknown) {
                       const axiosErr = err as { response?: { data?: { errors?: { conflicts?: string[] }; message?: string } } };
                       const conflicts = axiosErr?.response?.data?.errors?.conflicts;
@@ -712,7 +690,7 @@ export default function TravelDetailPage() {
                               conflict_resolution_note: note,
                             });
                             await refreshRequest();
-                            showToast("Submitted with conflict acknowledgement.");
+                            success("Submitted with conflict acknowledgement.");
                           } catch (ackErr) {
                             setError(apiErrorMessage(ackErr, "Failed to submit after acknowledging conflicts."));
                           }
@@ -1294,7 +1272,7 @@ export default function TravelDetailPage() {
               });
               setHotelName(""); setHotelCity(""); setHotelCheckIn(""); setHotelCheckOut(""); setHotelConfirm("");
               await refreshRequest();
-              showToast("Accommodation recorded.");
+              success("Accommodation recorded.");
             } catch {
               setError("Failed to save accommodation.");
             } finally {
@@ -1351,7 +1329,7 @@ export default function TravelDetailPage() {
                 private_vehicle_route: mileRoute || undefined,
               });
               await refreshRequest();
-              showToast("Mileage comparison saved.");
+              success("Mileage comparison saved.");
             } catch {
               setError("Failed to save mileage comparison.");
             } finally {
@@ -1452,9 +1430,9 @@ export default function TravelDetailPage() {
               try {
                 await travelApi.updatePersonalDays(request.id, personalDays);
                 await refreshRequest();
-                setToast("Personal / official days saved");
+                success("Personal / official days saved");
               } catch {
-                setToast("Failed to save personal days");
+                showErrorToast("Failed to save personal days");
               } finally {
                 setPersonalSaving(false);
               }
@@ -1498,10 +1476,10 @@ export default function TravelDetailPage() {
                   conflict_resolution_note: vehicleAck ? "Admin acknowledged vehicle conflict" : undefined,
                 });
                 await refreshRequest();
-                setToast("Vehicle assigned");
+                success("Vehicle assigned");
               } catch (e: any) {
                 const conflicts = e?.response?.data?.errors?.vehicle_conflicts;
-                setToast(Array.isArray(conflicts) ? conflicts.join(" ") : "Vehicle assign failed (check conflicts)");
+                success(Array.isArray(conflicts) ? conflicts.join(" ") : "Vehicle assign failed (check conflicts)");
               } finally {
                 setVehicleSaving(false);
               }

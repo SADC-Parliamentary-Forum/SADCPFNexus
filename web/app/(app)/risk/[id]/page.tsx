@@ -7,6 +7,8 @@ import { readStoredUser } from "@/lib/session";
 import { useFormatDate } from "@/lib/useFormatDate";
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import axios from "axios";
+import { useToast } from "@/components/ui/Toast";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -255,6 +257,14 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="font-mono text-xs text-neutral-600">{risk.risk_code}</span>
       </div>
+
+      <WorkflowStatusBanner
+        status={risk.status}
+        currentStage={WORKFLOW_STEPS[currentStepIdx]?.label ?? null}
+        currentHolder={(risk as { owner?: { name?: string }; owner_name?: string }).owner?.name
+          ?? (risk as { owner_name?: string }).owner_name
+          ?? null}
+      />
 
       {/* Status stepper */}
       <div className="card px-5 py-4 overflow-x-auto">

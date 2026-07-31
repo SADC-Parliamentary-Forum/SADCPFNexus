@@ -16,6 +16,7 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -50,6 +51,7 @@ function unwrapList(payload: unknown): ImprestRequest[] {
 }
 
 export default function ImprestPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { fmt: formatDateShort } = useFormatDate();
   const { confirm } = useConfirm();
   const queryClient = useQueryClient();
@@ -59,12 +61,7 @@ export default function ImprestPage() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
-  };
 
   const {
     data: requests = [],
@@ -130,7 +127,7 @@ export default function ImprestPage() {
     try {
       await Promise.all(ids.map((id) => imprestApi.delete(id)));
       selection.clear();
-      showToast("Selected drafts deleted.");
+      success("Selected drafts deleted.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
       setError("Some deletions failed.");
@@ -147,7 +144,7 @@ export default function ImprestPage() {
     try {
       await Promise.all(ids.map((id) => imprestApi.submit(id)));
       selection.clear();
-      showToast("Selected drafts submitted.");
+      success("Selected drafts submitted.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
       setError("Some submissions failed.");
@@ -171,7 +168,7 @@ export default function ImprestPage() {
     setError(null);
     try {
       await imprestApi.delete(row.id);
-      showToast("Draft deleted.");
+      success("Draft deleted.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
       setError("Failed to delete draft.");
@@ -195,7 +192,7 @@ export default function ImprestPage() {
     setError(null);
     try {
       await imprestApi.withdraw(row.id);
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
       await queryClient.invalidateQueries({ queryKey: ["imprest", "list"] });
     } catch {
       setError("Failed to withdraw request.");
@@ -261,12 +258,7 @@ export default function ImprestPage() {
           </Link>
         </div>
       </div>
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-      )}
-
-      {(isError || error) && (
+{(isError || error) && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error ?? "Failed to load imprest requests."}</span>
@@ -402,6 +394,7 @@ export default function ImprestPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
+              <caption className="sr-only">Imprest requests register</caption>
               <thead>
                 <tr>
                   <th className={selectionColumnClass.th}>

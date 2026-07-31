@@ -16,6 +16,12 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { useToast } from "@/components/ui/Toast";
+import { PrintButton } from "@/components/ui/PrintButton";
+import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -68,6 +74,7 @@ function unwrapList(payload: unknown): LeaveRequest[] {
 }
 
 export default function LeavePage() {
+  const { success, error, info } = useToast();
   const { confirm } = useConfirm();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -75,14 +82,9 @@ export default function LeavePage() {
   const [page, setPage] = useState(1);
   const [actionId, setActionId] = useState<number | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
-  };
 
   const {
     data: requests = [],
@@ -173,7 +175,7 @@ export default function LeavePage() {
     setActionError(null);
     try {
       await leaveApi.delete(row.id);
-      showToast("Draft deleted.");
+      success("Draft deleted.");
       selection.clear();
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
@@ -201,7 +203,7 @@ export default function LeavePage() {
     try {
       await Promise.all(ids.map((id) => leaveApi.delete(id)));
       selection.clear();
-      showToast("Selected drafts deleted.");
+      success("Selected drafts deleted.");
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
       setActionError("Some deletions failed.");
@@ -225,7 +227,7 @@ export default function LeavePage() {
     setActionError(null);
     try {
       await leaveApi.withdraw(row.id);
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
       setActionError("Failed to withdraw request.");
@@ -252,6 +254,7 @@ export default function LeavePage() {
       loading={loading}
       actions={
         <div className="flex flex-wrap gap-2">
+          <PrintButton className="text-xs no-print" />
           <button
             type="button"
             className="btn-secondary text-sm disabled:opacity-50"
@@ -281,10 +284,7 @@ export default function LeavePage() {
       }
       stats={
         <>
-          {toast && (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-          )}
-          {(isError || actionError) && (
+{(isError || actionError) && (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <span className="material-symbols-outlined text-[16px]">error_outline</span>
               <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
@@ -367,23 +367,35 @@ export default function LeavePage() {
         </>
       }
       filters={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-md flex-1">
-            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
-              search
-            </span>
-            <input
-              type="search"
-              className="form-input pl-10"
-              placeholder="Search reference, reason, type…"
-              value={search}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative max-w-md flex-1">
+              <Input
+                type="search"
+                icon="search"
+                className="bg-white"
+                placeholder="Search reference, reason, type…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                aria-label="Search leave requests"
+              />
+            </div>
+            <Select
+              className="w-full sm:w-44 sm:hidden"
+              aria-label="Filter by status"
+              value={filter}
               onChange={(e) => {
-                setSearch(e.target.value);
+                setFilter(e.target.value as FilterKey);
+                selection.clear();
                 setPage(1);
               }}
+              options={FILTER_TABS.map((t) => ({ value: t.key, label: t.label }))}
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden flex-wrap gap-2 sm:flex">
             {FILTER_TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -435,8 +447,33 @@ export default function LeavePage() {
       }
     >
       <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
+          <RegisterMobileCards
+            items={paged}
+            getKey={(req) => req.id}
+            title={(req) => req.reference_number}
+            subtitle={(req) => TYPE_LABELS[req.leave_type] ?? req.leave_type}
+            badge={(req) => {
+              const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
+              const variant =
+                s.cls.includes("success") ? "success" :
+                s.cls.includes("warning") ? "warning" :
+                s.cls.includes("danger") ? "danger" : "muted";
+              return <Badge variant={variant}>{s.label}</Badge>;
+            }}
+            fields={(req) => [
+              { label: "Dates", value: `${formatDateShort(req.start_date)} → ${formatDateShort(req.end_date)}` },
+              { label: "Days", value: req.days_requested },
+              { label: "Reason", value: req.reason || "—" },
+            ]}
+            actions={(req) => (
+              <Link href={`/leave/${req.id}`} className="text-xs font-medium text-primary hover:underline">
+                View
+              </Link>
+            )}
+          />
+          <div className="hidden overflow-x-auto md:block">
             <table className="data-table w-full">
+              <caption className="sr-only">Leave requests register</caption>
               <thead>
                 <tr>
                   <th className={selectionColumnClass.th}>
@@ -485,7 +522,13 @@ export default function LeavePage() {
                         {req.reason || "—"}
                       </td>
                       <td>
-                        <span className={`badge text-xs ${s.cls}`}>{s.label}</span>
+                        {(() => {
+                          const variant =
+                            s.cls.includes("success") ? "success" :
+                            s.cls.includes("warning") ? "warning" :
+                            s.cls.includes("danger") ? "danger" : "muted";
+                          return <Badge variant={variant as "success" | "warning" | "danger" | "muted"}>{s.label}</Badge>;
+                        })()}
                       </td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">

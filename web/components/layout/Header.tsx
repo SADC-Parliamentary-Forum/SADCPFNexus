@@ -191,6 +191,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative flex size-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
             title="Notifications"
+            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+            aria-expanded={showNotifications}
           >
             <span className="material-symbols-outlined text-[20px]">notifications</span>
             {unreadCount > 0 && (
@@ -213,8 +215,12 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                       Mark all read
                     </button>
                   )}
-                  <button onClick={() => setShowNotifications(false)} className="text-neutral-400 hover:text-neutral-600">
-                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="text-neutral-400 hover:text-neutral-600"
+                    aria-label="Close notifications"
+                  >
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
                   </button>
                 </div>
               </div>
@@ -278,6 +284,9 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+            aria-label="User menu"
+            aria-expanded={showUserMenu}
+            aria-haspopup="menu"
           >
             <div className="hidden sm:block text-right">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">{user?.name ?? "User"}</p>

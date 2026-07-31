@@ -7,6 +7,7 @@ import {
   documentGovernanceApi,
   type DocumentGovernanceDecision,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -15,10 +16,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function DocumentGovernancePage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<DocumentGovernanceDecision[]>([]);
   const [meta, setMeta] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("pending");
@@ -32,7 +33,7 @@ export default function DocumentGovernancePage() {
         setRows(r.data?.data ?? r.data ?? []);
         setMeta(r.data?.meta ?? r.meta ?? {});
       })
-      .catch(() => setToast("Could not load governance checklist"))
+      .catch(() => error("Could not load governance checklist"))
       .finally(() => setLoading(false));
   };
 
@@ -53,11 +54,11 @@ export default function DocumentGovernancePage() {
         status,
         decision_notes: notes || null,
       });
-      setToast("Decision saved");
+      success("Decision saved");
       setEditing(null);
       load();
     } catch {
-      setToast("Save failed");
+      error("Save failed");
     } finally {
       setSaving(false);
     }
@@ -74,12 +75,7 @@ export default function DocumentGovernancePage() {
           Back to document register
         </Link>
       </div>
-
-      {toast && (
-        <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">{toast}</div>
-      )}
-
-      {loading ? (
+{loading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
       ) : (
         <div className="space-y-3">

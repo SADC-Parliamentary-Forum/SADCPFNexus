@@ -6,27 +6,24 @@ import Link from "next/link";
 import SignaturePad from "signature_pad";
 import { saamApi, type SignatureProfile } from "@/lib/api";
 import api from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 type Tab = "full" | "initials";
 type InputMode = "draw" | "upload";
 
 export default function SignatureSetupPage() {
+  const { success, error, info } = useToast();
   const [tab, setTab] = useState<Tab>("full");
   const [mode, setMode] = useState<InputMode>("draw");
   const [profiles, setProfiles] = useState<SignatureProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sigPadRef = useRef<SignaturePad | null>(null);
 
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const loadProfiles = useCallback(() => {
     saamApi.getProfile()
@@ -63,17 +60,17 @@ export default function SignatureSetupPage() {
 
   async function saveDraw() {
     if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
-      showToast("error", "Please draw a signature first.");
+      error("Please draw a signature first.");
       return;
     }
     setSaving(true);
     try {
       const dataUrl = sigPadRef.current.toDataURL("image/png");
       await saamApi.draw(tab, dataUrl);
-      showToast("success", "Signature saved.");
+      success("Signature saved.");
       loadProfiles();
     } catch {
-      showToast("error", "Failed to save signature.");
+      error("Failed to save signature.");
     } finally {
       setSaving(false);
     }
@@ -81,18 +78,18 @@ export default function SignatureSetupPage() {
 
   async function saveUpload() {
     if (!uploadFile) {
-      showToast("error", "Please choose a file.");
+      error("Please choose a file.");
       return;
     }
     setSaving(true);
     try {
       await saamApi.upload(tab, uploadFile);
-      showToast("success", "Signature uploaded.");
+      success("Signature uploaded.");
       setUploadFile(null);
       setUploadPreview(null);
       loadProfiles();
     } catch {
-      showToast("error", "Failed to upload signature.");
+      error("Failed to upload signature.");
     } finally {
       setSaving(false);
     }
@@ -102,10 +99,10 @@ export default function SignatureSetupPage() {
     if (!confirm(`Revoke your ${type} signature? This action cannot be undone.`)) return;
     try {
       await saamApi.revoke(type);
-      showToast("success", "Signature revoked.");
+      success("Signature revoked.");
       loadProfiles();
     } catch {
-      showToast("error", "Failed to revoke signature.");
+      error("Failed to revoke signature.");
     }
   }
 
@@ -124,16 +121,7 @@ export default function SignatureSetupPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Toast */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
-
-      {/* Breadcrumb */}
+{/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/profile" className="hover:text-primary transition-colors">Profile</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>

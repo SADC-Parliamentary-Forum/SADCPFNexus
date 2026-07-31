@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userNotificationsApi, alertsApi, type UserNotification, type AlertsSummary } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Alerts helpers ──────────────────────────────────────────────────────────
 
@@ -316,16 +317,12 @@ type InboxFilter = "all" | "unread" | "read";
 
 function InboxTab() {
   const { fmt } = useFormatDate();
+  const { success, error: showErrorToast } = useToast();
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [page, setPage]     = useState(1);
-  const [toast, setToast]   = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["notifications", "list", filter, page],
@@ -353,9 +350,9 @@ function InboxTab() {
     try {
       await userNotificationsApi.markAllRead();
       invalidate();
-      showToast("success", "All notifications marked as read.");
+      success("All notifications marked as read.");
     } catch {
-      showToast("error", "Failed to mark all as read.");
+      showErrorToast("Failed to mark all as read.");
     }
   };
 
@@ -375,14 +372,6 @@ function InboxTab() {
 
   return (
     <div className="space-y-5">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
 
       <div className="flex items-center justify-between">
         <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700 flex-1">

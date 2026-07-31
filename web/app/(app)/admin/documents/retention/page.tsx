@@ -4,17 +4,18 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { documentServiceApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function DocumentRetentionPage() {
+  const { success, error, info } = useToast();
   const [data, setData] = useState<any>(null);
   const [name, setName] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
 
   const load = () => {
     documentServiceApi
       .retentionDashboard()
       .then((r: any) => setData(r.data?.data ?? r.data))
-      .catch(() => setToast("Could not load retention dashboard"));
+      .catch(() => error("Could not load retention dashboard"));
   };
 
   useEffect(() => {
@@ -26,10 +27,10 @@ export default function DocumentRetentionPage() {
     try {
       await documentServiceApi.createRetentionCampaign({ name });
       setName("");
-      setToast("Campaign created");
+      success("Campaign created");
       load();
     } catch {
-      setToast("Failed to create campaign");
+      error("Failed to create campaign");
     }
   };
 
@@ -44,8 +45,6 @@ export default function DocumentRetentionPage() {
           Document register
         </Link>
       </div>
-
-      {toast && <div className="text-sm border rounded px-3 py-2 bg-neutral-50">{toast}</div>}
 
       {data && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">

@@ -7,6 +7,7 @@ import {
   platformAuditApi,
   type AuditTrailGovernanceDecision,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -15,10 +16,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function AuditTrailGovernancePage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<AuditTrailGovernanceDecision[]>([]);
   const [phase2, setPhase2] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("pending");
@@ -32,7 +33,7 @@ export default function AuditTrailGovernancePage() {
         setRows(r.data?.data ?? r.data ?? []);
         setPhase2(r.data?.meta?.phase2_stubs ?? r.meta?.phase2_stubs ?? {});
       })
-      .catch(() => setToast("Could not load governance checklist"))
+      .catch(() => error("Could not load governance checklist"))
       .finally(() => setLoading(false));
   };
 
@@ -47,11 +48,11 @@ export default function AuditTrailGovernancePage() {
         status,
         decision_notes: notes || null,
       });
-      setToast("Decision saved");
+      success("Decision saved");
       setEditing(null);
       load();
     } catch {
-      setToast("Save failed");
+      error("Save failed");
     } finally {
       setSaving(false);
     }
@@ -74,12 +75,7 @@ export default function AuditTrailGovernancePage() {
         <div><span className="font-medium">Forensic workspace:</span> {phase2.forensic_workspace ?? "Governance Configuration Pending"}</div>
         <div><span className="font-medium">Anomaly AI:</span> {phase2.anomaly_ai ?? "Governance Configuration Pending"}</div>
       </div>
-
-      {toast && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>
-      )}
-
-      {loading ? (
+{loading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
       ) : (
         <div className="space-y-3">

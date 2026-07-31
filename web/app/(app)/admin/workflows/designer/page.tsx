@@ -100,7 +100,7 @@ export default function WorkflowDesignerPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-6xl">
       <div>
         <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
         <h1 className="text-2xl font-semibold">Visual workflow designer</h1>

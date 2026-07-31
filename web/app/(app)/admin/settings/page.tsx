@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { settingsApi, type SystemSettings } from "@/lib/api";
 import { MONTHS_OF_YEAR, CURRENCIES, TIMEZONES } from "@/lib/constants";
+import { useToast } from "@/components/ui/Toast";
 
 const DEFAULTS: SystemSettings = {
   org_name: "SADC Parliamentary Forum",
@@ -31,16 +32,12 @@ type CredentialRow = {
 };
 
 export default function AdminSettingsPage() {
+  const { success, error, info } = useToast();
   const [settings, setSettings] = useState<SystemSettings>(DEFAULTS);
   const [credentials, setCredentials] = useState<CredentialRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   useEffect(() => {
     Promise.all([
@@ -54,9 +51,9 @@ export default function AdminSettingsPage() {
     try {
       const res = await settingsApi.update(settings);
       setSettings({ ...DEFAULTS, ...res.data });
-      showToast("success", "Settings saved.");
+      success("Settings saved.");
     } catch {
-      showToast("error", "Failed to save settings. Please try again.");
+      error("Failed to save settings. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -66,16 +63,7 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
+<div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         <span className="text-neutral-900 font-medium">System Settings</span>

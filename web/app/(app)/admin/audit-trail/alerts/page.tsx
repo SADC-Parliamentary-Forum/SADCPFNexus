@@ -4,11 +4,12 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AuditTrailAlertsPage() {
+  const { success, error, info } = useToast();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [rules, setRules] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
 
   const load = () => {
     platformAuditApi.alerts({ per_page: 50 })
@@ -27,10 +28,10 @@ export default function AuditTrailAlertsPage() {
         workflow_status,
         classification: workflow_status === "classified" ? "indicator_reviewed" : undefined,
       });
-      setToast(`Alert moved to ${workflow_status}`);
+      success(`Alert moved to ${workflow_status}`);
       load();
     } catch {
-      setToast("Transition failed");
+      error("Transition failed");
     }
   };
 
@@ -44,8 +45,6 @@ export default function AuditTrailAlertsPage() {
       />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
-
-      {toast && <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>}
 
       <div className="card p-4">
         <h2 className="text-sm font-semibold mb-2">Active monitoring rules</h2>

@@ -14,6 +14,7 @@ import { PrintButton } from "@/components/ui/PrintButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { unwrapEntity } from "@/lib/unwrapEntity";
+import { useToast } from "@/components/ui/Toast";
 
 const typeConfig: Record<string, { label: string; color: string; icon: string }> = {
   annual: { label: "Annual Leave", color: "text-green-700 bg-green-50 border-green-200", icon: "sunny" },
@@ -82,6 +83,7 @@ function SkeletonCard() {
 }
 
 export default function LeaveDetailPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = Number(params?.id);
@@ -93,7 +95,6 @@ export default function LeaveDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const { confirm } = useConfirm();
 
   // Balance override flow
@@ -135,10 +136,6 @@ export default function LeaveDetailPage() {
     if (entity) setRequest(entity);
   };
 
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 5000);
-  };
 
   const handleApprove = async (override?: string) => {
     if (!request) return;
@@ -151,9 +148,9 @@ export default function LeaveDetailPage() {
       setShowOverrideModal(false);
       setOverrideReason("");
       if (notified.length > 0) {
-        showToast(`Approved. Notified: ${notified.join(", ")}`);
+        success(`Approved. Notified: ${notified.join(", ")}`);
       } else {
-        showToast("Request fully approved.");
+        success("Request fully approved.");
       }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { errors?: { balance?: string[] }; message?: string } } };
@@ -191,7 +188,7 @@ export default function LeaveDetailPage() {
       await leaveApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      showToast("Request returned to requester for correction.");
+      success("Request returned to requester for correction.");
     } catch {
       setError("Failed to return request.");
     } finally {
@@ -206,7 +203,7 @@ export default function LeaveDetailPage() {
     try {
       await leaveApi.withdraw(request.id);
       await refreshRequest();
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
     } catch {
       setError("Failed to withdraw request.");
     } finally {
@@ -221,7 +218,7 @@ export default function LeaveDetailPage() {
     try {
       await leaveApi.resubmit(request.id);
       await refreshRequest();
-      showToast("Request resubmitted for approval.");
+      success("Request resubmitted for approval.");
     } catch {
       setError("Failed to resubmit request.");
     } finally {
@@ -274,14 +271,7 @@ export default function LeaveDetailPage() {
     <div className="mx-auto max-w-3xl space-y-5">
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-lg">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {toast}
-        </div>
-      )}
-
-      <ModulePageHeader
+<ModulePageHeader
         title="Leave Request"
         subtitle={`${formatDateShort(request.start_date)} → ${formatDateShort(request.end_date)} · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
         breadcrumbs={
@@ -306,6 +296,7 @@ export default function LeaveDetailPage() {
         }
         actions={
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <PrintButton className="text-xs" />
             {request.status === "approved" && (
               <Link
                 href={`/leave/${request.id}/certificate`}
@@ -446,7 +437,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "recommend", comment: recommendComment || undefined });
                         await refreshRequest();
-                        setToast("Recommendation recorded.");
+                        success("Recommendation recorded.");
                       } catch { setError("Failed to record recommendation."); }
                       finally { setActionLoading(false); }
                     }}
@@ -462,7 +453,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "not_recommend", comment: recommendComment.trim() });
                         await refreshRequest();
-                        setToast("Not recommended recorded.");
+                        success("Not recommended recorded.");
                       } catch { setError("Failed to record recommendation."); }
                       finally { setActionLoading(false); }
                     }}
@@ -478,7 +469,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.recommend(request.id, { action: "return", comment: recommendComment.trim() });
                         await refreshRequest();
-                        setToast("Returned for correction.");
+                        success("Returned for correction.");
                       } catch { setError("Failed to return leave request."); }
                       finally { setActionLoading(false); }
                     }}
@@ -506,7 +497,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "certify", comment: certifyComment || undefined });
                         await refreshRequest();
-                        setToast("Certification recorded.");
+                        success("Certification recorded.");
                       } catch { setError("Failed to certify leave request."); }
                       finally { setActionLoading(false); }
                     }}
@@ -522,7 +513,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "certify_with_condition", comment: certifyComment.trim() });
                         await refreshRequest();
-                        setToast("Certified with condition.");
+                        success("Certified with condition.");
                       } catch { setError("Failed to certify leave request."); }
                       finally { setActionLoading(false); }
                     }}
@@ -538,7 +529,7 @@ export default function LeaveDetailPage() {
                       try {
                         await leaveApi.certify(request.id, { action: "return", comment: certifyComment.trim() });
                         await refreshRequest();
-                        setToast("Returned for correction.");
+                        success("Returned for correction.");
                       } catch { setError("Failed to return leave request."); }
                       finally { setActionLoading(false); }
                     }}

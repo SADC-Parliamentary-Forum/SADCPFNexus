@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 const WORK_BUCKETS = [
   "delivery",
@@ -94,12 +95,12 @@ function fromTemplate(t: TimesheetTemplate): FormState {
 }
 
 export default function TimesheetTemplatesAdminPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const [list, setList] = useState<TimesheetTemplate[]>([]);
   const [projects, setProjects] = useState<TimesheetProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [toastError, setToastError] = useState(false);
   const [allowed, setAllowed] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -112,10 +113,10 @@ export default function TimesheetTemplatesAdminPage() {
   }, []);
 
   const showToast = (msg: string, isError = false) => {
-    setToast(msg);
+    success(msg);
     setToastError(isError);
     setTimeout(() => {
-      setToast(null);
+      
       setToastError(false);
     }, 4000);
   };
@@ -153,7 +154,7 @@ export default function TimesheetTemplatesAdminPage() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.code.trim()) {
-      showToast("Name and code are required.", true);
+      showErrorToast("Name and code are required.");
       return;
     }
     setSaving(true);
@@ -161,16 +162,16 @@ export default function TimesheetTemplatesAdminPage() {
       const payload = toPayload(form);
       if (editId == null) {
         await hrApi.createTimesheetTemplate(payload);
-        showToast("Template created.");
+        success("Template created.");
       } else {
         await hrApi.updateTimesheetTemplate(editId, payload);
-        showToast("Template updated.");
+        success("Template updated.");
       }
       setShowForm(false);
       setEditId(null);
       fetchList();
     } catch {
-      showToast("Failed to save template.", true);
+      showErrorToast("Failed to save template.");
     } finally {
       setSaving(false);
     }
@@ -187,20 +188,20 @@ export default function TimesheetTemplatesAdminPage() {
     if (!ok) return;
     try {
       await hrApi.deactivateTimesheetTemplate(t.id);
-      showToast("Template deactivated.");
+      success("Template deactivated.");
       fetchList();
     } catch {
-      showToast("Failed to deactivate template.", true);
+      showErrorToast("Failed to deactivate template.");
     }
   };
 
   const handleReactivate = async (t: TimesheetTemplate) => {
     try {
       await hrApi.updateTimesheetTemplate(t.id, { is_active: true });
-      showToast("Template reactivated.");
+      success("Template reactivated.");
       fetchList();
     } catch {
-      showToast("Failed to reactivate template.", true);
+      showErrorToast("Failed to reactivate template.");
     }
   };
 
@@ -209,20 +210,7 @@ export default function TimesheetTemplatesAdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${
-            toastError ? "bg-red-600" : "bg-green-600"
-          }`}
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {toastError ? "error" : "check_circle"}
-          </span>
-          {toast}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
+<div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/hr/timesheets" className="transition-colors hover:text-primary">
           Timesheets
         </Link>

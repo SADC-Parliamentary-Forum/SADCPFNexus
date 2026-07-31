@@ -7,6 +7,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -109,6 +110,7 @@ function SkeletonRow() {
 }
 
 export default function HRLeavePage() {
+  const { success, error: showErrorToast, info } = useToast();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,6 @@ export default function HRLeavePage() {
   const [page, setPage] = useState(1);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [toast, setToast] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Balance override state
@@ -135,10 +136,6 @@ export default function HRLeavePage() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const load = () => {
     setLoading(true);
@@ -194,7 +191,7 @@ export default function HRLeavePage() {
   const handleApprove = (id: number, override?: string) => {
     setSubmitting(true);
     leaveApi.approve(id, override)
-      .then(() => { showToast("Leave approved."); load(); setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); })
+      .then(() => { success("Leave approved."); load(); setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); })
       .catch((e: unknown) => {
         const err = e as { response?: { data?: { errors?: { balance?: string[] } } } };
         const balMsg = err?.response?.data?.errors?.balance?.[0];
@@ -202,7 +199,7 @@ export default function HRLeavePage() {
           setOverrideId(id);
           setOverrideBalanceMsg(balMsg);
         } else {
-          showToast("Failed to approve.");
+          showErrorToast("Failed to approve.");
         }
       })
       .finally(() => setSubmitting(false));
@@ -212,8 +209,8 @@ export default function HRLeavePage() {
     if (!rejectId || !rejectReason.trim()) return;
     setSubmitting(true);
     leaveApi.reject(rejectId, rejectReason)
-      .then(() => { showToast("Leave rejected."); setRejectId(null); setRejectReason(""); load(); })
-      .catch(() => showToast("Failed to reject."))
+      .then(() => { success("Leave rejected."); setRejectId(null); setRejectReason(""); load(); })
+      .catch(() => showErrorToast("Failed to reject."))
       .finally(() => setSubmitting(false));
   };
 
@@ -232,7 +229,7 @@ export default function HRLeavePage() {
       } as Partial<LeaveRequest> & { user_id?: number });
       setShowNew(false);
       setNewEmployee(null); setNewLeaveType("annual"); setNewStartDate(""); setNewEndDate(""); setNewReason("");
-      showToast("Leave request created.");
+      success("Leave request created.");
       load();
     } catch (err: unknown) {
       setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create leave request.");
@@ -244,14 +241,7 @@ export default function HRLeavePage() {
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          {toast}
-        </div>
-      )}
-
-      <ModulePageHeader
+<ModulePageHeader
         title="Staff Leave Requests"
         subtitle="Review and action leave applications from staff members."
         breadcrumbs={

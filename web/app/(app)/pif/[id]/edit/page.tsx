@@ -9,6 +9,7 @@ import ArrivalDepartureSection from "./ArrivalDepartureSection";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { unwrapEntity } from "@/lib/unwrapEntity";
+import { useToast } from "@/components/ui/Toast";
 
 const STEPS = [
   "Overview",
@@ -23,6 +24,7 @@ const STEPS = [
 type StepIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function PifEditPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [step, setStep] = useState<StepIndex>(0);
@@ -30,7 +32,6 @@ export default function PifEditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [strategicPillar, setStrategicPillar] = useState("");
@@ -225,10 +226,6 @@ export default function PifEditPage() {
     };
   }, [id]);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const payloadForStep = useCallback((s: StepIndex): Record<string, unknown> => {
     switch (s) {
@@ -411,7 +408,7 @@ export default function PifEditPage() {
     const ok = await saveStep(step);
     if (!ok) return;
     if (step < STEPS.length - 1) {
-      showToast(`${STEPS[step]} saved.`);
+      success(`${STEPS[step]} saved.`);
       setStep((step + 1) as StepIndex);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -427,7 +424,7 @@ export default function PifEditPage() {
   const finish = async () => {
     const ok = await saveStep(step);
     if (!ok || !programme) return;
-    showToast("Programme updated.");
+    success("Programme updated.");
     router.push(`/pif/${programme.id}`);
   };
 
@@ -493,14 +490,7 @@ export default function PifEditPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          {toast}
-        </div>
-      )}
-
-      <ModulePageHeader
+<ModulePageHeader
         title="Edit Programme Implementation Form"
         subtitle="Complete each page in turn. Progress is saved when you continue — you can leave and return anytime."
         breadcrumbs={
@@ -1025,7 +1015,7 @@ export default function PifEditPage() {
                 programmeId={programme.id}
                 initialRows={programme.documents ?? []}
                 tenantUsers={tenantUsers}
-                onToast={showToast}
+                onToast={success}
               />
             </div>
 
@@ -1035,7 +1025,7 @@ export default function PifEditPage() {
               <ArrivalDepartureSection
                 programmeId={programme.id}
                 initialRows={programme.arrival_departures ?? []}
-                onToast={showToast}
+                onToast={success}
               />
             </div>
           </div>

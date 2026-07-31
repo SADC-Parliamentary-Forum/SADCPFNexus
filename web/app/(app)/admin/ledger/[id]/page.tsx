@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import { ledgerVerificationsApi, auditLogsApi, type LedgerVerification, type AuditLogEntry } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ function exportCSV(verification: LedgerVerification, logs: AuditLogEntry[]) {
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function LedgerVerificationDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { success, error: showErrorToast, info } = useToast();
   const { id } = use(params);
   const numId = Number(id);
 
@@ -65,12 +67,7 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
   const [lastPage, setLastPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [reverifying, setReverifying] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error" = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   useEffect(() => {
     ledgerVerificationsApi.get(numId)
@@ -100,9 +97,9 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
     try {
       const res = await ledgerVerificationsApi.verify("Manual re-verification from admin dashboard");
       setVerification(res.data.data);
-      showToast("Re-verification complete — " + (res.data.data.status === "pass" ? "PASSED" : "FAILED"));
+      success("Re-verification complete — " + (res.data.data.status === "pass" ? "PASSED" : "FAILED"));
     } catch {
-      showToast("Re-verification failed.", "error");
+      success("Re-verification failed.", "error");
     } finally {
       setReverifying(false);
     }
@@ -132,19 +129,8 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
   const isPassed = verification.status === "pass";
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Toast */}
-      {toast && (
-        <div className={cn(
-          "fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl",
-          toast.type === "success" ? "bg-green-600" : "bg-red-600"
-        )}>
-          <span className="material-symbols-outlined text-[18px]">
-            {toast.type === "success" ? "check_circle" : "error_outline"}
-          </span>
-          {toast.message}
-        </div>
-      )}
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-sm text-neutral-500">

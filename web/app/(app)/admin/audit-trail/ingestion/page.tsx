@@ -4,11 +4,12 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AuditTrailIngestionPage() {
+  const { success, error, info } = useToast();
   const [health, setHealth] = useState<Record<string, number | null> | null>(null);
   const [deadLetters, setDeadLetters] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
 
   const load = () => {
     platformAuditApi.ingestionHealth().then((r) => setHealth(r.data.data)).catch(() => setHealth(null));
@@ -22,20 +23,20 @@ export default function AuditTrailIngestionPage() {
   const replay = async (id: number) => {
     try {
       await platformAuditApi.replayDeadLetter(id);
-      setToast(`Replayed dead letter #${id}`);
+      success(`Replayed dead letter #${id}`);
       load();
     } catch {
-      setToast("Replay failed");
+      error("Replay failed");
     }
   };
 
   const migrate = async () => {
     try {
       const r = await platformAuditApi.migrateLegacy(5000);
-      setToast(`Migration: ${JSON.stringify(r.data.data)}`);
+      success(`Migration: ${JSON.stringify(r.data.data)}`);
       load();
     } catch {
-      setToast("Migration failed");
+      error("Migration failed");
     }
   };
 
@@ -49,8 +50,6 @@ export default function AuditTrailIngestionPage() {
       />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
-
-      {toast && <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>}
 
       {health && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -237,6 +237,7 @@ export default function PifPage() {
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table">
+              <caption className="sr-only">Programme implementation register</caption>
             <thead>
               <tr>
                 <th>Code</th>

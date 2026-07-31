@@ -8,6 +8,8 @@ import { assignmentsApi, tenantUsersApi, type Assignment, type AssignmentUpdate,
 import { formatDateShort, formatDateRelative } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
+import { useToast } from "@/components/ui/Toast";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -263,6 +265,12 @@ export default function AssignmentDetailPage() {
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
         <span className="text-neutral-700 font-medium truncate max-w-xs">{assignment.title}</span>
       </nav>
+
+      <WorkflowStatusBanner
+        status={assignment.status}
+        currentStage={null}
+        currentHolder={assignment.assignee?.name ?? null}
+      />
 
       {/* Header card */}
       <div className="card p-6">

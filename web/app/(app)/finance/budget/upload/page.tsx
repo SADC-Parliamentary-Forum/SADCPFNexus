@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { financeApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 type ParsedBudgetLine = {
     category: string;
@@ -14,11 +15,11 @@ type ParsedBudgetLine = {
 };
 
 export default function BudgetUploadPage() {
+  const { success, error: showErrorToast, info } = useToast();
     const router = useRouter();
 
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
-    const [toastMsg, setToastMsg] = useState("");
 
     const [year, setYear] = useState(new Date().getFullYear().toString());
     const [name, setName] = useState("");
@@ -88,7 +89,7 @@ export default function BudgetUploadPage() {
                 lines: parsedLines as any,
             });
 
-            setToastMsg("Budget successfully uploaded.");
+            success("Budget successfully uploaded.");
             setTimeout(() => router.push("/finance/budget"), 1500);
         } catch {
             setError("Failed to upload budget. Please check the network payload.");
@@ -99,12 +100,6 @@ export default function BudgetUploadPage() {
     return (
         <div className="mx-auto max-w-3xl space-y-6">
             {/* Toast */}
-            {toastMsg && (
-                <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                    {toastMsg}
-                </div>
-            )}
 
             {/* Page header */}
             <div className="flex items-center gap-2 text-sm text-neutral-500">

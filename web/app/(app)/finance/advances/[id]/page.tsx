@@ -10,7 +10,9 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
+import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
   draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
@@ -153,6 +155,7 @@ function RepaymentSchedule({
 }
 
 export default function AdvanceDetailPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const params = useParams();
   const router = useRouter();
   const id = params?.id != null ? Number(params.id) : NaN;
@@ -166,7 +169,6 @@ export default function AdvanceDetailPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [showCertifyModal, setShowCertifyModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -242,11 +244,11 @@ export default function AdvanceDetailPage() {
       if (certifyMode === "return") {
         if (!actionReason.trim()) { setError("Return reason is required."); return; }
         await financeApi.financeReturnAdvance(advance.id, actionReason.trim());
-        showToastMsg("Returned to requester.");
+        success("Returned to requester.");
       } else if (certifyMode === "not_eligible") {
         if (!actionReason.trim()) { setError("Not-eligible reason is required."); return; }
         await financeApi.markAdvanceNotEligible(advance.id, actionReason.trim());
-        showToastMsg("Marked not eligible.");
+        success("Marked not eligible.");
       } else {
         const net = Number(certifyForm.confirmed_net_salary);
         const recommended = Number(certifyForm.recommended_amount);
@@ -263,7 +265,7 @@ export default function AdvanceDetailPage() {
           eligible: true,
           comments: certifyForm.comments || undefined,
         });
-        showToastMsg("Finance certified (Part B).");
+        success("Finance certified (Part B).");
       }
       setShowCertifyModal(false);
       await refreshAdvance();
@@ -290,7 +292,7 @@ export default function AdvanceDetailPage() {
       });
       setShowPaymentModal(false);
       await refreshAdvance();
-      showToastMsg("Payment recorded.");
+      success("Payment recorded.");
     } catch { setError("Failed to record payment."); }
     finally { setActionLoading(false); }
   };
@@ -316,7 +318,7 @@ export default function AdvanceDetailPage() {
       });
       setShowRecoveryModal(false);
       await refreshAdvance();
-      showToastMsg("Recovery recorded.");
+      success("Recovery recorded.");
     } catch { setError("Failed to record recovery."); }
     finally { setActionLoading(false); }
   };
@@ -326,10 +328,6 @@ export default function AdvanceDetailPage() {
     setAdvance(getEntity<SalaryAdvanceRequest>(res.data));
   };
 
-  const showToastMsg = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 5000);
-  };
 
   const handleApprove = async () => {
     if (!advance) return;
@@ -339,9 +337,9 @@ export default function AdvanceDetailPage() {
       const notified: string[] = (res.data as any).notified_approvers ?? [];
       await refreshAdvance();
       if (notified.length > 0) {
-        showToastMsg(`Approved. Notified: ${notified.join(", ")}`);
+        success(`Approved. Notified: ${notified.join(", ")}`);
       } else {
-        showToastMsg("Request fully approved.");
+        success("Request fully approved.");
       }
     } catch { setError("Failed to approve request."); }
     finally { setActionLoading(false); }
@@ -365,7 +363,7 @@ export default function AdvanceDetailPage() {
       await financeApi.returnAdvanceForCorrection(advance.id, comment);
       await refreshAdvance();
       setShowReturnModal(false);
-      showToastMsg("Request returned to requester for correction.");
+      success("Request returned to requester for correction.");
     } catch { setError("Failed to return request."); }
     finally { setReturnLoading(false); }
   };
@@ -377,7 +375,7 @@ export default function AdvanceDetailPage() {
     try {
       await financeApi.withdrawAdvance(advance.id);
       await refreshAdvance();
-      showToastMsg("Request withdrawn.");
+      success("Request withdrawn.");
     } catch { setError("Failed to withdraw request."); }
     finally { setActionLoading(false); }
   };
@@ -389,7 +387,7 @@ export default function AdvanceDetailPage() {
     try {
       await financeApi.resubmitAdvance(advance.id);
       await refreshAdvance();
-      showToastMsg("Request resubmitted for approval.");
+      success("Request resubmitted for approval.");
     } catch { setError("Failed to resubmit request."); }
     finally { setActionLoading(false); }
   };
@@ -456,14 +454,11 @@ export default function AdvanceDetailPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-3 text-sm font-semibold shadow-lg">
-          <span className="material-symbols-outlined text-[18px]">check_circle</span>
-          {toast}
-        </div>
-      )}
+      <WorkflowStatusBanner
+        status={advance.status}
+        currentStage={currentStep?.role_name ?? currentStep?.name ?? null}
+        currentHolder={null}
+      />
 
       {/* Breadcrumb + header */}
       <div>

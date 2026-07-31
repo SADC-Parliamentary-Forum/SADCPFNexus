@@ -190,7 +190,7 @@ export default function ProcurementCreatePage() {
         </p>
       </div>
 
-      <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
+      <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-5">
         <div className="flex items-center gap-2">
           {STEPS.map((label, index) => (
             <div key={label} className="flex items-center gap-2 flex-1">
@@ -220,7 +220,7 @@ export default function ProcurementCreatePage() {
 
       {step === 0 && (
         <div className="space-y-4">
-          <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
+          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
             <h3 className="text-sm font-semibold text-neutral-900">Requisition Details</h3>
 
             <div className="space-y-1.5">
@@ -330,7 +330,7 @@ export default function ProcurementCreatePage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-4">
+          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-neutral-900">Supporting Documents</h3>
@@ -392,7 +392,7 @@ export default function ProcurementCreatePage() {
                     <select
                       value={doc.docType}
                       onChange={(e) => updateStagedType(doc.id, e.target.value as CreateDocType)}
-                      className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                      className="rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2 py-1 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                     >
                       {CREATE_DOC_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>
@@ -416,7 +416,7 @@ export default function ProcurementCreatePage() {
       )}
 
       {step === 1 && (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900">Review &amp; Submit</h3>
           {submitError && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{submitError}</div>
@@ -461,7 +461,7 @@ export default function ProcurementCreatePage() {
           {step > 0 && (
             <button
               onClick={() => setStep((current) => current - 1)}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               Back
@@ -472,7 +472,7 @@ export default function ProcurementCreatePage() {
           <button
             onClick={() => handleSubmit(true)}
             disabled={submitting}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
             Save Draft
           </button>

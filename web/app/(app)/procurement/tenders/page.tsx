@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_FILTERS = [
   "all",
@@ -26,12 +27,12 @@ const STATUS_FILTERS = [
 ] as const;
 
 export default function TendersPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const qc = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>("all");
   const [search, setSearch] = useState("");
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
   const [page, setPage] = useState(1);
-  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
@@ -72,7 +73,8 @@ export default function TendersPage() {
     onSuccess: (results) => {
       const ok = results.filter((r) => r.status === "fulfilled").length;
       const fail = results.length - ok;
-      setToast(fail ? `Cancelled ${ok}; ${fail} failed.` : `Cancelled ${ok} tender(s).`);
+      if (fail) showErrorToast(`Cancelled ${ok}; ${fail} failed.`);
+      else success(`Cancelled ${ok} tender(s).`);
       selection.clear();
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
     },
@@ -103,11 +105,7 @@ export default function TendersPage() {
       }}
       loading={isLoading}
       stats={
-        toast ? (
-          <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            {toast}
-          </div>
-        ) : error || isError ? (
+        error || isError ? (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error ?? "Failed to load tenders."}
           </div>
@@ -167,6 +165,7 @@ export default function TendersPage() {
     >
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
+              <caption className="sr-only">Procurement tenders register</caption>
           <thead>
             <tr className="border-b text-left text-xs text-neutral-500">
               <th className={selectionColumnClass.th}>

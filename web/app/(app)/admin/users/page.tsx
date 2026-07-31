@@ -13,6 +13,7 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { useToast } from "@/components/ui/Toast";
 
 const classColors: Record<string, string> = {
   UNCLASSIFIED: "badge-muted",
@@ -50,11 +51,11 @@ function isProtectedUser(user: User, currentUserId: number | null): { ok: false;
 }
 
 export default function AdminUsersPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(1);
@@ -106,10 +107,6 @@ export default function AdminUsersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset selection when the page set changes
   }, [page, search, statusFilter]);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
-  };
 
   const handleDeactivate = async (user: User) => {
     const gate = isProtectedUser(user, currentUserId);
@@ -133,7 +130,7 @@ export default function AdminUsersPage() {
       await adminApi.deactivateUser(user.id);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: false } : u)));
       selection.clear();
-      showToast("User deactivated.");
+      success("User deactivated.");
     } catch {
       setError("Failed to deactivate user.");
     } finally {
@@ -148,7 +145,7 @@ export default function AdminUsersPage() {
     try {
       await adminApi.reactivateUser(user.id);
       setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, is_active: true } : u)));
-      showToast("User reactivated.");
+      success("User reactivated.");
     } catch {
       setError("Failed to reactivate user.");
     } finally {
@@ -177,9 +174,9 @@ export default function AdminUsersPage() {
       selection.clear();
       reload();
       if (skipped_count > 0) {
-        showToast(`Deactivated ${deactivated_count}; skipped ${skipped_count}.`);
+        success(`Deactivated ${deactivated_count}; skipped ${skipped_count}.`);
       } else {
-        showToast(`Deactivated ${deactivated_count} user(s).`);
+        success(`Deactivated ${deactivated_count} user(s).`);
       }
     } catch {
       setError("Bulk deactivate failed.");
@@ -206,14 +203,7 @@ export default function AdminUsersPage() {
           </Link>
         )}
       </div>
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {toast}
-        </div>
-      )}
-
-      {error && (
+{error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
@@ -315,6 +305,7 @@ export default function AdminUsersPage() {
           <>
             <div className="overflow-x-auto">
               <table className="data-table">
+              <caption className="sr-only">Users register</caption>
                 <thead>
                   <tr>
                     {isAdmin && (

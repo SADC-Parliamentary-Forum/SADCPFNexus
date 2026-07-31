@@ -28,7 +28,7 @@ export default function AuditTrailEventTypesPage() {
   }, [eventId]);
 
   return (
-    <div className="space-y-6 p-6 max-w-6xl">
+    <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <ModulePageHeader
         title="Event type registry & detail"

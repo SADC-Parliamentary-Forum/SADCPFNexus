@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState, useCallback } from "react";
 import { weeklySummaryApi, WeeklySummaryRun } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_BADGE: Record<string, string> = {
   running:   "badge-warning",
@@ -14,18 +15,14 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function AdminWeeklySummaryPage() {
+  const { success, error, info } = useToast();
   const [runs, setRuns]         = useState<WeeklySummaryRun[]>([]);
   const [loading, setLoading]   = useState(true);
   const [triggering, setTriggering] = useState(false);
-  const [toast, setToast]       = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [page, setPage]         = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [polling, setPolling]   = useState(false);
 
-  const showToast = (type: "success" | "error", text: string) => {
-    setToast({ type, text });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const loadRuns = useCallback(async (p = page) => {
     try {
@@ -58,10 +55,10 @@ export default function AdminWeeklySummaryPage() {
     setTriggering(true);
     try {
       await weeklySummaryApi.triggerRun();
-      showToast("success", "Weekly summary run queued. Refresh in a few moments.");
+      success("Weekly summary run queued. Refresh in a few moments.");
       setTimeout(() => loadRuns(), 2000);
     } catch {
-      showToast("error", "Failed to queue run. Check your permissions.");
+      error("Failed to queue run. Check your permissions.");
     } finally {
       setTriggering(false);
     }
@@ -70,11 +67,6 @@ export default function AdminWeeklySummaryPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          {toast.text}
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">

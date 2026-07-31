@@ -4,10 +4,11 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AuditTrailForensicsPage() {
+  const { success, error, info } = useToast();
   const [cases, setCases] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [linkCaseId, setLinkCaseId] = useState<number | "">("");
   const [eventId, setEventId] = useState("");
@@ -24,10 +25,10 @@ export default function AuditTrailForensicsPage() {
     try {
       await platformAuditApi.createForensicCase({ title });
       setTitle("");
-      setToast("Forensic case opened");
+      success("Forensic case opened");
       load();
     } catch {
-      setToast("Could not create case");
+      error("Could not create case");
     }
   };
 
@@ -35,20 +36,20 @@ export default function AuditTrailForensicsPage() {
     if (!linkCaseId || !eventId) return;
     try {
       await platformAuditApi.linkForensicEvent(Number(linkCaseId), { audit_event_id: Number(eventId) });
-      setToast("Event linked");
+      success("Event linked");
       setEventId("");
       load();
     } catch {
-      setToast("Link failed");
+      error("Link failed");
     }
   };
 
   const hold = async (id: number) => {
     try {
       await platformAuditApi.forensicApplyHold(id, { hold_type: "investigation", reason: `Hold for forensic case ${id}` });
-      setToast("Investigation hold placed");
+      success("Investigation hold placed");
     } catch {
-      setToast("Hold failed");
+      error("Hold failed");
     }
   };
 
@@ -56,9 +57,9 @@ export default function AuditTrailForensicsPage() {
     try {
       const r = await platformAuditApi.sealEvidencePackage(id);
       const pkg = (r as any).data?.data ?? (r as any).data;
-      setToast(`Evidence sealed: ${pkg?.reference ?? "ok"} hash ${String(pkg?.manifest_hash ?? "").slice(0, 12)}…`);
+      success(`Evidence sealed: ${pkg?.reference ?? "ok"} hash ${String(pkg?.manifest_hash ?? "").slice(0, 12)}…`);
     } catch {
-      setToast("Seal failed — link events first");
+      error("Seal failed — link events first");
     }
   };
 
@@ -72,8 +73,6 @@ export default function AuditTrailForensicsPage() {
       />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
-
-      {toast && <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>}
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">
         <input className="form-input text-sm sm:col-span-2" placeholder="Case title" value={title} onChange={(e) => setTitle(e.target.value)} />

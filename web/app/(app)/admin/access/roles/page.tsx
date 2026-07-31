@@ -6,6 +6,9 @@ import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 
 type Role = {
   id: number;
@@ -69,24 +72,24 @@ export default function AccessRolesPage() {
       <FormSection title="Create draft role" description="Starts a new versioned role template." icon="badge" dense>
         <div className="flex flex-wrap items-end gap-3">
           <FormField label="Name" htmlFor="role-name" required className="min-w-[160px]">
-            <input
+            <Input
               id="role-name"
-              className="form-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder="Role name"
             />
           </FormField>
           <FormField label="Purpose" htmlFor="role-purpose" className="min-w-[240px] flex-1">
-            <input
+            <Input
               id="role-purpose"
-              className="form-input"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
+              placeholder="Purpose"
             />
           </FormField>
-          <button type="button" className="btn-primary text-sm" onClick={createDraft} disabled={!name}>
+          <Button type="button" onClick={createDraft} disabled={!name} size="sm">
             Create draft
-          </button>
+          </Button>
         </div>
         {message ? <p className="mt-3 text-sm text-neutral-600">{message}</p> : null}
       </FormSection>
@@ -105,13 +108,14 @@ export default function AccessRolesPage() {
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="data-table">
+              <caption className="sr-only">Access roles catalogue</caption>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Risk</th>
-                  <th>Status</th>
-                  <th>Version</th>
-                  <th>Perms</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Risk</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Version</th>
+                  <th scope="col">Perms</th>
                 </tr>
               </thead>
               <tbody>
@@ -119,11 +123,13 @@ export default function AccessRolesPage() {
                   <tr key={r.id}>
                     <td className="font-medium text-neutral-800">
                       {r.name}
-                      {r.feature_only ? <span className="ml-1.5 badge badge-muted text-[10px]">limited</span> : null}
+                      {r.feature_only ? (
+                        <Badge variant="muted" className="ml-1.5 text-[10px]">limited</Badge>
+                      ) : null}
                     </td>
                     <td className="capitalize">{r.risk_level ?? "—"}</td>
                     <td>
-                      <span className="badge badge-muted text-xs capitalize">{r.status ?? "—"}</span>
+                      <Badge variant="muted" className="capitalize">{r.status ?? "—"}</Badge>
                     </td>
                     <td>{r.current_version?.version ?? "—"}</td>
                     <td>{r.current_version?.permissions?.length ?? 0}</td>

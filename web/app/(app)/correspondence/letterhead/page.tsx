@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { settingsApi, type SystemSettings } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const DEFAULTS: Partial<SystemSettings> = {
   org_name: "SADC Parliamentary Forum",
@@ -17,17 +18,13 @@ const DEFAULTS: Partial<SystemSettings> = {
 };
 
 export default function LetterheadPage() {
+  const { success, error, info } = useToast();
   const [settings, setSettings] = useState<Partial<SystemSettings>>(DEFAULTS);
   const [form, setForm]         = useState<Partial<SystemSettings>>(DEFAULTS);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [dirty, setDirty]       = useState(false);
-  const [toast, setToast]       = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-  const showToast = (type: "success" | "error", msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   useEffect(() => {
     settingsApi.get()
@@ -61,9 +58,9 @@ export default function LetterheadPage() {
       setSettings(merged);
       setForm(merged);
       setDirty(false);
-      showToast("success", "Letterhead settings saved.");
+      success("Letterhead settings saved.");
     } catch {
-      showToast("error", "Failed to save settings.");
+      error("Failed to save settings.");
     } finally {
       setSaving(false);
     }
@@ -80,14 +77,6 @@ export default function LetterheadPage() {
   return (
     <div className="space-y-6 max-w-7xl">
       {/* Toast */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.msg}
-        </div>
-      )}
 
       {/* Breadcrumb + actions */}
       <div className="print:hidden flex items-center justify-between gap-4 flex-wrap">

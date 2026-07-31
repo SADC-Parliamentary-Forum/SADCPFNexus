@@ -9,6 +9,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { getLastPage, getListData, getTotal } from "@/lib/listPagination";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 type Runner = { id: number; name: string };
 
@@ -91,11 +92,11 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 }
 
 export default function AssetDepreciationPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const { confirm } = useConfirm();
   const [runs, setRuns] = useState<DepreciationRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -110,10 +111,6 @@ export default function AssetDepreciationPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3600);
-  };
 
   const load = useCallback(async (pageOverride?: number) => {
     const pageToLoad = pageOverride ?? page;
@@ -223,7 +220,7 @@ export default function AssetDepreciationPage() {
       const res = await api.post<{ data: RunDetail; message?: string }>("/assets-meta/depreciation-runs", {
         as_of: asOf || undefined,
       });
-      showToast(res.data.message ?? "Depreciation run completed (monitoring only).");
+      success(res.data.message ?? "Depreciation run completed (monitoring only).");
       if (page !== 1) setPage(1);
       await load(1);
       if (res.data.data?.id) {
@@ -239,7 +236,7 @@ export default function AssetDepreciationPage() {
 
   const handleExport = () => {
     if (!filteredRuns.length) {
-      showToast("No runs to export.");
+      success("No runs to export.");
       return;
     }
     exportToCsv(
@@ -265,7 +262,7 @@ export default function AssetDepreciationPage() {
         { key: "run_by", header: "Run by" },
       ],
     );
-    showToast(`Exported ${filteredRuns.length} run(s).`);
+    success(`Exported ${filteredRuns.length} run(s).`);
   };
 
   return (
@@ -311,14 +308,7 @@ export default function AssetDepreciationPage() {
           )}
         </div>
       </div>
-
-      {toast && (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {toast}
-        </div>
-      )}
-
-      {error && (
+{error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>

@@ -9,6 +9,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 
 export const SA_STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft:                   { label: "Draft",                   badge: "badge-muted" },
@@ -86,11 +87,11 @@ export function AdvanceQueueTable({
   showRequester?: boolean;
   emptyHint?: string;
 }) {
+  const { success } = useToast();
   const { confirm } = useConfirm();
   const [advances, setAdvances] = useState<SalaryAdvanceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -107,10 +108,6 @@ export function AdvanceQueueTable({
   } | null>(null);
   const isRecovery = queue === "recovery";
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
-  };
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
@@ -205,7 +202,7 @@ export function AdvanceQueueTable({
     setActionId(adv.id);
     try {
       await financeApi.deleteAdvance(adv.id);
-      showToast("Draft deleted.");
+      success("Draft deleted.");
       await load(page);
     } catch {
       setError("Failed to delete draft.");
@@ -228,7 +225,7 @@ export function AdvanceQueueTable({
     setActionId(adv.id);
     try {
       await financeApi.withdrawAdvance(adv.id);
-      showToast("Request withdrawn.");
+      success("Request withdrawn.");
       await load(page);
     } catch {
       setError("Failed to withdraw request.");
@@ -283,10 +280,7 @@ export function AdvanceQueueTable({
       }
       stats={
         <>
-          {toast ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{toast}</div>
-          ) : null}
-          {error ? (
+{error ? (
             <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               <span className="flex-1">{error}</span>
               <button type="button" className="text-xs font-semibold underline" onClick={() => void load(page)}>
@@ -372,6 +366,7 @@ export function AdvanceQueueTable({
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="data-table">
+              <caption className="sr-only">Salary advance applications</caption>
             <thead>
               <tr>
                 <th>Reference</th>

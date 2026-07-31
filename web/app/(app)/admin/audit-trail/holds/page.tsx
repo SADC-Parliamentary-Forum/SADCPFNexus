@@ -4,10 +4,11 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AuditTrailHoldsPage() {
+  const { success, error, info } = useToast();
   const [holds, setHolds] = useState<any[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
   const [form, setForm] = useState({
     hold_type: "legal",
     scope_type: "category",
@@ -26,21 +27,21 @@ export default function AuditTrailHoldsPage() {
   const place = async () => {
     try {
       await platformAuditApi.placeHold(form);
-      setToast("Hold placed — disposal blocked for matching scope");
+      success("Hold placed — disposal blocked for matching scope");
       setForm((f) => ({ ...f, reason: "" }));
       load();
     } catch {
-      setToast("Could not place hold");
+      error("Could not place hold");
     }
   };
 
   const release = async (id: number) => {
     try {
       await platformAuditApi.releaseHold(id);
-      setToast("Hold released");
+      success("Hold released");
       load();
     } catch {
-      setToast("Release failed");
+      error("Release failed");
     }
   };
 
@@ -54,8 +55,6 @@ export default function AuditTrailHoldsPage() {
       />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
-
-      {toast && <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>}
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">
         <select className="form-input text-sm" value={form.hold_type} onChange={(e) => setForm({ ...form, hold_type: e.target.value })}>

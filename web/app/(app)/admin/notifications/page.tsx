@@ -4,10 +4,12 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { notificationAdminApi, notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 type Tab = "templates" | "deliveries" | "failures" | "analytics";
 
 export default function AdminNotificationsPage() {
+  const { success, error, info } = useToast();
   const [tab, setTab] = useState<Tab>("templates");
   const [templates, setTemplates] = useState<NotifTemplate[]>([]);
   const [deliveries, setDeliveries] = useState<any[]>([]);
@@ -15,19 +17,18 @@ export default function AdminNotificationsPage() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [guards, setGuards] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
     if (tab === "templates") {
       notificationTemplatesApi.list()
         .then((r) => setTemplates(r.data))
-        .catch(() => setToast("Could not load templates"))
+        .catch(() => error("Could not load templates"))
         .finally(() => setLoading(false));
     } else if (tab === "deliveries") {
       notificationAdminApi.deliveries({ per_page: 50 })
         .then((r: any) => setDeliveries(r.data?.data ?? r.data ?? []))
-        .catch(() => setToast("Could not load deliveries"))
+        .catch(() => error("Could not load deliveries"))
         .finally(() => setLoading(false));
     } else if (tab === "analytics") {
       Promise.all([
@@ -38,12 +39,12 @@ export default function AdminNotificationsPage() {
           setAnalytics(a.data?.data ?? a.data ?? null);
           setGuards(g.data?.data ?? g.data ?? null);
         })
-        .catch(() => setToast("Could not load analytics"))
+        .catch(() => error("Could not load analytics"))
         .finally(() => setLoading(false));
     } else {
       notificationAdminApi.failures()
         .then((r: any) => setFailures(r.data?.data ?? r.data ?? null))
-        .catch(() => setToast("Could not load failures"))
+        .catch(() => error("Could not load failures"))
         .finally(() => setLoading(false));
     }
   }, [tab]);
@@ -51,19 +52,19 @@ export default function AdminNotificationsPage() {
   const retry = async (id: number) => {
     try {
       await notificationAdminApi.retry(id);
-      setToast("Retry queued");
+      success("Retry queued");
       setTab("failures");
     } catch {
-      setToast("Retry failed");
+      error("Retry failed");
     }
   };
 
   const suppress = async (id: number) => {
     try {
       await notificationAdminApi.suppress(id, "admin_suppressed");
-      setToast("Delivery suppressed");
+      success("Delivery suppressed");
     } catch {
-      setToast("Suppress failed");
+      error("Suppress failed");
     }
   };
 
@@ -83,12 +84,7 @@ export default function AdminNotificationsPage() {
           </Link>
         </div>
       </div>
-
-      {toast && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>
-      )}
-
-      <div className="flex gap-2 border-b border-[var(--border)] pb-2 flex-wrap">
+<div className="flex gap-2 border-b border-[var(--border)] pb-2 flex-wrap">
         {([
           ["templates", "Templates"],
           ["deliveries", "Deliveries"],

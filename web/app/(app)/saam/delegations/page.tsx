@@ -4,8 +4,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect } from "react";
 import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 export default function DelegationsPage() {
+  const { success, error: showErrorToast, info } = useToast();
   const [outgoing, setOutgoing] = useState<DelegatedAuthority[]>([]);
   const [incoming, setIncoming] = useState<DelegatedAuthority[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +22,7 @@ export default function DelegationsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
   function loadData() {
     setLoading(true);
@@ -58,7 +58,7 @@ export default function DelegationsPage() {
       });
       setShowForm(false);
       setForm({ delegate_user_id: "", start_date: "", end_date: "", role_scope: "", reason: "" });
-      showToast("Delegation created.");
+      success("Delegation created.");
       loadData();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create delegation.";
@@ -72,7 +72,7 @@ export default function DelegationsPage() {
     if (!confirm("Revoke this delegation?")) return;
     try {
       await saamApi.revokeDelegation(id);
-      showToast("Delegation revoked.");
+      success("Delegation revoked.");
       loadData();
     } catch { setError("Failed to revoke delegation."); }
   }
@@ -90,14 +90,7 @@ export default function DelegationsPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white bg-green-600 shadow-lg">
-          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          {toast}
-        </div>
-      )}
-
-      <div className="flex items-start justify-between gap-4">
+<div className="flex items-start justify-between gap-4">
         <ModulePageHeader
         title="Delegation of Authority"
         subtitle="Grant temporary signing authority to another staff member on your behalf."

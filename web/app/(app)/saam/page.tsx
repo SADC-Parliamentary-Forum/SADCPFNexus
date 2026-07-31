@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -666,13 +667,8 @@ function DelegationSummaryCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SaamPage() {
+  const { success, error } = useToast();
   const queryClient = useQueryClient();
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  function showToast(message: string, type: "success" | "error" = "success") {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }
 
   // ── Data fetching ──
   const {
@@ -705,31 +701,14 @@ export default function SaamPage() {
   const revokeMutation = useMutation({
     mutationFn: (type: "full" | "initials") => saamApi.revoke(type),
     onSuccess: (_, type) => {
-      showToast(`${sigTypeLabel(type)} revoked successfully.`);
+      success(`${sigTypeLabel(type)} revoked successfully.`);
       queryClient.invalidateQueries({ queryKey: ["saam", "profile"] });
     },
-    onError: () => showToast("Failed to revoke signature. Please try again.", "error"),
+    onError: () => error("Failed to revoke signature. Please try again."),
   });
 
   return (
     <div className="max-w-5xl space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg transition-all ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
-        >
-          <span
-            className="material-symbols-outlined text-[18px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            {toast.type === "success" ? "check_circle" : "error"}
-          </span>
-          {toast.message}
-        </div>
-      )}
-
       {/* Page header */}
       <ModulePageHeader
         title="Signatures & Authority"

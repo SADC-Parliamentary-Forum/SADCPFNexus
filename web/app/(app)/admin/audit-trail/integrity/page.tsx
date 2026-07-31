@@ -4,17 +4,18 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AuditTrailIntegrityPage() {
+  const { success, error, info } = useToast();
   const [checkpoints, setCheckpoints] = useState<Array<Record<string, unknown>>>([]);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const load = () => {
     platformAuditApi.checkpoints()
       .then((r) => setCheckpoints(r.data.data ?? []))
-      .catch(() => setToast("Could not load checkpoints"));
+      .catch(() => error("Could not load checkpoints"));
   };
 
   useEffect(() => { load(); }, []);
@@ -24,9 +25,9 @@ export default function AuditTrailIntegrityPage() {
     try {
       const r = await platformAuditApi.verifyIntegrity();
       setResult(r.data.data as any);
-      setToast(r.data.data.valid ? "Chain valid" : "Chain failure detected");
+      error(r.data.data.valid ? "Chain valid" : "Chain failure detected");
     } catch {
-      setToast("Verify failed");
+      error("Verify failed");
     } finally {
       setBusy(false);
     }
@@ -36,10 +37,10 @@ export default function AuditTrailIntegrityPage() {
     setBusy(true);
     try {
       await platformAuditApi.createCheckpoint();
-      setToast("Checkpoint created");
+      success("Checkpoint created");
       load();
     } catch {
-      setToast("Checkpoint failed");
+      error("Checkpoint failed");
     } finally {
       setBusy(false);
     }
@@ -55,8 +56,6 @@ export default function AuditTrailIntegrityPage() {
       />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
-
-      {toast && <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">{toast}</div>}
 
       <div className="flex gap-2">
         <button className="btn-primary text-sm" disabled={busy} onClick={verify}>Verify chain</button>

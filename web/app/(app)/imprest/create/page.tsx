@@ -90,7 +90,7 @@ export default function ImprestCreatePage() {
       </div>
 
       {/* Stepper */}
-      <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
+      <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-5">
         <div className="flex items-center gap-2">
           {STEPS.map((label, i) => (
             <div key={i} className="flex items-center gap-2 flex-1">
@@ -118,7 +118,7 @@ export default function ImprestCreatePage() {
       {step === 0 && (
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Form */}
-          <div className="flex-1 rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
+          <div className="flex-1 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
             <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">1</span>
               General Information
@@ -197,7 +197,7 @@ export default function ImprestCreatePage() {
 
           {/* Sidebar */}
           <div className="lg:w-64 space-y-4">
-            <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-4">
+            <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-4">
               <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">account_balance_wallet</span>
                 Balance Check
@@ -231,7 +231,7 @@ export default function ImprestCreatePage() {
             <div className="rounded-xl bg-gradient-to-br from-primary to-blue-700 p-4 text-white">
               <p className="text-xs font-semibold mb-1">Need Help?</p>
               <p className="text-[11px] opacity-80 mb-3">Contact Finance for questions about budget lines or limits.</p>
-              <button className="w-full rounded-md bg-white/20 hover:bg-white/30 px-3 py-1.5 text-xs font-semibold transition-colors">
+              <button className="w-full rounded-md bg-white dark:bg-neutral-900/20 hover:bg-white dark:bg-neutral-900/30 px-3 py-1.5 text-xs font-semibold transition-colors">
                 Contact Finance
               </button>
             </div>
@@ -241,7 +241,7 @@ export default function ImprestCreatePage() {
 
       {/* Step 1: Justification */}
       {step === 1 && (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">2</span>
             Supporting Justification
@@ -267,7 +267,7 @@ export default function ImprestCreatePage() {
 
       {/* Step 2: Review */}
       {step === 2 && (
-        <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5">
+        <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-6 space-y-5">
           <h3 className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold">3</span>
             Review & Submit
@@ -300,7 +300,7 @@ export default function ImprestCreatePage() {
           {step > 0 && (
             <button
               onClick={() => setStep((s) => s - 1)}
-              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
             >
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               Back
@@ -311,7 +311,7 @@ export default function ImprestCreatePage() {
           <button
             onClick={() => handleSubmit(true)}
             disabled={submitting}
-            className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+            className="rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
             Save Draft
           </button>

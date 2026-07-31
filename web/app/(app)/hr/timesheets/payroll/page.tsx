@@ -91,7 +91,7 @@ export default function TimesheetPayrollExportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <ModulePageHeader
         title="Payroll Export Console"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Payroll Export Console" }]} />}

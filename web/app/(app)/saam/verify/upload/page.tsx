@@ -4,12 +4,14 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saamApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 type SigType = "full" | "initials";
 
 const MAX_BYTES = 512 * 1024; // 512 KB — backend limit
 
 export default function UploadSignaturePage() {
+  const { success, error: showErrorToast, info } = useToast();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sigType, setSigType] = useState<SigType>("full");
@@ -18,12 +20,7 @@ export default function UploadSignaturePage() {
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
 
   function handleFile(f: File) {
     setError(null);
@@ -69,7 +66,7 @@ export default function UploadSignaturePage() {
     setError(null);
     try {
       await saamApi.upload(sigType, file);
-      showToast("Signature uploaded successfully.");
+      success("Signature uploaded successfully.");
       setTimeout(() => router.push("/saam"), 1000);
     } catch (e: unknown) {
       const msg =
@@ -83,19 +80,7 @@ export default function UploadSignaturePage() {
 
   return (
     <div className="max-w-xl space-y-5">
-      {toast && (
-        <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white bg-green-600 shadow-lg">
-          <span
-            className="material-symbols-outlined text-[18px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            check_circle
-          </span>
-          {toast}
-        </div>
-      )}
-
-      {/* Header */}
+{/* Header */}
       <div>
         <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
           <Link href="/saam" className="hover:text-neutral-600 transition-colors">

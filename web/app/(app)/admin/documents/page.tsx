@@ -4,15 +4,16 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { documentServiceApi, type ManagedDocumentRow } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function AdminDocumentsPage() {
+  const { success, error, info } = useToast();
   const [rows, setRows] = useState<ManagedDocumentRow[]>([]);
   const [meta, setMeta] = useState<{ current_page?: number; last_page?: number; total?: number }>({});
   const [q, setQ] = useState("");
   const [module, setModule] = useState("");
   const [holdOnly, setHoldOnly] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const load = () => {
@@ -33,7 +34,7 @@ export default function AdminDocumentsPage() {
           total: r.data?.total ?? r.total,
         });
       })
-      .catch(() => setToast("Could not load document register"))
+      .catch(() => error("Could not load document register"))
       .finally(() => setLoading(false));
   };
 
@@ -47,20 +48,20 @@ export default function AdminDocumentsPage() {
     if (!reason) return;
     try {
       await documentServiceApi.placeLegalHold(id, reason);
-      setToast("Legal hold placed");
+      success("Legal hold placed");
       load();
     } catch {
-      setToast("Failed to place hold");
+      error("Failed to place hold");
     }
   };
 
   const releaseHold = async (id: number) => {
     try {
       await documentServiceApi.releaseLegalHold(id);
-      setToast("Legal hold released");
+      success("Legal hold released");
       load();
     } catch {
-      setToast("Failed to release hold");
+      error("Failed to release hold");
     }
   };
 
@@ -80,12 +81,7 @@ export default function AdminDocumentsPage() {
           </Link>
         </div>
       </div>
-
-      {toast && (
-        <div className="rounded border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">{toast}</div>
-      )}
-
-      <div className="flex flex-wrap gap-2 items-end">
+<div className="flex flex-wrap gap-2 items-end">
         <div>
           <label className="block text-xs text-neutral-500 mb-1">Search</label>
           <input
