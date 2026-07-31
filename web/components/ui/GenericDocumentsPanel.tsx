@@ -28,7 +28,7 @@ function formatBytes(bytes: number | null): string {
 
 interface Props {
   documents: GenericAttachment[];
-  documentTypes: DocumentTypeOption[];
+  documentTypes: readonly DocumentTypeOption[];
   defaultType: string;
   loading: boolean;
   uploading: boolean;
