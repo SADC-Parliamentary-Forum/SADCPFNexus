@@ -102,8 +102,9 @@ This document reconciles programme residuals and tracks closeout. Governance ite
 
 | Field | Value |
 |---|---|
-| Feature SHA | _filled after commit_ |
-| Prod HEAD after FF | _filled after deploy_ |
-| API health | _filled after deploy_ |
-| Web health | _filled after deploy_ |
-| Test evidence | AccessControl + AuditTrail + residual suites — see commit notes |
+| Feature SHA | `ea14a15` (`feat/residual-closeout`) |
+| Prod HEAD after FF | `ea14a15` on `SADCPFNexus/main` |
+| API health | `200` (`http://127.0.0.1:8000/up`) |
+| Web health | `307` (`http://127.0.0.1:3000/`) |
+| Test evidence | AccessControl + AuditTrail + residual suites: **69 passed / 283 assertions** (PolicyDecisionPoint, ResidualCloseoutAccessControl, DelegationCollapse, PlatformAuditTrail Phase1+Phase2 MVP, AccessControlNegative/Persona included in filter run) |
+| Deploy backup | `/home/sadcpf-nexus/backups/databases/pre-deploy-20260731-082128.sql.gz` |
