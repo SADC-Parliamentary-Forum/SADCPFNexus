@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export interface DocumentTypeOption {
   value: string;
   label: string;
-  icon: string;
+  icon?: string;
 }
 
 export interface GenericAttachment {
