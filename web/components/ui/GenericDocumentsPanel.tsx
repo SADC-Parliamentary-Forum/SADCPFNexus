@@ -55,8 +55,10 @@ export default function GenericDocumentsPanel({
   const [dragOver, setDragOver] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const typeLabel = (type: string) => documentTypes.find(t => t.value === type)?.label ?? type;
-  const typeIcon  = (type: string) => documentTypes.find(t => t.value === type)?.icon ?? "attach_file";
+  const typeLabel = (type: string | null) =>
+    documentTypes.find((t) => t.value === type)?.label ?? type ?? "Document";
+  const typeIcon = (type: string | null) =>
+    documentTypes.find((t) => t.value === type)?.icon ?? "attach_file";
 
   const handleUpload = async () => {
     if (!selectedFile) return;
