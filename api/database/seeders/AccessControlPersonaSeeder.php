@@ -14,11 +14,12 @@ use Illuminate\Support\Str;
  *
  * Personas: Employee, Supervisor, HR, Finance, Programme, Procurement feature-only
  * evaluator, SG Office, ICT Admin, Access Admin, Internal Auditor.
+ *
+ * Password: set ACCESS_CONTROL_PERSONA_PASSWORD in local .env (never commit real secrets).
+ * If unset, a per-email local hash is used (operators cannot know it — set the env for pilot logins).
  */
 class AccessControlPersonaSeeder extends Seeder
 {
-    public const PASSWORD = 'PersonaPilot!ChangeMe';
-
     /**
      * @return array<string, array{email: string, name: string, role: string, persona: string}>
      */
@@ -95,13 +96,19 @@ class AccessControlPersonaSeeder extends Seeder
             'slug' => 'sadcpf-pilot-'.Str::lower(Str::random(4)),
         ]);
 
+        $configuredPassword = env('ACCESS_CONTROL_PERSONA_PASSWORD');
+
         foreach (self::personaMap() as $key => $meta) {
+            $passwordMaterial = is_string($configuredPassword) && $configuredPassword !== ''
+                ? $configuredPassword
+                : hash('sha256', 'persona-local|'.$meta['email'].'|'.(string) config('app.key'));
+
             $user = User::query()->firstOrCreate(
                 ['email' => $meta['email']],
                 [
                     'tenant_id' => $tenant->id,
                     'name' => $meta['name'],
-                    'password' => Hash::make(self::PASSWORD),
+                    'password' => Hash::make($passwordMaterial),
                     'is_active' => true,
                     'account_status' => User::STATUS_ACTIVE,
                     'email_verified_at' => now(),

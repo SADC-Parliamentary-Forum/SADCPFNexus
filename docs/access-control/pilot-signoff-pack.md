@@ -6,7 +6,7 @@
 
 ## Persona fixtures
 
-Seeded deterministic accounts (`@sadcpf.local`). Default password is documented in the seeder constant only for local/pilot — rotate before any shared environment.
+Seeded deterministic accounts (`@sadcpf.local`). Set `ACCESS_CONTROL_PERSONA_PASSWORD` in local `.env` before seeding if you need known pilot login credentials (never commit real secrets).
 
 | Persona key | Email | Spatie / template role |
 |---|---|---|
