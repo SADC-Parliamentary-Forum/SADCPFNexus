@@ -28,7 +28,7 @@ export default function AssetSettingsPage() {
   }, []);
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <h1 className="page-title">Asset Settings</h1>

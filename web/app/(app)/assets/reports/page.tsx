@@ -35,7 +35,7 @@ export default function AssetReportsPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <h1 className="page-title">Fixed Asset Reports</h1>
@@ -48,7 +48,7 @@ export default function AssetReportsPage() {
         <p className="text-muted" style={{ marginBottom: 16 }}>
           Export description, tag, serial, acquisition, cost, funding, useful life, depreciation and location fields.
         </p>
-        <button className="btn btn-primary" disabled={busy} onClick={downloadCsv}>
+        <button className="btn-primary" disabled={busy} onClick={downloadCsv}>
           {busy ? "Preparing…" : "Download CSV"}
         </button>
       </div>

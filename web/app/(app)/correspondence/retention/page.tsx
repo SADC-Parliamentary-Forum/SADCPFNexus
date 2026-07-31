@@ -61,7 +61,7 @@ export default function CorrespondenceRetentionPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
@@ -74,12 +74,12 @@ export default function CorrespondenceRetentionPage() {
             Set retention schedules and legal holds. Purge is blocked while a hold is active.
           </p>
         </div>
-        <Link href="/correspondence/master-register" className="btn btn-secondary btn-sm">
+        <Link href="/correspondence/master-register" className="btn-secondary btn-sm">
           Master register
         </Link>
       </div>
-      {msg && <div className="alert alert-success">{msg}</div>}
-      {err && <div className="alert alert-error">{err}</div>}
+      {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
+      {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       <form onSubmit={saveRetention} className="card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
@@ -111,7 +111,7 @@ export default function CorrespondenceRetentionPage() {
           Hold reason
           <textarea className="form-input mt-1 w-full" rows={2} value={form.legal_hold_reason} onChange={(e) => setForm({ ...form, legal_hold_reason: e.target.value })} />
         </label>
-        <button type="submit" className="btn btn-primary btn-sm">Save</button>
+        <button type="submit" className="btn-primary btn-sm">Save</button>
       </form>
 
       <div className="table-wrap">
@@ -139,7 +139,7 @@ export default function CorrespondenceRetentionPage() {
                 <td>{h.retain_until ?? "—"}</td>
                 <td className="max-w-xs truncate">{h.legal_hold_reason ?? "—"}</td>
                 <td>
-                  <button type="button" className="btn btn-sm" onClick={() => void release(h.id)}>Release hold</button>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => void release(h.id)}>Release hold</button>
                 </td>
               </tr>
             ))}

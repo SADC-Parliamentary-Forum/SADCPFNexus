@@ -6,6 +6,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { workflowApi, type ApprovalRequest } from '@/lib/api';
 import { formatDateShort } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
+import { ModulePageHeader, PageBreadcrumbs } from '@/components/ui/ModulePageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type InboxStatus = 'awaiting' | 'due' | 'overdue' | 'delegated' | 'acting' | 'completed';
 
@@ -78,13 +80,14 @@ export default function ApprovalsInboxPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">My Approvals</h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          Awaiting action, due, overdue, delegated, acting and completed tasks — with current holder and stage.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="My Approvals"
+        subtitle="Awaiting action, due, overdue, delegated, acting and completed tasks — with current holder and stage."
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: 'Approvals', href: '/approvals' }, { label: 'Inbox' }]} />
+        }
+      />
 
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -92,11 +95,7 @@ export default function ApprovalsInboxPage() {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 text-sm rounded-md border ${
-              tab === t.id
-                ? 'bg-primary text-white border-primary'
-                : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700'
-            }`}
+            className={`filter-tab ${tab === t.id ? 'active' : ''}`}
           >
             {t.label}
           </button>
@@ -104,9 +103,15 @@ export default function ApprovalsInboxPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-neutral-500">Loading inbox…</p>
+        <div className="card space-y-3 p-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-neutral-100" />
+          ))}
+        </div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-neutral-500">No items in this view.</p>
+        <div className="card">
+          <EmptyState icon="inbox" title="No items in this view" description="Switch tabs or check back when new approval tasks arrive." />
+        </div>
       ) : (
         <div className="overflow-x-auto border border-neutral-200 dark:border-neutral-800 rounded-lg">
           <table className="min-w-full text-sm">

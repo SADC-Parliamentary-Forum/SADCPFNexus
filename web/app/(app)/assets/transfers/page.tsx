@@ -13,13 +13,13 @@ export default function AssetTransfersPage() {
   }, []);
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <h1 className="page-title">Asset Transfers</h1>
           <p className="page-subtitle">Custody transfers and movement log. Assignment history is immutable on the API.</p>
         </div>
-        <a href="/assets/movement/new" className="btn btn-primary">Record movement</a>
+        <a href="/assets/movement/new" className="btn-primary">Record movement</a>
       </div>
       <div className="table-wrap">
         <table className="data-table">

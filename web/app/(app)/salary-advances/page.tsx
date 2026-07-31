@@ -6,6 +6,8 @@ import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
 import { canManageSalaryAdvanceFinance, getStoredUser } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { formatSaCurrency, SA_STATUS_CONFIG } from "@/components/salary-advance/AdvanceQueueTable";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function SalaryAdvanceEmployeeDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -42,8 +44,8 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-28 rounded-xl bg-neutral-100 animate-pulse" />)}
+      <div className="mx-auto max-w-6xl space-y-4">
+        {[...Array(3)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-neutral-100" />)}
       </div>
     );
   }
@@ -53,24 +55,25 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
   const currentStatus = current ? (SA_STATUS_CONFIG[current.status] ?? { label: current.status, badge: "badge-muted" }) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Salary Advance Dashboard</h1>
-          <p className="page-subtitle">Eligibility, active requests, and recent history.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {showFinanceLink && (
-            <Link href="/salary-advances/finance" className="btn-secondary py-2 px-4 text-sm">Finance dashboard</Link>
-          )}
-          <Link href="/salary-advances/create" className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Apply for Salary Advance
-          </Link>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="Salary Advance Dashboard"
+        subtitle="Eligibility, active requests, and recent history."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Salary Advances" }]} />}
+        actions={
+          <>
+            {showFinanceLink ? (
+              <Link href="/salary-advances/finance" className="btn-secondary text-sm">Finance dashboard</Link>
+            ) : null}
+            <Link href="/salary-advances/create" className="btn-primary text-sm">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Apply for Salary Advance
+            </Link>
+          </>
+        }
+      />
 
-      {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="card p-5 space-y-3">

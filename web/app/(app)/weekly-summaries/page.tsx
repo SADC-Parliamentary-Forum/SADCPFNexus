@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection, FormField } from "@/components/ui/FormSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function WeeklySummariesPage() {
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
@@ -103,93 +106,113 @@ export default function WeeklySummariesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">My Weekly Summary</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Suggestion chips from assignments, meetings, and decisions — you confirm what is submitted. AI draft never auto-submits.
-          </p>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="My Weekly Summary"
+        subtitle="Suggestion chips from assignments, meetings, and decisions — you confirm what is submitted. AI draft never auto-submits."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summaries" }]} />}
+        actions={
+          report ? (
+            <Link href={`/weekly-summaries/${report.id}`} className="btn-secondary text-sm">
+              Open detail
+            </Link>
+          ) : null
+        }
+      />
+
+      {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div> : null}
+      {busy && !report ? (
+        <div className="card space-y-3 p-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
+          ))}
         </div>
-        {report && (
-          <Link className="text-sm text-emerald-800 underline" href={`/weekly-summaries/${report.id}`}>
-            Open detail
-          </Link>
-        )}
-      </div>
+      ) : null}
 
-      {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
-      {busy && <p className="text-sm text-neutral-500">Loading…</p>}
-
-      {report && (
-        <section className="space-y-3 border-b border-neutral-200 pb-4">
-          <p className="text-sm">
-            <span className="font-medium">{report.reference}</span> · {report.status}
-            {report.period ? ` · ${report.period.start_date} → ${report.period.end_date}` : null}
-          </p>
-          <div className="grid gap-2 md:grid-cols-3">
-            <input
-              className="rounded border border-neutral-300 px-3 py-2 text-sm"
-              placeholder="Donor code"
-              value={donorCode}
-              onChange={(e) => setDonorCode(e.target.value)}
-            />
-            <input
-              className="rounded border border-neutral-300 px-3 py-2 text-sm"
-              placeholder="Donor / project name"
-              value={donorName}
-              onChange={(e) => setDonorName(e.target.value)}
-            />
-            <select
-              className="rounded border border-neutral-300 px-3 py-2 text-sm"
-              value={templateKey}
-              onChange={(e) => setTemplateKey(e.target.value)}
-            >
-              <option value="">Template (optional)</option>
-              <option value="standard">Standard</option>
-              <option value="donor_progress">Donor progress</option>
-              <option value="project_update">Project update</option>
-            </select>
+      {report ? (
+        <FormSection
+          title="Current period"
+          description={`${report.reference} · ${report.status}${report.period ? ` · ${report.period.start_date} → ${report.period.end_date}` : ""}`}
+          icon="edit_calendar"
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <FormField label="Donor code" htmlFor="donor-code">
+              <input
+                id="donor-code"
+                className="form-input"
+                placeholder="Donor code"
+                value={donorCode}
+                onChange={(e) => setDonorCode(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Donor / project name" htmlFor="donor-name">
+              <input
+                id="donor-name"
+                className="form-input"
+                placeholder="Donor / project name"
+                value={donorName}
+                onChange={(e) => setDonorName(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Template" htmlFor="template-key">
+              <select
+                id="template-key"
+                className="form-input"
+                value={templateKey}
+                onChange={(e) => setTemplateKey(e.target.value)}
+              >
+                <option value="">Template (optional)</option>
+                <option value="standard">Standard</option>
+                <option value="donor_progress">Donor progress</option>
+                <option value="project_update">Project update</option>
+              </select>
+            </FormField>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => void saveDonorTemplate()} className="rounded border border-neutral-300 px-3 py-2 text-sm">
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" onClick={() => void saveDonorTemplate()} className="btn-secondary text-sm">
               Save donor/template
             </button>
             <input
-              className="min-w-[240px] flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
+              className="form-input min-w-[240px] flex-1"
               placeholder="Add key achievement"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              aria-label="Achievement title"
             />
-            <button
-              type="button"
-              onClick={() => void addAchievement()}
-              className="rounded bg-emerald-800 px-3 py-2 text-sm text-white"
-            >
+            <button type="button" onClick={() => void addAchievement()} className="btn-primary text-sm">
               Add achievement
             </button>
             <button
               type="button"
               onClick={() => void submit()}
-              className="rounded border border-emerald-800 px-3 py-2 text-sm text-emerald-900"
+              className="btn-secondary text-sm"
               disabled={["pending_review", "accepted", "exempted"].includes(report.status)}
             >
               Submit with declaration
             </button>
           </div>
-        </section>
-      )}
+        </FormSection>
+      ) : null}
 
-      <section>
-        <h2 className="text-lg font-medium">Suggestion chips (confirm to include)</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
+      {!busy && !report && !error ? (
+        <div className="card">
+          <EmptyState
+            icon="edit_calendar"
+            title="No weekly summary"
+            description="Your current period summary will appear here when available."
+          />
+        </div>
+      ) : null}
+
+      <FormSection title="Suggestion chips" description="Confirm to include items in your submission." icon="tips_and_updates">
+        <div className="flex flex-wrap gap-2">
           {suggestions.map((s) => (
             <button
               key={`${s.source_type}-${s.source_id}`}
               type="button"
               disabled={s.decision === "included"}
               onClick={() => void include(s)}
-              className={`rounded-full border px-3 py-1.5 text-left text-xs ${chipClass(String(s.source_type))} ${
+              className={`rounded-lg border px-3 py-1.5 text-left text-xs ${chipClass(String(s.source_type))} ${
                 s.decision === "included" ? "opacity-60" : "hover:shadow-sm"
               }`}
               title={String(s.title)}
@@ -201,35 +224,39 @@ export default function WeeklySummariesPage() {
           ))}
           {suggestions.length === 0 && <p className="text-sm text-neutral-500">No suggestions for this period.</p>}
         </div>
-        {deferred.length > 0 && (
+        {deferred.length > 0 ? (
           <p className="mt-3 text-xs text-amber-800">Some source hooks are deferred.</p>
-        )}
-      </section>
+        ) : null}
+      </FormSection>
 
-      {report && (
-        <section className="space-y-2 rounded border border-neutral-200 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-medium">Optional AI draft stub</h2>
+      {report ? (
+        <FormSection
+          title="Optional AI draft stub"
+          description="Never auto-submits. Human confirmation only appends draft text to notes."
+          icon="smart_toy"
+          actions={
             <div className="flex gap-2">
-              <button type="button" className="rounded border border-neutral-300 px-3 py-1.5 text-sm" onClick={() => void generateDraft()}>
+              <button type="button" className="btn-secondary text-sm" onClick={() => void generateDraft()}>
                 Generate draft
               </button>
               <button
                 type="button"
-                className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white"
+                className="btn-primary text-sm"
                 onClick={() => void confirmDraft()}
                 disabled={!aiDraft}
               >
-                Confirm draft (does not submit)
+                Confirm draft
               </button>
             </div>
-          </div>
-          <p className="text-xs text-neutral-500">Never auto-submits. Human confirmation only appends draft text to notes.</p>
-          {aiDraft && (
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-neutral-50 p-3 text-xs text-neutral-800">{aiDraft}</pre>
+          }
+        >
+          {aiDraft ? (
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-xs text-neutral-800">{aiDraft}</pre>
+          ) : (
+            <p className="text-sm text-neutral-500">No draft generated yet.</p>
           )}
-        </section>
-      )}
+        </FormSection>
+      ) : null}
     </div>
   );
 }

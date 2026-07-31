@@ -46,8 +46,8 @@ export default function WeeklyCompliancePage() {
         Submitted: {compliance.submitted ?? 0} · Exempted: {compliance.exempted ?? 0} · Missing: {missing.length}
       </p>
       <div className="flex gap-2">
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => void load()}>Refresh</button>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={exportCsv} disabled={missing.length === 0}>
+        <button type="button" className="btn-secondary btn-sm" onClick={() => void load()}>Refresh</button>
+        <button type="button" className="btn-secondary btn-sm" onClick={exportCsv} disabled={missing.length === 0}>
           Export missing CSV
         </button>
       </div>

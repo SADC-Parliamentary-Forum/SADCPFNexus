@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment, type AssignmentStats } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const priorityConfig: Record<string, { label: string; cls: string; dot: string }> = {
   low:      { label: "Low",      cls: "badge-muted",    dot: "bg-neutral-400" },
@@ -126,28 +128,28 @@ export default function AssignmentsDashboard() {
   const recent = recentRes ?? [];
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Assignments & Oversight</h1>
-          <p className="page-subtitle">Monitor accountability, task progress, and team performance.</p>
-        </div>
-        <Link href="/assignments/create" className="btn-primary">
-          <span className="material-symbols-outlined text-[18px]">add_task</span>
-          New Assignment
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="Assignments & Oversight"
+        subtitle="Monitor accountability, task progress, and team performance."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignments" }]} />}
+        actions={
+          <Link href="/assignments/create" className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add_task</span>
+            New Assignment
+          </Link>
+        }
+      />
 
       {/* KPI Cards */}
       {statsLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="card p-5 h-20 animate-pulse bg-neutral-100" />
+            <div key={i} className="card h-20 animate-pulse bg-neutral-100 p-5" />
           ))}
         </div>
       ) : stats ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <KpiCard label="Total Assignments"  value={stats.total}      icon="assignment"          color="bg-blue-50 text-blue-600"   href="/assignments/all" />
           <KpiCard label="Active"             value={stats.active}     icon="play_circle"         color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
           <KpiCard label="Overdue"            value={stats.overdue}    icon="event_busy"          color="bg-red-50 text-red-600"     href="/assignments/overdue" />
@@ -161,9 +163,9 @@ export default function AssignmentsDashboard() {
 
       {/* Recent Assignments */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-700">Recent Assignments</h2>
-          <Link href="/assignments/all" className="text-xs text-primary hover:underline flex items-center gap-1">
+          <Link href="/assignments/all" className="flex items-center gap-1 text-xs text-primary hover:underline">
             View all
             <span className="material-symbols-outlined text-[13px]">chevron_right</span>
           </Link>
@@ -172,7 +174,7 @@ export default function AssignmentsDashboard() {
         {listLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="card p-4 h-16 animate-pulse bg-neutral-50" />
+              <div key={i} className="card h-16 animate-pulse bg-neutral-50 p-4" />
             ))}
           </div>
         ) : recent.length > 0 ? (
@@ -180,16 +182,18 @@ export default function AssignmentsDashboard() {
             {recent.map((a) => <AssignmentRow key={a.id} a={a} />)}
           </div>
         ) : (
-          <div className="card p-14 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">task_alt</span>
-            </div>
-            <p className="mt-4 text-sm font-semibold text-neutral-600">No assignments yet</p>
-            <p className="text-xs text-neutral-400 mt-1">Create your first assignment to get started.</p>
-            <Link href="/assignments/create" className="btn-primary mt-5 inline-flex">
-              <span className="material-symbols-outlined text-[18px]">add_task</span>
-              New Assignment
-            </Link>
+          <div className="card">
+            <EmptyState
+              icon="task_alt"
+              title="No assignments yet"
+              description="Create your first assignment to get started."
+              action={
+                <Link href="/assignments/create" className="btn-primary inline-flex">
+                  <span className="material-symbols-outlined text-[18px]">add_task</span>
+                  New Assignment
+                </Link>
+              }
+            />
           </div>
         )}
       </div>

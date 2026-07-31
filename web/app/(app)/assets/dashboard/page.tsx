@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type Dash = {
   total: number;
@@ -20,7 +21,8 @@ export default function AssetsDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<{ data: Dash }>("/assets/dashboard")
+    api
+      .get<{ data: Dash }>("/assets/dashboard")
       .then((r) => setData(r.data.data))
       .catch(() => setError("Unable to load asset dashboard."));
   }, []);
@@ -37,22 +39,23 @@ export default function AssetsDashboardPage() {
   ];
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Fixed Assets Dashboard</h1>
-          <p className="page-subtitle">Register health, custody, verification and disposal signals</p>
-        </div>
-        <Link href="/assets/intake" className="btn btn-primary">Pending intake</Link>
-      </div>
-      {error && <div className="alert alert-error">{error}</div>}
-      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))" }}>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <ModulePageHeader
+        title="Fixed Assets Dashboard"
+        subtitle="Register health, custody, verification and disposal signals"
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "Assets", href: "/assets" }, { label: "Dashboard" }]} />
+        }
+        actions={<Link href="/assets/intake" className="btn-primary">Pending intake</Link>}
+      />
+      {error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+      ) : null}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {cards.map((c) => (
-          <Link key={c.key} href={c.href} className="card" style={{ padding: "1rem", textDecoration: "none" }}>
-            <div className="text-sm text-muted">{c.label}</div>
-            <div className="text-2xl font-semibold" style={{ marginTop: 8 }}>
-              {data ? data[c.key] : "—"}
-            </div>
+          <Link key={c.key} href={c.href} className="card p-4 transition-colors hover:border-primary/30">
+            <div className="text-xs text-neutral-500">{c.label}</div>
+            <div className="mt-2 text-2xl font-semibold text-neutral-900">{data ? data[c.key] : "—"}</div>
           </Link>
         ))}
       </div>

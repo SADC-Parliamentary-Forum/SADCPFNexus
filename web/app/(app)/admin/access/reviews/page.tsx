@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection, FormField } from "@/components/ui/FormSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Campaign = {
   id: number;
@@ -21,9 +24,13 @@ type Campaign = {
 export default function AccessReviewsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("Q3 privileged access review");
+  const [loading, setLoading] = useState(true);
 
   const load = () =>
-    api.get<{ data: Campaign[] }>("/admin/access/reviews").then((r) => setCampaigns(r.data.data ?? []));
+    api
+      .get<{ data: Campaign[] }>("/admin/access/reviews")
+      .then((r) => setCampaigns(r.data.data ?? []))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
@@ -43,38 +50,88 @@ export default function AccessReviewsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Access review campaigns</h1>
-      <div className="flex gap-2 items-end">
-        <label className="text-sm">
-          Campaign name
-          <input className="block border rounded px-2 py-1 mt-1 min-w-[280px]" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <button type="button" className="rounded bg-[var(--primary)] text-white px-3 py-2 text-sm" onClick={create}>
-          Create campaign
-        </button>
-      </div>
-      {campaigns.map((c) => (
-        <div key={c.id} className="border rounded p-3 space-y-2">
-          <div className="font-medium">{c.name} · {c.status} · {c.recurrence}</div>
-          <ul className="text-sm space-y-1">
-            {(c.items ?? []).slice(0, 20).map((i) => (
-              <li key={i.id} className="flex gap-3 items-center">
-                <span>
-                  User {i.user_id}: {i.subject_snapshot?.role ?? i.review_type} ({i.status}
-                  {i.decision ? `/${i.decision}` : ""})
-                </span>
-                {i.status === "pending" && (
-                  <>
-                    <button type="button" className="underline" onClick={() => decide(i.id, "confirm")}>Confirm</button>
-                    <button type="button" className="underline" onClick={() => decide(i.id, "revoke")}>Revoke</button>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <ModulePageHeader
+        title="Access review campaigns"
+        subtitle="Periodic attestation of privileged and feature-only access."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Access", href: "/admin/access" },
+              { label: "Reviews" },
+            ]}
+          />
+        }
+      />
+
+      <FormSection title="Create campaign" icon="fact_check" dense>
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField label="Campaign name" htmlFor="campaign-name" required className="min-w-[280px] flex-1">
+            <input
+              id="campaign-name"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </FormField>
+          <button type="button" className="btn-primary text-sm" onClick={create} disabled={!name}>
+            Create campaign
+          </button>
         </div>
-      ))}
+      </FormSection>
+
+      {loading ? (
+        <div className="card space-y-3 p-6">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded bg-neutral-100" />
+          ))}
+        </div>
+      ) : campaigns.length === 0 ? (
+        <div className="card">
+          <EmptyState icon="fact_check" title="No review campaigns" description="Create a campaign to start periodic access attestation." />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {campaigns.map((c) => (
+            <FormSection
+              key={c.id}
+              title={c.name}
+              description={`${c.status}${c.recurrence ? ` · ${c.recurrence}` : ""}`}
+              icon="fact_check"
+              dense
+            >
+              {(c.items ?? []).length === 0 ? (
+                <p className="text-xs text-neutral-500">No review items yet.</p>
+              ) : (
+                <ul className="divide-y divide-neutral-100">
+                  {(c.items ?? []).slice(0, 20).map((i) => (
+                    <li key={i.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="text-neutral-700">
+                        User {i.user_id}: {i.subject_snapshot?.role ?? i.review_type}{" "}
+                        <span className="badge badge-muted text-[10px] capitalize">
+                          {i.status}
+                          {i.decision ? `/${i.decision}` : ""}
+                        </span>
+                      </span>
+                      {i.status === "pending" ? (
+                        <div className="flex gap-2">
+                          <button type="button" className="text-xs font-medium text-emerald-700 hover:underline" onClick={() => decide(i.id, "confirm")}>
+                            Confirm
+                          </button>
+                          <button type="button" className="text-xs font-medium text-red-600 hover:underline" onClick={() => decide(i.id, "revoke")}>
+                            Revoke
+                          </button>
+                        </div>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </FormSection>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "badge-muted" },
@@ -49,14 +51,21 @@ export default function CorrespondencePage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Correspondence Register</h1>
-        <p className="page-subtitle">Institutional action-and-record register — Registry → SG routing → ownership → dispatch.</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="Correspondence Register"
+        subtitle="Institutional action-and-record register — Registry → SG routing → ownership → dispatch."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Correspondence" }]} />}
+        actions={
+          <Link href="/correspondence/create" className="btn-primary text-sm">
+            <span className="material-symbols-outlined text-[18px]">edit_note</span>
+            New correspondence
+          </Link>
+        }
+      />
 
       {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error}
         </div>
@@ -108,9 +117,9 @@ export default function CorrespondencePage() {
           <Link href="/correspondence/registry" className="text-xs text-primary hover:underline">View register →</Link>
         </div>
         <div className="divide-y divide-neutral-100">
-          {loading && <div className="p-6 text-center text-neutral-400 text-sm">Loading…</div>}
+          {loading && <div className="p-6 text-center text-sm text-neutral-400">Loading…</div>}
           {!loading && letters.length === 0 && (
-            <div className="p-6 text-center text-neutral-400 text-sm">No correspondence yet.</div>
+            <EmptyState icon="mail" title="No correspondence yet" description="Register incoming mail or draft an outgoing letter to get started." />
           )}
           {letters.map((l) => {
             const st = statusConfig[l.status] ?? { label: l.status, cls: "badge-muted" };

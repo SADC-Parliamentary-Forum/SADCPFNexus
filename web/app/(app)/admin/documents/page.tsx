@@ -111,7 +111,7 @@ export default function AdminDocumentsPage() {
         </label>
         <button
           type="button"
-          className="btn btn-primary text-sm"
+          className="btn-primary text-sm"
           onClick={() => {
             setPage(1);
             load();

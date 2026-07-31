@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection, FormField } from "@/components/ui/FormSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Role = {
   id: number;
@@ -18,11 +21,15 @@ export default function AccessRolesPage() {
   const [name, setName] = useState("");
   const [purpose, setPurpose] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = () =>
-    api.get<{ data: Role[] }>("/admin/access/roles").then((r) => r.data)
+    api
+      .get<{ data: Role[] }>("/admin/access/roles")
+      .then((r) => r.data)
       .then((res) => setRoles(res.data ?? []))
-      .catch((e) => setMessage(e?.message ?? "Failed to load roles"));
+      .catch((e) => setMessage(e?.message ?? "Failed to load roles"))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
@@ -38,52 +45,89 @@ export default function AccessRolesPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Role catalogue</h1>
-        <p className="text-sm text-[var(--muted-foreground)]">Versioned role templates (draft → publish).</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-5">
+      <ModulePageHeader
+        title="Role catalogue"
+        subtitle="Versioned role templates (draft → publish)."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Access", href: "/admin/access" },
+              { label: "Roles" },
+            ]}
+          />
+        }
+      />
 
-      <div className="flex flex-wrap gap-2 items-end">
-        <label className="text-sm">
-          Name
-          <input className="block border rounded px-2 py-1 mt-1" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="text-sm">
-          Purpose
-          <input className="block border rounded px-2 py-1 mt-1 min-w-[240px]" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
-        </label>
-        <button type="button" className="rounded bg-[var(--primary)] text-white px-3 py-2 text-sm" onClick={createDraft} disabled={!name}>
-          Create draft
-        </button>
-      </div>
-      {message && <p className="text-sm">{message}</p>}
+      <FormSection title="Create draft role" description="Starts a new versioned role template." icon="badge" dense>
+        <div className="flex flex-wrap items-end gap-3">
+          <FormField label="Name" htmlFor="role-name" required className="min-w-[160px]">
+            <input
+              id="role-name"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Purpose" htmlFor="role-purpose" className="min-w-[240px] flex-1">
+            <input
+              id="role-purpose"
+              className="form-input"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+            />
+          </FormField>
+          <button type="button" className="btn-primary text-sm" onClick={createDraft} disabled={!name}>
+            Create draft
+          </button>
+        </div>
+        {message ? <p className="mt-3 text-sm text-neutral-600">{message}</p> : null}
+      </FormSection>
 
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="text-left border-b">
-            <th className="py-2">Name</th>
-            <th>Risk</th>
-            <th>Status</th>
-            <th>Version</th>
-            <th>Perms</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roles.map((r) => (
-            <tr key={r.id} className="border-b border-[var(--border)]">
-              <td className="py-2">
-                {r.name}
-                {r.feature_only ? " · feature-only" : ""}
-              </td>
-              <td>{r.risk_level}</td>
-              <td>{r.status}</td>
-              <td>{r.current_version?.version ?? "—"}</td>
-              <td>{r.current_version?.permissions?.length ?? 0}</td>
-            </tr>
+      {loading ? (
+        <div className="card space-y-3 p-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
           ))}
-        </tbody>
-      </table>
+        </div>
+      ) : roles.length === 0 ? (
+        <div className="card">
+          <EmptyState icon="badge" title="No roles yet" description="Create a draft role to begin the catalogue." />
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Risk</th>
+                  <th>Status</th>
+                  <th>Version</th>
+                  <th>Perms</th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map((r) => (
+                  <tr key={r.id}>
+                    <td className="font-medium text-neutral-800">
+                      {r.name}
+                      {r.feature_only ? <span className="ml-1.5 badge badge-muted text-[10px]">feature-only</span> : null}
+                    </td>
+                    <td className="capitalize">{r.risk_level ?? "—"}</td>
+                    <td>
+                      <span className="badge badge-muted text-xs capitalize">{r.status ?? "—"}</span>
+                    </td>
+                    <td>{r.current_version?.version ?? "—"}</td>
+                    <td>{r.current_version?.permissions?.length ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

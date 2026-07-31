@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userNotificationsApi, alertsApi, type UserNotification, type AlertsSummary } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Alerts helpers ──────────────────────────────────────────────────────────
 
@@ -517,24 +518,19 @@ function NotificationsPageInner() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-          <Link href="/dashboard" className="hover:text-primary transition-colors">Home</Link>
-          <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-          <span className="text-neutral-900 dark:text-neutral-100 font-medium">Alerts &amp; Notifications</span>
-        </div>
-        <h1 className="page-title">Alerts &amp; Notifications</h1>
-        <p className="page-subtitle">Operational awareness, upcoming deadlines, and your personal notification inbox.</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="Alerts & Notifications"
+        subtitle="Operational awareness, upcoming deadlines, and your personal notification inbox."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Home", href: "/dashboard" }, { label: "Alerts & Notifications" }]} />}
+      />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700">
+      <div className="flex gap-1 border-b border-neutral-200">
         <button
           onClick={() => switchTab("alerts")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tab === "alerts" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+          className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+            tab === "alerts" ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">notifications_active</span>
@@ -542,8 +538,8 @@ function NotificationsPageInner() {
         </button>
         <button
           onClick={() => switchTab("inbox")}
-          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-            tab === "inbox" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+          className={`-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+            tab === "inbox" ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-800"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">inbox</span>

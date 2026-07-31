@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { riskApi, type RiskKri, type RiskKriCatalogEntry } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function statusBadge(status: RiskKri["last_status"]): string {
   if (status === "breach") return "badge-danger";
@@ -51,40 +52,41 @@ export default function RiskKriPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Key Risk Indicators</h1>
-          <p className="page-subtitle">
-            Automated KRIs from Nexus data (budget, assignments, leave, stock, risk register). Threshold breaches raise in-app alerts.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/risk/dashboard" className="btn-secondary">
-            Risk dashboard
-          </Link>
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={evaluate.isPending}
-            onClick={() => evaluate.mutate()}
-          >
-            {evaluate.isPending ? "Evaluating…" : "Evaluate now"}
-          </button>
-        </div>
-      </div>
+      <ModulePageHeader
+        title="Key Risk Indicators"
+        subtitle="Automated KRIs from Nexus data (budget, assignments, leave, stock, risk register). Threshold breaches raise in-app alerts."
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "Risk", href: "/risk" }, { label: "KRIs" }]} />
+        }
+        actions={
+          <>
+            <Link href="/risk/dashboard" className="btn-secondary">
+              Risk dashboard
+            </Link>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={evaluate.isPending}
+              onClick={() => evaluate.mutate()}
+            >
+              {evaluate.isPending ? "Evaluating…" : "Evaluate now"}
+            </button>
+          </>
+        }
+      />
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="bg-neutral-50 text-left text-neutral-600">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="px-3 py-2 font-medium">KRI</th>
-              <th className="px-3 py-2 font-medium">Source</th>
-              <th className="px-3 py-2 font-medium">Value</th>
-              <th className="px-3 py-2 font-medium">Thresholds</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Linked risk / objective</th>
+              <th>KRI</th>
+              <th>Source</th>
+              <th>Value</th>
+              <th>Thresholds</th>
+              <th>Status</th>
+              <th>Linked risk / objective</th>
             </tr>
           </thead>
           <tbody>

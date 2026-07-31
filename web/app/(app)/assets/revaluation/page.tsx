@@ -66,16 +66,16 @@ export default function AssetRevaluationPage() {
   }
 
   return (
-    <div className="page-container space-y-4">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header flex items-start justify-between gap-3">
         <div>
           <h1 className="page-title">Asset Revaluations</h1>
           <p className="page-subtitle">Request → Finance approve → book value update. No GL posting.</p>
         </div>
-        <Link href="/assets/disposal" className="btn btn-secondary btn-sm">Disposals</Link>
+        <Link href="/assets/disposal" className="btn-secondary btn-sm">Disposals</Link>
       </div>
-      {msg && <div className="alert alert-success">{msg}</div>}
-      {err && <div className="alert alert-error">{err}</div>}
+      {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
+      {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       <form onSubmit={create} className="card space-y-3 p-4">
         <h2 className="text-lg font-semibold">New revaluation</h2>
@@ -102,7 +102,7 @@ export default function AssetRevaluationPage() {
             <textarea required rows={2} className="form-input mt-1 w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
           </label>
         </div>
-        <button type="submit" className="btn btn-primary btn-sm">Submit</button>
+        <button type="submit" className="btn-primary btn-sm">Submit</button>
       </form>
 
       <div className="table-wrap">
@@ -120,7 +120,7 @@ export default function AssetRevaluationPage() {
                 <td>{r.status}</td>
                 <td>
                   {r.status === "pending" && (
-                    <button type="button" className="btn btn-sm btn-primary" onClick={() => approve(r.id)}>Approve</button>
+                    <button type="button" className="btn-primary text-xs" onClick={() => approve(r.id)}>Approve</button>
                   )}
                 </td>
               </tr>

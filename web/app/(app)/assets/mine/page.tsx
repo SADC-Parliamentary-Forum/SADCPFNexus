@@ -17,7 +17,7 @@ export default function MyAssetsPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <h1 className="page-title">My Assigned Assets</h1>
@@ -44,7 +44,7 @@ export default function MyAssetsPage() {
                 <td>{(a as Asset & { acknowledgement_at?: string }).acknowledgement_at ? "Yes" : "No"}</td>
                 <td>
                   {!(a as Asset & { acknowledgement_at?: string }).acknowledgement_at && (
-                    <button className="btn btn-sm btn-primary" onClick={() => acknowledge(a.id)}>Acknowledge</button>
+                    <button className="btn-primary text-xs" onClick={() => acknowledge(a.id)}>Acknowledge</button>
                   )}
                 </td>
               </tr>

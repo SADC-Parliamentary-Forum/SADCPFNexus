@@ -89,7 +89,7 @@ export default function AssetInsurancePage() {
   const claims = (claimsQuery.data ?? []) as AssetInsuranceClaim[];
 
   return (
-    <div className="page-container space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Insurance</h1>

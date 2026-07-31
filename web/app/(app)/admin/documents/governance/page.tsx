@@ -119,7 +119,7 @@ export default function DocumentGovernancePage() {
                     placeholder="Decision notes (optional)"
                   />
                   <div className="flex gap-2">
-                    <button type="button" className="btn btn-primary text-sm" disabled={saving} onClick={() => save(row.id)}>
+                    <button type="button" className="btn-primary text-sm" disabled={saving} onClick={() => save(row.id)}>
                       Save
                     </button>
                     <button type="button" className="text-sm underline" onClick={() => setEditing(null)}>

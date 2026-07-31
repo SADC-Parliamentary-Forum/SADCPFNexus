@@ -111,7 +111,7 @@ export default function AssetDisposalPage() {
   }
 
   return (
-    <div className="page-container space-y-4">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="page-title">Disposal Requests</h1>
@@ -120,17 +120,17 @@ export default function AssetDisposalPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/assets/revaluation" className="btn btn-secondary btn-sm">
+          <Link href="/assets/revaluation" className="btn-secondary btn-sm">
             Revaluations
           </Link>
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+          <button type="button" className="btn-primary btn-sm" onClick={() => setShowCreate(true)}>
             New disposal
           </button>
         </div>
       </div>
 
-      {msg && <div className="alert alert-success">{msg}</div>}
-      {err && <div className="alert alert-error">{err}</div>}
+      {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
+      {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       {showCreate && (
         <form onSubmit={createDisposal} className="card space-y-3 p-4">
@@ -191,8 +191,8 @@ export default function AssetDisposalPage() {
             />
           </label>
           <div className="flex gap-2">
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? "Saving…" : "Submit request"}</button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowCreate(false)}>Cancel</button>
+            <button type="submit" className="btn-primary btn-sm" disabled={saving}>{saving ? "Saving…" : "Submit request"}</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => setShowCreate(false)}>Cancel</button>
           </div>
         </form>
       )}
@@ -222,23 +222,23 @@ export default function AssetDisposalPage() {
                   <td>{d.status}</td>
                   <td className="flex flex-wrap gap-1">
                     {d.status === "draft" && (
-                      <button className="btn btn-sm" disabled={saving} onClick={() => advance(d.id, "recommend", { comments: "Recommended" })}>
+                      <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "recommend", { comments: "Recommended" })}>
                         HOD recommend
                       </button>
                     )}
                     {d.status === "recommended" && (
-                      <button className="btn btn-sm" disabled={saving} onClick={() => advance(d.id, "finance-review", { comments: "Finance OK" })}>
+                      <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "finance-review", { comments: "Finance OK" })}>
                         Finance review
                       </button>
                     )}
                     {d.status === "finance_reviewed" && (
-                      <button className="btn btn-sm" disabled={saving} onClick={() => advance(d.id, "approve")}>
+                      <button className="btn-secondary text-xs" disabled={saving} onClick={() => advance(d.id, "approve")}>
                         Approve
                       </button>
                     )}
                     {d.status === "approved" && (
                       <button
-                        className="btn btn-sm btn-primary"
+                        className="btn-primary text-xs"
                         disabled={saving}
                         onClick={() => {
                           setSelected(d);
@@ -315,8 +315,8 @@ export default function AssetDisposalPage() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>Complete</button>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setCompleteOpen(false)}>Cancel</button>
+            <button type="submit" className="btn-primary btn-sm" disabled={saving}>Complete</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={() => setCompleteOpen(false)}>Cancel</button>
           </div>
         </form>
       )}

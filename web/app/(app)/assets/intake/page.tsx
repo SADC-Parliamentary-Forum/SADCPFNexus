@@ -17,13 +17,13 @@ export default function AssetsIntakePage() {
   }, []);
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <h1 className="page-title">Asset Intake / Pending Registration</h1>
           <p className="page-subtitle">GRN drafts awaiting classification and capitalisation. Consumables stay in Stock.</p>
         </div>
-        <Link href="/assets" className="btn btn-secondary">Full register</Link>
+        <Link href="/assets" className="btn-secondary">Full register</Link>
       </div>
       {loading ? <p>Loading…</p> : (
         <div className="table-wrap">
@@ -49,7 +49,7 @@ export default function AssetsIntakePage() {
                   <td>{a.purchase_value ?? "—"}</td>
                   <td>
                     {canManage && (
-                      <Link href={`/assets?status=pending`} className="btn btn-sm btn-primary">Capitalise on register</Link>
+                      <Link href={`/assets?status=pending`} className="btn-primary text-xs">Capitalise on register</Link>
                     )}
                   </td>
                 </tr>

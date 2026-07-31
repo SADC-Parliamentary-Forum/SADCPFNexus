@@ -7,6 +7,8 @@ import { workflowApi, type ApprovalRequest } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const MODULE_CONFIG: Record<string, { icon: string; color: string; bg: string; label: string; href: (id: number) => string }> = {
   travel:      { icon: "flight_takeoff",         color: "text-primary",                         bg: "bg-primary/10",                         label: "Travel",      href: (id) => `/travel/${id}` },
@@ -79,15 +81,20 @@ export default function ApprovalsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <h1 className="page-title">Pending Approvals</h1>
-        <p className="page-subtitle">Review and action requests awaiting your decision.</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <ModulePageHeader
+        title="Pending Approvals"
+        subtitle="Review and action requests awaiting your decision."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Approvals" }]} />}
+        actions={
+          <Link href="/approvals/inbox" className="btn-secondary text-sm">
+            Full inbox
+          </Link>
+        }
+      />
 
       {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400">Failed to load pending approvals.</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Failed to load pending approvals.</div>
       )}
 
       {/* Filter tabs */}
@@ -116,14 +123,16 @@ export default function ApprovalsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 rounded-3xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white dark:bg-neutral-800 shadow-sm border border-neutral-100 dark:border-neutral-700/50 mb-4">
-            <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          </div>
-          <p className="font-bold text-neutral-500 dark:text-neutral-400">You&apos;re all caught up!</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-            {filter === "all" ? "No requests currently awaiting your approval." : `No ${filter} requests pending.`}
-          </p>
+        <div className="card">
+          <EmptyState
+            icon="check_circle"
+            title="You're all caught up!"
+            description={
+              filter === "all"
+                ? "No requests currently awaiting your approval."
+                : `No ${filter} requests pending.`
+            }
+          />
         </div>
       ) : (
         <div className="space-y-3">

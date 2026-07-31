@@ -63,7 +63,7 @@ export default function DocumentRetentionPage() {
           <label className="block text-xs mb-1">New campaign name</label>
           <input className="form-input text-sm w-full" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <button type="button" className="btn btn-primary text-sm" onClick={createCampaign}>
+        <button type="button" className="btn-primary text-sm" onClick={createCampaign}>
           Create
         </button>
       </div>

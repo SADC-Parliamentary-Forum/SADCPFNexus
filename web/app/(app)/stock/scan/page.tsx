@@ -75,7 +75,7 @@ export default function StockBarcodeScanPage() {
   }
 
   return (
-    <div className="page-container">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <div>
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
@@ -88,10 +88,10 @@ export default function StockBarcodeScanPage() {
             Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync.
           </p>
         </div>
-        <Link href="/stock/stocktakes" className="btn btn-secondary btn-sm">Stocktakes</Link>
+        <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Stocktakes</Link>
       </div>
-      {msg && <div className="alert alert-success">{msg}</div>}
-      {err && <div className="alert alert-error">{err}</div>}
+      {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
+      {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       <form onSubmit={lookup} className="card flex flex-wrap items-end gap-3 p-4">
         <label className="block min-w-[220px] flex-1 text-sm">
@@ -105,7 +105,7 @@ export default function StockBarcodeScanPage() {
             required
           />
         </label>
-        <button type="submit" className="btn btn-primary btn-sm">Find</button>
+        <button type="submit" className="btn-primary btn-sm">Find</button>
       </form>
 
       {item && (
@@ -118,7 +118,7 @@ export default function StockBarcodeScanPage() {
               <span className="text-xs font-semibold text-neutral-700">Count</span>
               <input type="number" min="0" className="form-input mt-1 w-28" value={count} onChange={(e) => setCount(e.target.value)} />
             </label>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={queueOffline}>Queue offline</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={queueOffline}>Queue offline</button>
           </div>
         </div>
       )}
@@ -127,7 +127,7 @@ export default function StockBarcodeScanPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-900">Offline draft queue ({queue.length})</h2>
           {queue.length > 0 && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={clearQueue}>Clear</button>
+            <button type="button" className="btn-secondary btn-sm" onClick={clearQueue}>Clear</button>
           )}
         </div>
         <p className="text-xs text-neutral-500">
