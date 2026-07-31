@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -113,12 +114,11 @@ export default function AssetDisposalPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Disposal Requests</h1>
-          <p className="page-subtitle">
-            Workflow: request → HOD recommend → Finance review → approve → complete. Assets are never hard-deleted.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Disposal Requests"
+        subtitle="Workflow: request → HOD recommend → Finance review → approve → complete. Assets are never hard-deleted."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Disposal Requests" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/assets/revaluation" className="btn-secondary btn-sm">
             Revaluations

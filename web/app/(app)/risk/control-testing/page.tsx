@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -68,12 +69,11 @@ export default function RiskControlTestingPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Control Testing Campaigns</h1>
-          <p className="page-subtitle">
-            Schedule control tests against Risk Register controls, record pass/fail with checklist evidence, and surface overdue items.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Control Testing Campaigns"
+        subtitle="Schedule control tests against Risk Register controls, record pass/fail with checklist evidence, and surface overdue items."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Control Testing Campaigns" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/risk/kri" className="btn-secondary">
             KRI alerts

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { notificationAdminApi, notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
@@ -67,14 +68,12 @@ export default function AdminNotificationsPage() {
   };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Notifications admin</h1>
-          <p className="text-sm text-[var(--muted-foreground)]">
-            Phase 2/3 delivery health, analytics, broadcasts and ack campaigns. Provider failure never rolls back business decisions.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Notifications admin"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications admin" }]} />}
+      />
         <div className="flex items-center gap-3 flex-wrap">
           <Link href="/notifications" className="text-sm text-primary underline">
             Open user inbox

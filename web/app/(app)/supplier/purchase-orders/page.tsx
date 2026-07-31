@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
@@ -16,10 +17,11 @@ export default function SupplierPurchaseOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Purchase Orders</h1>
-        <p className="page-subtitle">Track issued orders and then move to the Invoices page to submit your proforma and final invoice documents.</p>
-      </div>
+      <ModulePageHeader
+        title="Purchase Orders"
+        subtitle="Track issued orders and then move to the Invoices page to submit your proforma and final invoice documents."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Purchase Orders" }]} />}
+      />
 
       <div className="card overflow-hidden">
         <table className="data-table w-full">

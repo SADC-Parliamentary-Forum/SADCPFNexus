@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -52,12 +53,10 @@ export default function DecisionsRegisterPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Decision Register</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Meeting resolutions and management decisions with adoption, ownership, and assignment follow-up.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Decision Register"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Decision Register" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/decisions/dashboard" className="btn-secondary">Dashboard</Link>
           <Link href="/decisions/create" className="btn-primary">New decision</Link>

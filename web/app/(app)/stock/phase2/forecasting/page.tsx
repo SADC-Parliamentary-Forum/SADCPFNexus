@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { stockDemandApi, type StockDemandRow } from "@/lib/api";
@@ -17,12 +18,11 @@ export default function StockDemandForecastPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Demand / reorder suggestions</h1>
-          <p className="page-subtitle">
-            Simple usage-based suggestions from stock issues over the lookback window. Not ML forecasting or event packs.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Demand / reorder suggestions"
+        subtitle="Simple usage-based suggestions from stock issues over the lookback window. Not ML forecasting or event packs."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Demand / reorder suggestions" }]} />}
+      />
         <div className="flex items-center gap-2">
           <label className="text-sm text-neutral-600">Lookback days</label>
           <select className="form-input w-28" value={lookback} onChange={(e) => setLookback(Number(e.target.value))}>

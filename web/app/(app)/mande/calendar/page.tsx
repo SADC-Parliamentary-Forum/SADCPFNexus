@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -34,10 +35,11 @@ export default function MandeCalendarPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Reporting Calendar</h1>
-          <p className="page-subtitle">Activity reports due by month, with overdue highlights.</p>
-        </div>
+        <ModulePageHeader
+        title="Reporting Calendar"
+        subtitle="Activity reports due by month, with overdue highlights."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Reporting Calendar" }]} />}
+      />
         <div className="flex items-center gap-2">
           <button type="button" className="btn-secondary text-sm" onClick={() => shiftMonth(-1)}>Prev</button>
           <input

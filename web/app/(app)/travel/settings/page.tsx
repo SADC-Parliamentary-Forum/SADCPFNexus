@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormEvent, useEffect, useState } from "react";
 import { travelApi } from "@/lib/api";
 
@@ -88,12 +89,10 @@ export default function TravelSettingsPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-neutral-900">Travel Settings — DSA &amp; FX Rates</h1>
-        <p className="text-sm text-neutral-500">
-          Finance-owned versioned DSA rates (Types 1/2/3) and manual FX table. Optional HTTP FX feed via env only — no paid API keys in code.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Travel Settings — DSA & FX Rates"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Settings — DSA & FX Rates" }]} />}
+      />
       {msg && <p className="text-sm text-primary">{msg}</p>}
       <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4">
         <label className="text-xs font-semibold">Country

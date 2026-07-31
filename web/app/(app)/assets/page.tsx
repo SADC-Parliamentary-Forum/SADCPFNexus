@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
@@ -560,10 +561,11 @@ export default function AssetsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-title">Fixed Asset Register</h1>
-          <p className="page-subtitle">Capital assets, movements, and GRN capitalisation queue.</p>
-        </div>
+        <ModulePageHeader
+        title="Fixed Asset Register"
+        subtitle="Capital assets, movements, and GRN capitalisation queue."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fixed Asset Register" }]} />}
+      />
         <div className="flex gap-2 flex-wrap">
           {(showAddAssetButton || showRequestButton) && (
             <>

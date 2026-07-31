@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 
@@ -13,10 +14,11 @@ export default function WeeklyTrendsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Weekly digest trends</h1>
-        <p className="page-subtitle">Completion rates and missing digests over time.</p>
-      </div>
+      <ModulePageHeader
+        title="Weekly digest trends"
+        subtitle="Completion rates and missing digests over time."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly digest trends" }]} />}
+      />
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-700">Failed to load trends.</p>}
       {data && (

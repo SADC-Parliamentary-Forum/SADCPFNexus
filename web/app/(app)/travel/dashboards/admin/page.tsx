@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { travelApi } from "@/lib/api";
@@ -22,10 +23,10 @@ export default function TravelAdminDashboardPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Administration Travel Dashboard</h1>
-          <p className="text-sm text-neutral-500 mt-1">Bookings, visas, vehicles, and readiness.</p>
-        </div>
+        <ModulePageHeader
+        title="Administration Travel Dashboard"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Administration Travel Dashboard" }]} />}
+      />
         <Link href="/travel/queues/admin" className="btn-primary">Admin queue</Link>
       </div>
       {isLoading && <p className="text-sm text-neutral-400">Loading…</p>}

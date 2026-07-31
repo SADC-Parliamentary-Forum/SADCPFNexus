@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -32,10 +33,11 @@ export default function VerifyDocumentPage() {
       </nav>
 
       {/* Header */}
-      <div>
-        <h1 className="page-title">Verify Document</h1>
-        <p className="page-subtitle">Check the signing trail and integrity of any signed document</p>
-      </div>
+      <ModulePageHeader
+        title="Verify Document"
+        subtitle="Check the signing trail and integrity of any signed document"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Verify Document" }]} />}
+      />
 
       {/* Lookup card */}
       <div className="card p-6 space-y-5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -59,15 +60,10 @@ export default function AuditTrailGovernancePage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-            Audit Trail governance checklist
-          </h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            PRD §122 — institutional decisions required. All items default to Pending; do not invent
-            retention periods or SIEM answers here.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Audit Trail governance checklist"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Audit Trail governance checklist" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">
           Back to Audit Trail
         </Link>

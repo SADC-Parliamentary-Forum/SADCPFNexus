@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockWriteOffsApi, type StockItem, type StockWriteOff } from "@/lib/api";
 import { canIssueStock, canManageStock, getStoredUser } from "@/lib/auth";
@@ -31,10 +32,11 @@ export default function StockWriteOffsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Write-Offs</h1>
-        <p className="page-subtitle">Write-offs require approval before the ledger out is posted.</p>
-      </div>
+      <ModulePageHeader
+        title="Write-Offs"
+        subtitle="Write-offs require approval before the ledger out is posted."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Write-Offs" }]} />}
+      />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>

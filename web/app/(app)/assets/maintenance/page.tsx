@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -24,10 +25,11 @@ export default function AssetMaintenancePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Maintenance & Warranty</h1>
-          <p className="page-subtitle">Corrective, preventive and warranty repair history</p>
-        </div>
+        <ModulePageHeader
+        title="Maintenance & Warranty"
+        subtitle="Corrective, preventive and warranty repair history"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Maintenance & Warranty" }]} />}
+      />
       </div>
       <div className="table-wrap">
         <table className="data-table">

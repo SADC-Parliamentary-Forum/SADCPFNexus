@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { budgetApi, type BudgetChangeRequest } from "@/lib/api";
@@ -27,10 +28,11 @@ export default function BudgetChangesPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Budget Changes</h1>
-          <p className="page-subtitle">Transfers, revisions, supplementary and contingency draws</p>
-        </div>
+        <ModulePageHeader
+        title="Budget Changes"
+        subtitle="Transfers, revisions, supplementary and contingency draws"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Changes" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
             Control

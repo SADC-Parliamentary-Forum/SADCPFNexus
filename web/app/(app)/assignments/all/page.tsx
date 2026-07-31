@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -56,10 +57,11 @@ export default function AllAssignmentsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">All Assignments</h1>
-          <p className="page-subtitle">Full list of assignments across the Secretariat.</p>
-        </div>
+        <ModulePageHeader
+        title="All Assignments"
+        subtitle="Full list of assignments across the Secretariat."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "All Assignments" }]} />}
+      />
         <Link href="/assignments/create" className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add_task</span>
           New Assignment

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -115,10 +116,11 @@ function RegistersPageContent() {
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Balance Registers</h1>
-          <p className="page-subtitle">All controlled balance registers across modules</p>
-        </div>
+        <ModulePageHeader
+        title="Balance Registers"
+        subtitle="All controlled balance registers across modules"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Balance Registers" }]} />}
+      />
         <button
           type="button"
           className="btn-secondary text-sm disabled:opacity-50"

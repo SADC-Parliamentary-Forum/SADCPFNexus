@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, adminApi, type CorrespondenceLetter } from "@/lib/api";
@@ -55,10 +56,11 @@ export default function PendingSgRoutingPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Pending SG Routing</h1>
-        <p className="page-subtitle">Registered incoming items awaiting Secretary General routing and primary ownership.</p>
-      </div>
+      <ModulePageHeader
+        title="Pending SG Routing"
+        subtitle="Registered incoming items awaiting Secretary General routing and primary ownership."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Pending SG Routing" }]} />}
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
       {msg && <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{msg}</div>}

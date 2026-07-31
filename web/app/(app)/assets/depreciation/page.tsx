@@ -8,6 +8,7 @@ import { formatCurrency, formatDateRangeTable, formatDateTable } from "@/lib/uti
 import { exportToCsv } from "@/lib/csvExport";
 import { getLastPage, getListData, getTotal } from "@/lib/listPagination";
 import { ListPagination } from "@/components/ui/ListPagination";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Runner = { id: number; name: string };
 
@@ -90,6 +91,7 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 }
 
 export default function AssetDepreciationPage() {
+  const { confirm } = useConfirm();
   const [runs, setRuns] = useState<DepreciationRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -206,9 +208,13 @@ export default function AssetDepreciationPage() {
       setError("You need assets.admin or finance.approve to run depreciation.");
       return;
     }
-    const ok = window.confirm(
-      "Run monthly depreciation for capital assets?\n\nThis updates book values for monitoring/reports. Official GL remains the accounting system.",
-    );
+    const ok = await confirm({
+      title: "Run monthly depreciation?",
+      message:
+        "This updates book values for monitoring/reports. Official GL remains the accounting system.",
+      confirmText: "Run depreciation",
+      variant: "primary",
+    });
     if (!ok) return;
 
     setBusy(true);

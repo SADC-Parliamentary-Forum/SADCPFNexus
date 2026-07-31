@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,10 +30,11 @@ export default function RecurringAssignmentsPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Recurring Tasks</h1>
-          <p className="page-subtitle">Templates generate separate assignment instances — never overwrite history.</p>
-        </div>
+        <ModulePageHeader
+        title="Recurring Tasks"
+        subtitle="Templates generate separate assignment instances — never overwrite history."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Recurring Tasks" }]} />}
+      />
         <Link href="/assignments/create" className="btn-primary">
           New Assignment
         </Link>

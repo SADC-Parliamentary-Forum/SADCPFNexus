@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -14,14 +15,12 @@ export default function AuditAnalyticsPage() {
   const rating = (data?.rating_distribution ?? {}) as Record<string, number>;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Audit analytics</h1>
-          <p className="text-sm text-neutral-600 mt-1">
-            Cycle time, rating mix, overdue corrective rates, and plan completion.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Audit analytics"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Audit analytics" }]} />}
+      />
         <Link href="/audit" className="text-sm underline">Dashboard</Link>
       </div>
 

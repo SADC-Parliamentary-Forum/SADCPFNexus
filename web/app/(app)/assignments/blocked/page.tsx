@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
@@ -35,10 +36,11 @@ export default function BlockedAssignmentsPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
           <span className="material-symbols-outlined text-red-600 text-[20px]">block</span>
         </div>
-        <div>
-          <h1 className="page-title">Blocked Assignments</h1>
-          <p className="page-subtitle">Assignments with an active blocker preventing progress.</p>
-        </div>
+        <ModulePageHeader
+        title="Blocked Assignments"
+        subtitle="Assignments with an active blocker preventing progress."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Blocked Assignments" }]} />}
+      />
       </div>
 
       {isLoading ? (

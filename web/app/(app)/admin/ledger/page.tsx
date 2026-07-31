@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
@@ -175,12 +176,11 @@ export default function AdminLedgerPage() {
 
       {/* Page title */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Ledger Verification</h1>
-          <p className="page-subtitle">
-            Cryptographic audit trail verification â€” tamper-evident record of all admin operations.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Ledger Verification"
+        subtitle="Cryptographic audit trail verification â€” tamper-evident record of all admin operations."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Ledger Verification" }]} />}
+      />
         <div className="flex items-center gap-2">
           <Link href="/admin/ledger/generate" className="btn-secondary flex items-center gap-2 shrink-0">
             <span className="material-symbols-outlined text-[18px]">summarize</span>

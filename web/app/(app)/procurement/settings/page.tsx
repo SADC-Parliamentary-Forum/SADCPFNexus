@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -103,12 +104,11 @@ export default function ProcurementSettingsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="page-title">Procurement Settings</h1>
-        <p className="page-subtitle">
-          Thresholds, multi-donor policy profiles, and optional AI comparison assist (never auto-awards).
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Procurement Settings"
+        subtitle="Thresholds, multi-donor policy profiles, and optional AI comparison assist (never auto-awards)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement Settings" }]} />}
+      />
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">

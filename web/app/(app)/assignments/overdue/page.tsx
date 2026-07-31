@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
@@ -28,10 +29,11 @@ export default function OverdueAssignmentsPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
           <span className="material-symbols-outlined text-red-600 text-[20px]">event_busy</span>
         </div>
-        <div>
-          <h1 className="page-title">Overdue Assignments</h1>
-          <p className="page-subtitle">Assignments that have passed their due date and are still open.</p>
-        </div>
+        <ModulePageHeader
+        title="Overdue Assignments"
+        subtitle="Assignments that have passed their due date and are still open."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Overdue Assignments" }]} />}
+      />
       </div>
 
       {isLoading ? (

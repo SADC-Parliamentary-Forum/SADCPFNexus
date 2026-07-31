@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import { noticeBoardApi } from "@/lib/api";
 
@@ -11,15 +12,11 @@ export default function StaffNoticeBoardPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Tender Notice Board</h1>
-        <p className="page-subtitle">
-          Published tender/RFQ advertisements for this organisation. Competitor bid data is never shown here.
-        </p>
-        <p className="text-xs text-neutral-500 mt-1">
-          Public mirror: <a className="underline" href="/tender-notices">/tender-notices</a>
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Tender Notice Board"
+        subtitle="Published tender/RFQ advertisements for this organisation. Competitor bid data is never shown here."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Tender Notice Board" }]} />}
+      />
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Failed to load notices.</div>

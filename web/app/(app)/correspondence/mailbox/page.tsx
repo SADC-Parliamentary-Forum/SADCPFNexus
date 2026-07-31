@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,13 +99,11 @@ export default function CorrespondenceMailboxPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="page-title">Registry Mailbox</h1>
-        <p className="page-subtitle">
-          Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits.
-          Poll via <code>php artisan correspondence:poll-mailbox</code> when IMAP is configured (or <code>--fixture</code> / <code>--dry-run</code>).
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Registry Mailbox"
+        subtitle="Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits.\r\n          Poll via php artisan corresponde"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Registry Mailbox" }]} />}
+      />
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 

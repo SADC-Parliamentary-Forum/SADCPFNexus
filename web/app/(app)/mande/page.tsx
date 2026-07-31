@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -50,10 +51,11 @@ export default function MandeDashboardPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">M&amp;E Dashboard</h1>
-          <p className="page-subtitle">Results monitoring across approved programmes — reporting, evidence and review status.</p>
-        </div>
+        <ModulePageHeader
+        title="M&E Dashboard"
+        subtitle="Results monitoring across approved programmes — reporting, evidence and review status."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "M&E Dashboard" }]} />}
+      />
         <div className="flex items-center gap-2 flex-wrap">
           <Link href="/mande/intake" className="btn-secondary flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">inbox</span>

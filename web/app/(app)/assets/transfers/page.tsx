@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api, { assetMovementsApi, type AssetMovement } from "@/lib/api";
 
@@ -15,10 +16,11 @@ export default function AssetTransfersPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Asset Transfers</h1>
-          <p className="page-subtitle">Custody transfers and movement log. Assignment history is immutable on the API.</p>
-        </div>
+        <ModulePageHeader
+        title="Asset Transfers"
+        subtitle="Custody transfers and movement log. Assignment history is immutable on the API."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Transfers" }]} />}
+      />
         <a href="/assets/movement/new" className="btn-primary">Record movement</a>
       </div>
       <div className="table-wrap">

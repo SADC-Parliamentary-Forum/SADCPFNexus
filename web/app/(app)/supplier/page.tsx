@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
@@ -15,12 +16,10 @@ export default function SupplierDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Supplier Portal</h1>
-        <p className="page-subtitle">
-          {data.vendor.name} {data.vendor.status ? `| ${data.vendor.status.replace("_", " ")}` : ""}
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Supplier Portal"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Supplier Portal" }]} />}
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         {[

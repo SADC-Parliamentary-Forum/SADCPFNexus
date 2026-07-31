@@ -164,7 +164,7 @@ export default function BudgetCycleDetailPage() {
 
   if (!cycle) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <p className="text-sm text-red-700">Cycle not found.</p>
         <Link href="/budget/cycles" className="text-sm text-[var(--primary)]">
           Back

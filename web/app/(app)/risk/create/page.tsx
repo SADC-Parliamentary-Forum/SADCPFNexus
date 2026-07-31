@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -120,10 +121,11 @@ export default function CreateRiskPage() {
         <span className="text-neutral-800 font-medium">Log New Risk</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Log New Risk</h1>
-        <p className="page-subtitle">Document a risk for institutional review and mitigation planning.</p>
-      </div>
+      <ModulePageHeader
+        title="Log New Risk"
+        subtitle="Document a risk for institutional review and mitigation planning."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Log New Risk" }]} />}
+      />
 
       {apiError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

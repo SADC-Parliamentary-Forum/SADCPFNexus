@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
@@ -54,10 +55,11 @@ export default function ResearcherReportsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">Activity Reports</h1>
-          <p className="page-subtitle">Periodic activity reports submitted by SRHR researchers.</p>
-        </div>
+        <ModulePageHeader
+        title="Activity Reports"
+        subtitle="Periodic activity reports submitted by SRHR researchers."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Activity Reports" }]} />}
+      />
         <Link href="/srhr/reports/new" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">add_notes</span>
           Submit Report

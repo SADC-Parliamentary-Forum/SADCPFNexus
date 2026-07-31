@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,12 +99,11 @@ export default function BudgetVariancePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Budget variance</h1>
-          <p className="page-subtitle">
-            YTD approved vs actual. Significant variance default threshold: 20% (Accounting Manual guideline).
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Budget variance"
+        subtitle="YTD approved vs actual. Significant variance default threshold: 20% (Accounting Manual guideline)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget variance" }]} />}
+      />
         <div className="flex items-center gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
             Budget control

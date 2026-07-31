@@ -183,6 +183,10 @@
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600;
   }
 
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800;
+  }
+
   /* Form inputs */
   .form-input {
     @apply w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition;
@@ -258,6 +262,10 @@
 
   .alert-warning {
     @apply border-amber-200 bg-amber-50 text-amber-900;
+  }
+
+  .alert-info {
+    @apply border-sky-200 bg-sky-50 text-sky-900;
   }
 
   /* Filter tabs */
@@ -366,6 +374,11 @@
     color: var(--dk-text-secondary);
   }
 
+  [data-theme="dark"] .badge-info {
+    background-color: rgba(14, 165, 233, 0.15);
+    color: #7dd3fc;
+  }
+
   /* ── Form inputs ─────────────────────────────────────────────────── */
   [data-theme="dark"] .form-input {
     background-color: var(--dk-bg-elevated);
@@ -457,6 +470,31 @@
 
   [data-theme="dark"] .data-table tbody td {
     color: var(--dk-text-primary);
+  }
+
+  [data-theme="dark"] .alert-info {
+    background-color: var(--dk-info-bg);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: var(--dk-info);
+  }
+
+  [data-theme="dark"] .alert-success {
+    background-color: var(--dk-success-bg);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: var(--dk-success);
+  }
+
+  [data-theme="dark"] .alert-warning {
+    background-color: var(--dk-warning-bg);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: var(--dk-warning);
+  }
+
+  [data-theme="dark"] .alert-error,
+  [data-theme="dark"] .alert-danger {
+    background-color: var(--dk-danger-bg);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: var(--dk-danger);
   }
 
   /* ── Nav items (light-sidebar nav-item class — not sidebar JSX) ── */

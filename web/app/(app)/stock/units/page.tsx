@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stockUnitsApi, type StockUnit } from "@/lib/api";
@@ -44,10 +45,11 @@ export default function StockUnitsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="page-title">Units of measure</h1>
-        <p className="page-subtitle">Controlled UoM for consumables (ream, box, pack, each…).</p>
-      </div>
+      <ModulePageHeader
+        title="Units of measure"
+        subtitle="Controlled UoM for consumables (ream, box, pack, each…)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Units of measure" }]} />}
+      />
 
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-3 gap-3 items-end">

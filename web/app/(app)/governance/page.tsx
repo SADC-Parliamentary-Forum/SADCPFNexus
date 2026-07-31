@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { governanceApi, minutesApi, type GovernanceMeeting, type MeetingMinutesRecord } from "@/lib/api";
@@ -56,13 +57,14 @@ export default function MeetingsMinutesPage() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Meetings &amp; Minutes</h1>
-          <p className="page-subtitle">Browse meeting records and attached minutes.</p>
-        </div>
+        <ModulePageHeader
+        title="Meetings & Minutes"
+        subtitle="Browse meeting records and attached minutes."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Meetings & Minutes" }]} />}
+      />
         <Link href="/governance/resolutions" className="btn-secondary text-sm">
           <span className="material-symbols-outlined text-sm mr-1">gavel</span>
           View Resolutions

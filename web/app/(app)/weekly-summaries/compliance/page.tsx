@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { weeklyReportsApi } from "@/lib/api";
 
@@ -34,13 +35,10 @@ export default function WeeklyCompliancePage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Weekly report compliance</h1>
-        <p className="text-sm text-neutral-600">
-          Period: {period?.reference ?? "current"} ({period?.start_date ?? "—"} → {period?.end_date ?? "—"}).
-          AI drafts remain stub/LLM-hook with human confirm only — never auto-submit.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Weekly report compliance"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly report compliance" }]} />}
+      />
       {msg && <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{msg}</div>}
       <p className="text-sm text-neutral-600">
         Submitted: {compliance.submitted ?? 0} · Exempted: {compliance.exempted ?? 0} · Missing: {missing.length}

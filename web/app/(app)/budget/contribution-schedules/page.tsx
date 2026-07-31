@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -29,10 +30,11 @@ export default function ContributionSchedulesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Donor / contribution calendar</h1>
-        <p className="page-subtitle">Structured inflow schedules for cashflow planning.</p>
-      </div>
+      <ModulePageHeader
+        title="Donor / contribution calendar"
+        subtitle="Structured inflow schedules for cashflow planning."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Donor / contribution calendar" }]} />}
+      />
       <div className="card grid gap-3 p-4 md:grid-cols-3">
         <input className="form-input" placeholder="Donor name" value={form.donor_name} onChange={(e) => setForm({ ...form, donor_name: e.target.value })} />
         <input className="form-input" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />

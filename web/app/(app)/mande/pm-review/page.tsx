@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,12 +30,11 @@ export default function ProgrammeReviewQueuePage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="page-title">Programme Manager Review</h1>
-        <p className="page-subtitle">
-          Clear or return reports when programme manager review is enabled in M&amp;E settings.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Programme Manager Review"
+        subtitle="Clear or return reports when programme manager review is enabled in M&amp;E settings."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Programme Manager Review" }]} />}
+      />
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">

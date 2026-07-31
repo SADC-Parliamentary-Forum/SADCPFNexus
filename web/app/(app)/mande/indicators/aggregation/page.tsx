@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import api from "@/lib/api";
@@ -22,10 +23,11 @@ export default function MeIndicatorAggregationPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Indicator aggregation</h1>
-        <p className="page-subtitle">Advanced coverage dashboard with optional AI assist (human confirm required).</p>
-      </div>
+      <ModulePageHeader
+        title="Indicator aggregation"
+        subtitle="Advanced coverage dashboard with optional AI assist (human confirm required)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Indicator aggregation" }]} />}
+      />
       {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : (
         <div className="card grid gap-3 p-4 md:grid-cols-4">
           <div><div className="text-xs text-neutral-500">Indicators</div><div className="text-2xl font-semibold">{data?.totals?.indicators ?? 0}</div></div>

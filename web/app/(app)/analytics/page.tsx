@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -161,10 +162,11 @@ export default function AnalyticsPage() {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Analytics Dashboard</h1>
-          <p className="page-subtitle">Cross-module performance insights and operational intelligence.</p>
-        </div>
+        <ModulePageHeader
+        title="Analytics Dashboard"
+        subtitle="Cross-module performance insights and operational intelligence."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Analytics Dashboard" }]} />}
+      />
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex rounded-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden text-sm">
             {["MTD", "QTD", "YTD"].map(p => (

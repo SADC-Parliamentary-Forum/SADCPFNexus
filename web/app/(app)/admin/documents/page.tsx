@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { documentServiceApi, type ManagedDocumentRow } from "@/lib/api";
@@ -66,12 +67,10 @@ export default function AdminDocumentsPage() {
   return (
     <div className="p-6 space-y-4 max-w-6xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Document register</h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            Shared Document Service — versioned, hashed, hold-aware repository.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Document register"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Document register" }]} />}
+      />
         <div className="flex gap-3 text-sm">
           <Link href="/admin/documents/governance" className="text-primary underline">
             Governance checklist

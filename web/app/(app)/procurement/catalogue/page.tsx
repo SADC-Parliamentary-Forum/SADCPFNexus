@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogueApi, vendorsApi } from "@/lib/api";
@@ -55,10 +56,11 @@ export default function CataloguePage() {
 
   return (
     <div className="space-y-5 max-w-4xl">
-      <div>
-        <h1 className="page-title">Supplier Catalogue</h1>
-        <p className="page-subtitle">Price/rate catalogue with version history on updates. Usable when linking PR/stock items.</p>
-      </div>
+      <ModulePageHeader
+        title="Supplier Catalogue"
+        subtitle="Price/rate catalogue with version history on updates. Usable when linking PR/stock items."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Supplier Catalogue" }]} />}
+      />
 
       <div className="card p-4 grid gap-3 sm:grid-cols-4 items-end">
         <div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, supplierPortalApi } from "@/lib/api";
@@ -74,10 +75,10 @@ export default function SupplierProfilePage() {
 
   return (
     <div className="max-w-4xl space-y-5">
-      <div>
-        <h1 className="page-title">Supplier Profile</h1>
-        <p className="page-subtitle">{profileQuery.data.name}</p>
-      </div>
+      <ModulePageHeader
+        title="Supplier Profile"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Supplier Profile" }]} />}
+      />
 
       <div className="card p-5 space-y-4">
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}

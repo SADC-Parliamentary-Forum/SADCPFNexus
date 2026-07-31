@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 
 const adminLinks = [
@@ -143,12 +144,11 @@ const adminLinks = [
 export default function AdminPage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Admin</h1>
-        <p className="page-subtitle">
-          System configuration, user management, and organisational settings.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Admin"
+        subtitle="System configuration, user management, and organisational settings."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin" }]} />}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {adminLinks.map((item) => (

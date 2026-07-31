@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -100,10 +101,11 @@ export default function CreateCorrespondencePage() {
         <span className="text-neutral-900 font-medium">New Letter</span>
       </div>
 
-      <div>
-        <h1 className="page-title">New Letter</h1>
-        <p className="page-subtitle">Create a new outgoing or incoming correspondence record.</p>
-      </div>
+      <ModulePageHeader
+        title="New Letter"
+        subtitle="Create a new outgoing or incoming correspondence record."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "New Letter" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

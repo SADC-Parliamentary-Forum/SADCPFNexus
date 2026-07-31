@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { weeklySummaryApi, WeeklySummaryReport } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
@@ -58,10 +59,11 @@ export default function WeeklyReportsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="page-title">Weekly Summary Reports</h1>
-        <p className="page-subtitle">Your institutional summary emails — generated every Friday</p>
-      </div>
+      <ModulePageHeader
+        title="Weekly Summary Reports"
+        subtitle="Your institutional summary emails — generated every Friday"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summary Reports" }]} />}
+      />
 
       {/* Table */}
       <div className="card overflow-hidden">

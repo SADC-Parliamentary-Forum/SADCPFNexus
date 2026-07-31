@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import { adminApi, type Department, type User } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
@@ -114,10 +115,11 @@ export default function AdminDepartmentsPage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Departments</h1>
-          <p className="page-subtitle">Manage organisational units and their department codes.</p>
-        </div>
+        <ModulePageHeader
+        title="Departments"
+        subtitle="Manage organisational units and their department codes."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Departments" }]} />}
+      />
         {isAdmin && (
           <button
             onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: "", code: "", parent_id: null, supervisor_id: null }); }}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi } from "@/lib/api";
@@ -22,10 +23,11 @@ export default function CorrespondenceReportsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Correspondence Reports</h1>
-        <p className="page-subtitle">Operational summary for the register (access-scoped).</p>
-      </div>
+      <ModulePageHeader
+        title="Correspondence Reports"
+        subtitle="Operational summary for the register (access-scoped)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Correspondence Reports" }]} />}
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <Link key={c.key} href={c.href} className="card p-5 hover:border-primary/40 transition-colors">

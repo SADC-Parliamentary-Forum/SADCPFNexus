@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { stockItemsApi, stockCategoriesApi, type StockItem, type StockCategory } from "@/lib/api";
@@ -68,10 +69,11 @@ export default function StockItemsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-title">Consumables / Stock</h1>
-          <p className="page-subtitle">Track consumable stock items, balances and reorder levels — separate from fixed assets.</p>
-        </div>
+        <ModulePageHeader
+        title="Consumables / Stock"
+        subtitle="Track consumable stock items, balances and reorder levels — separate from fixed assets."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Consumables / Stock" }]} />}
+      />
         <div className="flex gap-2 flex-wrap">
           <Link href="/stock/dashboard" className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">dashboard</span>

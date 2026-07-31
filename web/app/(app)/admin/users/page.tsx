@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { adminApi, type User } from "@/lib/api";
@@ -193,12 +194,11 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">User Management</h1>
-          <p className="page-subtitle">
-            Manage system access, roles, and security compliance for all personnel.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="User Management"
+        subtitle="Manage system access, roles, and security compliance for all personnel."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "User Management" }]} />}
+      />
         {isAdmin && (
           <Link href="/admin/users/create" className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span>

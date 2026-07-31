@@ -1,11 +1,13 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useFormatDate } from "@/lib/useFormatDate";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { workplanApi, type WorkplanEvent } from "@/lib/api";
 import { loadPdfLibs } from "@/lib/pdf-libs";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -814,6 +816,7 @@ function GanttView({
 
 export default function WorkplanListPage() {
   const { fmt: formatDate } = useFormatDate();
+  const { confirm } = useConfirm();
   const router = useRouter();
   const now = new Date();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -861,14 +864,20 @@ export default function WorkplanListPage() {
   }, [stableLoadList]);
 
   const handleDeleteEvent = useCallback(async (id: number) => {
-    if (typeof window !== "undefined" && !window.confirm("Delete this event? This cannot be undone.")) return;
+    const ok = await confirm({
+      title: "Delete this event?",
+      message: "This cannot be undone.",
+      confirmText: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await workplanApi.delete(id);
       loadList();
     } catch {
       setError("Failed to delete event.");
     }
-  }, [loadList]);
+  }, [confirm, loadList]);
 
   useEffect(() => {
     loadList();
@@ -978,12 +987,11 @@ export default function WorkplanListPage() {
     <div className="space-y-6 max-w-7xl">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="page-title">Master Workplan</h1>
-          <p className="page-subtitle">
-            Meetings, travel, milestones and deadlines across the year.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Master Workplan"
+        subtitle="Meetings, travel, milestones and deadlines across the year."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Master Workplan" }]} />}
+      />
         <div className="flex items-center gap-2">
           <div className="relative" ref={exportPdfRef}>
             <button

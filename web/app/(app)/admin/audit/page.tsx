@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
@@ -60,10 +61,11 @@ export default function AuditPage() {
         <span className="text-neutral-900 font-medium">Audit Logs</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Audit Logs</h1>
-        <p className="page-subtitle">Full activity trail â€” all user actions with timestamps, module, and IP address.</p>
-      </div>
+      <ModulePageHeader
+        title="Audit Logs"
+        subtitle="Full activity trail â€” all user actions with timestamps, module, and IP address."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Audit Logs" }]} />}
+      />
 
       {/* Filters */}
       <div className="card p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

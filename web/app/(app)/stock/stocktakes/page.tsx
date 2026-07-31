@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stocktakesApi, type Stocktake } from "@/lib/api";
@@ -48,10 +49,11 @@ export default function StocktakesPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Stocktakes</h1>
-          <p className="page-subtitle">Physical counts with variance posted as ledger adjustments.</p>
-        </div>
+        <ModulePageHeader
+        title="Stocktakes"
+        subtitle="Physical counts with variance posted as ledger adjustments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stocktakes" }]} />}
+      />
       </div>
 
       {canIssue && (

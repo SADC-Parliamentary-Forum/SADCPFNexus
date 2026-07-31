@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -89,13 +90,11 @@ export default function FleetListPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Fleet</h1>
-        <p className="page-subtitle">
-          Ops layer on Fixed Assets with category <code>fleet</code> — vehicles, drivers roster, and booking calendar.
-          GPS uses a pluggable telematics provider when configured; otherwise the manual last-known stub remains available.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Fleet"
+        subtitle="Ops layer on Fixed Assets with category fleet — vehicles, drivers roster, and booking calendar.\r\n          GPS uses a pluggable telematics provider when configu"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fleet" }]} />}
+      />
 
       <div className="flex flex-wrap gap-2">
         {(["vehicles", "drivers", "calendar"] as Tab[]).map((t) => (

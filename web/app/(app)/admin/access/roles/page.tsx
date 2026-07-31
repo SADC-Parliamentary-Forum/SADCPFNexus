@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -58,6 +59,11 @@ export default function AccessRolesPage() {
             ]}
           />
         }
+        actions={
+          <Link href="/admin/roles/matrix" className="btn-secondary text-sm">
+            Permission matrix
+          </Link>
+        }
       />
 
       <FormSection title="Create draft role" description="Starts a new versioned role template." icon="badge" dense>
@@ -113,7 +119,7 @@ export default function AccessRolesPage() {
                   <tr key={r.id}>
                     <td className="font-medium text-neutral-800">
                       {r.name}
-                      {r.feature_only ? <span className="ml-1.5 badge badge-muted text-[10px]">feature-only</span> : null}
+                      {r.feature_only ? <span className="ml-1.5 badge badge-muted text-[10px]">limited</span> : null}
                     </td>
                     <td className="capitalize">{r.risk_level ?? "—"}</td>
                     <td>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api, { workAssignmentsApi, WorkAssignment, User } from "@/lib/api";
@@ -161,13 +162,14 @@ export default function AssignmentsPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Work Assignments</h1>
-          <p className="page-subtitle">Track and manage work tasks and assignments</p>
-        </div>
+        <ModulePageHeader
+        title="Work Assignments"
+        subtitle="Track and manage work tasks and assignments"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Assignments" }]} />}
+      />
         <button className="btn-primary flex items-center gap-2" onClick={openModal}>
           <span className="material-symbols-outlined text-[20px]">add</span>
           New Assignment

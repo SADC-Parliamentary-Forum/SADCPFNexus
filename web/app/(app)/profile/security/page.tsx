@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
@@ -245,10 +246,11 @@ export default function ProfileSecurityPage() {
         </div>
       )}
 
-      <div>
-        <h1 className="page-title">Security & Password</h1>
-        <p className="page-subtitle">Manage your password, multi-factor authentication, and active sessions.</p>
-      </div>
+      <ModulePageHeader
+        title="Security & Password"
+        subtitle="Manage your password, multi-factor authentication, and active sessions."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Security & Password" }]} />}
+      />
 
       {forceMfaBanner && !mfaEnabled && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

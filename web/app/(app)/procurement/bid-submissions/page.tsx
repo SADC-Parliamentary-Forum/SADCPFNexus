@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import { tendersApi } from "@/lib/api";
 
@@ -11,10 +12,11 @@ export default function BidSubmissionsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Bid Submissions</h1>
-        <p className="page-subtitle">Sealed financials stay hidden until bid opening.</p>
-      </div>
+      <ModulePageHeader
+        title="Bid Submissions"
+        subtitle="Sealed financials stay hidden until bid opening."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Bid Submissions" }]} />}
+      />
       {isLoading ? (
         <div className="card p-8 text-center text-sm text-neutral-400">Loading…</div>
       ) : (

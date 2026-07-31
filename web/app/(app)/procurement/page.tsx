@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -54,10 +55,11 @@ export default function ProcurementPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Procurement</h1>
-          <p className="page-subtitle">Manage requisitions, vendor quotes, and procurement approvals.</p>
-        </div>
+        <ModulePageHeader
+        title="Procurement"
+        subtitle="Manage requisitions, vendor quotes, and procurement approvals."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement" }]} />}
+      />
         <div className="flex items-center gap-2">
           {canViewVendors && (
             <Link href="/procurement/vendors" className="btn-secondary flex items-center gap-1.5">

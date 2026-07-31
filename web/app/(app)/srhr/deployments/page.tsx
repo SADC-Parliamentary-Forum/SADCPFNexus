@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { deploymentsApi, type StaffDeployment } from "@/lib/api";
@@ -52,10 +53,11 @@ export default function DeploymentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">Field Deployments</h1>
-          <p className="page-subtitle">Track SRHR researcher deployments at member state parliaments.</p>
-        </div>
+        <ModulePageHeader
+        title="Field Deployments"
+        subtitle="Track SRHR researcher deployments at member state parliaments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Field Deployments" }]} />}
+      />
         <Link href="/srhr/deployments/new" className="btn-primary inline-flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Deployment

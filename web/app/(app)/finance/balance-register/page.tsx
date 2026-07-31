@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { bcreApi, programmeApi, type BcreDashboard, type BalanceRegister, type Programme } from "@/lib/api";
@@ -58,13 +59,14 @@ export default function BcreDashboardPage() {
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Balance Control & Reconciliation</h1>
-          <p className="page-subtitle">Financial truth engine — controlled registers for advances and imprest</p>
-        </div>
+        <ModulePageHeader
+        title="Balance Control & Reconciliation"
+        subtitle="Financial truth engine — controlled registers for advances and imprest"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Balance Control & Reconciliation" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/finance/balance-register/exceptions" className="btn-secondary text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-base">warning</span>

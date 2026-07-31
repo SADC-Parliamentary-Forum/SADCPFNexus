@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -65,15 +66,10 @@ export default function NotificationsGovernancePage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-            Notifications governance checklist
-          </h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            PRD §124 — institutional decisions required before final configuration. All items
-            default to Pending; do not invent answers here.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Notifications governance checklist"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications governance checklist" }]} />}
+      />
         <Link href="/admin/notifications" className="text-sm text-primary underline">
           Back to notifications admin
         </Link>

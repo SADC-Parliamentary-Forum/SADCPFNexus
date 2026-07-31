@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,10 +57,11 @@ export default function ResultsFrameworksPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Results Frameworks</h1>
-          <p className="page-subtitle">Manage results frameworks linked to strategic plans and donor programmes.</p>
-        </div>
+        <ModulePageHeader
+        title="Results Frameworks"
+        subtitle="Manage results frameworks linked to strategic plans and donor programmes."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Results Frameworks" }]} />}
+      />
         {canAdmin && (
           <button type="button" onClick={() => setModal({ ...EMPTY })} className="btn-primary flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[18px]">add</span>

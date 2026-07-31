@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { financeApi, type Payslip } from "@/lib/api";
@@ -87,10 +88,11 @@ export default function PayslipsPage() {
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Payslips</h1>
-          <p className="page-subtitle">View and download your payslip history.</p>
-        </div>
+        <ModulePageHeader
+        title="Payslips"
+        subtitle="View and download your payslip history."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Payslips" }]} />}
+      />
         <button
           type="button"
           className="btn-secondary text-sm disabled:opacity-50"

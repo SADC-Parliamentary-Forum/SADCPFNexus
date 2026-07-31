@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockReturnsApi, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
@@ -43,10 +44,11 @@ export default function StockReturnsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Stock Returns</h1>
-        <p className="page-subtitle">Returned stock is ledgered in; damaged/expired returns go to quarantine.</p>
-      </div>
+      <ModulePageHeader
+        title="Stock Returns"
+        subtitle="Returned stock is ledgered in; damaged/expired returns go to quarantine."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock Returns" }]} />}
+      />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>

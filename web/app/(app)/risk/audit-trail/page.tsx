@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -110,10 +111,11 @@ export default function RiskAuditTrailPage() {
     <div className="space-y-5 max-w-6xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Risk Audit Trail</h1>
-          <p className="page-subtitle">Tamper-evident ledger of all risk register events.</p>
-        </div>
+        <ModulePageHeader
+        title="Risk Audit Trail"
+        subtitle="Tamper-evident ledger of all risk register events."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Risk Audit Trail" }]} />}
+      />
         <button onClick={handleExport} disabled={!events.length} className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40">
           <span className="material-symbols-outlined text-[16px]">download</span>
           Export CSV

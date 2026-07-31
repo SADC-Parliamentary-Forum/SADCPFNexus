@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tenderCommitteesApi } from "@/lib/api";
@@ -22,10 +23,11 @@ export default function TenderCommitteePage() {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <div>
-        <h1 className="page-title">Tender Committee</h1>
-        <p className="page-subtitle">Standing or ad-hoc committees with quorum enforcement on meetings.</p>
-      </div>
+      <ModulePageHeader
+        title="Tender Committee"
+        subtitle="Standing or ad-hoc committees with quorum enforcement on meetings."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Tender Committee" }]} />}
+      />
 
       <div className="card p-4 flex gap-2 items-end">
         <div className="flex-1">

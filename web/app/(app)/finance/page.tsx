@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest, type Payslip, type FinanceSummary, type Budget } from "@/lib/api";
@@ -169,10 +170,11 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Finance</h1>
-        <p className="page-subtitle">View your payslips, manage salary advances, and track budget utilization.</p>
-      </div>
+      <ModulePageHeader
+        title="Finance"
+        subtitle="View your payslips, manage salary advances, and track budget utilization."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">

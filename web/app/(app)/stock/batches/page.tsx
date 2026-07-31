@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockBatchesApi, stockItemsApi, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
@@ -29,10 +30,11 @@ export default function StockBatchesPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Batches / Expiry</h1>
-        <p className="page-subtitle">Optional lot tracking. Expired batches are not issuable.</p>
-      </div>
+      <ModulePageHeader
+        title="Batches / Expiry"
+        subtitle="Optional lot tracking. Expired batches are not issuable."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Batches / Expiry" }]} />}
+      />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>

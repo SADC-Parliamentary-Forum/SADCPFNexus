@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ChangeEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -151,10 +152,11 @@ export default function SupplierInvoicesPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Invoices</h1>
-        <p className="page-subtitle">Submit proforma invoices after PO issue, then upload the final invoice and proof of payment after finance pays.</p>
-      </div>
+      <ModulePageHeader
+        title="Invoices"
+        subtitle="Submit proforma invoices after PO issue, then upload the final invoice and proof of payment after finance pays."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Invoices" }]} />}
+      />
 
       {pendingProforma.length > 0 && (
         <div className="card p-5 space-y-3">

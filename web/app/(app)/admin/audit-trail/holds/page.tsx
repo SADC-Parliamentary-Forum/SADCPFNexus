@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
@@ -46,10 +47,11 @@ export default function AuditTrailHoldsPage() {
   return (
     <div className="p-6 space-y-4 max-w-4xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Event holds</h1>
-          <p className="page-subtitle">Legal / audit / investigation holds block disposal.</p>
-        </div>
+        <ModulePageHeader
+        title="Event holds"
+        subtitle="Legal / audit / investigation holds block disposal."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Event holds" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

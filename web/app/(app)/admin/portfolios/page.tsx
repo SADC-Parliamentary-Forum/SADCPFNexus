@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import { adminApi, type Portfolio } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
@@ -65,10 +66,11 @@ export default function AdminPortfoliosPage() {
     return (
         <div className="space-y-6 max-w-4xl">
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="page-title">Portfolios</h1>
-                    <p className="page-subtitle">Manage organisational thematic areas and committees.</p>
-                </div>
+                <ModulePageHeader
+        title="Portfolios"
+        subtitle="Manage organisational thematic areas and committees."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Portfolios" }]} />}
+      />
                 <button onClick={() => { setShowForm(!showForm); setEditId(null); }} className="btn-primary">
                     <span className="material-symbols-outlined text-[18px]">{showForm ? "close" : "add"}</span>
                     {showForm ? "Cancel" : "New Portfolio"}

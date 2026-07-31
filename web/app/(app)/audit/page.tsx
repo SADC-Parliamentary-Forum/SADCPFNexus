@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -13,14 +14,12 @@ export default function AuditDashboardPage() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Audit Management</h1>
-          <p className="text-sm text-neutral-600 mt-1">
-            Internal Audit assurance workspace — findings owned by Audit; corrective actions by Management.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Audit Management"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Audit Management" }]} />}
+      />
         <div className="flex gap-2">
           {(["auditor", "management", "sg"] as const).map((v) => (
             <button

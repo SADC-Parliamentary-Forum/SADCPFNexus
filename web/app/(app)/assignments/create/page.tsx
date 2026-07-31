@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -85,10 +86,11 @@ export default function CreateAssignmentPage() {
         <span className="text-neutral-700 font-medium">New Assignment</span>
       </nav>
 
-      <div>
-        <h1 className="page-title">Create Assignment</h1>
-        <p className="page-subtitle">Issue a new assignment to an individual, sector, or team.</p>
-      </div>
+      <ModulePageHeader
+        title="Create Assignment"
+        subtitle="Issue a new assignment to an individual, sector, or team."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Create Assignment" }]} />}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Title */}

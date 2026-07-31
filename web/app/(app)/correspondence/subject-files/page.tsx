@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { correspondenceApi, type CorrespondenceSubjectFile } from "@/lib/api";
 
@@ -37,10 +38,11 @@ export default function SubjectFilesPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="page-title">Subject Files</h1>
-        <p className="page-subtitle">Institutional file plan. Correspondence links here — documents are not triplicated.</p>
-      </div>
+      <ModulePageHeader
+        title="Subject Files"
+        subtitle="Institutional file plan. Correspondence links here — documents are not triplicated."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Subject Files" }]} />}
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
 

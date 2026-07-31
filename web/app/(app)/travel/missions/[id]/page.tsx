@@ -36,7 +36,7 @@ export default function TravelMissionDetailPage() {
   if (loading) return <div className="p-6 text-sm text-neutral-400">Loading mission…</div>;
   if (error || !mission) {
     return (
-      <div className="p-6 space-y-3">
+    <div className="space-y-3">
         <p className="text-sm text-red-600">{error ?? "Not found"}</p>
         <Link href="/travel/missions" className="text-sm text-primary">Back to missions</Link>
       </div>

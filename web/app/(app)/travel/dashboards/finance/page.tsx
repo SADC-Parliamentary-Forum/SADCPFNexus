@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { travelApi } from "@/lib/api";
@@ -22,10 +23,10 @@ export default function TravelFinanceDashboardPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Finance Travel Dashboard</h1>
-          <p className="text-sm text-neutral-500 mt-1">DSA, funds confirmation, advances, and retirement.</p>
-        </div>
+        <ModulePageHeader
+        title="Finance Travel Dashboard"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance Travel Dashboard" }]} />}
+      />
         <Link href="/travel/queues/finance" className="btn-primary">Finance queue</Link>
       </div>
       {isLoading && <p className="text-sm text-neutral-400">Loading…</p>}

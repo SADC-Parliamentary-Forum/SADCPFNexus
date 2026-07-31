@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
@@ -64,10 +65,11 @@ export default function AuditTrailForensicsPage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Forensic cases</h1>
-          <p className="page-subtitle">MVP case workspace — link events, apply holds, seal hashed evidence packages.</p>
-        </div>
+        <ModulePageHeader
+        title="Forensic cases"
+        subtitle="MVP case workspace — link events, apply holds, seal hashed evidence packages."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Forensic cases" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

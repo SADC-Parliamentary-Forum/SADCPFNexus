@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Page() {
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
         <p className="text-xs uppercase tracking-wide text-neutral-500">People &amp; Authority</p>
         <h1 className="text-2xl font-semibold text-neutral-900">People Settings</h1>

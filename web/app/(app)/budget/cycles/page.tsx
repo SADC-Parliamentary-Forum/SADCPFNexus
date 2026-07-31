@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,10 +47,11 @@ export default function BudgetCyclesPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Budget Cycles</h1>
-          <p className="page-subtitle">Annual planning through SG approval and lock into Budget Control lines</p>
-        </div>
+        <ModulePageHeader
+        title="Budget Cycles"
+        subtitle="Annual planning through SG approval and lock into Budget Control lines"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Cycles" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
             Control

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -312,10 +313,11 @@ export default function AdminUserCreatePage() {
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         <span className="text-neutral-900 font-medium">New User</span>
       </div>
-      <div>
-        <h1 className="page-title">Create User Account</h1>
-        <p className="page-subtitle">Add a new staff member with their role, security settings, and module access.</p>
-      </div>
+      <ModulePageHeader
+        title="Create User Account"
+        subtitle="Add a new staff member with their role, security settings, and module access."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Create User Account" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

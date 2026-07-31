@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -165,13 +166,11 @@ export default function BudgetCashflowPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Cashflow / scenarios</h1>
-          <p className="page-subtitle">
-            Monthly liquidity forecast from budget actuals and open commitments, with optional scenario overlays.
-            Opening balances are Finance assumptions — Nexus does not replace the GL or bank ledger.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Cashflow / scenarios"
+        subtitle="Monthly liquidity forecast from budget actuals and open commitments, with optional scenario overlays.\r\n            Opening balances are Finance assumptions — Ne"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Cashflow / scenarios" }]} />}
+      />
         <div className="flex flex-wrap items-center gap-2">
           {effectiveFyId && (
             <a

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { assignmentsApi } from "@/lib/api";
@@ -13,12 +14,11 @@ export default function AssignmentReportsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Assignment Reports</h1>
-        <p className="page-subtitle">
-          Institutional workload and blocker analysis. Automated performance scores and leaderboards are disabled.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Assignment Reports"
+        subtitle="Institutional workload and blocker analysis. Automated performance scores and leaderboards are disabled."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignment Reports" }]} />}
+      />
 
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600">Failed to load report.</p>}

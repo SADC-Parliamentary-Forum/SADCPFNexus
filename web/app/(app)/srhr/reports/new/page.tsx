@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -154,10 +155,11 @@ function NewReportPageInner() {
         <span className="text-neutral-800 font-medium">New Report</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Submit Activity Report</h1>
-        <p className="page-subtitle">Document your activities, findings, and plans for the reporting period.</p>
-      </div>
+      <ModulePageHeader
+        title="Submit Activity Report"
+        subtitle="Document your activities, findings, and plans for the reporting period."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Submit Activity Report" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

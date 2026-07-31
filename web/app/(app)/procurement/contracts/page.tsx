@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -118,10 +119,11 @@ function ContractsPageInner() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Contracts</h1>
-          <p className="page-subtitle">Manage vendor contracts and agreements</p>
-        </div>
+        <ModulePageHeader
+        title="Contracts"
+        subtitle="Manage vendor contracts and agreements"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts" }]} />}
+      />
         <div className="flex items-center gap-2">
           <button
             onClick={openModal}

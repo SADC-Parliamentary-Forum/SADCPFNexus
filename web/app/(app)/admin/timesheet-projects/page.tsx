@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { adminApi, type TimesheetProject } from "@/lib/api";
@@ -120,10 +121,11 @@ export default function AdminTimesheetProjectsPage() {
         <span className="text-neutral-900 font-medium">Timesheet Projects</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Timesheet Projects</h1>
-        <p className="page-subtitle">Manage project options shown on the HR timesheets page. Staff select these when logging time.</p>
-      </div>
+      <ModulePageHeader
+        title="Timesheet Projects"
+        subtitle="Manage project options shown on the HR timesheets page. Staff select these when logging time."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Timesheet Projects" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

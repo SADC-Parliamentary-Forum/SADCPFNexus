@@ -1,0 +1,2988 @@
+{
+  "generated": "2026-07-31",
+  "total": 364,
+  "by_severity": {
+    "P1": 241,
+    "P2": 108,
+    "P0": 15
+  },
+  "by_category": {
+    "Layout chrome / page headers / breadcrumbs": 47,
+    "Navigation / sidebar / My Work / feature-only orphans": 23,
+    "Registers/lists (filters, density, pagination, bulk actions)": 19,
+    "Forms (labels, sections, validation presentation, steppers)": 20,
+    "Detail pages / tabs / workflow banners": 15,
+    "Buttons / CTAs / destructive actions": 14,
+    "Tables vs cards vs lists": 10,
+    "Status badges / colors / semantics": 17,
+    "Empty / loading / error / 403-404 states": 17,
+    "Spacing / typography / density": 5,
+    "Color / legacy CSS bridges / dark-light issues": 15,
+    "Icons / illustration inconsistency": 6,
+    "Modals / drawers / dialogs": 3,
+    "Date/time/currency/number formatting": 6,
+    "Search / filters UX": 10,
+    "Dashboard widgets / badge counts": 6,
+    "Admin vs operational module visual split": 17,
+    "Mobile / responsive breakpoints": 13,
+    "Accessibility (focus, labels, contrast, hit targets)": 14,
+    "Copy/tone / microcopy inconsistency": 12,
+    "Attachment / document upload UX": 9,
+    "Approval / inbox patterns": 5,
+    "Print/export affordances": 11,
+    "Cross-module \u201csame job, different UI\u201d duplicates": 50
+  },
+  "by_module": {
+    "platform": 117,
+    "assets": 27,
+    "stock": 7,
+    "correspondence": 6,
+    "my-work": 8,
+    "approvals": 13,
+    "people": 41,
+    "audit": 21,
+    "admin": 27,
+    "leave": 10,
+    "saam": 3,
+    "finance": 9,
+    "weekly-summaries": 3,
+    "travel": 9,
+    "imprest": 4,
+    "procurement": 7,
+    "hr": 6,
+    "settings": 4,
+    "dashboard": 5,
+    "organogram": 4,
+    "pif": 3,
+    "workflow": 1,
+    "fleet": 4,
+    "workplan": 2,
+    "assignments": 4,
+    "reports": 1,
+    "auth": 2,
+    "setup": 1,
+    "risk": 4,
+    "supplier": 1,
+    "notifications": 3,
+    "governance": 2,
+    "mande": 1,
+    "srhr": 1,
+    "budget": 1,
+    "analytics": 1,
+    "profile": 1
+  },
+  "findings": [
+    {
+      "id": "UX-001",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "web/app/(app)/**",
+      "module": "platform",
+      "summary": "ModulePageHeader adopted only on Leave/PIF"
+    },
+    {
+      "id": "UX-002",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "web/app/(app)/**",
+      "module": "platform",
+      "summary": "PageBreadcrumbs nearly unused outside Leave/PIF"
+    },
+    {
+      "id": "UX-003",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "web/components/layout/AppShell.tsx + many pages",
+      "module": "platform",
+      "summary": "Double horizontal padding (AppShell p-6 + page p-6)"
+    },
+    {
+      "id": "UX-004",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P2",
+      "route": "various",
+      "module": "platform",
+      "summary": "Inconsistent content max-width"
+    },
+    {
+      "id": "UX-005",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/intake",
+      "module": "assets",
+      "summary": "Assets Pending intake uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-006",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/maintenance",
+      "module": "assets",
+      "summary": "Assets Maintenance uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-007",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/revaluation",
+      "module": "assets",
+      "summary": "Assets Revaluation uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-008",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/disposal",
+      "module": "assets",
+      "summary": "Assets Disposal uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-009",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/verification",
+      "module": "assets",
+      "summary": "Assets Verification uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-010",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/reports",
+      "module": "assets",
+      "summary": "Assets Reports uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-011",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/dashboard",
+      "module": "assets",
+      "summary": "Assets Dashboard uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-012",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/settings",
+      "module": "assets",
+      "summary": "Assets Settings uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-013",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/transfers",
+      "module": "assets",
+      "summary": "Assets Transfers uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-014",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/insurance",
+      "module": "assets",
+      "summary": "Assets Insurance uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-015",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/mine",
+      "module": "assets",
+      "summary": "Assets My assets uses legacy page-container chrome"
+    },
+    {
+      "id": "UX-016",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/stock/scan",
+      "module": "stock",
+      "summary": "Stock scan uses legacy page-container"
+    },
+    {
+      "id": "UX-017",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/correspondence/retention",
+      "module": "correspondence",
+      "summary": "Correspondence retention uses legacy page-container"
+    },
+    {
+      "id": "UX-018",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/my-work",
+      "module": "my-work",
+      "summary": "My Work hub header not using page-title pattern"
+    },
+    {
+      "id": "UX-019",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/approvals/inbox",
+      "module": "approvals",
+      "summary": "Approvals inbox title style diverges from Pending Approvals"
+    },
+    {
+      "id": "UX-020",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/people",
+      "module": "people",
+      "summary": "People hub uses stub header typography"
+    },
+    {
+      "id": "UX-021",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit",
+      "module": "audit",
+      "summary": "Audit dashboard header not on design-system title classes"
+    },
+    {
+      "id": "UX-022",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P2",
+      "route": "/admin/access",
+      "module": "admin",
+      "summary": "Access governance uses alternate token set"
+    },
+    {
+      "id": "UX-023",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P0",
+      "route": "Sidebar NAV_ITEMS",
+      "module": "platform",
+      "summary": "Duplicate Approvals entry points in sidebar"
+    },
+    {
+      "id": "UX-024",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P0",
+      "route": "/organogram vs /people/org-chart",
+      "module": "people",
+      "summary": "Two organisation-chart experiences"
+    },
+    {
+      "id": "UX-025",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/leave and /hr/leave",
+      "module": "leave",
+      "summary": "Leave appears under Leave nav and again under HR"
+    },
+    {
+      "id": "UX-026",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/travel/toil vs /leave/toil",
+      "module": "leave",
+      "summary": "TOIL split across Travel and Leave with different UI maturity"
+    },
+    {
+      "id": "UX-027",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/profile vs /people/my-profile",
+      "module": "people",
+      "summary": "Two 'my profile' destinations"
+    },
+    {
+      "id": "UX-028",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/saam vs /people/signatures vs /profile/signature",
+      "module": "saam",
+      "summary": "Signature management fragmented across three modules"
+    },
+    {
+      "id": "UX-029",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P0",
+      "route": "/admin/roles vs /admin/access/roles",
+      "module": "admin",
+      "summary": "Two role-administration UIs"
+    },
+    {
+      "id": "UX-030",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/finance/advances vs /salary-advances",
+      "module": "finance",
+      "summary": "Salary advances dual module surfaces"
+    },
+    {
+      "id": "UX-031",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "Sidebar Weekly Summaries",
+      "module": "weekly-summaries",
+      "summary": "Legacy weekly digest still in primary nav"
+    },
+    {
+      "id": "UX-032",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/my-work",
+      "module": "my-work",
+      "summary": "My Work hub is bare underlined link list"
+    },
+    {
+      "id": "UX-033",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "/my-work/procurement-evaluations",
+      "module": "my-work",
+      "summary": "Feature-only orphan uses DIY breadcrumb and list"
+    },
+    {
+      "id": "UX-034",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "Sidebar Travel children",
+      "module": "travel",
+      "summary": "Travel nav overcrowded with parallel queues and dashboards"
+    },
+    {
+      "id": "UX-035",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "web/components/registers/RegisterShell.tsx consumers",
+      "module": "platform",
+      "summary": "RegisterShell only on ~9 registers"
+    },
+    {
+      "id": "UX-036",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/imprest",
+      "module": "imprest",
+      "summary": "Imprest list mirrors Leave but skips RegisterShell"
+    },
+    {
+      "id": "UX-037",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/stock",
+      "module": "stock",
+      "summary": "Stock items list custom chrome without RegisterShell"
+    },
+    {
+      "id": "UX-038",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/assets",
+      "module": "assets",
+      "summary": "Fixed assets register not on RegisterShell"
+    },
+    {
+      "id": "UX-039",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/procurement",
+      "module": "procurement",
+      "summary": "Procurement requests list not RegisterShell despite /procurement/register using it"
+    },
+    {
+      "id": "UX-040",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/hr/leave",
+      "module": "hr",
+      "summary": "HR leave register uses ListPagination not RegisterShell"
+    },
+    {
+      "id": "UX-041",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "ListPagination vs RegisterShell pagination",
+      "module": "platform",
+      "summary": "Two pagination components/patterns"
+    },
+    {
+      "id": "UX-042",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "BulkSelectionBar adoption",
+      "module": "platform",
+      "summary": "Bulk actions only on a handful of registers"
+    },
+    {
+      "id": "UX-043",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/admin/access/roles",
+      "module": "admin",
+      "summary": "Access roles table is unstyled raw HTML table"
+    },
+    {
+      "id": "UX-044",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "filter-tab vs ad-hoc pill buttons",
+      "module": "platform",
+      "summary": "Filter control styling inconsistent"
+    },
+    {
+      "id": "UX-045",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "FormSection / FormField usage",
+      "module": "platform",
+      "summary": "FormSection rarely used outside Leave/PIF/setup"
+    },
+    {
+      "id": "UX-046",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "FormField adoption",
+      "module": "platform",
+      "summary": "FormField only referenced from FormSection + pif/create"
+    },
+    {
+      "id": "UX-047",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "Stepper adoption",
+      "module": "platform",
+      "summary": "Stepper used only on subset of wizards"
+    },
+    {
+      "id": "UX-048",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/admin/access/roles",
+      "module": "admin",
+      "summary": "Access role create inputs lack form-input class"
+    },
+    {
+      "id": "UX-049",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "globals.css form-input:placeholder-shown",
+      "module": "platform",
+      "summary": "Global amber 'unedited' input highlight surprises on some forms"
+    },
+    {
+      "id": "UX-050",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/people",
+      "module": "people",
+      "summary": "People hub quick-create uses unstyled border inputs"
+    },
+    {
+      "id": "UX-051",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "/travel/create",
+      "module": "travel",
+      "summary": "Travel create breadcrumbs use <a> not Link/PageBreadcrumbs"
+    },
+    {
+      "id": "UX-052",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "/imprest/create",
+      "module": "imprest",
+      "summary": "Imprest create breadcrumbs use <a href>"
+    },
+    {
+      "id": "UX-053",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "settings/hr/*",
+      "module": "settings",
+      "summary": "HR settings pages use <a href=\"/settings/hr\"> crumbs"
+    },
+    {
+      "id": "UX-054",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "WorkflowStatusBanner",
+      "module": "platform",
+      "summary": "WorkflowStatusBanner only on leave/[id] and pif/[id]"
+    },
+    {
+      "id": "UX-055",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "Timeline component zoo",
+      "module": "platform",
+      "summary": "Four parallel timeline/tracker components"
+    },
+    {
+      "id": "UX-056",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/travel/[id]",
+      "module": "travel",
+      "summary": "Travel detail lacks ModulePageHeader used by Leave detail"
+    },
+    {
+      "id": "UX-057",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/imprest/[id]",
+      "module": "imprest",
+      "summary": "Imprest detail workflow chrome differs from Leave/PIF"
+    },
+    {
+      "id": "UX-058",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/procurement/[id]",
+      "module": "procurement",
+      "summary": "Procurement detail status presentation bespoke"
+    },
+    {
+      "id": "UX-059",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P2",
+      "route": "/finance/advances/[id]",
+      "module": "finance",
+      "summary": "Advance detail uses PrintButton but not ModulePageHeader"
+    },
+    {
+      "id": "UX-060",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "@/components/ui/Button",
+      "module": "platform",
+      "summary": "Design-system Button component has zero page imports"
+    },
+    {
+      "id": "UX-061",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "btn vs btn-primary dual CSS APIs",
+      "module": "platform",
+      "summary": "Legacy .btn.btn-primary and modern .btn-primary both exist"
+    },
+    {
+      "id": "UX-062",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P0",
+      "route": "window.confirm usage",
+      "module": "platform",
+      "summary": "Native window.confirm on some destructive flows"
+    },
+    {
+      "id": "UX-063",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "/assets/disposal",
+      "module": "assets",
+      "summary": "Disposal workflow actions are unlabeled generic btn-sm"
+    },
+    {
+      "id": "UX-064",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "/approvals/inbox",
+      "module": "approvals",
+      "summary": "Inbox reject uses hardcoded reason string"
+    },
+    {
+      "id": "UX-065",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P2",
+      "route": "/admin/access/roles",
+      "module": "admin",
+      "summary": "Primary CTA uses bg-[var(--primary)] not btn-primary"
+    },
+    {
+      "id": "UX-066",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/approvals vs /approvals/inbox",
+      "module": "approvals",
+      "summary": "Approvals: card list vs table/task list for same job"
+    },
+    {
+      "id": "UX-067",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/my-work/procurement-evaluations",
+      "module": "my-work",
+      "summary": "Evaluations as plain bordered <li> not table/register"
+    },
+    {
+      "id": "UX-068",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/people/* stubs",
+      "module": "people",
+      "summary": "People subpages render JSON in <pre> instead of tables/cards"
+    },
+    {
+      "id": "UX-069",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/audit/* stubs",
+      "module": "audit",
+      "summary": "Audit submodules mix KPI cards and JSON/minimal lists"
+    },
+    {
+      "id": "UX-070",
+      "category": "Tables vs cards vs lists",
+      "severity": "P2",
+      "route": "table-wrap vs overflow card",
+      "module": "platform",
+      "summary": "Legacy table-wrap still used beside data-table-in-card"
+    },
+    {
+      "id": "UX-071",
+      "category": "Status badges / colors / semantics",
+      "severity": "P0",
+      "route": "badge-info class",
+      "module": "platform",
+      "summary": "badge-info used but not defined in globals.css"
+    },
+    {
+      "id": "UX-072",
+      "category": "Status badges / colors / semantics",
+      "severity": "P0",
+      "route": "alert-info class",
+      "module": "assets",
+      "summary": "alert-info used on assets/reports without CSS definition"
+    },
+    {
+      "id": "UX-073",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "@/components/ui/Badge",
+      "module": "platform",
+      "summary": "React Badge component unused; CSS .badge-* used instead"
+    },
+    {
+      "id": "UX-074",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Leave type label LIL vs Leave in Lieu",
+      "module": "leave",
+      "summary": "LIL labeling inconsistent between /leave and /hr/leave"
+    },
+    {
+      "id": "UX-075",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "STATUS maps duplicated per module",
+      "module": "platform",
+      "summary": "Per-page statusConfig dictionaries diverge"
+    },
+    {
+      "id": "UX-076",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Purple used as module accent",
+      "module": "platform",
+      "summary": "Purple Tailwind accents for procurement/admin/finance widgets"
+    },
+    {
+      "id": "UX-077",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "/leave/[id] LIL section",
+      "module": "leave",
+      "summary": "Leave detail LIL blocks hardcode purple palette"
+    },
+    {
+      "id": "UX-078",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "Badge success green shade mismatch",
+      "module": "platform",
+      "summary": "CSS badge-success uses green-100/700; Badge.tsx uses emerald-100/800"
+    },
+    {
+      "id": "UX-079",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "EmptyState adoption",
+      "module": "platform",
+      "summary": "EmptyState used on ~6 pages only"
+    },
+    {
+      "id": "UX-080",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "Loading patterns mixed",
+      "module": "platform",
+      "summary": "Skeleton vs 'Loading\u2026' text inconsistency"
+    },
+    {
+      "id": "UX-081",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "Error presentation mixed",
+      "module": "platform",
+      "summary": "Errors via alert classes, red text, Toast, or silent catch"
+    },
+    {
+      "id": "UX-082",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P0",
+      "route": "AppShell canAccessRoute",
+      "module": "platform",
+      "summary": "Unauthorized routes silently redirect to /dashboard"
+    },
+    {
+      "id": "UX-083",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "web/app/not-found.tsx",
+      "module": "platform",
+      "summary": "404 page offers Home, Login, and Dashboard equally"
+    },
+    {
+      "id": "UX-084",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "/people/org-chart",
+      "module": "people",
+      "summary": "Org chart error is bare 'Unable to load.'"
+    },
+    {
+      "id": "UX-085",
+      "category": "Spacing / typography / density",
+      "severity": "P1",
+      "route": "page-title vs text-2xl font-semibold",
+      "module": "platform",
+      "summary": "Two competing H1 systems"
+    },
+    {
+      "id": "UX-086",
+      "category": "Spacing / typography / density",
+      "severity": "P2",
+      "route": "Register density toggle rare",
+      "module": "platform",
+      "summary": "Comfortable/compact density only where RegisterShell wired"
+    },
+    {
+      "id": "UX-087",
+      "category": "Spacing / typography / density",
+      "severity": "P2",
+      "route": "space-y-5 vs space-y-6 vs space-y-4",
+      "module": "platform",
+      "summary": "Vertical rhythm differs page to page"
+    },
+    {
+      "id": "UX-088",
+      "category": "Spacing / typography / density",
+      "severity": "P1",
+      "route": "/audit dashboard KPI cards",
+      "module": "audit",
+      "summary": "Audit KPIs show raw snake_case keys as labels"
+    },
+    {
+      "id": "UX-089",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "globals.css legacy bridges",
+      "module": "platform",
+      "summary": "Bootstrap-like legacy bridge layer still required"
+    },
+    {
+      "id": "UX-090",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "CSS variable pages vs Tailwind token pages",
+      "module": "admin",
+      "summary": "Access/admin/my-work use var(--foreground/muted/border)"
+    },
+    {
+      "id": "UX-091",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "Assets legacy pages dark mode",
+      "module": "assets",
+      "summary": "Assets page-container pages lack dark: / [data-theme] awareness in JSX"
+    },
+    {
+      "id": "UX-092",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "AppShell dark:bg-neutral-900 vs --dk-bg-app",
+      "module": "platform",
+      "summary": "Shell uses Tailwind dark:neutral-900 while token system defines --dk-bg-app #0B1220"
+    },
+    {
+      "id": "UX-093",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "[data-theme=dark] .card:hover elevates all cards",
+      "module": "platform",
+      "summary": "Dark mode card:hover elevates non-interactive cards"
+    },
+    {
+      "id": "UX-094",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P2",
+      "route": "Material Symbols usage",
+      "module": "platform",
+      "summary": "Icon size classes vary widely"
+    },
+    {
+      "id": "UX-095",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P2",
+      "route": "Module color+icon maps duplicated",
+      "module": "platform",
+      "summary": "Dashboard, Approvals, Header, SAAM each redefine module icon/colors"
+    },
+    {
+      "id": "UX-096",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P1",
+      "route": "/people hub links",
+      "module": "people",
+      "summary": "People hub tiles have no icons"
+    },
+    {
+      "id": "UX-097",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P2",
+      "route": "EmptyState default inbox icon",
+      "module": "platform",
+      "summary": "Same inbox icon for unrelated empty states"
+    },
+    {
+      "id": "UX-098",
+      "category": "Modals / drawers / dialogs",
+      "severity": "P1",
+      "route": "Modal vs SlideOver zoo",
+      "module": "platform",
+      "summary": "Mixed modal systems: ConfirmDialog, ReturnModal, Stock*Modal, SigningModal, QuickEntrySlideOver, HR SlideOvers"
+    },
+    {
+      "id": "UX-099",
+      "category": "Modals / drawers / dialogs",
+      "severity": "P2",
+      "route": "settings/hr SlideOvers",
+      "module": "settings",
+      "summary": "HR settings prefer SlideOver; stock prefers Modal"
+    },
+    {
+      "id": "UX-100",
+      "category": "Modals / drawers / dialogs",
+      "severity": "P1",
+      "route": "/assets capitalise modal",
+      "module": "assets",
+      "summary": "Capitalise flow embedded as page-local modal"
+    },
+    {
+      "id": "UX-101",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P1",
+      "route": "formatDate helpers",
+      "module": "platform",
+      "summary": "Multiple date formatters in play"
+    },
+    {
+      "id": "UX-102",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P1",
+      "route": "/hr/leave formatDate",
+      "module": "hr",
+      "summary": "HR leave defines local en-GB formatter"
+    },
+    {
+      "id": "UX-103",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P1",
+      "route": "Money formatting",
+      "module": "finance",
+      "summary": "Currency display helpers diverge"
+    },
+    {
+      "id": "UX-104",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P2",
+      "route": "en-US vs en-GB locale hardcoding",
+      "module": "platform",
+      "summary": "Hardcoded locales ignore tenant/user locale i18n"
+    },
+    {
+      "id": "UX-105",
+      "category": "Search / filters UX",
+      "severity": "P1",
+      "route": "GlobalSearch vs page search",
+      "module": "platform",
+      "summary": "In-page search inputs inconsistent"
+    },
+    {
+      "id": "UX-106",
+      "category": "Search / filters UX",
+      "severity": "P2",
+      "route": "/correspondence/master-register",
+      "module": "correspondence",
+      "summary": "Search triggers full reload on every change without debounce UI"
+    },
+    {
+      "id": "UX-107",
+      "category": "Search / filters UX",
+      "severity": "P1",
+      "route": "/hr/leave UserAutocomplete",
+      "module": "hr",
+      "summary": "Ad-hoc user autocomplete only on HR leave"
+    },
+    {
+      "id": "UX-108",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P1",
+      "route": "/dashboard",
+      "module": "dashboard",
+      "summary": "Dashboard module grid incomplete vs sidebar modules"
+    },
+    {
+      "id": "UX-109",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P2",
+      "route": "/dashboard purple KPI",
+      "module": "dashboard",
+      "summary": "Open Requisitions KPI uses purple accent"
+    },
+    {
+      "id": "UX-110",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P1",
+      "route": "/my-work",
+      "module": "my-work",
+      "summary": "My Work has no badge counts"
+    },
+    {
+      "id": "UX-111",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P2",
+      "route": "/stock dashboard vs /assets/dashboard",
+      "module": "stock",
+      "summary": "Module dashboards diverge in widget language"
+    },
+    {
+      "id": "UX-112",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin vs /admin/access",
+      "module": "admin",
+      "summary": "Admin hub polished cards; Access sub-app looks like internal tooling"
+    },
+    {
+      "id": "UX-113",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/audit-trail",
+      "module": "admin",
+      "summary": "Platform audit trail UI language differs from /admin/audit"
+    },
+    {
+      "id": "UX-114",
+      "category": "Admin vs operational module visual split",
+      "severity": "P2",
+      "route": "/admin/documents vs /correspondence/retention",
+      "module": "admin",
+      "summary": "Document retention appears in admin and correspondence with different UI"
+    },
+    {
+      "id": "UX-115",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/people/settings label",
+      "module": "people",
+      "summary": "Nav label 'Settings / Phase 2-3 stubs' leaks engineering jargon"
+    },
+    {
+      "id": "UX-116",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "Wide data tables",
+      "module": "platform",
+      "summary": "Many registers lack mobile card alternative"
+    },
+    {
+      "id": "UX-117",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "AppShell sidebar",
+      "module": "platform",
+      "summary": "Sidebar closes on main click always"
+    },
+    {
+      "id": "UX-118",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "/organogram",
+      "module": "organogram",
+      "summary": "Organogram canvas not mobile-optimized"
+    },
+    {
+      "id": "UX-119",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "Hit targets btn-sm",
+      "module": "assets",
+      "summary": "Assets action btn-sm dense for touch"
+    },
+    {
+      "id": "UX-120",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "aria-label scarcity on pages",
+      "module": "platform",
+      "summary": "Very few page.tsx files set aria-label"
+    },
+    {
+      "id": "UX-121",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Modals role=dialog",
+      "module": "platform",
+      "summary": "Custom modals inconsistently expose dialog semantics"
+    },
+    {
+      "id": "UX-122",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P2",
+      "route": "Underline-only links on stubs",
+      "module": "people",
+      "summary": "People/audit stub nav links are underline-only"
+    },
+    {
+      "id": "UX-123",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "/approvals/inbox reject",
+      "module": "approvals",
+      "summary": "Reject without prompting for reason hurts clarity"
+    },
+    {
+      "id": "UX-124",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P2",
+      "route": "Cursor pointer on all labels",
+      "module": "platform",
+      "summary": "globals force cursor:pointer on every label[for]"
+    },
+    {
+      "id": "UX-125",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "Pending Approvals vs My Approvals",
+      "module": "approvals",
+      "summary": "Different page titles for overlapping jobs"
+    },
+    {
+      "id": "UX-126",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "Failed to load\u2026 message variants",
+      "module": "platform",
+      "summary": "Error copy inconsistent"
+    },
+    {
+      "id": "UX-127",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "/people/settings nav",
+      "module": "people",
+      "summary": "Engineering 'stubs' language in UI"
+    },
+    {
+      "id": "UX-128",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "Saving\u2026 vs Saving... ellipsis",
+      "module": "platform",
+      "summary": "Ellipsis character inconsistent"
+    },
+    {
+      "id": "UX-129",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "Leave status 'Returned' vs 'Returned for Correction'",
+      "module": "leave",
+      "summary": "Short vs long returned labels"
+    },
+    {
+      "id": "UX-130",
+      "category": "Attachment / document upload UX",
+      "severity": "P1",
+      "route": "DocumentsPanel variants",
+      "module": "platform",
+      "summary": "Three document panels: DocumentsPanel, GenericDocumentsPanel, RiskDocumentsPanel"
+    },
+    {
+      "id": "UX-131",
+      "category": "Attachment / document upload UX",
+      "severity": "P2",
+      "route": "/pif DocumentsSection",
+      "module": "pif",
+      "summary": "PIF documents section separate from DocumentsPanel"
+    },
+    {
+      "id": "UX-132",
+      "category": "Attachment / document upload UX",
+      "severity": "P1",
+      "route": "Travel TRAVEL_DOCUMENT_TYPES inline",
+      "module": "travel",
+      "summary": "Travel attachments UX embedded in detail page"
+    },
+    {
+      "id": "UX-133",
+      "category": "Approval / inbox patterns",
+      "severity": "P0",
+      "route": "/approvals and /approvals/inbox",
+      "module": "approvals",
+      "summary": "Dual approval inboxes with different capabilities"
+    },
+    {
+      "id": "UX-134",
+      "category": "Approval / inbox patterns",
+      "severity": "P1",
+      "route": "Module queue pages vs central inbox",
+      "module": "platform",
+      "summary": "Per-module approval queues duplicate central Approvals"
+    },
+    {
+      "id": "UX-135",
+      "category": "Approval / inbox patterns",
+      "severity": "P2",
+      "route": "ReturnModal only some modules",
+      "module": "workflow",
+      "summary": "Return for correction modal not universal"
+    },
+    {
+      "id": "UX-136",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "PrintButton adoption",
+      "module": "platform",
+      "summary": "PrintButton only on certificate/detail subset"
+    },
+    {
+      "id": "UX-137",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "CSV export patterns",
+      "module": "platform",
+      "summary": "exportToCsv helper vs ad-hoc Blob download"
+    },
+    {
+      "id": "UX-138",
+      "category": "Print/export affordances",
+      "severity": "P2",
+      "route": "/assets/print",
+      "module": "assets",
+      "summary": "Dedicated print route separate from PrintButton pattern"
+    },
+    {
+      "id": "UX-139",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "Create request wizards",
+      "module": "platform",
+      "summary": "Create flows: Stepper+FormSection (leave/pif) vs travel wizard vs bare forms"
+    },
+    {
+      "id": "UX-140",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Toast systems",
+      "module": "platform",
+      "summary": "useToast vs local setToast state"
+    },
+    {
+      "id": "UX-141",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Input/Select components unused",
+      "module": "platform",
+      "summary": "Design-system Input and Select have zero imports"
+    },
+    {
+      "id": "UX-142",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/fleet",
+      "module": "fleet",
+      "summary": "Fleet hub mixes tabs + inline create forms"
+    },
+    {
+      "id": "UX-143",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/saam",
+      "module": "saam",
+      "summary": "SAAM home is a large custom dashboard"
+    },
+    {
+      "id": "UX-144",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P2",
+      "route": "/correspondence/letterhead",
+      "module": "correspondence",
+      "summary": "Letterhead settings heavy inline styles count"
+    },
+    {
+      "id": "UX-145",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/workplan",
+      "module": "workplan",
+      "summary": "Workplan uses unique color-coded event system + purple milestones"
+    },
+    {
+      "id": "UX-146",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Assignments lists",
+      "module": "assignments",
+      "summary": "Many assignment queue routes with AssignmentFilteredList vs one-off pages"
+    },
+    {
+      "id": "UX-147",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "/people/directory",
+      "module": "people",
+      "summary": "People directory ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-148",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "/people/org-chart",
+      "module": "people",
+      "summary": "People org-chart ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-149",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/units",
+      "module": "people",
+      "summary": "People units ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-150",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/positions",
+      "module": "people",
+      "summary": "People positions ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-151",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/assignments",
+      "module": "people",
+      "summary": "People assignments ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-152",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/reporting",
+      "module": "people",
+      "summary": "People reporting ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-153",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/job-descriptions",
+      "module": "people",
+      "summary": "People job-descriptions ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-154",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/authority",
+      "module": "people",
+      "summary": "People authority ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-155",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/acting",
+      "module": "people",
+      "summary": "People acting ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-156",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/delegations",
+      "module": "people",
+      "summary": "People delegations ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-157",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/signatures",
+      "module": "people",
+      "summary": "People signatures ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-158",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/onboarding",
+      "module": "people",
+      "summary": "People onboarding ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-159",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/offboarding",
+      "module": "people",
+      "summary": "People offboarding ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-160",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/access-reviews",
+      "module": "people",
+      "summary": "People access-reviews ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-161",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/recertification",
+      "module": "people",
+      "summary": "People recertification ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-162",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/sod",
+      "module": "people",
+      "summary": "People sod ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-163",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/scenarios",
+      "module": "people",
+      "summary": "People scenarios ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-164",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/m365",
+      "module": "people",
+      "summary": "People m365 ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-165",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/esign",
+      "module": "people",
+      "summary": "People esign ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-166",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/succession",
+      "module": "people",
+      "summary": "People succession ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-167",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/skills",
+      "module": "people",
+      "summary": "People skills ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-168",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/privilege-alerts",
+      "module": "people",
+      "summary": "People privilege-alerts ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-169",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/search",
+      "module": "people",
+      "summary": "People search ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-170",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/ai",
+      "module": "people",
+      "summary": "People ai ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-171",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/reports",
+      "module": "people",
+      "summary": "People reports ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-172",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "/people/my-profile",
+      "module": "people",
+      "summary": "People my-profile ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-173",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/people/my-delegations",
+      "module": "people",
+      "summary": "People my-delegations ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-174",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "/people/my-signature",
+      "module": "people",
+      "summary": "People my-signature ships stub/JSON UI in production nav"
+    },
+    {
+      "id": "UX-175",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/universe",
+      "module": "audit",
+      "summary": "Audit universe not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-176",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/plans",
+      "module": "audit",
+      "summary": "Audit plans not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-177",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/engagements",
+      "module": "audit",
+      "summary": "Audit engagements not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-178",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/findings",
+      "module": "audit",
+      "summary": "Audit findings not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-179",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/corrective-actions",
+      "module": "audit",
+      "summary": "Audit corrective-actions not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-180",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/external",
+      "module": "audit",
+      "summary": "Audit external not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-181",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/campaigns",
+      "module": "audit",
+      "summary": "Audit campaigns not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-182",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/appointments",
+      "module": "audit",
+      "summary": "Audit appointments not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-183",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/resources",
+      "module": "audit",
+      "summary": "Audit resources not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-184",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/qa",
+      "module": "audit",
+      "summary": "Audit qa not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-185",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/templates",
+      "module": "audit",
+      "summary": "Audit templates not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-186",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/governance-packs",
+      "module": "audit",
+      "summary": "Audit governance-packs not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-187",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/analytics",
+      "module": "audit",
+      "summary": "Audit analytics not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-188",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/ai",
+      "module": "audit",
+      "summary": "Audit ai not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-189",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/audit/settings",
+      "module": "audit",
+      "summary": "Audit settings not on Leave/PIF-level page chrome"
+    },
+    {
+      "id": "UX-190",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/access/simulator",
+      "module": "admin",
+      "summary": "Access simulator uses tooling aesthetic (CSS vars, p-6)"
+    },
+    {
+      "id": "UX-191",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/access/explorer",
+      "module": "admin",
+      "summary": "Access explorer uses tooling aesthetic (CSS vars, p-6)"
+    },
+    {
+      "id": "UX-192",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/access/requests",
+      "module": "admin",
+      "summary": "Access requests uses tooling aesthetic (CSS vars, p-6)"
+    },
+    {
+      "id": "UX-193",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/access/reviews",
+      "module": "admin",
+      "summary": "Access reviews uses tooling aesthetic (CSS vars, p-6)"
+    },
+    {
+      "id": "UX-194",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/access/governance",
+      "module": "admin",
+      "summary": "Access governance uses tooling aesthetic (CSS vars, p-6)"
+    },
+    {
+      "id": "UX-195",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/assets/depreciation",
+      "module": "assets",
+      "summary": "Depreciation page mixes table-wrap with complex custom UI"
+    },
+    {
+      "id": "UX-196",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "/assets/transfers",
+      "module": "assets",
+      "summary": "Transfers CTA uses raw <a href> full navigation"
+    },
+    {
+      "id": "UX-197",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "/weekly-summaries/compliance",
+      "module": "weekly-summaries",
+      "summary": "Compliance page uses legacy btn btn-secondary"
+    },
+    {
+      "id": "UX-198",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "/procurement/vendors",
+      "module": "procurement",
+      "summary": "Vendors page uses EmptyState but not RegisterShell"
+    },
+    {
+      "id": "UX-199",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/leave/[id] vs /pif/[id]",
+      "module": "leave",
+      "summary": "Leave and PIF details are gold standard but not templated for reuse"
+    },
+    {
+      "id": "UX-200",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "Sidebar i18nKey coverage",
+      "module": "platform",
+      "summary": "Only some nav labels have i18nKey"
+    },
+    {
+      "id": "UX-201",
+      "category": "Search / filters UX",
+      "severity": "P2",
+      "route": "Client per_page:100 then slice",
+      "module": "platform",
+      "summary": "Many lists fetch 100 then client-paginate"
+    },
+    {
+      "id": "UX-202",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "/correspondence/master-register",
+      "module": "correspondence",
+      "summary": "Errors swallowed with empty catch"
+    },
+    {
+      "id": "UX-203",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/assets/disposal create form",
+      "module": "assets",
+      "summary": "Disposal create is inline expandable form not FormSection"
+    },
+    {
+      "id": "UX-204",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "admin/roles MODULE_GROUPS colors",
+      "module": "admin",
+      "summary": "Roles page invents 20+ color names (fuchsia, lime, stone\u2026)"
+    },
+    {
+      "id": "UX-205",
+      "category": "Attachment / document upload UX",
+      "severity": "P2",
+      "route": "/admin/users/[id]",
+      "module": "admin",
+      "summary": "User admin uses DocumentsPanel; profile uses same \u2014 OK but password section mixed"
+    },
+    {
+      "id": "UX-206",
+      "category": "Print/export affordances",
+      "severity": "P2",
+      "route": "/reports",
+      "module": "reports",
+      "summary": "Reports hub export UX separate from module export buttons"
+    },
+    {
+      "id": "UX-207",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "/approvals card layout",
+      "module": "approvals",
+      "summary": "Approvals cards OK on mobile but inbox tabs wrap densely"
+    },
+    {
+      "id": "UX-208",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "Consumables / Stock title",
+      "module": "stock",
+      "summary": "Stock page title 'Consumables / Stock' slash style unique"
+    },
+    {
+      "id": "UX-209",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P1",
+      "route": "/finance vs /budget vs /salary-advances",
+      "module": "finance",
+      "summary": "Finance domain split across three top-level experiences"
+    },
+    {
+      "id": "UX-210",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/hr/timesheets vs QuickEntrySlideOver",
+      "module": "hr",
+      "summary": "Timesheet entry: full pages + slide-over"
+    },
+    {
+      "id": "UX-211",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Sidebar scrollbar hidden",
+      "module": "platform",
+      "summary": "Sidebar scrollbar fully hidden"
+    },
+    {
+      "id": "UX-212",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "login demo credentials purple",
+      "module": "auth",
+      "summary": "Login demo System Admin tile uses purple"
+    },
+    {
+      "id": "UX-213",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P2",
+      "route": "/setup",
+      "module": "setup",
+      "summary": "Setup uses FormSection+Stepper but outside AppShell patterns"
+    },
+    {
+      "id": "UX-214",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/risk",
+      "module": "risk",
+      "summary": "Risk register on RegisterShell but create/detail diverge"
+    },
+    {
+      "id": "UX-215",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P2",
+      "route": "/correspondence/[id]",
+      "module": "correspondence",
+      "summary": "Correspondence detail chrome vs leave detail"
+    },
+    {
+      "id": "UX-216",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Supplier Portal in main sidebar",
+      "module": "supplier",
+      "summary": "Supplier portal mixed into staff AppShell nav"
+    },
+    {
+      "id": "UX-217",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "@/components/ui/Checkbox",
+      "module": "platform",
+      "summary": "Checkbox component exists; bulk selection uses custom RowCheckbox"
+    },
+    {
+      "id": "UX-218",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Travel statusConfig uses bordered chips not .badge-*",
+      "module": "travel",
+      "summary": "Travel detail status chips are custom bordered pills"
+    },
+    {
+      "id": "UX-219",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "/stock/scan offline queue",
+      "module": "stock",
+      "summary": "Offline queue messaging via alert-success/error"
+    },
+    {
+      "id": "UX-220",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/workflows/*",
+      "module": "admin",
+      "summary": "Workflow designer/simulate/ai pages feel separate product"
+    },
+    {
+      "id": "UX-221",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/profile vs /people/my-profile vs HR files",
+      "module": "hr",
+      "summary": "Employee identity surfaces: profile, people, hr/files"
+    },
+    {
+      "id": "UX-222",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P2",
+      "route": "Relative vs absolute dates",
+      "module": "platform",
+      "summary": "formatDateRelative used sparsely"
+    },
+    {
+      "id": "UX-223",
+      "category": "Search / filters UX",
+      "severity": "P1",
+      "route": "Filter tabs hide when empty",
+      "module": "approvals",
+      "summary": "Approvals filter tabs only render when requests.length > 0"
+    },
+    {
+      "id": "UX-224",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P2",
+      "route": "Ghost/danger variants rarely used",
+      "module": "platform",
+      "summary": "Danger actions often styled as primary or plain btn-sm"
+    },
+    {
+      "id": "UX-225",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/notifications",
+      "module": "notifications",
+      "summary": "Notifications page custom layout vs ModulePageHeader"
+    },
+    {
+      "id": "UX-226",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "Header GlobalSearch",
+      "module": "platform",
+      "summary": "Global search desktop-oriented"
+    },
+    {
+      "id": "UX-227",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "Feature-only messaging",
+      "module": "my-work",
+      "summary": "Feature-only explanation only on some pages"
+    },
+    {
+      "id": "UX-228",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/travel/register vs /travel?scope=mine",
+      "module": "travel",
+      "summary": "Travel register vs filtered dashboard lists"
+    },
+    {
+      "id": "UX-229",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P2",
+      "route": "Certificate pages",
+      "module": "platform",
+      "summary": "Certificate pages share PrintButton but layout still per-module"
+    },
+    {
+      "id": "UX-230",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P2",
+      "route": "focus:ring inconsistency",
+      "module": "platform",
+      "summary": "btn-primary focus rings differ from Button component rings"
+    },
+    {
+      "id": "UX-231",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "Procurement category purple chips",
+      "module": "procurement",
+      "summary": "Services category forced to purple palette"
+    },
+    {
+      "id": "UX-232",
+      "category": "Admin vs operational module visual split",
+      "severity": "P2",
+      "route": "/admin/notifications vs /notifications",
+      "module": "admin",
+      "summary": "Admin notification templates vs user notifications"
+    },
+    {
+      "id": "UX-233",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/finance/advances/create",
+      "module": "finance",
+      "summary": "Advance create still on legacy finance path"
+    },
+    {
+      "id": "UX-234",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/assignments/[id]",
+      "module": "assignments",
+      "summary": "Assignment detail uses custom layout vs workflow modules"
+    },
+    {
+      "id": "UX-235",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "Silent permission failures",
+      "module": "platform",
+      "summary": "Some API catches set generic errors; some empty"
+    },
+    {
+      "id": "UX-236",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "Alerts & Notifications vs Notifications naming",
+      "module": "notifications",
+      "summary": "Nav label 'Alerts & Notifications' route /notifications"
+    },
+    {
+      "id": "UX-237",
+      "category": "Spacing / typography / density",
+      "severity": "P2",
+      "route": "card padding p-3 filters vs p-5 sections",
+      "module": "platform",
+      "summary": "Filter cards tighter than content cards"
+    },
+    {
+      "id": "UX-238",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/governance/resolutions",
+      "module": "governance",
+      "summary": "Resolutions page is a mega-custom surface"
+    },
+    {
+      "id": "UX-239",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P2",
+      "route": "FILL variation on icons",
+      "module": "platform",
+      "summary": "Material symbols default FILL 0 everywhere"
+    },
+    {
+      "id": "UX-240",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "Bulk export only when BulkSelectionBar present",
+      "module": "platform",
+      "summary": "Export selected requires bulk bar; Export all sometimes separate"
+    },
+    {
+      "id": "UX-241",
+      "category": "Attachment / document upload UX",
+      "severity": "P1",
+      "route": "/hr/files/[id]/documents",
+      "module": "hr",
+      "summary": "HR personnel documents separate from profile DocumentsPanel"
+    },
+    {
+      "id": "UX-242",
+      "category": "Approval / inbox patterns",
+      "severity": "P2",
+      "route": "Idempotency keys only in inbox decide path",
+      "module": "approvals",
+      "summary": "Inbox sends idempotency_key; /approvals approve path may not"
+    },
+    {
+      "id": "UX-243",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/mande/*",
+      "module": "mande",
+      "summary": "M&E module UI maturity uneven"
+    },
+    {
+      "id": "UX-244",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/srhr/*",
+      "module": "srhr",
+      "summary": "SRHR module visual language separate"
+    },
+    {
+      "id": "UX-245",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/admin page hub",
+      "module": "admin",
+      "summary": "Admin hub is card grid gold-standard for hubs but unused elsewhere"
+    },
+    {
+      "id": "UX-246",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "badge-primary vs Badge primary",
+      "module": "platform",
+      "summary": "Primary badge: CSS uses bg-primary/10; component uses bg-blue-100"
+    },
+    {
+      "id": "UX-247",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "surface-muted vs --surface",
+      "module": "platform",
+      "summary": "body bg-surface-muted and :root --surface both define canvas"
+    },
+    {
+      "id": "UX-248",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/leave/settings",
+      "module": "leave",
+      "summary": "Leave settings uses FormSection (good) but most module settings don't"
+    },
+    {
+      "id": "UX-249",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "per_page hardcoding",
+      "module": "platform",
+      "summary": "Magic per_page 50 vs 100 across registers"
+    },
+    {
+      "id": "UX-250",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Dashboard route outside (app) group",
+      "module": "dashboard",
+      "summary": "/dashboard lives under web/app/dashboard not (app)"
+    },
+    {
+      "id": "UX-251",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "/approval legacy route",
+      "module": "approvals",
+      "summary": "web/app/approval vs /approvals"
+    },
+    {
+      "id": "UX-252",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "Link styled as btn-secondary inconsistently",
+      "module": "platform",
+      "summary": "Some CTAs are <Link className=\"btn-secondary\">; others <button>"
+    },
+    {
+      "id": "UX-253",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P2",
+      "route": "SectionIcon local duplicates",
+      "module": "platform",
+      "summary": "SectionIcon redefined inside leave and travel detail pages"
+    },
+    {
+      "id": "UX-254",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Tables without caption/scope",
+      "module": "platform",
+      "summary": "Most data tables lack <caption> or th scope"
+    },
+    {
+      "id": "UX-255",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "BulkSelectionBar on small screens",
+      "module": "platform",
+      "summary": "Bulk bar + filters may crowd mobile filter card"
+    },
+    {
+      "id": "UX-256",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "Recommend Inbox vs Certification Queue naming",
+      "module": "leave",
+      "summary": "Queue naming style differs"
+    },
+    {
+      "id": "UX-257",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/ledger vs /analytics/ledger",
+      "module": "admin",
+      "summary": "Ledger surfaces in admin and analytics"
+    },
+    {
+      "id": "UX-258",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Calendar pages",
+      "module": "platform",
+      "summary": "Multiple calendars: leave, travel, assignments, mande, admin"
+    },
+    {
+      "id": "UX-259",
+      "category": "Search / filters UX",
+      "severity": "P2",
+      "route": "URL query filters inconsistent",
+      "module": "platform",
+      "summary": "Some lists sync filters to URL (finance advances); leave uses local state only"
+    },
+    {
+      "id": "UX-260",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Salary advance status explosion",
+      "module": "finance",
+      "summary": "SA status map has 12+ states with badge-primary overloaded"
+    },
+    {
+      "id": "UX-261",
+      "category": "Attachment / document upload UX",
+      "severity": "P2",
+      "route": "Drag-drop vs file input",
+      "module": "platform",
+      "summary": "Upload affordances differ by panel"
+    },
+    {
+      "id": "UX-262",
+      "category": "Print/export affordances",
+      "severity": "P2",
+      "route": "/fleet utilisation",
+      "module": "fleet",
+      "summary": "Utilisation report page export unclear"
+    },
+    {
+      "id": "UX-263",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "Uppercase eyebrow labels on people stubs",
+      "module": "people",
+      "summary": "People pages use text-xs uppercase tracking-wide eyebrows"
+    },
+    {
+      "id": "UX-264",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "Required field indicators",
+      "module": "platform",
+      "summary": "Asterisk / required marking inconsistent"
+    },
+    {
+      "id": "UX-265",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "RegisterShell empty vs children empty",
+      "module": "platform",
+      "summary": "Some pages pass empty prop; others render empty inside children"
+    },
+    {
+      "id": "UX-266",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Assignments nav depth",
+      "module": "assignments",
+      "summary": "Assignments children extremely long"
+    },
+    {
+      "id": "UX-267",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "Dark mode on var(--*) pages",
+      "module": "admin",
+      "summary": "CSS variable pages may not map to dark tokens"
+    },
+    {
+      "id": "UX-268",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "/assets/mine acknowledge",
+      "module": "assets",
+      "summary": "Acknowledge uses btn-sm btn-primary without confirm"
+    },
+    {
+      "id": "UX-269",
+      "category": "Tables vs cards vs lists",
+      "severity": "P2",
+      "route": "Dashboard recent activity list",
+      "module": "dashboard",
+      "summary": "Activity list custom vs notifications list"
+    },
+    {
+      "id": "UX-270",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "Tabs implementation ad-hoc",
+      "module": "platform",
+      "summary": "No shared Tabs component"
+    },
+    {
+      "id": "UX-271",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "/budget/* vs /finance/budget",
+      "module": "budget",
+      "summary": "Budget control module vs finance budgets"
+    },
+    {
+      "id": "UX-272",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P2",
+      "route": "Color-only status in places",
+      "module": "platform",
+      "summary": "Some statuses color-only without text/icon"
+    },
+    {
+      "id": "UX-273",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "max-w-6xl mx-auto on mobile",
+      "module": "platform",
+      "summary": "Centered max width fine; horizontal padding double issue worse on mobile"
+    },
+    {
+      "id": "UX-274",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "Institutional vs tooling tone",
+      "module": "platform",
+      "summary": "Leave/PIF copy is institutional; access/people stubs are developer tone"
+    },
+    {
+      "id": "UX-275",
+      "category": "Admin vs operational module visual split",
+      "severity": "P2",
+      "route": "/admin/governance vs /governance",
+      "module": "governance",
+      "summary": "Governance admin vs operational governance"
+    },
+    {
+      "id": "UX-276",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/stock/* subregisters",
+      "module": "stock",
+      "summary": "Stock submodules (issues, transfers, stocktakes\u2026) inconsistent shells"
+    },
+    {
+      "id": "UX-277",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/procurement/create",
+      "module": "procurement",
+      "summary": "Procurement create not on FormSection/Stepper baseline"
+    },
+    {
+      "id": "UX-278",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "Withdrawn vs cancelled badge both muted",
+      "module": "platform",
+      "summary": "Terminal states share muted badge"
+    },
+    {
+      "id": "UX-279",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "/audit dashboard loading",
+      "module": "audit",
+      "summary": "Loading dashboard\u2026 plain text"
+    },
+    {
+      "id": "UX-280",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "External RFQ route",
+      "module": "procurement",
+      "summary": "external-rfq outside (app) shell"
+    },
+    {
+      "id": "UX-281",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "/analytics",
+      "module": "analytics",
+      "summary": "Analytics export/print inconsistent with reports module"
+    },
+    {
+      "id": "UX-282",
+      "category": "Attachment / document upload UX",
+      "severity": "P1",
+      "route": "Supporting document links as raw <a target=_blank>",
+      "module": "finance",
+      "summary": "Balance register verify uses raw anchor for documents"
+    },
+    {
+      "id": "UX-283",
+      "category": "Approval / inbox patterns",
+      "severity": "P1",
+      "route": "MODULE_CONFIG missing modules",
+      "module": "approvals",
+      "summary": "Approvals card config misses PIF, assignments, salary advances, risk"
+    },
+    {
+      "id": "UX-284",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P2",
+      "route": "Settings scattered",
+      "module": "settings",
+      "summary": "Module settings under /travel/settings, /leave/settings, /settings/hr, /admin/settings, /people/settings"
+    },
+    {
+      "id": "UX-285",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "Hub pages without breadcrumbs",
+      "module": "platform",
+      "summary": "Module hubs rarely show where you are in IA"
+    },
+    {
+      "id": "UX-286",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P2",
+      "route": "Primary CTA placement",
+      "module": "platform",
+      "summary": "Create CTA sometimes left in subtitle row, sometimes right actions"
+    },
+    {
+      "id": "UX-287",
+      "category": "Date/time/currency/number formatting",
+      "severity": "P1",
+      "route": "PrefsProvider date format underused",
+      "module": "platform",
+      "summary": "User date prefs exist but most pages ignore useFormatDate"
+    },
+    {
+      "id": "UX-288",
+      "category": "Search / filters UX",
+      "severity": "P1",
+      "route": "Clear filters affordance missing",
+      "module": "platform",
+      "summary": "Many filter UIs lack Clear all"
+    },
+    {
+      "id": "UX-289",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Skip link absent",
+      "module": "platform",
+      "summary": "No skip-to-main-content link in AppShell"
+    },
+    {
+      "id": "UX-290",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "Travel create long wizard on mobile",
+      "module": "travel",
+      "summary": "Multi-step travel form dense on small screens"
+    },
+    {
+      "id": "UX-291",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "shadow-card token",
+      "module": "platform",
+      "summary": "Cards use shadow-card; dark mode overrides to --dk-shadow-sm"
+    },
+    {
+      "id": "UX-292",
+      "category": "Icons / illustration inconsistency",
+      "severity": "P1",
+      "route": "Admin hub vs People hub iconography",
+      "module": "admin",
+      "summary": "Admin hub rich icons; People hub none; Audit hub none"
+    },
+    {
+      "id": "UX-293",
+      "category": "Tables vs cards vs lists",
+      "severity": "P2",
+      "route": "KPI Object.entries anti-pattern",
+      "module": "audit",
+      "summary": "Audit dashboard not alone \u2014 other stubs dump keys"
+    },
+    {
+      "id": "UX-294",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "Validation error display",
+      "module": "platform",
+      "summary": "API errors: toast vs field-level vs alert"
+    },
+    {
+      "id": "UX-295",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "EmptyState min-h-[200px]",
+      "module": "platform",
+      "summary": "Fixed min height may look sparse in compact density"
+    },
+    {
+      "id": "UX-296",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Effective nav vs static NAV_ITEMS",
+      "module": "platform",
+      "summary": "Sidebar still largely static NAV_ITEMS while /access/navigation exists"
+    },
+    {
+      "id": "UX-297",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/documents governance buttons",
+      "module": "admin",
+      "summary": "Uses btn btn-primary text-sm legacy"
+    },
+    {
+      "id": "UX-298",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Queue table components",
+      "module": "platform",
+      "summary": "TravelQueueTable vs AdvanceQueueTable vs ad-hoc tables"
+    },
+    {
+      "id": "UX-299",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "filter-tab.active white on primary",
+      "module": "platform",
+      "summary": "Filter tabs use filled primary; inbox tabs use same but different radius"
+    },
+    {
+      "id": "UX-300",
+      "category": "Print/export affordances",
+      "severity": "P2",
+      "route": "PDF libs loaded ad-hoc on assets",
+      "module": "assets",
+      "summary": "loadPdfLibs on assets page"
+    },
+    {
+      "id": "UX-301",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "AuditTimeline only on some details",
+      "module": "platform",
+      "summary": "travel/leave show AuditTimeline; others don't"
+    },
+    {
+      "id": "UX-302",
+      "category": "Attachment / document upload UX",
+      "severity": "P2",
+      "route": "Vendor attachments custom UI",
+      "module": "procurement",
+      "summary": "procurement/vendors/[id] large custom attachment section"
+    },
+    {
+      "id": "UX-303",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "OK vs Okay vs success toasts",
+      "module": "platform",
+      "summary": "Toast titles vary (Approved, Decision recorded, Action Failed)"
+    },
+    {
+      "id": "UX-304",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P2",
+      "route": "meta slot on ModulePageHeader underused",
+      "module": "platform",
+      "summary": "ModulePageHeader supports meta badges but few pages pass status there"
+    },
+    {
+      "id": "UX-305",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/pif register as reference",
+      "module": "pif",
+      "summary": "PIF register is high quality but isolated"
+    },
+    {
+      "id": "UX-306",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "Header notifications panel",
+      "module": "platform",
+      "summary": "NotificationsPanel overlay desktop-first"
+    },
+    {
+      "id": "UX-307",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Contrast on badge-muted",
+      "module": "platform",
+      "summary": "badge-muted neutral-100/600 may fail on some surfaces"
+    },
+    {
+      "id": "UX-308",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "Toggle component usage",
+      "module": "platform",
+      "summary": "Toggle.tsx exists; many settings use checkboxes"
+    },
+    {
+      "id": "UX-309",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "e71cea6 table-wrap bridge still in use",
+      "module": "assets",
+      "summary": "Recent fix avoided @apply card in table-wrap but consumers remain"
+    },
+    {
+      "id": "UX-310",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "Gold path vs stub path",
+      "module": "platform",
+      "summary": "Product feels like two apps: polished Leave/PIF/Travel vs stub People/Audit/Access"
+    },
+    {
+      "id": "UX-311",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Organogram top-level vs People child",
+      "module": "organogram",
+      "summary": "Organogram is top-level nav item while People also has Organisation Chart"
+    },
+    {
+      "id": "UX-312",
+      "category": "Dashboard widgets / badge counts",
+      "severity": "P2",
+      "route": "Widget prefs localStorage only",
+      "module": "dashboard",
+      "summary": "Dashboard customization not mirrored elsewhere"
+    },
+    {
+      "id": "UX-313",
+      "category": "Search / filters UX",
+      "severity": "P2",
+      "route": "GlobalSearch module color purple for Admin",
+      "module": "platform",
+      "summary": "GlobalSearch Admin group text-purple-600"
+    },
+    {
+      "id": "UX-314",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "Reject flows require reason only sometimes",
+      "module": "platform",
+      "summary": "Approvals page requires reason; inbox doesn't; some queues optional"
+    },
+    {
+      "id": "UX-315",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "People stub 'Unable to load.' too terse",
+      "module": "people",
+      "summary": "Repeated across people pages"
+    },
+    {
+      "id": "UX-316",
+      "category": "Admin vs operational module visual split",
+      "severity": "P2",
+      "route": "Risk analytics purple/pink category colors",
+      "module": "risk",
+      "summary": "risk/analytics category color map includes pink/purple"
+    },
+    {
+      "id": "UX-317",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/admin/access/requests",
+      "module": "admin",
+      "summary": "Access requests list minimal vs operational registers"
+    },
+    {
+      "id": "UX-318",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P2",
+      "route": "PIF edit vs create chrome",
+      "module": "pif",
+      "summary": "PIF create uses FormSection; edit uses section components"
+    },
+    {
+      "id": "UX-319",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "Certificate vs Print register",
+      "module": "platform",
+      "summary": "Users may not find certificate from register row actions"
+    },
+    {
+      "id": "UX-320",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/salary-advances dashboard",
+      "module": "finance",
+      "summary": "Salary advance dashboard uses page-title (good) but not ModulePageHeader"
+    },
+    {
+      "id": "UX-321",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "/assets/add Stepper",
+      "module": "assets",
+      "summary": "Assets add uses Stepper but other asset flows don't"
+    },
+    {
+      "id": "UX-322",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Delegation UIs",
+      "module": "saam",
+      "summary": "saam/delegations vs people/delegations vs people/my-delegations"
+    },
+    {
+      "id": "UX-323",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P2",
+      "route": "Chart/canvas organogram",
+      "module": "organogram",
+      "summary": "SVG connectors may lack text alternatives"
+    },
+    {
+      "id": "UX-324",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "Filter tab wrap",
+      "module": "platform",
+      "summary": "Many filter-tab rows wrap to 2\u20133 lines on mobile"
+    },
+    {
+      "id": "UX-325",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "Hardcoded #cbd5e1 in organogram",
+      "module": "organogram",
+      "summary": "Inline SVG fill colors ignore theme"
+    },
+    {
+      "id": "UX-326",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Workplan milestone purple bar #8b5cf6",
+      "module": "workplan",
+      "summary": "Hardcoded hex purple in workplan page"
+    },
+    {
+      "id": "UX-327",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "AssignmentFilteredList uses RegisterShell",
+      "module": "assignments",
+      "summary": "Good pattern not copied to HR/stock"
+    },
+    {
+      "id": "UX-328",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "HR Leave Certify listed under HR and Leave",
+      "module": "leave",
+      "summary": "Certification queue linked from two sidebar sections"
+    },
+    {
+      "id": "UX-329",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P2",
+      "route": "SkeletonCard local in travel detail",
+      "module": "travel",
+      "summary": "Local SkeletonCard vs RegisterShell pulse rows"
+    },
+    {
+      "id": "UX-330",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P2",
+      "route": "Disabled opacity only",
+      "module": "platform",
+      "summary": "disabled:opacity-50 without explaining why"
+    },
+    {
+      "id": "UX-331",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P1",
+      "route": "My Work subtitle 'Feature-only tasks'",
+      "module": "my-work",
+      "summary": "User-facing 'feature-only' jargon"
+    },
+    {
+      "id": "UX-332",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "/admin/users create wizard",
+      "module": "admin",
+      "summary": "User create is elaborate multi-section; access role create is 2 fields"
+    },
+    {
+      "id": "UX-333",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P1",
+      "route": "/risk/[id] SectionIcon purple history",
+      "module": "risk",
+      "summary": "Risk detail history section purple accent"
+    },
+    {
+      "id": "UX-334",
+      "category": "Attachment / document upload UX",
+      "severity": "P1",
+      "route": "Profile documents vs HR file documents",
+      "module": "profile",
+      "summary": "Employees may upload in profile and HR file separately"
+    },
+    {
+      "id": "UX-335",
+      "category": "Print/export affordances",
+      "severity": "P2",
+      "route": "Weekly summaries compliance export",
+      "module": "weekly-summaries",
+      "summary": "Export CSV uses legacy btn classes"
+    },
+    {
+      "id": "UX-336",
+      "category": "Search / filters UX",
+      "severity": "P1",
+      "route": "/assets page filters",
+      "module": "assets",
+      "summary": "Assets register filters bespoke vs RegisterShell filter card"
+    },
+    {
+      "id": "UX-337",
+      "category": "Tables vs cards vs lists",
+      "severity": "P1",
+      "route": "/fleet tab content tables",
+      "module": "fleet",
+      "summary": "Fleet tables plain; no data-table thead styling consistently"
+    },
+    {
+      "id": "UX-338",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P2",
+      "route": "Inline style usage on leave/pif remaining",
+      "module": "leave",
+      "summary": "Some polished pages still carry style={{}} for progress widths"
+    },
+    {
+      "id": "UX-339",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Notifications: Header panel vs /notifications page",
+      "module": "notifications",
+      "summary": "Two notification UIs"
+    },
+    {
+      "id": "UX-340",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P1",
+      "route": "/approvals missing breadcrumbs",
+      "module": "approvals",
+      "summary": "Neither approvals page uses PageBreadcrumbs"
+    },
+    {
+      "id": "UX-341",
+      "category": "Status badges / colors / semantics",
+      "severity": "P2",
+      "route": "Info vs primary badge confusion",
+      "module": "platform",
+      "summary": "When badge-info missing, authors may misuse badge-primary for informational"
+    },
+    {
+      "id": "UX-342",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "ConfirmDialog and Toast focus management",
+      "module": "platform",
+      "summary": "Need verification that focus returns after confirm"
+    },
+    {
+      "id": "UX-343",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P1",
+      "route": "Sidebar 260px fixed",
+      "module": "platform",
+      "summary": "--sidebar-width 260px with very deep trees"
+    },
+    {
+      "id": "UX-344",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P2",
+      "route": "login page light-only demo tiles",
+      "module": "auth",
+      "summary": "Demo credential tiles use *-50 backgrounds without dark variants"
+    },
+    {
+      "id": "UX-345",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P2",
+      "route": "approval/page.tsx legacy",
+      "module": "approvals",
+      "summary": "Legacy /approval route group still in app tree"
+    },
+    {
+      "id": "UX-346",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P1",
+      "route": "/imprest missing density toggle",
+      "module": "imprest",
+      "summary": "Near-clone of leave without density"
+    },
+    {
+      "id": "UX-347",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "/my-work empty",
+      "module": "my-work",
+      "summary": "Empty copy 'No assigned My Work features.' plain li"
+    },
+    {
+      "id": "UX-348",
+      "category": "Admin vs operational module visual split",
+      "severity": "P1",
+      "route": "Access governance checklist tone",
+      "module": "admin",
+      "summary": "/admin/access/governance tooling checklist UI"
+    },
+    {
+      "id": "UX-349",
+      "category": "Buttons / CTAs / destructive actions",
+      "severity": "P1",
+      "route": "Create draft on access roles lacks validation feedback styling",
+      "module": "admin",
+      "summary": "disabled={!name} only \u2014 no error text"
+    },
+    {
+      "id": "UX-350",
+      "category": "Detail pages / tabs / workflow banners",
+      "severity": "P2",
+      "route": "StatusTimeline vs ApprovalTimeline both on travel",
+      "module": "travel",
+      "summary": "Possible redundant status storytelling"
+    },
+    {
+      "id": "UX-351",
+      "category": "Copy/tone / microcopy inconsistency",
+      "severity": "P2",
+      "route": "Capitalise British spelling",
+      "module": "assets",
+      "summary": "Capitalise used in assets (British) while other UI Americanize"
+    },
+    {
+      "id": "UX-352",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P1",
+      "route": "Settings HR approval matrix",
+      "module": "settings",
+      "summary": "HR approval matrix separate from admin workflows designer"
+    },
+    {
+      "id": "UX-353",
+      "category": "Print/export affordances",
+      "severity": "P1",
+      "route": "/correspondence master bulk export",
+      "module": "correspondence",
+      "summary": "Bulk export exists on master-register \u2014 good \u2014 but retention page has none"
+    },
+    {
+      "id": "UX-354",
+      "category": "Search / filters UX",
+      "severity": "P2",
+      "route": "Stock category filter local state",
+      "module": "stock",
+      "summary": "Filters not in URL; refresh loses filters"
+    },
+    {
+      "id": "UX-355",
+      "category": "Forms (labels, sections, validation presentation, steppers)",
+      "severity": "P1",
+      "route": "Fleet create driver User id raw number input",
+      "module": "fleet",
+      "summary": "driverUserId typed as raw id string"
+    },
+    {
+      "id": "UX-356",
+      "category": "Status badges / colors / semantics",
+      "severity": "P1",
+      "route": "Header notification module colors include purple procurement",
+      "module": "platform",
+      "summary": "Header.tsx procurement purple map"
+    },
+    {
+      "id": "UX-357",
+      "category": "Layout chrome / page headers / breadcrumbs",
+      "severity": "P2",
+      "route": "maxWidth prop on ModulePageHeader rarely passed",
+      "module": "platform",
+      "summary": "API supports 3xl/4xl/6xl but callers use none"
+    },
+    {
+      "id": "UX-358",
+      "category": "Accessibility (focus, labels, contrast, hit targets)",
+      "severity": "P1",
+      "route": "Icon-only header buttons",
+      "module": "platform",
+      "summary": "Header menu/notifications rely on icons"
+    },
+    {
+      "id": "UX-359",
+      "category": "Mobile / responsive breakpoints",
+      "severity": "P2",
+      "route": "main onClick closes sidebar",
+      "module": "platform",
+      "summary": "Clicking controls in main closes mobile sidebar \u2014 OK; may cause focus quirks"
+    },
+    {
+      "id": "UX-360",
+      "category": "Color / legacy CSS bridges / dark-light issues",
+      "severity": "P1",
+      "route": "People hub white cards without dark:bg",
+      "module": "people",
+      "summary": "bg-white border tiles ignore dark surfaces"
+    },
+    {
+      "id": "UX-361",
+      "category": "Empty / loading / error / 403-404 states",
+      "severity": "P1",
+      "route": "Audit isError plain text",
+      "module": "audit",
+      "summary": "Unable to load dashboard. without alert styling"
+    },
+    {
+      "id": "UX-362",
+      "category": "Registers/lists (filters, density, pagination, bulk actions)",
+      "severity": "P2",
+      "route": "Risk page RegisterShell + custom category icons",
+      "module": "risk",
+      "summary": "Good shell; category icon colors include purple compliance"
+    },
+    {
+      "id": "UX-363",
+      "category": "Navigation / sidebar / My Work / feature-only orphans",
+      "severity": "P1",
+      "route": "Finance nav mixes Budget module routes",
+      "module": "finance",
+      "summary": "Budget Control, Cycles, Changes\u2026 under Finance plus separate Budget mental model"
+    },
+    {
+      "id": "UX-364",
+      "category": "Cross-module \u201csame job, different UI\u201d duplicates",
+      "severity": "P0",
+      "route": "Design system adoption gap is the root cause",
+      "module": "platform",
+      "summary": "Canonical primitives exist but adoption <5% of pages"
+    }
+  ]
+}

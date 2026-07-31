@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { assetsApi, type Asset } from "@/lib/api";
 
@@ -19,10 +20,11 @@ export default function MyAssetsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">My Assigned Assets</h1>
-          <p className="page-subtitle">Acknowledge custody for items assigned to you</p>
-        </div>
+        <ModulePageHeader
+        title="My Assigned Assets"
+        subtitle="Acknowledge custody for items assigned to you"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Assigned Assets" }]} />}
+      />
       </div>
       <div className="table-wrap">
         <table className="data-table">

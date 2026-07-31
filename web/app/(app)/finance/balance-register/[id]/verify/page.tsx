@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
@@ -91,7 +92,7 @@ function VerifyTransactionPageContent() {
 
   if (error || !register || !txn) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
           {error ?? "Transaction not found."}
         </div>
@@ -113,10 +114,10 @@ function VerifyTransactionPageContent() {
         <span className="text-neutral-800 font-medium">Verify Transaction</span>
       </nav>
 
-      <div>
-        <h1 className="page-title">Verify Balance Update</h1>
-        <p className="page-subtitle">{register.reference_number} — Transaction #{txn.id}</p>
-      </div>
+      <ModulePageHeader
+        title="Verify Balance Update"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Verify Balance Update" }]} />}
+      />
 
       {/* Self-verification guard */}
       {isSelfVerification && (

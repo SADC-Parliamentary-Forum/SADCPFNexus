@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetsApi, type AssetInsuranceClaim, type AssetInsurancePolicy } from "@/lib/api";
@@ -91,10 +92,11 @@ export default function AssetInsurancePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Insurance</h1>
-          <p className="page-subtitle">Policies and claims for capital assets (Phase 2). Warranty fields remain on the asset register.</p>
-        </div>
+        <ModulePageHeader
+        title="Insurance"
+        subtitle="Policies and claims for capital assets (Phase 2). Warranty fields remain on the asset register."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Insurance" }]} />}
+      />
         <div className="flex gap-2">
           <button type="button" className={tab === "policies" ? "btn-primary text-sm" : "btn-secondary text-sm"} onClick={() => setTab("policies")}>
             Policies

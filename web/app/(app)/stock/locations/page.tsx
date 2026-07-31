@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stockLocationsApi, type StockLocation } from "@/lib/api";
@@ -45,10 +46,11 @@ export default function StockLocationsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="page-title">Store locations</h1>
-        <p className="page-subtitle">Physical stores / cupboards for consumables inventory.</p>
-      </div>
+      <ModulePageHeader
+        title="Store locations"
+        subtitle="Physical stores / cupboards for consumables inventory."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Store locations" }]} />}
+      />
 
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-4 gap-3 items-end">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
@@ -28,10 +29,11 @@ export default function PendingAcceptancePage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50">
           <span className="material-symbols-outlined text-amber-600 text-[20px]">pending_actions</span>
         </div>
-        <div>
-          <h1 className="page-title">Pending Acceptance</h1>
-          <p className="page-subtitle">Assignments awaiting a response from the assignee.</p>
-        </div>
+        <ModulePageHeader
+        title="Pending Acceptance"
+        subtitle="Assignments awaiting a response from the assignee."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Pending Acceptance" }]} />}
+      />
       </div>
 
       {isLoading ? (

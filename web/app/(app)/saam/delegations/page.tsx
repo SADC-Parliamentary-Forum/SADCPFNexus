@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
@@ -97,10 +98,11 @@ export default function DelegationsPage() {
       )}
 
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Delegation of Authority</h1>
-          <p className="page-subtitle">Grant temporary signing authority to another staff member on your behalf.</p>
-        </div>
+        <ModulePageHeader
+        title="Delegation of Authority"
+        subtitle="Grant temporary signing authority to another staff member on your behalf."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Delegation of Authority" }]} />}
+      />
         <button onClick={() => setShowForm(true)} className="btn-primary inline-flex items-center gap-1.5 flex-shrink-0 text-sm">
           <span className="material-symbols-outlined text-[16px]">add</span>
           New Delegation

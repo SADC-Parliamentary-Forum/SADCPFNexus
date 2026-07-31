@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockIssuesApi, type StockIssue } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
@@ -28,10 +29,11 @@ export default function StockIssuesPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Issue Vouchers</h1>
-        <p className="page-subtitle">Ledgered stock-out vouchers with recipient acknowledgement.</p>
-      </div>
+      <ModulePageHeader
+        title="Issue Vouchers"
+        subtitle="Ledgered stock-out vouchers with recipient acknowledgement."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Issue Vouchers" }]} />}
+      />
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
           <tr>

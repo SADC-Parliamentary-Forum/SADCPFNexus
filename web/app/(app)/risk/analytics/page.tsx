@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskMatrixData, type RiskDashboardData, type RiskCategory } from "@/lib/api";
@@ -89,10 +90,11 @@ export default function RiskAnalyticsPage() {
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Risk Analytics & Reports</h1>
-          <p className="page-subtitle">Institutional risk exposure analysis, departmental performance, and category breakdown.</p>
-        </div>
+        <ModulePageHeader
+        title="Risk Analytics & Reports"
+        subtitle="Institutional risk exposure analysis, departmental performance, and category breakdown."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Risk Analytics & Reports" }]} />}
+      />
         <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 text-sm">
           <span className="material-symbols-outlined text-[16px]">download</span>
           Export CSV

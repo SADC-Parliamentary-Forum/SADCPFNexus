@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { settingsApi, type SystemSettings } from "@/lib/api";
@@ -114,10 +115,11 @@ export default function LetterheadPage() {
         </div>
       </div>
 
-      <div>
-        <h1 className="page-title">Letterhead Branding</h1>
-        <p className="page-subtitle">Configure the organisation identity used on official correspondence and printed documents. Changes appear immediately in the live preview.</p>
-      </div>
+      <ModulePageHeader
+        title="Letterhead Branding"
+        subtitle="Configure the organisation identity used on official correspondence and printed documents. Changes appear immediately in the live preview."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Letterhead Branding" }]} />}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 items-start">
         {/* ── Edit panel ── */}

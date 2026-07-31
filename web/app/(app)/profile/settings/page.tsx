@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { TIMEZONES, DATE_FORMATS, CURRENCIES, LANGUAGES, PREFS_KEY } from "@/lib/constants";
@@ -95,10 +96,11 @@ export default function ProfileSettingsPage() {
         </div>
       )}
 
-      <div>
-        <h1 className="page-title">Preferences & Settings</h1>
-        <p className="page-subtitle">Customise notifications, display format, language, and accessibility options.</p>
-      </div>
+      <ModulePageHeader
+        title="Preferences & Settings"
+        subtitle="Customise notifications, display format, language, and accessibility options."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Preferences & Settings" }]} />}
+      />
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">

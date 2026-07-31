@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
@@ -15,10 +16,11 @@ export default function AssignmentsWorkloadPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Workload forecast</h1>
-          <p className="page-subtitle">Hours/capacity projection (estimated hours; default 8h when unset).</p>
-        </div>
+        <ModulePageHeader
+        title="Workload forecast"
+        subtitle="Hours/capacity projection (estimated hours; default 8h when unset)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Workload forecast" }]} />}
+      />
         <Link href="/assignments/capacity" className="btn-secondary text-sm">Capacity bands</Link>
       </div>
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}

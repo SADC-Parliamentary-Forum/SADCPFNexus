@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { documentServiceApi } from "@/lib/api";
@@ -35,12 +36,10 @@ export default function DocumentRetentionPage() {
   return (
     <div className="p-6 space-y-4 max-w-4xl">
       <div className="flex justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold">Retention campaigns</h1>
-          <p className="text-sm text-neutral-600 mt-1">
-            Holds override disposal. Expiry alone never auto-deletes.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Retention campaigns"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Retention campaigns" }]} />}
+      />
         <Link href="/admin/documents" className="text-sm text-primary underline">
           Document register
         </Link>

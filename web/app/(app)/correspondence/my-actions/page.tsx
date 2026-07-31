@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
@@ -18,10 +19,11 @@ export default function MyCorrespondenceActionsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">My Action Items</h1>
-        <p className="page-subtitle">Correspondence where you are the primary or supporting action owner.</p>
-      </div>
+      <ModulePageHeader
+        title="My Action Items"
+        subtitle="Correspondence where you are the primary or supporting action owner."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Action Items" }]} />}
+      />
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">

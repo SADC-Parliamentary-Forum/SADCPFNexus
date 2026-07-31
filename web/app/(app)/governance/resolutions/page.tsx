@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { useToast } from "@/components/ui/Toast";
@@ -2135,10 +2136,11 @@ export default function GovernancePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Governance</h1>
-        <p className="page-subtitle">Parliamentary resolutions, plenary business, meeting minutes, and implementation tracking.</p>
-      </div>
+      <ModulePageHeader
+        title="Governance"
+        subtitle="Committee and plenary resolutions."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Governance" }]} />}
+      />
 
       {/* Tab bar */}
       <div className="card p-1 flex gap-1 overflow-x-auto">

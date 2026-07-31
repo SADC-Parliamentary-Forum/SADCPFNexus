@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import { correspondenceApi, type CorrespondenceContact, type ContactGroup } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
@@ -138,10 +139,11 @@ export default function CorrespondenceContactsPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Contacts & Groups</h1>
-          <p className="page-subtitle">Manage correspondence recipients and distribution groups.</p>
-        </div>
+        <ModulePageHeader
+        title="Contacts & Groups"
+        subtitle="Manage correspondence recipients and distribution groups."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contacts & Groups" }]} />}
+      />
         {canAdmin && (
           <button
             onClick={() => tab === "contacts" ? openContactSlideOver() : openGroupSlideOver()}

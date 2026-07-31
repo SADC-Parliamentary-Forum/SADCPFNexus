@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES } from "@/lib/constants";
@@ -344,10 +345,11 @@ export default function HrPayslipsPage() {
         <span className="text-neutral-900 font-medium">Payslip Management</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Payslip Management</h1>
-        <p className="page-subtitle">Upload and manage employee payslips. Files are parsed for employee number and pay period.</p>
-      </div>
+      <ModulePageHeader
+        title="Payslip Management"
+        subtitle="Upload and manage employee payslips. Files are parsed for employee number and pay period."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Payslip Management" }]} />}
+      />
 
       {/* Uploaded payslips list */}
       <div className="card overflow-hidden">

@@ -1,0 +1,11 @@
+{
+  "counts": {
+    "Fixed": 148,
+    "Already-fixed-by-prior-pack": 6,
+    "Deferred": 210,
+    "Out-of-scope": 0
+  },
+  "closed": 154,
+  "total": 364,
+  "mphCount": 236
+}

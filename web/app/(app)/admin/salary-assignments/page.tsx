@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -139,10 +140,11 @@ export default function SalaryAssignmentsPage() {
       </nav>
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Employee Salary Assignments</h1>
-          <p className="page-subtitle">Link each employee to their grade band and notch for payslip auto-fill.</p>
-        </div>
+        <ModulePageHeader
+        title="Employee Salary Assignments"
+        subtitle="Link each employee to their grade band and notch for payslip auto-fill."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Employee Salary Assignments" }]} />}
+      />
         <button onClick={openCreate} className="btn-primary text-sm flex items-center gap-2">
           <span className="material-symbols-outlined text-base">add</span>
           Assign Grade

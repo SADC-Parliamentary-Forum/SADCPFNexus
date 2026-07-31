@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { financeApi, lookupsApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Stepper } from "@/components/ui/Stepper";
 
 type AdvanceTypeOption = { value: string; label: string; desc?: string; icon?: string };
 
@@ -478,57 +480,26 @@ export default function SalaryAdvanceCreatePage() {
   const stepContent = [renderStep0, renderStep1, renderStep2];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/finance/advances" className="hover:text-primary transition-colors">Salary Advance</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">New Request</span>
-      </div>
-
-      {/* Page header */}
-      <div>
-        <h1 className="page-title">Salary Advance Request</h1>
-        <p className="page-subtitle">Subject to policy limits and Secretary General approval.</p>
-      </div>
-
-      {/* Progress stepper */}
-      <div className="card p-5">
-        <div className="flex items-center gap-2">
-          {STEPS.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-2 flex-1">
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-all flex-shrink-0",
-                step > i ? "bg-green-500 text-white" : step === i ? "bg-primary text-white" : "bg-neutral-100 text-neutral-400",
-              )}>
-                {step > i ? (
-                  <span className="material-symbols-outlined text-[16px]">check</span>
-                ) : (
-                  <span className="text-xs">{i + 1}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={cn(
-                  "text-xs font-semibold truncate",
-                  step === i ? "text-primary" : step > i ? "text-green-600" : "text-neutral-400",
-                )}>
-                  {s.label}
-                </p>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={cn("h-px flex-shrink-0 w-6", step > i ? "bg-green-300" : "bg-neutral-200")} />
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 w-full bg-neutral-100 rounded-full h-1.5 overflow-hidden">
-          <div
-            className="bg-primary h-1.5 rounded-full transition-all"
-            style={{ width: `${((step) / (STEPS.length - 1)) * 100}%` }}
+    <div className="mx-auto max-w-3xl space-y-6">
+      <ModulePageHeader
+        title="Salary Advance Request"
+        subtitle="Subject to policy limits and Secretary General approval."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Finance", href: "/finance" },
+              { label: "Salary Advance", href: "/finance/advances" },
+              { label: "New Request" },
+            ]}
           />
-        </div>
+        }
+      />
+
+      <div className="card p-5">
+        <Stepper
+          steps={STEPS.map((s) => ({ label: s.label }))}
+          currentStep={step + 1}
+        />
       </div>
 
       {/* Step content */}

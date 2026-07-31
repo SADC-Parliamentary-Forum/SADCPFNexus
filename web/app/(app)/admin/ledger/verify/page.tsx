@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { auditLogsApi, ledgerVerificationsApi, type LedgerVerification } from "@/lib/api";
@@ -88,12 +89,11 @@ export default function LedgerVerifyPage() {
 
       {/* Page title */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Ledger Verification</h1>
-          <p className="page-subtitle">
-            Trigger manual integrity checks and review verification history.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Ledger Verification"
+        subtitle="Trigger manual integrity checks and review verification history."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Ledger Verification" }]} />}
+      />
         <Link href="/admin/ledger" className="btn-secondary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">receipt_long</span>
           View Audit Ledger

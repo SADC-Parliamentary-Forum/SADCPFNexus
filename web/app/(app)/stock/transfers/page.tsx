@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockLocationsApi, stockTransfersApi, type StockItem, type StockLocation, type StockTransfer } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
@@ -45,10 +46,11 @@ export default function StockTransfersPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Store Transfers</h1>
-        <p className="page-subtitle">Two-sided dispatch then receive — both sides ledgered.</p>
-      </div>
+      <ModulePageHeader
+        title="Store Transfers"
+        subtitle="Two-sided dispatch then receive — both sides ledgered."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Store Transfers" }]} />}
+      />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={fromId} onChange={(e) => setFromId(e.target.value)}>

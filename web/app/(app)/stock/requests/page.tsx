@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stockItemsApi, stockRequestsApi, type StockItem, type StockRequest } from "@/lib/api";
@@ -59,10 +60,11 @@ export default function StockRequestsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Stock Requests</h1>
-        <p className="page-subtitle">Request → approve (reserves) → issue against voucher.</p>
-      </div>
+      <ModulePageHeader
+        title="Stock Requests"
+        subtitle="Request → approve (reserves) → issue against voucher."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock Requests" }]} />}
+      />
 
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">

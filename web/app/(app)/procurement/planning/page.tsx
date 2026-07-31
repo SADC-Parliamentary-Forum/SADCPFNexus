@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementPlansApi } from "@/lib/api";
@@ -24,10 +25,11 @@ export default function PlanningPage() {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <div>
-        <h1 className="page-title">Annual Procurement Planning</h1>
-        <p className="page-subtitle">Plan year CRUD with line items for upcoming procurements.</p>
-      </div>
+      <ModulePageHeader
+        title="Annual Procurement Planning"
+        subtitle="Plan year CRUD with line items for upcoming procurements."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Annual Procurement Planning" }]} />}
+      />
 
       <div className="card p-4 grid gap-3 sm:grid-cols-[120px_1fr_auto] items-end">
         <div>

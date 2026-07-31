@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -81,7 +82,7 @@ export default function UpdateBalancePage() {
 
   if (regError || !register) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{regError ?? "Register not found."}</div>
       </div>
     );
@@ -89,7 +90,7 @@ export default function UpdateBalancePage() {
 
   if (register.status === "locked") {
     return (
-      <div className="p-6 space-y-4">
+    <div className="space-y-4">
         <nav className="text-sm text-neutral-500 flex items-center gap-1">
           <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>
           <span className="material-symbols-outlined text-xs">chevron_right</span>
@@ -119,10 +120,10 @@ export default function UpdateBalancePage() {
         <span className="text-neutral-800 font-medium">Add Transaction</span>
       </nav>
 
-      <div>
-        <h1 className="page-title">Add Balance Transaction</h1>
-        <p className="page-subtitle">{register.reference_number} — {register.employee?.name ?? `Employee #${register.employee_id}`}</p>
-      </div>
+      <ModulePageHeader
+        title="Add Balance Transaction"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Add Balance Transaction" }]} />}
+      />
 
       {/* Current balance card */}
       <div className="card p-5 bg-blue-50 border-blue-200">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -113,10 +114,11 @@ export default function BudgetUploadPage() {
             </div>
 
             <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="page-title">Upload New Budget</h1>
-                    <p className="page-subtitle">Import budget lines via CSV for a core or project portfolio.</p>
-                </div>
+                <ModulePageHeader
+        title="Upload New Budget"
+        subtitle="Import budget lines via CSV for a core or project portfolio."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Upload New Budget" }]} />}
+      />
             </div>
 
             {error && (

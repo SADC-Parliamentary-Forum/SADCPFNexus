@@ -11,6 +11,7 @@ import {
   type DelegatedAuthority,
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -730,24 +731,17 @@ export default function SaamPage() {
       )}
 
       {/* Page header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
-            <span>Home</span>
-            <span className="material-symbols-outlined text-[12px]">chevron_right</span>
-            <span className="text-neutral-600 font-medium">SAAM</span>
-          </div>
-          <h1 className="page-title">Signatures &amp; Authority</h1>
-          <p className="page-subtitle">
-            Manage your digital signatures and delegate signing authority to colleagues.
-          </p>
-        </div>
-        <Link href="/saam/delegations" className="btn-secondary text-sm flex-shrink-0">
-          <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
-          Delegations
-        </Link>
-      </div>
+      <ModulePageHeader
+        title="Signatures & Authority"
+        subtitle="Manage your digital signatures and delegate signing authority to colleagues."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Signatures" }]} />}
+        actions={
+          <Link href="/saam/delegations" className="btn-secondary text-sm flex-shrink-0">
+            <span className="material-symbols-outlined text-[16px]">manage_accounts</span>
+            Delegations
+          </Link>
+        }
+      />
 
       {/* Error banner */}
       {profileError && (

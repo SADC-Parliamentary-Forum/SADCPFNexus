@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 
 const SIDEBAR_OPEN_KEY = "sadcpf_sidebar_open";
@@ -12,17 +13,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     if (!pathname) return;
     const user = getStoredUser();
     if (!user) {
+      setAccessDenied(false);
       router.replace("/login");
       return;
     }
-    if (!canAccessRoute(user, pathname)) {
-      router.replace("/dashboard");
-    }
+    const allowed = canAccessRoute(user, pathname);
+    setAccessDenied(!allowed);
   }, [pathname, router]);
 
   // Responsive: on small screens start closed; persist preference on larger screens
@@ -60,6 +62,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen flex-col bg-surface-muted dark:bg-neutral-900 overflow-hidden">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[300] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Header onMenuClick={toggleSidebar} sidebarOpen={sidebarOpen} />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar
@@ -68,10 +76,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onOverlayClick={closeSidebar}
         />
         <main
+          id="main-content"
           className="flex-1 overflow-y-auto p-6 min-w-0"
           onClick={closeSidebar}
         >
-          {children}
+          {accessDenied ? (
+            <AccessDenied
+              path={pathname ?? undefined}
+              reason="Your account does not include permission for this route. Contact an administrator if you need access."
+            />
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -160,13 +161,11 @@ export default function PayslipConfigPage() {
       </nav>
 
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Payslip Line Config</h1>
-          <p className="page-subtitle">
-            {employee ? `${employee.name} — ` : ""}
-            Configure which lines appear on this employee&apos;s payslip and whether they are system-sourced or manually entered.
-          </p>
-        </div>
+        <ModulePageHeader
+          title="Payslip Line Config"
+          subtitle="Configure which lines appear on this employee's payslip."
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "Payslip Line Config" }]} />}
+        />
         <div className="flex items-center gap-2">
           <button
             onClick={handleGenerateDefaults}

@@ -73,7 +73,7 @@ export default function BudgetSubmissionDetailPage() {
 
   if (!pack) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <p className="text-sm text-red-700">Submission not found.</p>
         <Link href="/budget/cycles" className="text-sm text-[var(--primary)]">
           Back to cycles

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -30,10 +31,11 @@ export default function AssetSettingsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Asset Settings</h1>
-          <p className="page-subtitle">Versioned capitalisation policy and structured locations</p>
-        </div>
+        <ModulePageHeader
+        title="Asset Settings"
+        subtitle="Versioned capitalisation policy and structured locations"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Settings" }]} />}
+      />
       </div>
 
       <section className="card" style={{ padding: "1rem", marginBottom: "1.5rem" }}>

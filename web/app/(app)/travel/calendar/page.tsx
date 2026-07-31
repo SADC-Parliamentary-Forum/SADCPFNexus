@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -50,10 +51,10 @@ export default function TravelCalendarPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Travel Calendar</h1>
-          <p className="text-sm text-neutral-500 mt-1">Approved travel, departures, returns, and travellers away.</p>
-        </div>
+        <ModulePageHeader
+        title="Travel Calendar"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Calendar" }]} />}
+      />
         <div className="flex items-center gap-2">
           <button type="button" className="btn-secondary" onClick={() => setMonthOffset((v) => v - 1)}>Prev</button>
           <span className="text-sm font-medium min-w-[140px] text-center">{range.label}</span>

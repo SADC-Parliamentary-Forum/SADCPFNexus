@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockReplenishmentsApi, type StockItem, type StockReplenishmentRequest } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
@@ -27,10 +28,11 @@ export default function StockReplenishmentsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Replenishment Requests</h1>
-        <p className="page-subtitle">Stores → Procurement signal to buy before stockouts. Does not create budget commitments.</p>
-      </div>
+      <ModulePageHeader
+        title="Replenishment Requests"
+        subtitle="Stores → Procurement signal to buy before stockouts. Does not create budget commitments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Replenishment Requests" }]} />}
+      />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>

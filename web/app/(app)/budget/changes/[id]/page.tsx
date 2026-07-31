@@ -71,7 +71,7 @@ export default function BudgetChangeDetailPage() {
   if (query.isLoading) return <p className="p-6 text-sm text-[var(--muted)]">Loading…</p>;
   if (!row) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <p className="text-sm text-red-700">Not found.</p>
         <Link href="/budget/changes">Back</Link>
       </div>

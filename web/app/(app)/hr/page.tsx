@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -72,10 +73,11 @@ function HRPageContent() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Human Resources</h1>
-        <p className="page-subtitle">Timesheets, leave balances, payroll, and HR self-service.</p>
-      </div>
+      <ModulePageHeader
+        title="Human Resources"
+        subtitle="Timesheets, leave balances, payroll, and HR self-service."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Human Resources" }]} />}
+      />
 
       {/* Sub-navigation tabs */}
       <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700">

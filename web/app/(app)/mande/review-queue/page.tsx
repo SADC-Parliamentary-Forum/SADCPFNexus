@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -48,10 +49,11 @@ export default function ReviewQueuePage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="page-title">Review Queue</h1>
-        <p className="page-subtitle">Activity reports awaiting M&amp;E review, return, accept or close.</p>
-      </div>
+      <ModulePageHeader
+        title="Review Queue"
+        subtitle="Activity reports awaiting M&amp;E review, return, accept or close."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Review Queue" }]} />}
+      />
 
       <div className="flex flex-wrap gap-2">
         {(

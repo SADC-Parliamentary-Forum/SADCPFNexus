@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { bcreApi, type BalanceRegister } from "@/lib/api";
@@ -107,10 +108,11 @@ export default function ExceptionsPage() {
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Exceptions Queue</h1>
-          <p className="page-subtitle">Disputed registers and stale pending verifications requiring attention</p>
-        </div>
+        <ModulePageHeader
+        title="Exceptions Queue"
+        subtitle="Disputed registers and stale pending verifications requiring attention"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Exceptions Queue" }]} />}
+      />
         <div className="flex flex-wrap gap-2">
           <button
             type="button"

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -53,12 +54,11 @@ export default function MandeDataQualityPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Data Quality</h1>
-          <p className="page-subtitle">
-            Weighted score and remediation for missing M&amp;E records, overdue submissions, and evidence gaps.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Data Quality"
+        subtitle="Weighted score and remediation for missing M&amp;E records, overdue submissions, and evidence gaps."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Data Quality" }]} />}
+      />
         <div className="flex gap-2">
           <button
             type="button"

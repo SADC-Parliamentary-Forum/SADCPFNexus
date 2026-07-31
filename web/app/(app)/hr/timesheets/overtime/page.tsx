@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -80,12 +81,10 @@ export default function OvertimeRequestsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">My Overtime Requests</h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Overtime must be authorised before it is worked. Planned and actual hours are separate.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="My Overtime Requests"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Overtime Requests" }]} />}
+      />
         <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
           Back to timesheets
         </Link>

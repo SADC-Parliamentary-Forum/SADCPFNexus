@@ -5,6 +5,7 @@ import { profileApi, profileChangeRequestApi, profileDocumentsApi, type User, ty
 import { useToast } from "@/components/ui/Toast";
 import DocumentsPanel from "@/components/ui/DocumentsPanel";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type Section = "info" | "documents" | "password";
 
@@ -146,12 +147,12 @@ export default function MyProfilePage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">My Profile</h1>
-        <p className="text-sm text-neutral-500 mt-1">Manage your personal information, documents and security settings.</p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <ModulePageHeader
+        title="My Profile"
+        subtitle="Manage your personal information, documents and security settings."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Profile" }]} />}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column */}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
@@ -47,10 +48,11 @@ export default function AuditTrailIntegrityPage() {
   return (
     <div className="p-6 space-y-4 max-w-4xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Integrity report</h1>
-          <p className="page-subtitle">Hash-chain verification and periodic checkpoints.</p>
-        </div>
+        <ModulePageHeader
+        title="Integrity report"
+        subtitle="Hash-chain verification and periodic checkpoints."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Integrity report" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

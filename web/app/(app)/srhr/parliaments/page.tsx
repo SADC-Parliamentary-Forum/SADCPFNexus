@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
@@ -29,10 +30,11 @@ export default function ParliamentsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">Member State Parliaments</h1>
-          <p className="page-subtitle">SADC member state parliaments where researchers are or can be deployed.</p>
-        </div>
+        <ModulePageHeader
+        title="Member State Parliaments"
+        subtitle="SADC member state parliaments where researchers are or can be deployed."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Member State Parliaments" }]} />}
+      />
       </div>
 
       {/* Filters */}

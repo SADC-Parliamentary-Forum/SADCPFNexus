@@ -7,6 +7,8 @@ import type { Programme, TravelRequest } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getListData } from "@/lib/listPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Stepper } from "@/components/ui/Stepper";
 
 // ─── Country lists ────────────────────────────────────────────────────────────
 const SADC_COUNTRIES = [
@@ -711,7 +713,7 @@ function TravelCreatePageInner() {
 
   if (loadingDraft) {
     return (
-      <div className="max-w-4xl mx-auto space-y-4 p-6">
+      <div className="mx-auto max-w-4xl space-y-4">
         <div className="h-6 w-48 animate-pulse rounded bg-neutral-100" />
         <div className="h-40 animate-pulse rounded-xl bg-neutral-50" />
         <p className="text-sm text-neutral-400">Loading travel request…</p>
@@ -720,59 +722,29 @@ function TravelCreatePageInner() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-1 text-sm text-neutral-500 mb-1">
-          <a href="/travel" className="hover:text-primary transition-colors">Travel</a>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">{editId ? "Edit Request" : "New Request"}</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">
-          {editId ? "Edit Travel Request" : "New Travel Request"}
-        </h2>
-        <p className="text-sm text-neutral-500 mt-0.5">
-          {editId
+    <div className="mx-auto max-w-4xl space-y-6">
+      <ModulePageHeader
+        title={editId ? "Edit Travel Request" : "New Travel Request"}
+        subtitle={
+          editId
             ? "Update destinations, dates, funding, documents, then save or submit."
-            : "Submit a travel requisition for approval. DSA will be calculated by Finance Officers."}
-        </p>
-      </div>
+            : "Submit a travel requisition for approval. DSA will be calculated by Finance Officers."
+        }
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Travel", href: "/travel" },
+              { label: editId ? "Edit Request" : "New Request" },
+            ]}
+          />
+        }
+      />
 
-      {/* Stepper */}
-      <div className="rounded-xl bg-white border border-neutral-200 shadow-card p-4">
-        <div className="flex items-center gap-1">
-          {STEPS.map((label, i) => (
-            <div key={i} className="flex items-center gap-1 flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                    i < step
-                      ? "bg-primary text-white"
-                      : i === step
-                      ? "bg-primary text-white"
-                      : "bg-neutral-100 text-neutral-400"
-                  }`}
-                >
-                  {i < step ? (
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span
-                  className={`text-xs font-medium truncate hidden lg:block ${
-                    i === step ? "text-primary" : i < step ? "text-neutral-700" : "text-neutral-400"
-                  }`}
-                >
-                  {label}
-                </span>
-              </div>
-              {i < STEPS.length - 1 && (
-                <div className={`flex-1 h-px mx-1 ${i < step ? "bg-primary" : "bg-neutral-200"}`} />
-              )}
-            </div>
-          ))}
-        </div>
+      <div className="card p-4">
+        <Stepper
+          steps={STEPS.map((label) => ({ label }))}
+          currentStep={step + 1}
+        />
       </div>
 
       {/* ── Step 0: Trip Details ────────────────────────────────────────────── */}

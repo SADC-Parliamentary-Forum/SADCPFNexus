@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
@@ -16,10 +17,11 @@ export default function SupplierRfqsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">RFQs</h1>
-        <p className="page-subtitle">Only RFQs matching your approved supplier categories appear here.</p>
-      </div>
+      <ModulePageHeader
+        title="RFQs"
+        subtitle="Only RFQs matching your approved supplier categories appear here."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "RFQs" }]} />}
+      />
 
       <div className="card overflow-hidden">
         <table className="data-table w-full">

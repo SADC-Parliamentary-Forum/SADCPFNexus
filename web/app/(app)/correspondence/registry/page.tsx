@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -93,10 +94,11 @@ function CorrespondenceRegistryPageInner() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Correspondence Register</h1>
-          <p className="page-subtitle">Incoming and outgoing official correspondence (access-scoped).</p>
-        </div>
+        <ModulePageHeader
+        title="Correspondence Register"
+        subtitle="Incoming and outgoing official correspondence (access-scoped)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Correspondence Register" }]} />}
+      />
         <div className="flex gap-2">
           <Link href="/correspondence/incoming" className="btn-secondary text-sm">Register Incoming</Link>
           <Link href="/correspondence/create" className="btn-primary text-sm">Draft Outgoing</Link>

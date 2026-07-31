@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -110,10 +111,11 @@ export default function NewIncidentPage() {
         <Link href="/hr/incidents" className="text-neutral-400 hover:text-neutral-600 transition-colors">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
-        <div>
-          <h1 className="page-title">New Incident Report</h1>
-          <p className="page-subtitle">Report a workplace incident, safety concern, or conduct issue.</p>
-        </div>
+        <ModulePageHeader
+        title="New Incident Report"
+        subtitle="Report a workplace incident, safety concern, or conduct issue."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "New Incident Report" }]} />}
+      />
       </div>
 
       {/* Stepper */}

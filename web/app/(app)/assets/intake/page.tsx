@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { assetsApi, type Asset } from "@/lib/api";
@@ -19,10 +20,11 @@ export default function AssetsIntakePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Asset Intake / Pending Registration</h1>
-          <p className="page-subtitle">GRN drafts awaiting classification and capitalisation. Consumables stay in Stock.</p>
-        </div>
+        <ModulePageHeader
+        title="Asset Intake / Pending Registration"
+        subtitle="GRN drafts awaiting classification and capitalisation. Consumables stay in Stock."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Intake / Pending Registration" }]} />}
+      />
         <Link href="/assets" className="btn-secondary">Full register</Link>
       </div>
       {loading ? <p>Loading…</p> : (

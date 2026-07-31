@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { mandeApi, type MeImportPreview } from "@/lib/api";
@@ -35,13 +36,11 @@ export default function MandeImportPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Historical Import</h1>
-        <p className="page-subtitle">
-          Upload a CSV or Excel (.xlsx) file with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.
-          Preview first, then commit to create draft activity reports.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Historical Import"
+        subtitle="Upload a CSV or Excel (.xlsx) file with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.\r\n          Preview first, then commit to crea"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Historical Import" }]} />}
+      />
 
       <div className="card p-5 space-y-4">
         <input

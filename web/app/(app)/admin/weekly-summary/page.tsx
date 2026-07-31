@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState, useCallback } from "react";
 import { weeklySummaryApi, WeeklySummaryRun } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
@@ -77,10 +78,11 @@ export default function AdminWeeklySummaryPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Weekly Summary</h1>
-          <p className="page-subtitle">Trigger and monitor institutional summary email batches</p>
-        </div>
+        <ModulePageHeader
+        title="Weekly Summary"
+        subtitle="Trigger and monitor institutional summary email batches"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Weekly Summary" }]} />}
+      />
         <div className="flex gap-2">
           <button onClick={() => loadRuns()} className="btn-secondary flex items-center gap-1">
             <span className="material-symbols-outlined text-base">refresh</span>

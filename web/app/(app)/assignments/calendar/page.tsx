@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
@@ -51,10 +52,11 @@ export default function AssignmentsCalendarPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Assignment Calendar</h1>
-          <p className="page-subtitle">In-app due-date calendar for {bounds.label}. Download ICS for Google Calendar / Outlook when API credentials are absent.</p>
-        </div>
+        <ModulePageHeader
+        title="Assignment Calendar"
+        subtitle="In-app due-date calendar for {bounds.label}. Download ICS for Google Calendar / Outlook when API credentials are absent."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignment Calendar" }]} />}
+      />
         <div className="flex flex-wrap gap-2">
           <a className="btn-secondary text-sm" href="/assignments/capacity">Capacity</a>
           <a className="btn-secondary text-sm" href="/assignments/workload">Workload</a>

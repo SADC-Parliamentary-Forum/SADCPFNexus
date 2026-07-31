@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
@@ -399,12 +400,10 @@ export default function GenerateLedgerReportPage() {
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Generate Ledger Report</h1>
-          <p className="page-subtitle">
-            {step < 2 ? `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}` : "Complete"}
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Generate Ledger Report"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Generate Ledger Report" }]} />}
+      />
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
           <span className="material-symbols-outlined text-[14px]">verified_user</span>
           Level 4 Clearance

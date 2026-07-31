@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { adminApi, auditLogsApi, type Department, type User, type AuditLogEntry } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 const NODE_W = 228;
@@ -404,39 +405,47 @@ export default function OrganogramPage() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 8rem)" }}>
-
-      {/* ─ Header ─ */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h1 className="page-title">Interactive Organogram</h1>
-          <p className="page-subtitle text-neutral-500 text-xs mt-0.5">
-            Drag nodes to reposition &nbsp;·&nbsp; Hover a node → <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-600 px-1.5 rounded text-[10px] font-bold border border-amber-200"><span className="material-symbols-outlined text-[12px]">account_tree</span> Change Parent</span> to move in hierarchy &nbsp;·&nbsp; Scroll to zoom &nbsp;·&nbsp; Drag canvas to pan
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-4">
-          <button
-            onClick={() => { setPositions(autoLayout(tree)); setPan({ x: 60, y: 60 }); setScale(1); }}
-            className="btn-secondary flex items-center gap-1.5 text-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">auto_fix_high</span>
-            Auto-Layout
-          </button>
-          <button
-            onClick={() => { setShowHistory(true); loadHistory(); }}
-            className="btn-secondary flex items-center gap-1.5 text-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">history</span>
-            History
-          </button>
-          <button
-            onClick={() => openCreateModal(null)}
-            className="btn-primary flex items-center gap-1.5 text-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">add</span>
-            New Root Unit
-          </button>
-        </div>
-      </div>
+      <ModulePageHeader
+        title="Organisation Chart"
+        subtitle="Drag nodes to reposition · Change Parent to move hierarchy · Scroll to zoom · Drag canvas to pan"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "People & Authority", href: "/people" },
+              { label: "Organisation Chart" },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => { setPositions(autoLayout(tree)); setPan({ x: 60, y: 60 }); setScale(1); }}
+              className="btn-secondary flex items-center gap-1.5 text-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">auto_fix_high</span>
+              Auto-Layout
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowHistory(true); loadHistory(); }}
+              className="btn-secondary flex items-center gap-1.5 text-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">history</span>
+              History
+            </button>
+            <button
+              type="button"
+              onClick={() => openCreateModal(null)}
+              className="btn-primary flex items-center gap-1.5 text-sm"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Add Unit
+            </button>
+          </div>
+        }
+        className="mb-4"
+      />
 
       {/* ─ Zoom bar ─ */}
       <div className="flex items-center gap-2 mb-3">

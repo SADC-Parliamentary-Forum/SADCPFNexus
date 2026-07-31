@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -22,10 +23,11 @@ export default function PayrollImportsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Payroll vendor import</h1>
-        <p className="page-subtitle">Stage payslip lines from JSON or configured HTTP vendor. No OT rates invented.</p>
-      </div>
+      <ModulePageHeader
+        title="Payroll vendor import"
+        subtitle="Stage payslip lines from JSON or configured HTTP vendor. No OT rates invented."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Payroll vendor import" }]} />}
+      />
       <textarea className="form-input min-h-40 w-full font-mono text-xs" value={json} onChange={(e) => setJson(e.target.value)} />
       <button type="button" className="btn-primary" onClick={() => importMut.mutate()} disabled={importMut.isPending}>Import draft batch</button>
       {importMut.isError && <p className="text-sm text-red-700">Import failed — check JSON.</p>}

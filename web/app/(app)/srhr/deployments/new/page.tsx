@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -85,10 +86,11 @@ function NewDeploymentPageInner() {
         <span className="text-neutral-800 font-medium">New Deployment</span>
       </div>
 
-      <div>
-        <h1 className="page-title">New Field Deployment</h1>
-        <p className="page-subtitle">Deploy a researcher to a member state parliament.</p>
-      </div>
+      <ModulePageHeader
+        title="New Field Deployment"
+        subtitle="Deploy a researcher to a member state parliament."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "New Field Deployment" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

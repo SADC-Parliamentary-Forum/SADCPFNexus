@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -412,10 +413,11 @@ export default function ReportsPage() {
   return (
     <div className="space-y-5">
       {/* Page Header */}
-      <div>
-        <h1 className="page-title">Reports</h1>
-        <p className="page-subtitle">Generate, filter, and export reports across all modules. Use the fiscal year selector for annual audit periods.</p>
-      </div>
+      <ModulePageHeader
+        title="Reports"
+        subtitle="Generate, filter, and export reports across all modules. Use the fiscal year selector for annual audit periods."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Reports" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { hrApi } from "@/lib/api";
@@ -91,12 +92,10 @@ export default function TimesheetPayrollExportPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Payroll Export Console</h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Select a timesheet period, stage a payroll batch from validated pay settlements, then download. No settlement ID paste.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Payroll Export Console"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Payroll Export Console" }]} />}
+      />
 
       <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/hr/timesheets/team" className="text-[var(--brand)] hover:underline">Team approval</Link>

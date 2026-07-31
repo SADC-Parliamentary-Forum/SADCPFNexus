@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -148,12 +149,11 @@ export default function MandeReportsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Institutional Reports</h1>
-          <p className="page-subtitle">
-            Strategic M&amp;E summary and donor/project activity matrix exports.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Institutional Reports"
+        subtitle="Strategic M&amp;E summary and donor/project activity matrix exports."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Institutional Reports" }]} />}
+      />
         <button
           type="button"
           className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40"

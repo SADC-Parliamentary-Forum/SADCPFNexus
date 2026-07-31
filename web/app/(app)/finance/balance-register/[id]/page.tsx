@@ -163,7 +163,7 @@ export default function RegisterDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
+    <div className="space-y-4">
         <div className="h-6 bg-neutral-200 rounded animate-pulse w-48" />
         <div className="card p-6 animate-pulse space-y-3">
           <div className="h-4 bg-neutral-200 rounded w-1/3" />
@@ -175,7 +175,7 @@ export default function RegisterDetailPage() {
 
   if (error || !register) {
     return (
-      <div className="p-6">
+    <div className="space-y-5">
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error ?? "Register not found."}</div>
       </div>
     );
@@ -184,7 +184,7 @@ export default function RegisterDetailPage() {
   const statusCfg = STATUS_CONFIG[register.status] ?? { label: register.status, badge: "badge-muted", icon: "circle" };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="space-y-5">
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
         <Link href="/finance" className="hover:text-primary">Finance</Link>

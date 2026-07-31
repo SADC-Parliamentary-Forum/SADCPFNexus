@@ -12,7 +12,7 @@ export default function AuditFindingsPage() {
   const rows = (data as { data?: Array<Record<string, unknown>> })?.data ?? [];
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Findings</h1>
       <p className="text-sm text-neutral-600">
         Issued findings are immutable for Management. Responses and corrective actions are separate.

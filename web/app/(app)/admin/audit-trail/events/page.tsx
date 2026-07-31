@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -29,10 +30,11 @@ export default function AuditTrailEventTypesPage() {
   return (
     <div className="space-y-6 p-6 max-w-6xl">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="page-title">Event type registry & detail</h1>
-          <p className="page-subtitle">Read-heavy controlled taxonomy (PRD §11–§13).</p>
-        </div>
+        <ModulePageHeader
+        title="Event type registry & detail"
+        subtitle="Read-heavy controlled taxonomy (PRD §11–§13)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Event type registry & detail" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

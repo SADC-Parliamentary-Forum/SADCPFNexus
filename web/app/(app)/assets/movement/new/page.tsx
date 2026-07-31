@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -164,10 +165,11 @@ function NewAssetMovementPageContent() {
         <Link href="/assets" className="text-neutral-400 hover:text-neutral-600 transition-colors">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
-        <div>
-          <h1 className="page-title">Record Asset Movement</h1>
-          <p className="page-subtitle">Transfer, send for maintenance, or record a disposal of a managed asset.</p>
-        </div>
+        <ModulePageHeader
+        title="Record Asset Movement"
+        subtitle="Transfer, send for maintenance, or record a disposal of a managed asset."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Record Asset Movement" }]} />}
+      />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

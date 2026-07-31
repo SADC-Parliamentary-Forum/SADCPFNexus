@@ -9,6 +9,7 @@ import {
   type TimesheetTemplate,
 } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const WORK_BUCKETS = [
   "delivery",
@@ -93,6 +94,7 @@ function fromTemplate(t: TimesheetTemplate): FormState {
 }
 
 export default function TimesheetTemplatesAdminPage() {
+  const { confirm } = useConfirm();
   const [list, setList] = useState<TimesheetTemplate[]>([]);
   const [projects, setProjects] = useState<TimesheetProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,7 +178,13 @@ export default function TimesheetTemplatesAdminPage() {
 
   const handleDeactivate = async (t: TimesheetTemplate) => {
     if (!t.is_active) return;
-    if (!window.confirm(`Deactivate template “${t.name}”? Staff will no longer see it.`)) return;
+    const ok = await confirm({
+      title: "Deactivate template?",
+      message: `“${t.name}” will no longer be available for staff timesheets.`,
+      confirmText: "Deactivate",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await hrApi.deactivateTimesheetTemplate(t.id);
       showToast("Template deactivated.");

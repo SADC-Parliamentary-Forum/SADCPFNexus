@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -68,10 +69,11 @@ export default function AssetRevaluationPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header flex items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Asset Revaluations</h1>
-          <p className="page-subtitle">Request → Finance approve → book value update. No GL posting.</p>
-        </div>
+        <ModulePageHeader
+        title="Asset Revaluations"
+        subtitle="Request → Finance approve → book value update. No GL posting."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Revaluations" }]} />}
+      />
         <Link href="/assets/disposal" className="btn-secondary btn-sm">Disposals</Link>
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}

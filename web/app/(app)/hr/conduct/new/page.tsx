@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -126,10 +127,11 @@ export default function NewConductRecordPage() {
         <Link href="/hr/conduct" className="text-neutral-400 hover:text-neutral-600 transition-colors">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
-        <div>
-          <h1 className="page-title">New Conduct Record</h1>
-          <p className="page-subtitle">Create a formal conduct, performance, or commendation record for a staff member.</p>
-        </div>
+        <ModulePageHeader
+        title="New Conduct Record"
+        subtitle="Create a formal conduct, performance, or commendation record for a staff member."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "New Conduct Record" }]} />}
+      />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

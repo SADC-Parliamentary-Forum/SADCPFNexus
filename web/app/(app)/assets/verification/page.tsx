@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
@@ -29,10 +30,11 @@ export default function AssetVerificationPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Physical Verification</h1>
-          <p className="page-subtitle">Campaigns for inventory checks; missing/damaged results update asset status</p>
-        </div>
+        <ModulePageHeader
+        title="Physical Verification"
+        subtitle="Campaigns for inventory checks; missing/damaged results update asset status"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Physical Verification" }]} />}
+      />
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       <form onSubmit={createCampaign} className="card" style={{ padding: "1rem", marginBottom: "1.5rem", display: "flex", gap: 12, flexWrap: "wrap" }}>

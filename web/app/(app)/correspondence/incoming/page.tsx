@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -105,10 +106,11 @@ export default function IncomingMailPage() {
         <span className="text-neutral-900 font-medium">Incoming Mail</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Capture Incoming Mail</h1>
-        <p className="page-subtitle">Upload and register incoming correspondence for tracking and routing.</p>
-      </div>
+      <ModulePageHeader
+        title="Capture Incoming Mail"
+        subtitle="Upload and register incoming correspondence for tracking and routing."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Capture Incoming Mail" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { stockDashboardApi, type StockDashboard } from "@/lib/api";
@@ -37,12 +38,11 @@ export default function StockDashboardPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="page-title">Consumables dashboard</h1>
-        <p className="page-subtitle">
-          Stores KPIs for paper, toner, stationery and other consumables — separate from fixed assets.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Consumables dashboard"
+        subtitle="Stores KPIs for paper, toner, stationery and other consumables — separate from fixed assets."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Consumables dashboard" }]} />}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map((c) => (

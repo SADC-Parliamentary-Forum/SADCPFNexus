@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,12 +172,11 @@ export default function PolicyLibraryPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Policy Library</h1>
-          <p className="page-subtitle">
-            Manage organisational policies and link them to risks in the register.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Policy Library"
+        subtitle="Manage organisational policies and link them to risks in the register."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Policy Library" }]} />}
+      />
         <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[18px]">add</span> New Policy
         </button>

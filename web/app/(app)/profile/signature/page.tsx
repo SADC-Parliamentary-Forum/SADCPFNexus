@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import SignaturePad from "signature_pad";
@@ -139,10 +140,11 @@ export default function SignatureSetupPage() {
         <span className="text-neutral-900 font-medium">My Signature</span>
       </div>
 
-      <div>
-        <h1 className="page-title">Digital Signature</h1>
-        <p className="page-subtitle">Set up your institutional signature and initials for workflow approvals.</p>
-      </div>
+      <ModulePageHeader
+        title="Digital Signature"
+        subtitle="Set up your institutional signature and initials for workflow approvals."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Digital Signature" }]} />}
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">

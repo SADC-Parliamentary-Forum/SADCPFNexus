@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { deploymentsApi, researcherReportsApi, type StaffDeployment, type ResearcherReport } from "@/lib/api";
@@ -50,12 +51,11 @@ export default function SrhrOverviewPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="page-title">Field Researchers</h1>
-        <p className="page-subtitle">
-          Manage researcher deployments at member state parliaments and review activity reports.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Field Researchers"
+        subtitle="Manage researcher deployments at member state parliaments and review activity reports."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Field Researchers" }]} />}
+      />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

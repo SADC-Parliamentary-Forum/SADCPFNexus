@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { settingsApi, type SystemSettings } from "@/lib/api";
@@ -80,10 +81,11 @@ export default function AdminSettingsPage() {
         <span className="text-neutral-900 font-medium">System Settings</span>
       </div>
 
-      <div>
-        <h1 className="page-title">System Settings</h1>
-        <p className="page-subtitle">Configure organisation details, fiscal year, and platform-wide settings.</p>
-      </div>
+      <ModulePageHeader
+        title="System Settings"
+        subtitle="Configure organisation details, fiscal year, and platform-wide settings."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "System Settings" }]} />}
+      />
 
       {loading ? (
         <div className="space-y-4 animate-pulse">

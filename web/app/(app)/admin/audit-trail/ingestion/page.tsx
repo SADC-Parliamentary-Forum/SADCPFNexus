@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
@@ -41,10 +42,11 @@ export default function AuditTrailIngestionPage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Ingestion health</h1>
-          <p className="page-subtitle">Outbox, dead-letters, and legacy AuditLog migration.</p>
-        </div>
+        <ModulePageHeader
+        title="Ingestion health"
+        subtitle="Outbox, dead-letters, and legacy AuditLog migration."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Ingestion health" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

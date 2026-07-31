@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,10 +37,11 @@ export default function MandeIntakePage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">Intake Queue</h1>
-          <p className="page-subtitle">Approved PIFs awaiting an M&amp;E activity report shell.</p>
-        </div>
+        <ModulePageHeader
+        title="Intake Queue"
+        subtitle="Approved PIFs awaiting an M&amp;E activity report shell."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Intake Queue" }]} />}
+      />
         <div className="flex items-center gap-2">
           <button
             type="button"

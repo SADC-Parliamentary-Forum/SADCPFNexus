@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import api from "@/lib/api";
 
@@ -37,10 +38,11 @@ export default function AssetReportsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Fixed Asset Reports</h1>
-          <p className="page-subtitle">Register export and operational reports</p>
-        </div>
+        <ModulePageHeader
+        title="Fixed Asset Reports"
+        subtitle="Register export and operational reports"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fixed Asset Reports" }]} />}
+      />
       </div>
       {msg && <div className="alert alert-info">{msg}</div>}
       <div className="card" style={{ padding: "1.25rem" }}>

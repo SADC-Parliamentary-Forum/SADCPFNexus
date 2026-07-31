@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type Indicator, type ResultLevel } from "@/lib/api";
@@ -62,10 +63,11 @@ export default function IndicatorsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Indicators</h1>
-          <p className="page-subtitle">Define and manage results-framework indicators, baselines and targets.</p>
-        </div>
+        <ModulePageHeader
+        title="Indicators"
+        subtitle="Define and manage results-framework indicators, baselines and targets."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Indicators" }]} />}
+      />
         <div className="flex gap-2">
           <button
             onClick={() => exportToXls("indicators", indicators.map((i) => ({

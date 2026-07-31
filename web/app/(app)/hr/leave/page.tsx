@@ -6,6 +6,7 @@ import { leaveApi, tenantUsersApi, type LeaveRequest, type TenantUserOption } fr
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -250,23 +251,33 @@ export default function HRLeavePage() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/hr" className="hover:text-primary transition-colors">HR</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-900 font-medium">Leave Manager</span>
+      <ModulePageHeader
+        title="Staff Leave Requests"
+        subtitle="Review and action leave applications from staff members."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Leave", href: "/leave" },
+              { label: "HR Leave Register" },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            {pending > 0 && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+                <span className="material-symbols-outlined text-[18px] text-amber-600">pending_actions</span>
+                <span className="text-sm font-semibold text-amber-800">{pending} pending</span>
+              </div>
+            )}
+            <Link href="/leave" className="btn-secondary text-sm">
+              My Leave
+            </Link>
           </div>
-          <h1 className="page-title">Staff Leave Requests</h1>
-          <p className="page-subtitle">Review and action all leave applications from staff members.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {pending > 0 && (
-            <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5">
-              <span className="material-symbols-outlined text-amber-600 text-[18px]">pending_actions</span>
-              <span className="text-sm font-semibold text-amber-800">{pending} pending</span>
-            </div>
-          )}
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"
@@ -284,7 +295,6 @@ export default function HRLeavePage() {
             <span className="material-symbols-outlined text-[18px]">add</span>
             New leave request
           </button>
-        </div>
       </div>
 
       {/* Filters */}

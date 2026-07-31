@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -45,12 +46,10 @@ export default function WorkSchedulesPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Work Schedules</h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Default Mon–Fri 08:00–17:00 with lunch 13:00–14:00 (8 ordinary hours). Configurable per employee.
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Work Schedules"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Schedules" }]} />}
+      />
         <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
           Timesheets
         </Link>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -239,7 +240,7 @@ export default function HrDocumentsPage() {
   // ── Skeleton loading ──
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
+    <div className="space-y-6">
         <SkeletonPage />
       </div>
     );
@@ -252,7 +253,7 @@ export default function HrDocumentsPage() {
   const showFallback = apiAvailable === null || (apiAvailable && documents.length === 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-400">
         <Link href="/hr" className="hover:text-neutral-600">HR</Link>
@@ -262,10 +263,11 @@ export default function HrDocumentsPage() {
 
       {/* Page Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">My Documents</h1>
-          <p className="page-subtitle">All files and attachments across your requests and records</p>
-        </div>
+        <ModulePageHeader
+        title="My Documents"
+        subtitle="All files and attachments across your requests and records"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Documents" }]} />}
+      />
         {apiAvailable && documents.length > 0 && (
           <span className="badge badge-muted self-start mt-1">
             {documents.length} file{documents.length !== 1 ? "s" : ""}

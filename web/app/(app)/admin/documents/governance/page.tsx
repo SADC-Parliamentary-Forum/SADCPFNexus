@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -65,18 +66,10 @@ export default function DocumentGovernancePage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">
-            Document repository governance
-          </h1>
-          <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            PRD §125 — institutional decisions required before final configuration. All items
-            default to Pending; do not invent answers here.
-          </p>
-          <p className="text-xs text-neutral-500 mt-1">
-            AV driver: {String(meta.av_driver ?? "null")} · OCR: {String(meta.ocr_driver ?? "null")}
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Document repository governance"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Document repository governance" }]} />}
+      />
         <Link href="/admin/documents" className="text-sm text-primary underline">
           Back to document register
         </Link>

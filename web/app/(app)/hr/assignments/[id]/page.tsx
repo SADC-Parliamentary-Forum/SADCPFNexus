@@ -153,7 +153,7 @@ export default function AssignmentDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
+    <div className="space-y-4">
         <div className="h-8 w-64 bg-neutral-100 animate-pulse rounded" />
         <div className="card p-5 space-y-3">
           {[...Array(5)].map((_, i) => (

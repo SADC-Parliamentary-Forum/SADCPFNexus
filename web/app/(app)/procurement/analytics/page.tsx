@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { procurementAnalyticsApi, type ProcurementFlag } from "@/lib/api";
@@ -44,10 +45,11 @@ export default function ProcurementAnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Procurement Analytics</h1>
-          <p className="page-subtitle">Spend intelligence, vendor performance, and compliance flags</p>
-        </div>
+        <ModulePageHeader
+        title="Procurement Analytics"
+        subtitle="Spend intelligence, vendor performance, and compliance flags"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement Analytics" }]} />}
+      />
         <Link href="/procurement" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Procurement

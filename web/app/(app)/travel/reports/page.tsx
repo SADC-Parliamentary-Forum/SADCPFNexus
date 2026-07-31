@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { travelApi } from "@/lib/api";
@@ -34,12 +35,10 @@ export default function TravelReportsPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold text-neutral-900">Travel Reports &amp; Analytics</h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          Aggregates plus PRD report pack slices (register, retirement, TOIL, visa, amendments).
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Travel Reports & Analytics"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Reports & Analytics" }]} />}
+      />
 
       <ul className="flex flex-wrap gap-4 text-sm">
         <li><Link className="text-primary" href="/travel/register">Travel Register / export</Link></li>

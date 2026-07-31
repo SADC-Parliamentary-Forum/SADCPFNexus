@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -36,10 +37,11 @@ export default function MyActivityReportsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="page-title">My Reports</h1>
-          <p className="page-subtitle">Activity reports where you are the responsible officer or author.</p>
-        </div>
+        <ModulePageHeader
+        title="My Reports"
+        subtitle="Activity reports where you are the responsible officer or author."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "My Reports" }]} />}
+      />
         <Link href="/mande/intake" className="btn-secondary flex items-center gap-1.5 text-sm">
           <span className="material-symbols-outlined text-[16px]">inbox</span>
           Intake

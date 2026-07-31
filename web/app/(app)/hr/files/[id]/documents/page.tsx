@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { hrFilesApi, type HrPersonalFile, type HrFileDocument } from "@/lib/api";
@@ -102,7 +103,7 @@ export default function HrFileDocumentsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-400">
         <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">HR</button>
@@ -118,12 +119,10 @@ export default function HrFileDocumentsPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">Document Vault</h1>
-          <p className="page-subtitle">
-            {file ? `${file.employee?.name ?? `Employee #${id}`} — all HR documents on file` : "Loading..."}
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Document Vault"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Document Vault" }]} />}
+      />
         <div className="flex gap-2">
           <button
             className="btn-secondary flex items-center gap-2"

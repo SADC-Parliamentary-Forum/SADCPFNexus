@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -76,12 +77,11 @@ export default function BudgetControlPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Budget Control</h1>
-          <p className="page-subtitle">
-            Authoritative available balances including commitments (approved − actual − committed)
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Budget Control"
+        subtitle="Authoritative available balances including commitments (approved − actual − committed)"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Control" }]} />}
+      />
         <div className="flex items-center gap-2">
           <Link href="/budget/cycles" className="btn-secondary text-sm">
             Annual cycles

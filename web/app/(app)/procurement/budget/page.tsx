@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -118,10 +119,11 @@ export default function ProcurementBudgetPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="page-title">Budget Confirmation</h1>
-        <p className="page-subtitle">Finance queue: reserve budget for HOD-approved requests, then approve for procurement.</p>
-      </div>
+      <ModulePageHeader
+        title="Budget Confirmation"
+        subtitle="Finance queue: reserve budget for HOD-approved requests, then approve for procurement."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Confirmation" }]} />}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card p-4">

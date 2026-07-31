@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { financeApi, type Budget } from "@/lib/api";
@@ -94,10 +95,11 @@ export default function BudgetDashboardPage() {
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Budget Management</h1>
-          <p className="page-subtitle">Track core and project budgets, allocations, and expenditures</p>
-        </div>
+        <ModulePageHeader
+        title="Budget Management"
+        subtitle="Track core and project budgets, allocations, and expenditures"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Management" }]} />}
+      />
         <div className="flex items-center gap-3">
           <button
             type="button"

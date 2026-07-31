@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { type ReactNode, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -89,12 +90,11 @@ export default function BudgetReportsPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="page-title">Budget reports</h1>
-          <p className="page-subtitle">
-            Read-only utilisation, commitment ageing, change-request register, and cycle status
-          </p>
-        </div>
+        <ModulePageHeader
+        title="Budget reports"
+        subtitle="Read-only utilisation, commitment ageing, change-request register, and cycle status"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget reports" }]} />}
+      />
         <div className="flex flex-wrap items-center gap-2">
           <Link href="/budget" className="btn-secondary text-sm">
             Budget control

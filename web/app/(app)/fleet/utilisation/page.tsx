@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -17,10 +18,11 @@ export default function FleetUtilisationPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Fleet utilisation</h1>
-        <p className="page-subtitle">Booking days, km travelled, and idle days by vehicle.</p>
-      </div>
+      <ModulePageHeader
+        title="Fleet utilisation"
+        subtitle="Booking days, km travelled, and idle days by vehicle."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fleet utilisation" }]} />}
+      />
       <div className="flex flex-wrap gap-2">
         <input type="date" className="form-input" value={from} onChange={(e) => setFrom(e.target.value)} />
         <input type="date" className="form-input" value={to} onChange={(e) => setTo(e.target.value)} />

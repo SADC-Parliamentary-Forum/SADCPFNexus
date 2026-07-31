@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
@@ -36,10 +37,11 @@ export default function AuditTrailAlertsPage() {
   return (
     <div className="p-6 space-y-4 max-w-5xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Security alerts</h1>
-          <p className="page-subtitle">Monitoring-rule indicators — New → review → classify → close. Not proof of wrongdoing.</p>
-        </div>
+        <ModulePageHeader
+        title="Security alerts"
+        subtitle="Monitoring-rule indicators — New → review → classify → close. Not proof of wrongdoing."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Security alerts" }]} />}
+      />
         <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
       </div>
 

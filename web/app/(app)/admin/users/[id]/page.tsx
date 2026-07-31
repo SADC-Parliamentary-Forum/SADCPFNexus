@@ -1,5 +1,6 @@
 "use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -426,10 +427,10 @@ export default function UserEditPage() {
           >
             <span className="material-symbols-outlined">arrow_back</span>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900 leading-tight">Edit Staff Member</h1>
-            <p className="text-sm text-neutral-500">Manage profile and permissions for {form.name}</p>
-          </div>
+          <ModulePageHeader
+        title="Edit Staff Member"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Edit Staff Member" }]} />}
+      />
         </div>
         <div className="flex items-center gap-3">
           <button

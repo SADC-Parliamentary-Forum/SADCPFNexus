@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -30,10 +31,11 @@ export default function BudgetFxRatesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="page-title">Budget FX rates</h1>
-        <p className="page-subtitle">Multi-currency conversion for cashflow/reports. No bank or GL posting.</p>
-      </div>
+      <ModulePageHeader
+        title="Budget FX rates"
+        subtitle="Multi-currency conversion for cashflow/reports. No bank or GL posting."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget FX rates" }]} />}
+      />
       <div className="card grid gap-3 p-4 md:grid-cols-5">
         {(["base_currency", "quote_currency", "rate", "effective_date"] as const).map((k) => (
           <input key={k} className="form-input" placeholder={k} value={(form as any)[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} />
