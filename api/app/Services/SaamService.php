@@ -10,10 +10,10 @@ use App\Models\SignatureVersion;
 use App\Models\SignedDocument;
 use App\Models\TenantSetting;
 use App\Models\User;
+use App\Support\PasswordPolicy;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\Builder\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class SaamService
@@ -76,7 +76,7 @@ class SaamService
      */
     public function reAuthenticate(User $user, string $password): bool
     {
-        return Hash::check($password, $user->password);
+        return PasswordPolicy::check($password, $user->password);
     }
 
     /**

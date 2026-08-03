@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1\Profile;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\UserSession;
+use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use PragmaRX\Google2FA\Google2FA;
@@ -120,7 +120,7 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($data['password'], $user->password)) {
+        if (! PasswordPolicy::check((string) $data['password'], $user->password)) {
             throw ValidationException::withMessages(['password' => ['Incorrect password.']]);
         }
 

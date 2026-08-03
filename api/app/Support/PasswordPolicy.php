@@ -9,6 +9,36 @@ use Illuminate\Support\Facades\Hash;
 
 class PasswordPolicy
 {
+    /**
+     * Verify hashes created by the current or a previously configured driver.
+     * The configured Argon2id verifier rejects legacy bcrypt hashes before the
+     * login flow can upgrade them.
+     */
+    public static function check(string $plainPassword, ?string $hash): bool
+    {
+        if (! is_string($hash) || $hash === '') {
+            return false;
+        }
+
+        $algorithm = password_get_info($hash)['algoName'] ?? '';
+
+        return match ($algorithm) {
+            'bcrypt' => Hash::driver('bcrypt')->check($plainPassword, $hash),
+            'argon2i' => Hash::driver('argon')->check($plainPassword, $hash),
+            'argon2id' => Hash::driver('argon2id')->check($plainPassword, $hash),
+            default => false,
+        };
+    }
+
+    public static function needsRehash(?string $hash): bool
+    {
+        if (! is_string($hash) || ! str_starts_with($hash, '$argon2id$')) {
+            return true;
+        }
+
+        return Hash::needsRehash($hash);
+    }
+
     public static function rules(?User $user = null, array $context = [], bool $confirmed = true): array
     {
         $min = max(8, (int) config('auth_lifecycle.password_min', 12));
@@ -142,7 +172,7 @@ class PasswordPolicy
             $limit = max(0, (int) config('auth_lifecycle.password_history_count', 5));
 
             $currentHash = $user->getRawOriginal('password') ?? $user->password;
-            if (is_string($currentHash) && $currentHash !== '' && Hash::check($plain, $currentHash)) {
+            if (is_string($currentHash) && $currentHash !== '' && self::check($plain, $currentHash)) {
                 $fail('The password must not match a recently used password.');
                 return;
             }
@@ -159,7 +189,7 @@ class PasswordPolicy
                 ->get(['password']);
 
             foreach ($histories as $history) {
-                if (Hash::check($plain, (string) $history->password)) {
+                if (self::check($plain, (string) $history->password)) {
                     $fail('The password must not match a recently used password.');
                     return;
                 }

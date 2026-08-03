@@ -130,7 +130,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !PasswordPolicy::check((string) $request->password, $user->password)) {
             AuditLog::record('auth.login.failed', [
                 'new_values' => ['email' => $request->email],
                 'tags'       => 'auth',
@@ -152,7 +152,7 @@ class AuthController extends Controller
 
         // A bcrypt (or otherwise legacy) hash can only be upgraded after the
         // plaintext password has been verified successfully.
-        if (! str_starts_with((string) $user->password, '$argon2id$') || Hash::needsRehash($user->password)) {
+        if (PasswordPolicy::needsRehash($user->password)) {
             $user->forceFill(['password' => Hash::make((string) $request->password)])->save();
         }
 
