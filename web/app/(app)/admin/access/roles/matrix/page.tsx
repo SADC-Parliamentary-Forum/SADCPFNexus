@@ -1,397 +1,89 @@
 "use client";
 
-import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { adminApi, type Role } from "@/lib/api";
-import { getStoredUser, isSystemAdmin } from "@/lib/auth";
-import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { cn } from "@/lib/utils";
+import { adminApi, accessApi, type AccessPermissionDefinition, type Role } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Button } from "@/components/ui/Button";
+import { isSystemAdmin, getStoredUser } from "@/lib/auth";
 
-const PROTECTED_NAMES = ["System Admin", "System Administrator", "super-admin"];
+type Permission = AccessPermissionDefinition & { key: string };
+const protectedRoles = new Set(["System Admin", "System Administrator", "super-admin", "admin", "Admin"]);
 
-const MODULE_GROUPS = [
-  { label: "Travel",       icon: "flight",               color: "blue",   perms: ["travel.view","travel.create","travel.approve","travel.admin"] },
-  { label: "Leave",        icon: "event_available",      color: "emerald",perms: ["leave.view","leave.create","leave.approve","leave.admin"] },
-  { label: "Imprest",      icon: "payments",             color: "amber",  perms: ["imprest.view","imprest.create","imprest.approve","imprest.liquidate"] },
-  { label: "Finance",      icon: "account_balance",      color: "violet", perms: ["finance.view","finance.create","finance.approve","finance.export","finance.admin"] },
-  { label: "Procurement",  icon: "shopping_cart",        color: "orange", perms: ["procurement.view","procurement.create","procurement.approve","procurement.award","procurement.manage_vendors","procurement.manage_po","procurement.receive_goods","procurement.approve_invoice","procurement.hod_approve","procurement.manage_budget","procurement.admin"] },
-  { label: "Assets",       icon: "inventory_2",          color: "teal",   perms: ["assets.view","assets.create","assets.edit","assets.dispose","assets.admin","assets.manage"] },
-  { label: "Governance",   icon: "gavel",                color: "purple", perms: ["governance.view","governance.create","governance.approve","governance.admin"] },
-  { label: "HR",           icon: "people",               color: "pink",   perms: ["hr.view","hr.create","hr.edit","hr.approve","hr.admin"] },
-  { label: "Timesheets",   icon: "schedule",             color: "rose",   perms: ["timesheets.view","timesheets.create","timesheets.approve"] },
-  { label: "Appraisals",   icon: "star_rate",            color: "yellow", perms: ["appraisals.view","appraisals.create","appraisals.review","appraisals.admin"] },
-  { label: "Conduct",      icon: "policy",               color: "red",    perms: ["conduct.view","conduct.create","conduct.admin"] },
-  { label: "PIF",          icon: "folder_special",       color: "lime",   perms: ["pif.view","pif.create","pif.approve","pif.admin"] },
-  { label: "Workplan",     icon: "calendar_month",       color: "sky",    perms: ["workplan.view","workplan.create","workplan.approve","workplan.admin"] },
-  { label: "Assignments",  icon: "task_alt",             color: "stone",  perms: ["assignments.view","assignments.create","assignments.issue","assignments.admin"] },
-  { label: "Calendar",     icon: "event",                color: "fuchsia",perms: ["calendar.view","calendar.create","calendar.admin"] },
-  { label: "Support",      icon: "support_agent",        color: "zinc",   perms: ["support.view","support.create","support.admin"] },
-  { label: "Users",        icon: "manage_accounts",      color: "indigo", perms: ["users.view","users.create","users.edit","users.deactivate","users.delete"] },
-  { label: "Roles",        icon: "admin_panel_settings", color: "slate",  perms: ["roles.view","roles.manage","system.admin"] },
-  { label: "Reports",      icon: "bar_chart",            color: "cyan",   perms: ["reports.view","reports.export","reports.audit","audit.view","audit.export"] },
-  { label: "HR Settings",      icon: "tune",                 color: "green",   perms: ["hr_settings.view","hr_settings.edit","hr_settings.approve","hr_settings.publish"] },
-  { label: "SAAM",              icon: "draw",                color: "indigo",  perms: ["saam.view","saam.delegate"] },
-  { label: "Correspondence",    icon: "mail",                color: "sky",     perms: ["correspondence.view","correspondence.create","correspondence.admin"] },
-  { label: "SRHR",              icon: "health_and_safety",   color: "rose",    perms: ["srhr.view","srhr.create","srhr.manage","srhr.admin"] },
-  { label: "Parliaments",       icon: "account_balance",     color: "amber",   perms: ["parliaments.view","parliaments.manage"] },
-  { label: "Research Reports",  icon: "summarize",           color: "teal",    perms: ["researcher_reports.view","researcher_reports.submit","researcher_reports.acknowledge","researcher_reports.admin"] },
-  { label: "Risk Register",     icon: "shield",              color: "red",     perms: ["risk.view","risk.create","risk.submit","risk.review","risk.approve","risk.manage","risk.admin"] },
-  { label: "Audit",             icon: "manage_search",       color: "slate",   perms: ["audit.view","audit.export"] },
-];
+const label = (value: string) => value.replace(/[_.-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const GROUP_COLORS: Record<string, { header: string; pill: string }> = {
-  blue:    { header: "bg-blue-50",    pill: "bg-blue-100 text-blue-700" },
-  emerald: { header: "bg-emerald-50", pill: "bg-emerald-100 text-emerald-700" },
-  amber:   { header: "bg-amber-50",   pill: "bg-amber-100 text-amber-700" },
-  violet:  { header: "bg-violet-50",  pill: "bg-violet-100 text-violet-700" },
-  orange:  { header: "bg-orange-50",  pill: "bg-orange-100 text-orange-700" },
-  teal:    { header: "bg-teal-50",    pill: "bg-teal-100 text-teal-700" },
-  purple:  { header: "bg-purple-50",  pill: "bg-purple-100 text-purple-700" },
-  pink:    { header: "bg-pink-50",    pill: "bg-pink-100 text-pink-700" },
-  rose:    { header: "bg-rose-50",    pill: "bg-rose-100 text-rose-700" },
-  yellow:  { header: "bg-yellow-50",  pill: "bg-yellow-100 text-yellow-700" },
-  red:     { header: "bg-red-50",     pill: "bg-red-100 text-red-700" },
-  lime:    { header: "bg-lime-50",    pill: "bg-lime-100 text-lime-700" },
-  sky:     { header: "bg-sky-50",     pill: "bg-sky-100 text-sky-700" },
-  stone:   { header: "bg-stone-50",   pill: "bg-stone-100 text-stone-700" },
-  fuchsia: { header: "bg-fuchsia-50", pill: "bg-fuchsia-100 text-fuchsia-700" },
-  zinc:    { header: "bg-zinc-50",    pill: "bg-zinc-100 text-zinc-700" },
-  indigo:  { header: "bg-indigo-50",  pill: "bg-indigo-100 text-indigo-700" },
-  slate:   { header: "bg-slate-50",   pill: "bg-slate-100 text-slate-700" },
-  cyan:    { header: "bg-cyan-50",    pill: "bg-cyan-100 text-cyan-700" },
-  green:   { header: "bg-green-50",   pill: "bg-green-100 text-green-700" },
-};
-
-const CATEGORY_TABS = [
-  { id: "operations", label: "Operations",   icon: "hub",       groups: ["Travel","Leave","Imprest","Finance","Procurement","Assets","Governance","Timesheets","Calendar","Support"] },
-  { id: "management", label: "Management",   icon: "layers",    groups: ["HR","Appraisals","Conduct","PIF","Workplan","Assignments","Reports"] },
-  { id: "system",     label: "System Config",icon: "settings",  groups: ["HR Settings","Users","Roles"] },
-  { id: "extended",   label: "Extended",     icon: "extension", groups: ["SAAM","Correspondence","SRHR","Parliaments","Research Reports","Risk Register","Audit"] },
-];
-
-function permLabel(perm: string): string {
-  const part = perm.split(".")[1] ?? perm;
-  return part.charAt(0).toUpperCase() + part.slice(1);
-}
-
-function permissionCount(role: Role): number {
-  const p = role.permissions;
-  if (Array.isArray(p)) return p.length;
-  return 0;
-}
-
-export default function AdminRolesPage() {
+export default function PermissionMatrixPage() {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permSets, setPermSets] = useState<Record<number, Set<string>>>({});
-  const [savingCell, setSavingCell] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [moduleFilter, setModuleFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState("operations");
-  const { confirm } = useConfirm();
+  const canEdit = isSystemAdmin(getStoredUser());
 
-  useEffect(() => {
-    setIsAdmin(isSystemAdmin(getStoredUser()));
-  }, []);
-
-  useEffect(() => {
+  const load = async () => {
     setLoading(true);
-    adminApi
-      .listRoles()
-      .then((res) => {
-        const loaded: Role[] = res.data.roles ?? [];
-        setRoles(loaded);
-        const sets: Record<number, Set<string>> = {};
-        for (const role of loaded) {
-          const perms = role.permissions ?? [];
-          sets[role.id] = new Set(perms.map((x) => (typeof x === "string" ? x : x.name)));
-        }
-        setPermSets(sets);
-      })
-      .catch(() => setError("Failed to load roles."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleDelete = async (role: Role) => {
-    if (PROTECTED_NAMES.includes(role.name)) {
-      setError("This role cannot be deleted.");
-      return;
-    }
-    const ok = await confirm({
-      title: "Delete role",
-      message: `Are you sure you want to delete the role "${role.name}"? Users with this role will lose it.`,
-    });
-    if (!ok) return;
-    setActionLoading(role.id);
     try {
-      await adminApi.deleteRole(role.id);
-      setRoles((prev) => prev.filter((r) => r.id !== role.id));
-    } catch (e: unknown) {
-      const msg =
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Failed to delete role.";
-      setError(msg);
+      const [roleResponse, registryResponse] = await Promise.all([adminApi.listRoles(), accessApi.registry()]);
+      setRoles(roleResponse.data.roles ?? []);
+      setPermissions(Object.entries(registryResponse.data.data.permissions ?? {}).map(([key, value]) => ({ key, ...value })));
+    } catch (reason: any) {
+      setError(reason?.response?.data?.message ?? "Unable to load the permission registry.");
     } finally {
-      setActionLoading(null);
+      setLoading(false);
     }
   };
 
-  async function togglePerm(role: Role, permName: string) {
-    if (PROTECTED_NAMES.includes(role.name)) return;
-    const key = `${role.id}-${permName}`;
-    const current = new Set(permSets[role.id] ?? []);
-    const snapshot = new Set(current);
-    current.has(permName) ? current.delete(permName) : current.add(permName);
-    setPermSets((prev) => ({ ...prev, [role.id]: current }));
-    setSavingCell(key);
+  useEffect(() => { void load(); }, []);
+
+  const modules = useMemo(() => Array.from(new Set(permissions.map((permission) => permission.module))).sort(), [permissions]);
+  const visiblePermissions = useMemo(() => permissions.filter((permission) => {
+    const haystack = `${permission.key} ${permission.display_name} ${permission.feature} ${permission.action}`.toLowerCase();
+    return (moduleFilter === "all" || permission.module === moduleFilter) && (!search || haystack.includes(search.toLowerCase()));
+  }).sort((a, b) => `${a.module}.${a.feature}.${a.action}`.localeCompare(`${b.module}.${b.feature}.${b.action}`)), [permissions, moduleFilter, search]);
+
+  const rolePermissionSet = (role: Role) => new Set((role.permissions ?? []).map((permission) => typeof permission === "string" ? permission : permission.name));
+
+  const toggle = async (role: Role, permission: Permission) => {
+    if (!canEdit || protectedRoles.has(role.name)) return;
+    const current = rolePermissionSet(role);
+    current.has(permission.key) ? current.delete(permission.key) : current.add(permission.key);
+    setSaving(`${role.id}:${permission.key}`);
+    setError(null);
     try {
-      await adminApi.syncRolePermissions(role.id, Array.from(current));
-    } catch {
-      setPermSets((prev) => ({ ...prev, [role.id]: snapshot }));
-      setError(`Failed to update ${permName} for ${role.name}.`);
+      const response = await adminApi.syncRolePermissions(role.id, Array.from(current));
+      setRoles((previous) => previous.map((item) => item.id === role.id ? { ...item, permissions: response.data.data.permissions } : item));
+    } catch (reason: any) {
+      setError(reason?.response?.data?.message ?? `Could not update ${permission.display_name} for ${role.name}.`);
     } finally {
-      setSavingCell(null);
+      setSaving(null);
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <ModulePageHeader
-        title="Roles & Permissions"
-        subtitle="Create and manage roles, assign permissions, and assign roles to users from User Management."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Roles & Permissions" }]} />}
+    <div className="mx-auto max-w-[1600px] space-y-5">
+      <ModulePageHeader
+        title="Permission matrix"
+        subtitle="Assign individual feature actions to roles. Rows are roles; columns are canonical permissions from the registry."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin", href: "/admin" }, { label: "Access", href: "/admin/access" }, { label: "Roles", href: "/admin/access/roles" }, { label: "Matrix" }]} />}
+        actions={<Link href="/admin/access/roles" className="btn-secondary text-sm">Feature builder</Link>}
       />
-        {isAdmin && (
-          <Link href="/admin/access/roles" className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]">badge</span>
-            Role Catalogue
-          </Link>
-        )}
-      </div>
 
-      {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">error_outline</span>
-            {error}
-          </span>
-          <button type="button" onClick={() => setError(null)} className="text-red-600 hover:underline">
-            Dismiss
-          </button>
+      <div className="card p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <input className="form-input min-w-72 flex-1" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search permission, feature, or action" aria-label="Search permissions" />
+          <select className="form-input min-w-48" value={moduleFilter} onChange={(event) => setModuleFilter(event.target.value)} aria-label="Filter module"><option value="all">All modules</option>{modules.map((module) => <option key={module} value={module}>{label(module)}</option>)}</select>
+          <span className="text-xs text-neutral-500">{visiblePermissions.length} permissions shown</span>
         </div>
-      )}
+        {error ? <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p> : null}
+      </div>
 
-      {/* Roles summary table */}
       <div className="card overflow-hidden">
-        {loading ? (
-          <div className="py-16 text-center">
-            <div className="flex items-center justify-center gap-2 text-neutral-400">
-              <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-              <span className="text-sm">Loading roles…</span>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Role name</th>
-                    <th>Permissions</th>
-                    {isAdmin && <th className="text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {roles.map((role) => (
-                    <tr key={role.id}>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-neutral-900">{role.name}</p>
-                          {PROTECTED_NAMES.includes(role.name) && (
-                            <span className="material-symbols-outlined text-[14px] text-neutral-400" title="Protected role">lock</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className="text-sm text-neutral-600">
-                          {permissionCount(role)} permission{permissionCount(role) !== 1 ? "s" : ""}
-                        </span>
-                      </td>
-                      {isAdmin && (
-                        <td>
-                          <div className="flex items-center justify-end gap-3">
-                            <Link href="/admin/access/roles" className="text-xs font-semibold text-primary hover:underline">
-                              Catalogue
-                            </Link>
-                            {!PROTECTED_NAMES.includes(role.name) && (
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(role)}
-                                disabled={actionLoading === role.id}
-                                className="text-xs font-medium text-red-500 hover:underline disabled:opacity-50"
-                              >
-                                {actionLoading === role.id ? "…" : "Delete"}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {roles.length === 0 && (
-              <div className="py-16 text-center">
-                <span className="material-symbols-outlined text-5xl text-neutral-200">admin_panel_settings</span>
-                <p className="mt-3 text-sm font-medium text-neutral-500">No roles yet</p>
-                {isAdmin && (
-                  <Link href="/admin/access/roles" className="btn-primary mt-4 inline-flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">add</span>
-                    Add Role
-                  </Link>
-                )}
-              </div>
-            )}
-          </>
-        )}
+        {loading ? <div className="p-10 text-center text-sm text-neutral-500">Loading permission registry...</div> : visiblePermissions.length === 0 ? <div className="p-10 text-center text-sm text-neutral-500">No permissions match the current filter.</div> : <div className="max-h-[70vh] overflow-auto"><table className="min-w-max border-collapse text-xs"><thead className="sticky top-0 z-20 bg-white"><tr><th className="sticky left-0 z-30 min-w-56 border-b border-r border-neutral-200 bg-white px-4 py-3 text-left">Role</th>{visiblePermissions.map((permission) => <th key={permission.key} className="w-32 border-b border-r border-neutral-200 px-2 py-3 text-center align-bottom" title={permission.key}><div className="font-semibold text-neutral-800">{label(permission.action)}</div><div className="mt-1 text-[10px] font-normal text-neutral-500">{label(permission.module)} / {label(permission.feature)}</div></th>)}</tr></thead><tbody>{roles.map((role) => { const selected = rolePermissionSet(role); const protectedRole = protectedRoles.has(role.name); return <tr key={role.id} className="hover:bg-neutral-50"><td className="sticky left-0 z-10 border-b border-r border-neutral-200 bg-white px-4 py-3"><div className="flex items-center gap-2"><span className="font-semibold text-neutral-900">{role.name}</span>{protectedRole ? <span className="material-symbols-outlined text-[15px] text-neutral-400" title="Protected role">lock</span> : null}</div><span className="text-[11px] text-neutral-500">{selected.size} assigned</span></td>{visiblePermissions.map((permission) => { const key = `${role.id}:${permission.key}`; return <td key={permission.key} className="border-b border-r border-neutral-100 px-2 py-3 text-center"><input type="checkbox" checked={selected.has(permission.key)} disabled={!canEdit || protectedRole || saving === key} onChange={() => void toggle(role, permission)} aria-label={`${role.name}: ${permission.display_name}`} title={`${selected.has(permission.key) ? "Revoke" : "Grant"} ${permission.key}`} className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary disabled:opacity-40" />{saving === key ? <span className="material-symbols-outlined ml-1 animate-spin align-middle text-[13px] text-primary">progress_activity</span> : null}</td>; })}</tr>; })}</tbody></table></div>}
       </div>
-
-      {/* Permission Matrix */}
-      {!loading && roles.length > 0 && (() => {
-        const visibleGroups = MODULE_GROUPS.filter((g) =>
-          CATEGORY_TABS.find((t) => t.id === activeTab)?.groups.includes(g.label)
-        );
-        return (
-          <div className="card overflow-hidden">
-            {/* Card title */}
-            <div className="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-neutral-400 text-[20px]">grid_view</span>
-                <div>
-                  <h2 className="text-base font-semibold text-neutral-900">Permission Matrix</h2>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    Click a checkbox to instantly toggle a permission for a role. Protected roles are read-only.
-                  </p>
-                </div>
-              </div>
-            </div>
-            {/* Tab bar */}
-            <div className="flex gap-1 px-6 py-2.5 border-b border-neutral-200 bg-neutral-50">
-              {CATEGORY_TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "filter-tab flex items-center gap-1.5",
-                    activeTab === tab.id && "active"
-                  )}
-                >
-                  <span className="material-symbols-outlined text-[15px]">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="overflow-x-auto custom-scrollbar">
-              <table className="text-xs border-collapse min-w-max">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-2 text-left min-w-[160px]">
-                      Role
-                    </th>
-                    {visibleGroups.map((group) => {
-                      const colors = GROUP_COLORS[group.color] ?? GROUP_COLORS.slate;
-                      return (
-                        <th
-                          key={group.label}
-                          colSpan={group.perms.length}
-                          className={`border-b border-r border-neutral-200 px-2 py-2 text-center ${colors.header}`}
-                        >
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${colors.pill}`}>
-                            <span className="material-symbols-outlined text-[11px]">{group.icon}</span>
-                            {group.label}
-                          </span>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                  <tr>
-                    <th className="sticky left-0 z-10 bg-white border-b border-r border-neutral-200 px-4 py-1.5" />
-                    {visibleGroups.flatMap((group) =>
-                      group.perms.map((perm) => (
-                        <th
-                          key={perm}
-                          className="border-b border-r border-neutral-100 px-2 py-1.5 text-center font-medium text-neutral-500 whitespace-nowrap"
-                          title={perm}
-                        >
-                          {permLabel(perm)}
-                        </th>
-                      ))
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {roles.map((role) => {
-                    const isProtected = PROTECTED_NAMES.includes(role.name);
-                    return (
-                      <tr key={role.id} className={isProtected ? "bg-neutral-50 opacity-70" : "hover:bg-neutral-50/50"}>
-                        <td className="sticky left-0 z-10 bg-inherit border-b border-r border-neutral-200 px-4 py-2 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {isProtected && (
-                              <span className="material-symbols-outlined text-[12px] text-neutral-400">lock</span>
-                            )}
-                            <span className="font-medium text-neutral-800">{role.name}</span>
-                            {isAdmin && !isProtected && (
-                              <Link href="/admin/access/roles" className="text-[10px] text-primary hover:underline ml-1">
-                                Catalogue
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                        {visibleGroups.flatMap((group) =>
-                          group.perms.map((perm) => {
-                            const key = `${role.id}-${perm}`;
-                            const checked = permSets[role.id]?.has(perm) ?? false;
-                            const isSaving = savingCell === key;
-                            return (
-                              <td key={perm} className="border-b border-r border-neutral-100 px-2 py-2 text-center">
-                                {isSaving ? (
-                                  <span className="material-symbols-outlined animate-spin text-[14px] text-primary">progress_activity</span>
-                                ) : (
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    disabled={isProtected || !isAdmin}
-                                    onChange={() => togglePerm(role, perm)}
-                                    className="rounded border-neutral-300 text-primary focus:ring-primary disabled:opacity-40 cursor-pointer disabled:cursor-default"
-                                    title={`${checked ? "Revoke" : "Grant"} ${perm} for ${role.name}`}
-                                  />
-                                )}
-                              </td>
-                            );
-                          })
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })()}
-
-      <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4 text-sm text-neutral-600">
-        <p className="font-medium text-neutral-800">Assigning roles to users</p>
-        <p className="mt-1">
-          Go to <Link href="/admin/users" className="text-primary font-medium hover:underline">User Management</Link>, create or edit a user,
-          and select a role in the form. Each user can have one role; permissions are determined by that role.
-        </p>
-      </div>
+      <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900"><strong>Granular access:</strong> selecting <em>read</em> does not grant edit, delete, approve, or export. Use the feature builder for new roles and this matrix for precise role changes.</div>
+      <Button type="button" variant="secondary" onClick={() => void load()} disabled={loading}>Refresh registry</Button>
     </div>
   );
 }

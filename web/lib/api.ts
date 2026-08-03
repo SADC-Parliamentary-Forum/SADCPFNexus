@@ -341,9 +341,39 @@ export interface AccessEffectivePayload {
   delegations: unknown[];
 }
 
+export interface AccessPermissionDefinition {
+  display_name: string;
+  description?: string;
+  module: string;
+  feature: string;
+  action: string;
+  supported_scopes?: string[];
+  risk_level?: string;
+  data_classification?: string;
+  mfa_required?: boolean;
+  linked_routes?: string[];
+  linked_endpoints?: string[];
+}
+
+export interface AccessRegistryPayload {
+  permissions: Record<string, AccessPermissionDefinition>;
+  scopes: Record<string, unknown>;
+  modules: string[];
+  legacy_aliases: Record<string, string[]>;
+  sod_rules: Record<string, unknown>;
+}
+
 export const accessApi = {
   effective: () => api.get<{ data: AccessEffectivePayload }>("/access/effective"),
   navigation: () => api.get<{ data: AccessEffectivePayload["navigation"] }>("/access/navigation"),
+  registry: () => api.get<{ data: AccessRegistryPayload }>("/admin/access/registry"),
+  userProfile: (id: number) => api.get<{ data: {
+    user: User;
+    effective_permissions: string[];
+    role_assignments: unknown[];
+    direct_grants: unknown[];
+    denials: unknown[];
+  } }>(`/admin/access/users/${id}/profile`),
   coverage: () => api.get<{ data: Record<string, unknown> }>("/admin/access/coverage"),
 };
 
@@ -550,6 +580,8 @@ export const adminApi = {
   deleteRole: (id: number) => api.delete<{ message: string }>(`/admin/roles/${id}`),
   syncRolePermissions: (roleId: number, permissions: string[]) =>
     api.put<{ data: Role; message: string }>(`/admin/roles/${roleId}/permissions`, { permissions }),
+  updateUserRoles: (id: number, roles: string[]) =>
+    api.patch<{ user: User; message: string }>(`/admin/users/${id}/roles`, { roles }),
   // Workflows
   listWorkflows: () => api.get<{ data: ApprovalWorkflow[] }>("/admin/workflows"),
   createWorkflow: (data: any) => api.post("/admin/workflows", data),

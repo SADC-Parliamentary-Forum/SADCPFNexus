@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   adminApi,
+  accessApi,
   positionsApi,
   adminUserDocumentsApi,
   type User,
@@ -14,6 +15,7 @@ import {
   type Role,
   type Position,
   type UserDocument,
+  type AccessPermissionDefinition,
 } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -213,6 +215,10 @@ export default function UserEditPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [assignedRoles, setAssignedRoles] = useState<string[]>([]);
+  const [initialRoles, setInitialRoles] = useState<string[]>([]);
+  const [effectivePermissions, setEffectivePermissions] = useState<string[]>([]);
+  const [permissionRegistry, setPermissionRegistry] = useState<Record<string, AccessPermissionDefinition>>({});
   const [positions, setPositions] = useState<Position[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -227,12 +233,14 @@ export default function UserEditPage() {
       try {
         // Use allSettled so a 403 on secondary data (portfolios/positions)
         // doesn't prevent the user record from loading.
-        const [userResult, deptsResult, portsResult, rolesResult, posResult] = await Promise.allSettled([
+        const [userResult, deptsResult, portsResult, rolesResult, posResult, profileResult, registryResult] = await Promise.allSettled([
           adminApi.getUser(Number(id)),
           adminApi.listDepartments(),
           adminApi.listPortfolios(),
           adminApi.listRoles(),
           positionsApi.list({ all: true }),
+          accessApi.userProfile(Number(id)),
+          accessApi.registry(),
         ]);
 
         // User is the critical resource — if it fails with 403, show Access Denied
@@ -258,12 +266,22 @@ export default function UserEditPage() {
         if (rolesResult.status === "fulfilled") {
           setAvailableRoles(rolesResult.value.data?.roles ?? []);
         }
+        if (profileResult.status === "fulfilled") {
+          setEffectivePermissions(profileResult.value.data.data.effective_permissions ?? []);
+        }
+        if (registryResult.status === "fulfilled") {
+          setPermissionRegistry(registryResult.value.data.data.permissions ?? {});
+        }
         if (posResult.status === "fulfilled") {
           setPositions((posResult.value.data as any)?.data ?? []);
         }
 
         const rawRole = u.roles?.[0] || "Staff";
         const roleName = String((typeof rawRole === "object" ? (rawRole as any).name : rawRole) || "Staff");
+        const roleNames = (u.roles ?? []).map((role: any) => String(typeof role === "object" ? role.name : role)).filter(Boolean);
+        const normalizedRoles = roleNames.length > 0 ? roleNames : [roleName];
+        setAssignedRoles(normalizedRoles);
+        setInitialRoles(normalizedRoles);
         const portfolioIds = u.portfolios?.map((p) => p.id) ?? [];
 
         setForm({
@@ -339,6 +357,11 @@ export default function UserEditPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (assignedRoles.length === 0) {
+      toastError("Role Required", "Assign at least one governed role before saving access changes.");
+      setActiveTab("security");
+      return;
+    }
     setSaving(true);
     try {
       await adminApi.updateUser(Number(id), {
@@ -363,11 +386,14 @@ export default function UserEditPage() {
         emergency_contact_name: form.emergency_contact_name || undefined,
         emergency_contact_relationship: form.emergency_contact_relationship || undefined,
         emergency_contact_phone: form.emergency_contact_phone || undefined,
-        role: form.role,
         is_active: form.is_active,
         classification: form.classification,
         mfa_enabled: form.mfa_enabled,
       } as any);
+      if (JSON.stringify([...assignedRoles].sort()) !== JSON.stringify([...initialRoles].sort())) {
+        await adminApi.updateUserRoles(Number(id), assignedRoles);
+        setInitialRoles([...assignedRoles]);
+      }
       success("Success", "User updated successfully.");
       router.refresh();
     } catch {
@@ -709,31 +735,25 @@ export default function UserEditPage() {
                   </h3>
                   <div className="p-6 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-4">
                     <p className="text-sm text-neutral-600 leading-relaxed">
-                      System roles define high-level access patterns. A user must have exactly one primary role.
+                      Roles are composable bundles of feature permissions. Assign only the roles required for this person; each role can grant different actions and scopes.
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {availableRoles.map((role) => (
                         <label key={role.id} className={cn(
                           "cursor-pointer flex items-center justify-between p-4 rounded-xl border transition-all",
-                          form.role === role.name
+                          assignedRoles.includes(role.name)
                             ? "border-primary bg-primary/5 ring-1 ring-primary"
                             : "border-neutral-200 bg-white hover:border-neutral-300"
                         )}>
                           <div className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name="role"
-                              value={role.name}
-                              checked={form.role === role.name}
-                              onChange={() => set("role", role.name)}
-                              className="w-4 h-4 text-primary focus:ring-primary"
-                            />
+                            <input type="checkbox" name="roles" value={role.name} checked={assignedRoles.includes(role.name)} onChange={() => setAssignedRoles((current) => current.includes(role.name) ? current.filter((item) => item !== role.name) : [...current, role.name])} className="w-4 h-4 rounded text-primary focus:ring-primary" />
                             <span className="text-sm font-bold text-neutral-900">{role.name}</span>
                           </div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">System</span>
                         </label>
                       ))}
                     </div>
+                    <p className="text-xs text-neutral-500">Selected roles: {assignedRoles.length}. Save Changes applies the role set and revokes stale sessions so access changes take effect on the next login.</p>
                   </div>
                 </section>
 
@@ -814,18 +834,10 @@ export default function UserEditPage() {
 
             {/* ── Permissions Tab ─────────────────────────────────────────── */}
             {activeTab === "permissions" && (
-              <div className="p-20 text-center space-y-4">
-                <span className="material-symbols-outlined text-5xl text-neutral-200">lock_open</span>
-                <h3 className="text-xl font-bold text-neutral-900">Module Access Level</h3>
-                <p className="max-w-md mx-auto text-neutral-500 text-sm leading-relaxed">
-                  Advanced module-specific permissions are coming in the next update. Currently, permissions are inherited from the assigned <strong>{form.role}</strong> role.
-                </p>
-                <div className="flex justify-center mt-6">
-                  <Link href="/admin/access/roles" className="text-primary font-semibold hover:underline flex items-center gap-2">
-                    Manage Role Base Permissions
-                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                  </Link>
-                </div>
+              <div className="p-8 space-y-5">
+                <div className="flex items-start justify-between gap-3"><div><h3 className="text-lg font-bold text-neutral-900 flex items-center gap-2"><span className="material-symbols-outlined text-primary">lock_open</span>Effective feature access</h3><p className="mt-1 text-sm text-neutral-500">Read, create, edit, delete, approve, export, and other actions are evaluated independently.</p></div><Link href="/admin/access/roles" className="btn-secondary text-xs">Manage roles</Link></div>
+                {effectivePermissions.length === 0 ? <p className="rounded-xl border border-neutral-200 bg-neutral-50 p-5 text-sm text-neutral-500">No effective permissions were returned for this user.</p> : <div className="grid gap-3 md:grid-cols-2">{Object.entries(effectivePermissions.reduce<Record<string, string[]>>((groups, permission) => { const meta = permissionRegistry[permission]; const group = meta ? `${meta.module} / ${meta.feature}` : permission.split(".").slice(0, 2).join(" / "); (groups[group] ??= []).push(meta?.display_name || permission); return groups; }, {})).sort(([a], [b]) => a.localeCompare(b)).map(([group, items]) => <div key={group} className="rounded-xl border border-neutral-200 p-4"><p className="text-xs font-bold uppercase tracking-wide text-neutral-500">{group}</p><div className="mt-2 flex flex-wrap gap-1.5">{items.map((item) => <span key={item} className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">{item}</span>)}</div></div>)}</div>}
+                <p className="text-xs text-neutral-500">Change permissions by changing the assigned role set. Direct grants and denials remain governed by Access Governance.</p>
               </div>
             )}
 
