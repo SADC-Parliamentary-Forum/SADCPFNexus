@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 
 class RolesController extends Controller
 {
@@ -28,8 +29,10 @@ class RolesController extends Controller
             abort(403);
         }
 
+        $manager = app(CanonicalRoleManager::class);
         $roles = Role::with('permissions')
             ->where('guard_name', self::GUARD)
+            ->whereIn('name', array_merge($manager->canonicalRoleNames(), CanonicalRoleManager::SYSTEM_ROLES))
             ->orderBy('name')
             ->get();
         $permissions = Permission::where('guard_name', self::GUARD)->orderBy('name')->get();
@@ -68,6 +71,12 @@ class RolesController extends Controller
             'permissions'   => ['array'],
             'permissions.*' => ['string', 'exists:permissions,name'],
         ]);
+
+        if (! app(CanonicalRoleManager::class)->isAssignableRole($data['name'])) {
+            throw ValidationException::withMessages([
+                'name' => ['Create or publish roles through the governed access catalogue.'],
+            ]);
+        }
 
         $role = Role::create(['name' => $data['name'], 'guard_name' => self::GUARD]);
 

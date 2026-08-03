@@ -150,7 +150,7 @@ class User extends Authenticatable
      */
     public function isSystemAdmin(): bool
     {
-        return $this->hasAnyRole(['System Admin', 'System Administrator', 'super-admin']);
+        return $this->hasAnyRole(['System Admin', 'System Administrator', 'super-admin', 'admin', 'Admin']);
     }
 
     /**

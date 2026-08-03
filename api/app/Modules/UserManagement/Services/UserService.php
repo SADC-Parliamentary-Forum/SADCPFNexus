@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 
 class UserService
 {
@@ -106,7 +107,14 @@ class UserService
             }
 
             if (!empty($data['role'])) {
-                $user->assignRole($data['role']);
+                $roleManager = app(CanonicalRoleManager::class);
+                $role = $roleManager->canonicalize((string) $data['role']);
+                if (! $roleManager->isAssignableRole($role)) {
+                    throw ValidationException::withMessages([
+                        'role' => ['The selected role is not part of the governed role catalogue.'],
+                    ]);
+                }
+                $user->assignRole($role);
                 app(PermissionRegistrar::class)->forgetCachedPermissions();
             }
 
@@ -242,17 +250,24 @@ class UserService
         }
 
         if (!empty($data['role'])) {
-            $user->syncRoles([$data['role']]);
+            $roleManager = app(CanonicalRoleManager::class);
+            $role = $roleManager->canonicalize((string) $data['role']);
+            if (! $roleManager->isAssignableRole($role)) {
+                throw ValidationException::withMessages([
+                    'role' => ['The selected role is not part of the governed role catalogue.'],
+                ]);
+            }
+            $user->syncRoles([$role]);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            if ($oldRoles !== [$data['role']]) {
+            if ($oldRoles !== [$role]) {
                 $this->revokeAllAccess($user);
 
                 AuditLog::record('user.role_changed', [
                     'auditable_type' => User::class,
                     'auditable_id' => $user->id,
                     'old_values' => ['roles' => $oldRoles],
-                    'new_values' => ['roles' => [$data['role']]],
+                    'new_values' => ['roles' => [$role]],
                     'tags' => 'user_management',
                 ]);
             }

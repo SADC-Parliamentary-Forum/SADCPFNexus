@@ -585,9 +585,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
             );
 
-            // Phase 7: never let legacy syncPermissions clobber curated template merges.
-            $this->mergePublishedTemplatePermissions($guard);
+            // CanonicalRoleManager is the final authority. It performs an
+            // exact replacement so removed permissions cannot survive a seed.
         }
+
+        app(\App\Modules\AccessControl\Services\CanonicalRoleManager::class)->synchronize();
     }
 
     /**

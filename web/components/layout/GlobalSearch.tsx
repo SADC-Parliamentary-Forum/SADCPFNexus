@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { AuthUser } from "@/lib/api";
-import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { accessApi, type AccessEffectivePayload, type AuthUser } from "@/lib/api";
+import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
 
 // ─── Search index: all navigable areas + record types ────────────────────────
 interface SearchResult {
@@ -92,17 +92,25 @@ export function GlobalSearch() {
   const [cursor, setCursor] = useState(0);
   const [recent, setRecent] = useState<string[]>([]);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [effectiveAccess, setEffectiveAccess] = useState<AccessEffectivePayload | null>(null);
+  const [accessReady, setAccessReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const searchListboxId = "global-search-results";
 
   useEffect(() => {
     setUser(getStoredUser());
+    accessApi.effective()
+      .then(({ data }) => setEffectiveAccess(data.data))
+      .catch(() => setEffectiveAccess(null))
+      .finally(() => setAccessReady(true));
   }, []);
 
   const accessibleIndex = useMemo(
-    () => SEARCH_INDEX.filter((result) => canAccessRoute(user, result.href)),
-    [user]
+    () => accessReady
+      ? SEARCH_INDEX.filter((result) => canAccessRouteWithEffective(user, result.href, effectiveAccess))
+      : [],
+    [accessReady, effectiveAccess, user]
   );
 
   // Debounce query so scoring only runs 150ms after the user stops typing

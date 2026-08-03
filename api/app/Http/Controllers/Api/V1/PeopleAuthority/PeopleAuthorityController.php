@@ -29,6 +29,7 @@ use App\Models\PeopleAuthority\TransferCase;
 use App\Models\PeopleAuthority\UserRoleAssignment;
 use App\Models\Position;
 use App\Models\User;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 use App\Modules\PeopleAuthority\Services\AuthorityCheckService;
 use App\Modules\PeopleAuthority\Services\ConfidentialAccessGate;
 use App\Modules\PeopleAuthority\Services\IdentityAuditService;
@@ -525,9 +526,12 @@ class PeopleAuthorityController extends Controller
 
     public function rolesIndex(Request $request): JsonResponse
     {
+        $manager = app(CanonicalRoleManager::class);
+
         return response()->json([
             'data' => \Spatie\Permission\Models\Role::query()
                 ->where('guard_name', 'sanctum')
+                ->whereIn('name', array_merge($manager->canonicalRoleNames(), CanonicalRoleManager::SYSTEM_ROLES))
                 ->orderBy('name')
                 ->get(['id', 'name', 'guard_name']),
         ]);
@@ -545,6 +549,14 @@ class PeopleAuthorityController extends Controller
             'effective_to' => ['nullable', 'date'],
             'reason' => ['nullable', 'string'],
         ]);
+
+        $roleManager = app(CanonicalRoleManager::class);
+        $data['role_name'] = $roleManager->canonicalize($data['role_name']);
+        if (! $roleManager->isAssignableRole($data['role_name'])) {
+            throw ValidationException::withMessages([
+                'role_name' => ['The selected role is not part of the governed role catalogue.'],
+            ]);
+        }
 
         $privileged = (bool) ($data['is_privileged'] ?? $this->isPrivilegedRole($data['role_name']));
         if ($privileged && (int) $request->user()->id === (int) $user->id) {

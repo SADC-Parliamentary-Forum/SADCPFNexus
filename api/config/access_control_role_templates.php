@@ -27,7 +27,9 @@ return [
         'risk_level' => 'high',
         'permissions' => ['leave.request.authorise.assigned', 'leave.request.reject.assigned', 'leave.calendar.view.department', 'travel.request.approve.assigned', 'procurement.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.manager_review.act.assigned', 'risk.module.view', 'risk.create'],
         'inherits' => ['Supervisor / Line Manager'],
-        'legacy_roles' => ['Director', 'HOD'],
+        // HOD remains the supervisor role; only Director maps to this wider
+        // directorate scope.
+        'legacy_roles' => ['Director'],
         'feature_only' => false,
         'read_only' => false,
         'no_business_approve' => false,
@@ -67,7 +69,10 @@ return [
         'risk_level' => 'critical',
         'permissions' => ['programme.funds_procurement_rates.authorise.assigned', 'salary_advance.approve.assigned', 'travel.request.approve.assigned', 'procurement.purchase_order.create.assigned'],
         'inherits' => ['Finance Officer'],
-        'legacy_roles' => ['Finance Controller', 'Director'],
+        // Finance Controller is deliberately mapped to Finance Officer. The
+        // director-level approval role is assigned explicitly as its own
+        // canonical role and must not be inherited by every controller.
+        'legacy_roles' => [],
         'feature_only' => false,
         'read_only' => false,
         'no_business_approve' => false,
@@ -77,7 +82,9 @@ return [
         'risk_level' => 'medium',
         'permissions' => ['programme.module.view', 'programme.request.create', 'programme.request.read.created', 'programme.request.edit.created', 'programme.request.submit.created', 'programme.document.manage.created', 'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised'],
         'inherits' => [],
-        'legacy_roles' => ['staff'],
+        // Generic staff must not receive programme-authoring access merely
+        // because Programme Officer used to share the staff alias.
+        'legacy_roles' => [],
         'feature_only' => false,
         'read_only' => false,
         'no_business_approve' => false,
@@ -87,7 +94,7 @@ return [
         'risk_level' => 'high',
         'permissions' => ['programme.request.read.assigned', 'programme.manager_review.act.assigned', 'programme.activity_authorise.act.assigned'],
         'inherits' => ['Programme Officer'],
-        'legacy_roles' => ['Director'],
+        'legacy_roles' => [],
         'feature_only' => false,
         'read_only' => false,
         'no_business_approve' => false,
@@ -141,6 +148,16 @@ return [
         'feature_only' => false,
         'read_only' => true,
         'no_business_approve' => false,
+    ],
+    'External Auditor' => [
+        'purpose' => 'Time-limited, engagement-scoped read-only assurance access',
+        'risk_level' => 'high',
+        'permissions' => ['audit.event.read.organisation', 'reports.view.authorised', 'finance.view', 'risk.module.view', 'mande.module.view'],
+        'inherits' => [],
+        'legacy_roles' => [],
+        'feature_only' => false,
+        'read_only' => true,
+        'no_business_approve' => true,
     ],
     'ICT Platform Administrator' => [
         'purpose' => 'Technical platform administration without automatic business-data access',

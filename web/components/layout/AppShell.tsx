@@ -15,16 +15,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [accessReady, setAccessReady] = useState(false);
+  const [accessLoadFailed, setAccessLoadFailed] = useState(false);
   const [effectiveAccess, setEffectiveAccess] = useState<AccessEffectivePayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     accessApi.effective()
       .then(({ data }) => {
-        if (!cancelled) setEffectiveAccess(data.data);
+        if (!cancelled) {
+          setEffectiveAccess(data.data);
+          setAccessReady(true);
+          setAccessLoadFailed(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setEffectiveAccess(null);
+        if (!cancelled) {
+          setEffectiveAccess(null);
+          setAccessReady(true);
+          setAccessLoadFailed(true);
+        }
       });
 
     return () => {
@@ -40,9 +50,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const allowed = canAccessRouteWithEffective(user, pathname, effectiveAccess);
+    const allowed = accessReady && !accessLoadFailed && canAccessRouteWithEffective(user, pathname, effectiveAccess);
     setAccessDenied(!allowed);
-  }, [effectiveAccess, pathname, router]);
+  }, [accessReady, accessLoadFailed, effectiveAccess, pathname, router]);
 
   // Responsive: on small screens start closed; persist preference on larger screens
   useEffect(() => {
@@ -97,10 +107,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="flex-1 overflow-y-auto p-6 min-w-0"
           onClick={closeSidebar}
         >
-          {accessDenied ? (
+          {!accessReady || accessDenied ? (
             <AccessDenied
               path={pathname ?? undefined}
-              reason="Your account does not include permission for this route. Contact an administrator if you need access."
+              reason={!accessReady
+                ? "Access permissions are still being verified. Reload this page if the check does not complete."
+                : accessLoadFailed
+                  ? "Access permissions could not be verified. The page is unavailable until the authorization service responds."
+                  : "Your account does not include permission for this route. Contact an administrator if you need access."}
             />
           ) : (
             children

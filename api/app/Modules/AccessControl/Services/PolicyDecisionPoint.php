@@ -131,9 +131,11 @@ class PolicyDecisionPoint
         return $this->cache->rememberEffective($actor, function () use ($actor) {
             $keys = [];
             foreach ($actor->getAllPermissions()->pluck('name') as $name) {
-                $keys[] = $name;
-                foreach ($this->registry->expandLegacy((string) $name) as $canonical) {
-                    $keys[] = $canonical;
+                // Expose both sides of the legacy/canonical alias during the
+                // migration. Backend checks and older clients then resolve to
+                // the same capability without creating a second policy model.
+                foreach ($this->registry->resolveEquivalents((string) $name) as $equivalent) {
+                    $keys[] = $equivalent;
                 }
             }
 
