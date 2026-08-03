@@ -38,13 +38,13 @@ const SEARCH_INDEX: SearchResult[] = [
   // ── Admin pages ─────────────────────────────────────────────────────────
   { id: "a-users",       label: "User Management",           description: "Create and manage user accounts",       href: "/admin/users",         category: "Admin",       icon: "people"                 },
   { id: "a-users-new",   label: "Create User",               description: "Add a new user account",               href: "/admin/users/create",  category: "Actions",     icon: "person_add"             },
-  { id: "a-roles",       label: "Roles & Permissions",       description: "Configure system roles",               href: "/admin/roles",         category: "Admin",       icon: "admin_panel_settings"   },
+  { id: "a-roles",       label: "Roles & Permissions",       description: "Configure system roles",               href: "/admin/access/roles",  category: "Admin",       icon: "admin_panel_settings"   },
   { id: "a-depts",       label: "Departments",               description: "Organisational structure",             href: "/admin/departments",   category: "Admin",       icon: "corporate_fare"         },
   { id: "a-payslips",    label: "Payslip Upload",            description: "Bulk upload employee payslips",        href: "/admin/payslips",      category: "Admin",       icon: "receipt_long"           },
   { id: "a-settings",    label: "System Settings",           description: "Organisation, fiscal year, timezone",  href: "/admin/settings",      category: "Admin",       icon: "settings"               },
   { id: "a-workflows",   label: "Approval Workflows",        description: "Configure approval chains",            href: "/admin/workflows",     category: "Admin",       icon: "account_tree"           },
   { id: "a-notifs",      label: "Notification Templates",    description: "Email and system notification content",href: "/admin/notifications", category: "Admin",       icon: "notifications"          },
-  { id: "a-audit",       label: "Audit Logs",                description: "System activity trail",                href: "/admin/audit",         category: "Admin",       icon: "manage_search"          },
+  { id: "a-audit",       label: "Platform Audit Trail",      description: "System activity trail",                href: "/admin/audit-trail",   category: "Admin",       icon: "policy"                 },
   // ── Profile ─────────────────────────────────────────────────────────────
   { id: "p-profile",     label: "My Profile",                description: "Edit your personal details",           href: "/profile",             category: "Account",     icon: "person"                 },
   { id: "p-settings",    label: "My Settings",               description: "Notifications, theme, preferences",    href: "/profile/settings",    category: "Account",     icon: "settings"               },
@@ -94,6 +94,7 @@ export function GlobalSearch() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchListboxId = "global-search-results";
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -134,6 +135,8 @@ export function GlobalSearch() {
 
   // Flat list for keyboard nav
   const flatResults = useMemo(() => grouped.flatMap((g) => g.items), [grouped]);
+  const activeResult = flatResults[cursor];
+  const activeResultId = activeResult ? `global-search-option-${activeResult.id}` : undefined;
 
   const openSearch = useCallback(() => {
     setOpen(true);
@@ -225,15 +228,22 @@ export function GlobalSearch() {
               <input
                 ref={inputRef}
                 type="text"
+                role="combobox"
+                aria-label="Search modules, records, people, and policies"
+                aria-expanded={open}
+                aria-controls={flatResults.length > 0 ? searchListboxId : undefined}
+                aria-haspopup="listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={activeResultId}
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
                 onKeyDown={handleKeyDown}
                 placeholder="Search modules, records, people, policies…"
-                className="flex-1 text-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 bg-transparent border-none outline-none"
+                className="flex-1 rounded-md border-none bg-transparent text-sm text-neutral-900 outline-none placeholder-neutral-400 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-neutral-100 dark:focus-visible:ring-offset-neutral-800"
                 autoComplete="off"
               />
               {query && (
-                <button type="button" onClick={() => setQuery("")} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
+                <button type="button" aria-label="Clear search query" onClick={() => setQuery("")} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200">
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               )}
@@ -281,7 +291,7 @@ export function GlobalSearch() {
                   <p className="text-xs text-neutral-400 mt-0.5">Try a module name, action, or keyword</p>
                 </div>
               ) : (
-                <div className="py-2">
+                <div id={searchListboxId} role="listbox" aria-label="Search results" className="py-2">
                   {grouped.map(({ category, items }) => {
                     return (
                       <div key={category}>
@@ -292,7 +302,12 @@ export function GlobalSearch() {
                           const flatIdx = flatResults.indexOf(r);
                           const isActive = flatIdx === cursor;
                           return (
-                            <button key={r.id} type="button"
+                            <button
+                              key={r.id}
+                              id={`global-search-option-${r.id}`}
+                              type="button"
+                              role="option"
+                              aria-selected={isActive}
                               onMouseEnter={() => setCursor(flatIdx)}
                               onClick={() => navigate(r.href, r.label)}
                               className={`flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors ${isActive ? "bg-primary/5" : "hover:bg-neutral-50 dark:hover:bg-neutral-700/50"}`}>

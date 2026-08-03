@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -99,7 +99,8 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
     if (id == null || _queue.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Enter a draft stocktake id and queue at least one line.')),
+            content: Text(
+                'Enter a draft stocktake id and queue at least one line.')),
       );
       return;
     }
@@ -123,10 +124,14 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
           const SnackBar(content: Text('Offline queue synced to server.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sync failed: $e')),
+          const SnackBar(
+            content: Text(
+              'Sync failed. Check your connection and try again.',
+            ),
+          ),
         );
       }
     } finally {
@@ -161,7 +166,9 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: MobileScanner(
                   onDetect: (capture) {
-                    final code = (capture.barcodes.isNotEmpty ? capture.barcodes.first.rawValue : null);
+                    final code = (capture.barcodes.isNotEmpty
+                        ? capture.barcodes.first.rawValue
+                        : null);
                     if (code != null && code.isNotEmpty && !_lookingUp) {
                       _lookup(code);
                     }
@@ -220,8 +227,7 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
                     controller: _qtyCtrl,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(color: AppColors.textPrimary),
-                    decoration:
-                        const InputDecoration(labelText: 'Counted qty'),
+                    decoration: const InputDecoration(labelText: 'Counted qty'),
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
@@ -281,7 +287,8 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
           ElevatedButton(
             onPressed: _syncing || _queue.isEmpty ? null : _syncOffline,
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: Text(_syncing ? 'Syncingâ€¦' : 'Sync offline queue to server',
+            child: Text(
+                _syncing ? 'Syncingâ€¦' : 'Sync offline queue to server',
                 style: const TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 8),
@@ -294,4 +301,3 @@ class _StockScanScreenState extends ConsumerState<StockScanScreen> {
     );
   }
 }
-

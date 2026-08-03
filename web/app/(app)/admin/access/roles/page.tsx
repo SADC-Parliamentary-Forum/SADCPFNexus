@@ -63,7 +63,7 @@ export default function AccessRolesPage() {
           />
         }
         actions={
-          <Link href="/admin/roles/matrix" className="btn-secondary text-sm">
+          <Link href="/admin/access/roles/matrix" className="btn-secondary text-sm">
             Permission matrix
           </Link>
         }

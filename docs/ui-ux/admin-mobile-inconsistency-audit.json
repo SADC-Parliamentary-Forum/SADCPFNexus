@@ -1,0 +1,160 @@
+{
+  "generated_at": "2026-07-31",
+  "scope": {
+    "admin": "web/app/(app)/admin plus shared document components used by admin flows",
+    "mobile": "mobile/lib feature screens, shared shell widgets, and router"
+  },
+  "counting_rule": "Repeated defects count once per affected route or screen per UX pattern. Structural defects count once.",
+  "totals": {
+    "findings": 826,
+    "by_severity": {
+      "P0": 16,
+      "P1": 476,
+      "P2": 334
+    },
+    "by_surface": {
+      "admin_web": 186,
+      "mobile_flutter": 640
+    }
+  },
+  "evidence_base": {
+    "admin_tsx_files": 53,
+    "admin_page_routes": 52,
+    "mobile_screen_files": 97
+  },
+  "admin_pattern_counts": {
+    "missing_canonical_header": 16,
+    "legacy_page_title": 5,
+    "raw_color_utilities": 43,
+    "wide_data_tables": 19,
+    "raw_json_tool_output": 7,
+    "custom_fixed_modals": 5,
+    "bespoke_empty_loading_states": 30,
+    "dense_text_actions": 44,
+    "legacy_input_field_bridge": 1
+  },
+  "mobile_pattern_counts": {
+    "missing_shared_stitch_widgets": 94,
+    "raw_colors_or_color_literals": 95,
+    "bespoke_appbar": 87,
+    "local_snackbar_feedback": 40,
+    "raw_dialogs": 14,
+    "raw_bottom_sheets": 6,
+    "spinner_only_loading": 85,
+    "bespoke_form_fields": 34,
+    "single_child_scrollview_dense_forms": 12,
+    "missing_semantic_affordances": 89,
+    "raw_navigator_pop_back_behavior": 22,
+    "fragmented_date_money_formatting": 62
+  },
+  "p0_findings": [
+    {
+      "id": "AM-001",
+      "surface": "admin",
+      "summary": "Admin hub links to missing Correspondence Settings route",
+      "evidence": "web/app/(app)/admin/page.tsx href /admin/correspondence; no matching route file"
+    },
+    {
+      "id": "AM-002",
+      "surface": "mobile",
+      "summary": "Assignments create route is malformed and nests the calendar route inside the wrong GoRoute block",
+      "evidence": "mobile/lib/core/router/app_router.dart:601-610"
+    },
+    {
+      "id": "AM-003",
+      "surface": "mobile",
+      "summary": "Vendor directory pushes /procurement/vendors/new but router treats vendor path segment as numeric id",
+      "evidence": "mobile/lib/features/procurement/presentation/screens/vendor_directory_screen.dart:119; app_router.dart /procurement/vendors/:id"
+    },
+    {
+      "id": "AM-004",
+      "surface": "mobile",
+      "summary": "Unauthorized mobile routes silently redirect to dashboard",
+      "evidence": "mobile/lib/core/router/app_router.dart:173-174"
+    },
+    {
+      "id": "AM-005",
+      "surface": "mobile",
+      "summary": "GoRouter debug diagnostics are enabled",
+      "evidence": "mobile/lib/core/router/app_router.dart:146"
+    },
+    {
+      "id": "AM-006",
+      "surface": "admin",
+      "summary": "Role administration is split between canonical access roles and legacy admin roles routes",
+      "evidence": "/admin/access/roles plus /admin/roles/create, /admin/roles/matrix, /admin/roles/[id]/edit"
+    },
+    {
+      "id": "AM-007",
+      "surface": "admin",
+      "summary": "Audit administration is split between /admin/audit and /admin/audit-trail route families",
+      "evidence": "Both route families exist and render different experiences"
+    },
+    {
+      "id": "AM-008",
+      "surface": "admin",
+      "summary": "Access explorer renders raw JSON in production admin UI",
+      "evidence": "web/app/(app)/admin/access/explorer/page.tsx"
+    },
+    {
+      "id": "AM-009",
+      "surface": "admin",
+      "summary": "Access simulator renders raw JSON in production admin UI",
+      "evidence": "web/app/(app)/admin/access/simulator/page.tsx"
+    },
+    {
+      "id": "AM-010",
+      "surface": "admin",
+      "summary": "Workflow simulation renders raw JSON instead of reviewed result UI",
+      "evidence": "web/app/(app)/admin/workflows/simulate/page.tsx"
+    },
+    {
+      "id": "AM-011",
+      "surface": "admin",
+      "summary": "Workflow analytics renders raw JSON instead of dashboard primitives",
+      "evidence": "web/app/(app)/admin/workflows/analytics/page.tsx"
+    },
+    {
+      "id": "AM-012",
+      "surface": "admin",
+      "summary": "Workflow AI page renders guard and suggestion JSON directly",
+      "evidence": "web/app/(app)/admin/workflows/ai/page.tsx"
+    },
+    {
+      "id": "AM-013",
+      "surface": "admin",
+      "summary": "Notifications analytics renders multiple raw JSON panels",
+      "evidence": "web/app/(app)/admin/notifications/page.tsx"
+    },
+    {
+      "id": "AM-014",
+      "surface": "admin",
+      "summary": "Audit ingestion exposes migrate and replay operational controls as ordinary admin UI",
+      "evidence": "web/app/(app)/admin/audit-trail/ingestion/page.tsx"
+    },
+    {
+      "id": "AM-015",
+      "surface": "web_shared",
+      "summary": "Document download failures still use native alert",
+      "evidence": "web/components/ui/DocumentsPanel.tsx:68; web/components/ui/GenericDocumentsPanel.tsx:84"
+    },
+    {
+      "id": "AM-016",
+      "surface": "mobile",
+      "summary": "Drawer, dashboard, and route IA disagree on assignments and HR assignments entry points",
+      "evidence": "mobile/lib/shared/widgets/app_drawer.dart; mobile/lib/features/dashboard/presentation/screens/dashboard_screen.dart; mobile/lib/core/router/app_router.dart"
+    }
+  ],
+  "top_themes": [
+    "Broken route and navigation targets",
+    "Silent access failure",
+    "Raw JSON/tooling UI in production admin surfaces",
+    "Canonical admin primitives under-adopted",
+    "Mobile Stitch widgets under-adopted",
+    "Per-screen mobile AppBar, back, loading, empty, and error patterns",
+    "Mobile semantics and gesture accessibility gaps",
+    "Raw color literals and weak dark-mode resilience",
+    "Fragmented date, money, and status formatting",
+    "Dense admin tables without mobile fallback"
+  ]
+}

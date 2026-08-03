@@ -1,9 +1,5 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export default function AdminPositionsCreateRedirect() {
-  const router = useRouter();
-  useEffect(() => { router.replace("/hr/positions/create"); }, [router]);
-  return null;
+  redirect("/hr/positions/create");
 }

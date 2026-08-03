@@ -74,7 +74,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'srhr.view', 'srhr.create', 'srhr.manage', 'srhr.admin',
             'parliaments.view', 'parliaments.manage',
             'researcher_reports.view', 'researcher_reports.submit', 'researcher_reports.acknowledge', 'researcher_reports.admin',
-            'reports.view', 'reports.export', 'reports.audit',
+            'reports.view', 'reports.export', 'reports.audit', 'reports.schedule', 'reports.manage-schedules',
             'audit.view', 'audit.export',
             // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
             'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
@@ -83,6 +83,23 @@ class RolesAndPermissionsSeeder extends Seeder
             'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
             'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
             'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
+            // Admin Console, Platform Configuration & Operational Control
+            'admin-console.view', 'admin-console.view-health', 'admin-console.view-modules',
+            'admin-console.manage-modules', 'admin-console.view-config', 'admin-console.propose-config',
+            'admin-console.review-config', 'admin-console.approve-config', 'admin-console.activate-config',
+            'admin-console.rollback-config', 'admin-console.manage-reference-data',
+            'admin-console.approve-reference-data', 'admin-console.manage-feature-flags',
+            'admin-console.approve-feature-flags', 'admin-console.manage-calendars',
+            'admin-console.manage-numbering', 'admin-console.manage-localisation',
+            'admin-console.manage-integrations', 'admin-console.view-jobs', 'admin-console.run-jobs',
+            'admin-console.manage-dead-letters', 'admin-console.manage-maintenance',
+            'admin-console.manage-banners', 'admin-console.manage-data-quality',
+            'admin-console.request-data-correction', 'admin-console.approve-data-correction',
+            'admin-console.execute-data-correction', 'admin-console.view-backups',
+            'admin-console.request-restore', 'admin-console.view-restore', 'admin-console.approve-restore',
+            'admin-console.execute-restore', 'admin-console.manage-support-sessions',
+            'admin-console.request-break-glass', 'admin-console.approve-break-glass',
+            'admin-console.view-admin-audit', 'admin-console.export',
             // Audit Management Module (Phase 1) — distinct from platform audit.view/export
             'audit.universe.manage', 'audit.plan.manage', 'audit.plan.approve',
             'audit.engagement.manage', 'audit.engagement.fieldwork',
@@ -162,6 +179,43 @@ class RolesAndPermissionsSeeder extends Seeder
             $superAdmin = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => $guard]);
             $superAdmin->syncPermissions(Permission::where('guard_name', $guard)->get());
 
+            $platformAdmin = Role::firstOrCreate(['name' => 'Platform Administrator', 'guard_name' => $guard]);
+            $platformAdmin->syncPermissions(
+                Permission::whereIn('name', [
+                    'admin-console.view', 'admin-console.view-health', 'admin-console.view-modules',
+                    'admin-console.manage-modules', 'admin-console.view-config', 'admin-console.propose-config',
+                    'admin-console.review-config', 'admin-console.approve-config', 'admin-console.activate-config',
+                    'admin-console.rollback-config', 'admin-console.manage-reference-data',
+                    'admin-console.approve-reference-data', 'admin-console.manage-feature-flags',
+                    'admin-console.approve-feature-flags', 'admin-console.manage-calendars',
+                    'admin-console.manage-numbering', 'admin-console.manage-localisation',
+                    'admin-console.manage-integrations', 'admin-console.view-jobs', 'admin-console.run-jobs',
+                    'admin-console.manage-dead-letters', 'admin-console.manage-maintenance',
+                    'admin-console.manage-banners', 'admin-console.manage-data-quality',
+                    'admin-console.request-data-correction', 'admin-console.approve-data-correction',
+                    'admin-console.execute-data-correction', 'admin-console.view-backups',
+                    'admin-console.request-restore', 'admin-console.view-restore', 'admin-console.approve-restore',
+                    'admin-console.execute-restore', 'admin-console.manage-support-sessions',
+                    'admin-console.request-break-glass', 'admin-console.approve-break-glass',
+                    'admin-console.view-admin-audit', 'admin-console.export',
+                    'reports.view', 'reports.export', 'reports.audit', 'reports.schedule', 'reports.manage-schedules',
+                ])->where('guard_name', $guard)->get()
+            );
+
+            $operationsViewer = Role::firstOrCreate(['name' => 'Read-Only Operations Viewer', 'guard_name' => $guard]);
+            $operationsViewer->syncPermissions(
+                Permission::whereIn('name', [
+                    'admin-console.view',
+                    'admin-console.view-health',
+                    'admin-console.view-modules',
+                    'admin-console.view-config',
+                    'admin-console.view-jobs',
+                    'admin-console.view-backups',
+                    'admin-console.view-restore',
+                    'admin-console.view-admin-audit',
+                ])->where('guard_name', $guard)->get()
+            );
+
             $hrManager = Role::firstOrCreate(['name' => 'HR Manager', 'guard_name' => $guard]);
             $hrManager->syncPermissions(
                 Permission::whereIn('name', [
@@ -198,7 +252,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.manage_po', 'procurement.approve_invoice',
                     'procurement.manage_budget',
                     'governance.view', 'audit.view',
-                    'reports.view', 'reports.export',
+                    'reports.view', 'reports.export', 'reports.schedule', 'reports.manage-schedules',
                     'hr_settings.view', 'hr_settings.edit', 'hr_settings.approve', 'hr_settings.publish',
                     'overtime.send-payroll', 'timesheets.export', 'timesheets.view',
                 ])->where('guard_name', $guard)->get()
@@ -573,5 +627,3 @@ class RolesAndPermissionsSeeder extends Seeder
         }
     }
 }
-
-

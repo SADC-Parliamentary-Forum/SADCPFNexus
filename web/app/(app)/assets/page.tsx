@@ -137,7 +137,7 @@ function CapitaliseModal({
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} aria-label="Close asset form" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -302,7 +302,7 @@ function DepreciationModal({
               <p className="text-xs text-neutral-400">{asset.asset_code} — {asset.name}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close asset details" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

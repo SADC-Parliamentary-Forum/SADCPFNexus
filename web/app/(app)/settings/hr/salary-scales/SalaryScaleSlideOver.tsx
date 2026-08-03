@@ -118,7 +118,7 @@ export function SalaryScaleSlideOver({
               </div>
             )}
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700 ml-4">
+          <button onClick={onClose} aria-label="Close salary scale editor" className="text-neutral-400 hover:text-neutral-700 ml-4">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>

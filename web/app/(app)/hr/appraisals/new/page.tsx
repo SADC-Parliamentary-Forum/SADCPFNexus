@@ -375,7 +375,7 @@ export default function NewAppraisalPage() {
                 value={row.weight}
                 onChange={(e) => updateKra(i, "weight", e.target.value)}
               />
-              <button type="button" onClick={() => removeKra(i)} className="text-neutral-400 hover:text-red-600 p-1 mt-1">
+              <button type="button" onClick={() => removeKra(i)} aria-label={`Remove key result area ${i + 1}`} className="text-neutral-400 hover:text-red-600 p-1 mt-1">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>

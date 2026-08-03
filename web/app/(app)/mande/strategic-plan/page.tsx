@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type StrategicPlan } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const EMPTY: Partial<StrategicPlan> = {
   name: "",
@@ -19,6 +20,7 @@ const EMPTY: Partial<StrategicPlan> = {
 
 export default function StrategicPlanPage() {
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [modal, setModal] = useState<Partial<StrategicPlan> | null>(null);
@@ -141,7 +143,11 @@ export default function StrategicPlanPage() {
                         <button
                           type="button"
                           className="text-red-500 text-xs hover:underline"
-                          onClick={() => { if (confirm("Delete this plan?")) delMut.mutate(p.id); }}
+                          onClick={async () => {
+                            if (await confirm({ title: "Delete plan", message: "Delete this plan?", variant: "danger" })) {
+                              delMut.mutate(p.id);
+                            }
+                          }}
                         >
                           Delete
                         </button>

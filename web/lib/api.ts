@@ -315,6 +315,38 @@ export interface AuthUser {
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 
+export interface AccessNavItem {
+  label: string;
+  href: string | null;
+  icon: string;
+  linkable?: boolean;
+  feature_only?: boolean;
+  children?: AccessNavItem[];
+}
+
+export interface AccessEffectivePayload {
+  user: Pick<AuthUser, "id" | "name" | "email" | "tenant_id" | "account_status" | "mfa_enabled">;
+  roles: string[];
+  permissions: string[];
+  permission_count: number;
+  registry_hash: string;
+  navigation: {
+    items: AccessNavItem[];
+    effective_permission_count: number;
+  };
+  mfa_required_permissions: string[];
+  direct_grants: unknown[];
+  denials: unknown[];
+  role_assignments: unknown[];
+  delegations: unknown[];
+}
+
+export const accessApi = {
+  effective: () => api.get<{ data: AccessEffectivePayload }>("/access/effective"),
+  navigation: () => api.get<{ data: AccessEffectivePayload["navigation"] }>("/access/navigation"),
+  coverage: () => api.get<{ data: Record<string, unknown> }>("/admin/access/coverage"),
+};
+
 export interface User {
   id: number;
   name: string;
@@ -576,6 +608,109 @@ export const adminApi = {
     api.post<{ data: HolidayDate[]; message: string }>(`/admin/holiday-calendars/${calendarId}/dates`, { dates }),
   deleteHolidayDate: (calendarId: number, dateId: number) =>
     api.delete(`/admin/holiday-calendars/${calendarId}/dates/${dateId}`),
+};
+
+export type AdminConsoleRow = Record<string, unknown> & { id?: number; status?: string };
+
+export interface AdminConsoleDashboard {
+  status: string;
+  cards: Record<string, number>;
+  critical_alerts: AdminConsoleRow[];
+  health: {
+    overall_status: string;
+    services: Record<string, { name: string; status: string; meta?: Record<string, unknown> }>;
+    maintenance_active: boolean;
+  };
+  generated_at: string;
+}
+
+export const adminConsoleApi = {
+  dashboard: () => api.get<{ data: AdminConsoleDashboard }>("/admin/dashboard"),
+  platformStatus: () => api.get<{ data: AdminConsoleDashboard["health"] }>("/admin/platform-status"),
+  modules: () => api.get<{ data: AdminConsoleRow[] }>("/admin/modules"),
+  module: (id: number) => api.get<{ data: AdminConsoleRow }>(`/admin/modules/${id}`),
+  changeModuleStatus: (id: number, data: { status: string; availability?: string; health_status?: string; reason?: string }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/modules/${id}/change-status`, data),
+  configurations: () => api.get<{ data: AdminConsoleRow[] }>("/admin/configurations"),
+  proposeConfigurationChange: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configurations/${id}/change-requests`, data),
+  validateConfigurationChange: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/validate`),
+  reviewConfigurationChange: (id: number, data: { review_type: string; decision: string; notes?: string }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/review`, data),
+  approveConfigurationChange: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/approve`),
+  scheduleConfigurationChange: (id: number, effective_from: string) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/schedule`, { effective_from }),
+  activateConfigurationChange: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/activate`),
+  rollbackConfigurationChange: (id: number, data: { rollback_version_id?: number | null; reason: string }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/configuration-changes/${id}/rollback`, data),
+  referenceData: () => api.get<{ data: AdminConsoleRow[] }>("/admin/reference-data"),
+  addReferenceItem: (setId: number, data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/reference-data/${setId}/items`, data),
+  updateReferenceItem: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: AdminConsoleRow }>(`/admin/reference-data/items/${id}`, data),
+  deprecateReferenceItem: (id: number, data: { reason: string; effective_to?: string; replacement_item_id?: number }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/reference-data/items/${id}/deprecate`, data),
+  importReferenceData: (setId: number, rows: AdminConsoleRow[], dryRun = true) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/reference-data/${setId}/import`, { rows, dry_run: dryRun }),
+  featureFlags: () => api.get<{ data: AdminConsoleRow[] }>("/admin/feature-flags"),
+  createFeatureFlag: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/feature-flags", data),
+  approveFeatureFlag: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/feature-flags/${id}/approve`),
+  activateFeatureFlag: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/feature-flags/${id}/activate`),
+  disableFeatureFlag: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/feature-flags/${id}/disable`),
+  calendars: () => api.get<{ data: AdminConsoleRow[] }>("/admin/calendars"),
+  numberingSchemes: () => api.get<{ data: AdminConsoleRow[] }>("/admin/numbering-schemes"),
+  localisation: () => api.get<{ data: AdminConsoleRow[] }>("/admin/localisation"),
+  integrations: () => api.get<{ data: AdminConsoleRow[] }>("/admin/integrations"),
+  jobs: () => api.get<{ data: AdminConsoleRow[] }>("/admin/jobs"),
+  jobRuns: () => api.get<{ data: AdminConsoleRow[] }>("/admin/job-runs"),
+  runJob: (id: number, data: { reason: string; scope?: Record<string, unknown> }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/jobs/${id}/run`, data),
+  queues: () => api.get<{ data: { snapshots: AdminConsoleRow[]; audit_outbox: Record<string, number> } }>("/admin/queues"),
+  deadLetters: () => api.get<{ data: AdminConsoleRow[] }>("/admin/dead-letters"),
+  replayDeadLetter: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/dead-letters/${id}/replay`),
+  resolveDeadLetter: (id: number, data: { reason: string; action?: string; status?: string }) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/dead-letters/${id}/resolve`, data),
+  systemHealth: () => api.get<{ data: AdminConsoleRow[] }>("/admin/system-health"),
+  createMaintenanceWindow: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/maintenance-windows", data),
+  approveMaintenanceWindow: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/maintenance-windows/${id}/approve`),
+  startMaintenanceWindow: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/maintenance-windows/${id}/start`),
+  completeMaintenanceWindow: (id: number, outcome?: string) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/maintenance-windows/${id}/complete`, { outcome }),
+  createSystemBanner: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/system-banners", data),
+  dataQualityIssues: () => api.get<{ data: AdminConsoleRow[] }>("/admin/data-quality/issues"),
+  createDataCorrection: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/data-corrections", data),
+  approveDataCorrection: (id: number) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/data-corrections/${id}/approve`),
+    executeDataCorrection: (id: number) =>
+      api.post<{ data: AdminConsoleRow }>(`/admin/data-corrections/${id}/execute`),
+    backups: () => api.get<{ data: AdminConsoleRow[] }>("/admin/backups"),
+    requestRestore: (data: Record<string, unknown>) =>
+      api.post<{ data: AdminConsoleRow }>("/admin/restore-requests", data),
+    restoreRequests: () => api.get<{ data: AdminConsoleRow[] }>("/admin/restore-requests"),
+    approveRestore: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/restore-requests/${id}/approve`),
+    executeRestore: (id: number, data?: Record<string, unknown>) =>
+      api.post<{ data: AdminConsoleRow }>(`/admin/restore-requests/${id}/execute`, data ?? {}),
+    imports: () => api.get<{ data: AdminConsoleRow[] }>("/admin/imports"),
+  migrations: () => api.get<{ data: AdminConsoleRow[] }>("/admin/migrations"),
+  createSupportSession: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/support-sessions", data),
+  approveSupportSession: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/support-sessions/${id}/approve`),
+  closeSupportSession: (id: number, post_session_review?: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/support-sessions/${id}/close`, { post_session_review }),
+  requestBreakGlass: (data: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>("/admin/break-glass", data),
+  approveBreakGlass: (id: number) => api.post<{ data: AdminConsoleRow }>(`/admin/break-glass/${id}/approve`),
+  closeBreakGlass: (id: number, post_use_review?: Record<string, unknown>) =>
+    api.post<{ data: AdminConsoleRow }>(`/admin/break-glass/${id}/close`, { post_use_review }),
 };
 
 // ─── Positions (Establishment Register) ──────────────────────────────────────
@@ -2182,6 +2317,12 @@ export const reportsApi = {
   hrTimesheets: (params?: ReportFilter) => api.get("/reports/hr-timesheets", { params }),
   risk: (params?: ReportFilter) => api.get("/reports/risk", { params }),
   governance: (params?: ReportFilter) => api.get("/reports/governance", { params }),
+  schedules: () => api.get<{ data: Array<Record<string, unknown>> }>("/reports/schedules"),
+  exportEvents: () => api.get<{ data: Array<Record<string, unknown>> }>("/reports/export-events"),
+  downloadExport: (id: number) => api.get(`/reports/export-events/${id}/download`, { responseType: "blob" }),
+  createSchedule: (data: Record<string, unknown>) => api.post<{ data: Record<string, unknown> }>("/reports/schedules", data),
+  approveSchedule: (id: number) => api.post<{ data: Record<string, unknown> }>(`/reports/schedules/${id}/approve`),
+  pauseSchedule: (id: number) => api.post<{ data: Record<string, unknown> }>(`/reports/schedules/${id}/pause`),
 };
 
 // ─── Leave ───────────────────────────────────────────────────────────────────
@@ -8647,6 +8788,11 @@ export const platformAuditApi = {
   checkpoints: () => api.get<{ data: Array<Record<string, unknown>> }>("/audit-integrity/checkpoints"),
   createCheckpoint: () => api.post<{ data: Record<string, unknown> }>("/audit-admin/checkpoints"),
   ingestionHealth: () => api.get<{ data: Record<string, number | null> }>("/audit-admin/ingestion-health"),
+  processOutbox: (limit?: number) =>
+    api.post<{ data: { processed: number; committed: number; failed: number; dead_lettered: number } }>(
+      "/audit-admin/outbox/process",
+      { limit },
+    ),
   deadLetters: (params?: Record<string, string | number>) =>
     api.get("/audit-admin/dead-letters", { params }),
   replayDeadLetter: (id: number) => api.post(`/audit-admin/dead-letters/${id}/replay`),

@@ -472,7 +472,7 @@ export default function LeaveBalancesPage() {
               {initResult.skipped > 0 && <> <strong>{initResult.skipped}</strong> already had records and were skipped.</>}
             </span>
           </div>
-          <button onClick={() => setInitResult(null)} className="text-green-500 hover:text-green-700">
+          <button onClick={() => setInitResult(null)} aria-label="Dismiss balance initialization result" className="text-green-500 hover:text-green-700">
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>

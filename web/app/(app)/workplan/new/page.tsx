@@ -171,7 +171,7 @@ export default function NewWorkplanEventPage() {
                 className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-sm"
               >
                 {u.name}
-                <button type="button" onClick={() => removeResponsible(u.id)} className="hover:opacity-80">
+                <button type="button" onClick={() => removeResponsible(u.id)} aria-label={`Remove ${u.name}`} className="hover:opacity-80">
                   <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
               </span>

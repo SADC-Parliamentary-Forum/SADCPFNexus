@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { workflowEngineApi, type ApprovalWorkflow } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type StageDraft = {
   step_order: number;
@@ -101,7 +102,26 @@ export default function WorkflowDesignerPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div>
+      <ModulePageHeader
+        title="Visual Workflow Designer"
+        subtitle="Edit stages, transitions, conditions, and actor selectors. Validate before publish."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Workflows", href: "/admin/workflows" },
+              { label: "Designer" },
+            ]}
+          />
+        }
+        actions={
+          <Link href="/admin/workflows" className="btn-secondary text-sm">
+            Back to workflows
+          </Link>
+        }
+      />
+
+      <div className="hidden">
         <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
         <h1 className="text-2xl font-semibold">Visual workflow designer</h1>
         <p className="text-sm mt-1">Edit stages, transitions, conditions, and actor selectors. Validate before publish.</p>

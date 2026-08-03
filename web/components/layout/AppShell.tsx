@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { AccessDenied } from "@/components/ui/AccessDenied";
-import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
+import { accessApi, type AccessEffectivePayload } from "@/lib/api";
 
 const SIDEBAR_OPEN_KEY = "sadcpf_sidebar_open";
 
@@ -14,6 +15,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [effectiveAccess, setEffectiveAccess] = useState<AccessEffectivePayload | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    accessApi.effective()
+      .then(({ data }) => {
+        if (!cancelled) setEffectiveAccess(data.data);
+      })
+      .catch(() => {
+        if (!cancelled) setEffectiveAccess(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!pathname) return;
@@ -23,9 +40,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const allowed = canAccessRoute(user, pathname);
+    const allowed = canAccessRouteWithEffective(user, pathname, effectiveAccess);
     setAccessDenied(!allowed);
-  }, [pathname, router]);
+  }, [effectiveAccess, pathname, router]);
 
   // Responsive: on small screens start closed; persist preference on larger screens
   useEffect(() => {

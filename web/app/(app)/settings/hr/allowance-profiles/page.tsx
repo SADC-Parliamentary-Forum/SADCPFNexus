@@ -44,7 +44,7 @@ function AllowanceProfileModal({
           <h3 className="font-semibold text-neutral-900">
             {isEdit ? "Edit Allowance Profile" : "New Allowance Profile"}
           </h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label="Close allowance profile editor" className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>

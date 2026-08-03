@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { workAssignmentsApi, WorkAssignment, WorkAssignmentUpdate } from "@/lib/api";
 import { formatDate, formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const UPDATE_TYPE_ICONS: Record<string, string> = {
   progress: "radio_button_unchecked",
@@ -52,6 +53,7 @@ function statusLabel(status: WorkAssignment["status"]) {
 export default function AssignmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { confirm } = useConfirm();
   const [assignment, setAssignment] = useState<WorkAssignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export default function AssignmentDetailPage() {
 
   const handleCancel = async () => {
     if (!assignment) return;
-    if (!confirm("Cancel this assignment?")) return;
+    if (!(await confirm({ title: "Cancel assignment", message: "Cancel this assignment?", variant: "danger" }))) return;
     setActionLoading(true);
     try {
       const res = await workAssignmentsApi.update(assignment.id, { status: "cancelled" });
@@ -390,7 +392,7 @@ export default function AssignmentDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="font-semibold text-neutral-800">Mark Assignment Complete</h2>
-              <button onClick={() => setShowCompleteModal(false)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={() => setShowCompleteModal(false)} aria-label="Close completion dialog" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>

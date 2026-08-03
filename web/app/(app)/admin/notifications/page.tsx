@@ -5,11 +5,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { notificationAdminApi, notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { ObjectSummary } from "@/components/ui/ObjectSummary";
 
 type Tab = "templates" | "deliveries" | "failures" | "analytics";
 
 export default function AdminNotificationsPage() {
-  const { success, error, info } = useToast();
+  const { success, error } = useToast();
   const [tab, setTab] = useState<Tab>("templates");
   const [templates, setTemplates] = useState<NotifTemplate[]>([]);
   const [deliveries, setDeliveries] = useState<any[]>([]);
@@ -192,19 +193,19 @@ export default function AdminNotificationsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
                 <div className="font-medium mb-2">Totals</div>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(analytics.totals, null, 2)}</pre>
+                <ObjectSummary value={analytics.totals} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
                 <div className="font-medium mb-2">By channel</div>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(analytics.by_channel, null, 2)}</pre>
+                <ObjectSummary value={analytics.by_channel} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
                 <div className="font-medium mb-2">Dead letters</div>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(analytics.dead_letters, null, 2)}</pre>
+                <ObjectSummary value={analytics.dead_letters} />
               </div>
               <div className="rounded-md border border-[var(--border)] p-3 text-sm">
                 <div className="font-medium mb-2">By module</div>
-                <pre className="whitespace-pre-wrap text-xs">{JSON.stringify(analytics.by_module, null, 2)}</pre>
+                <ObjectSummary value={analytics.by_module} />
               </div>
             </div>
           )}

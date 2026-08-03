@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_drawer.dart';
+import 'connectivity_banner.dart';
 import 'notification_banner.dart';
 import 'shell_drawer_scope.dart';
 
@@ -90,7 +91,8 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   int _getSelectedIndex(BuildContext context) {
-    final location = GoRouter.of(context).routeInformationProvider.value.uri.toString();
+    final location =
+        GoRouter.of(context).routeInformationProvider.value.uri.toString();
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/requests')) return 1;
     if (location.startsWith('/approvals')) return 2;
@@ -131,50 +133,52 @@ class _AppShellState extends ConsumerState<AppShell>
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: true,
-        body: NotificationBannerOverlay(
-          child: Stack(
-          children: [
-            // Content area — full screen, NotificationListener catches scroll from any child
-            Positioned.fill(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _handleScroll,
-                child: widget.child,
-              ),
-            ),
-
-            // Transparent tap-zone at the bottom — only active when nav is hidden
-            ValueListenableBuilder<bool>(
-              valueListenable: _navVisible,
-              builder: (context, visible, _) {
-                if (visible) return const SizedBox.shrink();
-                return Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 72,
-                  child: GestureDetector(
-                    onTap: _showNav,
-                    behavior: HitTestBehavior.translucent,
+        body: ConnectivityBannerOverlay(
+          child: NotificationBannerOverlay(
+            child: Stack(
+              children: [
+                // Content area — full screen, NotificationListener catches scroll from any child
+                Positioned.fill(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _handleScroll,
+                    child: widget.child,
                   ),
-                );
-              },
-            ),
-
-            // Glassy floating pill nav bar
-            Positioned(
-              bottom: 0,
-              left: 12,
-              right: 12,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: _GlassNavBar(
-                  selectedIndex: selectedIndex,
-                  onTap: (index) => _onTap(context, index),
                 ),
-              ),
+
+                // Transparent tap-zone at the bottom — only active when nav is hidden
+                ValueListenableBuilder<bool>(
+                  valueListenable: _navVisible,
+                  builder: (context, visible, _) {
+                    if (visible) return const SizedBox.shrink();
+                    return Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 72,
+                      child: GestureDetector(
+                        onTap: _showNav,
+                        behavior: HitTestBehavior.translucent,
+                      ),
+                    );
+                  },
+                ),
+
+                // Glassy floating pill nav bar
+                Positioned(
+                  bottom: 0,
+                  left: 12,
+                  right: 12,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: _GlassNavBar(
+                      selectedIndex: selectedIndex,
+                      onTap: (index) => _onTap(context, index),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -299,42 +303,52 @@ class _GlassNavItem extends StatelessWidget {
     final inactiveColor = c.onSurface.withValues(alpha: 0.55);
 
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: '$label tab',
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isActive ? activeIcon : icon,
-                key: ValueKey(isActive),
-                color: isActive ? activeColor : inactiveColor,
-                size: 22,
-              ),
-            ),
-            const SizedBox(height: 3),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: textTheme.labelSmall!.copyWith(
-                color: isActive ? activeColor : inactiveColor,
-                fontSize: 10,
-                fontWeight:
-                    isActive ? FontWeight.w600 : FontWeight.w400,
-              ),
-              child: Text(label),
-            ),
-            const SizedBox(height: 4),
-            // Dot indicator
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              width: isActive ? 16 : 0,
-              height: 3,
-              decoration: BoxDecoration(
-                color: isActive ? activeColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(2),
+            Expanded(
+              child: InkWell(
+                onTap: onTap,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        isActive ? activeIcon : icon,
+                        key: ValueKey(isActive),
+                        color: isActive ? activeColor : inactiveColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: textTheme.labelSmall!.copyWith(
+                        color: isActive ? activeColor : inactiveColor,
+                        fontSize: 10,
+                        fontWeight:
+                            isActive ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                      child: Text(label),
+                    ),
+                    const SizedBox(height: 4),
+                    // Dot indicator
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      width: isActive ? 16 : 0,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: isActive ? activeColor : Colors.transparent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

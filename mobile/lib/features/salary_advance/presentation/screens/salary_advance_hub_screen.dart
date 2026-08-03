@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 import '../../data/salary_advance_helpers.dart';
 
 class SalaryAdvanceHubScreen extends ConsumerStatefulWidget {
@@ -17,7 +16,8 @@ class SalaryAdvanceHubScreen extends ConsumerStatefulWidget {
       _SalaryAdvanceHubScreenState();
 }
 
-class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen> {
+class _SalaryAdvanceHubScreenState
+    extends ConsumerState<SalaryAdvanceHubScreen> {
   bool _loading = true;
   String? _error;
   SalaryAdvanceEmployeeSummary? _summary;
@@ -62,57 +62,20 @@ class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => context.safePopOrGoHome(),
-        ),
-        title: const Text(
-          'Salary Advances',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
+    return StitchScreen(
+      title: 'Salary Advances',
+      fallbackRoute: '/dashboard',
+      actions: [
+        if (_showFinanceLink)
+          TextButton(
+            onPressed: () => context.push('/finance/command-center'),
+            child: const Text('Finance'),
           ),
-        ),
-        actions: [
-          if (_showFinanceLink)
-            TextButton(
-              onPressed: () => context.push('/finance/command-center'),
-              child: const Text(
-                'Finance',
-                style: TextStyle(
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading salary advances')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.danger)),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppColors.primary,
@@ -128,7 +91,9 @@ class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen>
                       const Text(
                         'Eligibility, current request, and outstanding balance.',
                         style: TextStyle(
-                            fontSize: 13, color: Color(0xFF666666), height: 1.5),
+                            fontSize: 13,
+                            color: Color(0xFF666666),
+                            height: 1.5),
                       ),
                       const SizedBox(height: 20),
                       _eligibilityCard(),
@@ -247,7 +212,8 @@ class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Icon(Icons.pending_actions_outlined, size: 18, color: AppColors.info),
+            Icon(Icons.pending_actions_outlined,
+                size: 18, color: AppColors.info),
             SizedBox(width: 8),
             Text('Current request',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
@@ -301,12 +267,12 @@ class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen>
                 style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
             const SizedBox(height: 4),
             Text(formatSaCurrency(active['amount']),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             _statusChip(status),
             TextButton(
-              onPressed: () =>
-                  context.push('/salary/advances/${active['id']}'),
+              onPressed: () => context.push('/salary/advances/${active['id']}'),
               child: const Text('View advance →'),
             ),
           ],
@@ -412,8 +378,8 @@ class _SalaryAdvanceHubScreenState extends ConsumerState<SalaryAdvanceHubScreen>
         child: Row(children: [
           Expanded(
               child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF666666)))),
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF666666)))),
           Text(value,
               style: const TextStyle(
                   fontSize: 12,

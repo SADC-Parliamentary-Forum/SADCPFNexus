@@ -1,9 +1,20 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { adminConsoleApi, type AdminConsoleDashboard } from "@/lib/api";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const adminLinks = [
+  {
+    title: "Operational Control",
+    description: "Platform health, modules, configuration, feature flags, jobs, queues, and break-glass controls.",
+    href: "/admin/operations",
+    icon: "monitoring",
+    color: "text-slate-700",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+  },
   {
     title: "User Management",
     description: "Manage system access, roles, and security for all personnel.",
@@ -16,7 +27,7 @@ const adminLinks = [
   {
     title: "Roles & Permissions",
     description: "Configure roles and assign permissions across the platform.",
-    href: "/admin/roles",
+    href: "/admin/access/roles",
     icon: "admin_panel_settings",
     color: "text-purple-600",
     bg: "bg-purple-50",
@@ -79,7 +90,7 @@ const adminLinks = [
   {
     title: "Audit Logs",
     description: "Full activity audit trail with user, module, and IP tracking.",
-    href: "/admin/audit",
+    href: "/admin/audit-trail",
     icon: "manage_search",
     color: "text-neutral-600",
     bg: "bg-neutral-100",
@@ -142,6 +153,12 @@ const adminLinks = [
 ];
 
 export default function AdminPage() {
+  const [dashboard, setDashboard] = useState<AdminConsoleDashboard | null>(null);
+
+  useEffect(() => {
+    adminConsoleApi.dashboard().then((res) => setDashboard(res.data.data)).catch(() => setDashboard(null));
+  }, []);
+
   return (
     <div className="space-y-6">
       <ModulePageHeader
@@ -149,6 +166,23 @@ export default function AdminPage() {
         subtitle="System configuration, user management, and organisational settings."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin" }]} />}
       />
+
+      {dashboard ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Platform", dashboard.status],
+            ["Active modules", dashboard.cards.modules_active],
+            ["Pending config", dashboard.cards.configuration_pending],
+            ["Open dead letters", dashboard.cards.dead_letters_open],
+            ["Data-quality issues", dashboard.cards.data_quality_open],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="card p-4">
+              <p className="text-[11px] uppercase tracking-wide text-neutral-500">{label}</p>
+              <p className="mt-1 text-lg font-semibold capitalize text-neutral-900">{String(value ?? "-").replaceAll("_", " ")}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {adminLinks.map((item) => (

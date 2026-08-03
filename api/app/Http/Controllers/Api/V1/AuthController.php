@@ -150,7 +150,9 @@ class AuthController extends Controller
             $this->invalidLogin();
         }
 
-        if (Hash::needsRehash($user->password)) {
+        // A bcrypt (or otherwise legacy) hash can only be upgraded after the
+        // plaintext password has been verified successfully.
+        if (! str_starts_with((string) $user->password, '$argon2id$') || Hash::needsRehash($user->password)) {
             $user->forceFill(['password' => Hash::make((string) $request->password)])->save();
         }
 

@@ -138,10 +138,11 @@ export default function CreateRiskPage() {
 
         {/* Title */}
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+          <label htmlFor="risk-title" className="block text-xs font-semibold text-neutral-700 mb-1.5">
             Risk Title <span className="text-red-500">*</span>
           </label>
           <input
+            id="risk-title"
             className={`form-input w-full ${errors.title ? "border-red-400" : ""}`}
             placeholder="e.g. Inadequate budget controls"
             value={form.title}
@@ -152,10 +153,11 @@ export default function CreateRiskPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+          <label htmlFor="risk-description" className="block text-xs font-semibold text-neutral-700 mb-1.5">
             Description <span className="text-red-500">*</span>
           </label>
           <textarea
+            id="risk-description"
             className={`form-input w-full h-28 resize-none ${errors.description ? "border-red-400" : ""}`}
             placeholder="Describe the risk in detail — its nature, potential triggers, and likely consequences…"
             value={form.description}
@@ -166,47 +168,49 @@ export default function CreateRiskPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Strategic objective ID</label>
-            <input className="form-input w-full" value={form.strategic_objective_id} onChange={(e) => set("strategic_objective_id", e.target.value)} placeholder="Required before submit" />
+            <label htmlFor="risk-strategic-objective-id" className="block text-xs font-semibold text-neutral-700 mb-1.5">Strategic objective ID</label>
+            <input id="risk-strategic-objective-id" className="form-input w-full" value={form.strategic_objective_id} onChange={(e) => set("strategic_objective_id", e.target.value)} placeholder="Required before submit" />
             {errors.strategic_objective_id && <p className="text-xs text-red-600 mt-1">{errors.strategic_objective_id[0]}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Risk owner user ID</label>
-            <input className="form-input w-full" value={form.risk_owner_id} onChange={(e) => set("risk_owner_id", e.target.value)} placeholder="Single accountable owner" />
+            <label htmlFor="risk-owner-user-id" className="block text-xs font-semibold text-neutral-700 mb-1.5">Risk owner user ID</label>
+            <input id="risk-owner-user-id" className="form-input w-full" value={form.risk_owner_id} onChange={(e) => set("risk_owner_id", e.target.value)} placeholder="Single accountable owner" />
             {errors.risk_owner_id && <p className="text-xs text-red-600 mt-1">{errors.risk_owner_id[0]}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Cause</label>
-            <textarea className="form-input w-full h-16 resize-none" value={form.cause} onChange={(e) => set("cause", e.target.value)} />
+            <label htmlFor="risk-cause" className="block text-xs font-semibold text-neutral-700 mb-1.5">Cause</label>
+            <textarea id="risk-cause" className="form-input w-full h-16 resize-none" value={form.cause} onChange={(e) => set("cause", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Event</label>
-            <textarea className="form-input w-full h-16 resize-none" value={form.event_description} onChange={(e) => set("event_description", e.target.value)} />
+            <label htmlFor="risk-event-description" className="block text-xs font-semibold text-neutral-700 mb-1.5">Event</label>
+            <textarea id="risk-event-description" className="form-input w-full h-16 resize-none" value={form.event_description} onChange={(e) => set("event_description", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Consequence</label>
-            <textarea className="form-input w-full h-16 resize-none" value={form.consequence} onChange={(e) => set("consequence", e.target.value)} />
+            <label htmlFor="risk-consequence" className="block text-xs font-semibold text-neutral-700 mb-1.5">Consequence</label>
+            <textarea id="risk-consequence" className="form-input w-full h-16 resize-none" value={form.consequence} onChange={(e) => set("consequence", e.target.value)} />
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.is_confidential} onChange={(e) => setForm((p) => ({ ...p, is_confidential: e.target.checked }))} />
+        <label htmlFor="risk-is-confidential" className="flex items-center gap-2 text-sm">
+          <input id="risk-is-confidential" type="checkbox" checked={form.is_confidential} onChange={(e) => setForm((p) => ({ ...p, is_confidential: e.target.checked }))} />
           Mark confidential (hidden from unprivileged search/dashboards)
         </label>
 
         {/* Category */}
-        <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+        <fieldset className="min-w-0">
+          <legend id="risk-category-label" className="block text-xs font-semibold text-neutral-700 mb-1.5">
             Category <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          </legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-labelledby="risk-category-label">
             {CATEGORIES.map((c) => (
               <button
                 type="button"
                 key={c.value}
+                role="radio"
+                aria-checked={form.category === c.value}
                 onClick={() => set("category", c.value)}
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition-all ${
                   form.category === c.value
@@ -220,19 +224,21 @@ export default function CreateRiskPage() {
             ))}
           </div>
           {errors.category && <p className="text-xs text-red-600 mt-1">{errors.category[0]}</p>}
-        </div>
+        </fieldset>
 
         {/* Likelihood + Impact + Score */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+          <fieldset className="min-w-0">
+            <legend id="risk-likelihood-label" className="block text-xs font-semibold text-neutral-700 mb-1.5">
               Likelihood (1–5) <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-1.5">
+            </legend>
+            <div className="space-y-1.5" role="radiogroup" aria-labelledby="risk-likelihood-label">
               {LIKELIHOODS.map((l) => (
                 <button
                   type="button"
                   key={l.value}
+                  role="radio"
+                  aria-checked={form.likelihood === l.value}
                   onClick={() => set("likelihood", l.value)}
                   className={`w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-xs transition-all ${
                     form.likelihood === l.value
@@ -251,17 +257,19 @@ export default function CreateRiskPage() {
               ))}
             </div>
             {errors.likelihood && <p className="text-xs text-red-600 mt-1">{errors.likelihood[0]}</p>}
-          </div>
+          </fieldset>
 
-          <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+          <fieldset className="min-w-0">
+            <legend id="risk-impact-label" className="block text-xs font-semibold text-neutral-700 mb-1.5">
               Impact (1–5) <span className="text-red-500">*</span>
-            </label>
-            <div className="space-y-1.5">
+            </legend>
+            <div className="space-y-1.5" role="radiogroup" aria-labelledby="risk-impact-label">
               {IMPACTS.map((im) => (
                 <button
                   type="button"
                   key={im.value}
+                  role="radio"
+                  aria-checked={form.impact === im.value}
                   onClick={() => set("impact", im.value)}
                   className={`w-full flex items-center gap-3 rounded-lg border px-3 py-2 text-xs transition-all ${
                     form.impact === im.value
@@ -280,7 +288,7 @@ export default function CreateRiskPage() {
               ))}
             </div>
             {errors.impact && <p className="text-xs text-red-600 mt-1">{errors.impact[0]}</p>}
-          </div>
+          </fieldset>
         </div>
 
         {/* Score preview */}
@@ -297,8 +305,9 @@ export default function CreateRiskPage() {
         {/* Review frequency */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Review Frequency</label>
+            <label htmlFor="risk-review-frequency" className="block text-xs font-semibold text-neutral-700 mb-1.5">Review Frequency</label>
             <select
+              id="risk-review-frequency"
               className="form-input w-full"
               value={form.review_frequency}
               onChange={(e) => set("review_frequency", e.target.value)}
@@ -310,8 +319,9 @@ export default function CreateRiskPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Next Review Date</label>
+            <label htmlFor="risk-next-review-date" className="block text-xs font-semibold text-neutral-700 mb-1.5">Next Review Date</label>
             <input
+              id="risk-next-review-date"
               type="date"
               className="form-input w-full"
               value={form.next_review_date}

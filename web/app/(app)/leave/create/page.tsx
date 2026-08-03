@@ -68,6 +68,10 @@ function numberText(value: unknown): string {
   return Number.isFinite(n) ? n.toFixed(2) : "0.00";
 }
 
+function hasInvalidDateRange(segment: Pick<SegmentDraft, "start_date" | "end_date">): boolean {
+  return Boolean(segment.start_date && segment.end_date && segment.end_date < segment.start_date);
+}
+
 export default function LeaveCreatePage() {
   const router = useRouter();
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -93,12 +97,23 @@ export default function LeaveCreatePage() {
       .finally(() => setLoadingLookups(false));
   }, []);
 
+  const dateValidationError = useMemo(() => {
+    const invalidIndex = segments.findIndex(hasInvalidDateRange);
+    return invalidIndex >= 0 ? `Segment ${invalidIndex + 1} ends before it starts.` : null;
+  }, [segments]);
+
   const completeForPreview = useMemo(
     () => segments.every((segment) => segment.leave_type && segment.start_date && segment.end_date),
     [segments],
   );
 
   useEffect(() => {
+    if (dateValidationError) {
+      setPreview(null);
+      setPreviewError(null);
+      return;
+    }
+
     if (!completeForPreview) {
       setPreview(null);
       setPreviewError(null);
@@ -121,7 +136,7 @@ export default function LeaveCreatePage() {
 
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments, completeForPreview]);
+  }, [segments, completeForPreview, dateValidationError]);
 
   const availableToilCredits = toilCredits.filter((credit) =>
     ["available", "partially_used", "extended"].includes(String(credit.status)) && Number(credit.remaining_balance) > 0,
@@ -156,9 +171,13 @@ export default function LeaveCreatePage() {
   const addSegment = () => setSegments((current) => [...current, blankSegment()]);
   const removeSegment = (uid: string) => setSegments((current) => current.filter((segment) => segment.uid !== uid));
 
-  const canSubmit = completeForPreview && !previewError && !submitting;
+  const canSubmit = completeForPreview && !dateValidationError && !previewError && !submitting;
 
   const submit = async (asDraft: boolean) => {
+    if (dateValidationError) {
+      setSubmitError(dateValidationError);
+      return;
+    }
     if (!canSubmit) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -198,9 +217,9 @@ export default function LeaveCreatePage() {
         }
       />
 
-      {(previewError || submitError) && (
+      {(previewError || submitError || dateValidationError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {submitError ?? previewError}
+          {submitError ?? dateValidationError ?? previewError}
         </div>
       )}
 
@@ -285,8 +304,13 @@ export default function LeaveCreatePage() {
                           type="date"
                           className="form-input"
                           value={segment.end_date}
+                          min={segment.start_date || undefined}
                           onChange={(event) => updateSegment(segment.uid, { end_date: event.target.value })}
+                          aria-invalid={hasInvalidDateRange(segment) || undefined}
                         />
+                        {hasInvalidDateRange(segment) && (
+                          <span className="text-xs font-medium text-red-600">End date cannot be before start date.</span>
+                        )}
                       </label>
                     </div>
 

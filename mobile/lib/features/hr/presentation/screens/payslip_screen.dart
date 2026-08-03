@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../shared/widgets/stitch_card.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 
 class PayslipScreen extends ConsumerStatefulWidget {
   const PayslipScreen({super.key});
@@ -35,10 +37,11 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
       _selectedIndex = null;
     });
     try {
-      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
-            '/finance/payslips',
-            queryParameters: {'per_page': 24},
-          );
+      final res =
+          await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+        '/finance/payslips',
+        queryParameters: {'per_page': 24},
+      );
       if (!mounted) return;
       final data = res.data?['data'] ?? res.data;
       final list = data is List ? List<dynamic>.from(data) : <dynamic>[];
@@ -57,7 +60,9 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
   }
 
   Map<String, dynamic>? get _selected {
-    if (_selectedIndex == null || _selectedIndex! >= _payslips.length) return null;
+    if (_selectedIndex == null || _selectedIndex! >= _payslips.length) {
+      return null;
+    }
     final raw = _payslips[_selectedIndex!];
     return raw is Map ? Map<String, dynamic>.from(raw) : null;
   }
@@ -66,14 +71,29 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
     final m = p['period_month'];
     final y = p['period_year'];
     if (m != null && y != null) {
-      const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
       final mn = (m is int) ? m : int.tryParse(m.toString());
       return '${months[mn != null && mn >= 1 && mn <= 12 ? mn : 0]} $y';
     }
     return p['period_label']?.toString() ?? '—';
   }
 
-  double _num(dynamic v) => (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
+  double _num(dynamic v) =>
+      (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
 
   String _fmt(double v) =>
       'N\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}';
@@ -90,7 +110,10 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
         options: Options(responseType: ResponseType.bytes),
       );
       if (res.data == null || res.data!.isEmpty) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No PDF available for this payslip.')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('No PDF available for this payslip.')));
+        }
         return;
       }
       final dir = await getTemporaryDirectory();
@@ -99,66 +122,48 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
       final openResult = await OpenFile.open(file.path);
       if (mounted && openResult.type != ResultType.done) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payslip saved. Open with a PDF viewer.')),
+          const SnackBar(
+              content: Text('Payslip saved. Open with a PDF viewer.')),
         );
       }
     } catch (e) {
       final msg = e is DioException && e.response?.statusCode == 404
           ? 'Payslip PDF not yet available.'
           : 'Download failed.';
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(msg)));
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return StitchScreen(
+      title: 'Payslip',
+      fallbackRoute: '/hr',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh payslips',
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
         ),
-        title: const Text('Payslip', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [
-          if (_selected != null)
-            TextButton.icon(
-              onPressed: _downloadPdf,
-              icon: const Icon(Icons.download_outlined, color: AppColors.primary, size: 16),
-              label: const Text('PDF', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
-            ),
-        ],
-      ),
+        if (_selected != null)
+          StitchIconAction(
+            tooltip: 'Download PDF',
+            icon: Icons.download_outlined,
+            onPressed: _downloadPdf,
+          ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading payslips')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _payslips.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.receipt_long_outlined, size: 48, color: AppColors.textMuted),
-                          const SizedBox(height: 12),
-                          const Text('No payslips yet', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                          const SizedBox(height: 8),
-                          TextButton(onPressed: _load, child: const Text('Refresh')),
-                        ],
-                      ),
+                  ? const StitchEmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'No payslips yet',
+                      message: 'Uploaded payslips will appear here.',
                     )
                   : RefreshIndicator(
                       onRefresh: _load,
@@ -167,30 +172,38 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
                         padding: const EdgeInsets.all(16),
                         children: [
                           // Period selector: date dropdown
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.bgSurface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
-                            ),
+                          StitchCard(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: _selectedIndex,
                                 isExpanded: true,
                                 dropdownColor: AppColors.bgSurface,
-                                icon: const Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary, size: 20),
-                                hint: const Text('Select period', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
+                                icon: const Icon(Icons.calendar_month_outlined,
+                                    color: AppColors.textSecondary, size: 20),
+                                hint: const Text('Select period',
+                                    style: TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 14)),
                                 items: List.generate(_payslips.length, (i) {
-                                  final p = _payslips[i] is Map ? _payslips[i] as Map<String, dynamic> : <String, dynamic>{};
+                                  final p = _payslips[i] is Map
+                                      ? _payslips[i] as Map<String, dynamic>
+                                      : <String, dynamic>{};
                                   final label = _periodLabel(p);
                                   return DropdownMenuItem<int>(
                                     value: i,
-                                    child: Text(label, style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                                    child: Text(label,
+                                        style: const TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600)),
                                   );
                                 }),
                                 onChanged: (int? value) {
-                                  if (value != null) setState(() => _selectedIndex = value);
+                                  if (value != null) {
+                                    setState(() => _selectedIndex = value);
+                                  }
                                 },
                               ),
                             ),
@@ -209,29 +222,34 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
     final gross = _num(p['gross_amount']);
     final deductions = gross - net;
     final periodLabel = _periodLabel(p);
-    return Container(
+    return StitchCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.bgCard],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-      ),
       child: Column(
         children: [
-          Text(periodLabel, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+          Text(periodLabel,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
           const SizedBox(height: 8),
-          Text(_fmt(net), style: const TextStyle(color: AppColors.primary, fontSize: 30, fontWeight: FontWeight.w900)),
-          const Text('Net Pay', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          Text(_fmt(net),
+              style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900)),
+          const Text('Net Pay',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: Column(
                   children: [
-                    Text(_fmt(gross), style: const TextStyle(color: AppColors.success, fontSize: 14, fontWeight: FontWeight.w800)),
-                    const Text('Gross', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                    Text(_fmt(gross),
+                        style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                    const Text('Gross',
+                        style: TextStyle(
+                            color: AppColors.textMuted, fontSize: 10)),
                   ],
                 ),
               ),
@@ -239,8 +257,14 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    Text(_fmt(deductions), style: const TextStyle(color: AppColors.danger, fontSize: 14, fontWeight: FontWeight.w800)),
-                    const Text('Deductions', style: TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                    Text(_fmt(deductions),
+                        style: const TextStyle(
+                            color: AppColors.danger,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800)),
+                    const Text('Deductions',
+                        style: TextStyle(
+                            color: AppColors.textMuted, fontSize: 10)),
                   ],
                 ),
               ),

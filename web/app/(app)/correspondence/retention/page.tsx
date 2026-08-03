@@ -26,6 +26,7 @@ export default function CorrespondenceRetentionPage() {
   });
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function loadHolds() {
     const r = await api.get<{ data: HoldRow[] }>("/correspondence/legal-holds");
@@ -39,9 +40,14 @@ export default function CorrespondenceRetentionPage() {
 
   async function saveRetention(e: FormEvent) {
     e.preventDefault();
+    const targetLetterId = letterId.trim();
+    if (!targetLetterId || saving) return;
+
     setErr(null);
+    setMsg(null);
+    setSaving(true);
     try {
-      await api.put(`/correspondence/letters/${letterId}/retention`, {
+      await api.put(`/correspondence/letters/${targetLetterId}/retention`, {
         retention_policy: form.retention_policy,
         retain_until: form.retain_until || null,
         legal_hold: form.legal_hold,
@@ -51,6 +57,8 @@ export default function CorrespondenceRetentionPage() {
       await loadHolds();
     } catch (error: unknown) {
       setErr(error instanceof Error ? error.message : "Failed to update retention.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -85,12 +93,24 @@ export default function CorrespondenceRetentionPage() {
         <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
         <label className="block text-sm">
           Letter ID
-          <input className="form-input mt-1 w-full" required value={letterId} onChange={(e) => setLetterId(e.target.value)} placeholder="Correspondence id" />
+          <input
+            className="form-input mt-1 w-full disabled:opacity-60"
+            required
+            value={letterId}
+            onChange={(e) => setLetterId(e.target.value)}
+            placeholder="Correspondence id"
+            disabled={saving}
+          />
         </label>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="block text-sm">
             Retention policy
-            <select className="form-input mt-1 w-full" value={form.retention_policy} onChange={(e) => setForm({ ...form, retention_policy: e.target.value })}>
+            <select
+              className="form-input mt-1 w-full disabled:opacity-60"
+              value={form.retention_policy}
+              onChange={(e) => setForm({ ...form, retention_policy: e.target.value })}
+              disabled={saving}
+            >
               <option value="general_3y">General 3 years</option>
               <option value="financial_7y">Financial 7 years</option>
               <option value="hr_permanent">HR permanent</option>
@@ -100,18 +120,37 @@ export default function CorrespondenceRetentionPage() {
           </label>
           <label className="block text-sm">
             Retain until
-            <input type="date" className="form-input mt-1 w-full" value={form.retain_until} onChange={(e) => setForm({ ...form, retain_until: e.target.value })} />
+            <input
+              type="date"
+              className="form-input mt-1 w-full disabled:opacity-60"
+              value={form.retain_until}
+              onChange={(e) => setForm({ ...form, retain_until: e.target.value })}
+              disabled={saving}
+            />
           </label>
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.legal_hold} onChange={(e) => setForm({ ...form, legal_hold: e.target.checked })} />
+          <input
+            type="checkbox"
+            checked={form.legal_hold}
+            onChange={(e) => setForm({ ...form, legal_hold: e.target.checked })}
+            disabled={saving}
+          />
           Place legal hold
         </label>
         <label className="block text-sm">
           Hold reason
-          <textarea className="form-input mt-1 w-full" rows={2} value={form.legal_hold_reason} onChange={(e) => setForm({ ...form, legal_hold_reason: e.target.value })} />
+          <textarea
+            className="form-input mt-1 w-full disabled:opacity-60"
+            rows={2}
+            value={form.legal_hold_reason}
+            onChange={(e) => setForm({ ...form, legal_hold_reason: e.target.value })}
+            disabled={saving}
+          />
         </label>
-        <button type="submit" className="btn-primary btn-sm">Save</button>
+        <button type="submit" className="btn-primary btn-sm disabled:opacity-60 disabled:cursor-not-allowed" disabled={saving || !letterId.trim()}>
+          {saving ? "Saving..." : "Save"}
+        </button>
       </form>
 
       <div className="table-wrap">

@@ -862,7 +862,7 @@ export default function AppraisalDetailPage() {
                         </td>
                         <td className="px-1 text-center">
                           {achievements.length > 1 && (
-                            <button type="button" onClick={() => setAchievements((p) => p.filter((_, idx) => idx !== i))} className="text-neutral-300 hover:text-red-500">
+                            <button type="button" onClick={() => setAchievements((p) => p.filter((_, idx) => idx !== i))} aria-label={`Remove achievement ${i + 1}`} className="text-neutral-300 hover:text-red-500">
                               <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
                           )}

@@ -393,7 +393,7 @@ export default function ConductPage() {
           <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
               <h2 className="text-base font-semibold text-neutral-900">New Conduct Record</h2>
-              <button type="button" onClick={() => setShowNew(false)} className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setShowNew(false)} aria-label="Close conduct record form" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>

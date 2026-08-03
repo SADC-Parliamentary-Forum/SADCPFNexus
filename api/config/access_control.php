@@ -8,6 +8,364 @@
  */
 return [
     'cache_ttl_seconds' => (int) env('ACCESS_CONTROL_CACHE_TTL', 60),
+    'endpoint_enforcement_mode' => env('ACCESS_CONTROL_ENDPOINT_ENFORCEMENT', 'mapped'),
+    'endpoint_enforcement_exemptions' => [
+        'api/v1/auth/*',
+        'api/v1/access/effective',
+        'api/v1/access/navigation',
+        'api/v1/access/authorize',
+        'api/v1/access/requests',
+        'api/v1/profile',
+        'api/v1/profile/*',
+        'api/v1/setup/*',
+        'api/v1/email-action/*',
+    ],
+    'endpoint_fallback_permission_rules' => [
+        ['pattern' => 'api/v1/admin/access-requests*', 'permissions' => [
+            'READ' => ['admin.access.requests.manage', 'users.view'],
+            'WRITE' => ['admin.roles.approve', 'users.edit'],
+        ]],
+        ['pattern' => 'api/v1/admin/users*', 'permissions' => [
+            'GET' => ['admin.users.view', 'users.view'],
+            'POST' => ['admin.users.create', 'users.create'],
+            'PUT' => ['admin.users.edit', 'users.edit'],
+            'PATCH' => ['admin.users.edit', 'users.edit'],
+            'DELETE' => ['admin.users.edit', 'users.delete'],
+        ]],
+        ['pattern' => 'api/v1/admin/roles*', 'permissions' => [
+            'READ' => ['admin.roles.view', 'roles.manage'],
+            'WRITE' => ['admin.roles.manage', 'roles.manage'],
+            'DELETE' => ['admin.roles.manage', 'roles.manage'],
+        ]],
+        ['pattern' => 'api/v1/admin/departments*', 'permissions' => [
+            'READ' => ['admin.organisation.manage', 'users.view'],
+            'WRITE' => ['admin.organisation.manage'],
+        ]],
+        ['pattern' => 'api/v1/admin/positions*', 'permissions' => [
+            'READ' => ['admin.organisation.manage', 'positions.manage'],
+            'WRITE' => ['admin.organisation.manage', 'positions.manage'],
+        ]],
+        ['pattern' => 'api/v1/admin/dashboard', 'permissions' => [
+            'READ' => ['admin-console.view'],
+        ]],
+        ['pattern' => 'api/v1/admin/platform-status', 'permissions' => [
+            'READ' => ['admin-console.view-health'],
+        ]],
+        ['pattern' => 'api/v1/admin/system-health', 'permissions' => [
+            'READ' => ['admin-console.view-health'],
+        ]],
+        ['pattern' => 'api/v1/admin/modules*', 'permissions' => [
+            'READ' => ['admin-console.view-modules'],
+            'WRITE' => ['admin-console.manage-modules'],
+        ]],
+        ['pattern' => 'api/v1/admin/configurations*', 'permissions' => [
+            'READ' => ['admin-console.view-config'],
+            'WRITE' => ['admin-console.propose-config', 'admin-console.approve-config', 'admin-console.activate-config', 'admin-console.rollback-config'],
+        ]],
+        ['pattern' => 'api/v1/admin/configuration-changes*', 'permissions' => [
+            'READ' => ['admin-console.view-config'],
+            'WRITE' => ['admin-console.review-config', 'admin-console.approve-config', 'admin-console.activate-config', 'admin-console.rollback-config'],
+        ]],
+        ['pattern' => 'api/v1/admin/reference-data*', 'permissions' => [
+            'READ' => ['admin-console.manage-reference-data'],
+            'WRITE' => ['admin-console.manage-reference-data', 'admin-console.approve-reference-data'],
+        ]],
+        ['pattern' => 'api/v1/admin/feature-flags*', 'permissions' => [
+            'READ' => ['admin-console.manage-feature-flags'],
+            'WRITE' => ['admin-console.manage-feature-flags', 'admin-console.approve-feature-flags'],
+        ]],
+        ['pattern' => 'api/v1/admin/calendars*', 'permissions' => [
+            'READ' => ['admin-console.manage-calendars'],
+            'WRITE' => ['admin-console.manage-calendars'],
+        ]],
+        ['pattern' => 'api/v1/admin/numbering-schemes*', 'permissions' => [
+            'READ' => ['admin-console.manage-numbering'],
+            'WRITE' => ['admin-console.manage-numbering'],
+        ]],
+        ['pattern' => 'api/v1/admin/localisation*', 'permissions' => [
+            'READ' => ['admin-console.manage-localisation'],
+            'WRITE' => ['admin-console.manage-localisation'],
+        ]],
+        ['pattern' => 'api/v1/admin/integrations*', 'permissions' => [
+            'READ' => ['admin-console.manage-integrations'],
+            'WRITE' => ['admin-console.manage-integrations'],
+        ]],
+        ['pattern' => 'api/v1/admin/jobs*', 'permissions' => [
+            'READ' => ['admin-console.view-jobs'],
+            'WRITE' => ['admin-console.run-jobs'],
+        ]],
+        ['pattern' => 'api/v1/admin/job-runs*', 'permissions' => [
+            'READ' => ['admin-console.view-jobs'],
+        ]],
+        ['pattern' => 'api/v1/admin/queues*', 'permissions' => [
+            'READ' => ['admin-console.view-jobs'],
+        ]],
+        ['pattern' => 'api/v1/admin/dead-letters*', 'permissions' => [
+            'READ' => ['admin-console.manage-dead-letters'],
+            'WRITE' => ['admin-console.manage-dead-letters'],
+        ]],
+        ['pattern' => 'api/v1/admin/maintenance-windows*', 'permissions' => [
+            '*' => ['admin-console.manage-maintenance'],
+        ]],
+        ['pattern' => 'api/v1/admin/system-banners*', 'permissions' => [
+            '*' => ['admin-console.manage-banners'],
+        ]],
+        ['pattern' => 'api/v1/admin/data-quality*', 'permissions' => [
+            'READ' => ['admin-console.manage-data-quality'],
+        ]],
+        ['pattern' => 'api/v1/admin/data-corrections*', 'permissions' => [
+            'READ' => ['admin-console.manage-data-quality'],
+            'WRITE' => ['admin-console.request-data-correction', 'admin-console.approve-data-correction', 'admin-console.execute-data-correction'],
+        ]],
+        ['pattern' => 'api/v1/admin/backups*', 'permissions' => [
+            'READ' => ['admin-console.view-backups'],
+        ]],
+        ['pattern' => 'api/v1/admin/restore-requests*', 'permissions' => [
+            'READ' => ['admin-console.view-restore'],
+            'WRITE' => ['admin-console.request-restore'],
+        ]],
+        ['pattern' => 'api/v1/admin/imports*', 'permissions' => [
+            'READ' => ['admin-console.manage-data-quality'],
+        ]],
+        ['pattern' => 'api/v1/admin/migrations*', 'permissions' => [
+            'READ' => ['admin-console.manage-data-quality'],
+        ]],
+        ['pattern' => 'api/v1/admin/support-sessions*', 'permissions' => [
+            '*' => ['admin-console.manage-support-sessions'],
+        ]],
+        ['pattern' => 'api/v1/admin/break-glass*', 'permissions' => [
+            'WRITE' => ['admin-console.request-break-glass', 'admin-console.approve-break-glass'],
+        ]],
+        ['pattern' => 'api/v1/admin/*', 'permissions' => [
+            '*' => ['admin.platform.manage', 'system.admin'],
+        ]],
+        ['pattern' => 'api/v1/procurement*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin'],
+            'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            'DELETE' => ['procurement.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin'],
+            'POST' => ['hr.create', 'hr.admin'],
+            'PUT' => ['hr.edit', 'hr.admin'],
+            'PATCH' => ['hr.edit', 'hr.admin'],
+            'DELETE' => ['hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/people-authority*', 'permissions' => [
+            'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
+            'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
+        ]],
+        ['pattern' => 'api/v1/audit-management*', 'permissions' => [
+            'READ' => ['audit.view', 'audit.events.view', 'audit.admin'],
+            'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage'],
+        ]],
+        ['pattern' => 'api/v1/audit-admin*', 'permissions' => [
+            '*' => ['audit-trail.admin', 'audit.view', 'system.admin'],
+        ]],
+        ['pattern' => 'api/v1/audit-events*', 'permissions' => [
+            'READ' => ['audit-trail.search', 'audit.view'],
+            'WRITE' => ['audit-trail.admin', 'audit-trail.manage-ingestion'],
+        ]],
+        ['pattern' => 'api/v1/audit-integrity*', 'permissions' => [
+            '*' => ['audit-trail.verify-integrity', 'audit-trail.admin'],
+        ]],
+        ['pattern' => 'api/v1/security-alerts*', 'permissions' => [
+            'READ' => ['audit-trail.view-security', 'audit-trail.manage-alerts', 'audit-trail.admin'],
+            'WRITE' => ['audit-trail.manage-alerts', 'audit-trail.admin'],
+        ]],
+        ['pattern' => 'api/v1/forensic-cases*', 'permissions' => [
+            '*' => ['audit-trail.create-forensic-case', 'audit-trail.admin'],
+        ]],
+        ['pattern' => 'api/v1/forensic-packages*', 'permissions' => [
+            'READ' => ['audit-trail.create-forensic-case', 'audit-trail.search', 'audit-trail.admin'],
+        ]],
+        ['pattern' => 'api/v1/records*', 'permissions' => [
+            'READ' => ['audit-trail.view-record-history', 'audit.view'],
+        ]],
+        ['pattern' => 'api/v1/budget*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.module.view'],
+            'POST' => ['risk.create', 'risk.manage', 'risk.admin'],
+            'PUT' => ['risk.manage', 'risk.admin'],
+            'PATCH' => ['risk.manage', 'risk.admin'],
+            'DELETE' => ['risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/mande*', 'permissions' => [
+            'READ' => ['mande.view', 'mande.module.view'],
+            'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
+        ]],
+        ['pattern' => 'api/v1/travel*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin'],
+            'POST' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'PUT' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'DELETE' => ['travel.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/correspondence*', 'permissions' => [
+            'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.admin'],
+            'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PUT' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PATCH' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'DELETE' => ['correspondence.admin'],
+        ]],
+        ['pattern' => 'api/v1/stock*', 'permissions' => [
+            'READ' => ['stock.view', 'stock.admin'],
+            'POST' => ['stock.create', 'stock.issue', 'stock.approve', 'stock.admin'],
+            'PUT' => ['stock.edit', 'stock.transfer', 'stock.admin'],
+            'PATCH' => ['stock.edit', 'stock.transfer', 'stock.admin'],
+            'DELETE' => ['stock.admin'],
+        ]],
+        ['pattern' => 'api/v1/assignments*', 'permissions' => [
+            'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.admin'],
+            'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin'],
+        ]],
+        ['pattern' => 'api/v1/programmes*', 'permissions' => [
+            'READ' => ['pif.view', 'programme.request.read.created', 'programme.request.read.assigned'],
+            'POST' => ['pif.create', 'programme.request.create', 'pif.approve', 'pif.admin'],
+            'PUT' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
+            'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
+            'DELETE' => ['pif.admin'],
+        ]],
+        ['pattern' => 'api/v1/leave*', 'permissions' => [
+            'READ' => ['leave.view', 'leave.approve', 'leave.admin'],
+            'POST' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'PUT' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'DELETE' => ['leave.admin'],
+        ]],
+        ['pattern' => 'api/v1/documents*', 'permissions' => [
+            'READ' => ['documents.view', 'documents.view.authorised', 'documents.download'],
+            'POST' => ['documents.upload', 'documents.finalize', 'documents.admin'],
+            'PUT' => ['documents.admin', 'documents.legal-hold'],
+            'PATCH' => ['documents.admin', 'documents.legal-hold'],
+            'DELETE' => ['documents.admin'],
+        ]],
+        ['pattern' => 'api/v1/governance*', 'permissions' => [
+            'READ' => ['governance.view', 'governance.admin'],
+            'WRITE' => ['governance.create', 'governance.approve', 'governance.admin'],
+        ]],
+        ['pattern' => 'api/v1/workflow-engine*', 'permissions' => [
+            'READ' => ['workflows.view-own', 'workflows.view-department', 'workflows.view-all', 'workflows.admin'],
+            'WRITE' => ['workflows.submit', 'workflows.act', 'workflows.manage-definitions', 'workflows.admin'],
+        ]],
+        ['pattern' => 'api/v1/notifications*', 'permissions' => [
+            'READ' => ['notifications.view-own', 'notifications.admin'],
+            'WRITE' => ['notifications.manage-own-preferences', 'notifications.acknowledge', 'notifications.admin'],
+        ]],
+        ['pattern' => 'api/v1/notification-admin*', 'permissions' => [
+            '*' => ['notifications.admin', 'notifications.manage-policies'],
+        ]],
+        ['pattern' => 'api/v1/weekly-summaries*', 'permissions' => [
+            'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+        ]],
+        ['pattern' => 'api/v1/weekly-summary*', 'permissions' => [
+            'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+        ]],
+        ['pattern' => 'api/v1/weekly-report-risks*', 'permissions' => [
+            'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team'],
+            'WRITE' => ['weekly-reports.create-risk', 'weekly-reports.admin'],
+        ]],
+        ['pattern' => 'api/v1/srhr*', 'permissions' => [
+            'READ' => ['srhr.view', 'srhr.admin'],
+            'WRITE' => ['srhr.create', 'srhr.manage', 'srhr.admin'],
+        ]],
+        ['pattern' => 'api/v1/decisions*', 'permissions' => [
+            'READ' => ['decisions.view', 'decisions.admin'],
+            'WRITE' => ['decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets-meta*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin'],
+            'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/asset-*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin'],
+            'POST' => ['assets.create', 'assets.edit', 'assets.manage', 'assets.admin'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
+            'DELETE' => ['assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin'],
+            'POST' => ['assets.create', 'assets.manage', 'assets.admin'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
+            'DELETE' => ['assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/workplan*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin'],
+            'WRITE' => ['workplan.create', 'workplan.approve', 'workplan.admin'],
+        ]],
+        ['pattern' => 'api/v1/reports/schedules/{id}/approve', 'permissions' => [
+            'WRITE' => ['reports.manage-schedules'],
+        ]],
+        ['pattern' => 'api/v1/reports/schedules/{id}/pause', 'permissions' => [
+            'WRITE' => ['reports.manage-schedules'],
+        ]],
+        ['pattern' => 'api/v1/reports/schedules', 'permissions' => [
+            'READ' => ['reports.view'],
+            'WRITE' => ['reports.schedule'],
+        ]],
+        ['pattern' => 'api/v1/reports/export-events', 'permissions' => [
+            'READ' => ['reports.view'],
+        ]],
+        ['pattern' => 'api/v1/reports*', 'permissions' => [
+            'READ' => ['reports.view', 'reports.view.authorised'],
+            'WRITE' => ['reports.export', 'reports.export.authorised'],
+        ]],
+        ['pattern' => 'api/v1/analytics*', 'permissions' => [
+            'READ' => ['reports.view', 'reports.view.authorised'],
+        ]],
+        ['pattern' => 'api/v1/saam*', 'permissions' => [
+            'READ' => ['saam.view'],
+            'WRITE' => ['saam.delegate'],
+        ]],
+        ['pattern' => 'api/v1/imprest*', 'permissions' => [
+            'READ' => ['imprest.view'],
+            'WRITE' => ['imprest.create', 'imprest.approve', 'imprest.liquidate'],
+        ]],
+        ['pattern' => 'api/v1/fleet*', 'permissions' => [
+            'READ' => ['admin.platform.manage', 'system.admin'],
+            'WRITE' => ['admin.platform.manage', 'system.admin'],
+        ]],
+        ['pattern' => 'api/v1/approvals*', 'permissions' => [
+            'READ' => ['approvals.inbox.view', 'workflows.view-own'],
+            'WRITE' => ['approvals.task.act.assigned', 'workflows.act'],
+        ]],
+        ['pattern' => 'api/v1/calendar*', 'permissions' => [
+            'READ' => ['calendar.view'],
+            'WRITE' => ['calendar.create', 'calendar.admin'],
+        ]],
+        ['pattern' => 'api/v1/support*', 'permissions' => [
+            'READ' => ['support.view'],
+            'WRITE' => ['support.create', 'support.admin'],
+        ]],
+        ['pattern' => 'api/v1/dashboard*', 'permissions' => [
+            'READ' => ['dashboard.view', 'reports.view'],
+        ]],
+        ['pattern' => 'api/v1/lookups', 'permissions' => [
+            'READ' => ['dashboard.view', 'reports.view'],
+        ]],
+        ['pattern' => 'api/v1/tenant-users', 'permissions' => [
+            'READ' => ['users.view', 'people.view-directory', 'dashboard.view', 'reports.view'],
+        ]],
+        ['pattern' => 'api/v1/users*', 'permissions' => [
+            'READ' => ['users.view', 'people.view-directory'],
+        ]],
+        ['pattern' => 'api/v1/alerts*', 'permissions' => [
+            'READ' => ['notifications.view-own', 'notifications.admin'],
+        ]],
+    ],
 
     'scopes' => [
         'self',

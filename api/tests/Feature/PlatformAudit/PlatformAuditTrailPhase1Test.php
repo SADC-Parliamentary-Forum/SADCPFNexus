@@ -15,6 +15,7 @@ use App\Modules\PlatformAudit\Services\LegacyAuditMigrationService;
 use App\Modules\PlatformAudit\Services\SensitiveFieldMasker;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Illuminate\Validation\ValidationException;
 
 class PlatformAuditTrailPhase1Test extends TestCase
 {
@@ -53,6 +54,87 @@ class PlatformAuditTrailPhase1Test extends TestCase
 
         $this->assertSame($a->id, $b->id);
         $this->assertSame(1, AuditEvent::query()->where('tenant_id', $tenant->id)->count());
+    }
+
+    public function test_unregistered_event_key_is_rejected_and_dead_lettered(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        Sanctum::actingAs($admin);
+
+        try {
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $tenant->id,
+                'event_key' => 'made.up.freeform.event',
+                'actor_id' => $admin->id,
+                'idempotency_key' => 'bad-event-key-1',
+            ]);
+            $this->fail('Unregistered event key was accepted.');
+        } catch (ValidationException) {
+            // Expected: producers must use the governed Event Type Registry.
+        }
+
+        $this->assertDatabaseMissing('audit_event_types', [
+            'event_key' => 'made.up.freeform.event',
+        ]);
+        $this->assertDatabaseHas('audit_event_dead_letters', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'made.up.freeform.event',
+            'status' => 'open',
+        ]);
+    }
+
+    public function test_enqueued_events_can_be_processed_from_outbox(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        Sanctum::actingAs($admin);
+
+        $svc = app(AuditEventIngestionService::class);
+        $outbox = $svc->enqueue([
+            'tenant_id' => $tenant->id,
+            'event_key' => 'auth.login.succeeded',
+            'actor_id' => $admin->id,
+            'idempotency_key' => 'queued-auth-login-1',
+        ]);
+
+        $this->assertSame('pending', $outbox->status);
+        $this->assertSame(0, AuditEvent::query()->where('tenant_id', $tenant->id)->count());
+
+        $stats = $svc->processPending($tenant->id, 10);
+
+        $this->assertSame(1, $stats['committed']);
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'auth.login.succeeded',
+            'idempotency_key' => 'queued-auth-login-1',
+        ]);
+    }
+
+    public function test_reconciliation_reports_outbox_exceptions_and_records_evidence(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        Sanctum::actingAs($admin);
+
+        app(AuditEventIngestionService::class)->enqueue([
+            'tenant_id' => $tenant->id,
+            'event_key' => 'auth.login.failed',
+            'actor_id' => $admin->id,
+            'idempotency_key' => 'reconcile-pending-1',
+        ]);
+
+        $response = $this->postJson('/api/v1/audit-admin/reconcile');
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', 'exceptions_found')
+            ->assertJsonPath('data.summary.processable_outbox', 1);
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'audit.reconciliation.completed',
+            'outcome' => 'partially_completed',
+        ]);
     }
 
     public function test_sensitive_fields_are_masked_or_excluded(): void
@@ -108,6 +190,22 @@ class PlatformAuditTrailPhase1Test extends TestCase
         $cp = $integrity->createCheckpoint($tenant->id, $admin);
         $this->assertSame('valid', $cp->status);
         $this->assertSame(2, $cp->event_count);
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'audit.checkpoint.created',
+            'subject_id' => $cp->id,
+        ]);
+
+        $this->getJson('/api/v1/audit-integrity/reports/'.$cp->id)
+            ->assertOk()
+            ->assertJsonPath('data.verification.valid', true)
+            ->assertJsonPath('data.checkpoint.id', $cp->id);
+
+        $this->assertDatabaseHas('audit_event_access_logs', [
+            'tenant_id' => $tenant->id,
+            'viewer_user_id' => $admin->id,
+            'access_type' => 'integrity_report',
+        ]);
     }
 
     public function test_holds_block_disposal_flag(): void
@@ -156,6 +254,12 @@ class PlatformAuditTrailPhase1Test extends TestCase
         $this->assertDatabaseHas('audit_event_access_logs', [
             'viewer_user_id' => $admin->id,
             'access_type' => 'search',
+        ]);
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'audit.access.logged',
+            'actor_id' => $admin->id,
+            'subject_type' => \App\Models\PlatformAudit\AuditEventAccessLog::class,
         ]);
     }
 
@@ -257,6 +361,17 @@ class PlatformAuditTrailPhase1Test extends TestCase
         $keys = array_column(AuditTrailGovernanceService::catalogue(), 'key');
         $this->assertContains('event_retention_periods', $keys);
         $this->assertContains('siem_integration', $keys);
+
+        $this->putJson('/api/v1/audit-admin/governance/'.$data[0]['id'], [
+            'status' => 'decided',
+            'decision_notes' => 'Approved for test',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'audit.governance.updated',
+            'subject_id' => $data[0]['id'],
+        ]);
     }
 
     public function test_staff_cannot_manage_governance(): void

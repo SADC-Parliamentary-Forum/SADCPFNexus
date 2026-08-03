@@ -32,8 +32,8 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
     items.push({
       id: `mission-${m.id}`,
       iconName: "flight_takeoff",
-      iconColor: "text-orange-600",
-      iconBg: "bg-orange-100",
+      iconColor: "text-orange-600 dark:text-orange-300",
+      iconBg: "bg-orange-100 dark:bg-orange-950",
       title: `Active mission: ${m.requester_name}`,
       subtitle: `in ${m.destination_country}`,
       timeLabel: `Returns ${formatDateShort(m.return_date)}`,
@@ -47,8 +47,8 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
       items.push({
         id: `leave-${e.id}`,
         iconName: "event_busy",
-        iconColor: "text-blue-600",
-        iconBg: "bg-blue-100",
+        iconColor: "text-blue-600 dark:text-blue-300",
+        iconBg: "bg-blue-100 dark:bg-blue-950",
         title: `On leave: ${e.name}`,
         subtitle: `until ${formatDateShort(e.to_date)}`,
         timeLabel: formatDateRelative(e.to_date),
@@ -61,8 +61,8 @@ function buildNotifications(data: AlertsSummary): NotificationItem[] {
     items.push({
       id: `deadline-${d.module}-${d.id}`,
       iconName: isImprest ? "receipt_long" : "event_note",
-      iconColor: "text-red-600",
-      iconBg: "bg-red-100",
+      iconColor: "text-red-600 dark:text-red-300",
+      iconBg: "bg-red-100 dark:bg-red-950",
       title: isImprest
         ? `Imprest ${d.reference_number ?? d.id} due`
         : `Deadline: ${d.title}`,
@@ -109,24 +109,24 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/20"
+        className="fixed inset-0 z-40 bg-black/20 dark:bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Panel */}
       <aside
-        className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col bg-white shadow-xl"
+        className="fixed right-0 top-0 z-50 flex h-full w-80 flex-col bg-white shadow-xl dark:bg-neutral-950 dark:shadow-black/40"
         role="dialog"
         aria-label="Notifications"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px] text-neutral-500">
+            <span className="material-symbols-outlined text-[20px] text-neutral-500 dark:text-neutral-400">
               notifications
             </span>
-            <h2 className="text-sm font-semibold text-neutral-800">
+            <h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">
               Notifications
             </h2>
             {!allRead && notifications.length > 0 && (
@@ -137,7 +137,7 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-900 dark:hover:text-neutral-200"
             aria-label="Close notifications"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
@@ -146,13 +146,13 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
 
         {/* Mark all as read */}
         {!loading && notifications.length > 0 && (
-          <div className="flex justify-end border-b border-neutral-100 px-4 py-2">
+          <div className="flex justify-end border-b border-neutral-100 px-4 py-2 dark:border-neutral-800">
             <button
               onClick={() => setAllRead(true)}
               className={`text-xs font-medium transition-colors ${
                 allRead
-                  ? "cursor-default text-neutral-400"
-                  : "text-primary hover:text-primary/80"
+                  ? "cursor-default text-neutral-400 dark:text-neutral-600"
+                  : "text-primary hover:text-primary/80 dark:text-primary-300 dark:hover:text-primary-200"
               }`}
               disabled={allRead}
             >
@@ -165,13 +165,13 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
         <div className="flex-1 overflow-y-auto">
           {/* Loading skeletons */}
           {loading && (
-            <ul className="divide-y divide-neutral-100 px-4 py-2">
+            <ul className="divide-y divide-neutral-100 px-4 py-2 dark:divide-neutral-800">
               {[1, 2, 3].map((n) => (
                 <li key={n} className="flex items-start gap-3 py-3">
-                  <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-200" />
+                  <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-200 dark:bg-neutral-800" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-200" />
-                    <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-200" />
+                    <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
+                    <div className="h-3 w-1/2 animate-pulse rounded bg-neutral-200 dark:bg-neutral-800" />
                   </div>
                 </li>
               ))}
@@ -181,36 +181,36 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
           {/* Error state */}
           {!loading && error && (
             <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-              <span className="material-symbols-outlined text-[36px] text-neutral-300">
+              <span className="material-symbols-outlined text-[36px] text-neutral-300 dark:text-neutral-700">
                 error_outline
               </span>
-              <p className="text-sm font-medium text-neutral-500">
+              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                 Failed to load notifications
               </p>
-              <p className="text-xs text-neutral-400">Please try again later.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">Please try again later.</p>
             </div>
           )}
 
           {/* Empty state */}
           {!loading && !error && notifications.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-              <span className="material-symbols-outlined text-[40px] text-neutral-300">
+              <span className="material-symbols-outlined text-[40px] text-neutral-300 dark:text-neutral-700">
                 notifications_none
               </span>
-              <p className="text-sm font-medium text-neutral-500">
+              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-300">
                 You&apos;re all caught up
               </p>
-              <p className="text-xs text-neutral-400">No new notifications.</p>
+              <p className="text-xs text-neutral-400 dark:text-neutral-500">No new notifications.</p>
             </div>
           )}
 
           {/* Notification list */}
           {!loading && !error && notifications.length > 0 && (
-            <ul className="divide-y divide-neutral-100">
+            <ul className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {notifications.map((item) => (
                 <li
                   key={item.id}
-                  className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 ${
+                  className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 ${
                     allRead ? "opacity-60" : ""
                   }`}
                 >
@@ -227,13 +227,13 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
 
                   {/* Text */}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-neutral-800">
+                    <p className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-100">
                       {item.title}
                     </p>
-                    <p className="mt-0.5 truncate text-xs text-neutral-500">
+                    <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
                       {item.subtitle}
                     </p>
-                    <p className="mt-1 text-[10px] font-medium text-neutral-400">
+                    <p className="mt-1 text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
                       {item.timeLabel}
                     </p>
                   </div>
@@ -249,8 +249,8 @@ export default function NotificationsPanel({ onClose }: NotificationsPanelProps)
         </div>
 
         {/* Footer */}
-        <div className="border-t border-neutral-200 px-4 py-3">
-          <p className="text-center text-[11px] text-neutral-400">
+        <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
+          <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
             Showing alerts &amp; upcoming deadlines
           </p>
         </div>

@@ -821,7 +821,7 @@ export default function UserEditPage() {
                   Advanced module-specific permissions are coming in the next update. Currently, permissions are inherited from the assigned <strong>{form.role}</strong> role.
                 </p>
                 <div className="flex justify-center mt-6">
-                  <Link href="/admin/roles" className="text-primary font-semibold hover:underline flex items-center gap-2">
+                  <Link href="/admin/access/roles" className="text-primary font-semibold hover:underline flex items-center gap-2">
                     Manage Role Base Permissions
                     <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                   </Link>

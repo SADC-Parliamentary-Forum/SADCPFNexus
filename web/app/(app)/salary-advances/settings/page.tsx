@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   financeApi,
+  hrFilesApi,
   type SalaryAdvancePolicyException,
   type SalaryAdvancePolicyVersion,
 } from "@/lib/api";
@@ -12,6 +13,7 @@ import { formatDate } from "@/lib/utils";
 export default function SalaryAdvanceSettingsPage() {
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
   const [exceptions, setExceptions] = useState<SalaryAdvancePolicyException[]>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<Array<{ id: number; label: string }>>([]);
   const [payroll, setPayroll] = useState<{
     mode: string;
     adapter?: string;
@@ -64,7 +66,20 @@ export default function SalaryAdvanceSettingsPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    hrFilesApi
+      .list({ per_page: 100 })
+      .then((res) => {
+        setEmployeeOptions(
+          (res.data.data ?? []).map((file) => ({
+            id: file.employee_id,
+            label: `${file.employee?.name ?? file.staff_number ?? `Employee ${file.employee_id}`} (${file.employee?.email ?? file.current_position ?? "no email"})`,
+          })),
+        );
+      })
+      .catch(() => setEmployeeOptions([]));
+  }, []);
 
   const createVersion = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,8 +235,15 @@ export default function SalaryAdvanceSettingsPage() {
               </p>
             </div>
             <form onSubmit={createException} className="grid sm:grid-cols-2 gap-3">
-              <label className="text-xs font-medium text-neutral-700">Employee user ID
-                <input required type="number" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
+              <label className="text-xs font-medium text-neutral-700">Employee
+                <input required type="text" inputMode="numeric" pattern="[0-9]*" list="salary-advance-employee-options" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
+                <datalist id="salary-advance-employee-options">
+                  {employeeOptions.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.label}
+                    </option>
+                  ))}
+                </datalist>
               </label>
               <label className="text-xs font-medium text-neutral-700">Exception type
                 <select className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>

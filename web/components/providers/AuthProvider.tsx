@@ -2,8 +2,8 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { AuthContext } from "@/lib/auth";
-import { authApi, type AuthUser } from "@/lib/api";
+import { AuthContext, mergeEffectivePermissions } from "@/lib/auth";
+import { accessApi, authApi, type AuthUser } from "@/lib/api";
 import { clearStoredUser, readStoredUser, writeStoredUser } from "@/lib/session";
 
 /** Paths where unauthenticated visitors are expected — do not call /auth/me. */
@@ -32,6 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => {
         writeStoredUser(data);
         setUser(data);
+        return accessApi.effective()
+          .then(({ data: access }) => {
+            const merged = mergeEffectivePermissions(data, access.data) ?? data;
+            writeStoredUser(merged);
+            setUser(merged);
+          })
+          .catch(() => {
+            // Keep /auth/me as the minimum viable session refresh if access metadata is unavailable.
+          });
       })
       .catch((err: unknown) => {
         const status = (err as { response?: { status?: number } })?.response?.status;

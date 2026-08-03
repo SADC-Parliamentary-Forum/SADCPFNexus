@@ -76,6 +76,12 @@ class PlatformAuditTrailPhase2MvpTest extends TestCase
         ]);
 
         $svc = app(SecurityMonitoringService::class);
+        $alert = $svc->transitionAlert($alert, $reviewer, [
+            'workflow_status' => 'assigned',
+            'assigned_to' => $reviewer->id,
+        ]);
+        $this->assertSame('assigned', $alert->workflow_status);
+        $this->assertSame($reviewer->id, $alert->assigned_to);
         $alert = $svc->transitionAlert($alert, $reviewer, ['workflow_status' => 'under_review']);
         $this->assertSame('under_review', $alert->workflow_status);
         $alert = $svc->transitionAlert($alert, $reviewer, [
@@ -89,6 +95,11 @@ class PlatformAuditTrailPhase2MvpTest extends TestCase
         ]);
         $this->assertSame('closed', $alert->workflow_status);
         $this->assertNotNull($alert->closed_at);
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $tenant->id,
+            'event_key' => 'security.alert.transitioned',
+            'subject_id' => $alert->id,
+        ]);
     }
 
     public function test_forensic_case_link_hold_and_evidence_package(): void
@@ -149,5 +160,55 @@ class PlatformAuditTrailPhase2MvpTest extends TestCase
             'title' => 'API case',
         ])->assertCreated();
         $this->getJson('/api/v1/audit-admin/forensic-cases')->assertOk();
+    }
+
+    public function test_canonical_security_alert_and_forensic_routes(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        Sanctum::actingAs($admin);
+
+        $rule = SecurityMonitoringRule::create([
+            'tenant_id' => $tenant->id,
+            'rule_key' => 'api_route_rule',
+            'version' => 1,
+            'name' => 'API route rule',
+            'event_key_pattern' => 'auth.login.failed',
+            'severity' => 'high',
+            'threshold_count' => 1,
+            'window_minutes' => 60,
+            'enabled' => true,
+            'status' => 'active',
+        ]);
+
+        $alert = AuditEventAlert::create([
+            'tenant_id' => $tenant->id,
+            'rule_id' => $rule->id,
+            'reference' => 'ALRT-API01',
+            'severity' => 'high',
+            'status' => 'open',
+            'workflow_status' => 'new',
+            'detected_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/security-alerts')->assertOk();
+        $this->getJson('/api/v1/security-alerts/'.$alert->id)->assertOk();
+        $this->postJson('/api/v1/security-alerts/'.$alert->id.'/assign', [
+            'assigned_to' => $admin->id,
+        ])->assertOk()->assertJsonPath('data.workflow_status', 'assigned');
+        $this->postJson('/api/v1/security-alerts/'.$alert->id.'/classify', [
+            'classification' => 'requires_investigation',
+        ])->assertOk()->assertJsonPath('data.workflow_status', 'classified');
+        $this->postJson('/api/v1/security-alerts/'.$alert->id.'/create-incident', [
+            'incident_id' => 'SEC-INC-API01',
+        ])->assertStatus(202)->assertJsonPath('data.workflow_status', 'confirmed_incident');
+        $this->postJson('/api/v1/security-alerts/'.$alert->id.'/close', [
+            'conclusion' => 'Resolved by API test',
+        ])->assertOk()->assertJsonPath('data.workflow_status', 'closed');
+
+        $caseResponse = $this->postJson('/api/v1/forensic-cases', [
+            'title' => 'Canonical API case',
+        ])->assertCreated();
+        $this->assertNotNull($caseResponse->json('data.id'));
     }
 }

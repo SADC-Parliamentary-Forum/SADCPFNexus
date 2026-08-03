@@ -15,6 +15,7 @@ use App\Models\AccessControl\UserPermissionGrant;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\AccessControl\Services\AccessCacheInvalidator;
+use App\Modules\AccessControl\Services\AccessManifestService;
 use App\Modules\AccessControl\Services\NavigationManifestService;
 use App\Modules\AccessControl\Services\PermissionRegistry;
 use App\Modules\AccessControl\Services\PolicyDecisionPoint;
@@ -29,6 +30,7 @@ class AccessGovernanceController extends Controller
         private readonly PermissionRegistry $registry,
         private readonly PolicyDecisionPoint $pdp,
         private readonly NavigationManifestService $nav,
+        private readonly AccessManifestService $manifest,
         private readonly AccessCacheInvalidator $cache,
     ) {}
 
@@ -107,6 +109,18 @@ class AccessGovernanceController extends Controller
     public function navigation(Request $request): JsonResponse
     {
         return response()->json(['data' => $this->nav->forUser($request->user())]);
+    }
+
+    public function effective(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->manifest->effective($request->user())]);
+    }
+
+    public function coverage(Request $request): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.access.explore');
+
+        return response()->json(['data' => $this->manifest->coverage()]);
     }
 
     public function authorizeCheck(Request $request): JsonResponse

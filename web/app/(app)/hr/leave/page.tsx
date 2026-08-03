@@ -427,7 +427,7 @@ export default function HRLeavePage() {
           <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
               <h2 className="text-base font-semibold text-neutral-900">New Leave Request</h2>
-              <button type="button" onClick={() => setShowNew(false)} className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setShowNew(false)} aria-label="Close new leave request" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
@@ -476,7 +476,7 @@ export default function HRLeavePage() {
                 <span className="material-symbols-outlined text-amber-600">warning</span>
                 <h2 className="text-base font-semibold text-neutral-900">Insufficient Leave Balance</h2>
               </div>
-              <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} aria-label="Close leave balance override" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
@@ -514,7 +514,7 @@ export default function HRLeavePage() {
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
               <h2 className="text-base font-semibold text-neutral-900">Reject Leave Request</h2>
-              <button type="button" onClick={() => setRejectId(null)} className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setRejectId(null)} aria-label="Close leave rejection dialog" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>

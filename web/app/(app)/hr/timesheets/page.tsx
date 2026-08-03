@@ -511,7 +511,14 @@ export default function TimesheetsPage() {
       {/* Week nav bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button type="button" onClick={handlePrevWeek} disabled={!weekStartDate} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40">
+          <button
+            type="button"
+            onClick={handlePrevWeek}
+            disabled={!weekStartDate}
+            aria-label="Previous week"
+            title="Previous week"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
+          >
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
           <div>
@@ -522,7 +529,14 @@ export default function TimesheetsPage() {
               <p className="text-xs text-neutral-500 mt-0.5">Timesheet #{timesheet.id}</p>
             )}
           </div>
-          <button type="button" onClick={handleNextWeek} disabled={!weekStartDate} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40">
+          <button
+            type="button"
+            onClick={handleNextWeek}
+            disabled={!weekStartDate}
+            aria-label="Next week"
+            title="Next week"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
+          >
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>

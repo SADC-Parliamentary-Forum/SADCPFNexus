@@ -7,8 +7,10 @@ import { financeApi, type Budget } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function BudgetDashboardPage() {
+  const { confirm } = useConfirm();
   const [loading, setLoading] = useState(true);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [error, setError] = useState("");
@@ -27,8 +29,14 @@ export default function BudgetDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = (budget: Budget) => {
-    if (!confirm(`Delete budget "${budget.name}"? This cannot be undone.`)) return;
+  const handleDelete = async (budget: Budget) => {
+    if (
+      !(await confirm({
+        title: "Delete budget",
+        message: `Delete budget "${budget.name}"? This cannot be undone.`,
+        variant: "danger",
+      }))
+    ) return;
     setDeletingId(budget.id);
     financeApi
       .deleteBudget(budget.id)

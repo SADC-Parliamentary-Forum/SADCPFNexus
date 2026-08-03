@@ -10,6 +10,7 @@ import {
   type ResultsFrameworkType,
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const EMPTY: Partial<ResultsFramework> = {
   name: "",
@@ -21,6 +22,7 @@ const EMPTY: Partial<ResultsFramework> = {
 
 export default function ResultsFrameworksPage() {
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -134,7 +136,11 @@ export default function ResultsFrameworksPage() {
                         <button
                           type="button"
                           className="text-red-500 text-xs hover:underline"
-                          onClick={() => { if (confirm("Delete this framework?")) delMut.mutate(fw.id); }}
+                          onClick={async () => {
+                            if (await confirm({ title: "Delete framework", message: "Delete this framework?", variant: "danger" })) {
+                              delMut.mutate(fw.id);
+                            }
+                          }}
                         >
                           Delete
                         </button>

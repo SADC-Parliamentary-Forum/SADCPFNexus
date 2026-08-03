@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deploymentsApi, researcherReportsApi, type StaffDeployment, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   active:    { label: "Active",    cls: "badge-success" },
@@ -26,6 +26,7 @@ const reportStatusConfig: Record<string, { label: string; cls: string }> = {
 export default function DeploymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }      = use(params);
   const router      = useRouter();
+  const { confirm } = useConfirm();
   const [dep, setDep] = useState<StaffDeployment | null>(null);
   const [reports, setReports]     = useState<ResearcherReport[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -60,7 +61,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
   };
 
   const handleComplete = async () => {
-    if (!confirm("Mark this deployment as completed?")) return;
+    if (!(await confirm({ title: "Complete deployment", message: "Mark this deployment as completed?", variant: "primary" }))) return;
     try {
       await deploymentsApi.complete(Number(id));
       router.push("/srhr/deployments");
@@ -88,24 +89,25 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <ModulePageHeader
-        title={dep.employee?.name ?? "Deployment"}
-        subtitle={`${dep.parliament?.name ?? ""} · ${dep.reference_number}`}
-        breadcrumbs={
-          <PageBreadcrumbs
-            items={[
-              { label: "SRHR", href: "/srhr" },
-              { label: "Deployments", href: "/srhr/deployments" },
-              { label: dep.reference_number },
-            ]}
-          />
-        }
-        meta={
-          <span className={`badge ${statusConfig[dep.status]?.cls ?? "badge-muted"}`}>
-            {statusConfig[dep.status]?.label}
-          </span>
-        }
-      />
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-sm text-neutral-500">
+        <Link href="/srhr" className="hover:text-primary">SRHR</Link>
+        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+        <Link href="/srhr/deployments" className="hover:text-primary">Deployments</Link>
+        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span className="text-neutral-800 font-medium">{dep.reference_number}</span>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">{dep.employee?.name}</h1>
+          <p className="page-subtitle">{dep.parliament?.name} · {dep.reference_number}</p>
+        </div>
+        <span className={`badge ${statusConfig[dep.status]?.cls ?? "badge-muted"} flex-shrink-0`}>
+          {statusConfig[dep.status]?.label}
+        </span>
+      </div>
 
       {/* Actions */}
       {dep.status === "active" && (

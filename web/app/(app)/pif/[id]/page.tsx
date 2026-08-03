@@ -120,7 +120,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
           <h2 className="text-sm font-semibold text-neutral-900">{title}</h2>
-          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} aria-label={`Close ${title}`} className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined text-[22px]">close</span>
           </button>
         </div>

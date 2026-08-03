@@ -65,10 +65,10 @@ const ICONS: Record<ToastType, string> = {
 };
 
 const STYLES: Record<ToastType, { container: string; icon: string; progress: string }> = {
-  success: { container: "border-green-200 bg-white", icon: "text-green-500", progress: "bg-green-500" },
-  error:   { container: "border-red-200 bg-white",   icon: "text-red-500",   progress: "bg-red-500"   },
-  warning: { container: "border-amber-200 bg-white", icon: "text-amber-500", progress: "bg-amber-500" },
-  info:    { container: "border-blue-200 bg-white",  icon: "text-blue-500",  progress: "bg-blue-500"  },
+  success: { container: "border-green-200 bg-white dark:border-green-800 dark:bg-neutral-900", icon: "text-green-500 dark:text-green-300", progress: "bg-green-500 dark:bg-green-400" },
+  error:   { container: "border-red-200 bg-white dark:border-red-800 dark:bg-neutral-900",     icon: "text-red-500 dark:text-red-300",     progress: "bg-red-500 dark:bg-red-400"     },
+  warning: { container: "border-amber-200 bg-white dark:border-amber-800 dark:bg-neutral-900", icon: "text-amber-500 dark:text-amber-300", progress: "bg-amber-500 dark:bg-amber-400" },
+  info:    { container: "border-blue-200 bg-white dark:border-blue-800 dark:bg-neutral-900",   icon: "text-blue-500 dark:text-blue-300",   progress: "bg-blue-500 dark:bg-blue-400"   },
 };
 
 function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => void }) {
@@ -88,14 +88,19 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => 
         {ICONS[toast.type]}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-neutral-900">{toast.title}</p>
-        {toast.message && <p className="text-xs text-neutral-500 mt-0.5">{toast.message}</p>}
+        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{toast.title}</p>
+        {toast.message && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{toast.message}</p>}
       </div>
-      <button onClick={() => dismiss(toast.id)} className="text-neutral-300 hover:text-neutral-500 transition-colors flex-shrink-0 mt-0.5">
+      <button
+        type="button"
+        aria-label="Dismiss notification"
+        onClick={() => dismiss(toast.id)}
+        className="text-neutral-300 hover:text-neutral-500 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors flex-shrink-0 mt-0.5"
+      >
         <span className="material-symbols-outlined text-[16px]">close</span>
       </button>
       {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-100">
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-100 dark:bg-neutral-800">
         <div className={`h-full ${style.progress} animate-[shrink_4s_linear_forwards]`} style={{ width: "100%" }} />
       </div>
     </div>
@@ -105,7 +110,12 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => 
 function ToastContainer({ toasts, dismiss }: { toasts: Toast[]; dismiss: (id: string) => void }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none"
+    >
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto">
           <ToastItem toast={t} dismiss={dismiss} />

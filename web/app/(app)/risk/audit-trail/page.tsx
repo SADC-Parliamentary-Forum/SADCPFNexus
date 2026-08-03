@@ -274,7 +274,7 @@ export default function RiskAuditTrailPage() {
         <div className="card p-5 space-y-4 border-primary/30 border">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-800">Event Detail</h2>
-            <button onClick={() => setSelected(null)} className="text-neutral-400 hover:text-neutral-600">
+            <button onClick={() => setSelected(null)} aria-label="Close event detail" className="text-neutral-400 hover:text-neutral-600">
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>

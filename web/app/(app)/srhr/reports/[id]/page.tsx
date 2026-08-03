@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",              cls: "badge-muted",    icon: "draft"            },
@@ -25,6 +26,7 @@ const typeLabel: Record<string, string> = {
 export default function ReportDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }     = use(params);
   const router     = useRouter();
+  const { confirm } = useConfirm();
   const [report, setReport]               = useState<ResearcherReport | null>(null);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   useEffect(() => { loadReport(); }, [id]);
 
   const handleSubmit = async () => {
-    if (!confirm("Submit this report to SADC-PF?")) return;
+    if (!(await confirm({ title: "Submit report", message: "Submit this report to SADC-PF?", variant: "primary" }))) return;
     setSubmitting(true);
     try {
       const res = await researcherReportsApi.submit(Number(id));
@@ -58,7 +60,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   };
 
   const handleAcknowledge = async () => {
-    if (!confirm("Acknowledge this report?")) return;
+    if (!(await confirm({ title: "Acknowledge report", message: "Acknowledge this report?", variant: "primary" }))) return;
     setAcknowledging(true);
     try {
       const res = await researcherReportsApi.acknowledge(Number(id));

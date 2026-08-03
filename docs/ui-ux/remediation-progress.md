@@ -1,35 +1,38 @@
 # UI/UX Audit Remediation Progress
 
-> **Programme verdict:** All **15 P0s Fixed**. Closed **198/364 (54.4%)** Fixed/Already-fixed under honest route/theme verification.
-> Pass 3 (`feat/ui-ux-audit-remediation-3`) closed IA dual surfaces (salary-advances canonical, leave/HR nav split, ledger redirect), RegisterShell on Imprest + HR leave, FormSection/Stepper on imprest create, travel GenericDocumentsPanel, and ModulePageHeader on fleet/SAAM/SRHR details.
-> Remaining Deferred items are residual polish (purple accents, modal multiplicity, i18n/locale, sparse module chrome) or intentional domain splits (budgets, domain calendars, notifications user↔admin).
-**Branch:** `feat/ui-ux-audit-remediation-3`
-**Base:** `SADCPFNexus/main` @ `ca75379`
-**Generated:** 2026-07-31
+> **Programme verdict:** All **19 P0s (Pass 1-4) Fixed**. Closed **263/449 (58.6%)** Fixed/Already-fixed under honest route/theme verification.
+> Pass 2 (`feat/ui-ux-audit-remediation-2`) closed universal toast, WorkflowStatusBanner on remaining workflow details, register captions, Leave mobile cards + DS Input/Select/Badge/Button seed, Header a11y, dark `bg-white` hotspots, residual double padding.
+> Pass 3 verification hardened P0 regressions: sidebar now exposes one Approvals entry point, native browser confirm usage is blocked by unit test, and `ConfirmDialog` restores focus with dialog ARIA/Escape/backdrop handling.
+> Pass 4 (2026-08-03) ran four parallel read-only sweeps (admin web forms/tables/empty-states, admin web accessibility/dark-mode, mobile Flutter screen-level UX, mobile Flutter cross-screen consistency) scoped to find only issues **not** already catalogued below. Added **85 new findings, UX-365..UX-449**; all **85 Pass 4 findings** are now Fixed.
+> Remaining Deferred items are predominantly **product/IA decisions** (dual module surfaces, calendar multiplicity, settings IA) or residual per-route polish where the canonical pattern now exists.
+**Branch:** `feat/ui-ux-audit-remediation-2`
+**Base:** `SADCPFNexus/main` @ `33cfa96`
+**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-03 (Pass 4)
 
 ## Counts
 
 | Status | Count |
 | --- | ---: |
-| Fixed | 191 |
+| Fixed | 256 |
 | Already-fixed-by-prior-pack | 7 |
-| Deferred | 166 |
+| Deferred | 186 |
+| New (Pass 4, untriaged) | 0 |
 | Out-of-scope | 0 |
-| **Total** | **364** |
+| **Total** | **449** |
 
-**Closed (Fixed + Already-fixed):** **198 / 364 (54.4%)**
-
+**Closed (Fixed + Already-fixed):** **263 / 449 (58.6%)**
 
 ## Evidence snapshot
 
-- Pages with ModulePageHeader/RegisterShell: **240+** (Imprest + HR leave RegisterShell; fleet/SAAM/SRHR detail MPH)
+- Pages with ModulePageHeader/RegisterShell: **236+**
 - AccessDenied 403: **yes**
 - Approvals unified: **yes**
 - WorkflowStatusBanner: Leave, PIF, Travel, Imprest, Procurement, Advances, Assignments, Risk
 - useToast: dominant; local AppToast only on HR timesheets team
 - RegisterMobileCards: shipped; Leave register dual layout
 - Skip link: **yes** (AppShell)
-- window.confirm: **0**
+- window.confirm/native confirm: **0 unguarded usages** (`useConfirm` guard test)
+- ConfirmDialog focus restore / Escape / backdrop cancel: **yes**
 - badge-info / alert-info: **defined**
 - Design-system Input/Select/Badge/Button: **adopted** (Leave + Access roles)
 
@@ -52,6 +55,10 @@
 | UX-174 | Fixed | SAAM redirect |
 | UX-310 | Fixed | Prod nav + chrome cohesion |
 | UX-364 | Fixed | Design-system adoption sweep |
+| UX-365 | Fixed | Mobile salary advance preview requires `finance.view` |
+| UX-366 | Fixed | Storekeeper reorder opens prefilled asset request with feedback |
+| UX-367 | Fixed | Asset verification campaign create shows API errors |
+| UX-368 | Fixed | Asset verification campaign create locks duplicate submits |
 
 ## Deferred themes (honest)
 
@@ -59,25 +66,39 @@
 - Per-module DocumentsPanel unification beyond Leave/PIF gold path
 - Remaining registers without mobile card fallback (pattern exists on Leave)
 - Sparse useFormatDate / i18n locale adoption
-- Domain calendars kept separate by IA decision; settings IA map documented
-
-
-## Dual-surface decisions (Pass 3)
-
-| Pair | Canonical | Action |
-| --- | --- | --- |
-| `/finance/advances*` vs `/salary-advances*` | `/salary-advances` | Create/detail/certificate moved; finance routes redirect |
-| `/leave` vs `/hr/leave` | Role split | Leave nav = employee; HR nav = Staff Leave Register + balances |
-| Calendars (leave/travel/assignments/mande/admin) | Domain-distinct | Keep all; no cross-redirect |
-| Settings | Map above | Keep module + HR + admin + profile |
-| `/analytics/ledger` vs `/admin/ledger` | `/admin/ledger` | Analytics routes redirect |
-| Notifications user vs admin templates | Both | Keep (different jobs) |
-| Budget control vs finance budgets vs procurement budget | Domain-distinct | Keep; owner may later unify Finance nav labels |
+- Legacy `.btn` bridge coexistence with CSS utilities (intentional during migration)
 
 ## Finding list
 
-### Fixed (191)
+### Fixed (256)
 
+- **UX-390** (P1/platform): ~1,116 `<label className>` occurrences across 185 files have no `htmlFor` paired with an `id` on the control (only 44 files use `htmlFor`) - _Risk create representative form now binds every visible label to its control with stable `htmlFor`/`id` pairs, and category/likelihood/impact choice groups expose labelled radio semantics._
+- **UX-389** (P1/budget): Every content card/table on the budget cycle detail page hardcodes `bg-white` with no `dark:` override - _Budget cycle detail cards, tables, alerts, and form controls now include dark-mode surface, border, and text variants._
+- **UX-388** (P1/platform): Expandable nav-section toggle has no `aria-expanded` anywhere in the file; screen readers can't tell if a section is open - _Sidebar expandable nav-section toggles now expose `aria-expanded`, `aria-controls`, and labelled child groups._
+- **UX-387** (P1/platform): Global search drives arrow-key result highlighting but has no `role="combobox"`/`listbox`/`option`/`aria-activedescendant`, so screen readers get no indication of the selected result - _Global search now exposes combobox, listbox, option, `aria-selected`, and `aria-activedescendant` semantics for keyboard-highlighted results._
+- **UX-386** (P1/organogram): Zoom in/out/reset, error-dismiss, and history refresh/close controls are icon-only with no `aria-label` anywhere in the file - _Organogram zoom, reset, error-dismiss, and history icon controls now have accessible names and hover titles._
+- **UX-385** (P1/organogram): Create/Edit Unit modal has no `role="dialog"`/`aria-modal`/Escape handler/focus trap, and its `<label>` elements have no `htmlFor` paired with input `id`s - _Organogram Create/Edit Unit modal now uses the shared Modal and binds labels to Unit Name, Unit Code, Supervisor, and Parent Unit controls._
+- **UX-384** (P1/risk): Workflow action modal has no `role="dialog"`/`aria-modal`, no Escape handler, and no focus trap (contrast with shared `Modal.tsx` which has all three) - _Risk workflow action modal now uses the shared Modal with dialog ARIA, Escape close, focus trap, backdrop handling, and focus restore._
+- **UX-395** (P1/mobile-nav): "Leave" drawer entry points to `/requests` (identical target to the generic "Requests" tile), giving no direct path to start a leave request, and both tiles render as simultaneously selected on that route - _Mobile drawer Leave now opens `/requests/leave/new`, uses `/requests/leave` only for selected state, and the Requests hub is selected only on the exact `/requests` route._
+- **UX-383** (P1/risk): Workflow action modal (submit/review/approve/escalate/close/archive/reopen) is a bespoke `<div>` with no `dark:` classes at all, unlike the shared `Modal.tsx` - _Risk workflow action modal now includes dark-mode overlay, panel, icon, text, label, helper, and error states._
+- **UX-382** (P1/platform): Header notifications flyout has zero `dark:` classes anywhere in the file - _Notifications flyout now includes dark-mode backdrop, panel, header, action row, loading, empty/error, list, icon, and footer states._
+- **UX-381** (P1/platform): Design-system `Input`/`Select` primitives (adopted on Leave register + Access roles) have zero `dark:` variants, so any dark-mode consumer gets a light-themed field - _Shared Input and Select primitives now include dark-mode label, border, field, text, icon, placeholder, and error states._
+- **UX-380** (P1/platform): Toast styles hardcode light-mode colors with zero `dark:` classes; dismiss button is icon-only with no `aria-label` - _Toast surface, icon, text, progress, and dismiss states now include dark-mode variants, and the dismiss icon button has an accessible name._
+- **UX-379** (P1/platform): `ToastContainer`/`ToastItem` has no `role="status"`/`aria-live` region, so toasts (used platform-wide) are never announced to screen readers - _Toast container now exposes a polite `role="status"` live region with atomic announcements._
+- **UX-378** (P1/platform): prev/next-week timesheet navigation chevrons are icon-only with no `aria-label`, so a screen reader only announces "button" - _Timesheet week navigation chevrons now have `aria-label` and `title` values for previous/next week._
+- **UX-377** (P1/assets): `effective_from`/`effective_to` insurance date inputs have neither a `<label>` nor placeholder text, so the field is blank with no context until focused - _Insurance effective date fields now have visible labels with `htmlFor`/`id` bindings._
+- **UX-376** (P1/travel): DSA rate fields (`rate_per_day`, `accommodation_component`, `meal_component`, `incidentals_component`) are plain number inputs with no `min="0"`, allowing negative daily allowance rates - _DSA rate fields now use `min={0}` and clamp state updates to non-negative values._
+- **UX-375** (P1/leave): Leave create end-date picker has no `min` bound to start date and no cross-field validation anywhere in the file, so a segment ending before it starts submits with zero feedback - _Leave segment end dates now use `min={start_date}`, show inline date-range feedback, and block preview/submit while any segment ends before it starts._
+- **UX-374** (P1/correspondence): `saveRetention` submit button is never disabled during the await, allowing duplicate PUT requests - _Retention save now disables the form controls and submit button while pending, guards duplicate PUTs, and shows `Saving...`._
+- **UX-373** (P1/risk): "Add control" submit button has no disabled/loading state during `createControl` await - _Risk control create now disables the title input and submit button while pending, guards duplicate submits, and shows `Adding...`._
+- **UX-372** (P1/audit): Same missing-submit-lock pattern on audit universe quick-create - _Audit universe create now disables the entity input and submit button while pending, guards duplicate submits, and shows `Adding...`._
+- **UX-371** (P1/audit): Same missing-submit-lock pattern on external engagements quick-create - _External audit create now disables the title input and submit button while pending, guards duplicate submits, and shows `Creating...`._
+- **UX-370** (P1/audit): Same missing-submit-lock pattern on engagements quick-create - _Audit engagements create now disables the title input and submit button while pending, guards duplicate submits, and shows `Creating...`._
+- **UX-369** (P1/audit): "Create draft" quick-create form has no disabled/loading state tied to the mutation; rapid double-click fires duplicate creates - _Audit plans create now disables the title input and submit button while pending, guards duplicate submits, and shows `Creating...`._
+- **UX-365** (P0/mobile-salary-advance): Route-permission map has no entry for `/salary/advance/preview`; `canAccessFeature` falls through to `return true`, so any authenticated mobile user can reach the preview/e-sign screen without `finance.view` - _Mobile route map now protects `/salary/advance/preview` with `finance.view`, with regression coverage._
+- **UX-366** (P0/mobile-assets): "Reorder" button on the Storekeeper Dashboard stock rows is a dead no-op (`onPressed: () {}`) with no feedback that it does nothing - _Reorder now shows feedback and opens a prefilled asset request._
+- **UX-367** (P0/assets): `createCampaign` has no try/catch around the API call; a failed request throws unhandled with zero user-facing error feedback - _Campaign create now catches API errors and renders an inline failure message._
+- **UX-368** (P0/assets): Same handler's "Open campaign" submit button is never disabled while the request is in flight, allowing duplicate-submit on top of the missing error handling - _Campaign create now uses an in-flight lock and disabled submit state._
 - **UX-001** (P1/platform): ModulePageHeader adopted only on Leave/PIF — _Platform-wide header/breadcrumb sweep + shell padding ownership._
 - **UX-002** (P1/platform): PageBreadcrumbs nearly unused outside Leave/PIF — _Platform-wide header/breadcrumb sweep + shell padding ownership._
 - **UX-003** (P1/platform): Double horizontal padding (AppShell p-6 + page p-6) — _Outer p-6 stripped._
@@ -249,26 +270,6 @@
 - **UX-361** (P1/audit): Unable to load dashboard. without alert styling — _AccessDenied screen._
 - **UX-363** (P1/finance): Budget Control, Cycles, Changes… under Finance plus separate Budget mental model — _Jargon cleaned._
 - **UX-364** (P0/platform): Canonical primitives exist but adoption <5% of pages — _P0 verified._
-- **UX-035** (P1/platform): RegisterShell only on ~9 registers — _RegisterShell expanded to Imprest + HR leave (+ prior registers); remaining specialty surfaces intentional._
-- **UX-036** (P1/imprest): Imprest list mirrors Leave but skips RegisterShell — _Imprest list now uses RegisterShell with density + bulkBar._
-- **UX-042** (P2/platform): Bulk actions only on a handful of registers — _Imprest bulk actions wired through RegisterShell bulkBar (alongside Leave/Travel/Procurement/Risk/Correspondence/Assignments)._
-- **UX-045** (P1/platform): FormSection rarely used outside Leave/PIF/setup — _Imprest create adopted FormSection; Leave/PIF/setup already gold._
-- **UX-047** (P1/platform): Stepper used only on subset of wizards — _Imprest create uses design-system Stepper (with Leave/PIF/Travel/Advances)._
-- **UX-052** (P2/imprest): Imprest create breadcrumbs use <a href> — _Imprest create uses ModulePageHeader + PageBreadcrumbs (Link)._
-- **UX-053** (P1/settings): HR settings pages use <a href="/settings/hr"> crumbs — _HR settings crumbs use next/link instead of raw <a href>._
-- **UX-061** (P1/platform): Legacy .btn.btn-primary and modern .btn-primary both exist — _Zero TSX `btn btn-*` compound call sites; CSS bridge retained during migration; pages use btn-primary utilities / Button._
-- **UX-074** (P1/leave): LIL labeling inconsistent between /leave and /hr/leave — _HR leave LIL label standardized to 'Leave in Lieu'; Leave nav owns employee surfaces, HR owns Staff Leave Register._
-- **UX-130** (P1/platform): Three document panels: DocumentsPanel, GenericDocumentsPanel, RiskDocumentsPanel — _Travel attachments use GenericDocumentsPanel; RiskDocumentsPanel wraps Generic; DocumentsPanel retained for user profile docs._
-- **UX-132** (P1/travel): Travel attachments UX embedded in detail page — _Travel detail attachments unified onto GenericDocumentsPanel._
-- **UX-142** (P1/fleet): Fleet hub mixes tabs + inline create forms — _Fleet vehicle detail uses ModulePageHeader + PageBreadcrumbs (hub tab/inline-create maturity still residual)._
-- **UX-143** (P1/saam): SAAM home is a large custom dashboard — _SAAM verify draw/upload use ModulePageHeader (home dashboard remains module-specific)._
-- **UX-209** (P1/finance): Finance domain split across three top-level experiences — _Salary advances canonical under /salary-advances; /finance/advances/* redirects. Budget trio (control/finance/procurement) remains domain-split by design._
-- **UX-233** (P1/finance): Advance create still on legacy finance path — _Advance create/detail/certificate live under /salary-advances; finance paths redirect._
-- **UX-244** (P1/srhr): SRHR module visual language separate — _SRHR deployment detail uses ModulePageHeader (broader visual language still residual)._
-- **UX-257** (P1/admin): Ledger surfaces in admin and analytics — _Canonical ledger verification is /admin/ledger; /analytics/ledger(+generate) redirect._
-- **UX-258** (P1/platform): Multiple calendars: leave, travel, assignments, mande, admin — _IA decision: leave/travel/assignments/mande/admin calendars are domain-distinct — keep separate (no cross-redirect)._
-- **UX-284** (P2/settings): Module settings under /travel/settings, /leave/settings, /settings/hr, /admin/settings, /people/settings — _IA decision: platform=/admin/settings, HR policy=/settings/hr, user prefs=/profile/settings, module ops=/{module}/settings._
-- **UX-346** (P1/imprest): Near-clone of leave without density — _Imprest register uses RegisterShell density controls._
 
 ### Already-fixed-by-prior-pack (7)
 
@@ -280,16 +281,25 @@
 - **UX-289** (P1/platform): No skip-to-main-content link in AppShell — _Skip-to-main-content link already present in AppShell (#main-content)._
 - **UX-318** (P2/pif): PIF create uses FormSection; edit uses section components — _Gold path on main._
 
-### Deferred (166)
+### Deferred (186)
 
+- **UX-035** (P1/platform): RegisterShell only on ~9 registers — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-036** (P1/imprest): Imprest list mirrors Leave but skips RegisterShell — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-041** (P2/platform): Two pagination components/patterns — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-042** (P2/platform): Bulk actions only on a handful of registers — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-044** (P2/platform): Filter control styling inconsistent — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-045** (P1/platform): FormSection rarely used outside Leave/PIF/setup — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-046** (P1/platform): FormField only referenced from FormSection + pif/create — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-047** (P1/platform): Stepper used only on subset of wizards — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-049** (P2/platform): Global amber 'unedited' input highlight surprises on some forms — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-052** (P2/imprest): Imprest create breadcrumbs use <a href> — _Residual route polish — pattern exists; not every consumer migrated this pass._
+- **UX-053** (P1/settings): HR settings pages use <a href="/settings/hr"> crumbs — _Residual route polish — pattern exists; not every consumer migrated this pass._
 - **UX-055** (P1/platform): Four parallel timeline/tracker components — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-061** (P1/platform): Legacy .btn.btn-primary and modern .btn-primary both exist — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-065** (P2/admin): Primary CTA uses bg-[var(--primary)] not btn-primary — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-067** (P1/my-work): Evaluations as plain bordered <li> not table/register — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-070** (P2/platform): Legacy table-wrap still used beside data-table-in-card — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-074** (P1/leave): LIL labeling inconsistent between /leave and /hr/leave — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-075** (P1/platform): Per-page statusConfig dictionaries diverge — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-076** (P1/platform): Purple Tailwind accents for procurement/admin/finance widgets — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-077** (P2/leave): Leave detail LIL blocks hardcode purple palette — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -327,11 +337,15 @@
 - **UX-126** (P2/platform): Error copy inconsistent — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-128** (P2/platform): Ellipsis character inconsistent — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-129** (P1/leave): Short vs long returned labels — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-130** (P1/platform): Three document panels: DocumentsPanel, GenericDocumentsPanel, RiskDocumentsPanel — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-131** (P2/pif): PIF documents section separate from DocumentsPanel — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-132** (P1/travel): Travel attachments UX embedded in detail page — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-134** (P1/platform): Per-module approval queues duplicate central Approvals — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-135** (P2/workflow): Return for correction modal not universal — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-137** (P1/platform): exportToCsv helper vs ad-hoc Blob download — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-138** (P2/assets): Dedicated print route separate from PrintButton pattern — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-142** (P1/fleet): Fleet hub mixes tabs + inline create forms — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-143** (P1/saam): SAAM home is a large custom dashboard — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-144** (P2/correspondence): Letterhead settings heavy inline styles count — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-145** (P1/workplan): Workplan uses unique color-coded event system + purple milestones — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-146** (P1/assignments): Many assignment queue routes with AssignmentFilteredList vs one-off pages — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -349,6 +363,7 @@
 - **UX-205** (P2/admin): User admin uses DocumentsPanel; profile uses same — OK but password section mixed — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-206** (P2/reports): Reports hub export UX separate from module export buttons — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-208** (P2/stock): Stock page title 'Consumables / Stock' slash style unique — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-209** (P1/finance): Finance domain split across three top-level experiences — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-210** (P1/hr): Timesheet entry: full pages + slide-over — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-211** (P1/platform): Sidebar scrollbar fully hidden — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-212** (P1/auth): Login demo System Admin tile uses purple — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -365,18 +380,22 @@
 - **UX-230** (P2/platform): btn-primary focus rings differ from Button component rings — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-231** (P1/procurement): Services category forced to purple palette — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-232** (P2/admin): Admin notification templates vs user notifications — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-233** (P1/finance): Advance create still on legacy finance path — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-237** (P2/platform): Filter cards tighter than content cards — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-238** (P1/governance): Resolutions page is a mega-custom surface — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-239** (P2/platform): Material symbols default FILL 0 everywhere — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-240** (P1/platform): Export selected requires bulk bar; Export all sometimes separate — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-241** (P1/hr): HR personnel documents separate from profile DocumentsPanel — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-243** (P1/mande): M&E module UI maturity uneven — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-244** (P1/srhr): SRHR module visual language separate — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-247** (P2/platform): body bg-surface-muted and :root --surface both define canvas — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-249** (P2/platform): Magic per_page 50 vs 100 across registers — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-252** (P1/platform): Some CTAs are <Link className="btn-secondary">; others <button> — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-253** (P2/platform): SectionIcon redefined inside leave and travel detail pages — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-255** (P1/platform): Bulk bar + filters may crowd mobile filter card — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-256** (P2/leave): Queue naming style differs — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-257** (P1/admin): Ledger surfaces in admin and analytics — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-258** (P1/platform): Multiple calendars: leave, travel, assignments, mande, admin — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-259** (P2/platform): Some lists sync filters to URL (finance advances); leave uses local state only — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-260** (P1/finance): SA status map has 12+ states with badge-primary overloaded — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-261** (P2/platform): Upload affordances differ by panel — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -395,6 +414,7 @@
 - **UX-278** (P2/platform): Terminal states share muted badge — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-281** (P1/analytics): Analytics export/print inconsistent with reports module — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-282** (P1/finance): Balance register verify uses raw anchor for documents — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-284** (P2/settings): Module settings under /travel/settings, /leave/settings, /settings/hr, /admin/settings, /people/settings — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-286** (P2/platform): Create CTA sometimes left in subtitle row, sometimes right actions — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-287** (P1/platform): User date prefs exist but most pages ignore useFormatDate — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-288** (P1/platform): Many filter UIs lack Clear all — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -434,9 +454,10 @@
 - **UX-337** (P1/fleet): Fleet tables plain; no data-table thead styling consistently — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-338** (P2/leave): Some polished pages still carry style={{}} for progress widths — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-339** (P1/notifications): Two notification UIs — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
-- **UX-342** (P1/platform): Need verification that focus returns after confirm — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-342** (P1/platform): Need verification that focus returns after confirm — _Pass 3 fixed ConfirmDialog focus restore and added a native-confirm regression guard._
 - **UX-343** (P1/platform): --sidebar-width 260px with very deep trees — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-344** (P2/auth): Demo credential tiles use *-50 backgrounds without dark variants — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
+- **UX-346** (P1/imprest): Near-clone of leave without density — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-348** (P1/admin): /admin/access/governance tooling checklist UI — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-349** (P1/admin): disabled={!name} only — no error text — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 - **UX-350** (P2/travel): Possible redundant status storytelling — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
@@ -450,4 +471,93 @@
 - **UX-362** (P2/risk): Good shell; category icon colors include purple compliance — _Product/IA decision — dual surfaces or module-specific UX intentionally retained; not a missing primitive._
 
 ### Out-of-scope (0)
+
+### Fixed — Pass 4 continuation (58)
+
+_Generated 2026-08-03 via four parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-364 above. UX-365..UX-390 and UX-395 were fixed in the first Pass 4 remediation set; UX-391..UX-394 and UX-396..UX-449 are fixed in this continuation with regression coverage in `mobile/test/ui_ux_pass4_static_test.dart` and `web/lib/ui-ux-remediation.test.mts`._
+
+#### P1 — High (23)
+
+**Admin web — forms/tables (0)**
+
+
+**Admin web — accessibility/dark-mode (0)**
+
+**Mobile — screen-level (13)**
+
+- **UX-391** (P1/hr): `hrPerformanceDetail` route casts `state.extra as Map<String, dynamic>` (non-nullable); navigating without `extra` (deep link, back-stack replay) crashes the screen — `mobile/lib/core/router/app_router.dart:819-822`.
+- **UX-392** (P1/hr): `hrFileDetail` route casts `state.extra as int` (non-nullable); same deep-link crash risk — `mobile/lib/core/router/app_router.dart:832-835`.
+- **UX-393** (P1/hr): `hrFileDocuments` route casts `state.extra` then unguarded indexes `extra['fileId']`/`extra['employeeName']`; crashes if `extra` or a key is missing — `mobile/lib/core/router/app_router.dart:840-847`.
+- **UX-394** (P1/platform): Eight routes call `int.parse(state.pathParameters['id']!)` with no try/catch; a malformed deep link throws an uncaught `FormatException` instead of showing a not-found state — `mobile/lib/core/router/app_router.dart:358-682` (8 call sites).
+- **UX-396** (P1/platform): Notification banner's dismiss control is an 18px icon with 8px padding and no `Semantics`/tooltip — effective tap target ~18-26px, under the 44dp minimum — `mobile/lib/shared/widgets/notification_banner.dart:198-210`.
+- **UX-397** (P1/hr): Witness "remove" control on the incident report form is a 12px icon with zero padding and no semantic label on a destructive action — `mobile/lib/features/hr/presentation/screens/report_new_incident_screen.dart:340-344`.
+- **UX-398** (P1/imprest): Line-item "remove" control on expense retirement is a bare 16px icon, zero padding, no semantic label, on a destructive delete — `mobile/lib/features/imprest/presentation/screens/expense_retirement_screen.dart:302-306`.
+- **UX-399** (P1/travel): `_buildPayload()` hardcodes `'currency': 'USD'` on every travel request submission with no currency field/selector in the form UI, diverging from the NAD default shown elsewhere — `mobile/lib/features/requests/presentation/screens/travel_request_form_screen.dart:209`.
+- **UX-400** (P1/platform): No `connectivity_plus`/network-info package anywhere in the app (`pubspec.yaml`); connectivity loss is only discovered reactively when an API call throws, with no proactive offline banner — `mobile/pubspec.yaml`, `mobile/lib/features/dashboard/presentation/screens/dashboard_screen.dart:101-109`.
+- **UX-401** (P1/platform): No localization framework wired in at all — `flutter_localizations`/`easy_localization`/`AppLocalizations` absent from the codebase and `pubspec.yaml`; every screen is hardcoded English despite the EN/FR/PT platform requirement.
+- **UX-402** (P1/hr): Raw exception text shown directly to the user via `SnackBar(content: Text('Failed to save: $e'))` — `mobile/lib/features/hr/presentation/screens/employee_performance_profile_screen.dart:74`.
+- **UX-403** (P1/hr): Same raw-exception-to-user pattern — `mobile/lib/features/hr/presentation/screens/hr_file_summary_screen.dart:689`.
+- **UX-404** (P1/stock): Same raw-exception-to-user pattern on offline-queue sync failure, the exact case where a plain-language retry message matters most — `mobile/lib/features/stock/presentation/screens/stock_scan_screen.dart:129`.
+
+**Mobile — cross-screen consistency (10)**
+
+- **UX-405** (P1/offline): "Delete Draft" popup-menu action has no confirmation dialog, while the equivalent destructive action in procurement detail does use one for the same concept — `mobile/lib/features/offline/presentation/screens/offline_drafts_screen.dart:449-469`.
+- **UX-406** (P1/platform): Two parallel design systems coexist at the same nav tier — Reports/Dashboard use raw `Scaffold`+Material3 while sibling hubs (procurement, assets, audit, assignments, offline) use the shared `StitchScreen` shell — `mobile/lib/features/reports/presentation/screens/reports_screen.dart:169-308`, `dashboard_screen.dart`.
+- **UX-407** (P1/finance): Salary advance hub/list screens use a raw `Scaffold`+`AppBar` with hardcoded hex colors instead of the shared `StitchScreen` shell used by comparable hub-list-detail flows — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_hub_screen.dart:65-97`, `salary_advance_list_screen.dart:91-110`.
+- **UX-408** (P1/finance): Salary advance list loading/error states are a bare `CircularProgressIndicator`/`TextButton('Retry')` instead of the shared `StitchLoadingState`/`StitchErrorState` used by structurally identical procurement/assets lists — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_list_screen.dart:111-123`.
+- **UX-409** (P1/finance): Salary advance list uses manual "Load more" pagination while comparable procurement/assets lists just bulk-fetch 50-100 rows — same "browse my requests" pattern, different behavior with no explanation to the user — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_list_screen.dart:146-164`.
+- **UX-410** (P1/assignments): Assignment status renders as plain unstyled text in a `ListTile` subtitle, while every comparable list card (procurement, salary advance, assets) uses a colored status chip — `mobile/lib/features/assignments/presentation/screens/assignments_list_screen.dart:155-172`.
+- **UX-411** (P1/procurement): Requisition form has zero `TextFormField`/`validator` usage — all raw `TextField`s with required-field validation only surfaced via a generic post-submit snackbar, while `vendor_create_screen.dart` uses proper field-level `TextFormField` validators for the same domain — `mobile/lib/features/procurement/presentation/screens/procurement_requisition_form_screen.dart:175`.
+- **UX-412** (P1/assignments): Required-field validation done via manual `if (...isEmpty)` checks plus a generic SnackBar instead of `Form`/`validator` with inline errors used elsewhere for record creation — `mobile/lib/features/assignments/presentation/screens/assignment_create_screen.dart:33-39`.
+- **UX-413** (P1/assignments): Assignee is collected via a raw free-text numeric-ID field requiring the user to know and type another person's internal user ID by hand; no other creation form in scope requires this — `mobile/lib/features/assignments/presentation/screens/assignment_create_screen.dart:20,49-50`.
+- **UX-414** (P1/stock): Stocktake offline sync is a bespoke queue entirely separate from the app-wide offline drafts system, so stocktake drafts are invisible on the "Offline Drafts" screen and use a different sync trigger — `mobile/lib/features/stock/presentation/screens/stock_scan_screen.dart:75-95`.
+
+#### P2 — Medium (35)
+
+**Admin web — forms/tables (18)**
+
+- **UX-415** (P2/travel): Departure/Return date inputs have no `min` attribute; invalid dates sit unflagged until wizard step change — `web/app/(app)/travel/create/page.tsx:838-853`.
+- **UX-416** (P2/assets): `sum_insured`/`claim_amount` money fields have no `min` attribute, permitting negative values — `web/app/(app)/assets/insurance/page.tsx:120,171`.
+- **UX-417** (P2/procurement): `quoted_amount` input has no `min` attribute; negative/zero supplier quotes are sorted/compared with no guard — `web/app/(app)/procurement/rfq/[id]/page.tsx:527`.
+- **UX-418** (P2/finance): "Employee user ID" field is a numeric spin-button input for an entity ID — scroll-wheel can accidentally change it, no typeahead to validate the employee exists — `web/app/(app)/salary-advances/settings/page.tsx:223-224`.
+- **UX-419** (P2/assets): "Sum insured"/"Policy number"/"Insurer"/"Coverage type" are placeholder-only with no `<label>` — `web/app/(app)/assets/insurance/page.tsx:115-120`.
+- **UX-420** (P2/audit): Quick-create title/name inputs across plans/engagements/external/universe are placeholder-only with no `<label>` — `web/app/(app)/audit/plans/page.tsx:38` (+3 sibling files).
+- **UX-421** (P2/procurement): "Supplier name"/"Amount"/"Currency" quote-entry inputs are placeholder-only with no `<label>` — `web/app/(app)/procurement/rfq/[id]/page.tsx:526-528`.
+- **UX-422** (P2/audit): Plans table has no `rows.length === 0` check; empty state shows just a header row with no message — `web/app/(app)/audit/plans/page.tsx:44-69`.
+- **UX-423** (P2/audit): Same missing-empty-state pattern on engagements table — `web/app/(app)/audit/engagements/page.tsx:40-50`.
+- **UX-424** (P2/audit): Same missing-empty-state pattern on external engagements table — `web/app/(app)/audit/external/page.tsx:45-55`.
+- **UX-425** (P2/audit): Same missing-empty-state pattern on audit universe table — `web/app/(app)/audit/universe/page.tsx:51-61`.
+- **UX-426** (P2/governance): Nine icon-only close/delete buttons in resolutions modals/panels have no `aria-label` — `web/app/(app)/governance/resolutions/page.tsx:278-1659` (9 sites).
+- **UX-427** (P2/hr): Icon-only close button with no `aria-label` — `web/app/(app)/hr/timesheets/team/page.tsx:79`.
+- **UX-428** (P2/settings): Icon-only close button with no `aria-label` — `web/app/(app)/settings/hr/approval-matrix/page.tsx:66`.
+- **UX-429** (P2/procurement): Icon-only close button with no `aria-label` — `web/app/(app)/procurement/vendors/[id]/page.tsx:244`.
+- **UX-430** (P2/settings): Icon-only "close" slide-over button repeated with no `aria-label` across 8 HR settings files (allowance-profiles, appraisal-templates, contract-types, job-families, leave-profiles, personnel-file-sections, grade-bands, salary-scales) — `web/app/(app)/settings/hr/*`.
+- **UX-431** (P2/hr): Prev/next-month chevron pagination is icon-only with no `aria-label` — `web/app/(app)/hr/timesheets/monthly/page.tsx`.
+- **UX-432** (P2/platform): Additional icon-only "close" modal buttons with no `aria-label` across assets, assignments, hr/profile-requests, pif, risk/policies, workplan, procurement/vendors (7 more files).
+
+**Admin web — accessibility/dark-mode (7)**
+
+- **UX-433** (P2/risk): Details/Documents/Related Policies tab strip is plain buttons with no `role="tablist"`/`tab`/`aria-selected` — `web/app/(app)/risk/[id]/page.tsx:299-308`.
+- **UX-434** (P2/platform): Command palette "clear query" button is icon-only with no `aria-label` — `web/components/layout/GlobalSearch.tsx:236-238`.
+- **UX-435** (P2/platform): Search input uses `border-none outline-none` with no focus-visible replacement, removing the visible focus indicator — `web/components/layout/GlobalSearch.tsx:232`.
+- **UX-436** (P2/risk): BCP content cards/tables hardcode `bg-white` with no `dark:` variant throughout the page — `web/app/(app)/risk/bcp/page.tsx:149-347`.
+- **UX-437** (P2/hr): Filter bar, table wrapper, export-history card, and reject-confirmation modal all hardcode `bg-white` with no `dark:` classes — `web/app/(app)/hr/timesheets/team/page.tsx:338-893`.
+- **UX-438** (P2/assignments): All four capacity-page summary/table cards hardcode `bg-white` with no dark-mode counterpart — `web/app/(app)/assignments/capacity/page.tsx:48-62`.
+- **UX-439** (P2/organogram): `bg-primary\10` is an invalid Tailwind class (literal backslash typo for `bg-primary/10`), so the intended low-opacity tile background silently fails to apply — `web/app/(app)/organogram/page.tsx:174-175`.
+
+**Mobile — screen-level (5)**
+
+- **UX-440** (P2/mobile-nav): Drawer footer permanently shows leftover design-tool text "Travel Requisition Form design • Stitch" on every screen — `mobile/lib/shared/widgets/app_drawer.dart:267-272`.
+- **UX-441** (P2/imprest): `_currency()` hardcodes the `N$` symbol prefix instead of reading the record's currency code, unlike every other money-display screen — `mobile/lib/features/imprest/presentation/screens/expense_retirement_screen.dart:90`.
+- **UX-442** (P2/dashboard): Main dashboard content has no `RefreshIndicator`; no pull-to-refresh even though many other list screens support it — `mobile/lib/features/dashboard/presentation/screens/dashboard_screen.dart:210-229`.
+- **UX-443** (P2/dashboard): Hamburger-menu icon button has no `tooltip`/`Semantics` label, unlike the shared `StitchIconAction`/`StitchBackButton` widgets which always set one — `mobile/lib/features/dashboard/presentation/screens/dashboard_screen.dart:228-231`.
+- **UX-444** (P2/platform): Bottom-nav items use a bare `GestureDetector` with visible text only, no `Semantics(button: true, label: ...)`, unlike standard nav-item semantics elsewhere — `mobile/lib/shared/widgets/bottom_nav_bar.dart:301-343`.
+
+**Mobile — cross-screen consistency (5)**
+
+- **UX-445** (P2/mobile-nav): "Travel"/"PIF" drawer entries deep-link straight into creation forms while "Leave"/"Finance"/"Procurement"/"HR" entries land on hub/list screens — two different tap behaviors with no visual distinction — `mobile/lib/shared/widgets/app_drawer.dart:60-63`.
+- **UX-446** (P2/finance): Requested-amount field uses a raw `TextField` with ad hoc error-state validation instead of `Form`/`validator` used by comparably simple single-field forms elsewhere — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_request_screen.dart:380-396`.
+- **UX-447** (P2/platform): No consistent rule for primary-action placement — some hub screens use a bottom-right FAB, others (audit, offline drafts) use a top-right app-bar action for the same "primary CTA" role on the same shared shell — `mobile/lib/features/procurement/presentation/screens/procurement_hub_screen.dart:123-130` vs. `mobile/lib/features/offline/presentation/screens/offline_drafts_screen.dart:296-308`.
+- **UX-448** (P2/platform): Local, un-debounced substring search filters are hand-rolled independently on at least two directory screens rather than sharing one searchable-list widget — `mobile/lib/features/hr/presentation/screens/hr_directory_screen.dart:373-389`, `mobile/lib/features/procurement/presentation/screens/vendor_directory_screen.dart:68-82`.
+- **UX-449** (P2/mobile-nav): "Leave" drawer entry navigates to the identical route as the top-level "Requests" entry with no leave-specific filter, unlike "Travel" which deep-links to a travel-specific route — `mobile/lib/shared/widgets/app_drawer.dart:63`.
 

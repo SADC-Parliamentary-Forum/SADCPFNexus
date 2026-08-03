@@ -5,6 +5,8 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type Indicator, type ResultLevel } from "@/lib/api";
 import { exportToXls } from "@/lib/csvExport";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 const RESULT_LEVELS: { value: ResultLevel; label: string; cls: string }[] = [
   { value: "impact",   label: "Impact",   cls: "badge-danger"  },
@@ -23,6 +25,8 @@ const EMPTY: Partial<Indicator> = {
 
 export default function IndicatorsPage() {
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
+  const { success, error } = useToast();
   const [levelFilter, setLevelFilter] = useState<string>("All");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Partial<Indicator> | null>(null);
@@ -128,17 +132,27 @@ export default function IndicatorsPage() {
                     <td className="whitespace-nowrap">
                       <button onClick={() => setModal({ ...ind })} className="text-primary text-xs hover:underline mr-3">Edit</button>
                       <button
-                        onClick={() => {
-                          if (confirm("Create a version snapshot of this indicator?")) {
+                        onClick={async () => {
+                          if (await confirm({ title: "Create snapshot", message: "Create a version snapshot of this indicator?", variant: "primary" })) {
                             mandeApi.createIndicatorVersion(ind.id, { label: `Snapshot ${new Date().toISOString().slice(0, 10)}` })
-                              .then(() => alert("Version snapshot created."));
+                              .then(() => success("Version snapshot created."))
+                              .catch(() => error("Snapshot failed", "Could not create the indicator snapshot."));
                           }
                         }}
                         className="text-neutral-600 text-xs hover:underline mr-3"
                       >
                         Snapshot
                       </button>
-                      <button onClick={() => { if (confirm("Delete this indicator?")) delMut.mutate(ind.id); }} className="text-red-500 text-xs hover:underline">Delete</button>
+                      <button
+                        onClick={async () => {
+                          if (await confirm({ title: "Delete indicator", message: "Delete this indicator?", variant: "danger" })) {
+                            delMut.mutate(ind.id);
+                          }
+                        }}
+                        className="text-red-500 text-xs hover:underline"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 );

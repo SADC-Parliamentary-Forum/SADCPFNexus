@@ -4,6 +4,7 @@ namespace App\Modules\AccessControl\Services;
 
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
+use App\Models\AccessControl\PermissionUsageEvent;
 use App\Models\User;
 use App\Modules\AccessControl\Support\AccessDecision;
 use Carbon\CarbonInterface;
@@ -37,6 +38,8 @@ class PolicyDecisionPoint
         array $context = [],
     ): AccessDecision {
         if (! $this->accountIsActive($actor)) {
+            $this->recordUsage($actor, $permission, 'deny', 'account_inactive', $resource, null, $context);
+
             return AccessDecision::deny('account_inactive', 'Account is not active.');
         }
 
@@ -76,8 +79,12 @@ class PolicyDecisionPoint
 
         if ($grant = $this->activeDirectGrant($actor, $equivalents, $now)) {
             if (! $this->scopes->allows($actor, $permission, $resource, $context, $grant->scope_type)) {
+                $this->recordUsage($actor, $permission, 'deny', 'out_of_scope', $resource, 'direct_grant', $context);
+
                 return AccessDecision::deny('out_of_scope', 'Resource is outside the granted scope.');
             }
+
+            $this->recordUsage($actor, $permission, 'allow', 'direct_grant', $resource, 'direct_grant', $context);
 
             return AccessDecision::allow('direct_grant', 'Allowed by direct grant.', $permission, 'direct_grant', [
                 'grant_id' => $grant->id,
@@ -86,8 +93,12 @@ class PolicyDecisionPoint
 
         if ($this->actorHasAnyPermission($actor, $equivalents)) {
             if (! $this->scopes->allows($actor, $permission, $resource, $context)) {
+                $this->recordUsage($actor, $permission, 'deny', 'out_of_scope', $resource, 'spatie', $context);
+
                 return AccessDecision::deny('out_of_scope', 'Resource is outside the authorised scope.');
             }
+
+            $this->recordUsage($actor, $permission, 'allow', 'role_or_permission', $resource, 'spatie', $context);
 
             return AccessDecision::allow('role_or_permission', 'Allowed by role or permission.', $permission, 'spatie');
         }
@@ -273,6 +284,8 @@ class PolicyDecisionPoint
 
     private function auditDenial(User $actor, string $permission, string $reason, mixed $resource): void
     {
+        $this->recordUsage($actor, $permission, 'deny', $reason, $resource);
+
         try {
             \App\Models\AuditLog::record('access.permission_denied', [
                 'auditable_type' => $resource instanceof Model ? $resource::class : null,
@@ -287,5 +300,56 @@ class PolicyDecisionPoint
         } catch (\Throwable) {
             // Audit must never block the deny path.
         }
+    }
+
+    private function recordUsage(
+        User $actor,
+        string $permission,
+        string $decision,
+        string $reason,
+        mixed $resource,
+        ?string $source = null,
+        array $context = [],
+    ): void {
+        try {
+            PermissionUsageEvent::create([
+                'tenant_id' => $actor->tenant_id,
+                'actor_id' => $actor->id,
+                'permission_key' => $permission,
+                'decision' => $decision,
+                'reason_code' => $reason,
+                'source' => $source,
+                'auditable_type' => $resource instanceof Model ? $resource::class : null,
+                'auditable_id' => $resource instanceof Model ? $resource->getKey() : null,
+                'context' => $this->safeContext($context),
+                'correlation_id' => request()?->attributes->get('request_id'),
+                'occurred_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // Permission logging must never change the access decision.
+        }
+    }
+
+    private function safeContext(array $context): array
+    {
+        $safe = [];
+
+        foreach ($context as $key => $value) {
+            $key = (string) $key;
+            if (preg_match('/password|secret|token|signature|credential/i', $key)) {
+                continue;
+            }
+
+            if (is_scalar($value) || $value === null) {
+                $safe[$key] = $value;
+                continue;
+            }
+
+            if (is_array($value)) {
+                $safe[$key] = json_decode(json_encode($value), true);
+            }
+        }
+
+        return $safe;
     }
 }

@@ -149,8 +149,10 @@ class LegacyEventMapper
             };
         }
 
-        // Keep controlled-looking keys as-is when already namespaced.
-        if (substr_count($legacyEvent, '.') >= 2) {
+        // Preserve only keys that are part of the governed registry catalogue.
+        // Unknown legacy names remain available in action/legacy_meta but do not
+        // create new event types during migration.
+        if (isset(EventTypeRegistryService::catalogueKeyMap()[$legacyEvent])) {
             return $legacyEvent;
         }
 

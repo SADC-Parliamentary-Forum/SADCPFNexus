@@ -187,13 +187,16 @@ Route::prefix('v1')->group(function () {
             $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
             Route::get('checkpoints', [$c, 'checkpoints']);
             Route::post('verify', [$c, 'verify']);
+            Route::get('reports/{id}', [$c, 'integrityReport']);
             Route::post('checkpoints', [$c, 'createCheckpoint']);
         });
         Route::prefix('audit-admin')->group(function () {
             $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
             Route::get('ingestion-health', [$c, 'ingestionHealth']);
+            Route::post('outbox/process', [$c, 'processOutbox']);
             Route::get('dead-letters', [$c, 'deadLetters']);
             Route::post('dead-letters/{id}/replay', [$c, 'replayDeadLetter']);
+            Route::post('reconcile', [$c, 'reconcile']);
             Route::get('holds', [$c, 'holds']);
             Route::post('holds', [$c, 'placeHold']);
             Route::post('holds/{id}/release', [$c, 'releaseHold']);
@@ -212,6 +215,23 @@ Route::prefix('v1')->group(function () {
             Route::post('migrate-legacy', [$c, 'migrateLegacy']);
             Route::post('checkpoints', [$c, 'createCheckpoint']);
         });
+        Route::prefix('security-alerts')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
+            Route::get('/', [$c, 'alerts']);
+            Route::get('{id}', [$c, 'showAlert']);
+            Route::post('{id}/assign', [$c, 'assignAlert']);
+            Route::post('{id}/classify', [$c, 'classifyAlert']);
+            Route::post('{id}/create-incident', [$c, 'createIncidentForAlert']);
+            Route::post('{id}/close', [$c, 'closeAlert']);
+        });
+        Route::prefix('forensic-cases')->group(function () {
+            $c = \App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class;
+            Route::post('/', [$c, 'createForensicCase']);
+            Route::post('{id}/events', [$c, 'linkForensicEvent']);
+            Route::post('{id}/holds', [$c, 'forensicApplyHold']);
+            Route::post('{id}/evidence-package', [$c, 'sealEvidencePackage']);
+        });
+        Route::get('forensic-packages/{id}/verify', [\App\Http\Controllers\Api\V1\PlatformAudit\PlatformAuditController::class, 'verifyEvidencePackage']);
         Route::prefix('notification-admin')->group(function () {
             Route::get('deliveries', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'deliveries']);
             Route::get('failures', [\App\Http\Controllers\Api\V1\Notifications\NotificationAdminController::class, 'failures']);
@@ -272,6 +292,7 @@ Route::prefix('v1')->group(function () {
 
         // Access-control navigation + PDP check (authenticated)
         Route::get('access/navigation', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'navigation']);
+        Route::get('access/effective', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'effective']);
         Route::post('access/authorize', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'authorizeCheck']);
         Route::post('access/requests', [\App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class, 'storeAccessRequest']);
 
@@ -281,6 +302,72 @@ Route::prefix('v1')->group(function () {
         // Admin SPA: many parallel GETs (user edit loads users, departments, roles, …).
         // The previous throttle:20,1 capped the whole prefix and caused frequent 429s.
         Route::prefix('admin')->middleware('throttle:180,1')->group(function () {
+            // Admin Console, Platform Configuration & Operational Control (Phase 1)
+            Route::get('dashboard', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'dashboard']);
+            Route::get('platform-status', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'platformStatus']);
+            Route::get('modules', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'modules']);
+            Route::get('modules/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'showModule']);
+            Route::post('modules/{id}/change-status', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'changeModuleStatus']);
+
+            Route::get('configurations', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'configurations']);
+            Route::post('configurations/{id}/change-requests', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'proposeConfigurationChange']);
+            Route::post('configuration-changes/{id}/validate', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'validateConfigurationChange']);
+            Route::post('configuration-changes/{id}/review', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'reviewConfigurationChange']);
+            Route::post('configuration-changes/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveConfigurationChange']);
+            Route::post('configuration-changes/{id}/schedule', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'scheduleConfigurationChange']);
+            Route::post('configuration-changes/{id}/activate', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'activateConfigurationChange']);
+            Route::post('configuration-changes/{id}/rollback', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'rollbackConfigurationChange']);
+
+            Route::get('reference-data', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'referenceData']);
+            Route::post('reference-data/{set}/items', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'storeReferenceItem']);
+            Route::put('reference-data/items/{id}', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'updateReferenceItem']);
+            Route::post('reference-data/items/{id}/deprecate', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'deprecateReferenceItem']);
+            Route::post('reference-data/{set}/import', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'importReferenceData']);
+
+            Route::get('feature-flags', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'featureFlags']);
+            Route::post('feature-flags', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'storeFeatureFlag']);
+            Route::post('feature-flags/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveFeatureFlag']);
+            Route::post('feature-flags/{id}/activate', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'activateFeatureFlag']);
+            Route::post('feature-flags/{id}/disable', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'disableFeatureFlag']);
+            Route::get('calendars', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'calendars']);
+            Route::get('numbering-schemes', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'numberingSchemes']);
+            Route::get('localisation', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'localisation']);
+            Route::get('integrations', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'integrations']);
+
+            Route::get('jobs', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'jobs']);
+            Route::get('job-runs', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'jobRuns']);
+            Route::post('jobs/{id}/run', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'runJob']);
+            Route::get('queues', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'queues']);
+            Route::get('dead-letters', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'deadLetters']);
+            Route::post('dead-letters/{id}/replay', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'replayDeadLetter']);
+            Route::post('dead-letters/{id}/resolve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'resolveDeadLetter']);
+            Route::get('system-health', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'systemHealth']);
+
+            Route::post('maintenance-windows', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'createMaintenanceWindow']);
+            Route::post('maintenance-windows/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveMaintenanceWindow']);
+            Route::post('maintenance-windows/{id}/start', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'startMaintenanceWindow']);
+            Route::post('maintenance-windows/{id}/complete', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'completeMaintenanceWindow']);
+            Route::post('system-banners', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'createSystemBanner']);
+
+            Route::get('data-quality/issues', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'dataQualityIssues']);
+            Route::post('data-corrections', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'createDataCorrection']);
+            Route::post('data-corrections/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveDataCorrection']);
+            Route::post('data-corrections/{id}/execute', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'executeDataCorrection']);
+
+            Route::get('backups', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'backups']);
+            Route::post('restore-requests', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'requestRestore']);
+            Route::get('restore-requests', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'restoreRequests']);
+            Route::post('restore-requests/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveRestore']);
+            Route::post('restore-requests/{id}/execute', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'executeRestore']);
+            Route::get('imports', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'imports']);
+            Route::get('migrations', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'migrations']);
+            Route::post('support-sessions', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'createSupportSession']);
+            Route::post('support-sessions/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveSupportSession']);
+            Route::post('support-sessions/{id}/close', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'closeSupportSession']);
+            Route::post('break-glass', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'requestBreakGlass']);
+            Route::post('break-glass/{id}/approve', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'approveBreakGlass']);
+            Route::post('break-glass/{id}/close', [\App\Http\Controllers\Api\V1\Admin\AdminConsoleController::class, 'closeBreakGlass']);
+
             // Users
             Route::post('users/bulk-deactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'bulkDeactivate']);
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
@@ -322,6 +409,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('access')->group(function () {
                 $ac = \App\Http\Controllers\Api\V1\AccessControl\AccessGovernanceController::class;
                 Route::get('registry', [$ac, 'registry']);
+                Route::get('coverage', [$ac, 'coverage']);
                 Route::get('roles', [$ac, 'roleCatalogue']);
                 Route::post('roles', [$ac, 'createRoleDraft']);
                 Route::post('roles/{catalogue}/publish', [$ac, 'publishRoleVersion']);
@@ -1231,6 +1319,12 @@ Route::prefix('v1')->group(function () {
             Route::get('reports/hr-timesheets',   [\App\Http\Controllers\Api\V1\ReportsController::class, 'hrTimesheets']);
             Route::get('reports/risk',            [\App\Http\Controllers\Api\V1\ReportsController::class, 'risk']);
             Route::get('reports/governance',      [\App\Http\Controllers\Api\V1\ReportsController::class, 'governance']);
+            Route::get('reports/schedules', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'schedules']);
+            Route::get('reports/export-events', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'exportEvents']);
+            Route::get('reports/export-events/{id}/download', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'downloadExport']);
+            Route::post('reports/schedules', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'createSchedule'])->middleware('can:reports.schedule');
+            Route::post('reports/schedules/{id}/approve', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'approveSchedule'])->middleware('can:reports.manage-schedules');
+            Route::post('reports/schedules/{id}/pause', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'pauseSchedule'])->middleware('can:reports.manage-schedules');
         });
 
         // Asset categories (CRUD; same auth as asset create)

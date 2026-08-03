@@ -261,7 +261,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
+          <button type="button" onClick={onClose} aria-label="Close vendor form" className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
@@ -723,6 +723,7 @@ export default function VendorsPage() {
               <button
                 type="button"
                 onClick={() => { setSearchInput(""); setSearch(""); }}
+                aria-label="Clear vendor search"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>

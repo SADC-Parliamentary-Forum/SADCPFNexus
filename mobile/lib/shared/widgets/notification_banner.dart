@@ -125,14 +125,10 @@ class _BannerCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1A2C24)
-                : Colors.white,
+            color: isDark ? const Color(0xFF1A2C24) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark
-                  ? const Color(0xFF2E4D3D)
-                  : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF2E4D3D) : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
               BoxShadow(
@@ -195,16 +191,23 @@ class _BannerCard extends StatelessWidget {
               ),
 
               // Dismiss
-              GestureDetector(
-                onTap: onDismiss,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 18,
-                    color: isDark
-                        ? const Color(0xFF7BB89A)
-                        : const Color(0xFF94A3B8),
+              Semantics(
+                button: true,
+                label: 'Dismiss notification',
+                child: SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: IconButton(
+                    tooltip: 'Dismiss notification',
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 20,
+                      color: isDark
+                          ? const Color(0xFF7BB89A)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    onPressed: onDismiss,
                   ),
                 ),
               ),

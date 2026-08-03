@@ -204,33 +204,33 @@ export default function BudgetCycleDetailPage() {
         </div>
       </div>
 
-      {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">{message}</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">{error}</div>}
 
       {canFinance && cycle.status !== "active" && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3">
-          <h2 className="text-sm font-semibold">Publish guidelines</h2>
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="text-sm font-semibold dark:text-neutral-100">Publish guidelines</h2>
           <textarea
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             rows={3}
             placeholder="Assumptions"
             value={assumptions}
             onChange={(e) => setAssumptions(e.target.value)}
           />
           <div className="flex flex-wrap gap-3">
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Inflation %
               <input
-                className="ml-2 w-24 rounded-lg border border-[var(--border)] px-2 py-1"
+                className="ml-2 w-24 rounded-lg border border-[var(--border)] px-2 py-1 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={inflation}
                 onChange={(e) => setInflation(e.target.value)}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Department deadline
               <input
                 type="date"
-                className="ml-2 rounded-lg border border-[var(--border)] px-2 py-1"
+                className="ml-2 rounded-lg border border-[var(--border)] px-2 py-1 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
               />
@@ -240,16 +240,16 @@ export default function BudgetCycleDetailPage() {
             </button>
           </div>
           {cycle.guideline?.assumptions && (
-            <p className="text-xs text-[var(--muted)]">Current: {cycle.guideline.assumptions}</p>
+            <p className="text-xs text-[var(--muted)] dark:text-neutral-400">Current: {cycle.guideline.assumptions}</p>
           )}
         </div>
       )}
 
       {canFinance && cycle.status === "finance_review" && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-2">
-          <h2 className="text-sm font-semibold">Return to departments</h2>
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-2 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="text-sm font-semibold dark:text-neutral-100">Return to departments</h2>
           <input
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             placeholder="Reason"
             value={returnReason}
             onChange={(e) => setReturnReason(e.target.value)}
@@ -266,29 +266,29 @@ export default function BudgetCycleDetailPage() {
       )}
 
       {["planning", "department_preparation"].includes(cycle.status) && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3">
-          <h2 className="text-sm font-semibold">New department pack</h2>
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="text-sm font-semibold dark:text-neutral-100">New department pack</h2>
           <input
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             placeholder="Pack title"
             value={packTitle}
             onChange={(e) => setPackTitle(e.target.value)}
           />
           <div className="grid gap-2 md:grid-cols-3">
             <input
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
               placeholder="Line code"
               value={itemCode}
               onChange={(e) => setItemCode(e.target.value)}
             />
             <input
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
               placeholder="Line name"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
             <input
-              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+              className="rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
               placeholder="Requested amount"
               value={itemAmount}
               onChange={(e) => setItemAmount(e.target.value)}
@@ -306,17 +306,17 @@ export default function BudgetCycleDetailPage() {
       )}
 
       {canRecordDecision && institutionalStatuses.includes(cycle.status) && cycle.status !== "plenary_approved" && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3">
-          <h2 className="text-sm font-semibold">Institutional decision (FSC → EXCO → Plenary)</h2>
-          <p className="text-xs text-[var(--muted)]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 space-y-3 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="text-sm font-semibold dark:text-neutral-100">Institutional decision (FSC → EXCO → Plenary)</h2>
+          <p className="text-xs text-[var(--muted)] dark:text-neutral-400">
             Current stage: <span className="capitalize">{statusLabel(cycle.status)}</span>. Record the matching body outcome.
             Non-approved returns the cycle to Finance review.
           </p>
           <div className="grid gap-2 md:grid-cols-2">
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Body
               <select
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionBody}
                 onChange={(e) => setDecisionBody(e.target.value as "fsc" | "exco" | "plenary")}
               >
@@ -325,10 +325,10 @@ export default function BudgetCycleDetailPage() {
                 <option value="plenary">Plenary Assembly</option>
               </select>
             </label>
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Decision
               <select
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionOutcome}
                 onChange={(e) => setDecisionOutcome(e.target.value)}
               >
@@ -338,19 +338,19 @@ export default function BudgetCycleDetailPage() {
                 <option value="rejected">Rejected</option>
               </select>
             </label>
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Meeting date
               <input
                 type="date"
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={meetingOn}
                 onChange={(e) => setMeetingOn(e.target.value)}
               />
             </label>
-            <label className="text-sm">
+            <label className="text-sm dark:text-neutral-200">
               Minute / reference
               <input
-                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2"
+                className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
                 value={minuteRef}
                 onChange={(e) => setMinuteRef(e.target.value)}
                 placeholder="e.g. FSC/2026/14"
@@ -358,7 +358,7 @@ export default function BudgetCycleDetailPage() {
             </label>
           </div>
           <textarea
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
             rows={2}
             placeholder="Comments / summary"
             value={decisionComments}
@@ -367,7 +367,7 @@ export default function BudgetCycleDetailPage() {
           <input
             type="file"
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-            className="block w-full text-sm"
+            className="block w-full text-sm dark:text-neutral-300"
             onChange={(e) => setDecisionFile(e.target.files?.[0] ?? null)}
           />
           <button
@@ -382,12 +382,12 @@ export default function BudgetCycleDetailPage() {
       )}
 
       {(cycle.decisions?.length ?? 0) > 0 && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold">Institutional decisions</h2>
-          <ul className="space-y-1 text-sm text-[var(--muted)]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">Institutional decisions</h2>
+          <ul className="space-y-1 text-sm text-[var(--muted)] dark:text-neutral-400">
             {cycle.decisions?.map((d) => (
               <li key={d.id}>
-                <span className="uppercase text-[var(--foreground)]">{d.body}</span> — {statusLabel(d.decision)}
+                <span className="uppercase text-[var(--foreground)] dark:text-neutral-100">{d.body}</span> — {statusLabel(d.decision)}
                 {d.minute_reference ? ` (${d.minute_reference})` : ""}
                 {d.comments ? `: ${d.comments}` : ""}
               </li>
@@ -396,13 +396,13 @@ export default function BudgetCycleDetailPage() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white">
-        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold">Submissions</div>
+      <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white dark:border-neutral-700 dark:bg-neutral-900">
+        <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold dark:border-neutral-700 dark:text-neutral-100">Submissions</div>
         {submissions.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-[var(--muted)]">No packs yet.</p>
+          <p className="px-4 py-6 text-sm text-[var(--muted)] dark:text-neutral-400">No packs yet.</p>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-[var(--border)] text-[var(--muted)]">
+          <table className="w-full text-left text-sm dark:text-neutral-200">
+            <thead className="border-b border-[var(--border)] text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-950/60 dark:text-neutral-400">
               <tr>
                 <th className="px-4 py-2 font-medium">Title</th>
                 <th className="px-4 py-2 font-medium">Status</th>
@@ -412,7 +412,7 @@ export default function BudgetCycleDetailPage() {
             </thead>
             <tbody>
               {submissions.map((s) => (
-                <tr key={s.id} className="border-b border-[var(--border)] last:border-0">
+                <tr key={s.id} className="border-b border-[var(--border)] last:border-0 dark:border-neutral-800">
                   <td className="px-4 py-2">{s.title}</td>
                   <td className="px-4 py-2 capitalize">{statusLabel(s.status)}</td>
                   <td className="px-4 py-2">{s.items?.length ?? 0}</td>
@@ -429,12 +429,12 @@ export default function BudgetCycleDetailPage() {
       </div>
 
       {(cycle.approvals?.length ?? 0) > 0 && (
-        <div className="rounded-xl border border-[var(--border)] bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold">Stage history</h2>
-          <ul className="space-y-1 text-sm text-[var(--muted)]">
+        <div className="rounded-xl border border-[var(--border)] bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+          <h2 className="mb-2 text-sm font-semibold dark:text-neutral-100">Stage history</h2>
+          <ul className="space-y-1 text-sm text-[var(--muted)] dark:text-neutral-400">
             {cycle.approvals?.map((a) => (
               <li key={a.id}>
-                <span className="capitalize text-[var(--foreground)]">{statusLabel(a.stage)}</span> — {a.decision}
+                <span className="capitalize text-[var(--foreground)] dark:text-neutral-100">{statusLabel(a.stage)}</span> — {a.decision}
                 {a.comments ? `: ${a.comments}` : ""}
               </li>
             ))}

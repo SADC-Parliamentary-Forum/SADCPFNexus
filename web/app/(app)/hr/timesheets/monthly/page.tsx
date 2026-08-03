@@ -196,10 +196,10 @@ export default function MonthlyTimesheetPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link href="/hr/timesheets" className="btn-secondary text-sm">Weekly View</Link>
-          <button type="button" onClick={prevMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+          <button type="button" onClick={prevMonth} aria-label="Previous month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           </button>
-          <button type="button" onClick={nextMonth} className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
+          <button type="button" onClick={nextMonth} aria-label="Next month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>

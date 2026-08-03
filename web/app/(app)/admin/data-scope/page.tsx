@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { adminApi, type Department } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type SecurityGateStatus = "pass" | "fail";
 
@@ -82,21 +83,57 @@ export default function DataScopePage() {
 
   return (
     <div className="space-y-6">
+      <ModulePageHeader
+        title="Data Scope & RLS Status"
+        subtitle="Active tenant scope monitoring, Row-Level Security integrity, and SEV-0 enforcement."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Data Scope & RLS Status" },
+            ]}
+          />
+        }
+        meta={
+          <span className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-green-700">
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            System Live
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/admin/ledger" className="btn-secondary flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+              Audit Log
+            </Link>
+            <button
+              type="button"
+              onClick={handleRunDiagnostics}
+              disabled={runningDiag}
+              className="btn-primary flex items-center gap-2 disabled:opacity-60"
+            >
+              <span className={cn("material-symbols-outlined text-[18px]", runningDiag ? "animate-spin" : "")}>refresh</span>
+              {runningDiag ? "Running..." : "Run Diagnostics"}
+            </button>
+          </div>
+        }
+      />
+
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm text-neutral-500">
+      <div className="hidden">
         <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         <span className="text-neutral-900 dark:text-neutral-100 font-medium">Data Scope & RLS Status</span>
       </div>
 
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="hidden">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs text-green-600 font-medium uppercase tracking-wider">System Live</span>
           </div>
-          <h1 className="page-title">Data Scope & RLS Status</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">Data Scope & RLS Status</h1>
           <p className="page-subtitle">
             Active tenant scope monitoring · Row-Level Security integrity · Enforcement level: SEV-0
           </p>

@@ -26,11 +26,12 @@ class AuditEventIngestionService
     public function __construct(
         private readonly EventTypeRegistryService $registry,
         private readonly SensitiveFieldMasker $masker,
+        private readonly AuditEventContractValidator $contract,
     ) {}
 
     /**
-     * Write an outbox row in the caller's DB transaction, then commit into the immutable store.
-     * When $sync is true (default for critical paths), processes immediately inside the same transaction.
+     * Write an outbox row, then commit into the immutable store.
+     * Use enqueue() when the producer needs an outbox-only asynchronous write.
      *
      * @param  array<string, mixed>  $input
      */
@@ -40,37 +41,42 @@ class AuditEventIngestionService
             throw new \RuntimeException('Platform audit store is not migrated yet.');
         }
 
-        $this->registry->ensureSeeded();
-
         $uuid = (string) ($input['uuid'] ?? Str::uuid());
-        $idempotencyKey = $input['idempotency_key'] ?? null;
-        $tenantId = (int) ($input['tenant_id'] ?? auth()->user()?->tenant_id);
-        $eventKey = (string) ($input['event_key'] ?? $input['event_type'] ?? 'other.controlled');
-
-        if ($idempotencyKey) {
-            $existing = AuditEvent::query()
-                ->where('tenant_id', $tenantId)
-                ->where('idempotency_key', $idempotencyKey)
-                ->first();
-            if ($existing) {
-                return $existing;
-            }
-        }
-
-        $byUuid = AuditEvent::query()->where('uuid', $uuid)->first();
-        if ($byUuid) {
-            return $byUuid;
-        }
-
-        $payload = [
-            'uuid' => $uuid,
-            'idempotency_key' => $idempotencyKey,
-            'tenant_id' => $tenantId,
-            'event_key' => $eventKey,
-            'input' => $input,
-        ];
-
+        $tenantId = (int) ($input['tenant_id'] ?? auth()->user()?->tenant_id ?? 0);
+        $eventKey = (string) ($input['event_key'] ?? $input['event_type'] ?? null);
+        $payload = null;
         try {
+            $this->registry->ensureSeeded();
+            $input['uuid'] = $uuid;
+            $input = $this->contract->normalize($input, $this->registry);
+
+            $idempotencyKey = $input['idempotency_key'] ?? null;
+            $tenantId = (int) $input['tenant_id'];
+            $eventKey = (string) $input['event_key'];
+
+            if ($idempotencyKey) {
+                $existing = AuditEvent::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('idempotency_key', $idempotencyKey)
+                    ->first();
+                if ($existing) {
+                    return $existing;
+                }
+            }
+
+            $byUuid = AuditEvent::query()->where('uuid', $uuid)->first();
+            if ($byUuid) {
+                return $byUuid;
+            }
+
+            $payload = [
+                'uuid' => $uuid,
+                'idempotency_key' => $idempotencyKey,
+                'tenant_id' => $tenantId,
+                'event_key' => $eventKey,
+                'input' => $input,
+            ];
+
             return DB::transaction(function () use ($payload, $sync, $tenantId, $uuid, $eventKey, $idempotencyKey) {
                 $outbox = AuditEventOutbox::query()->create([
                     'tenant_id' => $tenantId,
@@ -90,9 +96,108 @@ class AuditEventIngestionService
                 return $this->commitFromOutbox($outbox);
             });
         } catch (Throwable $e) {
-            $this->deadLetter($tenantId, $uuid, $eventKey, $payload, $e->getMessage());
+            $this->deadLetter($tenantId, $uuid, $eventKey, $payload ?? ['input' => $input], $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Store an event in the transactional outbox without appending it immediately.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function enqueue(array $input): AuditEventOutbox
+    {
+        if (! Schema::hasTable('audit_events')) {
+            throw new \RuntimeException('Platform audit store is not migrated yet.');
+        }
+
+        $uuid = (string) ($input['uuid'] ?? Str::uuid());
+        $tenantId = (int) ($input['tenant_id'] ?? auth()->user()?->tenant_id ?? 0);
+        $eventKey = (string) ($input['event_key'] ?? $input['event_type'] ?? null);
+        $payload = null;
+
+        try {
+            $this->registry->ensureSeeded();
+            $input['uuid'] = $uuid;
+            $input['outcome'] = $input['outcome'] ?? 'queued';
+            $input = $this->contract->normalize($input, $this->registry);
+
+            $tenantId = (int) $input['tenant_id'];
+            $eventKey = (string) $input['event_key'];
+            $idempotencyKey = $input['idempotency_key'] ?? null;
+
+            $payload = [
+                'uuid' => $uuid,
+                'idempotency_key' => $idempotencyKey,
+                'tenant_id' => $tenantId,
+                'event_key' => $eventKey,
+                'input' => $input,
+            ];
+
+            $query = AuditEventOutbox::query()
+                ->where('tenant_id', $tenantId)
+                ->where(function ($q) use ($uuid, $idempotencyKey) {
+                    $q->where('event_uuid', $uuid);
+                    if ($idempotencyKey) {
+                        $q->orWhere('idempotency_key', $idempotencyKey);
+                    }
+                });
+
+            if ($existing = $query->first()) {
+                return $existing;
+            }
+
+            return AuditEventOutbox::query()->create([
+                'tenant_id' => $tenantId,
+                'event_uuid' => $uuid,
+                'idempotency_key' => $idempotencyKey,
+                'event_key' => $eventKey,
+                'payload' => $payload,
+                'status' => 'pending',
+                'attempts' => 0,
+                'available_at' => now(),
+            ]);
+        } catch (Throwable $e) {
+            $this->deadLetter($tenantId, $uuid, $eventKey, $payload ?? ['input' => $input], $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * @return array{processed:int, committed:int, failed:int, dead_lettered:int}
+     */
+    public function processPending(int $tenantId, int $limit = 100): array
+    {
+        $stats = ['processed' => 0, 'committed' => 0, 'failed' => 0, 'dead_lettered' => 0];
+
+        $rows = AuditEventOutbox::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('status', ['pending', 'failed'])
+            ->where('attempts', '<', 3)
+            ->where(function ($q) {
+                $q->whereNull('available_at')->orWhere('available_at', '<=', now());
+            })
+            ->orderBy('id')
+            ->limit(max(1, min($limit, 500)))
+            ->get();
+
+        foreach ($rows as $outbox) {
+            $stats['processed']++;
+            try {
+                $this->commitFromOutbox($outbox);
+                $stats['committed']++;
+            } catch (Throwable) {
+                $fresh = $outbox->fresh();
+                if ($fresh?->status === 'dead_lettered') {
+                    $stats['dead_lettered']++;
+                } else {
+                    $stats['failed']++;
+                }
+            }
+        }
+
+        return $stats;
     }
 
     public function commitFromOutbox(AuditEventOutbox $outbox): AuditEvent
@@ -108,13 +213,15 @@ class AuditEventIngestionService
             $outbox->last_error = null;
             $outbox->save();
 
-            try {
-                app(SecurityMonitoringService::class)->evaluateEvent($event);
-            } catch (Throwable $monitorError) {
-                Log::warning('platform_audit.monitoring_eval_failed', [
-                    'event_id' => $event->id,
-                    'error' => $monitorError->getMessage(),
-                ]);
+            if (! (bool) ($outbox->payload['input']['suppress_monitoring'] ?? false)) {
+                try {
+                    app(SecurityMonitoringService::class)->evaluateEvent($event);
+                } catch (Throwable $monitorError) {
+                    Log::warning('platform_audit.monitoring_eval_failed', [
+                        'event_id' => $event->id,
+                        'error' => $monitorError->getMessage(),
+                    ]);
+                }
             }
 
             return $event;
@@ -145,10 +252,13 @@ class AuditEventIngestionService
      */
     public function appendImmutable(array $input, ?string $uuid = null, ?string $idempotencyKey = null): AuditEvent
     {
+        $this->registry->ensureSeeded();
+        $input = $this->contract->normalize($input, $this->registry);
+
         $uuid = $uuid ?? (string) ($input['uuid'] ?? Str::uuid());
         $idempotencyKey = $idempotencyKey ?? ($input['idempotency_key'] ?? null);
-        $tenantId = (int) ($input['tenant_id'] ?? auth()->user()?->tenant_id);
-        $eventKey = (string) ($input['event_key'] ?? $input['event_type'] ?? 'other.controlled');
+        $tenantId = (int) $input['tenant_id'];
+        $eventKey = (string) $input['event_key'];
         $type = $this->registry->resolveOrRegister($eventKey, $input['category'] ?? null);
 
         if ($idempotencyKey) {
@@ -167,7 +277,7 @@ class AuditEventIngestionService
         }
 
         $actorType = (string) ($input['actor_type'] ?? 'human');
-        $actorId = $input['actor_id'] ?? auth()->id();
+        $actorId = array_key_exists('actor_id', $input) ? $input['actor_id'] : auth()->id();
         $actorSnapshot = $input['actor_snapshot'] ?? $this->buildActorSnapshot($actorId, $actorType);
         $subjectType = $input['subject_type'] ?? $input['auditable_type'] ?? null;
         $subjectId = $input['subject_id'] ?? $input['auditable_id'] ?? null;
@@ -213,8 +323,8 @@ class AuditEventIngestionService
             'event_key' => $eventKey,
             'schema_version' => (int) ($input['schema_version'] ?? 1),
             'producer_version' => $input['producer_version'] ?? 'platform-audit-trail@1',
-            'category' => $input['category'] ?? $type->category,
-            'severity' => $input['severity'] ?? $type->severity,
+            'category' => $type->category,
+            'severity' => $type->severity,
             'outcome' => $input['outcome'] ?? 'success',
             'occurred_at' => $occurredAt,
             'received_at' => now(),
@@ -427,12 +537,21 @@ class AuditEventIngestionService
             return;
         }
 
+        $safePayload = null;
+        if ($payload !== null) {
+            $scrubbed = $this->masker->scrub($payload);
+            $safePayload = $scrubbed['values'];
+            if ($scrubbed['redactions'] !== []) {
+                $safePayload['_redactions'] = $scrubbed['redactions'];
+            }
+        }
+
         AuditEventDeadLetter::query()->create([
             'tenant_id' => $tenantId,
             'event_uuid' => $uuid,
             'outbox_id' => $outboxId,
             'event_key' => $eventKey,
-            'payload' => $payload,
+            'payload' => $safePayload,
             'error_message' => $error,
             'status' => 'open',
         ]);

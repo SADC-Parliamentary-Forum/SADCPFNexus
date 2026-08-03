@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../shared/widgets/searchable_list_filter.dart';
+import '../../../../../shared/widgets/stitch_card.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 
 class HrDirectoryScreen extends ConsumerStatefulWidget {
   const HrDirectoryScreen({super.key});
@@ -28,18 +31,10 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
   int _probation = 0;
   int _warnings = 0;
 
-  final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -51,27 +46,21 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
       final repo = ref.read(authRepositoryProvider);
       final roles = await repo.getStoredRoles();
       _isHr = roles.any((r) =>
-          r.toLowerCase().contains('hr') ||
-          r.toLowerCase().contains('admin'));
+          r.toLowerCase().contains('hr') || r.toLowerCase().contains('admin'));
 
-      final res = await ref.read(apiClientProvider).dio.get<dynamic>('/hr/files');
+      final res =
+          await ref.read(apiClientProvider).dio.get<dynamic>('/hr/files');
       final data = res.data;
-      final List<dynamic> raw =
-          (data is Map && data['data'] != null)
-              ? data['data'] as List<dynamic>
-              : (data is List ? data : []);
+      final List<dynamic> raw = (data is Map && data['data'] != null)
+          ? data['data'] as List<dynamic>
+          : (data is List ? data : []);
       _files = raw.cast<Map<String, dynamic>>();
 
       _total = _files.length;
-      _active = _files
-          .where((f) => f['employment_status'] == 'active')
-          .length;
-      _probation = _files
-          .where((f) => f['probation_status'] == 'on_probation')
-          .length;
-      _warnings = _files
-          .where((f) => f['active_warning_flag'] == true)
-          .length;
+      _active = _files.where((f) => f['employment_status'] == 'active').length;
+      _probation =
+          _files.where((f) => f['probation_status'] == 'on_probation').length;
+      _warnings = _files.where((f) => f['active_warning_flag'] == true).length;
 
       _applyFilters();
       setState(() => _loading = false);
@@ -87,12 +76,18 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
     var result = List<Map<String, dynamic>>.from(_files);
 
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
       result = result.where((f) {
-        final name = (f['employee_name'] ?? f['name'] ?? '').toString().toLowerCase();
-        final pos = (f['job_title'] ?? f['position'] ?? '').toString().toLowerCase();
-        final dept = (f['department'] ?? '').toString().toLowerCase();
-        return name.contains(q) || pos.contains(q) || dept.contains(q);
+        return matchesSearchText(
+          f,
+          _searchQuery,
+          const [
+            'employee_name',
+            'name',
+            'job_title',
+            'position',
+            'department'
+          ],
+        );
       }).toList();
     }
 
@@ -112,8 +107,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
             try {
               final date = DateTime.parse(expiry);
               final now = DateTime.now();
-              return date.difference(now).inDays <= 90 &&
-                  date.isAfter(now);
+              return date.difference(now).inDays <= 90 && date.isAfter(now);
             } catch (_) {
               return false;
             }
@@ -128,28 +122,24 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('Employee Files'),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
+    return StitchScreen(
+      title: 'Employee Files',
+      fallbackRoute: '/dashboard',
       floatingActionButton: _isHr
           ? FloatingActionButton(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textPrimary,
-              onPressed: () => _showCreateFileSheet(context),
+              onPressed: _showCreateFileSheet,
               child: const Icon(Icons.person_add_outlined),
             )
           : null,
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading employee files')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(
+                  message: 'Failed to load employee files.',
+                  onRetry: _loadData,
+                )
               : RefreshIndicator(
                   onRefresh: _loadData,
                   color: AppColors.primary,
@@ -171,8 +161,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
                         )
                       else
                         SliverPadding(
-                          padding:
-                              const EdgeInsets.fromLTRB(16, 4, 16, 80),
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (_, i) => Padding(
@@ -195,7 +184,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
     );
   }
 
-  Future<void> _showCreateFileSheet(BuildContext context) async {
+  Future<void> _showCreateFileSheet() async {
     final formKey = GlobalKey<FormState>();
     final employeeIdCtrl = TextEditingController();
     final staffNumberCtrl = TextEditingController();
@@ -302,24 +291,22 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
                                     .dio
                                     .post('/hr/files', data: body);
 
-                                if (mounted) {
-                                  Navigator.pop(ctx);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('HR file created successfully.')),
-                                  );
-                                  _loadData();
-                                }
+                                if (!mounted || !ctx.mounted) return;
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'HR file created successfully.')),
+                                );
+                                _loadData();
                               } catch (e) {
+                                if (!mounted || !ctx.mounted) return;
                                 setSheetState(() => submitting = false);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            'Failed to create file: ${e.toString()}')),
-                                  );
-                                }
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Failed to create file: ${e.toString()}')),
+                                );
                               }
                             },
                       style: ElevatedButton.styleFrom(
@@ -333,8 +320,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.textPrimary))
+                                  strokeWidth: 2, color: AppColors.textPrimary))
                           : const Text('Create File',
                               style: TextStyle(
                                   fontWeight: FontWeight.w700, fontSize: 15)),
@@ -351,8 +337,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
 
   InputDecoration _inputDecoration(String label) => InputDecoration(
         labelText: label,
-        labelStyle:
-            const TextStyle(color: AppColors.textMuted, fontSize: 13),
+        labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
         filled: true,
         fillColor: AppColors.bgDark,
         border: OutlineInputBorder(
@@ -365,8 +350,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -377,96 +361,16 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
         isDense: true,
       );
 
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load employee files',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? '',
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
-                minimumSize: const Size(140, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildSearch() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (v) {
-          _searchQuery = v;
+      child: DebouncedSearchField(
+        value: _searchQuery,
+        hintText: 'Search by name, position, department...',
+        onChanged: (value) {
+          _searchQuery = value;
           _applyFilters();
         },
-        style: const TextStyle(
-            fontSize: 14, color: AppColors.textPrimary),
-        decoration: InputDecoration(
-          hintText: 'Search by name, position, department...',
-          hintStyle: const TextStyle(
-              fontSize: 13, color: AppColors.textMuted),
-          prefixIcon: const Icon(Icons.search,
-              size: 20, color: AppColors.textMuted),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear,
-                      size: 18, color: AppColors.textMuted),
-                  onPressed: () {
-                    _searchController.clear();
-                    _searchQuery = '';
-                    _applyFilters();
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: AppColors.bgSurface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          isDense: true,
-        ),
       ),
     );
   }
@@ -494,28 +398,23 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
               _applyFilters();
             },
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withValues(alpha: 0.15)
                     : AppColors.bgSurface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.border,
+                  color: isSelected ? AppColors.primary : AppColors.border,
                 ),
               ),
               child: Text(
                 filters[i].$2,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -532,10 +431,7 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
         children: [
           _MiniStat(label: 'Total', value: _total, color: AppColors.info),
           const SizedBox(width: 8),
-          _MiniStat(
-              label: 'Active',
-              value: _active,
-              color: AppColors.success),
+          _MiniStat(label: 'Active', value: _active, color: AppColors.success),
           const SizedBox(width: 8),
           _MiniStat(
               label: 'Probation',
@@ -543,40 +439,17 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
               color: const Color(0xFFF59E0B)),
           const SizedBox(width: 8),
           _MiniStat(
-              label: 'Warnings',
-              value: _warnings,
-              color: AppColors.danger),
+              label: 'Warnings', value: _warnings, color: AppColors.danger),
         ],
       ),
     );
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.folder_shared_outlined,
-            size: 56,
-            color: AppColors.textMuted.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'No employee files found',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Try adjusting your search or filter.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-        ],
-      ),
+    return const StitchEmptyState(
+      icon: Icons.folder_shared_outlined,
+      title: 'No employee files found',
+      message: 'Try adjusting your search or filter.',
     );
   }
 }
@@ -710,8 +583,7 @@ class _FileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name =
         (file['employee_name'] ?? file['name'] ?? 'Unknown').toString();
-    final position =
-        (file['job_title'] ?? file['position'] ?? '').toString();
+    final position = (file['job_title'] ?? file['position'] ?? '').toString();
     final department = (file['department'] ?? '').toString();
     final fileStatus = file['file_status'] as String?;
     final empStatus = file['employment_status'] as String?;
@@ -741,146 +613,132 @@ class _FileCard extends StatelessWidget {
       } catch (_) {}
     }
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              // Avatar
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: avatarColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: avatarColor,
-                    ),
-                  ),
+    return StitchCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          // Avatar
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: avatarColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: avatarColor,
                 ),
               ),
-              const SizedBox(width: 12),
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (warningFlag)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.danger.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.flag,
-                                    size: 10, color: AppColors.danger),
-                                SizedBox(width: 2),
-                                Text(
-                                  'Warning',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: AppColors.danger,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    if (position.isNotEmpty)
-                      Text(
-                        position,
+                    Expanded(
+                      child: Text(
+                        name,
                         style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    if (department.isNotEmpty)
-                      Text(
-                        department,
-                        style: const TextStyle(
-                            fontSize: 10, color: AppColors.textMuted),
-                      ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _SmallBadge(
-                          label: _fileStatusLabel(fileStatus),
-                          color: _fileStatusColor(fileStatus),
-                        ),
-                        const SizedBox(width: 6),
-                        _SmallBadge(
-                          label: _employmentStatusLabel(empStatus),
-                          color: _employmentStatusColor(empStatus),
-                        ),
-                        if (probation) ...[
-                          const SizedBox(width: 6),
-                          const _SmallBadge(
-                            label: 'Probation',
-                            color: Color(0xFFF59E0B),
-                          ),
-                        ],
-                      ],
                     ),
-                    if (contractExpiringSoon && expiryLabel != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.schedule,
-                              size: 11,
-                              color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 3),
-                          Text(
-                            expiryLabel,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Color(0xFFF59E0B),
-                              fontWeight: FontWeight.w600,
+                    if (warningFlag)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.flag, size: 10, color: AppColors.danger),
+                            SizedBox(width: 2),
+                            Text(
+                              'Warning',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.danger,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                if (position.isNotEmpty)
+                  Text(
+                    position,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                if (department.isNotEmpty)
+                  Text(
+                    department,
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textMuted),
+                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    _SmallBadge(
+                      label: _fileStatusLabel(fileStatus),
+                      color: _fileStatusColor(fileStatus),
+                    ),
+                    const SizedBox(width: 6),
+                    _SmallBadge(
+                      label: _employmentStatusLabel(empStatus),
+                      color: _employmentStatusColor(empStatus),
+                    ),
+                    if (probation) ...[
+                      const SizedBox(width: 6),
+                      const _SmallBadge(
+                        label: 'Probation',
+                        color: Color(0xFFF59E0B),
                       ),
                     ],
                   ],
                 ),
-              ),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.textMuted, size: 20),
-            ],
+                if (contractExpiringSoon && expiryLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule,
+                          size: 11, color: Color(0xFFF59E0B)),
+                      const SizedBox(width: 3),
+                      Text(
+                        expiryLabel,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Color(0xFFF59E0B),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
+          const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+        ],
       ),
     );
   }

@@ -240,7 +240,7 @@ function EditModal({ vendor, onClose }: EditModalProps) {
               <p className="text-xs text-neutral-500">{vendor.name}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100">
+          <button type="button" onClick={onClose} aria-label="Close vendor edit dialog" className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>

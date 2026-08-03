@@ -7,6 +7,7 @@ import { PAYSLIP_ACCEPTED_TYPES, PAYSLIP_EMPLOYEE_PATTERN, PAYSLIP_MONTH_NAMES }
 import { adminApi } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import type { AdminPayslip, User } from "@/lib/api";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
 interface PayslipRow {
@@ -218,14 +219,7 @@ export default function PayslipsPage() {
     <div className="space-y-6 max-w-4xl">
 {/* Modal: payslip detail + Download + Re-upload */}
       {selectedPayslip && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={() => setSelectedPayslip(null)}>
-          <div className="card max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-neutral-900">Payslip</h3>
-              <button type="button" onClick={() => setSelectedPayslip(null)} className="text-neutral-400 hover:text-neutral-600">
-                <span className="material-symbols-outlined text-[24px]">close</span>
-              </button>
-            </div>
+        <Modal open title="Payslip" onClose={() => setSelectedPayslip(null)} size="md">
             <dl className="space-y-2 text-sm">
               <div><dt className="text-neutral-500">Employee</dt><dd className="font-medium text-neutral-900">{selectedPayslip.user?.name ?? selectedPayslip.user?.email ?? "—"}</dd></div>
               <div><dt className="text-neutral-500">Employee code</dt><dd className="font-mono text-neutral-700">{selectedPayslip.user?.employee_number ?? "—"}</dd></div>
@@ -246,8 +240,7 @@ export default function PayslipsPage() {
                 </label>
               )}
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       <div className="flex items-center gap-2 text-sm text-neutral-500">

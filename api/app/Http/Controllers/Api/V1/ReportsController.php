@@ -13,10 +13,15 @@ use App\Models\Risk;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Timesheet;
 use App\Models\TravelRequest;
+use App\Modules\Reports\Services\ReportManagementService;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsController extends Controller
@@ -26,9 +31,46 @@ class ReportsController extends Controller
      *
      * @param array<array<string,mixed>> $rows
      */
-    private function csvResponse(array $rows, string $filename): StreamedResponse
+    private function csvResponse(array $rows, string $filename): Response|StreamedResponse
     {
         $headers = !empty($rows) ? array_keys($rows[0]) : [];
+
+        $format = strtolower((string) request()->input('format', 'csv'));
+        if ($format === 'pdf') {
+            $payload = Pdf::loadView('reports.scheduled', [
+                'title' => pathinfo($filename, PATHINFO_FILENAME),
+                'reference' => request()->attributes->get('report_export_event_id', 'interactive'),
+                'rows' => array_merge([$headers], array_map(static fn (array $row) => array_values($row), $rows)),
+                'generatedAt' => now()->utc()->toIso8601String(),
+            ])->output();
+            $this->completeInteractiveExport($payload, count($rows));
+
+            return response($payload, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . pathinfo($filename, PATHINFO_FILENAME) . '.pdf"',
+            ]);
+        }
+
+        if ($format === 'xlsx') {
+            $path = tempnam(sys_get_temp_dir(), 'nexus-report-');
+            abort_unless($path !== false, 500, 'Unable to create a temporary report file.');
+            $writer = new Writer();
+            $writer->openToFile($path);
+            if ($headers) {
+                $writer->addRow(Row::fromValues($headers));
+            }
+            foreach ($rows as $row) {
+                $writer->addRow(Row::fromValues(array_map(static fn ($value) => is_scalar($value) || $value === null ? (string) ($value ?? '') : json_encode($value), array_values($row))));
+            }
+            $writer->close();
+            $this->completeInteractiveExport((string) file_get_contents($path), count($rows));
+
+            return response()->download($path, pathinfo($filename, PATHINFO_FILENAME) . '.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        }
+
+        $this->completeInteractiveExport(json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), count($rows));
 
         return response()->streamDownload(function () use ($rows, $headers) {
             $out = fopen('php://output', 'w');
@@ -43,16 +85,47 @@ class ReportsController extends Controller
         ]);
     }
 
+    private function completeInteractiveExport(string $payload, int $rows): void
+    {
+        $exportId = request()->attributes->get('report_export_event_id');
+        if (is_numeric($exportId)) {
+            app(ReportManagementService::class)->completeExport(
+                (int) request()->user()->tenant_id,
+                (int) $exportId,
+                $rows,
+                hash('sha256', $payload),
+            );
+        }
+    }
+
     /**
-     * Gate CSV/PDF exports behind the reports.export permission.
+     * Gate generated exports behind the reports.export permission.
      * Returns a 403 JSON response if denied, null if allowed.
      */
     private function gateExport(Request $request): ?JsonResponse
     {
-        if ($request->input('format') === 'csv' && !$request->user()->can('reports.export')) {
+        $format = strtolower((string) $request->input('format', ''));
+        if (in_array($format, ['csv', 'pdf', 'xlsx'], true) && !$request->user()->can('reports.export')) {
             return response()->json(['message' => 'You do not have permission to export reports.'], 403);
         }
+        if (in_array($format, ['csv', 'pdf', 'xlsx'], true) && ! $request->attributes->has('scheduled_export_event_id')) {
+            $exportId = app(ReportManagementService::class)->recordExport(
+                (int) $request->user()->tenant_id,
+                basename($request->path()),
+                $format,
+                $request->except(['password', 'token', 'secret']),
+                $request->user(),
+            );
+            if ($exportId) {
+                $request->attributes->set('report_export_event_id', $exportId);
+            }
+        }
         return null;
+    }
+
+    private function wantsExport(Request $request): bool
+    {
+        return in_array(strtolower((string) $request->input('format', '')), ['csv', 'pdf', 'xlsx'], true);
     }
 
     /**
@@ -110,13 +183,16 @@ class ReportsController extends Controller
     {
         $user = $request->user();
         $tenantId = $user->tenant_id;
+        $organisationScope = $user->can('reports.export');
 
-        $travelCount   = TravelRequest::where('tenant_id', $tenantId)->count();
-        $leaveCount    = LeaveRequest::where('tenant_id', $tenantId)->count();
+        $travelCount   = TravelRequest::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('requester_id', $user->id))->count();
+        $leaveCount    = LeaveRequest::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('requester_id', $user->id))->count();
         $assetCount    = Asset::where('tenant_id', $tenantId)->count();
-        $imprestCount  = ImprestRequest::where('tenant_id', $tenantId)->count();
-        $procCount     = ProcurementRequest::where('tenant_id', $tenantId)->count();
-        $riskCount     = Risk::where('tenant_id', $tenantId)->count();
+        $imprestCount  = ImprestRequest::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('requester_id', $user->id))->count();
+        $procCount     = ProcurementRequest::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('requester_id', $user->id))->count();
+        $salaryCount   = SalaryAdvanceRequest::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('requester_id', $user->id))->count();
+        $timesheetCount = Timesheet::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where('user_id', $user->id))->count();
+        $riskCount     = Risk::where('tenant_id', $tenantId)->when(! $organisationScope, fn ($q) => $q->where(function ($nested) use ($user) { $nested->where('risk_owner_id', $user->id)->orWhere('submitted_by', $user->id); }))->count();
         $govCount      = GovernanceResolution::where('tenant_id', $tenantId)->count();
 
         return response()->json([
@@ -133,11 +209,11 @@ class ReportsController extends Controller
                 ['id' => 'dsa',             'label' => 'DSA',              'count' => $travelCount],
                 ['id' => 'imprest',         'label' => 'Imprest',          'count' => $imprestCount],
                 ['id' => 'procurement',     'label' => 'Procurement',      'count' => $procCount],
-                ['id' => 'salary-advances', 'label' => 'Salary Advances',  'count' => 0],
-                ['id' => 'hr-timesheets',   'label' => 'HR Timesheets',    'count' => 0],
+                ['id' => 'salary-advances', 'label' => 'Salary Advances',  'count' => $salaryCount],
+                ['id' => 'hr-timesheets',   'label' => 'HR Timesheets',    'count' => $timesheetCount],
                 ['id' => 'risk',            'label' => 'Risk Register',    'count' => $riskCount],
                 ['id' => 'governance',      'label' => 'Governance',       'count' => $govCount],
-                ['id' => 'financial',       'label' => 'Financial',        'count' => 0],
+                ['id' => 'financial',       'label' => 'Financial',        'count' => $salaryCount + $procCount + $imprestCount],
                 ['id' => 'assets',          'label' => 'Assets',           'count' => $assetCount],
             ],
         ]);
@@ -200,7 +276,7 @@ class ReportsController extends Controller
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($t) => [
                 'reference'   => $t->reference_number,
                 'employee'    => $t->requester?->name,
@@ -238,7 +314,7 @@ class ReportsController extends Controller
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($t) => [
                 'reference'   => $t->reference_number,
                 'employee'    => $t->requester?->name,
@@ -277,7 +353,7 @@ class ReportsController extends Controller
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($l) => [
                 'reference'  => $l->reference_number,
                 'employee'   => $l->requester?->name,
@@ -319,7 +395,7 @@ class ReportsController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($a) => [
                 'asset_tag'      => $a->asset_tag,
                 'name'           => $a->name,
@@ -366,7 +442,7 @@ class ReportsController extends Controller
             $query->lowStock();
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn ($i) => [
                 'item_code'       => $i->item_code,
                 'name'            => $i->name,
@@ -406,7 +482,7 @@ class ReportsController extends Controller
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($i) => [
                 'reference'                 => $i->reference_number,
                 'employee'                  => $i->requester?->name,
@@ -445,7 +521,7 @@ class ReportsController extends Controller
 
         $this->applyCommonFilters($query, $request, 'requester_id');
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($p) => [
                 'reference'         => $p->reference_number,
                 'employee'          => $p->requester?->name,
@@ -495,7 +571,7 @@ class ReportsController extends Controller
             };
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn ($s) => [
                 'reference'        => $s->reference_number,
                 'employee'         => $s->requester?->name,
@@ -558,7 +634,7 @@ class ReportsController extends Controller
             $query->whereHas('user', fn($q) => $q->where('department_id', (int) $deptId));
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($t) => [
                 'employee'       => $t->user?->name,
                 'week_start'     => $t->week_start?->toDateString(),
@@ -606,7 +682,7 @@ class ReportsController extends Controller
             $query->where('department_id', (int) $deptId);
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($r) => [
                 'code'          => $r->risk_code,
                 'title'         => $r->title,
@@ -656,7 +732,7 @@ class ReportsController extends Controller
             $query->where('committee', $committee);
         }
 
-        if ($request->input('format') === 'csv') {
+        if ($this->wantsExport($request)) {
             $rows = $query->get()->map(fn($g) => [
                 'reference'  => $g->reference_number,
                 'title'      => $g->title,

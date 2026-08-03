@@ -54,6 +54,7 @@ export default function GenericDocumentsPanel({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const typeLabel = (type: string | null) =>
     documentTypes.find((t) => t.value === type)?.label ?? type ?? "Document";
@@ -73,6 +74,7 @@ export default function GenericDocumentsPanel({
   };
 
   const handleDownload = async (doc: GenericAttachment, url: string) => {
+    setDownloadError(null);
     try {
       const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error("Download failed");
@@ -83,12 +85,22 @@ export default function GenericDocumentsPanel({
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      alert("Failed to download file.");
+      setDownloadError(`Failed to download ${doc.original_filename}.`);
     }
   };
 
   return (
     <div className="space-y-6">
+      {downloadError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          <span className="material-symbols-outlined text-[18px]">error</span>
+          <span>{downloadError}</span>
+        </div>
+      )}
+
       {/* Upload Area */}
       <div className="space-y-4">
         <div

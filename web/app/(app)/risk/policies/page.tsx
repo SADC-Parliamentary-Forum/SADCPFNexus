@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { policyApi, RISK_DOCUMENT_TYPES, type Policy, type RiskDocumentType } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const STATUS_OPTS = ["all", "active", "archived"] as const;
 
@@ -56,6 +57,7 @@ function formatBytes(bytes: number): string {
 
 export default function PolicyLibraryPage() {
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
 
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("active");
   const [search, setSearch]             = useState("");
@@ -273,8 +275,10 @@ export default function PolicyLibraryPage() {
                         <span className="material-symbols-outlined text-[16px]">edit</span>
                       </button>
                       <button
-                        onClick={() => {
-                          if (confirm("Delete this policy?")) deleteMutation.mutate(p.id);
+                        onClick={async () => {
+                          if (await confirm({ title: "Delete policy", message: "Delete this policy?", variant: "danger" })) {
+                            deleteMutation.mutate(p.id);
+                          }
                         }}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-neutral-400 hover:text-red-600"
                         title="Delete"
@@ -307,6 +311,7 @@ export default function PolicyLibraryPage() {
               <button
                 type="button"
                 onClick={closeModal}
+                aria-label="Close policy form"
                 className="text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
@@ -468,6 +473,7 @@ export default function PolicyLibraryPage() {
                         <button
                           type="button"
                           onClick={() => removeStagedDoc(doc.id)}
+                          aria-label="Remove attachment"
                           className="text-neutral-400 hover:text-red-500 transition-colors shrink-0"
                         >
                           <span className="material-symbols-outlined text-[15px]">close</span>

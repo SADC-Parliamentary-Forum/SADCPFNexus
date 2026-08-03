@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { workflowEngineApi, type ApprovalWorkflow } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection, FormField } from "@/components/ui/FormSection";
+import { ObjectSummary } from "@/components/ui/ObjectSummary";
 import { useToast } from "@/components/ui/Toast";
 
 export default function WorkflowSimulatePage() {
@@ -10,11 +13,16 @@ export default function WorkflowSimulatePage() {
   const [definitions, setDefinitions] = useState<ApprovalWorkflow[]>([]);
   const [workflowId, setWorkflowId] = useState<number | null>(null);
   const [amount, setAmount] = useState("1000");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<unknown>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    workflowEngineApi.definitions().then((res) => setDefinitions(res.data.data || []));
-  }, []);
+    workflowEngineApi
+      .definitions()
+      .then((res) => setDefinitions(res.data.data || []))
+      .catch(() => toast("error", "Could not load workflows"))
+      .finally(() => setLoading(false));
+  }, [toast]);
 
   const run = async () => {
     if (!workflowId) return;
@@ -30,24 +38,65 @@ export default function WorkflowSimulatePage() {
   };
 
   return (
-    <div className="p-6 space-y-4 max-w-4xl">
-      <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
-      <h1 className="text-2xl font-semibold">Workflow simulation</h1>
-      <p className="text-sm">Dry-run a definition against test context. Shows stages, actors, conditions, deadlines — never creates production approvals.</p>
-      <Link href="/admin/workflows" className="text-sm underline inline-block">Back</Link>
-      <div className="flex flex-wrap gap-2">
-        <select className="border rounded px-3 py-2 bg-transparent" value={workflowId ?? ""} onChange={(e) => setWorkflowId(Number(e.target.value) || null)}>
-          <option value="">Select workflow…</option>
-          {definitions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-        <input className="border rounded px-3 py-2 bg-transparent" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Test amount" />
-        <button className="border rounded px-3 py-2" onClick={run}>Simulate</button>
-      </div>
-      {result && (
-        <pre className="border rounded p-3 text-xs overflow-auto whitespace-pre-wrap">
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      )}
+    <div className="mx-auto max-w-5xl space-y-5">
+      <ModulePageHeader
+        title="Workflow Simulation"
+        subtitle="Dry-run a workflow definition against test context without creating production approvals."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Workflows", href: "/admin/workflows" },
+              { label: "Simulation" },
+            ]}
+          />
+        }
+        actions={
+          <Link href="/admin/workflows" className="btn-secondary text-sm">
+            Back to workflows
+          </Link>
+        }
+      />
+
+      <FormSection title="Test context" description="Select a workflow and enter the sample amount." icon="science" dense>
+        <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_180px_auto] sm:items-end">
+          <FormField label="Workflow" htmlFor="workflow-id" required>
+            <select
+              id="workflow-id"
+              className="form-input"
+              value={workflowId ?? ""}
+              onChange={(e) => setWorkflowId(Number(e.target.value) || null)}
+              disabled={loading}
+            >
+              <option value="">{loading ? "Loading workflows..." : "Select workflow..."}</option>
+              {definitions.map((definition) => (
+                <option key={definition.id} value={definition.id}>
+                  {definition.name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Amount" htmlFor="test-amount" required>
+            <input
+              id="test-amount"
+              className="form-input"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Test amount"
+            />
+          </FormField>
+          <button type="button" className="btn-primary text-sm" onClick={run} disabled={!workflowId}>
+            Simulate
+          </button>
+        </div>
+      </FormSection>
+
+      {result ? (
+        <FormSection title="Simulation result" icon="rule">
+          <ObjectSummary value={result} />
+        </FormSection>
+      ) : null}
     </div>
   );
 }

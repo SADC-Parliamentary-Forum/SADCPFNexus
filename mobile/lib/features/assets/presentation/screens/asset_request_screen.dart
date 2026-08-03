@@ -8,7 +8,9 @@ import '../../../../../core/theme/app_theme.dart';
 /// Screen to request an asset with justification (and optional doc).
 /// Any user with assets.view can request; only managers can add assets.
 class AssetRequestScreen extends ConsumerStatefulWidget {
-  const AssetRequestScreen({super.key});
+  const AssetRequestScreen({super.key, this.initialJustification});
+
+  final String? initialJustification;
 
   @override
   ConsumerState<AssetRequestScreen> createState() => _AssetRequestScreenState();
@@ -16,9 +18,17 @@ class AssetRequestScreen extends ConsumerStatefulWidget {
 
 class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _justificationController = TextEditingController();
+  late final TextEditingController _justificationController;
   bool _submitting = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _justificationController = TextEditingController(
+      text: widget.initialJustification ?? '',
+    );
+  }
 
   @override
   void dispose() {
@@ -29,7 +39,10 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
   Future<void> _submit() async {
     if (_submitting) return;
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _submitting = true; _error = null; });
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       final dio = ref.read(apiClientProvider).dio;
       await dio.post<Map<String, dynamic>>(
@@ -60,12 +73,16 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
         backgroundColor: AppColors.bgDark,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              size: 18, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Request Asset',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700),
         ),
       ),
       body: SingleChildScrollView(
@@ -91,7 +108,9 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
                   alignLabelWithHint: true,
                 ),
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Justification is required.';
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Justification is required.';
+                  }
                   return null;
                 },
               ),
@@ -106,7 +125,8 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Submit Request'),
               ),

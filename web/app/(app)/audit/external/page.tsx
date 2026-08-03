@@ -14,8 +14,8 @@ export default function AuditExternalPage() {
   const rows = (data as { data?: Array<Record<string, unknown>> })?.data ?? [];
 
   const create = useMutation({
-    mutationFn: () => auditApi.createExternal({
-      title,
+    mutationFn: (externalTitle: string) => auditApi.createExternal({
+      title: externalTitle,
       access_starts_at: new Date().toISOString().slice(0, 10),
       access_ends_at: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     }),
@@ -35,11 +35,27 @@ export default function AuditExternalPage() {
         className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (title.trim()) create.mutate();
+          const externalTitle = title.trim();
+          if (!externalTitle || create.isPending) return;
+          create.mutate(externalTitle);
         }}
       >
-        <input className="border rounded px-2 py-1 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="External engagement title" />
-        <button type="submit" className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded">Create</button>
+        <label className="sr-only" htmlFor="audit-external-title">External engagement title</label>
+        <input
+          id="audit-external-title"
+          className="border rounded px-2 py-1 text-sm disabled:opacity-60"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="External engagement title"
+          disabled={create.isPending}
+        />
+        <button
+          type="submit"
+          className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={create.isPending || !title.trim()}
+        >
+          {create.isPending ? "Creating..." : "Create"}
+        </button>
       </form>
       {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : (
         <table className="w-full text-sm">
@@ -63,6 +79,13 @@ export default function AuditExternalPage() {
                 </td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td className="p-4 text-sm text-neutral-500" colSpan={4}>
+                  No external audit engagements yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}

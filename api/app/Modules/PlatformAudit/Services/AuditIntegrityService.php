@@ -8,7 +8,9 @@ use App\Models\PlatformAudit\AuditEventCheckpoint;
 use App\Models\PlatformAudit\AuditEventIntegrityRecord;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AuditIntegrityService
 {
@@ -117,7 +119,7 @@ class AuditIntegrityService
                 $uuid = (string) Str::uuid();
                 $hash = hash('sha256', 'empty|'.$tenantId.'|'.$uuid);
 
-                return AuditEventCheckpoint::query()->create([
+                $checkpoint = AuditEventCheckpoint::query()->create([
                     'tenant_id' => $tenantId,
                     'uuid' => $uuid,
                     'from_sequence' => 0,
@@ -132,6 +134,27 @@ class AuditIntegrityService
                     'meta' => ['note' => 'Empty chain checkpoint'],
                     'created_at' => now(),
                 ]);
+
+                app(AuditEventIngestionService::class)->ingest([
+                    'tenant_id' => $tenantId,
+                    'event_key' => 'audit.checkpoint.created',
+                    'actor_id' => $actor?->id,
+                    'actor_type' => $actor ? 'human' : 'service',
+                    'outcome' => 'success',
+                    'source_module' => 'platform-audit',
+                    'subject_type' => AuditEventCheckpoint::class,
+                    'subject_id' => $checkpoint->id,
+                    'business_reference' => $checkpoint->uuid,
+                    'new_values' => [
+                        'from_sequence' => 0,
+                        'to_sequence' => 0,
+                        'event_count' => 0,
+                        'status' => $checkpoint->status,
+                        'checkpoint_hash' => $checkpoint->checkpoint_hash,
+                    ],
+                ]);
+
+                return $checkpoint;
             }
 
             $verify = $this->verifyChain($tenantId);
@@ -148,7 +171,7 @@ class AuditIntegrityService
                 $uuid,
             ]));
 
-            return AuditEventCheckpoint::query()->create([
+            $checkpoint = AuditEventCheckpoint::query()->create([
                 'tenant_id' => $tenantId,
                 'uuid' => $uuid,
                 'from_sequence' => (int) $events->first()->sequence_number,
@@ -163,18 +186,69 @@ class AuditIntegrityService
                 'meta' => ['verify' => $verify],
                 'created_at' => now(),
             ]);
+
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $tenantId,
+                'event_key' => 'audit.checkpoint.created',
+                'actor_id' => $actor?->id,
+                'actor_type' => $actor ? 'human' : 'service',
+                'outcome' => $verify['valid'] ? 'success' : 'failed',
+                'source_module' => 'platform-audit',
+                'subject_type' => AuditEventCheckpoint::class,
+                'subject_id' => $checkpoint->id,
+                'business_reference' => $checkpoint->uuid,
+                'new_values' => [
+                    'from_sequence' => $checkpoint->from_sequence,
+                    'to_sequence' => $checkpoint->to_sequence,
+                    'event_count' => $checkpoint->event_count,
+                    'status' => $checkpoint->status,
+                    'checkpoint_hash' => $checkpoint->checkpoint_hash,
+                ],
+            ]);
+
+            return $checkpoint;
         });
     }
 
     private function raiseIntegrityAlert(int $tenantId, AuditEvent $event): ?int
     {
+        $detectionEvent = null;
+        try {
+            $detectionEvent = app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $tenantId,
+                'event_key' => 'security.integrity.failed',
+                'actor_type' => 'service',
+                'outcome' => 'failed',
+                'source_module' => 'platform-audit',
+                'subject_type' => AuditEvent::class,
+                'subject_id' => $event->id,
+                'business_reference' => $event->uuid,
+                'reason' => 'Hash chain break detected during integrity verification.',
+                'new_values' => [
+                    'failed_sequence' => $event->sequence_number,
+                    'failed_event_id' => $event->id,
+                    'failed_event_uuid' => $event->uuid,
+                    'failed_event_key' => $event->event_key,
+                ],
+                'suppress_monitoring' => true,
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('platform_audit.integrity_failure_event_failed', [
+                'tenant_id' => $tenantId,
+                'failed_event_id' => $event->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $alert = AuditEventAlert::query()->create([
             'tenant_id' => $tenantId,
             'reference' => 'INT-'.strtoupper(Str::random(8)),
             'severity' => 'critical',
-            'first_event_id' => $event->id,
+            'first_event_id' => $detectionEvent?->id ?? $event->id,
+            'event_ids' => array_values(array_filter([$event->id, $detectionEvent?->id])),
             'actor_id' => $event->actor_id,
             'status' => 'open',
+            'workflow_status' => 'new',
             'notes' => 'Integrity chain failure detected (indicator only — not proof of wrongdoing).',
             'detected_at' => now(),
         ]);

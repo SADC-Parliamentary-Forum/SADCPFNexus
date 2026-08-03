@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AuditSearchService
 {
@@ -177,7 +179,7 @@ class AuditSearchService
      */
     public function logAccess(User $user, string $type, ?array $filters = null, ?int $targetEventId = null, ?string $purpose = null): void
     {
-        AuditEventAccessLog::query()->create([
+        $access = AuditEventAccessLog::query()->create([
             'tenant_id' => $user->tenant_id,
             'viewer_user_id' => $user->id,
             'access_type' => $type,
@@ -188,5 +190,35 @@ class AuditSearchService
             'accessed_at' => now(),
             'created_at' => now(),
         ]);
+
+        try {
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $user->tenant_id,
+                'event_key' => 'audit.access.logged',
+                'actor_id' => $user->id,
+                'actor_type' => 'human',
+                'outcome' => 'success',
+                'source_module' => 'platform-audit',
+                'subject_type' => AuditEventAccessLog::class,
+                'subject_id' => $access->id,
+                'action' => 'audit_trail_'.$type,
+                'reason' => $purpose ?? request()->input('purpose'),
+                'new_values' => [
+                    'access_type' => $type,
+                    'target_event_id' => $targetEventId,
+                    'filters' => $filters,
+                    'purpose_provided' => (bool) ($purpose ?? request()->input('purpose')),
+                ],
+                'idempotency_key' => 'audit-access:'.$access->id,
+                'retention_class' => 'security',
+                'confidentiality' => 'confidential',
+            ]);
+        } catch (Throwable $e) {
+            Log::warning('platform_audit.access_self_audit_failed', [
+                'access_log_id' => $access->id,
+                'access_type' => $type,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

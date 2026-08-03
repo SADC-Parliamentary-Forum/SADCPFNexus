@@ -6,6 +6,7 @@ use App\Models\PlatformAudit\AuditEvent;
 use App\Models\PlatformAudit\AuditEventAlert;
 use App\Models\PlatformAudit\SecurityMonitoringRule;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -14,6 +15,37 @@ use Illuminate\Support\Str;
  */
 class SecurityMonitoringService
 {
+    public const WORKFLOW_STATUSES = [
+        'new',
+        'under_review',
+        'assigned',
+        'investigating',
+        'classified',
+        'benign',
+        'confirmed_incident',
+        'escalated',
+        'resolved',
+        'closed',
+        'suppressed_by_approved_rule',
+    ];
+
+    private const OPEN_WORKFLOW_STATUSES = [
+        'new',
+        'under_review',
+        'assigned',
+        'investigating',
+        'classified',
+        'confirmed_incident',
+        'escalated',
+    ];
+
+    private const CLOSED_WORKFLOW_STATUSES = [
+        'benign',
+        'resolved',
+        'closed',
+        'suppressed_by_approved_rule',
+    ];
+
     /**
      * @return list<array{rule_key: string, name: string, description: string, event_key_pattern: string, severity: string, threshold_count: int, window_minutes: int}>
      */
@@ -42,7 +74,7 @@ class SecurityMonitoringService
                 'rule_key' => 'integrity_failure',
                 'name' => 'Audit integrity chain failure',
                 'description' => 'Integrity verification failure indicator.',
-                'event_key_pattern' => 'audit.integrity.failed|integrity.chain.broken',
+                'event_key_pattern' => 'security.integrity.failed|audit.integrity.failed|integrity.chain.broken',
                 'severity' => 'critical',
                 'threshold_count' => 1,
                 'window_minutes' => 60,
@@ -129,14 +161,18 @@ class SecurityMonitoringService
             $open = AuditEventAlert::query()
                 ->where('tenant_id', $event->tenant_id)
                 ->where('rule_id', $rule->id)
-                ->whereIn('workflow_status', ['new', 'under_review', 'classified'])
+                ->whereIn('workflow_status', self::OPEN_WORKFLOW_STATUSES)
                 ->where('detected_at', '>=', $since)
                 ->when($event->actor_id, fn ($q) => $q->where('actor_id', $event->actor_id))
                 ->first();
 
             if ($open) {
                 $ids = array_values(array_unique(array_merge($open->event_ids ?? [], [$event->id])));
-                $open->update(['event_ids' => $ids, 'first_event_id' => $open->first_event_id ?: $event->id]);
+                $open->update([
+                    'event_ids' => $ids,
+                    'first_event_id' => $open->first_event_id ?: $event->id,
+                    'last_detected_at' => now(),
+                ]);
 
                 return $open->fresh();
             }
@@ -153,6 +189,7 @@ class SecurityMonitoringService
                 'workflow_status' => 'new',
                 'notes' => 'Auto-raised by rule '.$rule->rule_key.' v'.$rule->version.' (indicator only).',
                 'detected_at' => now(),
+                'last_detected_at' => now(),
             ]);
         }
 
@@ -160,39 +197,70 @@ class SecurityMonitoringService
     }
 
     /**
-     * @param  array{workflow_status?: string, classification?: ?string, conclusion?: ?string, notes?: ?string}  $data
+     * @param  array{workflow_status?: string, classification?: ?string, conclusion?: ?string, notes?: ?string, assigned_to?: ?int, incident_id?: ?string}  $data
      */
     public function transitionAlert(AuditEventAlert $alert, User $actor, array $data): AuditEventAlert
     {
         $status = $data['workflow_status'] ?? $alert->workflow_status;
-        $allowed = ['new', 'under_review', 'classified', 'closed'];
-        if (! in_array($status, $allowed, true)) {
+        if (! in_array($status, self::WORKFLOW_STATUSES, true)) {
             abort(422, 'Invalid workflow status.');
         }
 
-        $alert->workflow_status = $status;
-        if (array_key_exists('classification', $data)) {
-            $alert->classification = $data['classification'];
-        }
-        if (array_key_exists('conclusion', $data)) {
-            $alert->conclusion = $data['conclusion'];
-        }
-        if (array_key_exists('notes', $data)) {
-            $alert->notes = $data['notes'];
-        }
-        $alert->reviewed_by = $actor->id;
-        $alert->reviewed_at = now();
+        return DB::transaction(function () use ($alert, $actor, $data, $status) {
+            $old = $alert->only([
+                'status', 'workflow_status', 'classification', 'conclusion', 'notes',
+                'reviewed_by', 'reviewed_at', 'assigned_to', 'assigned_at', 'incident_id', 'closed_at',
+            ]);
 
-        if ($status === 'closed') {
-            $alert->status = 'closed';
-            $alert->closed_at = now();
-        } elseif ($status === 'under_review' || $status === 'classified') {
-            $alert->status = 'open';
-        }
+            $alert->workflow_status = $status;
+            if (array_key_exists('classification', $data)) {
+                $alert->classification = $data['classification'];
+            }
+            if (array_key_exists('conclusion', $data)) {
+                $alert->conclusion = $data['conclusion'];
+            }
+            if (array_key_exists('notes', $data)) {
+                $alert->notes = $data['notes'];
+            }
+            if (array_key_exists('assigned_to', $data)) {
+                $alert->assigned_to = $data['assigned_to'];
+                $alert->assigned_at = $data['assigned_to'] ? now() : null;
+            }
+            if (array_key_exists('incident_id', $data)) {
+                $alert->incident_id = $data['incident_id'];
+            }
+            $alert->reviewed_by = $actor->id;
+            $alert->reviewed_at = now();
 
-        $alert->save();
+            if (in_array($status, self::CLOSED_WORKFLOW_STATUSES, true)) {
+                $alert->status = 'closed';
+                $alert->closed_at = $alert->closed_at ?: now();
+            } else {
+                $alert->status = 'open';
+                $alert->closed_at = null;
+            }
 
-        return $alert->fresh();
+            $alert->save();
+
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $alert->tenant_id,
+                'event_key' => 'security.alert.transitioned',
+                'actor_id' => $actor->id,
+                'actor_type' => 'human',
+                'outcome' => 'success',
+                'source_module' => 'platform-audit',
+                'subject_type' => AuditEventAlert::class,
+                'subject_id' => $alert->id,
+                'business_reference' => $alert->reference,
+                'old_values' => $old,
+                'new_values' => $alert->only([
+                    'status', 'workflow_status', 'classification', 'conclusion', 'notes',
+                    'reviewed_by', 'reviewed_at', 'assigned_to', 'assigned_at', 'incident_id', 'closed_at',
+                ]),
+            ]);
+
+            return $alert->fresh();
+        });
     }
 
     private function matchesPattern(string $eventKey, string $pattern): bool

@@ -9,6 +9,7 @@ import {
   type HrFileDocument,
   type HrFileTimelineEvent,
 } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -95,6 +96,7 @@ export default function HrFileDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id != null ? Number(params.id) : NaN;
+  const { confirm } = useConfirm();
   const [file, setFile] = useState<FileWithRelations | null>(null);
   const [tab, setTab] = useState<TabId>("summary");
   const [loading, setLoading] = useState(true);
@@ -198,7 +200,14 @@ export default function HrFileDetailPage() {
   };
 
   const handleDeleteDocument = async (docId: number) => {
-    if (!file || !confirm("Delete this document record?")) return;
+    if (
+      !file ||
+      !(await confirm({
+        title: "Delete document record",
+        message: "Delete this document record?",
+        variant: "danger",
+      }))
+    ) return;
     try {
       await hrFilesApi.deleteDocument(file.id, docId);
       load();

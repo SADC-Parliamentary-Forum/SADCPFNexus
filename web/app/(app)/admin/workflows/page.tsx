@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { adminApi, programmeApi, type ApprovalWorkflow, type ApprovalStep, type User, type Department, type Programme } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const MODULE_OPTIONS = [
   { value: "leave",          label: "Leave" },
@@ -25,6 +27,7 @@ export default function AdminWorkflowPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<ApprovalWorkflow> | null>(null);
   const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     Promise.all([
@@ -85,7 +88,14 @@ export default function AdminWorkflowPage() {
   };
 
   const deleteWorkflow = async () => {
-    if (!editing?.id || !confirm("Delete this workflow? This cannot be undone.")) return; // ship-safe-ignore
+    if (
+      !editing?.id ||
+      !(await confirm({
+        title: "Delete workflow",
+        message: "Delete this workflow? This cannot be undone.",
+        variant: "danger",
+      }))
+    ) return; // ship-safe-ignore
     setLoading(true);
     try {
       await adminApi.deleteWorkflow(editing.id);
@@ -114,20 +124,29 @@ export default function AdminWorkflowPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="page-title">Approval Workflows</h1>
-          <p className="page-subtitle text-neutral-500">Configure multi-stage approval processes for system modules.</p>
-        </div>
-        <button
-          onClick={() => setEditing({ name: "", module_type: "leave", is_active: true, steps: [], target_type: null, target_id: null })}
-          className="btn-primary"
-        >
-          <span className="material-symbols-outlined">add</span>
-          New Workflow
-        </button>
-      </div>
+    <div className="space-y-6">
+      <ModulePageHeader
+        title="Approval Workflows"
+        subtitle="Configure multi-stage approval processes for system modules."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Approval Workflows" },
+            ]}
+          />
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => setEditing({ name: "", module_type: "leave", is_active: true, steps: [], target_type: null, target_id: null })}
+            className="btn-primary"
+          >
+            <span className="material-symbols-outlined">add</span>
+            New Workflow
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Workflow List */}
@@ -181,7 +200,7 @@ export default function AdminWorkflowPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Workflow Name</label>
                   <input
-                    className="input-field"
+                    className="form-input"
                     value={editing.name}
                     onChange={e => setEditing({ ...editing, name: e.target.value })}
                     placeholder="e.g. Leave Approval Policy"
@@ -190,7 +209,7 @@ export default function AdminWorkflowPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Module</label>
                   <select
-                    className="input-field"
+                    className="form-input"
                     value={editing.module_type}
                     onChange={e => setEditing({ ...editing, module_type: e.target.value })}
                   >
@@ -206,7 +225,7 @@ export default function AdminWorkflowPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Applicability</label>
                   <select
-                    className="input-field"
+                    className="form-input"
                     value={editing.target_type ?? ""}
                     onChange={e => setEditing({ ...editing, target_type: (e.target.value as "programme" | "department") || null, target_id: null })}
                   >
@@ -219,7 +238,7 @@ export default function AdminWorkflowPage() {
                   <div>
                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
                     <select
-                      className="input-field"
+                      className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
                     >
@@ -232,7 +251,7 @@ export default function AdminWorkflowPage() {
                   <div>
                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Programme</label>
                     <select
-                      className="input-field"
+                      className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
                     >
@@ -259,7 +278,7 @@ export default function AdminWorkflowPage() {
                           <div className="col-span-1">
                             <label className="block text-[10px] font-bold text-neutral-500 mb-1">Approver Type</label>
                             <select
-                              className="input-field py-1 text-xs"
+                              className="form-input py-1 text-xs"
                               value={step.approver_type}
                               onChange={e => handleUpdateStep(idx, { approver_type: e.target.value as any })}
                             >
@@ -275,7 +294,7 @@ export default function AdminWorkflowPage() {
                               <>
                                 <label className="block text-[10px] font-bold text-neutral-500 mb-1">Select Role</label>
                                 <select
-                                  className="input-field py-1 text-xs"
+                                  className="form-input py-1 text-xs"
                                   value={step.role_id || ""}
                                   onChange={e => handleUpdateStep(idx, { role_id: parseInt(e.target.value) })}
                                 >
@@ -288,7 +307,7 @@ export default function AdminWorkflowPage() {
                               <>
                                 <label className="block text-[10px] font-bold text-neutral-500 mb-1">Select User</label>
                                 <select
-                                  className="input-field py-1 text-xs"
+                                  className="form-input py-1 text-xs"
                                   value={step.user_id || ""}
                                   onChange={e => handleUpdateStep(idx, { user_id: parseInt(e.target.value) })}
                                 >

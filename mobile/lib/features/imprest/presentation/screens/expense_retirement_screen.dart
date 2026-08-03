@@ -87,7 +87,12 @@ class _ExpenseRetirementScreenState
 
   double get _variance => _advance - _total;
 
-  String _currency(double v) => 'N\$${v.toStringAsFixed(2)}';
+  String get _currencyCode {
+    final raw = _imprest?['currency']?.toString().trim();
+    return raw == null || raw.isEmpty ? 'NAD' : raw;
+  }
+
+  String _currency(double v) => '$_currencyCode ${v.toStringAsFixed(2)}';
 
   Future<void> _submit() async {
     final id = widget.requestId;
@@ -190,8 +195,8 @@ class _ExpenseRetirementScreenState
     final r = _imprest ?? {};
     final purpose = r['purpose']?.toString() ?? '—';
     final ref = r['reference_number']?.toString() ?? '';
-    final deadline = AppDateFormatter.short(
-        r['expected_liquidation_date']?.toString());
+    final deadline =
+        AppDateFormatter.short(r['expected_liquidation_date']?.toString());
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -211,8 +216,8 @@ class _ExpenseRetirementScreenState
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text('$ref  ·  Due $deadline',
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 11)),
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 11)),
           ),
         const SizedBox(height: 16),
 
@@ -229,8 +234,8 @@ class _ExpenseRetirementScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   const Text('Advance Issued',
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 10)),
+                      style:
+                          TextStyle(color: AppColors.textMuted, fontSize: 10)),
                   Text(_currency(_advance),
                       style: const TextStyle(
                           color: AppColors.textPrimary,
@@ -243,8 +248,8 @@ class _ExpenseRetirementScreenState
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                   const Text('Total Claimed',
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 10)),
+                      style:
+                          TextStyle(color: AppColors.textMuted, fontSize: 10)),
                   Text(_currency(_total),
                       style: const TextStyle(
                           color: AppColors.primary,
@@ -300,30 +305,36 @@ class _ExpenseRetirementScreenState
                   ),
                 ),
                 if (_items.length > 1)
-                  GestureDetector(
-                    onTap: () => setState(() => _items.removeAt(idx)),
-                    child: const Icon(Icons.close,
-                        color: AppColors.textMuted, size: 16),
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: IconButton(
+                      tooltip: 'Remove expense item ${idx + 1}',
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.close,
+                          color: AppColors.textMuted, size: 20),
+                      onPressed: () => setState(() => _items.removeAt(idx)),
+                    ),
                   ),
               ]),
               const Divider(color: AppColors.border, height: 16),
               Row(children: [
-                const Text('N\$',
-                    style: TextStyle(
+                Text(_currencyCode,
+                    style: const TextStyle(
                         color: AppColors.textMuted, fontSize: 13)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w700),
                     decoration: const InputDecoration(
                       hintText: '0.00',
-                      hintStyle: TextStyle(
-                          color: AppColors.textMuted, fontSize: 15),
+                      hintStyle:
+                          TextStyle(color: AppColors.textMuted, fontSize: 15),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -348,12 +359,10 @@ class _ExpenseRetirementScreenState
           child: TextField(
             controller: _notesController,
             maxLines: 3,
-            style: const TextStyle(
-                color: AppColors.textPrimary, fontSize: 13),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
             decoration: const InputDecoration(
               hintText: 'Additional notes (optional)',
-              hintStyle:
-                  TextStyle(color: AppColors.textMuted, fontSize: 13),
+              hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 13),
               border: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero,
@@ -372,42 +381,35 @@ class _ExpenseRetirementScreenState
                   .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: (_variance >= 0
-                          ? AppColors.success
-                          : AppColors.danger)
+                  color: (_variance >= 0 ? AppColors.success : AppColors.danger)
                       .withValues(alpha: 0.3)),
             ),
             child: Row(children: [
-              Icon(
-                  _variance >= 0
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  color: _variance >= 0
-                      ? AppColors.success
-                      : AppColors.danger,
+              Icon(_variance >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: _variance >= 0 ? AppColors.success : AppColors.danger,
                   size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(
-                    '${_currency(_variance.abs())} ${_variance >= 0 ? 'refund due' : 'overspent'}',
-                    style: TextStyle(
-                        color: _variance >= 0
-                            ? AppColors.success
-                            : AppColors.danger,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    _variance >= 0
-                        ? 'You spent less than the advance issued.'
-                        : 'Amount exceeds the advance issued.',
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 11),
-                  ),
-                ]),
+                      Text(
+                        '${_currency(_variance.abs())} ${_variance >= 0 ? 'refund due' : 'overspent'}',
+                        style: TextStyle(
+                            color: _variance >= 0
+                                ? AppColors.success
+                                : AppColors.danger,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        _variance >= 0
+                            ? 'You spent less than the advance issued.'
+                            : 'Amount exceeds the advance issued.',
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 11),
+                      ),
+                    ]),
               ),
             ]),
           ),
@@ -432,8 +434,8 @@ class _ExpenseRetirementScreenState
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: AppColors.bgDark))
                 : const Text('Submit for Approval',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
           ),
         ),
         const SizedBox(height: 32),

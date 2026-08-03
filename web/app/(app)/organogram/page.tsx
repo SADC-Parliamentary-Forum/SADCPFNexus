@@ -5,6 +5,7 @@ import { adminApi, auditLogsApi, type Department, type User, type AuditLogEntry 
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { Modal } from "@/components/ui/Modal";
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 const NODE_W = 228;
@@ -336,6 +337,8 @@ export default function OrganogramPage() {
     setModalOpen(true);
   };
 
+  const closeCrudModal = () => setModalOpen(false);
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -449,21 +452,41 @@ export default function OrganogramPage() {
 
       {/* ─ Zoom bar ─ */}
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={() => setScale(s => Math.min(2, +(s + 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => setScale(s => Math.min(2, +(s + 0.1).toFixed(2)))}
+          className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300"
+        >
           <span className="material-symbols-outlined text-[16px]">add</span>
         </button>
         <span className="text-xs text-neutral-500 dark:text-neutral-400 w-11 text-center font-mono tabular-nums">{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(s => Math.max(0.25, +(s - 0.1).toFixed(2)))} className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300">
+        <button
+          type="button"
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => setScale(s => Math.max(0.25, +(s - 0.1).toFixed(2)))}
+          className="size-7 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-50 dark:hover:bg-neutral-700 shadow-sm text-neutral-600 dark:text-neutral-300"
+        >
           <span className="material-symbols-outlined text-[16px]">remove</span>
         </button>
-        <button onClick={() => { setScale(1); setPan({ x: 60, y: 60 }); }} className="text-[11px] text-neutral-400 hover:text-primary px-2">Reset View</button>
+        <button
+          type="button"
+          aria-label="Reset organogram view"
+          title="Reset organogram view"
+          onClick={() => { setScale(1); setPan({ x: 60, y: 60 }); }}
+          className="text-[11px] text-neutral-400 hover:text-primary px-2"
+        >
+          Reset View
+        </button>
         <span className="ml-auto text-[11px] text-neutral-400">{flat.length} unit{flat.length !== 1 ? "s" : ""}</span>
       </div>
 
       {error && (
         <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center justify-between text-sm">
           <span className="flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">error</span>{error}</span>
-          <button onClick={() => setError(null)}><span className="material-symbols-outlined text-[16px]">close</span></button>
+          <button type="button" aria-label="Dismiss organogram error" title="Dismiss organogram error" onClick={() => setError(null)}><span className="material-symbols-outlined text-[16px]">close</span></button>
         </div>
       )}
 
@@ -588,24 +611,40 @@ export default function OrganogramPage() {
 
       {/* ─ CRUD Modal ─ */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-neutral-100 dark:border-neutral-700 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-4 mb-7">
-              <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-[26px]">
+        <Modal
+          open={modalOpen}
+          onClose={closeCrudModal}
+          size="md"
+          className="max-w-md rounded-3xl dark:shadow-black/40"
+          bodyClassName="space-y-4"
+          title={
+            <span className="flex items-center gap-4">
+              <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 dark:bg-primary/20">
+                <span className="material-symbols-outlined text-[26px] text-primary dark:text-primary-300">
                   {editingDept ? "edit_square" : "add_business"}
                 </span>
-              </div>
+              </span>
+              <span>{editingDept ? "Edit Unit" : "Create Unit"}</span>
+            </span>
+          }
+          description={<span className="text-xs font-bold uppercase tracking-widest">Organisational Management</span>}
+          footer={
+            <>
+              <button onClick={closeCrudModal} className="flex-1 btn-secondary py-3 font-bold">Cancel</button>
+              <button
+                onClick={handleSave}
+                disabled={!form.name || !form.code || saving}
+                className="flex-1 btn-primary py-3 font-bold"
+              >
+                {saving ? "Saving…" : "Save Unit"}
+              </button>
+            </>
+          }
+        >
               <div>
-                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{editingDept ? "Edit Unit" : "Create Unit"}</h2>
-                <p className="text-xs text-neutral-400 dark:text-neutral-500 uppercase tracking-widest font-bold">Organisational Management</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Name</label>
+                <label htmlFor="organogram-unit-name" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Name</label>
                 <input
+                  id="organogram-unit-name"
                   className="input-field w-full"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -614,8 +653,9 @@ export default function OrganogramPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Code</label>
+                  <label htmlFor="organogram-unit-code" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Unit Code</label>
                   <input
+                    id="organogram-unit-code"
                     className="input-field font-mono uppercase w-full"
                     value={form.code}
                     onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
@@ -624,8 +664,9 @@ export default function OrganogramPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Supervisor</label>
+                  <label htmlFor="organogram-unit-supervisor" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Supervisor</label>
                   <select
+                    id="organogram-unit-supervisor"
                     className="input-field w-full"
                     value={form.supervisor_id ?? ""}
                     onChange={e => setForm(f => ({ ...f, supervisor_id: e.target.value ? parseInt(e.target.value) : null }))}
@@ -638,8 +679,9 @@ export default function OrganogramPage() {
               {/* Parent selector in create mode */}
               {!editingDept && (
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Parent Unit</label>
+                  <label htmlFor="organogram-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">Parent Unit</label>
                   <select
+                    id="organogram-parent-unit"
                     className="input-field w-full"
                     value={formParentId ?? ""}
                     onChange={e => setFormParentId(e.target.value ? parseInt(e.target.value) : null)}
@@ -649,20 +691,7 @@ export default function OrganogramPage() {
                   </select>
                 </div>
               )}
-            </div>
-
-            <div className="flex gap-3 mt-8">
-              <button onClick={() => setModalOpen(false)} className="flex-1 btn-secondary py-3 font-bold">Cancel</button>
-              <button
-                onClick={handleSave}
-                disabled={!form.name || !form.code || saving}
-                className="flex-1 btn-primary py-3 font-bold"
-              >
-                {saving ? "Saving…" : "Save Unit"}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ─ Change History Drawer ─ */}
@@ -676,10 +705,10 @@ export default function OrganogramPage() {
                 <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Organogram Change History</h3>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1">
+                <button type="button" aria-label="Refresh organogram history" title="Refresh organogram history" onClick={loadHistory} className="text-neutral-400 hover:text-neutral-600 p-1">
                   <span className={`material-symbols-outlined text-[18px] ${historyLoading ? "animate-spin" : ""}`}>refresh</span>
                 </button>
-                <button onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-neutral-600 p-1">
+                <button type="button" aria-label="Close organogram history" title="Close organogram history" onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-neutral-600 p-1">
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
               </div>

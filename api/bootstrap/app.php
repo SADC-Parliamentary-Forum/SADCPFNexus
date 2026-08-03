@@ -34,6 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\AssignRequestId::class,
         ], append: [
             \App\Http\Middleware\RequireMfaForPrivileged::class,
+            \App\Http\Middleware\EnforceRegisteredEndpointAccess::class,
+            \App\Http\Middleware\EnforceAdminMaintenanceMode::class,
         ]);
         // Append security headers to all responses.
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
@@ -44,6 +46,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'mfa.privileged' => \App\Http\Middleware\RequireMfaForPrivileged::class,
             'access' => \App\Http\Middleware\EnforceAccessPermission::class,
+            'access.registered' => \App\Http\Middleware\EnforceRegisteredEndpointAccess::class,
+            'admin.maintenance' => \App\Http\Middleware\EnforceAdminMaintenanceMode::class,
         ]);
 
         // Exclude email-approval POST routes from CSRF: the token in the URL path

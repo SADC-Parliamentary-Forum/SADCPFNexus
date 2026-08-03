@@ -20,42 +20,114 @@ class _DrawerEntry {
     required this.label,
     required this.icon,
     this.activeIcon,
+    this.selectedPrefix,
   });
   final String path;
   final String label;
   final IconData icon;
   final IconData? activeIcon;
+  final String? selectedPrefix;
 }
 
 const _mainEntries = [
-  _DrawerEntry(path: '/dashboard', label: 'Home', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard),
-  _DrawerEntry(path: '/requests', label: 'Requests', icon: Icons.description_outlined, activeIcon: Icons.description),
-  _DrawerEntry(path: '/approvals', label: 'Approvals', icon: Icons.approval_outlined, activeIcon: Icons.approval),
-  _DrawerEntry(path: '/reports', label: 'Reports', icon: Icons.analytics_outlined, activeIcon: Icons.analytics),
-  _DrawerEntry(path: '/profile', label: 'Profile', icon: Icons.person_outline, activeIcon: Icons.person),
+  _DrawerEntry(
+      path: '/dashboard',
+      label: 'Home',
+      icon: Icons.dashboard_outlined,
+      activeIcon: Icons.dashboard),
+  _DrawerEntry(
+      path: '/requests',
+      label: 'Requests',
+      icon: Icons.description_outlined,
+      activeIcon: Icons.description),
+  _DrawerEntry(
+      path: '/approvals',
+      label: 'Approvals',
+      icon: Icons.approval_outlined,
+      activeIcon: Icons.approval),
+  _DrawerEntry(
+      path: '/reports',
+      label: 'Reports',
+      icon: Icons.analytics_outlined,
+      activeIcon: Icons.analytics),
+  _DrawerEntry(
+      path: '/profile',
+      label: 'Profile',
+      icon: Icons.person_outline,
+      activeIcon: Icons.person),
 ];
 
 const _moduleEntries = [
-  _DrawerEntry(path: '/requests/travel/new', label: 'Travel', icon: Icons.flight_takeoff),
-  _DrawerEntry(path: '/requests', label: 'Leave', icon: Icons.event_available),
-  _DrawerEntry(path: '/finance/command-center', label: 'Finance', icon: Icons.account_balance_outlined),
-  _DrawerEntry(path: '/procurement', label: 'Procurement', icon: Icons.inventory_2_outlined),
-  _DrawerEntry(path: '/imprest/form', label: 'Imprest', icon: Icons.account_balance_wallet_outlined),
-  _DrawerEntry(path: '/timesheets', label: 'Timesheets', icon: Icons.schedule_outlined),
+  _DrawerEntry(
+      path: '/requests/travel/new',
+      label: 'New travel request',
+      icon: Icons.flight_takeoff,
+      selectedPrefix: '/requests/travel'),
+  _DrawerEntry(
+      path: '/requests/leave/new',
+      label: 'New leave request',
+      icon: Icons.event_available,
+      selectedPrefix: '/requests/leave'),
+  _DrawerEntry(
+      path: '/finance/command-center',
+      label: 'Finance',
+      icon: Icons.account_balance_outlined),
+  _DrawerEntry(
+      path: '/procurement',
+      label: 'Procurement',
+      icon: Icons.inventory_2_outlined),
+  _DrawerEntry(
+      path: '/imprest/form',
+      label: 'Imprest',
+      icon: Icons.account_balance_wallet_outlined),
+  _DrawerEntry(
+      path: '/timesheets', label: 'Timesheets', icon: Icons.schedule_outlined),
   _DrawerEntry(path: '/hr/dashboard', label: 'HR', icon: Icons.people_outline),
-  _DrawerEntry(path: '/hr/performance', label: 'Performance Tracker', icon: Icons.trending_up_outlined),
-  _DrawerEntry(path: '/hr/files', label: 'Employee Files', icon: Icons.folder_shared_outlined),
-  _DrawerEntry(path: '/pif/form', label: 'PIF', icon: Icons.description_outlined),
-  _DrawerEntry(path: '/governance/meetings', label: 'Governance', icon: Icons.gavel_outlined),
-  _DrawerEntry(path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
-  _DrawerEntry(path: '/assets/fleet', label: 'Fleet', icon: Icons.directions_car_outlined),
-  _DrawerEntry(path: '/assignments', label: 'Assignments', icon: Icons.assignment_outlined),
+  _DrawerEntry(
+      path: '/hr/assignments',
+      label: 'HR Work',
+      icon: Icons.assignment_ind_outlined),
+  _DrawerEntry(
+      path: '/hr/performance',
+      label: 'Performance Tracker',
+      icon: Icons.trending_up_outlined),
+  _DrawerEntry(
+      path: '/hr/files',
+      label: 'Employee Files',
+      icon: Icons.folder_shared_outlined),
+  _DrawerEntry(
+      path: '/pif/form', label: 'New PIF', icon: Icons.description_outlined),
+  _DrawerEntry(
+      path: '/governance/meetings',
+      label: 'Governance',
+      icon: Icons.gavel_outlined),
+  _DrawerEntry(
+      path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
+  _DrawerEntry(
+      path: '/assets/fleet',
+      label: 'Fleet',
+      icon: Icons.directions_car_outlined),
+  _DrawerEntry(
+      path: '/assignments',
+      label: 'Accountability',
+      icon: Icons.assignment_outlined),
   _DrawerEntry(path: '/audit', label: 'Audit', icon: Icons.policy_outlined),
-  _DrawerEntry(path: '/risk', label: 'Risk', icon: Icons.warning_amber_outlined),
-  _DrawerEntry(path: '/correspondence', label: 'Correspondence', icon: Icons.mail_outline),
-  _DrawerEntry(path: '/stock/scan', label: 'Stock scan', icon: Icons.qr_code_scanner),
-  _DrawerEntry(path: '/weekly-summaries', label: 'Weekly summaries', icon: Icons.summarize_outlined),
-  _DrawerEntry(path: '/budget/cashflow', label: 'Budget cashflow', icon: Icons.waterfall_chart),
+  _DrawerEntry(
+      path: '/risk', label: 'Risk', icon: Icons.warning_amber_outlined),
+  _DrawerEntry(
+      path: '/correspondence',
+      label: 'Correspondence',
+      icon: Icons.mail_outline),
+  _DrawerEntry(
+      path: '/stock/scan', label: 'Stock scan', icon: Icons.qr_code_scanner),
+  _DrawerEntry(
+      path: '/weekly-summaries',
+      label: 'Weekly summaries',
+      icon: Icons.summarize_outlined),
+  _DrawerEntry(
+      path: '/budget/cashflow',
+      label: 'Budget cashflow',
+      icon: Icons.waterfall_chart),
 ];
 
 class _AppDrawerState extends ConsumerState<AppDrawer> {
@@ -86,11 +158,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final location = GoRouter.of(context).routeInformationProvider.value.uri.toString();
+    final location =
+        GoRouter.of(context).routeInformationProvider.value.uri.path;
 
-    bool isSelected(String path) {
+    bool isPathSelected(String path) {
       if (path == '/dashboard') return location.startsWith('/dashboard');
+      if (path == '/requests') return location == '/requests';
       return location.startsWith(path);
+    }
+
+    bool isEntrySelected(_DrawerEntry entry) {
+      return isPathSelected(entry.selectedPrefix ?? entry.path);
     }
 
     void closeAndGo(String path) {
@@ -105,7 +183,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           icon: e.icon,
           activeIcon: e.activeIcon,
           label: e.label,
-          isSelected: isSelected(e.path),
+          isSelected: isEntrySelected(e),
           onTap: () => closeAndGo(e.path),
         ));
       }
@@ -118,7 +196,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           icon: e.icon,
           activeIcon: e.activeIcon,
           label: e.label,
-          isSelected: isSelected(e.path),
+          isSelected: isEntrySelected(e),
           onTap: () => closeAndGo(e.path),
         ));
       }
@@ -191,14 +269,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   _DrawerTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
-                    isSelected: isSelected('/profile'),
+                    isSelected: isPathSelected('/profile'),
                     onTap: () => closeAndGo('/profile'),
                   ),
                   const Divider(height: 24),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     child: Text(
-                      'Travel Requisition Form design • Stitch',
+                      'SADCPFNexus Mobile',
                       style: textTheme.labelSmall?.copyWith(
                         color: c.onSurface.withValues(alpha: 0.5),
                         fontSize: 10,

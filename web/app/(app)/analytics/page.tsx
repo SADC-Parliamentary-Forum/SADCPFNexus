@@ -359,7 +359,7 @@ export default function AnalyticsPage() {
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">Latest system events from the audit log.</p>
             </div>
-            <Link href="/admin/audit" className="text-sm text-primary hover:underline">View All</Link>
+            <Link href="/admin/audit-trail" className="text-sm text-primary hover:underline">View All</Link>
           </div>
           {loading ? (
             <div className="space-y-3 animate-pulse">

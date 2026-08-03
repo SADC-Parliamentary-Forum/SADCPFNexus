@@ -68,7 +68,7 @@ function ReviewModal({
           <h3 className="text-base font-bold text-neutral-900">
             {action === "approve" ? "Approve Profile Changes" : "Reject Profile Changes"}
           </h3>
-          <button type="button" onClick={onClose} className="ml-auto text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} aria-label="Close profile request review" className="ml-auto text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>

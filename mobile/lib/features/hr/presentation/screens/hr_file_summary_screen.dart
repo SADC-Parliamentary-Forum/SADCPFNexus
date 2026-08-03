@@ -75,10 +75,10 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
       }
 
       setState(() => _loading = false);
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = 'Failed to load HR personal file. Please try again.';
       });
     }
   }
@@ -114,8 +114,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                 Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textMuted),
+                  style:
+                      const TextStyle(fontSize: 13, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -162,7 +162,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textMuted,
           indicatorColor: AppColors.primary,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          labelStyle:
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Summary'),
             Tab(text: 'Employment'),
@@ -307,8 +308,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
 
     final emergencyContact = f['emergency_contact'] as Map<String, dynamic>?;
 
-    final latestAppraisal =
-        f['latest_appraisal'] as Map<String, dynamic>?;
+    final latestAppraisal = f['latest_appraisal'] as Map<String, dynamic>?;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
@@ -352,8 +352,10 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
           title: 'Key Dates',
           rows: [
             ('Appointment Date', _formatDate(appointmentDate) ?? 'Not set'),
-            ('Confirmation Date',
-                _formatDate(confirmationDate) ?? 'Not confirmed'),
+            (
+              'Confirmation Date',
+              _formatDate(confirmationDate) ?? 'Not confirmed'
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -364,8 +366,10 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
             title: 'Emergency Contact',
             rows: [
               ('Name', emergencyContact['name']?.toString() ?? 'N/A'),
-              ('Relationship',
-                  emergencyContact['relationship']?.toString() ?? 'N/A'),
+              (
+                'Relationship',
+                emergencyContact['relationship']?.toString() ?? 'N/A'
+              ),
               ('Phone', emergencyContact['phone']?.toString() ?? 'N/A'),
             ],
           ),
@@ -417,8 +421,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
     if (contractExpiry != null) {
       try {
         final exp = DateTime.parse(contractExpiry);
-        contractExpiringSoon =
-            exp.difference(DateTime.now()).inDays <= 90;
+        contractExpiringSoon = exp.difference(DateTime.now()).inDays <= 90;
       } catch (_) {}
     }
 
@@ -444,8 +447,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                     const Text(
                       'Contract Expiry',
                       style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary),
+                          fontSize: 12, color: AppColors.textSecondary),
                     ),
                     Text(
                       _formatDate(contractExpiry) ?? contractExpiry,
@@ -472,8 +474,12 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
             items: promotionHistory
                 .cast<Map<String, dynamic>>()
                 .map((p) => _HistoryItem(
-                      title: p['title']?.toString() ?? p['position']?.toString() ?? 'Promotion',
-                      date: _formatDate(p['date']?.toString()) ?? p['date']?.toString() ?? '',
+                      title: p['title']?.toString() ??
+                          p['position']?.toString() ??
+                          'Promotion',
+                      date: _formatDate(p['date']?.toString()) ??
+                          p['date']?.toString() ??
+                          '',
                       subtitle: p['from']?.toString(),
                     ))
                 .toList(),
@@ -493,7 +499,9 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                       title: t['to_department']?.toString() ??
                           t['department']?.toString() ??
                           'Transfer',
-                      date: _formatDate(t['date']?.toString()) ?? t['date']?.toString() ?? '',
+                      date: _formatDate(t['date']?.toString()) ??
+                          t['date']?.toString() ??
+                          '',
                       subtitle: t['from_department']?.toString(),
                     ))
                 .toList(),
@@ -506,8 +514,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
             padding: EdgeInsets.only(top: 8),
             child: Text(
               'No promotion or transfer history recorded.',
-              style:
-                  TextStyle(fontSize: 12, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
           ),
@@ -522,8 +529,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.folder_open_outlined,
-                size: 56,
-                color: AppColors.textMuted.withValues(alpha: 0.5)),
+                size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             const Text(
               'No documents uploaded',
@@ -552,8 +558,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.timeline,
-                size: 56,
-                color: AppColors.textMuted.withValues(alpha: 0.5)),
+                size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             const Text(
               'No timeline events',
@@ -599,8 +604,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: AppColors.bgSurface,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           title: const Text(
             'Add Timeline Event',
             style: TextStyle(
@@ -618,8 +623,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                   labelText: 'Event Title',
                   isDense: true,
                 ),
-                style: const TextStyle(
-                    fontSize: 14, color: AppColors.textPrimary),
+                style:
+                    const TextStyle(fontSize: 14, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -634,12 +639,10 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                           child: Text(
                             t
                                 .split('_')
-                                .map((w) =>
-                                    w[0].toUpperCase() + w.substring(1))
+                                .map((w) => w[0].toUpperCase() + w.substring(1))
                                 .join(' '),
                             style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textPrimary),
+                                fontSize: 13, color: AppColors.textPrimary),
                           ),
                         ))
                     .toList(),
@@ -654,8 +657,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                   labelText: 'Description (optional)',
                   isDense: true,
                 ),
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.textPrimary),
+                style:
+                    const TextStyle(fontSize: 13, color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -691,8 +694,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
                   }
                 }
               },
-              style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary),
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
               child: const Text('Add Event'),
             ),
           ],
@@ -768,8 +770,18 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
 
   static String _monthAbbr(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return months[month - 1];
   }
@@ -841,8 +853,7 @@ class _SummaryChip extends StatelessWidget {
             ),
             Text(
               label,
-              style: const TextStyle(
-                  fontSize: 8, color: AppColors.textMuted),
+              style: const TextStyle(fontSize: 8, color: AppColors.textMuted),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -877,8 +888,7 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: Text(
               title,
               style: const TextStyle(
@@ -892,8 +902,7 @@ class _InfoCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.border),
           ...rows.map(
             (r) => Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -922,8 +931,7 @@ class _InfoCard extends StatelessWidget {
           ),
           if (extraWidget != null)
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: extraWidget!,
             ),
         ],
@@ -988,8 +996,7 @@ class _HistoryCard extends StatelessWidget {
           const Divider(height: 1, color: AppColors.border),
           ...items.map(
             (item) => Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Container(
@@ -1015,8 +1022,7 @@ class _HistoryCard extends StatelessWidget {
                           Text(
                             'From: ${item.subtitle}',
                             style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted),
+                                fontSize: 11, color: AppColors.textMuted),
                           ),
                       ],
                     ),
@@ -1089,7 +1095,8 @@ class _DocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = (doc['title'] ?? doc['document_name'] ?? 'Document').toString();
+    final title =
+        (doc['title'] ?? doc['document_name'] ?? 'Document').toString();
     final docType = doc['document_type'] as String?;
     final confidentiality = doc['confidentiality'] as String?;
     final uploadDate = doc['created_at'] as String?;
@@ -1116,8 +1123,7 @@ class _DocumentCard extends StatelessWidget {
               color: AppColors.info.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(_docIcon(docType),
-                size: 20, color: AppColors.info),
+            child: Icon(_docIcon(docType), size: 20, color: AppColors.info),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1136,8 +1142,7 @@ class _DocumentCard extends StatelessWidget {
                   Text(
                     docType
                         .split('_')
-                        .map(
-                            (w) => w[0].toUpperCase() + w.substring(1))
+                        .map((w) => w[0].toUpperCase() + w.substring(1))
                         .join(' '),
                     style: const TextStyle(
                         fontSize: 10, color: AppColors.textMuted),
@@ -1146,8 +1151,7 @@ class _DocumentCard extends StatelessWidget {
                   Text(
                     [
                       if (uploadedBy != null) 'By $uploadedBy',
-                      if (uploadDate != null)
-                        _fmtDate(uploadDate),
+                      if (uploadDate != null) _fmtDate(uploadDate),
                     ].join(' · '),
                     style: const TextStyle(
                         fontSize: 10, color: AppColors.textMuted),
@@ -1156,8 +1160,7 @@ class _DocumentCard extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
               color: cColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(5),
@@ -1181,8 +1184,18 @@ class _DocumentCard extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       const m = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${d.day} ${m[d.month - 1]} ${d.year}';
     } catch (_) {
@@ -1271,8 +1284,7 @@ class _TimelineEventTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
                           child: Text(
@@ -1294,8 +1306,7 @@ class _TimelineEventTile extends StatelessWidget {
                           ),
                       ],
                     ),
-                    if (description != null &&
-                        description.isNotEmpty) ...[
+                    if (description != null && description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         description,
@@ -1319,8 +1330,18 @@ class _TimelineEventTile extends StatelessWidget {
     try {
       final d = DateTime.parse(raw);
       const m = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${d.day} ${m[d.month - 1]} ${d.year}';
     } catch (_) {

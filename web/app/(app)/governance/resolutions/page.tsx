@@ -143,6 +143,7 @@ function DocumentsPanel({ resolution, onRefresh }: { resolution: GovernanceResol
                     </button>
                     <button
                       onClick={() => handleDelete(code, doc)}
+                      aria-label={`Delete ${doc.original_filename}`}
                       className="flex items-center gap-0.5 rounded px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[13px]">delete</span>
@@ -274,7 +275,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
               {isEdit ? "Edit" : "New"} {type === "committee" ? "Committee" : "Plenary"} Resolution
             </h2>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close resolution form" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -336,7 +337,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
                       <div className="flex flex-1 items-center gap-2 min-w-0">
                         <span className="material-symbols-outlined text-green-600 text-[15px]">check_circle</span>
                         <span className="text-xs text-neutral-700 truncate flex-1">{queued.file.name}</span>
-                        <button type="button" onClick={() => removeQueued(code)} className="text-neutral-300 hover:text-red-500">
+                        <button type="button" onClick={() => removeQueued(code)} aria-label="Remove queued document" className="text-neutral-300 hover:text-red-500">
                           <span className="material-symbols-outlined text-[15px]">close</span>
                         </button>
                       </div>
@@ -419,10 +420,10 @@ function ResolutionDrawer({
             <button onClick={onEdit} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-neutral-100 transition-colors border border-neutral-200">
               <span className="material-symbols-outlined text-[14px]">edit</span>Edit
             </button>
-            <button onClick={handleDelete} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors border border-red-200">
+            <button onClick={handleDelete} aria-label="Delete resolution" className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors border border-red-200">
               <span className="material-symbols-outlined text-[14px]">delete</span>
             </button>
-            <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600 ml-1">
+            <button onClick={onClose} aria-label="Close resolution details" className="text-neutral-400 hover:text-neutral-600 ml-1">
               <span className="material-symbols-outlined">close</span>
             </button>
           </div>
@@ -576,7 +577,7 @@ function ManageCommitteesModal({
             <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
             <h2 className="font-semibold text-neutral-900">Manage Committees</h2>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close committee manager" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -606,7 +607,7 @@ function ManageCommitteesModal({
                   <button onClick={() => startEdit(c)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">edit</span>
                   </button>
-                  <button onClick={() => deleteItem(c)} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                  <button onClick={() => deleteItem(c)} aria-label={`Delete ${c.name}`} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </>
@@ -718,7 +719,7 @@ function ManageMeetingTypesModal({
             <span className="material-symbols-outlined text-primary text-[20px]">settings</span>
             <h2 className="font-semibold text-neutral-900">Manage Meeting Types</h2>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close meeting type manager" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -741,7 +742,7 @@ function ManageMeetingTypesModal({
                   <button onClick={() => startEdit(t)} className="text-neutral-400 hover:text-primary p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">edit</span>
                   </button>
-                  <button onClick={() => deleteItem(t)} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
+                  <button onClick={() => deleteItem(t)} aria-label={`Delete ${t.name}`} className="text-neutral-400 hover:text-red-500 p-1 transition-colors">
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </>
@@ -1114,7 +1115,7 @@ function MeetingFormModal({
           <h3 className="font-semibold text-neutral-900">
             {existing ? "Edit Meeting Minutes" : "Record Meeting Minutes"}
           </h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close meeting form" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -1208,7 +1209,7 @@ function MeetingFormModal({
                     <span className="material-symbols-outlined text-primary text-[15px]">description</span>
                     <span className="text-xs text-neutral-700 flex-1 truncate">{f.name}</span>
                     <span className="text-xs text-neutral-400">{f.size < 1024 ? `${f.size} B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(0)} KB` : `${(f.size / 1048576).toFixed(1)} MB`}</span>
-                    <button type="button" onClick={() => removeQueued(i)} className="text-neutral-300 hover:text-red-500">
+                    <button type="button" onClick={() => removeQueued(i)} aria-label={`Remove ${f.name}`} className="text-neutral-300 hover:text-red-500">
                       <span className="material-symbols-outlined text-[15px]">close</span>
                     </button>
                   </div>
@@ -1393,7 +1394,7 @@ function MeetingDrawer({
               <button onClick={() => setShowEdit(true)} className="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">edit</span>Edit
               </button>
-              <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600 ml-1">
+              <button onClick={onClose} aria-label="Close meeting details" className="text-neutral-400 hover:text-neutral-600 ml-1">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -1630,6 +1631,7 @@ function MeetingDrawer({
                           <span className="material-symbols-outlined text-[14px]">download</span>Download
                         </a>
                         <button onClick={() => handleDeleteDoc(att.id)}
+                          aria-label={`Delete ${att.original_filename}`}
                           className="text-neutral-300 hover:text-red-500 transition-colors ml-1">
                           <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
@@ -1655,7 +1657,7 @@ function MeetingDrawer({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
               <h3 className="font-semibold text-neutral-900">Formally Assign Task</h3>
-              <button onClick={() => setAssignItem(null)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={() => setAssignItem(null)} aria-label="Close assignment dialog" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -1763,7 +1765,7 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
             <span className="material-symbols-outlined text-[14px]">assignment_ind</span>Assign
           </button>
         )}
-        <button onClick={onDelete} className="text-neutral-300 hover:text-red-500 transition-colors p-1">
+        <button onClick={onDelete} aria-label="Delete action item" className="text-neutral-300 hover:text-red-500 transition-colors p-1">
           <span className="material-symbols-outlined text-[16px]">delete</span>
         </button>
       </div>

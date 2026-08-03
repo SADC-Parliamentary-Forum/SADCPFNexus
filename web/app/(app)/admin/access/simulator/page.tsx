@@ -4,6 +4,7 @@ import { useState } from "react";
 import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
+import { ObjectSummary } from "@/components/ui/ObjectSummary";
 
 export default function AccessSimulatorPage() {
   const [userId, setUserId] = useState("");
@@ -59,10 +60,8 @@ export default function AccessSimulatorPage() {
       </FormSection>
 
       {result ? (
-        <FormSection title="Simulation result" icon="terminal">
-          <pre className="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-800">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+        <FormSection title="Simulation result" icon="fact_check">
+          <ObjectSummary value={result} />
         </FormSection>
       ) : null}
     </div>

@@ -15,7 +15,7 @@ export default function AuditPlansPage() {
   const rows = (data as { data?: Array<Record<string, unknown>> })?.data ?? [];
 
   const create = useMutation({
-    mutationFn: () => auditApi.createPlan({ title, fiscal_year: new Date().getFullYear() }),
+    mutationFn: (planTitle: string) => auditApi.createPlan({ title: planTitle, fiscal_year: new Date().getFullYear() }),
     onSuccess: () => {
       setTitle("");
       qc.invalidateQueries({ queryKey: ["audit", "plans"] });
@@ -32,11 +32,27 @@ export default function AuditPlansPage() {
           className="flex gap-2"
           onSubmit={(e) => {
             e.preventDefault();
-            if (title.trim()) create.mutate();
+            const planTitle = title.trim();
+            if (!planTitle || create.isPending) return;
+            create.mutate(planTitle);
           }}
         >
-          <input className="border rounded px-2 py-1 text-sm" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Plan title" />
-          <button type="submit" className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded">Create draft</button>
+          <label className="sr-only" htmlFor="audit-plan-title">Plan title</label>
+          <input
+            id="audit-plan-title"
+            className="border rounded px-2 py-1 text-sm disabled:opacity-60"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Plan title"
+            disabled={create.isPending}
+          />
+          <button
+            type="submit"
+            className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={create.isPending || !title.trim()}
+          >
+            {create.isPending ? "Creating..." : "Create draft"}
+          </button>
         </form>
       }
     >
@@ -71,6 +87,13 @@ export default function AuditPlansPage() {
                 </td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td className="p-4 text-sm text-neutral-500" colSpan={5}>
+                  No audit plans yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}

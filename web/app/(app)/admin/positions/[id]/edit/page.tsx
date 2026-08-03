@@ -1,10 +1,10 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { redirect } from "next/navigation";
 
-export default function AdminPositionEditRedirect() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  useEffect(() => { router.replace(`/hr/positions/${id}/edit`); }, [router, id]);
-  return null;
+export default async function AdminPositionEditRedirect({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  redirect(`/hr/positions/${id}/edit`);
 }

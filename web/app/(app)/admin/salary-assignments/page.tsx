@@ -11,6 +11,8 @@ import {
   type TenantUserOption,
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { Modal } from "@/components/ui/Modal";
 
 type GradeBand = { id: number; code: string; label: string; salary_scales?: SalaryScale[] };
 type SalaryScale = { id: number; grade_band_id: number; status: string; notches?: { notch: number; monthly: number }[] };
@@ -20,6 +22,7 @@ function fmt2(n: number) {
 }
 
 export default function SalaryAssignmentsPage() {
+  const { confirm } = useConfirm();
   const [assignments, setAssignments] = useState<EmployeeSalaryAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +125,13 @@ export default function SalaryAssignmentsPage() {
   };
 
   const handleRemove = async (id: number) => {
-    if (!confirm("Remove this salary assignment?")) return;
+    if (
+      !(await confirm({
+        title: "Remove salary assignment",
+        message: "Remove this salary assignment?",
+        variant: "danger",
+      }))
+    ) return;
     await salaryAssignmentApi.remove(id);
     load();
   };
@@ -210,10 +219,8 @@ export default function SalaryAssignmentsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900">{editId ? "Edit" : "Assign"} Grade Band</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <Modal open title={`${editId ? "Edit" : "Assign"} Grade Band`} onClose={() => setShowModal(false)} size="lg">
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Employee <span className="text-red-500">*</span></label>
                 <select className="form-input w-full" value={form.user_id} onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))} required disabled={!!editId}>
@@ -267,9 +274,8 @@ export default function SalaryAssignmentsPage() {
                   {submitting ? "Saving…" : editId ? "Update" : "Create"}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

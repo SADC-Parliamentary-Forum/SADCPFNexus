@@ -403,6 +403,7 @@ export default function ProcurementCreatePage() {
                     <button
                       type="button"
                       onClick={() => removeStagedDoc(doc.id)}
+                      aria-label="Remove item"
                       className="text-neutral-400 hover:text-red-500 transition-colors shrink-0"
                     >
                       <span className="material-symbols-outlined text-[16px]">close</span>

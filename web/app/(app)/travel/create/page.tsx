@@ -387,6 +387,7 @@ function TravelCreatePageInner() {
   }, []);
   const canPrepareForOthers =
     mounted && (isSystemAdmin(user) || hasPermission(user, "travel.prepare-for-others"));
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState<FormData>({
     purpose: "",
@@ -837,6 +838,7 @@ function TravelCreatePageInner() {
               <input
                 type="date"
                 className="form-input"
+                min={todayIso}
                 value={form.departure_date}
                 onChange={(e) => updateField("departure_date", e.target.value)}
               />
@@ -848,6 +850,7 @@ function TravelCreatePageInner() {
               <input
                 type="date"
                 className="form-input"
+                min={form.departure_date || todayIso}
                 value={form.return_date}
                 onChange={(e) => updateField("return_date", e.target.value)}
               />

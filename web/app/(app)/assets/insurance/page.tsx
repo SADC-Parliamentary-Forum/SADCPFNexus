@@ -112,12 +112,30 @@ export default function AssetInsurancePage() {
       {tab === "policies" && (
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
-            <input className="form-input" placeholder="Policy number" value={policyForm.policy_number} onChange={(e) => setPolicyForm((f) => ({ ...f, policy_number: e.target.value }))} />
-            <input className="form-input" placeholder="Insurer" value={policyForm.insurer_name} onChange={(e) => setPolicyForm((f) => ({ ...f, insurer_name: e.target.value }))} />
-            <input className="form-input" placeholder="Coverage type" value={policyForm.coverage_type} onChange={(e) => setPolicyForm((f) => ({ ...f, coverage_type: e.target.value }))} />
-            <input className="form-input" type="date" value={policyForm.effective_from} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_from: e.target.value }))} />
-            <input className="form-input" type="date" value={policyForm.effective_to} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_to: e.target.value }))} />
-            <input className="form-input" type="number" placeholder="Sum insured" value={policyForm.sum_insured} onChange={(e) => setPolicyForm((f) => ({ ...f, sum_insured: e.target.value }))} />
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-number">
+              Policy number
+              <input id="policy-number" className="form-input" value={policyForm.policy_number} onChange={(e) => setPolicyForm((f) => ({ ...f, policy_number: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-insurer">
+              Insurer
+              <input id="policy-insurer" className="form-input" value={policyForm.insurer_name} onChange={(e) => setPolicyForm((f) => ({ ...f, insurer_name: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-coverage-type">
+              Coverage type
+              <input id="policy-coverage-type" className="form-input" value={policyForm.coverage_type} onChange={(e) => setPolicyForm((f) => ({ ...f, coverage_type: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-effective-from">
+              Effective from
+              <input id="policy-effective-from" className="form-input" type="date" value={policyForm.effective_from} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_from: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-effective-to">
+              Effective to
+              <input id="policy-effective-to" className="form-input" type="date" value={policyForm.effective_to} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_to: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-sum-insured">
+              Sum insured
+              <input id="policy-sum-insured" className="form-input" type="number" min={0} value={policyForm.sum_insured} onChange={(e) => setPolicyForm((f) => ({ ...f, sum_insured: e.target.value }))} />
+            </label>
             <button
               type="button"
               className="btn-primary text-sm md:col-span-3"
@@ -160,16 +178,31 @@ export default function AssetInsurancePage() {
       {tab === "claims" && (
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
-            <select className="form-input" value={claimForm.policy_id} onChange={(e) => setClaimForm((f) => ({ ...f, policy_id: e.target.value }))}>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-policy">
+              Policy
+            <select id="claim-policy" className="form-input" value={claimForm.policy_id} onChange={(e) => setClaimForm((f) => ({ ...f, policy_id: e.target.value }))}>
               <option value="">Select policy</option>
               {policies.map((p) => (
                 <option key={p.id} value={p.id}>{p.policy_number} — {p.insurer_name}</option>
               ))}
             </select>
-            <input className="form-input" placeholder="Claim number" value={claimForm.claim_number} onChange={(e) => setClaimForm((f) => ({ ...f, claim_number: e.target.value }))} />
-            <input className="form-input" type="date" value={claimForm.incident_date} onChange={(e) => setClaimForm((f) => ({ ...f, incident_date: e.target.value }))} />
-            <input className="form-input" type="number" placeholder="Claim amount" value={claimForm.claim_amount} onChange={(e) => setClaimForm((f) => ({ ...f, claim_amount: e.target.value }))} />
-            <input className="form-input md:col-span-2" placeholder="Description" value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-number">
+              Claim number
+              <input id="claim-number" className="form-input" value={claimForm.claim_number} onChange={(e) => setClaimForm((f) => ({ ...f, claim_number: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-incident-date">
+              Incident date
+              <input id="claim-incident-date" className="form-input" type="date" value={claimForm.incident_date} onChange={(e) => setClaimForm((f) => ({ ...f, incident_date: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-amount">
+              Claim amount
+              <input id="claim-amount" className="form-input" type="number" min={0} value={claimForm.claim_amount} onChange={(e) => setClaimForm((f) => ({ ...f, claim_amount: e.target.value }))} />
+            </label>
+            <label className="space-y-1 text-xs font-semibold text-neutral-700 md:col-span-2" htmlFor="claim-description">
+              Description
+              <input id="claim-description" className="form-input" value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} />
+            </label>
             <button
               type="button"
               className="btn-primary text-sm md:col-span-3"

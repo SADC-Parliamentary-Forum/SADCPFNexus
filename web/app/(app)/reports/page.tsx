@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { AccessDenied } from "@/components/ui/AccessDenied";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -284,21 +285,53 @@ export default function ReportsPage() {
   const [assetCategories, setAssetCategories] = useState<AssetCategory[]>([]);
   const [canExport, setCanExport] = useState(false);
   const [isManager, setIsManager] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [canSchedule, setCanSchedule] = useState(false);
+  const [schedules, setSchedules] = useState<Array<Record<string, unknown>>>([]);
+  const [exportEvents, setExportEvents] = useState<Array<Record<string, unknown>>>([]);
+  const [scheduleForm, setScheduleForm] = useState({ label: "", frequency: "monthly", format: "csv", recipients: "" });
+  const [scheduleNotice, setScheduleNotice] = useState<string | null>(null);
 
   // Auth guard + load filter data
   useEffect(() => {
     const user = getStoredUser();
     if (!user || !hasPermission(user, "reports.view")) {
-      router.replace("/dashboard");
+      setAccessDenied(true);
       return;
     }
     setCanExport(hasPermission(user, "reports.export"));
     setIsManager(hasPermission(user, "reports.export"));
+    setCanSchedule(hasPermission(user, "reports.schedule"));
 
     reportsApi.users().then((r) => setReportUsers(r.data.data ?? [])).catch(() => {});
     reportsApi.departments().then((r) => setDepartments(r.data.data ?? [])).catch(() => {});
     assetCategoriesApi.list().then((r) => setAssetCategories(r.data.data ?? [])).catch(() => {});
+    reportsApi.schedules().then((r) => setSchedules(r.data.data ?? [])).catch(() => {});
+    reportsApi.exportEvents().then((r) => setExportEvents(r.data.data ?? [])).catch(() => {});
   }, [router]);
+
+  const submitSchedule = async () => {
+    if (!scheduleForm.label.trim() || !scheduleForm.recipients.trim()) return;
+    setScheduleNotice(null);
+    try {
+      await reportsApi.createSchedule({
+        report_key: activeModule,
+        label: scheduleForm.label,
+        frequency: scheduleForm.frequency,
+        format: scheduleForm.format,
+        recipients: scheduleForm.recipients.split(",").map((email) => email.trim()).filter(Boolean),
+        filters: buildApiParams(filters),
+      });
+      setScheduleNotice("Scheduled report submitted for approval.");
+      setScheduleForm({ label: "", frequency: "monthly", format: "csv", recipients: "" });
+      const response = await reportsApi.schedules();
+      setSchedules(response.data.data ?? []);
+      const exports = await reportsApi.exportEvents();
+      setExportEvents(exports.data.data ?? []);
+    } catch {
+      setScheduleNotice("Unable to create the scheduled report.");
+    }
+  };
 
   // Reset rows when module changes
   useEffect(() => {
@@ -354,12 +387,12 @@ export default function ReportsPage() {
     }
   }, [activeModule, filters]);
 
-  const exportCsv = useCallback(async () => {
+  const exportGenerated = useCallback(async (format: "csv" | "xlsx" | "pdf") => {
     if (!canExport) return;
     setExporting(true);
     setError(null);
     try {
-      const params = buildApiParams(filters, { format: "csv" });
+      const params = buildApiParams(filters, { format });
       let res;
       switch (activeModule) {
         case "travel":          res = await api.get("/reports/travel", { params, responseType: "blob" }); break;
@@ -375,13 +408,17 @@ export default function ReportsPage() {
         default: setExporting(false); return;
       }
       const date = new Date().toISOString().slice(0, 10);
-      downloadBlob(res.data as Blob, `${activeModule}-report-${date}.csv`);
+      downloadBlob(res.data as Blob, `${activeModule}-report-${date}.${format}`);
     } catch {
       setError("Export failed. You may not have permission to export reports.");
     } finally {
       setExporting(false);
     }
   }, [activeModule, filters, canExport]);
+
+  const exportCsv = useCallback(() => exportGenerated("csv"), [exportGenerated]);
+  const exportXlsx = useCallback(() => exportGenerated("xlsx"), [exportGenerated]);
+  const exportPdfFile = useCallback(() => exportGenerated("pdf"), [exportGenerated]);
 
   const exportPdf = useCallback(() => {
     if (!rows || rows.length === 0 || !module) return;
@@ -410,6 +447,10 @@ export default function ReportsPage() {
 
   const previewRows = rows?.slice(0, 10) ?? [];
 
+  if (accessDenied) {
+    return <AccessDenied path="/reports" reason="Your account does not have permission to view shared reports." />;
+  }
+
   return (
     <div className="space-y-5">
       {/* Page Header */}
@@ -424,6 +465,69 @@ export default function ReportsPage() {
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error}
         </div>
+      )}
+
+      {canSchedule && (
+        <section className="card p-5" aria-labelledby="scheduled-reports-heading">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="scheduled-reports-heading" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Scheduled management information</h2>
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">Save the current report and filter scope for controlled recurring delivery.</p>
+            </div>
+            <span className="badge badge-muted">{schedules.length} schedules</span>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-4">
+            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Name
+              <input className="form-input mt-1 text-sm" value={scheduleForm.label} onChange={(event) => setScheduleForm((prev) => ({ ...prev, label: event.target.value }))} placeholder="Monthly travel report" />
+            </label>
+            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Frequency
+              <select className="form-input mt-1 text-sm" value={scheduleForm.frequency} onChange={(event) => setScheduleForm((prev) => ({ ...prev, frequency: event.target.value }))}>
+                <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Format
+              <select className="form-input mt-1 text-sm" value={scheduleForm.format} onChange={(event) => setScheduleForm((prev) => ({ ...prev, format: event.target.value }))}>
+                <option value="csv">CSV</option><option value="xlsx">Excel</option><option value="pdf">PDF</option>
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Recipients
+              <input className="form-input mt-1 text-sm" value={scheduleForm.recipients} onChange={(event) => setScheduleForm((prev) => ({ ...prev, recipients: event.target.value }))} placeholder="name@example.org" />
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-primary text-xs" onClick={submitSchedule}>Submit schedule</button>
+            {scheduleNotice ? <span className="text-xs text-neutral-500 dark:text-neutral-400" role="status">{scheduleNotice}</span> : null}
+          </div>
+          {schedules.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="data-table text-xs">
+                <thead><tr><th>Name</th><th>Report</th><th>Frequency</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>{schedules.slice(0, 8).map((schedule, index) => (
+                  <tr key={String(schedule.id ?? index)}>
+                    <td>{String(schedule.label ?? "-")}</td><td>{String(schedule.report_key ?? "-")}</td><td className="capitalize">{String(schedule.frequency ?? "-")}</td>
+                    <td><span className="badge badge-muted capitalize">{String(schedule.status ?? "-")}</span></td>
+                    <td>{schedule.status === "requested" ? <button type="button" className="btn-secondary text-xs" onClick={async () => { if (schedule.id) { await reportsApi.approveSchedule(Number(schedule.id)); const response = await reportsApi.schedules(); setSchedules(response.data.data ?? []); } }}>Approve</button> : schedule.status === "active" ? <button type="button" className="btn-secondary text-xs" onClick={async () => { if (schedule.id) { await reportsApi.pauseSchedule(Number(schedule.id)); const response = await reportsApi.schedules(); setSchedules(response.data.data ?? []); } }}>Pause</button> : null}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          ) : null}
+          {exportEvents.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Export history</h3>
+              <table className="data-table text-xs">
+                <thead><tr><th>Reference</th><th>Report</th><th>Status</th><th>Rows</th><th>Action</th></tr></thead>
+                <tbody>{exportEvents.slice(0, 8).map((item, index) => (
+                  <tr key={String(item.id ?? index)}>
+                    <td className="font-mono">{String(item.reference ?? "-")}</td><td>{String(item.report_key ?? "-")}</td>
+                    <td><span className="badge badge-muted capitalize">{String(item.status ?? "-")}</span></td><td>{String(item.rows_count ?? "-")}</td>
+                    <td>{item.status === "completed" && item.id ? <button type="button" className="btn-secondary text-xs" onClick={async () => { const response = await reportsApi.downloadExport(Number(item.id)); downloadBlob(response.data as Blob, `${String(item.reference ?? "report-export")}.csv`); }}>Download</button> : null}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
       )}
 
       <div className="flex gap-5">
@@ -614,6 +718,30 @@ export default function ReportsPage() {
                       <span className="material-symbols-outlined text-[15px]">table_view</span>
                     )}
                     {exporting ? "Exporting…" : "Export CSV"}
+                  </button>
+                )}
+
+                {canExport && rows !== null && activeModule !== "budget" && (
+                  <button
+                    type="button"
+                    onClick={exportXlsx}
+                    disabled={exporting}
+                    className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">grid_on</span>
+                    Export Excel
+                  </button>
+                )}
+
+                {canExport && rows !== null && activeModule !== "budget" && (
+                  <button
+                    type="button"
+                    onClick={exportPdfFile}
+                    disabled={exporting}
+                    className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-[15px] text-red-500">picture_as_pdf</span>
+                    Export PDF
                   </button>
                 )}
 

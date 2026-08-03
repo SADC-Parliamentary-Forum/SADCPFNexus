@@ -84,7 +84,6 @@ export default function PlatformAuditTrailAdminPage() {
           <Link href="/admin/audit-trail/forensics" className="btn-secondary text-xs">Forensics</Link>
           <Link href="/admin/audit-trail/events" className="btn-secondary text-xs">Event types</Link>
           <Link href="/admin/audit-trail/governance" className="btn-primary text-xs">Governance</Link>
-          <Link href="/admin/audit" className="self-center text-xs text-neutral-500 underline">Legacy explorer</Link>
         </div>
       }
       stats={

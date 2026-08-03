@@ -5,6 +5,9 @@ import Link from "next/link";
 import { calendarApi, type CalendarEntry, type CalendarEntryInput } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { Modal } from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const SADC_COUNTRY_CODES: Record<string, string> = {
   NA: "Namibia (LIL uses NA only)",
@@ -29,6 +32,7 @@ const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
 
 export default function AdminCalendarPage() {
+  const { confirm } = useConfirm();
   const [tab, setTab] = useState<"manage" | "single" | "bulk">("manage");
   const [type, setType] = useState<"sadc_holiday" | "un_day">("sadc_holiday");
   const [countryCode, setCountryCode] = useState<string>("NA");
@@ -47,7 +51,6 @@ export default function AdminCalendarPage() {
   const [filterCountry, setFilterCountry] = useState<string>("");
   const [viewEntry, setViewEntry] = useState<CalendarEntry | null>(null);
   const [editEntry, setEditEntry] = useState<CalendarEntry | null>(null);
-  const [deleteEntry, setDeleteEntry] = useState<CalendarEntry | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -79,14 +82,20 @@ export default function AdminCalendarPage() {
     if (tab === "manage") loadList();
   }, [tab, filterType, filterYear, filterCountry]);
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteEntry) return;
+  const handleDeleteRequest = async (entry: CalendarEntry) => {
+    if (
+      !(await confirm({
+        title: "Delete calendar entry",
+        message: `"${entry.title}" (${formatDateShort(entry.date)}) will be removed.`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) return;
     setSubmitting(true);
     resetMessages();
     try {
-      await calendarApi.delete(deleteEntry.id);
+      await calendarApi.delete(entry.id);
       setSuccess("Entry deleted.");
-      setDeleteEntry(null);
       loadList();
     } catch {
       setError("Failed to delete entry.");
@@ -182,12 +191,25 @@ export default function AdminCalendarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <ModulePageHeader
+        title="Calendar Upload"
+        subtitle="Upload SADC public holidays, UN days, and calendar entries. Leave in lieu uses Namibia holidays only."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Admin", href: "/admin" },
+              { label: "Calendar Upload" },
+            ]}
+          />
+        }
+      />
+
+      <div className="hidden">
         <div>
           <Link href="/admin" className="text-sm text-neutral-500 hover:text-neutral-700 mb-1 block">
             ← Admin
           </Link>
-          <h1 className="page-title">Calendar Upload</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">Calendar Upload</h1>
           <p className="page-subtitle">
             Upload SADC public holidays, UN days, and calendar entries. Public holidays can be for the whole SADC region.
             Leave in lieu uses Namibia (NA) holidays only.
@@ -321,7 +343,7 @@ export default function AdminCalendarPage() {
                           {isAdmin && (
                             <>
                               <button type="button" onClick={() => setEditEntry(e)} className="text-primary hover:underline text-xs font-medium">Edit</button>
-                              <button type="button" onClick={() => setDeleteEntry(e)} className="text-red-600 hover:underline text-xs font-medium">Delete</button>
+                              <button type="button" onClick={() => handleDeleteRequest(e)} className="text-red-600 hover:underline text-xs font-medium">Delete</button>
                             </>
                           )}
                         </div>
@@ -449,27 +471,22 @@ export default function AdminCalendarPage() {
 
       {/* View modal */}
       {viewEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setViewEntry(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-lg font-bold text-neutral-900">View entry</h2>
-              <button type="button" onClick={() => setViewEntry(null)} className="text-neutral-400 hover:text-neutral-600">
-                <span className="material-symbols-outlined text-[22px]">close</span>
-              </button>
-            </div>
-            <dl className="space-y-2 text-sm">
-              <div><dt className="font-semibold text-neutral-500">Date</dt><dd className="text-neutral-900">{formatDateShort(viewEntry.date)}</dd></div>
-              <div><dt className="font-semibold text-neutral-500">Title</dt><dd className="text-neutral-900">{viewEntry.title}</dd></div>
-              <div><dt className="font-semibold text-neutral-500">Type</dt><dd className="text-neutral-900">{viewEntry.type === "un_day" ? "UN Day" : "Public Holiday"}</dd></div>
-              {viewEntry.country_code && <div><dt className="font-semibold text-neutral-500">Country</dt><dd className="text-neutral-900">{viewEntry.country_code}</dd></div>}
-              <div><dt className="font-semibold text-neutral-500">Show as alert</dt><dd className="text-neutral-900">{viewEntry.is_alert ? "Yes" : "No"}</dd></div>
-              {viewEntry.description && <div><dt className="font-semibold text-neutral-500">Description</dt><dd className="text-neutral-700">{viewEntry.description}</dd></div>}
-            </dl>
-            <div className="mt-6 flex justify-end">
-              <button type="button" onClick={() => setViewEntry(null)} className="btn-secondary px-4 py-2 text-sm">Close</button>
-            </div>
-          </div>
-        </div>
+        <Modal
+          open
+          title="View entry"
+          onClose={() => setViewEntry(null)}
+          size="md"
+          footer={<button type="button" onClick={() => setViewEntry(null)} className="btn-secondary px-4 py-2 text-sm">Close</button>}
+        >
+          <dl className="space-y-2 text-sm">
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Date</dt><dd className="text-neutral-900 dark:text-neutral-100">{formatDateShort(viewEntry.date)}</dd></div>
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Title</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.title}</dd></div>
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Type</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.type === "un_day" ? "UN Day" : "Public Holiday"}</dd></div>
+            {viewEntry.country_code && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Country</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.country_code}</dd></div>}
+            <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Show as alert</dt><dd className="text-neutral-900 dark:text-neutral-100">{viewEntry.is_alert ? "Yes" : "No"}</dd></div>
+            {viewEntry.description && <div><dt className="font-semibold text-neutral-500 dark:text-neutral-400">Description</dt><dd className="text-neutral-700 dark:text-neutral-300">{viewEntry.description}</dd></div>}
+          </dl>
+        </Modal>
       )}
 
       {/* Edit modal */}
@@ -483,23 +500,6 @@ export default function AdminCalendarPage() {
         />
       )}
 
-      {/* Delete confirm modal */}
-      {deleteEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setDeleteEntry(null)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-neutral-900 mb-2">Delete entry?</h2>
-            <p className="text-sm text-neutral-600 mb-4">
-              &quot;{deleteEntry.title}&quot; ({formatDateShort(deleteEntry.date)}) will be removed.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setDeleteEntry(null)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
-              <button type="button" onClick={handleDeleteConfirm} disabled={submitting} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -525,15 +525,8 @@ function EditCalendarModal({
   const [isAlert, setIsAlert] = useState(entry.is_alert);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-lg font-bold text-neutral-900">Edit entry</h2>
-          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
-            <span className="material-symbols-outlined text-[22px]">close</span>
-          </button>
-        </div>
-        <form onSubmit={(e) => onSubmit(e, { type, country_code: type === "un_day" ? null : countryCode, date, title, description: description || null, is_alert: isAlert })} className="space-y-4">
+    <Modal open title="Edit entry" onClose={onClose} size="md">
+      <form onSubmit={(e) => onSubmit(e, { type, country_code: type === "un_day" ? null : countryCode, date, title, description: description || null, is_alert: isAlert })} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Type</label>
             <div className="flex gap-2">
@@ -573,8 +566,7 @@ function EditCalendarModal({
               {submitting ? "Saving…" : "Save"}
             </button>
           </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

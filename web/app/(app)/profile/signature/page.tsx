@@ -7,12 +7,14 @@ import SignaturePad from "signature_pad";
 import { saamApi, type SignatureProfile } from "@/lib/api";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Tab = "full" | "initials";
 type InputMode = "draw" | "upload";
 
 export default function SignatureSetupPage() {
   const { success, error, info } = useToast();
+  const { confirm } = useConfirm();
   const [tab, setTab] = useState<Tab>("full");
   const [mode, setMode] = useState<InputMode>("draw");
   const [profiles, setProfiles] = useState<SignatureProfile[]>([]);
@@ -96,7 +98,13 @@ export default function SignatureSetupPage() {
   }
 
   async function revokeSignature(type: Tab) {
-    if (!confirm(`Revoke your ${type} signature? This action cannot be undone.`)) return;
+    if (
+      !(await confirm({
+        title: "Revoke signature",
+        message: `Revoke your ${type} signature? This action cannot be undone.`,
+        variant: "danger",
+      }))
+    ) return;
     try {
       await saamApi.revoke(type);
       success("Signature revoked.");

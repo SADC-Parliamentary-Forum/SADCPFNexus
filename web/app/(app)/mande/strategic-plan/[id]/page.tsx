@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type NodeDraft = { title: string; code: string; description: string };
 
@@ -79,6 +80,7 @@ export default function StrategicPlanDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
 
@@ -161,6 +163,16 @@ export default function StrategicPlanDetailPage() {
     setAddingOutputFor(kind === "output" ? parentId : null);
   };
 
+  const confirmDeleteNode = async (
+    type: "goal" | "objective" | "outcome" | "output",
+    nodeId: number,
+    message: string,
+  ) => {
+    if (await confirm({ title: `Delete ${type}`, message, variant: "danger" })) {
+      deleteMut.mutate({ type, nodeId });
+    }
+  };
+
   if (isLoading) {
     return <div className="px-5 py-10 text-sm text-neutral-400">Loading plan…</div>;
   }
@@ -233,11 +245,7 @@ export default function StrategicPlanDetailPage() {
                   <button
                     type="button"
                     className="text-red-500 text-xs hover:underline"
-                    onClick={() => {
-                      if (confirm("Delete this goal and its children?")) {
-                        deleteMut.mutate({ type: "goal", nodeId: goal.id });
-                      }
-                    }}
+                    onClick={() => confirmDeleteNode("goal", goal.id, "Delete this goal and its children?")}
                   >
                     Delete
                   </button>
@@ -278,11 +286,7 @@ export default function StrategicPlanDetailPage() {
                       <button
                         type="button"
                         className="text-red-500 text-xs hover:underline"
-                        onClick={() => {
-                          if (confirm("Delete this objective?")) {
-                            deleteMut.mutate({ type: "objective", nodeId: obj.id });
-                          }
-                        }}
+                        onClick={() => confirmDeleteNode("objective", obj.id, "Delete this objective?")}
                       >
                         Delete
                       </button>
@@ -323,11 +327,7 @@ export default function StrategicPlanDetailPage() {
                           <button
                             type="button"
                             className="text-red-500 text-xs hover:underline"
-                            onClick={() => {
-                              if (confirm("Delete this outcome?")) {
-                                deleteMut.mutate({ type: "outcome", nodeId: outcome.id });
-                              }
-                            }}
+                            onClick={() => confirmDeleteNode("outcome", outcome.id, "Delete this outcome?")}
                           >
                             Delete
                           </button>
@@ -361,11 +361,7 @@ export default function StrategicPlanDetailPage() {
                               <button
                                 type="button"
                                 className="text-red-500 text-xs hover:underline shrink-0"
-                                onClick={() => {
-                                  if (confirm("Delete this output?")) {
-                                    deleteMut.mutate({ type: "output", nodeId: output.id });
-                                  }
-                                }}
+                                onClick={() => confirmDeleteNode("output", output.id, "Delete this output?")}
                               >
                                 Delete
                               </button>

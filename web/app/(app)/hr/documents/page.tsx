@@ -317,6 +317,7 @@ export default function HrDocumentsPage() {
                 <button
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                   onClick={() => setSearch("")}
+                  aria-label="Clear document search"
                 >
                   <span className="material-symbols-outlined text-[17px]">close</span>
                 </button>

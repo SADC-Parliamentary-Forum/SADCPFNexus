@@ -68,10 +68,12 @@ class _EmployeePerformanceProfileScreenState
           const SnackBar(content: Text('Notes saved')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          const SnackBar(
+            content: Text('Failed to save notes. Please try again.'),
+          ),
         );
       }
     } finally {
@@ -204,8 +206,7 @@ class _EmployeePerformanceProfileScreenState
             ),
             Text(
               name,
-              style: const TextStyle(
-                  fontSize: 11, color: AppColors.textMuted),
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ],
         ),
@@ -383,8 +384,7 @@ class _EmployeePerformanceProfileScreenState
       itemBuilder: (_, i) {
         final label = scores[i].$1;
         final raw = scores[i].$2;
-        final value =
-            raw != null ? double.tryParse(raw.toString()) : null;
+        final value = raw != null ? double.tryParse(raw.toString()) : null;
         return _ScoreCard(label: label, score: value);
       },
     );
@@ -424,9 +424,8 @@ class _EmployeePerformanceProfileScreenState
               _MetricTile(
                 label: 'Blocked',
                 value: '$blocked',
-                color: blocked > 0
-                    ? const Color(0xFFF59E0B)
-                    : AppColors.textMuted,
+                color:
+                    blocked > 0 ? const Color(0xFFF59E0B) : AppColors.textMuted,
               ),
             ],
           ),
@@ -490,8 +489,7 @@ class _EmployeePerformanceProfileScreenState
         runSpacing: 8,
         children: flags.map((f) {
           return Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: f.$2.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
@@ -557,8 +555,8 @@ class _EmployeePerformanceProfileScreenState
                           strokeWidth: 2, color: AppColors.primary))
                   : const Text(
                       'Save Notes',
-                      style: TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
             ),
           ],
@@ -581,9 +579,8 @@ class _EmployeePerformanceProfileScreenState
             color: notes?.isNotEmpty == true
                 ? AppColors.textPrimary
                 : AppColors.textMuted,
-            fontStyle: notes?.isNotEmpty == true
-                ? FontStyle.normal
-                : FontStyle.italic,
+            fontStyle:
+                notes?.isNotEmpty == true ? FontStyle.normal : FontStyle.italic,
           ),
         ),
       );
@@ -721,8 +718,8 @@ class _ScoreCard extends StatelessWidget {
               ),
               Text(
                 hasScore ? '/ 10' : '',
-                style: const TextStyle(
-                    fontSize: 10, color: AppColors.textMuted),
+                style:
+                    const TextStyle(fontSize: 10, color: AppColors.textMuted),
               ),
             ],
           ),
@@ -774,8 +771,7 @@ class _MetricTile extends StatelessWidget {
             ),
             Text(
               label,
-              style: const TextStyle(
-                  fontSize: 9, color: AppColors.textMuted),
+              style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
             ),
           ],
         ),

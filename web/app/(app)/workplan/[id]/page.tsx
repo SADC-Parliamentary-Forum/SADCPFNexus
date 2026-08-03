@@ -16,6 +16,7 @@ import {
   type WorkplanAttachment,
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function asValidDate(value: string): Date | null {
   const d = new Date(value);
@@ -127,6 +128,7 @@ function ManageTypesModal({
   onDelete: (id: number) => Promise<unknown>;
   onClose: () => void;
 }) {
+  const { confirm } = useConfirm();
   const [newName, setNewName] = useState("");
   const [editId, setEditId]   = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -148,7 +150,7 @@ function ManageTypesModal({
   };
 
   const doDelete = async (id: number) => {
-    if (!confirm("Delete this item?")) return;
+    if (!(await confirm({ title: "Delete item", message: "Delete this item?", variant: "danger" }))) return;
     setBusy(true); setErr(null);
     try { await onDelete(id); } catch { setErr("Could not delete."); }
     finally { setBusy(false); }
@@ -159,7 +161,7 @@ function ManageTypesModal({
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
           <h3 className="font-semibold text-neutral-900">Manage {title}</h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button onClick={onClose} aria-label="Close manager" className="text-neutral-400 hover:text-neutral-600">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -568,7 +570,7 @@ export default function WorkplanEventDetailPage() {
               {selectedResponsibleUsers.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-sm">
                   {u.name}
-                  <button type="button" onClick={() => removeResponsible(u.id)}>
+                  <button type="button" onClick={() => removeResponsible(u.id)} aria-label={`Remove ${u.name}`}>
                     <span className="material-symbols-outlined text-[16px]">close</span>
                   </button>
                 </span>

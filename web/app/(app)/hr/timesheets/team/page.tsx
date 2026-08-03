@@ -75,7 +75,7 @@ function AppToast({ toast, onClose }: { toast: ToastState | null; onClose: () =>
         {toast.type === "success" ? "check_circle" : "error_outline"}
       </span>
       {toast.message}
-      <button type="button" onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
+      <button type="button" onClick={onClose} aria-label="Dismiss notification" className="ml-2 opacity-70 hover:opacity-100">
         <span className="material-symbols-outlined text-[16px]">close</span>
       </button>
     </div>
@@ -335,7 +335,7 @@ export default function TeamTimesheetsPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* View mode toggle */}
-          <div className="flex items-center rounded-lg border border-neutral-200 bg-white overflow-hidden">
+          <div className="flex items-center rounded-lg border border-neutral-200 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
             <button
               type="button"
               onClick={() => setViewMode("cards")}
@@ -380,7 +380,7 @@ export default function TeamTimesheetsPage() {
             </button>
           )}
           <div
-            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2 py-1"
+            className="flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
             data-testid="team-payroll-stage"
           >
             <select
@@ -466,7 +466,7 @@ export default function TeamTimesheetsPage() {
       </div>
 
       {exportHistory.length > 0 && (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4" data-testid="team-payroll-export-history">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900" data-testid="team-payroll-export-history">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-800">Payroll export history</h2>
             <button type="button" className="text-xs text-primary hover:underline" onClick={() => void loadExportHistory()}>
@@ -759,7 +759,7 @@ export default function TeamTimesheetsPage() {
                             <div className="flex items-center justify-end gap-1.5">
                               <Link
                                 href={`/hr/timesheets/${ts.id}`}
-                                className="flex h-7 items-center rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-600 hover:border-primary hover:text-primary transition-colors"
+                                className="flex h-7 items-center rounded-lg border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-600 hover:border-primary hover:text-primary transition-colors dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
                               >
                                 View
                               </Link>
@@ -873,7 +873,7 @@ export default function TeamTimesheetsPage() {
                 },
               ].map((item) => (
                 <div key={item.label} className={cn("rounded-xl p-4 flex items-start gap-3", item.bg)}>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/70">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/70 dark:bg-neutral-800">
                     <span className={cn("material-symbols-outlined text-[16px]", item.iconColor)}>{item.icon}</span>
                   </div>
                   <div>
@@ -890,7 +890,7 @@ export default function TeamTimesheetsPage() {
       {/* Bulk Approve Confirmation Modal */}
       {showBulkConfirm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100">
+          <div className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 dark:border-neutral-700 dark:bg-neutral-900">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
                 <span className="material-symbols-outlined text-primary text-[22px]">done_all</span>

@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_card.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 /// Accountability assignments (not HR work assignments).
 class AssignmentsListScreen extends ConsumerStatefulWidget {
@@ -59,7 +61,8 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
           _capacity = extractListData(cap);
         } else if (cap is Map && cap['data'] is Map) {
           final nested = cap['data'] as Map;
-          _capacity = extractListData(nested['people'] ?? nested['rows'] ?? nested);
+          _capacity =
+              extractListData(nested['people'] ?? nested['rows'] ?? nested);
         } else {
           _capacity = extractListData(cap);
         }
@@ -78,64 +81,46 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        title: const Text('Assignments',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 18)),
-        actions: [
-          IconButton(
-            tooltip: 'Audit',
-            icon: const Icon(Icons.policy_outlined, color: AppColors.textSecondary),
-            onPressed: () => context.push('/audit'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary),
-            onPressed: () => context.push('/assignments/calendar'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'Mine'),
-            Tab(text: 'Register'),
-            Tab(text: 'Capacity'),
-          ],
+    return StitchScreen(
+      title: 'Accountability',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Open audit workspace',
+          icon: Icons.policy_outlined,
+          onPressed: () => context.push('/audit'),
         ),
+        StitchIconAction(
+          tooltip: 'Open calendar',
+          icon: Icons.calendar_month_outlined,
+          onPressed: () => context.push('/assignments/calendar'),
+        ),
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
+        ),
+      ],
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        tabs: const [
+          Tab(text: 'Mine'),
+          Tab(text: 'Register'),
+          Tab(text: 'Capacity'),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/assignments/create'),
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('New', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add),
+        label: const Text('New'),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading assignments')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style:
-                              const TextStyle(color: AppColors.textSecondary)),
-                      TextButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : TabBarView(
                   controller: _tabs,
                   children: [
@@ -149,9 +134,10 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
 
   Widget _list(List<Map<String, dynamic>> items, {required String empty}) {
     if (items.isEmpty) {
-      return Center(
-          child: Text(empty,
-              style: const TextStyle(color: AppColors.textMuted)));
+      return StitchEmptyState(
+        icon: Icons.assignment_outlined,
+        title: empty,
+      );
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -161,38 +147,97 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
-          final a = items[i];
-          final id = a['id'];
-          return ListTile(
-            tileColor: AppColors.bgSurface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.border),
-            ),
-            title: Text(a['title']?.toString() ?? 'Assignment',
+          final assignment = items[i];
+          final id = assignment['id'];
+          return StitchCard(
+            padding: EdgeInsets.zero,
+            onTap: id == null ? null : () => context.push('/assignments/$id'),
+            child: ListTile(
+              title: Text(
+                assignment['title']?.toString() ?? 'Assignment',
                 style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700)),
-            subtitle: Text(
-              '${a['status'] ?? '—'} · due ${a['due_date'] ?? '—'}',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _statusChip(assignment['status']),
+                    Text(
+                      'Due ${assignment['due_date'] ?? '-'}',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              trailing:
+                  const Icon(Icons.chevron_right, color: AppColors.textMuted),
             ),
-            trailing: const Icon(Icons.chevron_right,
-                color: AppColors.textMuted),
-            onTap: id == null
-                ? null
-                : () => context.push('/assignments/$id'),
           );
         },
       ),
     );
   }
 
+  Widget _statusChip(Object? rawStatus) {
+    final status = rawStatus?.toString() ?? 'unknown';
+    final label = status
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+    final color = _statusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
+      ),
+      child: Text(
+        label.isEmpty ? 'Unknown' : label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'accepted':
+      case 'in_progress':
+      case 'started':
+        return AppColors.primary;
+      case 'completed':
+      case 'closed':
+        return AppColors.success;
+      case 'overdue':
+      case 'blocked':
+      case 'rejected':
+        return AppColors.danger;
+      default:
+        return AppColors.textMuted;
+    }
+  }
+
   Widget _capacityTab() {
     if (_capacity.isEmpty) {
-      return const Center(
-          child: Text('No capacity rows returned.',
-              style: TextStyle(color: AppColors.textMuted)));
+      return const StitchEmptyState(
+        icon: Icons.groups_outlined,
+        title: 'No capacity rows returned',
+      );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -208,18 +253,22 @@ class _AssignmentsListScreenState extends ConsumerState<AssignmentsListScreen>
             row['active_count'] ??
             row['load'] ??
             row['assignments_count'] ??
-            '—';
-        return ListTile(
-          tileColor: AppColors.bgSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          title: Text('$name',
+            '-';
+        return StitchCard(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            title: Text(
+              '$name',
               style: const TextStyle(
-                  color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-          subtitle: Text('Open load: $load',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Open load: $load',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ),
         );
       },
     );

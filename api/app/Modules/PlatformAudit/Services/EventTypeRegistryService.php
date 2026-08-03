@@ -96,14 +96,25 @@ class EventTypeRegistryService
             ['event_key' => 'system.config.updated', 'name' => 'Configuration updated', 'category' => 'Configuration', 'severity' => 'high'],
             ['event_key' => 'system.admin.action', 'name' => 'Administrator action', 'category' => 'System Administration', 'severity' => 'high'],
             ['event_key' => 'security.access.denied', 'name' => 'Access denied', 'category' => 'Security', 'severity' => 'medium'],
+            ['event_key' => 'security.alert.transitioned', 'name' => 'Security alert transitioned', 'category' => 'Security', 'severity' => 'high'],
             ['event_key' => 'security.integrity.failed', 'name' => 'Integrity failure', 'category' => 'Security', 'severity' => 'critical'],
             ['event_key' => 'migration.event.imported', 'name' => 'Legacy event migrated', 'category' => 'Migration', 'severity' => 'informational'],
             ['event_key' => 'audit.finding.closed', 'name' => 'Internal audit finding closed', 'category' => 'Internal Audit', 'severity' => 'medium'],
+            ['event_key' => 'audit.access.logged', 'name' => 'Audit trail access logged', 'category' => 'Data Access', 'severity' => 'medium'],
+            ['event_key' => 'audit.checkpoint.created', 'name' => 'Audit integrity checkpoint created', 'category' => 'Security', 'severity' => 'medium'],
+            ['event_key' => 'audit.dead_letter.replayed', 'name' => 'Audit dead-letter replayed', 'category' => 'Exception', 'severity' => 'high'],
+            ['event_key' => 'audit.governance.updated', 'name' => 'Audit governance decision updated', 'category' => 'Configuration', 'severity' => 'high'],
+            ['event_key' => 'audit.outbox.processed', 'name' => 'Audit outbox processed', 'category' => 'Background Processing', 'severity' => 'medium'],
+            ['event_key' => 'audit.reconciliation.completed', 'name' => 'Audit reconciliation completed', 'category' => 'Exception', 'severity' => 'medium'],
             ['event_key' => 'data.access.viewed', 'name' => 'Record viewed', 'category' => 'Data Access', 'severity' => 'informational'],
             ['event_key' => 'integration.event.received', 'name' => 'Integration event received', 'category' => 'Integration', 'severity' => 'informational'],
             ['event_key' => 'background.job.completed', 'name' => 'Background job completed', 'category' => 'Background Processing', 'severity' => 'informational'],
             ['event_key' => 'retention.hold.placed', 'name' => 'Event hold placed', 'category' => 'Retention and Disposal', 'severity' => 'high'],
             ['event_key' => 'retention.hold.released', 'name' => 'Event hold released', 'category' => 'Retention and Disposal', 'severity' => 'high'],
+            ['event_key' => 'forensic.case.opened', 'name' => 'Forensic case opened', 'category' => 'Security', 'severity' => 'high'],
+            ['event_key' => 'forensic.event.linked', 'name' => 'Forensic event linked', 'category' => 'Security', 'severity' => 'high'],
+            ['event_key' => 'forensic.evidence.sealed', 'name' => 'Forensic evidence package sealed', 'category' => 'Security', 'severity' => 'high'],
+            ['event_key' => 'forensic.custody.transferred', 'name' => 'Forensic case custody transferred', 'category' => 'Security', 'severity' => 'high'],
             ['event_key' => 'organisation.updated', 'name' => 'Organisation updated', 'category' => 'Organisation', 'severity' => 'informational'],
             ['event_key' => 'user.profile.updated', 'name' => 'User profile updated', 'category' => 'User Profile', 'severity' => 'informational'],
             ['event_key' => 'account.created', 'name' => 'Account created', 'category' => 'Account', 'severity' => 'medium'],
@@ -118,7 +129,7 @@ class EventTypeRegistryService
     {
         DB::transaction(function () {
             foreach (self::catalogue() as $item) {
-                $type = AuditEventType::query()->firstOrCreate(
+                $type = AuditEventType::query()->updateOrCreate(
                     ['event_key' => $item['event_key']],
                     [
                         'name' => $item['name'],
@@ -158,6 +169,19 @@ class EventTypeRegistryService
         return AuditEventType::query()->where('event_key', $eventKey)->first();
     }
 
+    /**
+     * @return array<string, true>
+     */
+    public static function catalogueKeyMap(): array
+    {
+        $map = [];
+        foreach (self::catalogue() as $item) {
+            $map[$item['event_key']] = true;
+        }
+
+        return $map;
+    }
+
     public function resolveOrRegister(string $eventKey, ?string $category = null): AuditEventType
     {
         $existing = $this->findByKey($eventKey);
@@ -165,23 +189,7 @@ class EventTypeRegistryService
             return $existing;
         }
 
-        $inferredCategory = $category ?? $this->inferCategory($eventKey);
-
-        return AuditEventType::query()->create([
-            'event_key' => $eventKey,
-            'name' => $eventKey,
-            'description' => 'Auto-registered controlled key from producer',
-            'category' => $inferredCategory,
-            'severity' => 'informational',
-            'required_fields' => ['event_uuid', 'event_type', 'timestamp', 'actor', 'outcome'],
-            'sensitive_fields' => SensitiveFieldMasker::EXCLUDED_KEYS,
-            'actor_required' => true,
-            'subject_required' => false,
-            'retention_class' => 'standard',
-            'user_visible_label' => $eventKey,
-            'effective_version' => 1,
-            'status' => 'active',
-        ]);
+        throw new \InvalidArgumentException("Unregistered platform audit event key [{$eventKey}].");
     }
 
     private function inferCategory(string $eventKey): string

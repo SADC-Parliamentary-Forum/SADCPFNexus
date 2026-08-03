@@ -872,7 +872,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
-          <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100">
+          <button onClick={onClose} aria-label={`Close ${title}`} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>

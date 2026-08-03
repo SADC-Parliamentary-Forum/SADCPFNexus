@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { adminApi, type TimesheetProject } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 
 export default function AdminTimesheetProjectsPage() {
+  const { confirm } = useConfirm();
   const { success, error: showErrorToast, info } = useToast();
   const [list, setList] = useState<TimesheetProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +22,6 @@ export default function AdminTimesheetProjectsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editSortOrder, setEditSortOrder] = useState(0);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: number; label: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -89,11 +90,17 @@ export default function AdminTimesheetProjectsPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteConfirm) return;
+  const handleDelete = async (project: TimesheetProject) => {
+    if (
+      !(await confirm({
+        title: "Delete project",
+        message: `"${project.label}" will be removed. Staff will no longer see it in the timesheet project list.`,
+        confirmText: "Delete",
+        variant: "danger",
+      }))
+    ) return;
     try {
-      await adminApi.deleteTimesheetProject(deleteConfirm.id);
-      setDeleteConfirm(null);
+      await adminApi.deleteTimesheetProject(project.id);
       success("Project deleted.");
       fetchList();
     } catch {
@@ -219,7 +226,7 @@ export default function AdminTimesheetProjectsPage() {
                           <button type="button" onClick={() => startEdit(p)} className="text-primary hover:underline text-sm font-medium mr-2">
                             Edit
                           </button>
-                          <button type="button" onClick={() => setDeleteConfirm({ id: p.id, label: p.label })} className="text-red-600 hover:underline text-sm font-medium">
+                          <button type="button" onClick={() => handleDelete(p)} className="text-red-600 hover:underline text-sm font-medium">
                             Delete
                           </button>
                         </td>
@@ -233,23 +240,6 @@ export default function AdminTimesheetProjectsPage() {
         )}
       </div>
 
-      {/* Delete confirm */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteConfirm(null)}>
-          <div className="card max-w-sm w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete project?</h3>
-            <p className="text-sm text-neutral-600 mb-4">“{deleteConfirm.label}” will be removed. Staff will no longer see it in the timesheet project list.</p>
-            <div className="flex gap-3 justify-end">
-              <button type="button" onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 rounded-lg">
-                Cancel
-              </button>
-              <button type="button" onClick={() => handleDelete()} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { AuthUser } from "@/lib/api";
+import type { AccessEffectivePayload, AuthUser } from "@/lib/api";
 import { readStoredUser } from "@/lib/session";
 
 export interface AuthContextValue {
@@ -38,6 +38,28 @@ export function hasPermission(
   if (!user?.permissions?.length) return false;
   const list = Array.isArray(permission) ? permission : [permission];
   return list.some((p) => user.permissions.includes(p));
+}
+
+export function mergeEffectivePermissions(
+  user: AuthUser | null | undefined,
+  effective: Pick<AccessEffectivePayload, "permissions" | "roles"> | null | undefined
+): AuthUser | null {
+  if (!user) return null;
+  if (!effective) return user;
+
+  return {
+    ...user,
+    roles: Array.from(new Set([...(user.roles ?? []), ...(effective.roles ?? [])])),
+    permissions: Array.from(new Set([...(user.permissions ?? []), ...(effective.permissions ?? [])])),
+  };
+}
+
+export function canAccessRouteWithEffective(
+  user: AuthUser | null | undefined,
+  pathOrId: string,
+  effective: Pick<AccessEffectivePayload, "permissions" | "roles"> | null | undefined
+): boolean {
+  return canAccessRoute(mergeEffectivePermissions(user, effective), pathOrId);
 }
 
 /** Permission(s) that allow adding/managing assets (add asset, approve requests). */

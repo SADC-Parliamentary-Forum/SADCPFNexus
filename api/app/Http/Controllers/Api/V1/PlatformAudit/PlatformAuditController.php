@@ -12,10 +12,12 @@ use App\Models\PlatformAudit\AuditTrailGovernanceDecision;
 use App\Modules\PlatformAudit\Services\AuditEventIngestionService;
 use App\Modules\PlatformAudit\Services\AuditHoldService;
 use App\Modules\PlatformAudit\Services\AuditIntegrityService;
+use App\Modules\PlatformAudit\Services\AuditReconciliationService;
 use App\Modules\PlatformAudit\Services\AuditSearchService;
 use App\Modules\PlatformAudit\Services\AuditTrailGovernanceService;
 use App\Modules\PlatformAudit\Services\EventTypeRegistryService;
 use App\Modules\PlatformAudit\Services\LegacyAuditMigrationService;
+use App\Modules\PlatformAudit\Services\SecurityMonitoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -50,9 +52,24 @@ class PlatformAuditController extends Controller
             'category' => 'nullable|string|max:64',
             'severity' => 'nullable|string|max:32',
             'retention_class' => 'nullable|string|max:64',
+            'sync' => 'nullable|boolean',
         ]);
 
         $data['tenant_id'] = $request->user()->tenant_id;
+        if ($request->boolean('sync', true) === false) {
+            $outbox = $ingestion->enqueue($data);
+
+            return response()->json([
+                'data' => [
+                    'id' => $outbox->id,
+                    'event_uuid' => $outbox->event_uuid,
+                    'event_key' => $outbox->event_key,
+                    'status' => $outbox->status,
+                    'available_at' => optional($outbox->available_at)?->toIso8601String(),
+                ],
+            ], 202);
+        }
+
         $event = $ingestion->ingest($data);
 
         return response()->json(['data' => $this->serializeEvent($event)], 201);
@@ -195,6 +212,43 @@ class PlatformAuditController extends Controller
         return response()->json(['data' => $result]);
     }
 
+    public function integrityReport(Request $request, int $id, AuditIntegrityService $integrity, AuditSearchService $search): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.verify-integrity', 'audit-trail.admin']);
+
+        $checkpoint = AuditEventCheckpoint::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        $search->logAccess($request->user(), 'integrity_report', [
+            'checkpoint_id' => $checkpoint->id,
+            'from_sequence' => $checkpoint->from_sequence,
+            'to_sequence' => $checkpoint->to_sequence,
+        ]);
+
+        $verification = (int) $checkpoint->event_count === 0
+            ? [
+                'valid' => true,
+                'checked' => 0,
+                'first_failure_sequence' => null,
+                'message' => 'Empty checkpoint verified',
+                'alert_id' => null,
+            ]
+            : $integrity->verifyChain(
+                (int) $request->user()->tenant_id,
+                (int) $checkpoint->from_sequence,
+                (int) $checkpoint->to_sequence,
+            );
+
+        return response()->json([
+            'data' => [
+                'checkpoint' => $checkpoint,
+                'verification' => $verification,
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
     public function createCheckpoint(Request $request, AuditIntegrityService $integrity): JsonResponse
     {
         $this->requirePerm($request, ['audit-trail.verify-integrity', 'audit-trail.admin']);
@@ -212,10 +266,66 @@ class PlatformAuditController extends Controller
             'data' => [
                 'pending_outbox' => AuditEventOutbox::query()->where('tenant_id', $tenantId)->where('status', 'pending')->count(),
                 'failed_outbox' => AuditEventOutbox::query()->where('tenant_id', $tenantId)->whereIn('status', ['failed', 'dead_lettered'])->count(),
+                'processable_outbox' => AuditEventOutbox::query()
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('status', ['pending', 'failed'])
+                    ->where('attempts', '<', 3)
+                    ->where(function ($q) {
+                        $q->whereNull('available_at')->orWhere('available_at', '<=', now());
+                    })
+                    ->count(),
                 'open_dead_letters' => AuditEventDeadLetter::query()->where('tenant_id', $tenantId)->where('status', 'open')->count(),
                 'events_total' => \App\Models\PlatformAudit\AuditEvent::query()->where('tenant_id', $tenantId)->count(),
                 'latest_sequence' => \App\Models\PlatformAudit\AuditEvent::query()->where('tenant_id', $tenantId)->max('sequence_number'),
             ],
+        ]);
+    }
+
+    public function processOutbox(Request $request, AuditEventIngestionService $ingestion): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-ingestion', 'audit-trail.admin']);
+        $data = $request->validate([
+            'limit' => 'nullable|integer|min:1|max:500',
+        ]);
+        $stats = $ingestion->processPending(
+            (int) $request->user()->tenant_id,
+            (int) ($data['limit'] ?? 100),
+        );
+
+        $ingestion->ingest([
+            'tenant_id' => $request->user()->tenant_id,
+            'event_key' => 'audit.outbox.processed',
+            'actor_id' => $request->user()->id,
+            'actor_type' => 'human',
+            'outcome' => $stats['failed'] > 0 || $stats['dead_lettered'] > 0 ? 'partially_completed' : 'success',
+            'source_module' => 'platform-audit',
+            'subject_type' => AuditEventOutbox::class,
+            'action' => 'process_pending_outbox',
+            'new_values' => $stats,
+        ]);
+
+        return response()->json([
+            'data' => $stats,
+        ]);
+    }
+
+    public function reconcile(Request $request, AuditReconciliationService $reconciliation): JsonResponse
+    {
+        $this->requirePerm($request, [
+            'audit-trail.manage-ingestion',
+            'audit-trail.verify-integrity',
+            'audit-trail.admin',
+        ]);
+        $data = $request->validate([
+            'stale_minutes' => 'nullable|integer|min:1|max:10080',
+        ]);
+
+        return response()->json([
+            'data' => $reconciliation->reconcile(
+                (int) $request->user()->tenant_id,
+                $request->user(),
+                (int) ($data['stale_minutes'] ?? 15),
+            ),
         ]);
     }
 
@@ -247,6 +357,25 @@ class PlatformAuditController extends Controller
         $row->resolved_by = $request->user()->id;
         $row->resolved_at = now();
         $row->save();
+
+        $ingestion->ingest([
+            'tenant_id' => $request->user()->tenant_id,
+            'event_key' => 'audit.dead_letter.replayed',
+            'actor_id' => $request->user()->id,
+            'actor_type' => 'human',
+            'outcome' => 'success',
+            'source_module' => 'platform-audit',
+            'subject_type' => AuditEventDeadLetter::class,
+            'subject_id' => $row->id,
+            'business_reference' => (string) ($row->event_uuid ?? $row->id),
+            'new_values' => [
+                'dead_letter_id' => $row->id,
+                'replayed_event_id' => $event->id,
+                'replayed_event_uuid' => $event->uuid,
+                'event_key' => $row->event_key,
+                'status' => $row->status,
+            ],
+        ]);
 
         return response()->json(['data' => $this->serializeEvent($event)]);
     }
@@ -374,7 +503,23 @@ class PlatformAuditController extends Controller
         return response()->json($rows);
     }
 
-    public function transitionAlert(Request $request, int $id, \App\Modules\PlatformAudit\Services\SecurityMonitoringService $monitoring): JsonResponse
+    public function showAlert(Request $request, int $id, AuditSearchService $search): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.view-security', 'audit-trail.admin', 'audit-trail.search']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->with('rule')
+            ->findOrFail($id);
+
+        $search->logAccess($request->user(), 'security_alert_view', [
+            'alert_id' => $alert->id,
+            'reference' => $alert->reference,
+        ]);
+
+        return response()->json(['data' => $alert]);
+    }
+
+    public function assignAlert(Request $request, int $id, SecurityMonitoringService $monitoring): JsonResponse
     {
         $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
         $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
@@ -382,11 +527,104 @@ class PlatformAuditController extends Controller
             ->findOrFail($id);
 
         $data = $request->validate([
-            'workflow_status' => 'required|in:new,under_review,classified,closed',
-            'classification' => 'nullable|string|max:64',
+            'assigned_to' => 'required|integer|exists:users,id',
+            'notes' => 'nullable|string',
+        ]);
+        $this->assertTenantUser($request, (int) $data['assigned_to']);
+        $data['workflow_status'] = 'assigned';
+
+        return response()->json(['data' => $monitoring->transitionAlert($alert, $request->user(), $data)]);
+    }
+
+    public function classifyAlert(Request $request, int $id, SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+        $statuses = implode(',', [
+            'classified',
+            'benign',
+            'confirmed_incident',
+            'escalated',
+            'resolved',
+            'suppressed_by_approved_rule',
+        ]);
+
+        $data = $request->validate([
+            'classification' => 'required|string|max:64',
+            'workflow_status' => 'nullable|in:'.$statuses,
             'conclusion' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
+        $data['workflow_status'] ??= match ($data['classification']) {
+            'benign' => 'benign',
+            'confirmed_incident' => 'confirmed_incident',
+            default => 'classified',
+        };
+
+        return response()->json(['data' => $monitoring->transitionAlert($alert, $request->user(), $data)]);
+    }
+
+    public function createIncidentForAlert(Request $request, int $id, SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'incident_id' => 'nullable|string|max:128',
+            'notes' => 'nullable|string',
+        ]);
+        $data['incident_id'] ??= 'SEC-INC-'.$alert->id;
+        $data['classification'] = 'confirmed_incident';
+        $data['workflow_status'] = 'confirmed_incident';
+
+        return response()->json([
+            'data' => $monitoring->transitionAlert($alert, $request->user(), $data),
+            'meta' => [
+                'incident_reference' => $data['incident_id'],
+                'integration' => 'Security incident module handoff reference recorded on alert.',
+            ],
+        ], 202);
+    }
+
+    public function closeAlert(Request $request, int $id, SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+
+        $data = $request->validate([
+            'conclusion' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+        $data['workflow_status'] = 'closed';
+
+        return response()->json(['data' => $monitoring->transitionAlert($alert, $request->user(), $data)]);
+    }
+
+    public function transitionAlert(Request $request, int $id, SecurityMonitoringService $monitoring): JsonResponse
+    {
+        $this->requirePerm($request, ['audit-trail.manage-alerts', 'audit-trail.admin']);
+        $alert = \App\Models\PlatformAudit\AuditEventAlert::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($id);
+        $statuses = implode(',', SecurityMonitoringService::WORKFLOW_STATUSES);
+
+        $data = $request->validate([
+            'workflow_status' => 'required|in:'.$statuses,
+            'classification' => 'nullable|string|max:64',
+            'conclusion' => 'nullable|string|max:255',
+            'assigned_to' => 'nullable|integer|exists:users,id',
+            'incident_id' => 'nullable|string|max:128',
+            'notes' => 'nullable|string',
+        ]);
+        if (array_key_exists('assigned_to', $data)) {
+            $this->assertTenantUser($request, $data['assigned_to'] ? (int) $data['assigned_to'] : null);
+        }
 
         return response()->json(['data' => $monitoring->transitionAlert($alert, $request->user(), $data)]);
     }
@@ -494,6 +732,22 @@ class PlatformAuditController extends Controller
             }
         }
         abort(403);
+    }
+
+    private function assertTenantUser(Request $request, ?int $userId): void
+    {
+        if (! $userId) {
+            return;
+        }
+
+        $exists = \App\Models\User::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->whereKey($userId)
+            ->exists();
+
+        if (! $exists) {
+            abort(422, 'The selected user is not available in this tenant.');
+        }
     }
 
     private function serializeEvent(\App\Models\PlatformAudit\AuditEvent $event, bool $detail = false): array

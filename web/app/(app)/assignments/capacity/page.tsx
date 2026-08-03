@@ -45,21 +45,21 @@ export default function AssignmentsCapacityPage() {
       {isError && <p className="text-sm text-red-700">Failed to load capacity view.</p>}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
           <p className="text-xs uppercase tracking-wide text-neutral-500">Assignees</p>
           <p className="mt-1 text-2xl font-semibold">{summary.assignee_count ?? 0}</p>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
           <p className="text-xs uppercase tracking-wide text-neutral-500">Open</p>
           <p className="mt-1 text-2xl font-semibold">{summary.open_total ?? 0}</p>
         </div>
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
           <p className="text-xs uppercase tracking-wide text-neutral-500">Overdue</p>
           <p className="mt-1 text-2xl font-semibold">{summary.overdue_total ?? 0}</p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
             <tr>

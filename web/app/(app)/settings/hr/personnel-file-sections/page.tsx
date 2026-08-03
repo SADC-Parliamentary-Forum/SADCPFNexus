@@ -64,7 +64,7 @@ function PersonnelFileSectionModal({
           <h3 className="font-semibold text-neutral-900">
             {isEdit ? "Edit File Section" : "New File Section"}
           </h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-700">
+          <button onClick={onClose} aria-label="Close file section editor" className="text-neutral-400 hover:text-neutral-700">
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>

@@ -15,7 +15,7 @@ export default function AuditUniversePage() {
   const rows = (data as { data?: Array<Record<string, unknown>> })?.data ?? [];
 
   const create = useMutation({
-    mutationFn: () => auditApi.createUniverse({ name, entity_type: "process" }),
+    mutationFn: (entityName: string) => auditApi.createUniverse({ name: entityName, entity_type: "process" }),
     onSuccess: () => {
       setName("");
       qc.invalidateQueries({ queryKey: ["audit", "universe"] });
@@ -32,16 +32,27 @@ export default function AuditUniversePage() {
           className="flex gap-2 items-center"
           onSubmit={(e) => {
             e.preventDefault();
-            if (name.trim()) create.mutate();
+            const entityName = name.trim();
+            if (!entityName || create.isPending) return;
+            create.mutate(entityName);
           }}
         >
+          <label className="sr-only" htmlFor="audit-universe-name">New entity name</label>
           <input
-            className="border rounded px-2 py-1 text-sm"
+            id="audit-universe-name"
+            className="border rounded px-2 py-1 text-sm disabled:opacity-60"
             placeholder="New entity name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={create.isPending}
           />
-          <button type="submit" className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded">Add</button>
+          <button
+            type="submit"
+            className="text-sm px-3 py-1.5 bg-neutral-900 text-white rounded disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={create.isPending || !name.trim()}
+          >
+            {create.isPending ? "Adding..." : "Add"}
+          </button>
         </form>
       }
     >
@@ -66,6 +77,13 @@ export default function AuditUniversePage() {
                 <td className="p-2">{String(r.status)}</td>
               </tr>
             ))}
+            {rows.length === 0 && (
+              <tr>
+                <td className="p-4 text-sm text-neutral-500" colSpan={4}>
+                  No audit universe entities yet.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}

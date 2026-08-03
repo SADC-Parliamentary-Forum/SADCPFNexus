@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -62,6 +63,7 @@ export default function ActivityReportDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const user = getStoredUser();
   const canReview = isSystemAdmin(user) || hasPermission(user, ["mande.review", "mande.admin"]);
   const canCreate = isSystemAdmin(user) || hasPermission(user, ["mande.create", "mande.admin"]);
@@ -499,8 +501,10 @@ export default function ActivityReportDetailPage() {
                           type="button"
                           className="text-red-600 text-xs hover:underline disabled:opacity-40"
                           disabled={deleteFollowUpMut.isPending}
-                          onClick={() => {
-                            if (confirm("Delete this follow-up?")) deleteFollowUpMut.mutate(fu.id);
+                          onClick={async () => {
+                            if (await confirm({ title: "Delete follow-up", message: "Delete this follow-up?", variant: "danger" })) {
+                              deleteFollowUpMut.mutate(fu.id);
+                            }
                           }}
                         >
                           Delete

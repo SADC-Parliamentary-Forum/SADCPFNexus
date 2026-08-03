@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ledgerVerificationsApi, auditLogsApi, type LedgerVerification, type AuditLogEntry } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -131,18 +132,53 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Toast */}
+      <ModulePageHeader
+        title="Ledger Verification Report"
+        subtitle={`${verification.type === "manual" ? "Manual" : "Scheduled"} verification - ${formatTs(verification.verified_at)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Audit Ledger", href: "/admin/ledger" },
+              { label: `Verification #${verification.id}` },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => exportCSV(verification, logs)}
+              className="btn-secondary flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleReverify}
+              disabled={reverifying}
+              className="btn-primary flex items-center gap-1.5 disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined text-[18px]">
+                {reverifying ? "hourglass_top" : "verified_user"}
+              </span>
+              {reverifying ? "Verifying..." : "Re-verify"}
+            </button>
+          </div>
+        }
+      />
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm text-neutral-500">
+      <div className="hidden">
         <Link href="/admin/ledger" className="hover:text-primary">Audit Ledger</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>
         <span className="text-neutral-800 font-medium">Verification #{verification.id}</span>
       </div>
 
       {/* Header row */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="hidden">
         <div className="flex-1">
-          <h1 className="page-title">Ledger Verification Report</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900">Ledger Verification Report</h1>
           <p className="page-subtitle">
             {verification.type === "manual" ? "Manual" : "Scheduled"} verification — {formatTs(verification.verified_at)}
           </p>

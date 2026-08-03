@@ -56,7 +56,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('Assignments'), findsOneWidget);
+    expect(find.text('Accountability'), findsOneWidget);
   });
 
   testWidgets('RiskRegisterScreen smoke', (tester) async {

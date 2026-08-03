@@ -17,6 +17,7 @@ class ProcurementRequisitionFormScreen extends ConsumerStatefulWidget {
 
 class _ProcurementRequisitionFormScreenState
     extends ConsumerState<ProcurementRequisitionFormScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
   final _justificationCtrl = TextEditingController();
@@ -90,10 +91,6 @@ class _ProcurementRequisitionFormScreenState
     }
   }
 
-  bool get _canSubmit =>
-      _titleCtrl.text.trim().isNotEmpty &&
-      _descriptionCtrl.text.trim().isNotEmpty;
-
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -120,8 +117,7 @@ class _ProcurementRequisitionFormScreenState
       if (_justificationCtrl.text.trim().isNotEmpty)
         'justification': _justificationCtrl.text.trim(),
       if (_requiredBy != null)
-        'required_by_date':
-            '${_requiredBy!.year.toString().padLeft(4, '0')}-'
+        'required_by_date': '${_requiredBy!.year.toString().padLeft(4, '0')}-'
             '${_requiredBy!.month.toString().padLeft(2, '0')}-'
             '${_requiredBy!.day.toString().padLeft(2, '0')}',
       if (estimated != null && estimated >= 0) 'estimated_value': estimated,
@@ -129,13 +125,7 @@ class _ProcurementRequisitionFormScreenState
   }
 
   Future<void> _save({required bool submit}) async {
-    if (!_canSubmit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Title and description are required.'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+    if (!_formKey.currentState!.validate()) {
       return;
     }
     setState(() => _submitting = true);
@@ -162,9 +152,8 @@ class _ProcurementRequisitionFormScreenState
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(submit
-              ? 'Procurement request submitted.'
-              : 'Draft saved.'),
+          content:
+              Text(submit ? 'Procurement request submitted.' : 'Draft saved.'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -220,167 +209,177 @@ class _ProcurementRequisitionFormScreenState
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
-        children: [
-          const Text(
-            'Submit the requisition first. Quotes and tender actions happen after approval.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: 'Requisition Details',
-            icon: Icons.description_outlined,
-            iconColor: AppColors.primary,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _label('Title *'),
-                _textField(_titleCtrl, 'e.g. Office furniture for chamber'),
-                const SizedBox(height: 12),
-                _label('Description *'),
-                _textField(_descriptionCtrl,
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
+          children: [
+            const Text(
+              'Submit the requisition first. Quotes and tender actions happen after approval.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Requisition Details',
+              icon: Icons.description_outlined,
+              iconColor: AppColors.primary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _label('Title *'),
+                  _textField(
+                    _titleCtrl,
+                    'e.g. Office furniture for chamber',
+                    requiredMessage: 'Title is required.',
+                  ),
+                  const SizedBox(height: 12),
+                  _label('Description *'),
+                  _textField(
+                    _descriptionCtrl,
                     'Describe what is being procured and why…',
-                    maxLines: 3),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('Category *'),
-                          _dropdown(
-                            value: _category,
-                            items: const ['goods', 'services', 'works'],
-                            labels: const {
-                              'goods': 'Goods',
-                              'services': 'Services',
-                              'works': 'Works',
-                            },
-                            onChanged: (v) =>
-                                setState(() => _category = v ?? 'goods'),
-                          ),
-                        ],
+                    maxLines: 3,
+                    requiredMessage: 'Description is required.',
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('Category *'),
+                            _dropdown(
+                              value: _category,
+                              items: const ['goods', 'services', 'works'],
+                              labels: const {
+                                'goods': 'Goods',
+                                'services': 'Services',
+                                'works': 'Works',
+                              },
+                              onChanged: (v) =>
+                                  setState(() => _category = v ?? 'goods'),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('Method'),
-                          _dropdown(
-                            value: _method,
-                            items: const [
-                              'quotation',
-                              'tender',
-                              'direct',
-                            ],
-                            labels: const {
-                              'quotation': 'RFQ',
-                              'tender': 'Open Tender',
-                              'direct': 'Direct',
-                            },
-                            onChanged: (v) =>
-                                setState(() => _method = v ?? 'quotation'),
-                          ),
-                        ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('Method'),
+                            _dropdown(
+                              value: _method,
+                              items: const [
+                                'quotation',
+                                'tender',
+                                'direct',
+                              ],
+                              labels: const {
+                                'quotation': 'RFQ',
+                                'tender': 'Open Tender',
+                                'direct': 'Direct',
+                              },
+                              onChanged: (v) =>
+                                  setState(() => _method = v ?? 'quotation'),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _label('Budget Line'),
-                _budgetsLoading
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _label('Budget Line'),
+                  _budgetsLoading
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
+                        )
+                      : _dropdown(
+                          value: _budgetLine,
+                          hint: _budgetLines.isEmpty
+                              ? 'No budget lines available'
+                              : 'Select budget line…',
+                          items: _budgetLines.map((l) => l.value).toList(),
+                          labels: {
+                            for (final l in _budgetLines) l.value: l.label,
+                          },
+                          onChanged: (v) => setState(() => _budgetLine = v),
                         ),
-                      )
-                    : _dropdown(
-                        value: _budgetLine,
-                        hint: _budgetLines.isEmpty
-                            ? 'No budget lines available'
-                            : 'Select budget line…',
-                        items: _budgetLines.map((l) => l.value).toList(),
-                        labels: {
-                          for (final l in _budgetLines) l.value: l.label,
-                        },
-                        onChanged: (v) => setState(() => _budgetLine = v),
+                  if (_budgetLine != null) ...[
+                    const SizedBox(height: 6),
+                    Builder(builder: (_) {
+                      final opt = _budgetLines
+                          .where((l) => l.value == _budgetLine)
+                          .firstOrNull;
+                      if (opt == null || opt.available == null) {
+                        return const SizedBox.shrink();
+                      }
+                      return Text(
+                        'Available on line: NAD ${opt.available!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: opt.available! >= 0
+                              ? AppColors.success
+                              : AppColors.danger,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    }),
+                  ],
+                  const SizedBox(height: 12),
+                  _label('Required By'),
+                  InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgDark,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
                       ),
-                if (_budgetLine != null) ...[
-                  const SizedBox(height: 6),
-                  Builder(builder: (_) {
-                    final opt = _budgetLines
-                        .where((l) => l.value == _budgetLine)
-                        .firstOrNull;
-                    if (opt == null || opt.available == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return Text(
-                      'Available on line: NAD ${opt.available!.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: opt.available! >= 0
-                            ? AppColors.success
-                            : AppColors.danger,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    );
-                  }),
-                ],
-                const SizedBox(height: 12),
-                _label('Required By'),
-                InkWell(
-                  onTap: _pickDate,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.bgDark,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      _requiredBy == null
-                          ? 'Select date…'
-                          : '${_requiredBy!.year}-'
-                              '${_requiredBy!.month.toString().padLeft(2, '0')}-'
-                              '${_requiredBy!.day.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        color: _requiredBy == null
-                            ? AppColors.textMuted
-                            : AppColors.textPrimary,
-                        fontSize: 13,
+                      child: Text(
+                        _requiredBy == null
+                            ? 'Select date…'
+                            : '${_requiredBy!.year}-'
+                                '${_requiredBy!.month.toString().padLeft(2, '0')}-'
+                                '${_requiredBy!.day.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          color: _requiredBy == null
+                              ? AppColors.textMuted
+                              : AppColors.textPrimary,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _label('Estimated Value (NAD)'),
-                _textField(_estimatedCtrl, '0.00',
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true)),
-                const SizedBox(height: 12),
-                _label('Justification'),
-                _textField(_justificationCtrl,
-                    'Business need and expected benefit…',
-                    maxLines: 3),
-              ],
+                  const SizedBox(height: 12),
+                  _label('Estimated Value (NAD)'),
+                  _textField(_estimatedCtrl, '0.00',
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true)),
+                  const SizedBox(height: 12),
+                  _label('Justification'),
+                  _textField(
+                      _justificationCtrl, 'Business need and expected benefit…',
+                      maxLines: 3),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -431,12 +430,17 @@ class _ProcurementRequisitionFormScreenState
     String hint, {
     int maxLines = 1,
     TextInputType? keyboardType,
+    String? requiredMessage,
   }) {
-    return TextField(
+    return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
       keyboardType: keyboardType,
       onChanged: (_) => setState(() {}),
+      validator: requiredMessage == null
+          ? null
+          : (value) =>
+              value == null || value.trim().isEmpty ? requiredMessage : null,
       style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
@@ -454,8 +458,7 @@ class _ProcurementRequisitionFormScreenState
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
     );
@@ -481,8 +484,7 @@ class _ProcurementRequisitionFormScreenState
         child: DropdownButton<String>(
           value: effectiveValue,
           hint: Text(hint ?? 'Select…',
-              style:
-                  const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
           isExpanded: true,
           dropdownColor: AppColors.bgSurface,
           icon: const Icon(Icons.keyboard_arrow_down_rounded,
@@ -526,8 +528,7 @@ class _BudgetLineOption {
         : '${budget['id']}-${line['id']}';
     final allocated = (line['amount_allocated'] as num?)?.toDouble();
     final spent = (line['amount_spent'] as num?)?.toDouble() ?? 0;
-    final available =
-        allocated == null ? null : (allocated - spent);
+    final available = allocated == null ? null : (allocated - spent);
     final budgetName = budget['name'] as String? ?? 'Budget';
     final year = budget['year'];
     final label =

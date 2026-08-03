@@ -10,6 +10,7 @@ import '../../../../core/cache/cache_service.dart';
 import '../../../../core/notifications/notification_poller.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 // Stitch horizontal padding
 const _paddingH = 20.0;
@@ -38,24 +39,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Future<void> _load({bool backgroundRefresh = false}) async {
     if (!mounted) return;
 
-    final cache  = ref.read(cacheServiceProvider);
-    final repo   = ref.read(authRepositoryProvider);
-    final api    = ref.read(apiClientProvider);
+    final cache = ref.read(cacheServiceProvider);
+    final repo = ref.read(authRepositoryProvider);
+    final api = ref.read(apiClientProvider);
 
     // ── 1. Serve cache immediately ──────────────────────────────────────────
-    final cached = await cache.get<Map<String, dynamic>>(CacheKeys.dashboardStats);
+    final cached =
+        await cache.get<Map<String, dynamic>>(CacheKeys.dashboardStats);
     if (cached != null && !backgroundRefresh) {
-      final name  = await repo.getStoredUserName();
+      final name = await repo.getStoredUserName();
       final perms = await repo.getStoredPermissions();
       final roles = await repo.getStoredRoles();
       if (!mounted) return;
       setState(() {
-        _userName    = name ?? 'User';
-        _stats       = cached;
+        _userName = name ?? 'User';
+        _stats = cached;
         _permissions = perms;
-        _roles       = roles;
-        _loading     = false;
-        _error       = null;
+        _roles = roles;
+        _loading = false;
+        _error = null;
       });
       // Refresh in background — do not await.
       _load(backgroundRefresh: true);
@@ -63,16 +65,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     if (!backgroundRefresh) {
-      setState(() { _loading = true; _error = null; });
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
     }
 
     // ── 2. Fetch from API ───────────────────────────────────────────────────
     try {
-      final name    = await repo.getStoredUserName();
-      final perms   = await repo.getStoredPermissions();
-      final roles   = await repo.getStoredRoles();
-      final response = await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
-      final data    = response.data ?? {};
+      final name = await repo.getStoredUserName();
+      final perms = await repo.getStoredPermissions();
+      final roles = await repo.getStoredRoles();
+      final response =
+          await api.dio.get<Map<String, dynamic>>('/dashboard/stats');
+      final data = response.data ?? {};
 
       // Cache the fresh result.
       await cache.set(CacheKeys.dashboardStats, data,
@@ -80,12 +86,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
       if (!mounted) return;
       setState(() {
-        _userName    = name ?? 'User';
-        _stats       = data;
+        _userName = name ?? 'User';
+        _stats = data;
         _permissions = perms;
-        _roles       = roles;
-        _loading     = false;
-        _error       = null;
+        _roles = roles;
+        _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -96,8 +102,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final msg = e.toString().toLowerCase();
       setState(() {
         _loading = false;
-        _error   = (msg.contains('socket') || msg.contains('connection') ||
-                    msg.contains('network') || msg.contains('xmlhttprequest'))
+        _error = (msg.contains('socket') ||
+                msg.contains('connection') ||
+                msg.contains('network') ||
+                msg.contains('xmlhttprequest'))
             ? 'Cannot reach server. Check your connection.'
             : 'Failed to load dashboard data.';
       });
@@ -113,8 +121,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   static String _todayLabel() {
     final now = DateTime.now();
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
@@ -132,8 +153,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final textTheme = theme.textTheme;
 
     if (_loading) {
-      return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+      return StitchScreen(
+        title: 'Dashboard',
+        showAppBar: false,
         body: SafeArea(
           child: Center(child: CircularProgressIndicator(color: c.primary)),
         ),
@@ -141,8 +163,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
 
     if (_error != null) {
-      return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
+      return StitchScreen(
+        title: 'Dashboard',
+        showAppBar: false,
         body: SafeArea(
           child: Center(
             child: Padding(
@@ -150,13 +173,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.cloud_off_outlined, color: c.onSurface.withValues(alpha: 0.7), size: 48),
+                  Icon(Icons.cloud_off_outlined,
+                      color: c.onSurface.withValues(alpha: 0.7), size: 48),
                   const SizedBox(height: 16),
-                  Text(_error!, textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: c.onSurface.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    )),
+                  Text(_error!,
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: c.onSurface.withValues(alpha: 0.7),
+                        fontSize: 14,
+                      )),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: _load,
@@ -185,377 +210,500 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     final firstName = (_userName ?? 'User').split(' ').first;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+    return StitchScreen(
+      title: 'Dashboard',
+      showAppBar: false,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              floating: true,
-              backgroundColor: theme.scaffoldBackgroundColor.withValues(alpha: 0.96),
-              elevation: 0,
-              automaticallyImplyLeading: false,
-              toolbarHeight: 64,
-              flexibleSpace: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.menu),
-                      onPressed: ShellDrawerScope.openDrawerOf(context),
-                      style: IconButton.styleFrom(
-                        backgroundColor: c.surface,
-                        foregroundColor: c.onSurface,
+        child: RefreshIndicator(
+          onRefresh: () => _load(),
+          color: c.primary,
+          child: CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: true,
+                backgroundColor:
+                    theme.scaffoldBackgroundColor.withValues(alpha: 0.96),
+                elevation: 0,
+                automaticallyImplyLeading: false,
+                toolbarHeight: 64,
+                flexibleSpace: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Open navigation menu',
+                        icon: const Icon(Icons.menu),
+                        onPressed: ShellDrawerScope.openDrawerOf(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: c.surface,
+                          foregroundColor: c.onSurface,
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        constraints:
+                            const BoxConstraints(minWidth: 44, minHeight: 44),
                       ),
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 42, height: 42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: c.primary.withValues(alpha: 0.4), width: 2),
-                      ),
-                      child: CircleAvatar(
-                        backgroundColor: c.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          (_userName ?? 'U').trim().split(' ').where((p) => p.isNotEmpty).take(2).map((p) => p[0].toUpperCase()).join(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: c.primary,
-                            height: 1,
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: c.primary.withValues(alpha: 0.4),
+                              width: 2),
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: c.primary.withValues(alpha: 0.15),
+                          child: Text(
+                            (_userName ?? 'U')
+                                .trim()
+                                .split(' ')
+                                .where((p) => p.isNotEmpty)
+                                .take(2)
+                                .map((p) => p[0].toUpperCase())
+                                .join(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: c.primary,
+                              height: 1,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('${_greeting()},',
-                            style: textTheme.labelMedium?.copyWith(
-                              fontSize: 11, color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 0.3)),
-                          Text(firstName,
-                            style: textTheme.titleMedium?.copyWith(
-                              fontSize: 16, fontWeight: FontWeight.w800, height: 1.2)),
-                        ],
-                      ),
-                    ),
-                    // Live notification bell
-                    Consumer(builder: (ctx, r, _) {
-                      final countAsync = r.watch(notificationCountProvider);
-                      final count = countAsync.valueOrNull ?? 0;
-                      return GestureDetector(
-                        onTap: () => context.push('/notifications'),
-                        child: Stack(
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              width: 40, height: 40,
-                              decoration: BoxDecoration(
-                                color: c.surface,
-                                borderRadius: BorderRadius.circular(kStitchCardRoundness),
-                                border: Border.all(color: c.outline),
+                            Text('${_greeting()},',
+                                style: textTheme.labelMedium?.copyWith(
+                                    fontSize: 11,
+                                    color: c.onSurface.withValues(alpha: 0.7),
+                                    letterSpacing: 0.3)),
+                            Text(firstName,
+                                style: textTheme.titleMedium?.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.2)),
+                          ],
+                        ),
+                      ),
+                      // Live notification bell
+                      Consumer(builder: (ctx, r, _) {
+                        final countAsync = r.watch(notificationCountProvider);
+                        final count = countAsync.valueOrNull ?? 0;
+                        return GestureDetector(
+                          onTap: () => context.push('/notifications'),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: c.surface,
+                                  borderRadius: BorderRadius.circular(
+                                      kStitchCardRoundness),
+                                  border: Border.all(color: c.outline),
+                                ),
+                                child: Icon(
+                                    count > 0
+                                        ? Icons.notifications_rounded
+                                        : Icons.notifications_outlined,
+                                    color: count > 0
+                                        ? const Color(0xFF13ec80)
+                                        : c.onSurface.withValues(alpha: 0.7),
+                                    size: 20),
                               ),
-                              child: Icon(
-                                count > 0
-                                    ? Icons.notifications_rounded
-                                    : Icons.notifications_outlined,
-                                color: count > 0
-                                    ? const Color(0xFF13ec80)
-                                    : c.onSurface.withValues(alpha: 0.7),
-                                size: 20),
-                            ),
-                            if (count > 0)
-                              Positioned(
-                                top: 6, right: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                                  decoration: BoxDecoration(
-                                    color: c.error, shape: BoxShape.circle),
-                                  child: Text(
-                                    count > 99 ? '99+' : '$count',
-                                    style: const TextStyle(
-                                      fontSize: 8, color: Colors.white, fontWeight: FontWeight.w700),
-                                    textAlign: TextAlign.center,
+                              if (count > 0)
+                                Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    constraints: const BoxConstraints(
+                                        minWidth: 14, minHeight: 14),
+                                    decoration: BoxDecoration(
+                                        color: c.error, shape: BoxShape.circle),
+                                    child: Text(
+                                      count > 99 ? '99+' : '$count',
+                                      style: const TextStyle(
+                                          fontSize: 8,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Search bar with autocomplete (below app bar so it never covers left icons)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(kStitchSpace16, kStitchSpace12, kStitchSpace16, 0),
-                child: _DashboardSearchBar(theme: theme),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace20, _paddingH, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Dashboard',
-                      style: textTheme.headlineSmall?.copyWith(fontSize: 22, height: 1.2)),
-                    Text(_todayLabel(),
-                      style: textTheme.bodySmall?.copyWith(fontSize: 12)),
-                  ],
+              // Search bar with autocomplete (below app bar so it never covers left icons)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      kStitchSpace16, kStitchSpace12, kStitchSpace16, 0),
+                  child: _DashboardSearchBar(theme: theme),
                 ),
               ),
-            ),
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace16, _paddingH, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('AT A GLANCE',
-                      style: textTheme.labelSmall?.copyWith(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: kStitchSpace12),
-                    GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: kStitchSpace12,
-                      crossAxisSpacing: kStitchSpace12,
-                      childAspectRatio: 1.55,
-                      children: [
-                        _KpiCard(
-                          label: 'Pending Approvals',
-                          value: '$pending',
-                          icon: Icons.pending_actions,
-                          color: c.secondary,
-                          badge: pending > 0 ? '+$pending new' : 'None',
-                          badgeHighlight: pending > 0,
-                        ),
-                        _KpiCard(
-                          label: 'Active Travels',
-                          value: '$travels',
-                          icon: Icons.flight_takeoff,
-                          color: c.primary,
-                          badge: travels > 0 ? 'In progress' : 'None',
-                          badgeHighlight: false,
-                        ),
-                        _KpiCard(
-                          label: 'Leave Requests',
-                          value: '$leaveReqs',
-                          icon: Icons.event_available,
-                          color: c.primary,
-                          badge: 'Pending review',
-                          badgeHighlight: false,
-                        ),
-                        _KpiCard(
-                          label: 'Open Requisitions',
-                          value: '$requisitions',
-                          icon: Icons.shopping_cart,
-                          color: c.primary,
-                          badge: 'Awaiting',
-                          badgeHighlight: false,
-                        ),
-                      ],
-                    ),
-                  ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      _paddingH, kStitchSpace20, _paddingH, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dashboard',
+                          style: textTheme.headlineSmall
+                              ?.copyWith(fontSize: 22, height: 1.2)),
+                      Text(_todayLabel(),
+                          style: textTheme.bodySmall?.copyWith(fontSize: 12)),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace24, _paddingH, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('QUICK ACTIONS',
-                      style: textTheme.labelSmall?.copyWith(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: kStitchSpace12),
-                    Row(
-                      children: [
-                        if (canAccessFeature(_permissions, _roles, '/requests/travel/new'))
-                          _ActionButton(icon: Icons.flight_takeoff, label: 'Travel',
-                            onTap: () => context.push('/requests/travel/new')),
-                        if (canAccessFeature(_permissions, _roles, '/requests/travel/finance-queue')) ...[
-                          const SizedBox(width: 10),
-                          _ActionButton(icon: Icons.calculate_outlined, label: 'Travel DSA',
-                            onTap: () => context.push('/requests/travel/finance-queue')),
-                        ],
-                        if (canAccessFeature(_permissions, _roles, '/requests/travel/toil')) ...[
-                          const SizedBox(width: 10),
-                          _ActionButton(icon: Icons.more_time, label: 'TOIL',
-                            onTap: () => context.push('/requests/travel/toil')),
-                        ],
-                        if (canAccessFeature(_permissions, _roles, '/requests')) ...[
-                          const SizedBox(width: 10),
-                          _ActionButton(icon: Icons.event_available, label: 'Leave',
-                            onTap: () => context.go('/requests')),
-                        ],
-                        if (canAccessFeature(_permissions, _roles, '/finance/command-center')) ...[
-                          const SizedBox(width: 10),
-                          _ActionButton(icon: Icons.account_balance_wallet, label: 'Finance',
-                            onTap: () => context.push('/finance/command-center')),
-                        ],
-                        if (canAccessFeature(_permissions, _roles, '/procurement')) ...[
-                          const SizedBox(width: 10),
-                          _ActionButton(icon: Icons.inventory_2_outlined, label: 'Procure',
-                            onTap: () => context.push('/procurement')),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(_paddingH, kStitchSpace24, _paddingH, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ALL MODULES',
-                      style: textTheme.labelSmall?.copyWith(
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                        color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                    const SizedBox(height: kStitchSpace12),
-                    GridView.count(
-                      crossAxisCount: 3,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 0.95,
-                      children: [
-                        if (canAccessFeature(_permissions, _roles, '/finance/command-center'))
-                          _ModuleTile(icon: Icons.account_balance_outlined, label: 'Finance',
-                            color: c.primary,
-                            onTap: () => context.push('/finance/command-center')),
-                        if (canAccessFeature(_permissions, _roles, '/procurement'))
-                          _ModuleTile(icon: Icons.inventory_2_outlined, label: 'Procurement',
-                            color: c.secondary,
-                            onTap: () => context.push('/procurement')),
-                        if (canAccessFeature(_permissions, _roles, '/imprest/form'))
-                          _ModuleTile(icon: Icons.account_balance_wallet_outlined, label: 'Imprest',
-                            color: c.primary,
-                            onTap: () => context.push('/imprest/form')),
-                        if (canAccessFeature(_permissions, _roles, '/salary/advances'))
-                          _ModuleTile(icon: Icons.savings_outlined, label: 'Salary Adv.',
-                            color: c.primary,
-                            onTap: () => context.push('/salary/advances')),
-                        if (canAccessFeature(_permissions, _roles, '/hr/dashboard'))
-                          _ModuleTile(icon: Icons.people_outline, label: 'HR',
-                            color: c.primary,
-                            onTap: () => context.push('/hr/dashboard')),
-                        if (canAccessFeature(_permissions, _roles, '/hr/assignments'))
-                          _ModuleTile(icon: Icons.assignment_outlined, label: 'Assignments',
-                            color: c.primary,
-                            onTap: () => context.push('/hr/assignments')),
-                        if (canAccessFeature(_permissions, _roles, '/assets/inventory'))
-                          _ModuleTile(icon: Icons.devices_outlined, label: 'Assets',
-                            color: c.secondary,
-                            onTap: () => context.push('/assets/inventory')),
-                        if (canAccessFeature(_permissions, _roles, '/pif/form'))
-                          _ModuleTile(icon: Icons.description_outlined, label: 'PIF',
-                            color: c.error,
-                            onTap: () => context.push('/pif/form')),
-                        if (canAccessFeature(_permissions, _roles, '/governance/meetings'))
-                          _ModuleTile(icon: Icons.gavel_outlined, label: 'Governance',
-                            color: c.primary,
-                            onTap: () => context.push('/governance/meetings')),
-                        if (canAccessFeature(_permissions, _roles, '/search'))
-                          _ModuleTile(icon: Icons.search, label: 'Search',
-                            color: c.onSurface.withValues(alpha: 0.7),
-                            onTap: () => context.push('/search')),
-                        if (canAccessFeature(_permissions, _roles, '/assets/fleet'))
-                          _ModuleTile(icon: Icons.directions_car_outlined, label: 'Fleet',
-                            color: c.primary,
-                            onTap: () => context.push('/assets/fleet')),
-                        if (canAccessFeature(_permissions, _roles, '/analytics/global-summary'))
-                          _ModuleTile(icon: Icons.analytics_outlined, label: 'Analytics',
-                            color: c.primary,
-                            onTap: () => context.push('/analytics/global-summary')),
-                        if (canAccessFeature(_permissions, _roles, '/dashboard/executive-cockpit'))
-                          _ModuleTile(icon: Icons.dashboard_customize_outlined, label: 'Cockpit',
-                            color: c.secondary,
-                            onTap: () => context.push('/dashboard/executive-cockpit')),
-                        if (canAccessFeature(_permissions, _roles, '/calendar'))
-                          _ModuleTile(icon: Icons.calendar_month_outlined, label: 'Calendar',
-                            color: c.primary,
-                            onTap: () => context.push('/calendar')),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('RECENT ACTIVITY',
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      _paddingH, kStitchSpace16, _paddingH, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('AT A GLANCE',
                           style: textTheme.labelSmall?.copyWith(
-                            fontSize: 10, fontWeight: FontWeight.w700,
-                            color: c.onSurface.withValues(alpha: 0.7), letterSpacing: 1.2)),
-                        GestureDetector(
-                          onTap: () => context.go('/requests'),
-                          child: Text('View all',
-                            style: textTheme.labelMedium?.copyWith(
-                              fontSize: 11, color: c.primary, fontWeight: FontWeight.w600)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: kStitchSpace12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: c.surface,
-                        borderRadius: BorderRadius.circular(kStitchCardRoundness),
-                        border: Border.all(color: c.outline),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: c.onSurface.withValues(alpha: 0.7),
+                              letterSpacing: 1.2)),
+                      const SizedBox(height: kStitchSpace12),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: kStitchSpace12,
+                        crossAxisSpacing: kStitchSpace12,
+                        childAspectRatio: 1.55,
+                        children: [
+                          _KpiCard(
+                            label: 'Pending Approvals',
+                            value: '$pending',
+                            icon: Icons.pending_actions,
+                            color: c.secondary,
+                            badge: pending > 0 ? '+$pending new' : 'None',
+                            badgeHighlight: pending > 0,
+                          ),
+                          _KpiCard(
+                            label: 'Active Travels',
+                            value: '$travels',
+                            icon: Icons.flight_takeoff,
+                            color: c.primary,
+                            badge: travels > 0 ? 'In progress' : 'None',
+                            badgeHighlight: false,
+                          ),
+                          _KpiCard(
+                            label: 'Leave Requests',
+                            value: '$leaveReqs',
+                            icon: Icons.event_available,
+                            color: c.primary,
+                            badge: 'Pending review',
+                            badgeHighlight: false,
+                          ),
+                          _KpiCard(
+                            label: 'Open Requisitions',
+                            value: '$requisitions',
+                            icon: Icons.shopping_cart,
+                            color: c.primary,
+                            badge: 'Awaiting',
+                            badgeHighlight: false,
+                          ),
+                        ],
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          children: [
-                            Icon(Icons.inbox_outlined, color: c.outline, size: 40),
-                            const SizedBox(height: kStitchSpace12),
-                            Text('No recent activity',
-                              style: textTheme.titleSmall?.copyWith(
-                                fontSize: 13, fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 4),
-                            Text('Your submissions and approvals will appear here.',
-                              textAlign: TextAlign.center,
-                              style: textTheme.bodySmall?.copyWith(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      _paddingH, kStitchSpace24, _paddingH, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('QUICK ACTIONS',
+                          style: textTheme.labelSmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: c.onSurface.withValues(alpha: 0.7),
+                              letterSpacing: 1.2)),
+                      const SizedBox(height: kStitchSpace12),
+                      Row(
+                        children: [
+                          if (canAccessFeature(
+                              _permissions, _roles, '/requests/travel/new'))
+                            _ActionButton(
+                                icon: Icons.flight_takeoff,
+                                label: 'Travel',
+                                onTap: () =>
+                                    context.push('/requests/travel/new')),
+                          if (canAccessFeature(_permissions, _roles,
+                              '/requests/travel/finance-queue')) ...[
+                            const SizedBox(width: 10),
+                            _ActionButton(
+                                icon: Icons.calculate_outlined,
+                                label: 'Travel DSA',
+                                onTap: () => context
+                                    .push('/requests/travel/finance-queue')),
+                          ],
+                          if (canAccessFeature(_permissions, _roles,
+                              '/requests/travel/toil')) ...[
+                            const SizedBox(width: 10),
+                            _ActionButton(
+                                icon: Icons.more_time,
+                                label: 'TOIL',
+                                onTap: () =>
+                                    context.push('/requests/travel/toil')),
+                          ],
+                          if (canAccessFeature(
+                              _permissions, _roles, '/requests')) ...[
+                            const SizedBox(width: 10),
+                            _ActionButton(
+                                icon: Icons.event_available,
+                                label: 'Leave',
+                                onTap: () => context.go('/requests')),
+                          ],
+                          if (canAccessFeature(_permissions, _roles,
+                              '/finance/command-center')) ...[
+                            const SizedBox(width: 10),
+                            _ActionButton(
+                                icon: Icons.account_balance_wallet,
+                                label: 'Finance',
+                                onTap: () =>
+                                    context.push('/finance/command-center')),
+                          ],
+                          if (canAccessFeature(
+                              _permissions, _roles, '/procurement')) ...[
+                            const SizedBox(width: 10),
+                            _ActionButton(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Procure',
+                                onTap: () => context.push('/procurement')),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      _paddingH, kStitchSpace24, _paddingH, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ALL MODULES',
+                          style: textTheme.labelSmall?.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: c.onSurface.withValues(alpha: 0.7),
+                              letterSpacing: 1.2)),
+                      const SizedBox(height: kStitchSpace12),
+                      GridView.count(
+                        crossAxisCount: 3,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.95,
+                        children: [
+                          if (canAccessFeature(
+                              _permissions, _roles, '/finance/command-center'))
+                            _ModuleTile(
+                                icon: Icons.account_balance_outlined,
+                                label: 'Finance',
+                                color: c.primary,
+                                onTap: () =>
+                                    context.push('/finance/command-center')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/procurement'))
+                            _ModuleTile(
+                                icon: Icons.inventory_2_outlined,
+                                label: 'Procurement',
+                                color: c.secondary,
+                                onTap: () => context.push('/procurement')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/imprest/form'))
+                            _ModuleTile(
+                                icon: Icons.account_balance_wallet_outlined,
+                                label: 'Imprest',
+                                color: c.primary,
+                                onTap: () => context.push('/imprest/form')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/salary/advances'))
+                            _ModuleTile(
+                                icon: Icons.savings_outlined,
+                                label: 'Salary Adv.',
+                                color: c.primary,
+                                onTap: () => context.push('/salary/advances')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/hr/dashboard'))
+                            _ModuleTile(
+                                icon: Icons.people_outline,
+                                label: 'HR',
+                                color: c.primary,
+                                onTap: () => context.push('/hr/dashboard')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/hr/assignments'))
+                            _ModuleTile(
+                                icon: Icons.assignment_ind_outlined,
+                                label: 'HR Work',
+                                color: c.primary,
+                                onTap: () => context.push('/hr/assignments')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/assignments'))
+                            _ModuleTile(
+                                icon: Icons.assignment_outlined,
+                                label: 'Accountability',
+                                color: c.primary,
+                                onTap: () => context.push('/assignments')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/assets/inventory'))
+                            _ModuleTile(
+                                icon: Icons.devices_outlined,
+                                label: 'Assets',
+                                color: c.secondary,
+                                onTap: () => context.push('/assets/inventory')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/pif/form'))
+                            _ModuleTile(
+                                icon: Icons.description_outlined,
+                                label: 'PIF',
+                                color: c.error,
+                                onTap: () => context.push('/pif/form')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/governance/meetings'))
+                            _ModuleTile(
+                                icon: Icons.gavel_outlined,
+                                label: 'Governance',
+                                color: c.primary,
+                                onTap: () =>
+                                    context.push('/governance/meetings')),
+                          if (canAccessFeature(_permissions, _roles, '/search'))
+                            _ModuleTile(
+                                icon: Icons.search,
+                                label: 'Search',
+                                color: c.onSurface.withValues(alpha: 0.7),
+                                onTap: () => context.push('/search')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/assets/fleet'))
+                            _ModuleTile(
+                                icon: Icons.directions_car_outlined,
+                                label: 'Fleet',
+                                color: c.primary,
+                                onTap: () => context.push('/assets/fleet')),
+                          if (canAccessFeature(_permissions, _roles,
+                              '/analytics/global-summary'))
+                            _ModuleTile(
+                                icon: Icons.analytics_outlined,
+                                label: 'Analytics',
+                                color: c.primary,
+                                onTap: () =>
+                                    context.push('/analytics/global-summary')),
+                          if (canAccessFeature(_permissions, _roles,
+                              '/dashboard/executive-cockpit'))
+                            _ModuleTile(
+                                icon: Icons.dashboard_customize_outlined,
+                                label: 'Cockpit',
+                                color: c.secondary,
+                                onTap: () => context
+                                    .push('/dashboard/executive-cockpit')),
+                          if (canAccessFeature(
+                              _permissions, _roles, '/calendar'))
+                            _ModuleTile(
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Calendar',
+                                color: c.primary,
+                                onTap: () => context.push('/calendar')),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('RECENT ACTIVITY',
+                              style: textTheme.labelSmall?.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: c.onSurface.withValues(alpha: 0.7),
+                                  letterSpacing: 1.2)),
+                          GestureDetector(
+                            onTap: () => context.go('/requests'),
+                            child: Text('View all',
+                                style: textTheme.labelMedium?.copyWith(
+                                    fontSize: 11,
+                                    color: c.primary,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: kStitchSpace12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: c.surface,
+                          borderRadius:
+                              BorderRadius.circular(kStitchCardRoundness),
+                          border: Border.all(color: c.outline),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(Icons.inbox_outlined,
+                                  color: c.outline, size: 40),
+                              const SizedBox(height: kStitchSpace12),
+                              Text('No recent activity',
+                                  style: textTheme.titleSmall?.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 4),
+                              Text(
+                                  'Your submissions and approvals will appear here.',
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodySmall
+                                      ?.copyWith(fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -604,12 +752,15 @@ class _KpiCard extends StatelessWidget {
           children: [
             // Left accent bar
             Positioned(
-              top: 0, left: 0, bottom: 0,
+              top: 0,
+              left: 0,
+              bottom: 0,
               child: Container(width: 3, color: color),
             ),
             // Background icon watermark
             Positioned(
-              top: -4, right: -4,
+              top: -4,
+              right: -4,
               child: Opacity(
                 opacity: 0.10,
                 child: Icon(icon, color: color, size: 60),
@@ -617,7 +768,8 @@ class _KpiCard extends StatelessWidget {
             ),
             // Content
             Padding(
-              padding: const EdgeInsets.fromLTRB(kStitchSpace12 + 3, kStitchSpace12, kStitchSpace12, kStitchSpace12),
+              padding: const EdgeInsets.fromLTRB(kStitchSpace12 + 3,
+                  kStitchSpace12, kStitchSpace12, kStitchSpace12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -638,31 +790,41 @@ class _KpiCard extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(value,
-                            style: textTheme.headlineMedium?.copyWith(
-                              fontSize: 26, fontWeight: FontWeight.w800, height: 1)),
+                              style: textTheme.headlineMedium?.copyWith(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1)),
                           if (badge != null) ...[
                             const SizedBox(width: 5),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
                               decoration: BoxDecoration(
                                 color: badgeHighlight
-                                  ? color.withValues(alpha: 0.15)
-                                  : c.outline.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(kStitchRoundness),
+                                    ? color.withValues(alpha: 0.15)
+                                    : c.outline.withValues(alpha: 0.2),
+                                borderRadius:
+                                    BorderRadius.circular(kStitchRoundness),
                               ),
                               child: Text(badge!,
-                                style: TextStyle(
-                                  fontSize: 9, fontWeight: FontWeight.w700,
-                                  color: badgeHighlight ? color : c.onSurface.withValues(alpha: 0.7))),
+                                  style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: badgeHighlight
+                                          ? color
+                                          : c.onSurface
+                                              .withValues(alpha: 0.7))),
                             ),
                           ],
                         ],
                       ),
                       const SizedBox(height: 2),
                       Text(label,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: c.onSurface.withValues(alpha: 0.7), fontSize: 10),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                          style: textTheme.labelSmall?.copyWith(
+                              color: c.onSurface.withValues(alpha: 0.7),
+                              fontSize: 10),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ],
@@ -702,7 +864,10 @@ class _ModuleTile extends StatelessWidget {
           border: Border.all(color: c.outline),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.22 : 0.05),
+              color: Colors.black.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark
+                      ? 0.22
+                      : 0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -712,7 +877,8 @@ class _ModuleTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(kStitchRoundness),
@@ -720,7 +886,8 @@ class _ModuleTile extends StatelessWidget {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 8),
-            Text(label,
+            Text(
+              label,
               style: textTheme.labelSmall?.copyWith(
                 color: c.onSurface.withValues(alpha: 0.7),
                 fontSize: 10,
@@ -767,10 +934,10 @@ class _ActionButton extends StatelessWidget {
               Icon(icon, color: c.primary, size: 20),
               const SizedBox(height: 5),
               Text(label,
-                style: textTheme.labelSmall?.copyWith(
-                  color: c.onSurface.withValues(alpha: 0.7),
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600)),
+                  style: textTheme.labelSmall?.copyWith(
+                      color: c.onSurface.withValues(alpha: 0.7),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -817,7 +984,8 @@ class _DashboardSearchBar extends StatelessWidget {
           controller: controller,
           focusNode: focusNode,
           onSubmitted: (_) => context.push('/search'),
-          style: textTheme.bodyMedium?.copyWith(color: c.onSurface, fontSize: 14),
+          style:
+              textTheme.bodyMedium?.copyWith(color: c.onSurface, fontSize: 14),
           decoration: InputDecoration(
             hintText: 'Search resolutions, PIFs, requests…',
             hintStyle: textTheme.bodyMedium?.copyWith(
@@ -843,7 +1011,8 @@ class _DashboardSearchBar extends StatelessWidget {
               borderRadius: BorderRadius.circular(kStitchRoundness),
               borderSide: BorderSide(color: c.primary, width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         );
       },
@@ -865,10 +1034,12 @@ class _DashboardSearchBar extends StatelessWidget {
                   return InkWell(
                     onTap: () => onSelected(option),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       child: Text(
                         option,
-                        style: textTheme.bodyMedium?.copyWith(color: c.onSurface),
+                        style:
+                            textTheme.bodyMedium?.copyWith(color: c.onSurface),
                       ),
                     ),
                   );

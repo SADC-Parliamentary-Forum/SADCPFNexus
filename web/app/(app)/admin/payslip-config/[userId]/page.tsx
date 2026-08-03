@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { payslipConfigApi, tenantUsersApi, type PayslipLineConfig, type TenantUserOption } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { Modal } from "@/components/ui/Modal";
 
 const COMPONENT_TYPES = [
   { value: "earning",              label: "Earning" },
@@ -37,6 +39,7 @@ function TypeBadge({ type }: { type: string }) {
 export default function PayslipConfigPage() {
   const { userId } = useParams<{ userId: string }>();
   const uid = Number(userId);
+  const { confirm } = useConfirm();
 
   const [configs, setConfigs] = useState<PayslipLineConfig[]>([]);
   const [employee, setEmployee] = useState<TenantUserOption | null>(null);
@@ -139,7 +142,13 @@ export default function PayslipConfigPage() {
   };
 
   const handleRemove = async (id: number) => {
-    if (!confirm("Remove this line from the payslip config?")) return;
+    if (
+      !(await confirm({
+        title: "Remove payslip line",
+        message: "Remove this line from the payslip config?",
+        variant: "danger",
+      }))
+    ) return;
     await payslipConfigApi.remove(id);
     load();
   };
@@ -301,10 +310,8 @@ export default function PayslipConfigPage() {
 
       {/* Add line modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-base font-semibold text-neutral-900">Add Payslip Line</h2>
-            <form onSubmit={handleAddSubmit} className="space-y-4">
+        <Modal open title="Add Payslip Line" onClose={() => setShowAddModal(false)} size="md">
+          <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">Component Key <span className="text-red-500">*</span></label>
                 <input className="form-input w-full font-mono text-sm" placeholder="e.g. housing_allowance or custom_bonus"
@@ -344,9 +351,8 @@ export default function PayslipConfigPage() {
                   {submitting ? "Saving…" : "Add Line"}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

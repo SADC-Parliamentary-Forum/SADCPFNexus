@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 const _reportTypes = [
   _ReportType(
     title: 'Travel & Missions',
-    subtitle: 'Mission requests, travel summaries, and institutional travel reports',
+    subtitle:
+        'Mission requests, travel summaries, and institutional travel reports',
     icon: Icons.flight_takeoff_rounded,
     color: AppColors.primary,
     tag: 'Travel',
@@ -111,7 +113,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final counts = <String, int>{};
 
     try {
-      final summaryRes = await dio.get<Map<String, dynamic>>('/reports/summary');
+      final summaryRes =
+          await dio.get<Map<String, dynamic>>('/reports/summary');
       final summary = summaryRes.data ?? const <String, dynamic>{};
       counts['travel'] = _asInt(summary['travel_requests_count']);
       counts['leave'] = _asInt(summary['leave_requests_count']);
@@ -166,33 +169,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final textTheme = theme.textTheme;
     final totalCount = _counts.values.fold<int>(0, (sum, item) => sum + item);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+    return StitchScreen(
+      title: 'Reports',
+      showBackButton: false,
+      actions: [
+        StitchIconAction(
+          tooltip: 'Open navigation menu',
+          icon: Icons.menu,
+          onPressed: ShellDrawerScope.openDrawerOf(context),
+        ),
+        StitchIconAction(
+          tooltip: 'Refresh reports',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
+        ),
+      ],
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              pinned: false,
-              backgroundColor: theme.scaffoldBackgroundColor,
-              elevation: 0,
-              leading: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: ShellDrawerScope.openDrawerOf(context),
-              ),
-              title: Text(
-                'Reports',
-                style: textTheme.titleLarge?.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _loading ? null : _load,
-                ),
-              ],
-            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),

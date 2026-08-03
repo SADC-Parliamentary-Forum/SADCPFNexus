@@ -146,7 +146,7 @@ export default function RiskBcpPage() {
           e.preventDefault();
           createLink.mutate();
         }}
-        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2"
+        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2 dark:border-neutral-700 dark:bg-neutral-900"
       >
         <label className="space-y-1">
           <span className="text-sm font-medium">Risk ID</span>
@@ -180,7 +180,7 @@ export default function RiskBcpPage() {
         </div>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-600">
             <tr>
@@ -210,7 +210,7 @@ export default function RiskBcpPage() {
         </table>
       </div>
 
-      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
         <h2 className="text-lg font-semibold">BCP exercises</h2>
         <form
           onSubmit={(e: FormEvent) => {
@@ -280,7 +280,7 @@ export default function RiskBcpPage() {
         </div>
       </section>
 
-      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4">
+      <section className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
         <h2 className="text-lg font-semibold">Insurance renewals due</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -326,7 +326,7 @@ export default function RiskBcpPage() {
           e.preventDefault();
           createDep.mutate();
         }}
-        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3"
+        className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3 dark:border-neutral-700 dark:bg-neutral-900"
       >
         <h2 className="md:col-span-3 text-lg font-semibold">Interdependency mapping</h2>
         <label className="space-y-1">
@@ -344,7 +344,7 @@ export default function RiskBcpPage() {
         </div>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
         <table className="min-w-full text-sm">
           <thead className="bg-neutral-50 text-left text-neutral-600">
             <tr>

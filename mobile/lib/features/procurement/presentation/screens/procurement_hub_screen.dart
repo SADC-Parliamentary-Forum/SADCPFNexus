@@ -7,6 +7,8 @@ import '../../../../../core/cache/cache_provider.dart';
 import '../../../../../core/cache/cache_service.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import '../../../../../shared/widgets/stitch_card.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 import '../../data/procurement_api_helpers.dart';
 
 /// Procurement home: list/create entry + browse links (tenders, notices, vendors).
@@ -51,9 +53,8 @@ class _ProcurementHubScreenState extends ConsumerState<ProcurementHubScreen> {
       if (cached != null) {
         if (!mounted) return;
         setState(() {
-          _requests = cached
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList();
+          _requests =
+              cached.map((e) => Map<String, dynamic>.from(e as Map)).toList();
           _loading = false;
           _error = null;
         });
@@ -116,43 +117,24 @@ class _ProcurementHubScreenState extends ConsumerState<ProcurementHubScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
+    return StitchScreen(
+      title: 'Procurement',
+      fallbackRoute: '/dashboard',
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () =>
-            context.push('/procurement/form').then((_) => _load()),
+        onPressed: () => context.push('/procurement/form').then((_) => _load()),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.bgDark,
         icon: const Icon(Icons.add),
         label: const Text('New Requisition',
             style: TextStyle(fontWeight: FontWeight.w700)),
       ),
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/dashboard');
-            }
-          },
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Procurement',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -194,10 +176,10 @@ class _ProcurementHubScreenState extends ConsumerState<ProcurementHubScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary))
+                ? const StitchLoadingState(
+                    label: 'Loading procurement requests')
                 : _error != null
-                    ? _ErrorBody(message: _error!, onRetry: _load)
+                    ? StitchErrorState(message: _error!, onRetry: _load)
                     : RefreshIndicator(
                         color: AppColors.primary,
                         onRefresh: _load,
@@ -206,19 +188,17 @@ class _ProcurementHubScreenState extends ConsumerState<ProcurementHubScreen> {
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 children: const [
                                   SizedBox(height: 80),
-                                  Center(
-                                    child: Text(
-                                      'No procurement requests yet.',
-                                      style: TextStyle(
-                                          color: AppColors.textMuted,
-                                          fontSize: 14),
-                                    ),
+                                  StitchEmptyState(
+                                    icon: Icons.receipt_long_outlined,
+                                    title: 'No procurement requests yet',
+                                    message:
+                                        'New requisitions will appear here.',
                                   ),
                                 ],
                               )
                             : ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(
-                                    16, 8, 16, 100),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 8, 16, 100),
                                 itemCount: _requests.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 10),
@@ -305,30 +285,19 @@ class _LinkChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.bgSurface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 18, color: AppColors.primaryDark),
-              const SizedBox(height: 4),
-              Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-        ),
+    return StitchCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: AppColors.primaryDark),
+          const SizedBox(height: 4),
+          Text(label,
+              style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }
@@ -350,117 +319,72 @@ class _RequestTile extends StatelessWidget {
     final budgetLine = request['budget_line'] as String?;
     final submitted = request['submitted_at'] as String?;
 
-    return Material(
-      color: AppColors.bgSurface,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return StitchCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(refNo.isEmpty ? 'Draft' : refNo,
-                        style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: cfg.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(cfg.label,
-                        style: TextStyle(
-                            color: cfg.color,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(title,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  if (budgetLine != null && budgetLine.isNotEmpty) ...[
-                    const Icon(Icons.account_balance_outlined,
-                        size: 12, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(budgetLine,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              color: AppColors.textMuted, fontSize: 11)),
-                    ),
-                  ] else
-                    const Spacer(),
-                  if (value != null && value > 0)
-                    Text('$currency ${value.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700)),
-                ],
-              ),
-              if (submitted != null) ...[
-                const SizedBox(height: 4),
-                Text('Submitted ${AppDateFormatter.short(submitted)}',
+              Expanded(
+                child: Text(refNo.isEmpty ? 'Draft' : refNo,
                     style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 10)),
-              ],
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: cfg.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(cfg.label,
+                    style: TextStyle(
+                        color: cfg.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700)),
+              ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-            const SizedBox(height: 12),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 14)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary),
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
-            ),
+          const SizedBox(height: 8),
+          Text(title,
+              style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (budgetLine != null && budgetLine.isNotEmpty) ...[
+                const Icon(Icons.account_balance_outlined,
+                    size: 12, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(budgetLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 11)),
+                ),
+              ] else
+                const Spacer(),
+              if (value != null && value > 0)
+                Text('$currency ${value.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700)),
+            ],
+          ),
+          if (submitted != null) ...[
+            const SizedBox(height: 4),
+            Text('Submitted ${AppDateFormatter.short(submitted)}',
+                style:
+                    const TextStyle(color: AppColors.textMuted, fontSize: 10)),
           ],
-        ),
+        ],
       ),
     );
   }

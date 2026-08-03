@@ -12,7 +12,9 @@ return [
     |
     */
 
-    'driver' => env('HASH_DRIVER', 'argon2id'),
+    // Passwords are an institutional security control; do not allow a
+    // deployment environment to silently downgrade the configured driver.
+    'driver' => 'argon2id',
 
     'bcrypt' => [
         'rounds' => env('BCRYPT_ROUNDS', 12),

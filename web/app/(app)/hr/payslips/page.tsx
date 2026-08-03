@@ -241,7 +241,7 @@ export default function HrPayslipsPage() {
           <div className="card max-w-md w-full p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-neutral-900">Payslip</h3>
-              <button type="button" onClick={() => setSelectedPayslip(null)} className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setSelectedPayslip(null)} aria-label="Close payslip preview" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[24px]">close</span>
               </button>
             </div>

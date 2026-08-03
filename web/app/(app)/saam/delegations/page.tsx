@@ -5,9 +5,11 @@ import { useState, useEffect } from "react";
 import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function DelegationsPage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { confirm } = useConfirm();
   const [outgoing, setOutgoing] = useState<DelegatedAuthority[]>([]);
   const [incoming, setIncoming] = useState<DelegatedAuthority[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,13 @@ export default function DelegationsPage() {
   }
 
   async function revoke(id: number) {
-    if (!confirm("Revoke this delegation?")) return;
+    if (
+      !(await confirm({
+        title: "Revoke delegation",
+        message: "Revoke this delegation?",
+        variant: "danger",
+      }))
+    ) return;
     try {
       await saamApi.revokeDelegation(id);
       success("Delegation revoked.");

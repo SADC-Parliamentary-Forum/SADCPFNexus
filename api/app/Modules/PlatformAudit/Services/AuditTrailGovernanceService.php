@@ -6,6 +6,7 @@ use App\Models\PlatformAudit\AuditTrailGovernanceDecision;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -83,17 +84,35 @@ class AuditTrailGovernanceService
             throw ValidationException::withMessages(['status' => 'Invalid status.']);
         }
 
-        $decision->status = $status;
-        $decision->decision_notes = $data['decision_notes'] ?? $decision->decision_notes;
-        if ($status === AuditTrailGovernanceDecision::STATUS_DECIDED || $status === AuditTrailGovernanceDecision::STATUS_NA) {
-            $decision->decided_by = $actor->id;
-            $decision->decided_at = now();
-        } else {
-            $decision->decided_by = null;
-            $decision->decided_at = null;
-        }
-        $decision->save();
+        return DB::transaction(function () use ($decision, $data, $actor, $status) {
+            $old = $decision->only(['status', 'decision_notes', 'decided_by', 'decided_at']);
 
-        return $decision->fresh();
+            $decision->status = $status;
+            $decision->decision_notes = $data['decision_notes'] ?? $decision->decision_notes;
+            if ($status === AuditTrailGovernanceDecision::STATUS_DECIDED || $status === AuditTrailGovernanceDecision::STATUS_NA) {
+                $decision->decided_by = $actor->id;
+                $decision->decided_at = now();
+            } else {
+                $decision->decided_by = null;
+                $decision->decided_at = null;
+            }
+            $decision->save();
+
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $decision->tenant_id,
+                'event_key' => 'audit.governance.updated',
+                'actor_id' => $actor->id,
+                'actor_type' => 'human',
+                'outcome' => 'success',
+                'source_module' => 'platform-audit',
+                'subject_type' => AuditTrailGovernanceDecision::class,
+                'subject_id' => $decision->id,
+                'business_reference' => $decision->decision_key,
+                'old_values' => $old,
+                'new_values' => $decision->only(['status', 'decision_notes', 'decided_by', 'decided_at']),
+            ]);
+
+            return $decision->fresh();
+        });
     }
 }

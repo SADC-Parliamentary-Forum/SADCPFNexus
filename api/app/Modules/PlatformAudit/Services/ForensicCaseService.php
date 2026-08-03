@@ -53,7 +53,7 @@ class ForensicCaseService
             ->where('tenant_id', $case->tenant_id)
             ->findOrFail($eventId);
 
-        return ForensicCaseEvent::query()->firstOrCreate(
+        $link = ForensicCaseEvent::query()->firstOrCreate(
             [
                 'forensic_case_id' => $case->id,
                 'audit_event_id' => $event->id,
@@ -64,6 +64,28 @@ class ForensicCaseService
                 'notes' => $notes,
             ]
         );
+
+        if ($link->wasRecentlyCreated) {
+            app(AuditEventIngestionService::class)->ingest([
+                'tenant_id' => $case->tenant_id,
+                'event_key' => 'forensic.event.linked',
+                'actor_id' => $actor->id,
+                'actor_type' => 'human',
+                'outcome' => 'success',
+                'source_module' => 'platform-audit',
+                'subject_type' => ForensicCase::class,
+                'subject_id' => $case->id,
+                'new_values' => [
+                    'forensic_reference' => $case->reference,
+                    'audit_event_id' => $event->id,
+                    'audit_event_uuid' => $event->uuid,
+                    'notes' => $notes,
+                ],
+                'idempotency_key' => 'forensic-link:'.$case->uuid.':'.$event->uuid,
+            ]);
+        }
+
+        return $link;
     }
 
     public function applyHold(ForensicCase $case, User $actor, array $data): \App\Models\PlatformAudit\AuditEventHold
@@ -172,6 +194,23 @@ class ForensicCaseService
             'custody_holder_id' => $newHolderId,
             'custody_notes' => trim(($case->custody_notes ?? '')."\n".now()->toIso8601String()
                 ." custody {$prev} → {$newHolderId} by {$actor->id}: ".($notes ?? '')),
+        ]);
+
+        app(AuditEventIngestionService::class)->ingest([
+            'tenant_id' => $case->tenant_id,
+            'event_key' => 'forensic.custody.transferred',
+            'actor_id' => $actor->id,
+            'actor_type' => 'human',
+            'outcome' => 'success',
+            'source_module' => 'platform-audit',
+            'subject_type' => ForensicCase::class,
+            'subject_id' => $case->id,
+            'old_values' => ['custody_holder_id' => $prev],
+            'new_values' => [
+                'custody_holder_id' => $newHolderId,
+                'notes' => $notes,
+            ],
+            'idempotency_key' => 'forensic-custody:'.$case->uuid.':'.$prev.':'.$newHolderId.':'.now()->timestamp,
         ]);
 
         return $case->fresh();

@@ -8,6 +8,7 @@ import { useFormatDate } from "@/lib/useFormatDate";
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import axios from "axios";
 import { useToast } from "@/components/ui/Toast";
+import { Modal } from "@/components/ui/Modal";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 
 // ── Config ──────────────────────────────────────────────────────────────────
@@ -248,6 +249,13 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   const canArchive   = hasRole(currentUser, "Secretary General", "System Admin", "super-admin");
   const canReopen    = hasRole(currentUser, "Director", "Governance Officer", "Secretary General", "System Admin", "super-admin");
   const isOwner      = currentUser?.id === risk.submitted_by || currentUser?.id === risk.risk_owner_id;
+  const workflowModalTitle = modal === "submit" ? "Submit Risk" : modal === "review" ? "Start Review" : modal === "approve" ? "Approve Risk" : modal === "escalate" ? "Escalate Risk" : modal === "close" ? "Close Risk" : modal === "archive" ? "Archive Risk" : "Reopen Risk";
+  const workflowModalIcon = modal === "submit" ? "send" : modal === "review" ? "rate_review" : modal === "approve" ? "check_circle" : modal === "escalate" ? "warning" : modal === "close" ? "lock" : modal === "archive" ? "archive" : "refresh";
+  const workflowConfirmDisabled = working || (modal === "escalate" && !modalData.level) || (modal === "close" && !modalData.evidence?.trim());
+  const closeWorkflowModal = () => {
+    setModal(null);
+    setModalError(null);
+  };
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -295,10 +303,15 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 border-b border-neutral-200">
+      <div className="flex gap-1 border-b border-neutral-200" role="tablist" aria-label="Risk detail sections">
         {(["details", "documents", "policies"] as const).map((tab) => (
           <button
             key={tab}
+            id={`risk-tab-${tab}`}
+            role="tab"
+            type="button"
+            aria-selected={activeTab === tab}
+            aria-controls={tab === "details" ? undefined : `risk-panel-${tab}`}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2.5 text-sm font-semibold capitalize border-b-2 transition-colors -mb-px ${
               activeTab === tab
@@ -642,7 +655,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* ── Documents Tab ── */}
       {activeTab === "documents" && (
-        <div className="card p-6">
+        <div id="risk-panel-documents" role="tabpanel" aria-labelledby="risk-tab-documents" className="card p-6">
           <div className="flex items-center gap-2 mb-5">
             <SectionIcon icon="attach_file" color="text-blue-600" bg="bg-blue-50" />
             <h2 className="text-sm font-semibold text-neutral-800">Risk Documents</h2>
@@ -669,7 +682,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* ── Policies Tab ── */}
       {activeTab === "policies" && (
-        <div className="space-y-5">
+        <div id="risk-panel-policies" role="tabpanel" aria-labelledby="risk-tab-policies" className="space-y-5">
           {/* Linked policies */}
           <div className="card p-6">
             <div className="flex items-center gap-2 mb-4">
@@ -760,30 +773,44 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* ── Workflow Modal ── */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => { setModal(null); setModalError(null); }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[20px] text-primary">
-                  {modal === "submit" ? "send" : modal === "review" ? "rate_review" : modal === "approve" ? "check_circle" : modal === "escalate" ? "warning" : modal === "close" ? "lock" : modal === "archive" ? "archive" : "refresh"}
+        <Modal
+          open={Boolean(modal)}
+          onClose={closeWorkflowModal}
+          size="md"
+          className="max-w-md dark:shadow-black/40"
+          bodyClassName="space-y-4"
+          title={
+            <span className="flex items-center gap-3">
+              <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 dark:bg-primary/20">
+                <span className="material-symbols-outlined text-[20px] text-primary dark:text-primary-300">
+                  {workflowModalIcon}
                 </span>
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-neutral-900">
-                  {modal === "submit" ? "Submit Risk" : modal === "review" ? "Start Review" : modal === "approve" ? "Approve Risk" : modal === "escalate" ? "Escalate Risk" : modal === "close" ? "Close Risk" : modal === "archive" ? "Archive Risk" : "Reopen Risk"}
-                </h2>
-                <p className="text-xs text-neutral-500">{risk.risk_code}</p>
-              </div>
-            </div>
-
+              </span>
+              <span>{workflowModalTitle}</span>
+            </span>
+          }
+          description={risk.risk_code}
+          footer={
+            <>
+              <button className="btn-secondary flex-1" onClick={closeWorkflowModal} disabled={working}>Cancel</button>
+              <button
+                className="btn-primary flex-1 flex items-center justify-center gap-1.5"
+                onClick={doWorkflowAction}
+                disabled={workflowConfirmDisabled}
+              >
+                {working ? <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Confirm"}
+              </button>
+            </>
+          }
+        >
             {modalError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2.5 text-sm text-red-700">{modalError}</div>
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">{modalError}</div>
             )}
 
             {modal === "escalate" && (
               <>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Escalation Level <span className="text-red-500">*</span></label>
+                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Escalation Level <span className="text-red-500 dark:text-red-400">*</span></label>
                   <select className="form-input w-full" value={modalData.level ?? ""} onChange={(e) => setModalData((p) => ({ ...p, level: e.target.value }))}>
                     <option value="">Select…</option>
                     <option value="departmental">Departmental</option>
@@ -793,7 +820,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Notes</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Notes</label>
                   <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Reason for escalation…" />
                 </div>
               </>
@@ -801,39 +828,27 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
             {modal === "approve" && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Review Notes</label>
+                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Review Notes</label>
                 <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes for the risk owner…" />
               </div>
             )}
 
             {modal === "close" && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Closure Evidence <span className="text-red-500">*</span></label>
+                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Closure Evidence <span className="text-red-500 dark:text-red-400">*</span></label>
                 <textarea className="form-input w-full h-24 resize-none" value={modalData.evidence ?? ""} onChange={(e) => setModalData((p) => ({ ...p, evidence: e.target.value }))} placeholder="Document what evidence confirms this risk is closed…" />
               </div>
             )}
 
             {(modal === "submit" || modal === "review" || modal === "archive" || modal === "reopen") && (
-              <p className="text-sm text-neutral-600">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
                 {modal === "submit"  && "Submit this risk for departmental review. You will not be able to edit it once submitted."}
                 {modal === "review"  && "Start the formal review process for this risk."}
                 {modal === "archive" && "Archive this closed risk. It will be removed from the active register."}
                 {modal === "reopen"  && "Reopen this risk and move it back to 'Submitted' status for reassessment."}
               </p>
             )}
-
-            <div className="flex gap-3 pt-1">
-              <button className="btn-secondary flex-1" onClick={() => { setModal(null); setModalError(null); }} disabled={working}>Cancel</button>
-              <button
-                className="btn-primary flex-1 flex items-center justify-center gap-1.5"
-                onClick={doWorkflowAction}
-                disabled={working || (modal === "escalate" && !modalData.level) || (modal === "close" && !modalData.evidence?.trim())}
-              >
-                {working ? <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

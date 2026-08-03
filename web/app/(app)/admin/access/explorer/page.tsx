@@ -4,6 +4,7 @@ import { useState } from "react";
 import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
+import { ObjectSummary } from "@/components/ui/ObjectSummary";
 
 export default function PermissionExplorerPage() {
   const [permission, setPermission] = useState("leave.request.authorise.assigned");
@@ -60,10 +61,8 @@ export default function PermissionExplorerPage() {
       </FormSection>
 
       {result ? (
-        <FormSection title="Explorer result" icon="terminal">
-          <pre className="max-h-[60vh] overflow-auto rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-xs text-neutral-800">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+        <FormSection title="Explorer result" icon="fact_check">
+          <ObjectSummary value={result} />
         </FormSection>
       ) : null}
     </div>

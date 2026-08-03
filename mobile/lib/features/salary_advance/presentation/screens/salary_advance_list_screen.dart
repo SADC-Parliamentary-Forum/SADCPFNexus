@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 import '../../data/salary_advance_helpers.dart';
 
 /// Employee lists: [queue] = `mine` (applications) or `history`.
@@ -34,95 +33,52 @@ class _SalaryAdvanceListScreenState
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
-  int _page = 1;
-  int _lastPage = 1;
-  bool _loadingMore = false;
 
   @override
   void initState() {
     super.initState();
-    _load(1);
+    _load();
   }
 
-  Future<void> _load(int page, {bool append = false}) async {
+  Future<void> _load() async {
     setState(() {
-      if (append) {
-        _loadingMore = true;
-      } else {
-        _loading = true;
-        _error = null;
-      }
+      _loading = true;
+      _error = null;
     });
     try {
       final dio = ref.read(apiClientProvider).dio;
       final res = await dio.get<Map<String, dynamic>>(
         '/finance/advances',
         queryParameters: {
-          'per_page': 20,
-          'page': page,
+          'per_page': 100,
           'queue': widget.queue,
         },
       );
       if (!mounted) return;
-      final payload = res.data;
-      final items = extractSalaryAdvanceList(payload);
-      final metaLast = payload == null
-          ? 1
-          : int.tryParse('${payload['last_page'] ?? 1}') ?? 1;
       setState(() {
-        _items = append ? [..._items, ...items] : items;
-        _page = page;
-        _lastPage = metaLast;
+        _items = extractSalaryAdvanceList(res.data);
         _loading = false;
-        _loadingMore = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load salary advances.';
         _loading = false;
-        _loadingMore = false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => context.safePopOrGoHome(),
-        ),
-        title: Text(
-          widget.title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A1A),
-          ),
-        ),
-      ),
+    return StitchScreen(
+      title: widget.title,
+      fallbackRoute: '/salary/advances',
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading salary advances')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                      TextButton(
-                          onPressed: () => _load(1), child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
-                  onRefresh: () => _load(1),
+                  onRefresh: _load,
                   color: AppColors.primary,
                   child: _items.isEmpty
                       ? ListView(
@@ -145,20 +101,10 @@ class _SalaryAdvanceListScreenState
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                          itemCount:
-                              _items.length + (_page < _lastPage ? 1 : 0),
+                          itemCount: _items.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
-                            if (index >= _items.length) {
-                              return TextButton(
-                                onPressed: _loadingMore
-                                    ? null
-                                    : () => _load(_page + 1, append: true),
-                                child: Text(
-                                    _loadingMore ? 'Loading…' : 'Load more'),
-                              );
-                            }
                             return _AdvanceTile(item: _items[index]);
                           },
                         ),
@@ -209,8 +155,8 @@ class _AdvanceTile extends StatelessWidget {
                     item['purpose']?.toString() ??
                         (item['advance_type']?.toString() ?? '—')
                             .replaceAll('_', ' '),
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF666666)),
+                    style:
+                        const TextStyle(fontSize: 12, color: Color(0xFF666666)),
                   ),
                   if (createdAt != null) ...[
                     const SizedBox(height: 2),

@@ -244,7 +244,7 @@ export default function HrFileDocumentsPage() {
           <div className="card p-6 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-neutral-800">Add Document</h2>
-              <button onClick={() => setShowUpload(false)} className="text-neutral-400 hover:text-neutral-600">
+              <button onClick={() => setShowUpload(false)} aria-label="Close upload document dialog" className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>

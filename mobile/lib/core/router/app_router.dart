@@ -1,9 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Auth & Shell
 import '../../features/splash/presentation/screens/splash_screen.dart';
+import '../../features/auth/presentation/screens/access_denied_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -96,6 +98,7 @@ import '../../features/finance/presentation/screens/budget_cashflow_screen.dart'
 
 // Procurement detail + vendor screens
 import '../../features/procurement/presentation/screens/procurement_detail_screen.dart';
+import '../../features/procurement/presentation/screens/vendor_create_screen.dart';
 import '../../features/procurement/presentation/screens/vendor_directory_screen.dart';
 import '../../features/procurement/presentation/screens/vendor_detail_screen.dart';
 
@@ -135,6 +138,95 @@ import '../../core/auth/auth_providers.dart';
 import '../../core/auth/auth_session_controller.dart';
 import '../../core/auth/feature_access.dart';
 
+int? _routeIntParam(GoRouterState state, String name) {
+  final raw = state.pathParameters[name];
+  return raw == null ? null : int.tryParse(raw);
+}
+
+Map<String, dynamic>? _routeExtraMap(GoRouterState state) {
+  final extra = state.extra;
+  return extra is Map<String, dynamic> ? extra : null;
+}
+
+int? _routeExtraInt(GoRouterState state) {
+  final extra = state.extra;
+  if (extra is int) return extra;
+  if (extra is String) return int.tryParse(extra);
+  return null;
+}
+
+int? _mapInt(Map<String, dynamic>? map, String key) {
+  final value = map?[key];
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
+Widget _invalidRouteScreen({
+  required String title,
+  required String message,
+  String fallbackRoute = '/dashboard',
+}) {
+  return _InvalidRouteScreen(
+    title: title,
+    message: message,
+    fallbackRoute: fallbackRoute,
+  );
+}
+
+class _InvalidRouteScreen extends StatelessWidget {
+  const _InvalidRouteScreen({
+    required this.title,
+    required this.message,
+    required this.fallbackRoute,
+  });
+
+  final String title;
+  final String message;
+  final String fallbackRoute;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.link_off_rounded,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Cannot open this link',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () => context.go(fallbackRoute),
+                child: const Text('Go back'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   // ref.READ (not watch) â€” the router is created once.
   // refreshListenable handles all subsequent session changes reactively.
@@ -143,7 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final sessionController = ref.read(authSessionControllerProvider);
   final router = GoRouter(
     initialLocation: '/splash',
-    debugLogDiagnostics: true,
+    debugLogDiagnostics: kDebugMode,
     refreshListenable: sessionController,
     redirect: (context, state) {
       final loc = state.uri.toString();
@@ -151,7 +243,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplash = loc.startsWith('/splash');
       final isLogin = loc.startsWith('/login');
       final isBiometricEntry = loc.startsWith('/biometric-entry');
-      final isPublicRoute = isSplash || isLogin || isBiometricEntry;
+      final isAccessDenied = loc.startsWith('/access-denied');
 
       if (session.status == AuthSessionStatus.unknown) {
         return isSplash ? null : '/splash';
@@ -170,8 +262,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/dashboard';
       }
 
+      if (isAccessDenied) {
+        return null;
+      }
+
       if (!canAccessFeature(session.permissions, session.roles, loc)) {
-        return '/dashboard';
+        return Uri(
+          path: '/access-denied',
+          queryParameters: {'from': loc},
+        ).toString();
       }
 
       return null;
@@ -196,6 +295,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/biometric-entry',
         name: 'biometric-entry',
         builder: (context, state) => const BiometricEntryScreen(),
+      ),
+
+      GoRoute(
+        path: '/access-denied',
+        name: 'access-denied',
+        builder: (context, state) => AccessDeniedScreen(
+          fromPath: state.uri.queryParameters['from'],
+        ),
       ),
 
       // â”€â”€â”€ App shell with bottom navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -333,11 +440,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const VendorDirectoryScreen(),
       ),
       GoRoute(
+        path: '/procurement/vendors/new',
+        name: 'vendor-create',
+        builder: (context, state) => const VendorCreateScreen(),
+      ),
+      GoRoute(
         path: '/procurement/vendors/:id',
         name: 'vendor-detail',
-        builder: (context, state) => VendorDetailScreen(
-          vendorId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final vendorId = _routeIntParam(state, 'id');
+          if (vendorId == null) {
+            return _invalidRouteScreen(
+              title: 'Vendor',
+              message: 'The vendor link is missing a valid numeric ID.',
+              fallbackRoute: '/procurement/vendors',
+            );
+          }
+          return VendorDetailScreen(vendorId: vendorId);
+        },
       ),
       GoRoute(
         path: '/procurement/form',
@@ -352,9 +472,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/procurement/tenders/:id',
         name: 'procurement-tender-detail',
-        builder: (context, state) => ProcurementTenderDetailScreen(
-          tenderId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final tenderId = _routeIntParam(state, 'id');
+          if (tenderId == null) {
+            return _invalidRouteScreen(
+              title: 'Tender',
+              message: 'The tender link is missing a valid numeric ID.',
+              fallbackRoute: '/procurement/tenders',
+            );
+          }
+          return ProcurementTenderDetailScreen(tenderId: tenderId);
+        },
       ),
       GoRoute(
         path: '/procurement/notices',
@@ -364,9 +492,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/procurement/rfq/:id',
         name: 'procurement-rfq',
-        builder: (context, state) => ProcurementRfqScreen(
-          requestId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final requestId = _routeIntParam(state, 'id');
+          if (requestId == null) {
+            return _invalidRouteScreen(
+              title: 'RFQ',
+              message: 'The RFQ link is missing a valid numeric request ID.',
+              fallbackRoute: '/procurement',
+            );
+          }
+          return ProcurementRfqScreen(requestId: requestId);
+        },
       ),
       GoRoute(
         path: '/procurement/approval-matrix',
@@ -426,7 +562,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           queue: 'mine',
           title: 'My applications',
           subtitle: 'Your salary advance applications (open and in progress).',
-          emptyHint: 'You have not created any salary advance applications yet.',
+          emptyHint:
+              'You have not created any salary advance applications yet.',
         ),
       ),
       GoRoute(
@@ -512,7 +649,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/hr/assignments',
-        name: 'hr-assignments',
+        name: 'hr-work-assignments',
         builder: (context, state) => const WorkAssignmentsScreen(),
       ),
       GoRoute(
@@ -562,7 +699,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/assets/request',
         name: 'assets-request',
-        builder: (context, state) => const AssetRequestScreen(),
+        builder: (context, state) {
+          final extra = state.extra is Map<String, dynamic>
+              ? state.extra as Map<String, dynamic>
+              : null;
+          final itemName = extra?['itemName'] as String?;
+          final isReorder = extra?['requestType'] == 'stock_reorder' &&
+              itemName != null &&
+              itemName.trim().isNotEmpty;
+          return AssetRequestScreen(
+            initialJustification: isReorder
+                ? 'Request stock reorder for ${itemName.trim()}.'
+                : null,
+          );
+        },
       ),
       GoRoute(
         path: '/assets/assigned',
@@ -582,15 +732,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/fleet/:id',
         name: 'fleet-vehicle-detail',
-        builder: (context, state) => FleetVehicleDetailScreen(
-          vehicleId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final vehicleId = _routeIntParam(state, 'id');
+          if (vehicleId == null) {
+            return _invalidRouteScreen(
+              title: 'Fleet',
+              message: 'The fleet link is missing a valid numeric vehicle ID.',
+              fallbackRoute: '/assets/fleet',
+            );
+          }
+          return FleetVehicleDetailScreen(vehicleId: vehicleId);
+        },
       ),
 
       // â”€â”€â”€ Gap Pack 2 modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       GoRoute(
         path: '/assignments',
-        name: 'assignments',
+        name: 'accountability-assignments',
         builder: (context, state) => const AssignmentsListScreen(),
       ),
       GoRoute(
@@ -602,18 +760,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/assignments/create',
         name: 'assignments-create',
         builder: (context, state) => const AssignmentCreateScreen(),
+      ),
       GoRoute(
         path: '/assignments/calendar',
         name: 'assignments-calendar',
         builder: (context, state) => const AssignmentsCalendarScreen(),
       ),
-      ),
       GoRoute(
         path: '/assignments/:id',
         name: 'assignments-detail',
-        builder: (context, state) => AssignmentDetailScreen(
-          assignmentId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final assignmentId = _routeIntParam(state, 'id');
+          if (assignmentId == null) {
+            return _invalidRouteScreen(
+              title: 'Assignment',
+              message: 'The assignment link is missing a valid numeric ID.',
+              fallbackRoute: '/assignments',
+            );
+          }
+          return AssignmentDetailScreen(assignmentId: assignmentId);
+        },
       ),
       GoRoute(
         path: '/risk',
@@ -623,9 +789,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/risk/:id',
         name: 'risk-detail',
-        builder: (context, state) => RiskDetailScreen(
-          riskId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final riskId = _routeIntParam(state, 'id');
+          if (riskId == null) {
+            return _invalidRouteScreen(
+              title: 'Risk',
+              message: 'The risk link is missing a valid numeric ID.',
+              fallbackRoute: '/risk',
+            );
+          }
+          return RiskDetailScreen(riskId: riskId);
+        },
       ),
       GoRoute(
         path: '/correspondence',
@@ -635,9 +809,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/correspondence/:id',
         name: 'correspondence-detail',
-        builder: (context, state) => CorrespondenceDetailScreen(
-          letterId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final letterId = _routeIntParam(state, 'id');
+          if (letterId == null) {
+            return _invalidRouteScreen(
+              title: 'Correspondence',
+              message: 'The correspondence link is missing a valid numeric ID.',
+              fallbackRoute: '/correspondence',
+            );
+          }
+          return CorrespondenceDetailScreen(letterId: letterId);
+        },
       ),
       GoRoute(
         path: '/stock/scan',
@@ -652,9 +834,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/weekly-summaries/:id',
         name: 'weekly-summary-detail',
-        builder: (context, state) => WeeklySummaryDetailScreen(
-          reportId: int.parse(state.pathParameters['id']!),
-        ),
+        builder: (context, state) {
+          final reportId = _routeIntParam(state, 'id');
+          if (reportId == null) {
+            return _invalidRouteScreen(
+              title: 'Weekly Summary',
+              message: 'The weekly summary link is missing a valid numeric ID.',
+              fallbackRoute: '/weekly-summaries',
+            );
+          }
+          return WeeklySummaryDetailScreen(reportId: reportId);
+        },
       ),
       GoRoute(
         path: '/budget/cashflow',
@@ -793,7 +983,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/hr/performance/detail',
         name: 'hrPerformanceDetail',
         builder: (context, state) {
-          final tracker = state.extra as Map<String, dynamic>;
+          final tracker = _routeExtraMap(state);
+          if (tracker == null) {
+            return _invalidRouteScreen(
+              title: 'Performance',
+              message:
+                  'This performance profile needs tracker data. Open it from the performance list.',
+              fallbackRoute: '/hr/performance',
+            );
+          }
           return EmployeePerformanceProfileScreen(tracker: tracker);
         },
       ),
@@ -806,7 +1004,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/hr/files/detail',
         name: 'hrFileDetail',
         builder: (context, state) {
-          final fileId = state.extra as int;
+          final fileId = _routeExtraInt(state);
+          if (fileId == null) {
+            return _invalidRouteScreen(
+              title: 'HR Personal File',
+              message:
+                  'This personal file link is missing a valid file ID. Open it from the HR files directory.',
+              fallbackRoute: '/hr/files',
+            );
+          }
           return HrFileSummaryScreen(fileId: fileId);
         },
       ),
@@ -814,10 +1020,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/hr/files/documents',
         name: 'hrFileDocuments',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
+          final extra = _routeExtraMap(state);
+          final fileId = _mapInt(extra, 'fileId');
+          final employeeName = extra?['employeeName'] as String?;
+          if (fileId == null ||
+              employeeName == null ||
+              employeeName.trim().isEmpty) {
+            return _invalidRouteScreen(
+              title: 'HR Documents',
+              message:
+                  'This documents link is missing file details. Open it from the HR file summary.',
+              fallbackRoute: '/hr/files',
+            );
+          }
           return HrFileDocumentsScreen(
-            fileId: extra['fileId'] as int,
-            employeeName: extra['employeeName'] as String,
+            fileId: fileId,
+            employeeName: employeeName.trim(),
           );
         },
       ),
@@ -849,4 +1067,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
   return router;
 });
-

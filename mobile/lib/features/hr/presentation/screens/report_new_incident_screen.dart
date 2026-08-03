@@ -11,7 +11,8 @@ class ReportNewIncidentScreen extends ConsumerStatefulWidget {
       _ReportNewIncidentScreenState();
 }
 
-class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScreen> {
+class _ReportNewIncidentScreenState
+    extends ConsumerState<ReportNewIncidentScreen> {
   String? _incidentType;
   String _severity = 'Medium';
   bool _submitting = false;
@@ -63,13 +64,17 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Incident reported successfully.'), backgroundColor: Color(0xFF13EC80)),
+        const SnackBar(
+            content: Text('Incident reported successfully.'),
+            backgroundColor: Color(0xFF13EC80)),
       );
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit: ${e.toString()}'), backgroundColor: Colors.red),
+        SnackBar(
+            content: Text('Failed to submit: ${e.toString()}'),
+            backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -150,8 +155,12 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                       color: const Color(0xFF13EC80),
                     ),
                   ),
-                  Expanded(child: Container(height: 3, color: const Color(0xFFE0E0E0))),
-                  Expanded(child: Container(height: 3, color: const Color(0xFFE0E0E0))),
+                  Expanded(
+                      child:
+                          Container(height: 3, color: const Color(0xFFE0E0E0))),
+                  Expanded(
+                      child:
+                          Container(height: 3, color: const Color(0xFFE0E0E0))),
                 ],
               ),
             ],
@@ -167,7 +176,10 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
 
           const Text(
             'Incident Type',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333)),
           ),
           const SizedBox(height: 8),
           Container(
@@ -184,7 +196,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                   'Select classification...',
                   style: TextStyle(fontSize: 14, color: Color(0xFFAAAAAA)),
                 ),
-                icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF888888)),
+                icon: const Icon(Icons.keyboard_arrow_down,
+                    color: Color(0xFF888888)),
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF1A1A1A),
@@ -200,7 +213,10 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
 
           const Text(
             'Severity Level',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333)),
           ),
           const SizedBox(height: 8),
           Container(
@@ -238,21 +254,18 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                             ? activeColor.withValues(alpha: 0.12)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(11),
-                        border: isActive
-                            ? Border.all(color: activeColor)
-                            : null,
+                        border:
+                            isActive ? Border.all(color: activeColor) : null,
                       ),
                       child: Text(
                         s,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: isActive
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isActive
-                              ? activeColor
-                              : const Color(0xFF888888),
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w500,
+                          color:
+                              isActive ? activeColor : const Color(0xFF888888),
                         ),
                       ),
                     ),
@@ -269,7 +282,10 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
 
           const Text(
             'Description',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333)),
           ),
           const SizedBox(height: 8),
           Container(
@@ -296,7 +312,10 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
 
           const Text(
             'Witnesses (Optional)',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF333333)),
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333)),
           ),
           const SizedBox(height: 8),
           Container(
@@ -336,12 +355,18 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                                   color: Color(0xFF0BAE5E),
                                 ),
                               ),
-                              const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () =>
-                                    setState(() => _witnesses.remove(w)),
-                                child: const Icon(Icons.close,
-                                    size: 12, color: Color(0xFF0BAE5E)),
+                              const SizedBox(width: 2),
+                              SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: IconButton(
+                                  tooltip: 'Remove witness $w',
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(Icons.close,
+                                      size: 18, color: Color(0xFF0BAE5E)),
+                                  onPressed: () =>
+                                      setState(() => _witnesses.remove(w)),
+                                ),
                               ),
                             ],
                           ),
@@ -486,9 +511,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                   width: _signed ? 1.5 : 1,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                color: _signed
-                    ? const Color(0xFFF0FFF6)
-                    : const Color(0xFFFAFAFA),
+                color:
+                    _signed ? const Color(0xFFF0FFF6) : const Color(0xFFFAFAFA),
               ),
               child: _signed
                   ? CustomPaint(
@@ -502,8 +526,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
                         SizedBox(height: 4),
                         Text(
                           'Tap to sign',
-                          style: TextStyle(
-                              fontSize: 12, color: Color(0xFFAAAAAA)),
+                          style:
+                              TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
                         ),
                       ],
                     ),
@@ -512,7 +536,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
           const SizedBox(height: 12),
           const Text(
             'By signing, you confirm the accuracy of this report. Your digital signature is legally binding under SADC SecureID authentication protocol.',
-            style: TextStyle(fontSize: 11, color: Color(0xFF999999), height: 1.5),
+            style:
+                TextStyle(fontSize: 11, color: Color(0xFF999999), height: 1.5),
           ),
           const SizedBox(height: 24),
         ],
@@ -529,7 +554,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF102219)),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Color(0xFF102219)),
                 )
               : const Icon(Icons.send, size: 18),
           label: Text(_submitting ? 'Submitting...' : 'Submit Report'),
@@ -537,7 +563,8 @@ class _ReportNewIncidentScreenState extends ConsumerState<ReportNewIncidentScree
             backgroundColor: const Color(0xFF13EC80),
             foregroundColor: const Color(0xFF102219),
             minimumSize: const Size(double.infinity, 52),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
             textStyle: const TextStyle(
               fontSize: 15,

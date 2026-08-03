@@ -27,6 +27,8 @@ type FxRate = {
   notes?: string | null;
 };
 
+const nonNegativeNumber = (value: string) => Math.max(0, Number(value));
+
 export default function TravelSettingsPage() {
   const [rates, setRates] = useState<DsaRate[]>([]);
   const [fxRates, setFxRates] = useState<FxRate[]>([]);
@@ -109,16 +111,16 @@ export default function TravelSettingsPage() {
           </select>
         </label>
         <label className="text-xs font-semibold">Rate / day
-          <input type="number" className="form-input w-full mt-1" value={form.rate_per_day} onChange={(e) => setForm({ ...form, rate_per_day: Number(e.target.value) })} />
+          <input type="number" min={0} className="form-input w-full mt-1" value={form.rate_per_day} onChange={(e) => setForm({ ...form, rate_per_day: nonNegativeNumber(e.target.value) })} />
         </label>
         <label className="text-xs font-semibold">Accommodation
-          <input type="number" className="form-input w-full mt-1" value={form.accommodation_component} onChange={(e) => setForm({ ...form, accommodation_component: Number(e.target.value) })} />
+          <input type="number" min={0} className="form-input w-full mt-1" value={form.accommodation_component} onChange={(e) => setForm({ ...form, accommodation_component: nonNegativeNumber(e.target.value) })} />
         </label>
         <label className="text-xs font-semibold">Meals
-          <input type="number" className="form-input w-full mt-1" value={form.meal_component} onChange={(e) => setForm({ ...form, meal_component: Number(e.target.value) })} />
+          <input type="number" min={0} className="form-input w-full mt-1" value={form.meal_component} onChange={(e) => setForm({ ...form, meal_component: nonNegativeNumber(e.target.value) })} />
         </label>
         <label className="text-xs font-semibold">Incidentals
-          <input type="number" className="form-input w-full mt-1" value={form.incidentals_component} onChange={(e) => setForm({ ...form, incidentals_component: Number(e.target.value) })} />
+          <input type="number" min={0} className="form-input w-full mt-1" value={form.incidentals_component} onChange={(e) => setForm({ ...form, incidentals_component: nonNegativeNumber(e.target.value) })} />
         </label>
         <div className="col-span-2 flex justify-end">
           <button type="submit" className="btn-primary py-2 px-4 text-sm">Save DSA rate</button>

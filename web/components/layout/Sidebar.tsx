@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
+import { accessApi, authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { clearStoredUser } from "@/lib/session";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
-import type { AuthUser } from "@/lib/api";
+import type { AccessNavItem, AuthUser } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
 
 interface NavChild {
@@ -31,7 +31,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "My Work", href: "/my-work", icon: "work", i18nKey: "nav.my_work", children: [
       { label: "My Work Hub", href: "/my-work", icon: "work" },
       { label: "Procurement Evaluations", href: "/my-work/procurement-evaluations", icon: "fact_check" },
-      { label: "Approvals", href: "/approvals", icon: "inbox" },
     ] },
   { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
   { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active", i18nKey: "nav.notifications" },
@@ -489,7 +488,6 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Payslip Upload",       href: "/admin/payslips",         icon: "upload_file" },
       { label: "Salary Assignments",   href: "/admin/salary-assignments", icon: "badge" },
       { label: "Platform Audit Trail", href: "/admin/audit-trail",      icon: "policy" },
-      { label: "Audit Logs (legacy)",  href: "/admin/audit",            icon: "manage_search" },
       { label: "Document Register",    href: "/admin/documents",        icon: "folder_managed" },
       { label: "Ledger Verification",  href: "/admin/ledger",           icon: "verified_user" },
       { label: "Data Scope & RLS",     href: "/admin/data-scope",       icon: "database" },
@@ -504,11 +502,29 @@ interface SidebarProps {
   onOverlayClick: () => void;
 }
 
+function navItemFromManifest(item: AccessNavItem): NavItem | null {
+  const children = (item.children ?? [])
+    .map(navItemFromManifest)
+    .filter((child): child is NavItem => child !== null)
+    .map((child) => ({ label: child.label, href: child.href, icon: child.icon }));
+  const href = item.href ?? children[0]?.href;
+
+  if (!href) return null;
+
+  return {
+    label: item.label,
+    href,
+    icon: item.icon,
+    children: children.length > 0 ? children : undefined,
+  };
+}
+
 export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useI18n();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [manifestItems, setManifestItems] = useState<NavItem[] | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isCollapsed = !isOpen;
 
@@ -518,7 +534,29 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
     setUser(getStoredUser());
   }, []);
 
-  const navItems = useMemo(() => NAV_ITEMS.map((item) => {
+  useEffect(() => {
+    let cancelled = false;
+    accessApi.navigation()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const items = (data.data.items ?? [])
+          .map(navItemFromManifest)
+          .filter((item): item is NavItem => item !== null);
+        setManifestItems(items.length > 0 ? items : null);
+      })
+      .catch(() => {
+        if (!cancelled) setManifestItems(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const navItems = useMemo(() => {
+    if (manifestItems) return manifestItems;
+
+    return NAV_ITEMS.map((item) => {
     if (item.children) {
       const children = item.children.filter((c) => canAccessRoute(user, c.href));
       if (children.length === 0) return null;
@@ -526,7 +564,8 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
     }
     if (!canAccessRoute(user, item.href)) return null;
     return item;
-  }).filter((item): item is NavItem => item !== null), [user]);
+    }).filter((item): item is NavItem => item !== null);
+  }, [manifestItems, user]);
 
   // Auto-expand parent when a child is active
   useEffect(() => {
@@ -587,7 +626,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
     // Collapsed: icon-only link (parent goes to first accessible child)
     if (isCollapsed) {
       const collapsedHref = hasChildren
-        ? (item.children!.find((c) => canAccessRoute(user, c.href))?.href ?? item.href)
+        ? (item.children![0]?.href ?? item.href)
         : item.href;
       return (
         <Link
@@ -615,11 +654,15 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
     }
 
     if (hasChildren) {
+      const childGroupId = `sidebar-section-${item.href.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "") || "root"}`;
       return (
         <div key={item.href}>
           {/* Parent toggle button */}
           <button
             type="button"
+            aria-expanded={isExpanded}
+            aria-controls={childGroupId}
+            aria-label={`${navLabel(item)} navigation section`}
             onClick={() => toggleExpand(item.href)}
             className={cn(
               "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
@@ -650,7 +693,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
 
           {/* Children */}
           {isExpanded && (
-            <div className="mt-0.5 ml-3 pl-3 border-l border-neutral-700/60 space-y-0.5">
+            <div id={childGroupId} role="group" aria-label={`${navLabel(item)} links`} className="mt-0.5 ml-3 pl-3 border-l border-neutral-700/60 space-y-0.5">
               {item.children!.map((child) => {
                 // Use exact match for index-style hrefs (e.g. /governance) to avoid
                 // matching siblings like /governance/resolutions as also active.

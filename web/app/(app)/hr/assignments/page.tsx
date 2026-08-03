@@ -342,6 +342,7 @@ export default function AssignmentsPage() {
               <h2 className="font-semibold text-neutral-800 text-lg">New Assignment</h2>
               <button
                 onClick={() => setShowModal(false)}
+                aria-label="Close assignment form"
                 className="text-neutral-400 hover:text-neutral-600"
               >
                 <span className="material-symbols-outlined text-[22px]">close</span>

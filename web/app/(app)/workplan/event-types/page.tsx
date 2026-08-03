@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { workplanEventTypesApi, type WorkplanEventType } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const COLOR_OPTIONS = [
   { value: "neutral", label: "Grey" },
@@ -25,6 +26,7 @@ const COLOR_DOT: Record<string, string> = {
 };
 
 export default function WorkplanEventTypesPage() {
+  const { confirm } = useConfirm();
   const [list, setList] = useState<WorkplanEventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,13 @@ export default function WorkplanEventTypesPage() {
   };
 
   const handleDelete = async (et: WorkplanEventType) => {
-    if (!confirm(`Delete event type "${et.name}"?`)) return; // ship-safe-ignore
+    if (
+      !(await confirm({
+        title: "Delete event type",
+        message: `Delete event type "${et.name}"?`,
+        variant: "danger",
+      }))
+    ) return; // ship-safe-ignore
     setError(null);
     try {
       await workplanEventTypesApi.delete(et.id);

@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect, useCallback } from "react";
 import { correspondenceApi, type CorrespondenceContact, type ContactGroup } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Tab = "contacts" | "groups";
 
@@ -18,6 +19,7 @@ const EMPTY_CONTACT = {
 };
 
 export default function CorrespondenceContactsPage() {
+  const { confirm } = useConfirm();
   const [tab, setTab] = useState<Tab>("contacts");
   const [contacts, setContacts] = useState<CorrespondenceContact[]>([]);
   const [groups, setGroups] = useState<ContactGroup[]>([]);
@@ -97,7 +99,13 @@ export default function CorrespondenceContactsPage() {
   }
 
   async function deleteContact(id: number) {
-    if (!confirm("Delete this contact?")) return;
+    if (
+      !(await confirm({
+        title: "Delete contact",
+        message: "Delete this contact?",
+        variant: "danger",
+      }))
+    ) return;
     try {
       await correspondenceApi.deleteContact(id);
       loadData();
@@ -125,7 +133,13 @@ export default function CorrespondenceContactsPage() {
   }
 
   async function deleteGroup(id: number) {
-    if (!confirm("Delete this group?")) return;
+    if (
+      !(await confirm({
+        title: "Delete group",
+        message: "Delete this group?",
+        variant: "danger",
+      }))
+    ) return;
     try {
       await correspondenceApi.deleteGroup(id);
       loadData();

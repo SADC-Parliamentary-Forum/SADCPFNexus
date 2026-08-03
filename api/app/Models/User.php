@@ -196,6 +196,10 @@ class User extends Authenticatable
                 'HR Manager',
                 'HR Administrator',
                 'Procurement Officer',
+                'Platform Administrator',
+                'Technical Administrator',
+                'Security Administrator',
+                'Read-Only Operations Viewer',
             ]);
     }
 }

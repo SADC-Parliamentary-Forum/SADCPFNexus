@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { workplanMeetingTypesApi, type MeetingType } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 export default function MeetingTypesPage() {
+  const { confirm } = useConfirm();
   const [list, setList] = useState<MeetingType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,13 @@ export default function MeetingTypesPage() {
   };
 
   const handleDelete = async (mt: MeetingType) => {
-    if (!confirm(`Delete meeting type "${mt.name}"? This will fail if any event uses it.`)) return; // ship-safe-ignore: confirm dialog string, not SQL
+    if (
+      !(await confirm({
+        title: "Delete meeting type",
+        message: `Delete meeting type "${mt.name}"? This will fail if any event uses it.`,
+        variant: "danger",
+      }))
+    ) return; // ship-safe-ignore: confirm dialog string, not SQL
     setError(null);
     try {
       await workplanMeetingTypesApi.delete(mt.id);
