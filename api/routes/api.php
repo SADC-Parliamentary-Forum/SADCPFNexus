@@ -84,7 +84,10 @@ Route::prefix('v1')->group(function () {
     Route::middleware([
         'auth:sanctum',
         \App\Http\Middleware\EnsureSessionAuthIsValid::class,
-        'throttle:60,1',
+        // Authenticated pages load several permission, notification and data
+        // endpoints together. Keep abuse protection while allowing a normal
+        // browser session to burst during navigation and initial hydration.
+        'throttle:300,1',
         \App\Http\Middleware\SetRlsContext::class,
     ])->group(function () {
 

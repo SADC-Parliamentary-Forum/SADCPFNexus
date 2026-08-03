@@ -39,6 +39,16 @@ function statusLabel(status: string | null | undefined): string {
   return status.replace(/_/g, " ");
 }
 
+function responsibleOfficerLabel(programme: Programme): string {
+  const value = (programme as Programme & { responsible_officer?: unknown }).responsible_officer;
+  if (typeof value === "string" && value.trim()) return value;
+  if (value && typeof value === "object" && "name" in value) {
+    const name = (value as { name?: unknown }).name;
+    if (typeof name === "string" && name.trim()) return name;
+  }
+  return "—";
+}
+
 export default function PifPage() {
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +93,7 @@ export default function PifPage() {
         row.title,
         row.status,
         row.funding_source,
-        row.responsible_officer,
+        responsibleOfficerLabel(row),
       ]
         .filter(Boolean)
         .join(" ")
@@ -115,7 +125,7 @@ export default function PifPage() {
         funding_source: p.funding_source ?? "",
         currency: p.primary_currency ?? "",
         total_budget: p.total_budget ?? "",
-        responsible_officer: p.responsible_officer ?? "",
+        responsible_officer: responsibleOfficerLabel(p),
         end_date: p.end_date ?? "",
       })),
       [
@@ -266,7 +276,7 @@ export default function PifPage() {
                   <td className="font-medium text-neutral-700">
                     {formatBudget(p.primary_currency, p.total_budget)}
                   </td>
-                  <td className="text-neutral-600">{p.responsible_officer || "—"}</td>
+                  <td className="text-neutral-600">{responsibleOfficerLabel(p)}</td>
                   <td className="text-xs text-neutral-500">{formatDateShort(p.end_date)}</td>
                   <td>
                     <div className="flex flex-wrap gap-2">
