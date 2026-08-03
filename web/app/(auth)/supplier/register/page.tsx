@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supplierCategoriesApi, supplierRegistrationApi, type SupplierCategory } from "@/lib/api";
+import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
 
 const SADC_COUNTRIES = [
   "Angola", "Botswana", "Comoros", "Democratic Republic of the Congo",
@@ -105,6 +106,7 @@ const initialForm: FormState = {
 };
 
 export default function SupplierRegisterPage() {
+  const { t } = useI18n();
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState<FormState>(initialForm);
   const [categories, setCategories] = useState<SupplierCategory[]>([]);
@@ -173,14 +175,15 @@ export default function SupplierRegisterPage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Supplier Registration</h1>
+            <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{t("auth.supplierTitle")}</h1>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Register your company to receive category-matched RFQs through the SADC-PF supplier portal.
+              {t("auth.supplierDescription")}
             </p>
           </div>
-          <Link href="/login" className="btn-secondary text-sm">
-            Back to Login
-          </Link>
+          <div className="flex items-center gap-2">
+            <LocaleSwitcher />
+            <Link href="/login" className="btn-secondary text-sm">{t("auth.backLogin")}</Link>
+          </div>
         </div>
 
         {!mounted ? (

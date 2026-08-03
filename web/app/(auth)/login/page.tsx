@@ -27,12 +27,12 @@ const DEMO_CREDENTIALS = IS_DEV ? [
 ] : [];
 
 const FEATURES = [
-  { icon: "flight_takeoff",        label: "Travel & Mission Management"  },
-  { icon: "event_available",       label: "Leave & Attendance Tracking"  },
-  { icon: "account_balance_wallet",label: "Imprest & Finance Control"    },
-  { icon: "gavel",                 label: "Governance & Compliance"      },
-  { icon: "people",                label: "HR, Payroll & Assets"         },
-  { icon: "bar_chart",             label: "Reports & Executive Analytics"},
+  { icon: "flight_takeoff",         key: "auth.feature.travel" },
+  { icon: "event_available",        key: "auth.feature.leave" },
+  { icon: "account_balance_wallet", key: "auth.feature.imprest" },
+  { icon: "gavel",                  key: "auth.feature.governance" },
+  { icon: "people",                 key: "auth.feature.people" },
+  { icon: "bar_chart",              key: "auth.feature.reports" },
 ];
 
 export default function LoginPage() {
@@ -155,15 +155,15 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-lg font-bold leading-tight">SADC-PF Nexus</h1>
-              <p className="text-xs text-white/40">Institutional Operations Platform</p>
+              <p className="text-xs text-white/40">{t("auth.platform")}</p>
             </div>
           </div>
 
           <h2 className="text-3xl font-bold leading-snug mb-4">
-            Secure governance<br />for Southern Africa
+            {t("auth.brandTitle")}
           </h2>
           <p className="text-sm text-white/60 leading-relaxed mb-10">
-            A unified platform for parliamentary operations, finance, HR, and compliance across the SADC Parliamentary Forum.
+            {t("auth.brandDescription")}
           </p>
 
           <div className="space-y-3">
@@ -172,7 +172,7 @@ export default function LoginPage() {
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/10">
                   <span className="material-symbols-outlined text-white/80 text-[18px]">{f.icon}</span>
                 </div>
-                <span className="text-sm text-white/70">{f.label}</span>
+                <span className="text-sm text-white/70">{t(f.key)}</span>
               </div>
             ))}
           </div>
@@ -182,12 +182,12 @@ export default function LoginPage() {
         <div className="border-t border-white/10 pt-6">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-green-400" />
-            <span className="text-xs text-white/50">All systems operational</span>
+            <span className="text-xs text-white/50">{t("auth.operational")}</span>
           </div>
           <p className="mt-3 text-xs text-white/30" suppressHydrationWarning>
             {/* Use UTC year so SSR (Node) and the browser agree — local getFullYear()
                 can differ across timezones at year boundaries and trigger React #418. */}
-            © {new Date().getUTCFullYear()} SADC Parliamentary Forum. All rights reserved.
+            © {new Date().getUTCFullYear()} {t("auth.rights")}
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-base font-bold text-neutral-900">SADC-PF Nexus</h1>
-              <p className="text-xs text-neutral-400">Institutional Operations Platform</p>
+              <p className="text-xs text-neutral-400">{t("auth.platform")}</p>
             </div>
           </div>
 

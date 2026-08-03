@@ -32,7 +32,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
 
   useEffect(() => {
-    setLocaleState(readStoredLocale());
+    const stored = readStoredLocale();
+    setLocaleState(stored);
+    document.documentElement.lang = stored;
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
@@ -74,21 +76,23 @@ export function useI18n(): I18nValue {
 export function LocaleSwitcher({ className = "" }: { className?: string }) {
   const { locale, setLocale, locales, labels } = useI18n();
   return (
-    <label className={`inline-flex items-center gap-2 text-xs text-neutral-500 ${className}`}>
-      <span className="sr-only">Language</span>
-      <select
-        className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs text-neutral-700"
-        value={locale}
-        onChange={(e) => setLocale(e.target.value as Locale)}
-        aria-label="Language"
-      >
-        {locales.map((code) => (
-          <option key={code} value={code}>
-            {labels[code]}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className={`inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white p-1 shadow-sm ${className}`} role="group" aria-label="Language">
+      <span className="material-symbols-outlined ml-1 mr-0.5 text-[17px] text-neutral-400" aria-hidden="true">language</span>
+      {locales.map((code) => (
+        <button
+          key={code}
+          type="button"
+          onClick={() => setLocale(code)}
+          aria-pressed={locale === code}
+          aria-label={`Use ${labels[code]}`}
+          className={`rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-colors ${
+            locale === code ? "bg-primary text-white shadow-sm" : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+          }`}
+        >
+          {code}
+        </button>
+      ))}
+    </div>
   );
 }
 

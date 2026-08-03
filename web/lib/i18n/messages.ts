@@ -49,6 +49,20 @@ const en: Dict = {
   "login.mailboxHelp": "If you no longer have mailbox access, contact IT Support.",
   "login.supplierOnboarding": "Supplier onboarding:",
   "login.supplierRegister": "Register your supplier account",
+  "auth.platform": "Institutional Operations Platform",
+  "auth.brandTitle": "Secure governance for Southern Africa",
+  "auth.brandDescription": "A unified platform for parliamentary operations, finance, HR, and compliance across the SADC Parliamentary Forum.",
+  "auth.feature.travel": "Travel & Mission Management",
+  "auth.feature.leave": "Leave & Attendance Tracking",
+  "auth.feature.imprest": "Imprest & Finance Control",
+  "auth.feature.governance": "Governance & Compliance",
+  "auth.feature.people": "HR, Payroll & Assets",
+  "auth.feature.reports": "Reports & Executive Analytics",
+  "auth.operational": "All systems operational",
+  "auth.rights": "SADC Parliamentary Forum. All rights reserved.",
+  "auth.supplierTitle": "Supplier Registration",
+  "auth.supplierDescription": "Register your company to receive category-matched RFQs through the SADC-PF supplier portal.",
+  "auth.backLogin": "Back to Login",
 };
 
 const fr: Dict = {
@@ -91,6 +105,20 @@ const fr: Dict = {
   "login.mailboxHelp": "Si vous n'avez plus accès à votre boîte mail, contactez le support informatique.",
   "login.supplierOnboarding": "Inscription fournisseur :",
   "login.supplierRegister": "Créer votre compte fournisseur",
+  "auth.platform": "Plateforme des opérations institutionnelles",
+  "auth.brandTitle": "Gouvernance sécurisée pour l'Afrique australe",
+  "auth.brandDescription": "Une plateforme unifiée pour les opérations parlementaires, les finances, les RH et la conformité du Forum parlementaire de la SADC.",
+  "auth.feature.travel": "Missions et déplacements",
+  "auth.feature.leave": "Congés et suivi des présences",
+  "auth.feature.imprest": "Avances et contrôle financier",
+  "auth.feature.governance": "Gouvernance et conformité",
+  "auth.feature.people": "RH, paie et actifs",
+  "auth.feature.reports": "Rapports et analyses de direction",
+  "auth.operational": "Tous les systèmes sont opérationnels",
+  "auth.rights": "Forum parlementaire de la SADC. Tous droits réservés.",
+  "auth.supplierTitle": "Inscription fournisseur",
+  "auth.supplierDescription": "Inscrivez votre entreprise pour recevoir des demandes de devis correspondant à vos catégories via le portail fournisseur du Forum.",
+  "auth.backLogin": "Retour à la connexion",
 };
 
 const pt: Dict = {
@@ -133,6 +161,20 @@ const pt: Dict = {
   "login.mailboxHelp": "Se já não tiver acesso ao correio, contacte o suporte de TI.",
   "login.supplierOnboarding": "Onboarding de fornecedor:",
   "login.supplierRegister": "Registar a sua conta de fornecedor",
+  "auth.platform": "Plataforma de Operações Institucionais",
+  "auth.brandTitle": "Governação segura para a África Austral",
+  "auth.brandDescription": "Uma plataforma unificada para operações parlamentares, finanças, RH e conformidade no Fórum Parlamentar da SADC.",
+  "auth.feature.travel": "Gestão de viagens e missões",
+  "auth.feature.leave": "Controlo de licenças e presenças",
+  "auth.feature.imprest": "Controlo de adiantamentos e finanças",
+  "auth.feature.governance": "Governação e conformidade",
+  "auth.feature.people": "RH, salários e activos",
+  "auth.feature.reports": "Relatórios e análise executiva",
+  "auth.operational": "Todos os sistemas operacionais",
+  "auth.rights": "Fórum Parlamentar da SADC. Todos os direitos reservados.",
+  "auth.supplierTitle": "Registo de fornecedor",
+  "auth.supplierDescription": "Registe a sua empresa para receber pedidos de cotação correspondentes às suas categorias através do portal de fornecedores do Fórum.",
+  "auth.backLogin": "Voltar ao login",
 };
 
 const TABLES: Record<Locale, Dict> = { en, fr, pt };

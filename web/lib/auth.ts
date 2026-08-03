@@ -301,6 +301,15 @@ export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: stri
     return systemAdmin;
   }
 
+  // System administrators are the platform-wide fallback for routes that are
+  // not yet represented in the client-side registry. Keep explicitly
+  // restricted external portals opt-out below. This prevents a stale route
+  // catalogue from hiding or blocking a deployed Nexus module while ordinary
+  // users still fail closed on unknown routes.
+  if (systemAdmin && path !== "/supplier" && !path.startsWith("/supplier/")) {
+    return true;
+  }
+
   const entry = ROUTE_ACCESS.find((e) => path === e.path || path.startsWith(e.path + "/"));
   if (!entry) return false; // unknown route: deny-default
   if (systemAdmin && entry.allowSystemAdmin !== false) return true;

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { accessApi, authApi, clearAuthCookie, clearMustResetCookie, clearSetupCompleteCookie } from "@/lib/api";
-import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { canAccessRoute, getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { clearStoredUser } from "@/lib/session";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import type { AccessNavItem, AuthUser } from "@/lib/api";
@@ -554,7 +554,11 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   }, []);
 
   const navItems = useMemo(() => {
-    if (manifestItems) return manifestItems;
+    // The server manifest is intentionally conservative and is still being
+    // expanded module by module. A system administrator must see the full
+    // application catalogue so newly deployed modules are not hidden merely
+    // because their navigation entry has not reached the manifest yet.
+    if (manifestItems && !isSystemAdmin(user)) return manifestItems;
 
     return NAV_ITEMS.map((item) => {
     if (item.children) {
