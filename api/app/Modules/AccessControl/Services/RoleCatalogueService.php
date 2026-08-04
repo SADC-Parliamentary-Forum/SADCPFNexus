@@ -511,6 +511,24 @@ class RoleCatalogueService
             $roleName = $item->roleNameFromSnapshot();
             if ($user && $roleName) {
                 $user->removeRole($roleName);
+
+                // Review decisions must revoke the canonical assignment as well as
+                // the legacy Spatie role, otherwise the PDP can immediately
+                // rehydrate the access from the still-active assignment.
+                AccessRoleAssignment::query()
+                    ->where('tenant_id', $item->tenant_id)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->whereHas('roleVersion.catalogue', function ($query) use ($roleName): void {
+                        $query->where('name', $roleName)
+                            ->orWhere('key', Str::slug($roleName, '_'));
+                    })
+                    ->update([
+                        'status' => 'revoked',
+                        'revoked_by' => $actor->id,
+                        'revoked_at' => now(),
+                    ]);
+
                 $this->cache->invalidate($user);
             }
         }
