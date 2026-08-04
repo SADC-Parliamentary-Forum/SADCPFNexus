@@ -35,11 +35,33 @@ class RoleCatalogueService
 
     public function createDraft(array $data, User $actor): AccessRoleCatalogue
     {
+        $name = trim((string) ($data['name'] ?? ''));
+        if ($name === '' || in_array($name, CanonicalRoleManager::SYSTEM_ROLES, true)) {
+            throw ValidationException::withMessages([
+                'name' => ['Choose a valid non-system role name.'],
+            ]);
+        }
+
+        $key = $data['key'] ?? Str::slug($name, '_');
+        if (AccessRoleCatalogue::query()->where('tenant_id', $actor->tenant_id)->where('key', $key)->exists()) {
+            throw ValidationException::withMessages([
+                'name' => ['A role with this key already exists in the tenant.'],
+            ]);
+        }
+
+        $permissions = $this->validatedPermissionKeys($data['permissions'] ?? []);
+        $risk = $data['risk_level'] ?? 'medium';
+        if (! in_array($risk, ['low', 'medium', 'high', 'critical'], true)) {
+            throw ValidationException::withMessages([
+                'risk_level' => ['The role risk level is not registered.'],
+            ]);
+        }
+
         return DB::transaction(function () use ($data, $actor) {
             $catalogue = AccessRoleCatalogue::create([
                 'tenant_id' => $actor->tenant_id,
                 'key' => $data['key'] ?? Str::slug($data['name'], '_'),
-                'name' => $data['name'],
+                'name' => trim((string) $data['name']),
                 'purpose' => $data['purpose'] ?? null,
                 'owner_user_id' => $actor->id,
                 'risk_level' => $data['risk_level'] ?? 'medium',
@@ -54,7 +76,7 @@ class RoleCatalogueService
                 'role_catalogue_id' => $catalogue->id,
                 'version' => 1,
                 'status' => 'draft',
-                'permissions' => $data['permissions'] ?? [],
+                'permissions' => $this->validatedPermissionKeys($data['permissions'] ?? []),
                 'changelog' => $data['changelog'] ?? 'Draft created',
             ]);
 
@@ -71,6 +93,25 @@ class RoleCatalogueService
 
     public function publishVersion(AccessRoleCatalogue $catalogue, array $permissions, User $actor, ?string $changelog = null): AccessRoleVersion
     {
+        if ($catalogue->status === 'retired') {
+            throw ValidationException::withMessages([
+                'role' => ['A retired role catalogue cannot be published.'],
+            ]);
+        }
+
+        if ($catalogue->tenant_id !== null && (int) $catalogue->tenant_id !== (int) $actor->tenant_id) {
+            throw ValidationException::withMessages([
+                'role' => ['This role catalogue is outside the administrator tenant.'],
+            ]);
+        }
+
+        if ($catalogue->tenant_id === null && ! $actor->isSystemAdmin()) {
+            throw ValidationException::withMessages([
+                'role' => ['Only a system administrator may publish a platform-wide role catalogue.'],
+            ]);
+        }
+
+        $permissions = $this->validatedPermissionKeys($permissions);
         $next = ((int) $catalogue->versions()->max('version')) + 1;
 
         $version = AccessRoleVersion::create([
@@ -96,6 +137,21 @@ class RoleCatalogueService
         ]);
 
         return $version;
+    }
+
+    /** @return list<string> */
+    private function validatedPermissionKeys(array $permissions): array
+    {
+        $permissions = array_values(array_unique(array_filter($permissions, 'is_string')));
+        $unknown = array_values(array_diff($permissions, array_keys($this->registry->all())));
+
+        if ($unknown !== []) {
+            throw ValidationException::withMessages([
+                'permissions' => ['The role contains unregistered permission keys: '.implode(', ', $unknown)],
+            ]);
+        }
+
+        return $permissions;
     }
 
     public function assignRoleVersion(User $target, AccessRoleVersion $version, array $data, User $actor): AccessRoleAssignment

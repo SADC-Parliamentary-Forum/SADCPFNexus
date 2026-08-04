@@ -73,7 +73,7 @@ class AccessGovernanceController extends Controller
 
     public function publishRoleVersion(Request $request, AccessRoleCatalogue $catalogue): JsonResponse
     {
-        $this->pdp->assert($request->user(), 'admin.roles.manage');
+        $this->pdp->assert($request->user(), 'admin.roles.approve');
         $data = $request->validate([
             'permissions' => ['required', 'array'],
             'changelog' => ['nullable', 'string'],
