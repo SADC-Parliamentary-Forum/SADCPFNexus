@@ -14,6 +14,7 @@ interface NavChild {
   label: string;
   href: string;
   icon: string;
+  i18nKey?: string;
 }
 
 interface NavItem {
@@ -496,6 +497,20 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const MANIFEST_I18N_KEYS: Record<string, string> = {
+  Dashboard: "nav.dashboard",
+  "My Work": "nav.my_work",
+  Approvals: "nav.approvals",
+  "Alerts & Notifications": "nav.notifications",
+  Travel: "nav.travel",
+  Leave: "nav.leave",
+  Procurement: "nav.procurement",
+  Finance: "nav.finance",
+  HR: "nav.hr",
+  "M&E": "nav.mande",
+  Reports: "nav.reports",
+};
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -506,7 +521,7 @@ function navItemFromManifest(item: AccessNavItem): NavItem | null {
   const children = (item.children ?? [])
     .map(navItemFromManifest)
     .filter((child): child is NavItem => child !== null)
-    .map((child) => ({ label: child.label, href: child.href, icon: child.icon }));
+    .map((child) => ({ label: child.label, href: child.href, icon: child.icon, i18nKey: child.i18nKey }));
   const href = item.href ?? children[0]?.href;
 
   if (!href) return null;
@@ -515,6 +530,7 @@ function navItemFromManifest(item: AccessNavItem): NavItem | null {
     label: item.label,
     href,
     icon: item.icon,
+    i18nKey: MANIFEST_I18N_KEYS[item.label],
     children: children.length > 0 ? children : undefined,
   };
 }
@@ -723,7 +739,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
                     >
                       {child.icon}
                     </span>
-                    <span className="truncate">{child.label}</span>
+                    <span className="truncate">{navLabel(child)}</span>
                     {isChildActive && (
                       <span className="ml-auto flex h-1.5 w-1.5 rounded-full bg-white/60 flex-shrink-0" />
                     )}
