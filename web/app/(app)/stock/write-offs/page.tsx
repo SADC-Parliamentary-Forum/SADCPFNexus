@@ -15,6 +15,7 @@ export default function StockWriteOffsPage() {
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("1");
   const [reason, setReason] = useState("damaged");
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(() => {
     stockWriteOffsApi.list({ per_page: 50 })
@@ -39,30 +40,41 @@ export default function StockWriteOffsPage() {
       />
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
-          <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>
+          <select className="form-input disabled:opacity-60" value={itemId} onChange={(e) => setItemId(e.target.value)} disabled={creating}>
             <option value="">Item…</option>
             {items.map((i) => <option key={i.id} value={i.id}>{i.item_code} — {i.name}</option>)}
           </select>
-          <input type="number" min={1} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
-          <select className="form-input" value={reason} onChange={(e) => setReason(e.target.value)}>
+          <input type="number" min={1} className="form-input w-24 disabled:opacity-60" value={qty} onChange={(e) => setQty(e.target.value)} disabled={creating} />
+          <select className="form-input disabled:opacity-60" value={reason} onChange={(e) => setReason(e.target.value)} disabled={creating}>
             <option value="damaged">Damaged</option>
             <option value="expired">Expired</option>
             <option value="shortage">Shortage</option>
             <option value="other">Other</option>
           </select>
-          <button type="button" className="btn-primary" onClick={async () => {
-            try {
-              await stockWriteOffsApi.create({
-                stock_item_id: Number(itemId),
-                quantity: Number(qty),
-                reason_code: reason,
-              });
-              toast("success", "Submitted for approval");
-              load();
-            } catch {
-              toast("error", "Could not submit write-off");
-            }
-          }}>Request write-off</button>
+          <button
+            type="button"
+            className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={creating || !itemId}
+            onClick={async () => {
+              if (creating) return;
+              setCreating(true);
+              try {
+                await stockWriteOffsApi.create({
+                  stock_item_id: Number(itemId),
+                  quantity: Number(qty),
+                  reason_code: reason,
+                });
+                toast("success", "Submitted for approval");
+                load();
+              } catch {
+                toast("error", "Could not submit write-off");
+              } finally {
+                setCreating(false);
+              }
+            }}
+          >
+            {creating ? "Submitting..." : "Request write-off"}
+          </button>
         </div>
       )}
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -94,6 +106,13 @@ export default function StockWriteOffsPage() {
               </td>
             </tr>
           ))}
+          {rows.length === 0 && (
+            <tr>
+              <td className="px-4 py-6 text-center text-sm text-neutral-500" colSpan={6}>
+                No write-offs yet.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
