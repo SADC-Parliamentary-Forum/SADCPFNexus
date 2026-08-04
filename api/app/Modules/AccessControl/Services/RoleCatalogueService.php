@@ -307,12 +307,32 @@ class RoleCatalogueService
 
     public function createAccessRequest(User $requester, array $data): AccessRequest
     {
+        if (! empty($data['permission_key']) && ! $this->registry->get((string) $data['permission_key'])) {
+            throw ValidationException::withMessages([
+                'permission_key' => ['The requested permission is not registered in the canonical access registry.'],
+            ]);
+        }
+
+        $scopeType = (string) ($data['scope_type'] ?? 'self');
+        if (! in_array($scopeType, $this->registry->scopes(), true)) {
+            throw ValidationException::withMessages([
+                'scope_type' => ['The requested access scope is not registered.'],
+            ]);
+        }
+
+        if (! empty($data['valid_from']) && ! empty($data['valid_until'])
+            && strtotime((string) $data['valid_until']) < strtotime((string) $data['valid_from'])) {
+            throw ValidationException::withMessages([
+                'valid_until' => ['The requested access expiry must be after the start date.'],
+            ]);
+        }
+
         $request = AccessRequest::create([
             'tenant_id' => $requester->tenant_id,
             'requester_id' => $requester->id,
             'permission_key' => $data['permission_key'] ?? null,
             'role_catalogue_key' => $data['role_catalogue_key'] ?? null,
-            'scope_type' => $data['scope_type'] ?? 'self',
+            'scope_type' => $scopeType,
             'scope_reference' => $data['scope_reference'] ?? null,
             'business_reason' => $data['business_reason'],
             'sensitivity' => $data['sensitivity'] ?? 'Internal',
@@ -334,6 +354,17 @@ class RoleCatalogueService
 
     public function decideAccessRequest(AccessRequest $request, User $actor, string $decision, string $stage = 'supervisor'): AccessRequest
     {
+        if (! $actor->isSystemAdmin() && (int) $request->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        $expectedStatus = $stage === 'supervisor' ? 'pending_supervisor' : 'pending_approver';
+        if ($request->status !== $expectedStatus) {
+            throw ValidationException::withMessages([
+                'status' => ['This access request is not awaiting the selected approval stage.'],
+            ]);
+        }
+
         if ($stage === 'supervisor') {
             $request->update([
                 'supervisor_id' => $actor->id,
@@ -350,6 +381,12 @@ class RoleCatalogueService
             ]);
 
             if ($decision === 'approve' && $request->permission_key) {
+                if (! $this->registry->get((string) $request->permission_key)) {
+                    throw ValidationException::withMessages([
+                        'permission_key' => ['The requested permission is no longer registered and cannot be granted.'],
+                    ]);
+                }
+
                 UserPermissionGrant::create([
                     'tenant_id' => $request->tenant_id,
                     'user_id' => $request->requester_id,

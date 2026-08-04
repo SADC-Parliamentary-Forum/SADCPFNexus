@@ -304,6 +304,7 @@ class AccessGovernanceController extends Controller
 
     public function decideAccessRequest(Request $request, AccessRequest $accessRequest): JsonResponse
     {
+        abort_unless($request->user()->isSystemAdmin() || (int) $accessRequest->tenant_id === (int) $request->user()->tenant_id, 404);
         $data = $request->validate([
             'decision' => ['required', 'in:approve,reject'],
             'stage' => ['nullable', 'in:supervisor,approver'],

@@ -450,4 +450,16 @@ class AccessControlNegativeAccessTest extends TestCase
             'reason' => 'Must be rejected',
         ])->assertStatus(422);
     }
+
+    public function test_access_request_rejects_unregistered_permission(): void
+    {
+        $requester = $this->makeUser('staff');
+
+        Sanctum::actingAs($requester);
+        $this->postJson('/api/v1/admin/access/requests', [
+            'permission_key' => 'unregistered.permission',
+            'scope_type' => 'self',
+            'business_reason' => 'Must be rejected',
+        ])->assertStatus(422);
+    }
 }
