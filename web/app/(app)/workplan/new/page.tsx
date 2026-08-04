@@ -148,6 +148,7 @@ export default function NewWorkplanEventPage() {
             <input
               type="date"
               className="form-input w-full"
+              min={date || undefined}
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
             />

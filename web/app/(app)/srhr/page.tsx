@@ -24,6 +24,7 @@ export default function SrhrOverviewPage() {
   const [deployments, setDeployments] = useState<StaffDeployment[]>([]);
   const [reports, setReports]         = useState<ResearcherReport[]>([]);
   const [loading, setLoading]         = useState(true);
+  const [loadError, setLoadError]     = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +34,10 @@ export default function SrhrOverviewPage() {
       .then(([dRes, rRes]) => {
         setDeployments(dRes.data.data ?? []);
         setReports(rRes.data.data ?? []);
+        setLoadError(null);
+      })
+      .catch(() => {
+        setLoadError("Could not load field researcher data. Please try again.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -56,6 +61,13 @@ export default function SrhrOverviewPage() {
         subtitle="Manage researcher deployments at member state parliaments and review activity reports."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Field Researchers" }]} />}
       />
+
+      {loadError && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+          <span className="material-symbols-outlined text-[16px]">error_outline</span>
+          {loadError}
+        </div>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -118,7 +130,7 @@ export default function SrhrOverviewPage() {
               : deployments.length === 0
               ? (
                   <div className="px-5 py-8 text-center text-sm text-neutral-400">
-                    No active deployments
+                    {loadError ? "Unable to load deployments" : "No active deployments"}
                   </div>
                 )
               : deployments.map((d) => (
@@ -164,7 +176,7 @@ export default function SrhrOverviewPage() {
               : reports.length === 0
               ? (
                   <div className="px-5 py-8 text-center text-sm text-neutral-400">
-                    No reports yet
+                    {loadError ? "Unable to load reports" : "No reports yet"}
                   </div>
                 )
               : reports.map((r) => (

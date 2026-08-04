@@ -143,7 +143,7 @@ function NewDeploymentPageInner() {
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-700 mb-1.5">End Date <span className="text-neutral-400">(optional)</span></label>
-            <input type="date" className="form-input" value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
+            <input type="date" className="form-input" min={form.start_date || undefined} value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
           </div>
         </div>
 
