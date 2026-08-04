@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
@@ -54,6 +55,7 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
     final subjectCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     var severity = 'medium';
+    String? subjectError;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -67,8 +69,15 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
               children: [
                 TextField(
                   controller: subjectCtrl,
-                  decoration: const InputDecoration(labelText: 'Subject', border: OutlineInputBorder()),
+                  decoration: InputDecoration(
+                    labelText: 'Subject',
+                    border: const OutlineInputBorder(),
+                    errorText: subjectError,
+                  ),
                   style: const TextStyle(color: AppColors.textPrimary),
+                  onChanged: (_) {
+                    if (subjectError != null) setDialog(() => subjectError = null);
+                  },
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -95,7 +104,10 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             FilledButton(
               onPressed: () async {
-                if (subjectCtrl.text.trim().isEmpty) return;
+                if (subjectCtrl.text.trim().isEmpty) {
+                  setDialog(() => subjectError = 'Subject is required');
+                  return;
+                }
                 Navigator.pop(ctx);
                 try {
                   await ref.read(apiClientProvider).dio.post('/hr/incidents', data: {
@@ -175,9 +187,12 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Back',
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            padding: EdgeInsets.zero,
+            icon: Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
@@ -482,30 +497,14 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
         const SizedBox(height: 16),
 
         // Active Cases header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'ACTIVE CASES',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-                letterSpacing: 1.2,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {},
-              child: const Text(
-                'View All',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
+        const Text(
+          'ACTIVE CASES',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 10),
         if (_loadingIncidents)
@@ -529,10 +528,30 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
 
   Widget _buildBottomNav() {
     final items = [
-      (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'Home'),
-      (icon: Icons.gavel_outlined, activeIcon: Icons.gavel, label: 'Governance'),
-      (icon: Icons.analytics_outlined, activeIcon: Icons.analytics, label: 'Reports'),
-      (icon: Icons.person_outline, activeIcon: Icons.person, label: 'Profile'),
+      (
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home,
+        label: 'Home',
+        route: '/dashboard',
+      ),
+      (
+        icon: Icons.gavel_outlined,
+        activeIcon: Icons.gavel,
+        label: 'Governance',
+        route: '/hr/dashboard',
+      ),
+      (
+        icon: Icons.analytics_outlined,
+        activeIcon: Icons.analytics,
+        label: 'Reports',
+        route: '/reports',
+      ),
+      (
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Profile',
+        route: '/profile',
+      ),
     ];
 
     return Container(
@@ -551,7 +570,10 @@ class _TimesheetsIncidentsScreenState extends ConsumerState<TimesheetsIncidentsS
               final isActive = i == _selectedNav;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => setState(() => _selectedNav = i),
+                  onTap: () {
+                    setState(() => _selectedNav = i);
+                    context.go(item.route);
+                  },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
