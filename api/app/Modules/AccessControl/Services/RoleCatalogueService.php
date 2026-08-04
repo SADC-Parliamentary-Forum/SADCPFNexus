@@ -428,9 +428,13 @@ class RoleCatalogueService
             'opened_at' => now(),
         ]);
 
-        $userIds = $data['user_ids'] ?? User::query()->where('tenant_id', $actor->tenant_id)->limit(50)->pluck('id');
+        $userIds = User::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->when(isset($data['user_ids']), fn ($query) => $query->whereIn('id', $data['user_ids']))
+            ->limit(200)
+            ->pluck('id');
         foreach ($userIds as $userId) {
-            $user = User::find($userId);
+            $user = User::query()->where('tenant_id', $actor->tenant_id)->find($userId);
             if (! $user) {
                 continue;
             }
@@ -451,6 +455,16 @@ class RoleCatalogueService
 
     public function decideReviewItem(AccessReviewItem $item, User $actor, string $decision, ?string $reason = null): AccessReviewItem
     {
+        if (! $actor->isSystemAdmin() && (int) $item->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        if ($item->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'status' => ['This access review item has already been decided.'],
+            ]);
+        }
+
         $mapped = match ($decision) {
             'confirm' => 'confirm',
             'revoke' => 'revoke',
@@ -470,7 +484,7 @@ class RoleCatalogueService
         ]);
 
         if ($decision === 'revoke') {
-            $user = User::find($item->user_id);
+            $user = User::query()->where('tenant_id', $item->tenant_id)->find($item->user_id);
             $roleName = $item->roleNameFromSnapshot();
             if ($user && $roleName) {
                 $user->removeRole($roleName);

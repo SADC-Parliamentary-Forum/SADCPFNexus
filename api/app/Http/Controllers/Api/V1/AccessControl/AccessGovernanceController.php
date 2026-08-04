@@ -324,8 +324,13 @@ class AccessGovernanceController extends Controller
     {
         $this->pdp->assert($request->user(), 'admin.access.reviews.manage');
 
+        $query = AccessReviewCampaign::query()->with('items')->orderByDesc('id')->limit(50);
+        if (! $request->user()->isSystemAdmin()) {
+            $query->where('tenant_id', $request->user()->tenant_id);
+        }
+
         return response()->json([
-            'data' => AccessReviewCampaign::query()->with('items')->orderByDesc('id')->limit(50)->get(),
+            'data' => $query->get(),
         ]);
     }
 
@@ -336,7 +341,8 @@ class AccessGovernanceController extends Controller
             'name' => ['required', 'string'],
             'cadence' => ['nullable', 'string'],
             'due_at' => ['nullable', 'date'],
-            'user_ids' => ['nullable', 'array'],
+            'user_ids' => ['nullable', 'array', 'max:200'],
+            'user_ids.*' => ['integer'],
         ]);
 
         return response()->json(['data' => $this->roles->createReviewCampaign($data, $request->user())], 201);
@@ -345,6 +351,7 @@ class AccessGovernanceController extends Controller
     public function decideReviewItem(Request $request, AccessReviewItem $item): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.access.reviews.manage');
+        abort_unless($request->user()->isSystemAdmin() || (int) $item->tenant_id === (int) $request->user()->tenant_id, 404);
         $data = $request->validate([
             'decision' => ['required', 'in:confirm,revoke,reduce,extend'],
             'reason' => ['nullable', 'string'],
