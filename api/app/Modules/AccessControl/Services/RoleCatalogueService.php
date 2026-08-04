@@ -396,6 +396,35 @@ class RoleCatalogueService
                 'status' => $decision === 'approve' ? 'pending_approver' : 'rejected',
             ]);
         } else {
+            if ($decision === 'approve' && $request->permission_key) {
+                if (! $this->registry->get((string) $request->permission_key)) {
+                    throw ValidationException::withMessages([
+                        'permission_key' => ['The requested permission is no longer registered and cannot be granted.'],
+                    ]);
+                }
+
+                $duplicate = UserPermissionGrant::query()
+                    ->where('tenant_id', $request->tenant_id)
+                    ->where('user_id', $request->requester_id)
+                    ->where('permission_key', $request->permission_key)
+                    ->where('scope_type', $request->scope_type)
+                    ->where(function ($query) use ($request): void {
+                        if ($request->scope_reference === null) {
+                            $query->whereNull('scope_reference');
+                        } else {
+                            $query->where('scope_reference', $request->scope_reference);
+                        }
+                    })
+                    ->whereIn('status', ['active', 'pending_approval'])
+                    ->exists();
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages([
+                        'permission_key' => ['An active or pending grant already covers this access request.'],
+                    ]);
+                }
+            }
+
             $request->update([
                 'approver_id' => $actor->id,
                 'approver_decision' => $decision,
@@ -404,12 +433,6 @@ class RoleCatalogueService
             ]);
 
             if ($decision === 'approve' && $request->permission_key) {
-                if (! $this->registry->get((string) $request->permission_key)) {
-                    throw ValidationException::withMessages([
-                        'permission_key' => ['The requested permission is no longer registered and cannot be granted.'],
-                    ]);
-                }
-
                 UserPermissionGrant::create([
                     'tenant_id' => $request->tenant_id,
                     'user_id' => $request->requester_id,
