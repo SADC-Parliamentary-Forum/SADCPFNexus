@@ -366,8 +366,13 @@ class AccessGovernanceController extends Controller
     {
         $this->pdp->assert($request->user(), 'admin.security.manage');
 
+        $query = AccessGovernanceDecision::query()->orderBy('id');
+        if (! $request->user()->isSystemAdmin()) {
+            $query->where('tenant_id', $request->user()->tenant_id);
+        }
+
         return response()->json([
-            'data' => AccessGovernanceDecision::query()->orderBy('id')->get(),
+            'data' => $query->get(),
         ]);
     }
 
@@ -391,7 +396,11 @@ class AccessGovernanceController extends Controller
         ]);
 
         $result = app(\App\Modules\AccessControl\Services\AccessCutoverService::class)
-            ->revokeObsoleteBroadRoles($data['user_ids'], (bool) ($data['execute'] ?? false));
+            ->revokeObsoleteBroadRoles(
+                $data['user_ids'],
+                (bool) ($data['execute'] ?? false),
+                $request->user()->isSystemAdmin() ? null : $request->user()->tenant_id,
+            );
 
         return response()->json(['data' => $result]);
     }

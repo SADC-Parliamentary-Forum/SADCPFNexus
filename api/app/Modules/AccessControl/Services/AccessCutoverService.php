@@ -88,9 +88,13 @@ class AccessCutoverService
             }
         }
 
-        $publishedVersions = AccessRoleVersion::query()->where('status', 'active')->count();
+        $publishedVersions = AccessRoleVersion::query()
+            ->where('status', 'active')
+            ->when($tenantId, fn ($q) => $q->whereHas('catalogue', fn ($catalogue) => $catalogue->whereNull('tenant_id')->orWhere('tenant_id', $tenantId)))
+            ->count();
         $governancePending = \App\Models\AccessControl\AccessGovernanceDecision::query()
             ->where('status', 'pending')
+            ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->exists();
 
         $checklist = [
@@ -164,10 +168,13 @@ class AccessCutoverService
      * @param  list<int>  $userIds
      * @return array{dry_run: bool, actions: list<array{user_id: int, role: string, action: string}>}
      */
-    public function revokeObsoleteBroadRoles(array $userIds, bool $execute = false): array
+    public function revokeObsoleteBroadRoles(array $userIds, bool $execute = false, ?int $tenantId = null): array
     {
         $actions = [];
-        $users = User::query()->whereIn('id', $userIds)->get();
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
+            ->get();
 
         foreach ($users as $user) {
             foreach (self::OBSOLETE_BROAD_CANDIDATES as $roleName) {
