@@ -452,6 +452,49 @@ class AccessControlNegativeAccessTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_duplicate_direct_permission_grant_is_rejected(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $target = $this->makeUser('staff', $admin->tenant);
+        $service = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+        $data = [
+            'permission_key' => 'dashboard.view',
+            'scope_type' => 'self',
+            'reason' => 'Duplicate grant protection',
+        ];
+
+        $service->createGrant($target, $data, $admin);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $service->createGrant($target, $data, $admin);
+    }
+
+    public function test_duplicate_privileged_role_assignment_is_rejected(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $target = $this->makeUser('staff', $admin->tenant);
+        $catalogue = \App\Models\AccessControl\AccessRoleCatalogue::create([
+            'tenant_id' => null,
+            'key' => 'duplicate-assignment-test',
+            'name' => 'Duplicate Assignment Test',
+            'status' => 'active',
+            'risk_level' => 'high',
+            'default_scopes' => ['organisation'],
+        ]);
+        $version = \App\Models\AccessControl\AccessRoleVersion::create([
+            'role_catalogue_id' => $catalogue->id,
+            'version' => 1,
+            'status' => 'active',
+            'permissions' => ['dashboard.view'],
+        ]);
+        $service = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
+
+        $service->createRoleAssignment($target, $version, [], $admin);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $service->createRoleAssignment($target, $version, [], $admin);
+    }
+
     public function test_access_request_rejects_unregistered_permission(): void
     {
         $requester = $this->makeUser('staff');

@@ -7,6 +7,8 @@ use App\Models\AccessControl\AccessRoleVersion;
 use App\Models\AccessControl\UserPermissionGrant;
 use App\Models\AuditLog;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -61,10 +63,56 @@ class PrivilegedAccessDualControlService
     {
         $permissionKey = $data['permission_key'];
         $privileged = $this->isPrivilegedPermission($permissionKey);
+        $scopeType = $data['scope_type'] ?? 'self';
+        $scopeReference = $data['scope_reference'] ?? null;
+        $validFrom = Carbon::parse($data['valid_from'] ?? now());
+        $validUntil = isset($data['valid_until']) && $data['valid_until'] !== null
+            ? Carbon::parse($data['valid_until'])
+            : null;
 
         if ($privileged && (int) $target->id === (int) $actor->id) {
             throw ValidationException::withMessages([
                 'permission_key' => ['Access administrators cannot grant themselves privileged access.'],
+            ]);
+        }
+
+        if ($validUntil !== null && $validUntil->lt($validFrom)) {
+            throw ValidationException::withMessages([
+                'valid_until' => ['The grant expiry must be on or after the start date.'],
+            ]);
+        }
+
+        $duplicate = UserPermissionGrant::query()
+            ->where('tenant_id', $target->tenant_id)
+            ->where('user_id', $target->id)
+            ->where('permission_key', $permissionKey)
+            ->where('scope_type', $scopeType)
+            ->where(function (Builder $query) use ($scopeReference): void {
+                if ($scopeReference === null) {
+                    $query->whereNull('scope_reference');
+                } else {
+                    $query->where('scope_reference', $scopeReference);
+                }
+            })
+            ->whereIn('status', ['active', 'pending_approval'])
+            ->where(function (Builder $query) use ($validFrom, $validUntil): void {
+                $query->where(function (Builder $range) use ($validFrom): void {
+                    $range->whereNull('valid_until')
+                        ->orWhere('valid_until', '>=', $validFrom);
+                });
+
+                if ($validUntil !== null) {
+                    $query->where(function (Builder $range) use ($validUntil): void {
+                        $range->whereNull('valid_from')
+                            ->orWhere('valid_from', '<=', $validUntil);
+                    });
+                }
+            })
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'permission_key' => ['An active or pending grant already covers this user, permission and scope for the requested period.'],
             ]);
         }
 
@@ -75,10 +123,10 @@ class PrivilegedAccessDualControlService
             'tenant_id' => $target->tenant_id,
             'user_id' => $target->id,
             'permission_key' => $permissionKey,
-            'scope_type' => $data['scope_type'] ?? 'self',
-            'scope_reference' => $data['scope_reference'] ?? null,
-            'valid_from' => $data['valid_from'] ?? now(),
-            'valid_until' => $data['valid_until'] ?? null,
+            'scope_type' => $scopeType,
+            'scope_reference' => $scopeReference,
+            'valid_from' => $validFrom,
+            'valid_until' => $validUntil,
             'status' => $status,
             'reason' => $data['reason'],
             'granted_by' => $actor->id,
@@ -180,10 +228,56 @@ class PrivilegedAccessDualControlService
         User $actor
     ): AccessRoleAssignment {
         $privileged = $this->isPrivilegedRoleVersion($version);
+        $scopeType = $data['scope_type'] ?? 'organisation';
+        $scopeReference = $data['scope_reference'] ?? null;
+        $validFrom = Carbon::parse($data['valid_from'] ?? now());
+        $validUntil = isset($data['valid_until']) && $data['valid_until'] !== null
+            ? Carbon::parse($data['valid_until'])
+            : null;
 
         if ($privileged && (int) $target->id === (int) $actor->id) {
             throw ValidationException::withMessages([
                 'role' => ['Access administrators cannot assign themselves privileged roles.'],
+            ]);
+        }
+
+        if ($validUntil !== null && $validUntil->lt($validFrom)) {
+            throw ValidationException::withMessages([
+                'valid_until' => ['The role assignment expiry must be on or after the start date.'],
+            ]);
+        }
+
+        $duplicate = AccessRoleAssignment::query()
+            ->where('tenant_id', $target->tenant_id)
+            ->where('user_id', $target->id)
+            ->where('role_version_id', $version->id)
+            ->where('scope_type', $scopeType)
+            ->where(function (Builder $query) use ($scopeReference): void {
+                if ($scopeReference === null) {
+                    $query->whereNull('scope_reference');
+                } else {
+                    $query->where('scope_reference', $scopeReference);
+                }
+            })
+            ->whereIn('status', ['active', 'pending_approval'])
+            ->where(function (Builder $query) use ($validFrom, $validUntil): void {
+                $query->where(function (Builder $range) use ($validFrom): void {
+                    $range->whereNull('valid_until')
+                        ->orWhere('valid_until', '>=', $validFrom);
+                });
+
+                if ($validUntil !== null) {
+                    $query->where(function (Builder $range) use ($validUntil): void {
+                        $range->whereNull('valid_from')
+                            ->orWhere('valid_from', '<=', $validUntil);
+                    });
+                }
+            })
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'role' => ['An active or pending assignment already covers this role, user and scope for the requested period.'],
             ]);
         }
 
@@ -192,10 +286,10 @@ class PrivilegedAccessDualControlService
             'user_id' => $target->id,
             'role_version_id' => $version->id,
             'assignment_type' => $data['assignment_type'] ?? 'standing',
-            'scope_type' => $data['scope_type'] ?? 'organisation',
-            'scope_reference' => $data['scope_reference'] ?? null,
-            'valid_from' => $data['valid_from'] ?? now(),
-            'valid_until' => $data['valid_until'] ?? null,
+            'scope_type' => $scopeType,
+            'scope_reference' => $scopeReference,
+            'valid_from' => $validFrom,
+            'valid_until' => $validUntil,
             'status' => $privileged ? 'pending_approval' : ($data['status'] ?? 'active'),
             'reason' => $data['reason'] ?? null,
             'requested_by' => $actor->id,
