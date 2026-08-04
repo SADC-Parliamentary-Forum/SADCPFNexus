@@ -27,7 +27,7 @@ class RoleCatalogueService
     public function catalogue(): array
     {
         return AccessRoleCatalogue::query()
-            ->with(['currentVersion'])
+            ->with(['currentVersion', 'latestVersion'])
             ->orderBy('name')
             ->get()
             ->all();

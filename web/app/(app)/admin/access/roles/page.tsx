@@ -20,6 +20,7 @@ type Role = {
   read_only?: boolean;
   no_business_approve?: boolean;
   current_version?: { version: number; permissions: string[] } | null;
+  latest_version?: { version: number; status: string; permissions: string[] } | null;
 };
 
 type PermissionRow = AccessPermissionDefinition & { key: string };
@@ -111,7 +112,7 @@ export default function AccessRolesPage() {
   };
 
   const startFromRole = (role: Role) => {
-    const rolePermissions = role.current_version?.permissions ?? [];
+    const rolePermissions = role.latest_version?.permissions ?? role.current_version?.permissions ?? [];
     setSelected(new Set(rolePermissions));
     setPurpose(role.purpose ?? "");
     setRisk(role.risk_level ?? "medium");
@@ -145,6 +146,25 @@ export default function AccessRolesPage() {
       await load();
     } catch (error: any) {
       setMessage(error?.response?.data?.message ?? "Unable to create the draft role.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishDraft = async (role: Role) => {
+    const draft = role.latest_version;
+    if (!draft || draft.status !== "draft") return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      await api.post(`/admin/access/roles/${role.id}/publish`, {
+        permissions: draft.permissions,
+        changelog: "Published from the governed role catalogue",
+      });
+      setMessage(`${role.name} was published as an active role version.`);
+      await load();
+    } catch (error: any) {
+      setMessage(error?.response?.data?.message ?? "Unable to publish this role. Independent approval may be required.");
     } finally {
       setSaving(false);
     }
@@ -218,7 +238,7 @@ export default function AccessRolesPage() {
 
       <div className="card overflow-hidden">
         <div className="border-b border-neutral-200 px-4 py-3"><h2 className="font-semibold text-neutral-900">Governed roles</h2><p className="text-xs text-neutral-500">Copy an existing role into the builder to create a narrower variant.</p></div>
-        {roles.length === 0 ? <EmptyState icon="badge" title="No roles found" description="The canonical role catalogue is unavailable." /> : <div className="divide-y divide-neutral-100">{roles.map((role) => <div key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div><div className="flex items-center gap-2"><span className="font-medium text-neutral-900">{role.name}</span>{protectedNames.has(role.name) ? <Badge variant="danger">protected</Badge> : null}{role.read_only ? <Badge variant="muted">read-only</Badge> : null}</div><p className="text-xs text-neutral-500">{role.purpose || "No purpose recorded"} · {role.current_version?.permissions?.length ?? 0} permissions · v{role.current_version?.version ?? "-"}</p></div><Button type="button" size="sm" variant="secondary" onClick={() => startFromRole(role)}>Use as starting point</Button></div>)}</div>}
+        {roles.length === 0 ? <EmptyState icon="badge" title="No roles found" description="The canonical role catalogue is unavailable." /> : <div className="divide-y divide-neutral-100">{roles.map((role) => <div key={role.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"><div><div className="flex items-center gap-2"><span className="font-medium text-neutral-900">{role.name}</span>{protectedNames.has(role.name) ? <Badge variant="danger">protected</Badge> : null}{role.read_only ? <Badge variant="muted">read-only</Badge> : null}{role.latest_version?.status === "draft" ? <Badge variant="warning">draft</Badge> : null}</div><p className="text-xs text-neutral-500">{role.purpose || "No purpose recorded"} · {role.latest_version?.permissions?.length ?? role.current_version?.permissions?.length ?? 0} permissions · v{role.latest_version?.version ?? role.current_version?.version ?? "-"}</p></div><div className="flex items-center gap-2"><Button type="button" size="sm" variant="secondary" onClick={() => startFromRole(role)}>Use as starting point</Button>{role.latest_version?.status === "draft" ? <Button type="button" size="sm" onClick={() => publishDraft(role)} disabled={saving}>Publish</Button> : null}</div></div>)}</div>}
       </div>
     </div>
   );

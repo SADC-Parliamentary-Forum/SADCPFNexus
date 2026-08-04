@@ -367,6 +367,8 @@ export const accessApi = {
   effective: () => api.get<{ data: AccessEffectivePayload }>("/access/effective"),
   navigation: () => api.get<{ data: AccessEffectivePayload["navigation"] }>("/access/navigation"),
   registry: () => api.get<{ data: AccessRegistryPayload }>("/admin/access/registry"),
+  publishRoleVersion: (catalogueId: number, data: { permissions: string[]; changelog?: string }) =>
+    api.post<{ data: { id: number; version: number; status: string } }>(`/admin/access/roles/${catalogueId}/publish`, data),
   userProfile: (id: number) => api.get<{ data: {
     user: User;
     effective_permissions: string[];

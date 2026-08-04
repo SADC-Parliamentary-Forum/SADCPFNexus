@@ -45,4 +45,10 @@ class AccessRoleCatalogue extends Model
             ->where('status', 'active')
             ->orderByDesc('version');
     }
+
+    public function latestVersion()
+    {
+        return $this->hasOne(AccessRoleVersion::class, 'role_catalogue_id')
+            ->latestOfMany('version');
+    }
 }
