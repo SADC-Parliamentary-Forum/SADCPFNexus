@@ -463,4 +463,14 @@ class AccessControlNegativeAccessTest extends TestCase
             'business_reason' => 'Must be rejected',
         ])->assertStatus(422);
     }
+
+    public function test_access_request_requires_a_governed_target(): void
+    {
+        $requester = $this->makeUser('staff');
+
+        Sanctum::actingAs($requester);
+        $this->postJson('/api/v1/admin/access/requests', [
+            'business_reason' => 'No target should be rejected',
+        ])->assertStatus(422);
+    }
 }

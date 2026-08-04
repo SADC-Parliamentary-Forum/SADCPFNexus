@@ -307,10 +307,33 @@ class RoleCatalogueService
 
     public function createAccessRequest(User $requester, array $data): AccessRequest
     {
+        if (empty($data['permission_key']) && empty($data['role_catalogue_key'])) {
+            throw ValidationException::withMessages([
+                'permission_key' => ['Request a registered permission or a governed role catalogue.'],
+            ]);
+        }
+
         if (! empty($data['permission_key']) && ! $this->registry->get((string) $data['permission_key'])) {
             throw ValidationException::withMessages([
                 'permission_key' => ['The requested permission is not registered in the canonical access registry.'],
             ]);
+        }
+
+        if (! empty($data['role_catalogue_key'])) {
+            $roleQuery = AccessRoleCatalogue::query()
+                ->where('key', (string) $data['role_catalogue_key'])
+                ->where('status', '!=', 'retired');
+            if (! $requester->isSystemAdmin()) {
+                $roleQuery->where(function ($scope) use ($requester) {
+                    $scope->whereNull('tenant_id')->orWhere('tenant_id', $requester->tenant_id);
+                });
+            }
+
+            if (! $roleQuery->exists()) {
+                throw ValidationException::withMessages([
+                    'role_catalogue_key' => ['The requested role catalogue is not available in this tenant.'],
+                ]);
+            }
         }
 
         $scopeType = (string) ($data['scope_type'] ?? 'self');
