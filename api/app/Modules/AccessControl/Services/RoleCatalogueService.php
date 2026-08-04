@@ -166,10 +166,7 @@ class RoleCatalogueService
     {
         $roles = [];
         foreach ($this->registry->roleTemplates() as $name => $meta) {
-            $perms = $meta['permissions'] ?? [];
-            foreach ($meta['inherits'] ?? [] as $parent) {
-                $perms = array_merge($perms, $this->registry->roleTemplates()[$parent]['permissions'] ?? []);
-            }
+            $perms = $this->registry->rolePermissions($name);
             if (in_array($permissionKey, $perms, true)) {
                 $roles[] = $name;
             }

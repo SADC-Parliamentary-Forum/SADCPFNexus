@@ -64,8 +64,46 @@ class PermissionRegistry
         return config('access_control.role_templates', []);
     }
 
+    /**
+     * Return the complete permission set for a role, including all inherited
+     * roles. The recursive expansion is cycle-safe so a bad draft cannot make
+     * access administration recurse indefinitely.
+     *
+     * @return list<string>
+     */
+    public function rolePermissions(string $roleName): array
+    {
+        $templates = $this->roleTemplates();
+
+        return $this->expandRolePermissions($roleName, $templates);
+    }
+
     public function scopes(): array
     {
         return config('access_control.scopes', []);
+    }
+
+    private function expandRolePermissions(string $roleName, array $templates, array $seen = []): array
+    {
+        if (in_array($roleName, $seen, true)) {
+            return [];
+        }
+
+        $template = $templates[$roleName] ?? null;
+        if (! is_array($template)) {
+            return [];
+        }
+
+        $seen[] = $roleName;
+        $permissions = $template['permissions'] ?? [];
+
+        foreach ($template['inherits'] ?? [] as $parent) {
+            $permissions = array_merge(
+                $permissions,
+                $this->expandRolePermissions((string) $parent, $templates, $seen),
+            );
+        }
+
+        return array_values(array_unique(array_filter($permissions, 'is_string')));
     }
 }

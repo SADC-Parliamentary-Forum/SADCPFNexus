@@ -70,7 +70,7 @@ class CanonicalRoleManager
 
         $rolePermissions = [];
         foreach ($templates as $name => $meta) {
-            $keys = $this->inheritedPermissions($name, $templates);
+            $keys = $this->registry()->rolePermissions($name);
             $targets = array_values(array_unique(array_merge([$name], $meta['legacy_roles'] ?? [])));
             foreach ($targets as $targetName) {
                 if (in_array($targetName, self::SYSTEM_ROLES, true)) {
@@ -131,7 +131,7 @@ class CanonicalRoleManager
                 DB::table('access_role_catalogues')->where('id', $catalogueId)->update($values);
             }
 
-            $permissions = $this->inheritedPermissions($name, $templates);
+            $permissions = $this->registry()->rolePermissions($name);
             if (! DB::table('access_role_versions')->where('role_catalogue_id', $catalogueId)->exists()) {
                 DB::table('access_role_versions')->insert([
                     'role_catalogue_id' => $catalogueId,
@@ -148,19 +148,8 @@ class CanonicalRoleManager
         }
     }
 
-    private function inheritedPermissions(string $name, array $templates, array $seen = []): array
+    private function registry(): PermissionRegistry
     {
-        if (in_array($name, $seen, true)) {
-            return [];
-        }
-
-        $seen[] = $name;
-        $meta = $templates[$name] ?? [];
-        $keys = $meta['permissions'] ?? [];
-        foreach ($meta['inherits'] ?? [] as $parent) {
-            $keys = array_merge($keys, $this->inheritedPermissions($parent, $templates, $seen));
-        }
-
-        return array_values(array_unique($keys));
+        return app(PermissionRegistry::class);
     }
 }
