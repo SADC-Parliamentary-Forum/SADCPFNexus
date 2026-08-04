@@ -34,8 +34,10 @@ class AccessGovernanceController extends Controller
         private readonly AccessCacheInvalidator $cache,
     ) {}
 
-    public function registry(): JsonResponse
+    public function registry(Request $request): JsonResponse
     {
+        $this->pdp->assert($request->user(), 'admin.roles.view');
+
         return response()->json([
             'data' => [
                 'permissions' => $this->registry->all(),

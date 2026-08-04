@@ -151,6 +151,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $staff = $this->makeUser('staff');
         Sanctum::actingAs($staff);
         $this->getJson('/api/v1/admin/access/roles')->assertStatus(403);
+        $this->getJson('/api/v1/admin/access/registry')->assertStatus(403);
 
         $admin = $this->makeUser('Security and Access Administrator');
         Sanctum::actingAs($admin);
