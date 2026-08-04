@@ -23,6 +23,11 @@ class _OvertimeClaimFormScreenState
 
   final _compensationOptions = const ['Payment', 'Time Off in Lieu (LIL)'];
 
+  /// Structured value sent to the API's `entry_category` field, in addition
+  /// to the human-readable compensation note kept in the description text.
+  String get _compensationCategory =>
+      _compensation.startsWith('Time Off') ? 'toil' : 'payment';
+
   @override
   void dispose() {
     _reasonCtrl.dispose();
@@ -104,6 +109,7 @@ class _OvertimeClaimFormScreenState
                   '${_reasonCtrl.text.trim()} [Compensation: $_compensation]',
               'activity_type': 'overtime_claim',
               'work_bucket': 'operations',
+              'entry_category': _compensationCategory,
             }
           ],
         },

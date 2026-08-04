@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 
 Response<dynamic> _emptyResponse() => Response<dynamic>(
       requestOptions: RequestOptions(path: '/'),
@@ -17,9 +17,9 @@ Response<dynamic> _emptyResponse() => Response<dynamic>(
 Color _priorityColor(String? priority) {
   switch (priority?.toLowerCase()) {
     case 'critical':
-      return Colors.red[700]!;
+      return AppColors.danger;
     case 'high':
-      return Colors.orange[700]!;
+      return AppColors.warning;
     case 'low':
       return AppColors.textMuted;
     default:
@@ -30,13 +30,13 @@ Color _priorityColor(String? priority) {
 Color _statusColor(String? status) {
   switch (status?.toLowerCase()) {
     case 'assigned':
-      return Colors.blue[400]!;
+      return AppColors.info;
     case 'in_progress':
       return AppColors.primary;
     case 'pending_review':
-      return Colors.orange[400]!;
+      return AppColors.warning;
     case 'completed':
-      return Colors.green[400]!;
+      return AppColors.success;
     case 'overdue':
       return AppColors.danger;
     case 'cancelled':
@@ -167,7 +167,14 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
   }
 
   Future<void> _submitNewAssignment() async {
-    if (_titleCtrl.text.trim().isEmpty) return;
+    if (_titleCtrl.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Title is required.')),
+        );
+      }
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
@@ -197,6 +204,7 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
   }
 
   void _showNewAssignmentSheet() {
+    final formKey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -212,7 +220,9 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
             top: 24,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
-          child: Column(
+          child: Form(
+            key: formKey,
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -225,11 +235,23 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              _field('Title *', _titleCtrl),
+              _field(
+                'Title *',
+                _titleCtrl,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Title is required'
+                    : null,
+              ),
               const SizedBox(height: 12),
               _field('Description', _descCtrl, maxLines: 3),
               const SizedBox(height: 12),
-              _field('Assigned To (employee name/id)', _assignedToCtrl),
+              _field(
+                'Assigned To (employee name/id) *',
+                _assignedToCtrl,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Assigned To is required'
+                    : null,
+              ),
               const SizedBox(height: 12),
               // Priority dropdown
               DropdownButtonFormField<String>(
@@ -296,7 +318,12 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitting ? null : _submitNewAssignment,
+                  onPressed: _submitting
+                      ? null
+                      : () {
+                          if (!formKey.currentState!.validate()) return;
+                          _submitNewAssignment();
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.black,
@@ -316,25 +343,41 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, {int maxLines = 1}) {
-    return TextField(
+  Widget _field(
+    String label,
+    TextEditingController ctrl, {
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
+      validator: validator,
       style: const TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.textMuted),
+        errorStyle: const TextStyle(color: AppColors.danger),
         filled: true,
         fillColor: AppColors.bgDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.danger),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
         ),
       ),
     );
@@ -342,62 +385,60 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgSurfaceDark,
-        title: const Text('Work Assignments'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
+    return StitchScreen(
+      title: 'Work Assignments',
+      fallbackRoute: '/hr/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh assignments',
+          icon: Icons.refresh_rounded,
+          onPressed: _loadData,
+        ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        indicatorColor: AppColors.primary,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        tabs: [
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('My Work'),
+                if (_myWork.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  _countBadge(_myWork.length),
+                ],
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Team'),
+                if (_teamWork.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  _countBadge(_teamWork.length),
+                ],
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Overdue'),
+                if (_overdueList.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  _countBadge(_overdueList.length,
+                      color: AppColors.danger),
+                ],
+              ],
+            ),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('My Work'),
-                  if (_myWork.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    _countBadge(_myWork.length),
-                  ],
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Team'),
-                  if (_teamWork.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    _countBadge(_teamWork.length),
-                  ],
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Overdue'),
-                  if (_overdueList.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    _countBadge(_overdueList.length,
-                        color: AppColors.danger),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
       floatingActionButton: _isSupervisorOrHr
           ? FloatingActionButton.extended(
@@ -410,30 +451,9 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
             )
           : null,
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const StitchLoadingState(label: 'Loading assignments')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          size: 48, color: AppColors.danger),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          style: const TextStyle(color: AppColors.textMuted),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.black,
-                        ),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _loadData)
               : Column(
                   children: [
                     if (_stats != null) _buildStatsRow(),
@@ -510,16 +530,9 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
   Widget _buildList(List<Map<String, dynamic>> items,
       {required bool showAssignee}) {
     if (items.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.task_alt, size: 56, color: AppColors.textMuted),
-            SizedBox(height: 12),
-            Text('No assignments found',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 16)),
-          ],
-        ),
+      return const StitchEmptyState(
+        icon: Icons.task_alt,
+        title: 'No assignments found',
       );
     }
     return RefreshIndicator(
@@ -532,11 +545,154 @@ class _WorkAssignmentsScreenState extends ConsumerState<WorkAssignmentsScreen>
             _AssignmentCard(
               assignment: items[i],
               showAssignee: showAssignee,
-              onTap: () => context.push(
-                '/hr/assignments/detail',
-                extra: items[i]['id'] as int,
-              ),
+              onTap: () => _showAssignmentDetailSheet(items[i]),
             ),
+      ),
+    );
+  }
+
+  void _showAssignmentDetailSheet(Map<String, dynamic> assignment) {
+    final title = assignment['title']?.toString() ?? 'Untitled';
+    final description = assignment['description']?.toString();
+    final priority = assignment['priority']?.toString() ?? 'medium';
+    final status = assignment['status']?.toString() ?? 'assigned';
+    final dueDate = assignment['due_date']?.toString();
+    final assignee = assignment['assignee_name']?.toString();
+    final assignedBy = assignment['assigned_by_name']?.toString();
+    final estHours = assignment['estimated_hours'];
+    final actualHours = assignment['actual_hours'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgSurfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _detailChip(
+                    priority[0].toUpperCase() + priority.substring(1),
+                    _priorityColor(priority),
+                  ),
+                  const SizedBox(width: 8),
+                  _detailChip(
+                    status.replaceAll('_', ' ').toUpperCase(),
+                    _statusColor(status),
+                  ),
+                ],
+              ),
+              if (description != null && description.trim().isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Description',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                      color: AppColors.textPrimary, fontSize: 14),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (dueDate != null)
+                _detailRow('Due Date', dueDate.substring(0, 10),
+                    Icons.calendar_today_outlined),
+              if (assignee != null)
+                _detailRow('Assigned To', assignee, Icons.person_outline),
+              if (assignedBy != null)
+                _detailRow('Assigned By', assignedBy,
+                    Icons.supervisor_account_outlined),
+              if (estHours != null)
+                _detailRow(
+                    'Estimated Hours', '$estHours hrs', Icons.access_time),
+              if (actualHours != null)
+                _detailRow(
+                    'Actual Hours', '$actualHours hrs', Icons.timer_outlined),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

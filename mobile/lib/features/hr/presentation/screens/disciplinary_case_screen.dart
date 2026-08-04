@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 
 class DisciplinaryCaseScreen extends ConsumerStatefulWidget {
   final int? conductId;
@@ -51,77 +52,47 @@ class _DisciplinaryCaseScreenState extends ConsumerState<DisciplinaryCaseScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      body: SafeArea(
-        child: Column(children: [
-          _buildAppBar(),
-          Expanded(child: _buildBody()),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
     final caseRef = _selected?['reference_number'] as String? ??
         (_selected != null ? 'Case #${_selected!['id']}' : 'Conduct Cases');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(children: [
-        GestureDetector(
-          onTap: () => Navigator.of(context).pop(),
-          child: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.bgSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.textPrimary),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(caseRef,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-            overflow: TextOverflow.ellipsis),
-        ),
+    return StitchScreen(
+      title: caseRef,
+      fallbackRoute: '/hr/dashboard',
+      actions: [
         if (_selected != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: _statusColor(_selected!['status'] as String? ?? '').withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _statusColor(_selected!['status'] as String? ?? '').withValues(alpha: 0.4)),
-            ),
-            child: Text(
-              _statusLabel(_selected!['status'] as String? ?? ''),
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _statusColor(_selected!['status'] as String? ?? '')),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _statusColor(_selected!['status'] as String? ?? '').withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _statusColor(_selected!['status'] as String? ?? '').withValues(alpha: 0.4)),
+                ),
+                child: Text(
+                  _statusLabel(_selected!['status'] as String? ?? ''),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _statusColor(_selected!['status'] as String? ?? '')),
+                ),
+              ),
             ),
           ),
-      ]),
+      ],
+      body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const StitchLoadingState(label: 'Loading conduct records');
     }
     if (_error != null) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-        const SizedBox(height: 12),
-        Text(_error!, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
-        const SizedBox(height: 16),
-        TextButton(onPressed: _load, child: const Text('Retry', style: TextStyle(color: AppColors.primary))),
-      ]));
+      return StitchErrorState(message: _error!, onRetry: _load);
     }
     if (_cases.isEmpty && _selected == null) {
-      return const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.gavel_outlined, color: AppColors.textMuted, size: 48),
-        SizedBox(height: 12),
-        Text('No conduct records found.', style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-      ]));
+      return const StitchEmptyState(
+        icon: Icons.gavel_outlined,
+        title: 'No conduct records found.',
+      );
     }
 
     return RefreshIndicator(
