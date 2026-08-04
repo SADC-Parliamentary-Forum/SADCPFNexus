@@ -419,4 +419,22 @@ class AccessControlNegativeAccessTest extends TestCase
         Sanctum::actingAs($admin);
         $this->getJson("/api/v1/admin/access/users/{$target->id}/profile")->assertStatus(404);
     }
+
+    public function test_role_draft_owner_cannot_publish_own_tenant_role(): void
+    {
+        $owner = $this->makeUser('Security and Access Administrator');
+        $catalogue = \App\Models\AccessControl\AccessRoleCatalogue::create([
+            'tenant_id' => $owner->tenant_id,
+            'key' => 'owner-publish-test',
+            'name' => 'Owner Publish Test',
+            'owner_user_id' => $owner->id,
+            'status' => 'draft',
+            'risk_level' => 'low',
+            'default_scopes' => ['self'],
+        ]);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        app(\App\Modules\AccessControl\Services\RoleCatalogueService::class)
+            ->publishVersion($catalogue, ['dashboard.view'], $owner);
+    }
 }
