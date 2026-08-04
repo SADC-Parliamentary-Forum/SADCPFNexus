@@ -161,7 +161,7 @@ export default function AnalyticsPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <ModulePageHeader
         title="Analytics Dashboard"
         subtitle="Cross-module performance insights and operational intelligence."

@@ -173,7 +173,7 @@ export default function PolicyLibraryPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Policy Library"
         subtitle="Manage organisational policies and link them to risks in the register."

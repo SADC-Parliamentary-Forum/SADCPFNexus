@@ -65,7 +65,7 @@ export default function AdminPortfoliosPage() {
 
     return (
         <div className="space-y-6 max-w-4xl">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
                 <ModulePageHeader
         title="Portfolios"
         subtitle="Manage organisational thematic areas and committees."

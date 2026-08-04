@@ -29,7 +29,7 @@ export default function AuditTrailEventTypesPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <ModulePageHeader
         title="Event type registry & detail"
         subtitle="Read-heavy controlled taxonomy (PRD §11–§13)."

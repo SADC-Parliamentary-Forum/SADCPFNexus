@@ -22,7 +22,7 @@ export default function TravelFinanceDashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Finance Travel Dashboard"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance Travel Dashboard" }]} />}

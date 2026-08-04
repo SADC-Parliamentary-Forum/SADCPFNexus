@@ -65,7 +65,7 @@ export default function AuditTrailForensicsPage() {
 
   return (
     <div className="p-6 space-y-4 max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Forensic cases"
         subtitle="MVP case workspace — link events, apply holds, seal hashed evidence packages."

@@ -69,7 +69,7 @@ export default function AdminWeeklySummaryPage() {
       {/* Toast */}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Weekly Summary"
         subtitle="Trigger and monitor institutional summary email batches"

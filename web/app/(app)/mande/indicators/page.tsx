@@ -66,7 +66,7 @@ export default function IndicatorsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Indicators"
         subtitle="Define and manage results-framework indicators, baselines and targets."

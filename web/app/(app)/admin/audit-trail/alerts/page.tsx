@@ -37,7 +37,7 @@ export default function AuditTrailAlertsPage() {
 
   return (
     <div className="p-6 space-y-4 max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Security alerts"
         subtitle="Monitoring-rule indicators — New → review → classify → close. Not proof of wrongdoing."

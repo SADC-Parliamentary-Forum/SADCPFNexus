@@ -36,7 +36,7 @@ export default function MandeIntakePage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
         title="Intake Queue"
         subtitle="Approved PIFs awaiting an M&amp;E activity report shell."

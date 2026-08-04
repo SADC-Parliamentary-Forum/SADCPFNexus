@@ -169,7 +169,7 @@ export default function PayslipConfigPage() {
         <span className="text-neutral-800 font-medium">Payslip Config</span>
       </nav>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <ModulePageHeader
           title="Payslip Line Config"
           subtitle="Configure which lines appear on this employee's payslip."

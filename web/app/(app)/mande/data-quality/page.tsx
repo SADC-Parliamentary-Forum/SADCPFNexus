@@ -53,7 +53,7 @@ export default function MandeDataQualityPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
         title="Data Quality"
         subtitle="Weighted score and remediation for missing M&amp;E records, overdue submissions, and evidence gaps."

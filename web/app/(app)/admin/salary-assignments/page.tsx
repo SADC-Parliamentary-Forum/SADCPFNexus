@@ -148,7 +148,7 @@ export default function SalaryAssignmentsPage() {
         <span className="text-neutral-800 font-medium">Salary Assignments</span>
       </nav>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Employee Salary Assignments"
         subtitle="Link each employee to their grade band and notch for payslip auto-fill."

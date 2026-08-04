@@ -59,7 +59,7 @@ export default function MeetingsMinutesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Meetings & Minutes"
         subtitle="Browse meeting records and attached minutes."

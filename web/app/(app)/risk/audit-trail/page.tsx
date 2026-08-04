@@ -110,7 +110,7 @@ export default function RiskAuditTrailPage() {
   return (
     <div className="space-y-5 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Risk Audit Trail"
         subtitle="Tamper-evident ledger of all risk register events."

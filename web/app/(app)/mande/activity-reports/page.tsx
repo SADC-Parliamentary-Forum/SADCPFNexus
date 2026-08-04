@@ -47,7 +47,7 @@ export default function ActivityReportsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
         title="Activity Reports"
         subtitle="All M&amp;E activity reports linked to approved PIFs."

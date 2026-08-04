@@ -50,7 +50,7 @@ export default function TravelCalendarPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <ModulePageHeader
         title="Travel Calendar"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Calendar" }]} />}

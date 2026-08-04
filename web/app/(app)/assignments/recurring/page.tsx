@@ -29,7 +29,7 @@ export default function RecurringAssignmentsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <ModulePageHeader
         title="Recurring Tasks"
         subtitle="Templates generate separate assignment instances — never overwrite history."

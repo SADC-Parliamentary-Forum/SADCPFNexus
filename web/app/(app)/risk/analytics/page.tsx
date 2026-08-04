@@ -89,7 +89,7 @@ export default function RiskAnalyticsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Risk Analytics & Reports"
         subtitle="Institutional risk exposure analysis, departmental performance, and category breakdown."

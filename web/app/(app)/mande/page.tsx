@@ -50,7 +50,7 @@ export default function MandeDashboardPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="M&E Dashboard"
         subtitle="Results monitoring across approved programmes — reporting, evidence and review status."

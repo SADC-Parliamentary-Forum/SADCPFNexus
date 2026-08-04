@@ -118,7 +118,7 @@ export default function HrFileDocumentsPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-start justify-between flex-wrap gap-3">
         <ModulePageHeader
         title="Document Vault"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Document Vault" }]} />}

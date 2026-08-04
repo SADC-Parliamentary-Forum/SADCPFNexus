@@ -68,7 +68,7 @@ export default function StockItemsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
         title="Consumables / Stock"
         subtitle="Track consumable stock items, balances and reorder levels — separate from fixed assets."

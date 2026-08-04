@@ -54,7 +54,7 @@ export default function ProcurementPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Procurement"
         subtitle="Manage requisitions, vendor quotes, and procurement approvals."

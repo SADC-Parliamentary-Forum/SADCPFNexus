@@ -58,7 +58,7 @@ export default function ResultsFrameworksPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <ModulePageHeader
         title="Results Frameworks"
         subtitle="Manage results frameworks linked to strategic plans and donor programmes."
