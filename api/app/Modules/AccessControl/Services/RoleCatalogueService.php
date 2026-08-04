@@ -24,12 +24,19 @@ class RoleCatalogueService
         private readonly SegregationOfDutiesService $sod,
     ) {}
 
-    public function catalogue(): array
+    public function catalogue(User $actor): array
     {
-        return AccessRoleCatalogue::query()
+        $query = AccessRoleCatalogue::query()
             ->with(['currentVersion', 'latestVersion'])
-            ->orderBy('name')
-            ->get()
+            ->orderBy('name');
+
+        if (! $actor->isSystemAdmin()) {
+            $query->where(function ($scope) use ($actor) {
+                $scope->whereNull('tenant_id')->orWhere('tenant_id', $actor->tenant_id);
+            });
+        }
+
+        return $query->get()
             ->all();
     }
 
@@ -203,8 +210,9 @@ class RoleCatalogueService
             ->createRoleAssignment($target, $version, $data, $actor);
     }
 
-    public function userAccessProfile(User $user): array
+    public function userAccessProfile(User $user, User $actor): array
     {
+        $this->assertSameTenant($user, $actor);
         $pdp = app(PolicyDecisionPoint::class);
 
         return [
@@ -233,8 +241,9 @@ class RoleCatalogueService
         ];
     }
 
-    public function simulate(User $user): array
+    public function simulate(User $user, User $actor): array
     {
+        $this->assertSameTenant($user, $actor);
         $pdp = app(PolicyDecisionPoint::class);
         $nav = app(NavigationManifestService::class);
         $effective = $pdp->effectivePermissions($user);
@@ -254,7 +263,7 @@ class RoleCatalogueService
         ];
     }
 
-    public function explorePermission(string $permissionKey): array
+    public function explorePermission(string $permissionKey, User $actor): array
     {
         $roles = [];
         foreach ($this->registry->roleTemplates() as $name => $meta) {
@@ -270,9 +279,24 @@ class RoleCatalogueService
             'permission' => $permissionKey,
             'registry' => $meta,
             'roles_containing' => array_values(array_unique($roles)),
-            'direct_grants' => UserPermissionGrant::query()->where('permission_key', $permissionKey)->where('status', 'active')->get(),
-            'denials' => UserPermissionDenial::query()->where('permission_key', $permissionKey)->where('status', 'active')->get(),
+            'direct_grants' => UserPermissionGrant::query()
+                ->where('permission_key', $permissionKey)
+                ->where('status', 'active')
+                ->when(! $actor->isSystemAdmin(), fn ($query) => $query->where('tenant_id', $actor->tenant_id))
+                ->get(),
+            'denials' => UserPermissionDenial::query()
+                ->where('permission_key', $permissionKey)
+                ->where('status', 'active')
+                ->when(! $actor->isSystemAdmin(), fn ($query) => $query->where('tenant_id', $actor->tenant_id))
+                ->get(),
         ];
+    }
+
+    private function assertSameTenant(User $target, User $actor): void
+    {
+        if (! $actor->isSystemAdmin() && (int) $target->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
     }
 
     public function createAccessRequest(User $requester, array $data): AccessRequest

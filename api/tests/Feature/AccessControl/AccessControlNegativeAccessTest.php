@@ -409,4 +409,14 @@ class AccessControlNegativeAccessTest extends TestCase
             'permissions' => ['dashboard.view'],
         ])->assertStatus(409);
     }
+
+    public function test_access_profile_cannot_cross_tenant_boundary(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $otherTenant = \App\Models\Tenant::factory()->create();
+        $target = $this->makeUser('staff', $otherTenant);
+
+        Sanctum::actingAs($admin);
+        $this->getJson("/api/v1/admin/access/users/{$target->id}/profile")->assertStatus(404);
+    }
 }

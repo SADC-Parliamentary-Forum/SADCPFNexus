@@ -51,7 +51,7 @@ class AccessGovernanceController extends Controller
     {
         $this->pdp->assert($request->user(), 'admin.roles.view');
 
-        return response()->json(['data' => $this->roles->catalogue()]);
+        return response()->json(['data' => $this->roles->catalogue($request->user())]);
     }
 
     public function createRoleDraft(Request $request): JsonResponse
@@ -88,14 +88,14 @@ class AccessGovernanceController extends Controller
     {
         $this->pdp->assert($request->user(), 'admin.roles.view');
 
-        return response()->json(['data' => $this->roles->userAccessProfile($user)]);
+        return response()->json(['data' => $this->roles->userAccessProfile($user, $request->user())]);
     }
 
     public function simulate(Request $request, User $user): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.access.simulate');
 
-        return response()->json(['data' => $this->roles->simulate($user)]);
+        return response()->json(['data' => $this->roles->simulate($user, $request->user())]);
     }
 
     public function explore(Request $request): JsonResponse
@@ -103,7 +103,7 @@ class AccessGovernanceController extends Controller
         $this->pdp->assert($request->user(), 'admin.access.explore');
         $data = $request->validate(['permission' => ['required', 'string']]);
 
-        return response()->json(['data' => $this->roles->explorePermission($data['permission'])]);
+        return response()->json(['data' => $this->roles->explorePermission($data['permission'], $request->user())]);
     }
 
     public function navigation(Request $request): JsonResponse
