@@ -56,7 +56,7 @@ export default function TravelCalendarPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Calendar" }]} />}
       />
         <div className="flex items-center gap-2">
-          <button type="button" className="btn-secondary" onClick={() => setMonthOffset((v) => v - 1)}>Prev</button>
+          <button type="button" className="btn-secondary" onClick={() => setMonthOffset((v) => v - 1)}>Previous</button>
           <span className="text-sm font-medium min-w-[140px] text-center">{range.label}</span>
           <button type="button" className="btn-secondary" onClick={() => setMonthOffset((v) => v + 1)}>Next</button>
           <Link href="/travel" className="btn-secondary">Dashboard</Link>

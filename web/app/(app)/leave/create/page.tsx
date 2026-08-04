@@ -208,7 +208,7 @@ export default function LeaveCreatePage() {
       <ModulePageHeader
         title="New Leave Request"
         subtitle="Create one application with one or more leave segments."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "New request" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "New Request" }]} />}
         actions={
           <Link href="/leave" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -488,7 +488,7 @@ export default function LeaveCreatePage() {
               onClick={() => void submit(false)}
               className="btn-primary flex-1 justify-center disabled:opacity-50"
             >
-              {submitting ? "Submitting..." : "Submit"}
+              {submitting ? "Submitting…" : "Submit"}
             </button>
           </div>
         </aside>

@@ -455,7 +455,7 @@ export default function AssetsPage() {
       doc.setFontSize(14);
       doc.text("Asset Register", 14, 15);
       doc.setFontSize(10);
-      doc.text(`Generated ${new Date().toLocaleDateString()} – ${list.length} item(s)`, 14, 22);
+      doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} – ${list.length} item(s)`, 14, 22);
       const tableStart = 28;
       const headers = ["Code", "Name", "Category", "Status", "QR"];
       const body = list.map((a) => [
@@ -731,7 +731,7 @@ export default function AssetsPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`badge ${s.cls}`}>{s.label}</span>
                           <span className="text-xs text-neutral-400">
-                            {req.created_at ? new Date(req.created_at).toLocaleDateString() : ""}
+                            {req.created_at ? new Date(req.created_at).toLocaleDateString("en-GB") : ""}
                           </span>
                         </div>
                         <p className="text-sm text-neutral-700 whitespace-pre-wrap">{req.justification}</p>

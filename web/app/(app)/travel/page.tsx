@@ -25,7 +25,7 @@ const filterMap: Record<string, string | undefined> = {
 
 function StatCard({ label, value, href }: { label: string; value: number | string; href?: string }) {
   const inner = (
-    <div className="card p-4">
+    <div className="card p-5">
       <p className="text-[11px] uppercase tracking-wide text-neutral-400">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-neutral-900">{value}</p>
     </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { travelApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
-import { formatDateShort, formatDateRelative } from "@/lib/utils";
+import { formatCurrency, formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
 import { PrintButton } from "@/components/ui/PrintButton";
@@ -41,9 +41,8 @@ function apiErrorMessage(err: unknown, fallback: string): string {
 }
 
 function formatMoney(amount: number | null | undefined, currency?: string | null): string {
-  const code = currency?.trim() || "";
-  if (amount == null || Number.isNaN(Number(amount))) return code ? `${code} —` : "—";
-  return `${code ? `${code} ` : ""}${Number(amount).toLocaleString()}`;
+  if (amount == null || Number.isNaN(Number(amount))) return "—";
+  return formatCurrency(Number(amount), currency?.trim() || "NAD");
 }
 
 function requesterInitials(name: string | null | undefined): string {

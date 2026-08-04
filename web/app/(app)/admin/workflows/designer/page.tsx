@@ -116,7 +116,7 @@ export default function WorkflowDesignerPage() {
         }
         actions={
           <Link href="/admin/workflows" className="btn-secondary text-sm">
-            Back to workflows
+            Back to Workflows
           </Link>
         }
       />
@@ -125,7 +125,7 @@ export default function WorkflowDesignerPage() {
         <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
         <h1 className="text-2xl font-semibold">Visual workflow designer</h1>
         <p className="text-sm mt-1">Edit stages, transitions, conditions, and actor selectors. Validate before publish.</p>
-        <Link href="/admin/workflows" className="text-sm underline mt-2 inline-block">Back to workflows</Link>
+        <Link href="/admin/workflows" className="text-sm underline mt-2 inline-block">Back to Workflows</Link>
       </div>
 
       <div className="flex gap-3 flex-wrap">

@@ -168,7 +168,7 @@ export default function AdminWeeklySummaryPage() {
               onClick={() => { setPage(p => Math.max(1, p - 1)); loadRuns(Math.max(1, page - 1)); }}
               disabled={page <= 1}
               className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40"
-            >Prev</button>
+            >Previous</button>
             <span className="text-sm text-neutral-500 self-center">Page {page} / {lastPage}</span>
             <button
               onClick={() => { setPage(p => Math.min(lastPage, p + 1)); loadRuns(Math.min(lastPage, page + 1)); }}

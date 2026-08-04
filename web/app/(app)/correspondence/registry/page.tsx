@@ -188,7 +188,7 @@ function CorrespondenceRegistryPageInner() {
       <div className="flex items-center justify-between text-sm text-neutral-500">
         <span>{total} record(s)</span>
         <div className="flex gap-2">
-          <button type="button" className="btn-secondary text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+          <button type="button" className="btn-secondary text-xs" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
           <span>Page {page} / {lastPage}</span>
           <button type="button" className="btn-secondary text-xs" disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}>Next</button>
         </div>

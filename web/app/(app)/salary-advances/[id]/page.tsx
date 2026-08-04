@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
@@ -40,10 +40,6 @@ const TYPE_LABELS: Record<string, string> = {
   emergency_advance: "Emergency Advance",
   other:             "Other",
 };
-
-function formatCurrency(amount: number, currency: string) {
-  return `${currency} ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function getEntity<T>(payload: unknown): T | null {
   if (payload && typeof payload === "object" && "data" in payload) {

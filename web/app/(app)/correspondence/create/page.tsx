@@ -254,7 +254,7 @@ export default function CreateCorrespondencePage() {
             onClick={() => handleSubmit("draft")}
             className="btn-secondary"
           >
-            {saving ? "Saving…" : "Save as Draft"}
+            {saving ? "Saving…" : "Save Draft"}
           </button>
           <button
             type="button"

@@ -41,7 +41,7 @@ export default function MandeCalendarPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Reporting Calendar" }]} />}
       />
         <div className="flex items-center gap-2">
-          <button type="button" className="btn-secondary text-sm" onClick={() => shiftMonth(-1)}>Prev</button>
+          <button type="button" className="btn-secondary text-sm" onClick={() => shiftMonth(-1)}>Previous</button>
           <input
             type="month"
             className="input text-sm"

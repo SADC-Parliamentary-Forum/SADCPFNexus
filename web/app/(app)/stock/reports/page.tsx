@@ -79,7 +79,7 @@ export default function StockReportsPage() {
       doc.setFontSize(14);
       doc.text("Consumables / Stock Report", 14, 15);
       doc.setFontSize(10);
-      doc.text(`Generated ${new Date().toLocaleDateString()} – ${rows.length} item(s)`, 14, 22);
+      doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} – ${rows.length} item(s)`, 14, 22);
       autoTable(doc, {
         head: [["Item Code", "Name", "Category", "Balance", "Reorder", "Low", "Unit Cost", "Value", "Location"]],
         body: rows.map((r) => [r.item_code, r.name, r.category, r.current_balance, r.reorder_level, r.low_stock, r.unit_cost, r.stock_value, r.storage_location]),

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrGradeBand, type HrSalaryScale, type HrSalaryScaleNotch, type HrSettingsStatus } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency as formatAmount } from "@/lib/utils";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SalaryScaleSlideOver } from "./SalaryScaleSlideOver";
 
@@ -16,12 +16,6 @@ const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   published: "badge-success",
   archived:  "badge-muted",
 };
-
-function formatAmount(val: number, currency = "NAD"): string {
-  return new Intl.NumberFormat("en-NA", {
-    style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0,
-  }).format(val);
-}
 
 function SkeletonRow() {
   return (

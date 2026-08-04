@@ -202,7 +202,7 @@ function CalendarView({
         <div className="flex items-center justify-between mb-4 gap-2">
           <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-            Prev
+            Previous
           </button>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{MONTHS[month]} {year}</h2>
@@ -232,7 +232,7 @@ function CalendarView({
         {events.length > 0 && eventsThisMonth === 0 && (
           <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
             <span className="material-symbols-outlined text-[20px]">info</span>
-            <span>No events in {MONTHS[month]} {year}. Use Prev/Next to switch month, or add an event.</span>
+            <span>No events in {MONTHS[month]} {year}. Use Previous/Next to switch month, or add an event.</span>
           </div>
         )}
 
@@ -595,7 +595,7 @@ function GanttView({
       <div className="flex items-center justify-between mb-4">
         <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          Prev
+          Previous
         </button>
         <h2 className="text-base font-bold text-neutral-900">
           {MONTHS[month - 1 < 0 ? 11 : month - 1].slice(0,3)} – {MONTHS[(month + 1) % 12].slice(0,3)} {year}

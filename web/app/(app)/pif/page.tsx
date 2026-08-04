@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { programmeApi, type Programme } from "@/lib/api";
-import { formatDateShort } from "@/lib/utils";
+import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import {
   DEFAULT_PAGE_SIZE,
@@ -18,7 +18,7 @@ import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 const STATUS_BADGE: Record<string, string> = {
   draft: "badge-muted",
   submitted: "badge-warning",
-  approved: "badge-primary",
+  approved: "badge-success",
   active: "badge-success",
   on_hold: "badge-warning",
   completed: "badge-success",
@@ -29,9 +29,8 @@ const STATUS_BADGE: Record<string, string> = {
 const STATUS_LABELS = ["All", "draft", "submitted", "approved", "active", "on_hold", "completed"] as const;
 
 function formatBudget(currency: string | null | undefined, amount: number | null | undefined): string {
-  const code = currency?.trim() || "—";
-  if (amount == null || Number.isNaN(Number(amount))) return `${code} —`;
-  return `${code} ${Number(amount).toLocaleString()}`;
+  if (amount == null || Number.isNaN(Number(amount))) return "—";
+  return formatCurrency(Number(amount), currency?.trim() || "NAD");
 }
 
 function statusLabel(status: string | null | undefined): string {

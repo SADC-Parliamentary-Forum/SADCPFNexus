@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -91,7 +91,7 @@ return (await peopleAuthorityApi.listSuccession()).data;
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rowsâ€¦"
+            placeholder="Filter rows…"
           />
         </label>
       </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   financeApi,
@@ -10,6 +9,7 @@ import {
   type Budget,
   type BudgetLine,
 } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STEPS = ["Requisition Details", "Review & Submit"];
 
@@ -176,19 +176,11 @@ export default function ProcurementCreatePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/procurement" className="hover:text-primary transition-colors">
-            Procurement
-          </Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">New Requisition</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">New Procurement Requisition</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">
-          Submit the requisition first. Specific items, pricing, and supplier quotations can be finalized later in the procurement process.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="New Procurement Requisition"
+        subtitle="Submit the requisition first. Specific items, pricing, and supplier quotations can be finalized later in the procurement process."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "New Requisition" }]} />}
+      />
 
       <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-5">
         <div className="flex items-center gap-2">
@@ -492,7 +484,7 @@ export default function ProcurementCreatePage() {
               disabled={submitting}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {submitting ? "Submitting..." : "Submit Requisition"}
+              {submitting ? "Submitting…" : "Submit Requisition"}
               <span className="material-symbols-outlined text-[18px]">send</span>
             </button>
           )}

@@ -575,7 +575,7 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Notes <span className="text-red-400">*</span></label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">Notes <span className="text-red-500">*</span></label>
               <textarea
                 rows={4}
                 value={updateForm.notes}

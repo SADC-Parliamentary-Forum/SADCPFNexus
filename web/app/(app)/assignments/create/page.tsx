@@ -95,7 +95,7 @@ export default function CreateAssignmentPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-400">*</span></label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={form.title}
@@ -109,7 +109,7 @@ export default function CreateAssignmentPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Description <span className="text-red-400">*</span></label>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
           <textarea
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
@@ -194,7 +194,7 @@ export default function CreateAssignmentPage() {
         {/* Dates */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Due Date <span className="text-red-400">*</span></label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
             <input
               type="date"
               value={form.due_date}

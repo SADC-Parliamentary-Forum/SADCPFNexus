@@ -4,14 +4,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { financeApi, type Budget, type BudgetLine } from "@/lib/api";
+import { formatCurrency as formatMoney } from "@/lib/utils";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
-}
-
-function formatMoney(value: number, currency: string): string {
-  return `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function pct(spent: number, allocated: number): number {
@@ -195,7 +192,7 @@ export default function BudgetDetailPage() {
             {budget.type === "core" ? "Core budget" : "Project budget"} · {budget.year} · {budget.currency}
           </p>
         </div>
-        <Link href="/finance/budget" className="btn-secondary">Back to list</Link>
+        <Link href="/finance/budget" className="btn-secondary">Back to List</Link>
       </div>
 
       {error && (
