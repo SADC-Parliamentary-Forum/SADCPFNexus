@@ -53,7 +53,7 @@ export default function AdminPortfoliosPage() {
     };
 
     const handleDelete = async (id: number, name: string) => {
-        if (!(await confirm({ title: "Delete Portfolio", message: `Delete "${name}"?`, variant: "danger" }))) return; // ship-safe-ignore: confirm dialog string, not SQL
+        if (!(await confirm({ title: "Delete Portfolio", message: `Delete "${name}"? This cannot be undone.`, variant: "danger" }))) return; // ship-safe-ignore: confirm dialog string, not SQL
         try {
             await adminApi.deletePortfolio(id);
             setPortfolios(prev => prev.filter(p => p.id !== id));

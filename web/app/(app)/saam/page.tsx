@@ -88,7 +88,7 @@ function StatCard({
   loading?: boolean;
 }) {
   return (
-    <div className="card px-5 py-4 flex items-center gap-4">
+    <div className="card p-5 flex items-center gap-4">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <span
           className="material-symbols-outlined text-[20px]"

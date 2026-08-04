@@ -145,7 +145,7 @@ export default function OvertimeRequestsPage() {
             disabled={saving}
             className="rounded bg-[var(--brand)] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {saving ? "Savingâ€¦" : "Create draft requisition"}
+            {saving ? "Saving…" : "Create draft requisition"}
           </button>
         </div>
       </form>
@@ -165,7 +165,7 @@ export default function OvertimeRequestsPage() {
             {loading && (
               <tr>
                 <td colSpan={5} className="px-3 py-6 text-center text-[var(--text-secondary)]">
-                  Loadingâ€¦
+                  Loading…
                 </td>
               </tr>
             )}

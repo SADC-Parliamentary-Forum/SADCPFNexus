@@ -63,7 +63,7 @@ function KpiCard({
   label: string; value: number | string; icon: string; color: string; bg: string; href?: string;
 }) {
   const inner = (
-    <div className={`card px-4 py-4 flex items-center gap-3 ${href ? "hover:shadow-md transition-shadow cursor-pointer" : ""}`}>
+    <div className={`card p-5 flex items-center gap-3 ${href ? "hover:shadow-md transition-shadow cursor-pointer" : ""}`}>
       <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
         <span className={`material-symbols-outlined text-[22px] ${color}`}>{icon}</span>
       </div>

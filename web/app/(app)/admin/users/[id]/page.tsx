@@ -548,11 +548,11 @@ export default function UserEditPage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Full Name <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-bold text-neutral-700 ml-1">Full Name <span className="text-red-500">*</span></label>
                       <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Email Address <span className="text-red-400">*</span></label>
+                      <label className="text-sm font-bold text-neutral-700 ml-1">Email Address <span className="text-red-500">*</span></label>
                       <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">

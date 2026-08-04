@@ -502,7 +502,7 @@ export default function ActivityReportDetailPage() {
                           className="text-red-600 text-xs hover:underline disabled:opacity-40"
                           disabled={deleteFollowUpMut.isPending}
                           onClick={async () => {
-                            if (await confirm({ title: "Delete follow-up", message: "Delete this follow-up?", variant: "danger" })) {
+                            if (await confirm({ title: "Delete follow-up", message: "Delete this follow-up? This cannot be undone.", variant: "danger" })) {
                               deleteFollowUpMut.mutate(fu.id);
                             }
                           }}

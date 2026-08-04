@@ -38,7 +38,7 @@ export default function TravelMissionDetailPage() {
     return (
     <div className="space-y-3">
         <p className="text-sm text-red-600">{error ?? "Not found"}</p>
-        <Link href="/travel/missions" className="text-sm text-primary">Back to missions</Link>
+        <Link href="/travel/missions" className="text-sm text-primary">Back to Missions</Link>
       </div>
     );
   }

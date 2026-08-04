@@ -120,7 +120,7 @@ export default function WeeklyReportsPage() {
 
         {lastPage > 1 && (
           <div className="px-5 py-3 border-t border-neutral-100 flex gap-2 justify-end">
-            <button onClick={() => { setPage(p => Math.max(1, p - 1)); loadReports(Math.max(1, page - 1)); }} disabled={page <= 1} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">Prev</button>
+            <button onClick={() => { setPage(p => Math.max(1, p - 1)); loadReports(Math.max(1, page - 1)); }} disabled={page <= 1} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">Previous</button>
             <span className="text-sm text-neutral-500 self-center">Page {page} / {lastPage}</span>
             <button onClick={() => { setPage(p => Math.min(lastPage, p + 1)); loadReports(Math.min(lastPage, page + 1)); }} disabled={page >= lastPage} className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40">Next</button>
           </div>

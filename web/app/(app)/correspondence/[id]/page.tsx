@@ -308,7 +308,7 @@ export default function CorrespondenceDetailPage() {
             { label: "File Code", value: letter.file_code ?? "—" },
             { label: "Signatory", value: letter.signatory_code ?? "—" },
             { label: "Created by", value: letter.creator?.name ?? "—" },
-            { label: "Created", value: new Date(letter.created_at).toLocaleDateString() },
+            { label: "Created", value: new Date(letter.created_at).toLocaleDateString("en-GB") },
           ].map(({ label, value }) => (
             <div key={label} className="flex justify-between text-sm">
               <span className="text-neutral-500">{label}</span>

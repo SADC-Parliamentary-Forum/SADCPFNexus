@@ -322,7 +322,7 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
             <div key={label} className="bg-neutral-50 rounded-xl p-3">
               <p className="text-xs text-neutral-500 mb-1">{label}</p>
               <p className="text-sm font-medium text-neutral-800">{name ?? "—"}</p>
-              {at && <p className="text-xs text-neutral-400 mt-0.5">{new Date(at).toLocaleDateString()}</p>}
+              {at && <p className="text-xs text-neutral-400 mt-0.5">{new Date(at).toLocaleDateString("en-GB")}</p>}
             </div>
           ))}
         </div>

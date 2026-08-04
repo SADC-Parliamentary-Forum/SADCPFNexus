@@ -180,7 +180,7 @@ export default function SignatureSetupPage() {
                   </div>
                   <p className="text-xs text-neutral-400 mt-2">
                     Version {currentProfile!.active_version!.version_no} · Active since{" "}
-                    {new Date(currentProfile!.active_version!.effective_from).toLocaleDateString()}
+                    {new Date(currentProfile!.active_version!.effective_from).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <button

@@ -276,7 +276,7 @@ export default function PolicyLibraryPage() {
                       </button>
                       <button
                         onClick={async () => {
-                          if (await confirm({ title: "Delete policy", message: "Delete this policy?", variant: "danger" })) {
+                          if (await confirm({ title: "Delete policy", message: "Delete this policy? This cannot be undone.", variant: "danger" })) {
                             deleteMutation.mutate(p.id);
                           }
                         }}

@@ -144,7 +144,7 @@ export default function StrategicPlanPage() {
                           type="button"
                           className="text-red-500 text-xs hover:underline"
                           onClick={async () => {
-                            if (await confirm({ title: "Delete plan", message: "Delete this plan?", variant: "danger" })) {
+                            if (await confirm({ title: "Delete plan", message: "Delete this plan? This cannot be undone.", variant: "danger" })) {
                               delMut.mutate(p.id);
                             }
                           }}

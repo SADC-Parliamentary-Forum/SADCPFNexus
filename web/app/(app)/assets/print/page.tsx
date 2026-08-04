@@ -106,7 +106,7 @@ export default function AssetsPrintPage() {
       <div ref={printRef} className="print-only p-8 max-w-5xl mx-auto">
         <h2 className="text-lg font-bold text-neutral-900 mb-4">Asset Register</h2>
         <p className="text-sm text-neutral-500 mb-4">
-          Generated {new Date().toLocaleDateString()} – {assets.length} item(s)
+          Generated {new Date().toLocaleDateString("en-GB")} – {assets.length} item(s)
         </p>
         <table className="w-full border-collapse text-sm">
           <thead>

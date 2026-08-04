@@ -341,7 +341,7 @@ export default function CreateRiskPage() {
             className="btn-secondary flex items-center gap-1.5"
           >
             {saving ? <span className="h-4 w-4 border-2 border-neutral-400 border-t-neutral-600 rounded-full animate-spin" /> : null}
-            Save as Draft
+            Save Draft
           </button>
           <button
             type="button"

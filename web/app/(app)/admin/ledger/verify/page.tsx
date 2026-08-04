@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
@@ -16,8 +16,8 @@ function formatVerifiedAt(ts: string) {
 }
 
 function hashDisplay(hash: string | null): string {
-  if (!hash) return "â€”";
-  return `${hash.slice(0, 12)}â€¦${hash.slice(-6)}`;
+  if (!hash) return "—";
+  return `${hash.slice(0, 12)}…${hash.slice(-6)}`;
 }
 
 export default function LedgerVerifyPage() {
@@ -135,7 +135,7 @@ export default function LedgerVerifyPage() {
                 : ""}
               {total > 0
                 ? `${total.toLocaleString()} verification${total !== 1 ? "s" : ""} on record.`
-                : "No verifications run yet â€” trigger the first check below."}
+                : "No verifications run yet — trigger the first check below."}
             </p>
           </div>
         </div>
@@ -146,7 +146,7 @@ export default function LedgerVerifyPage() {
           className="btn-primary flex items-center gap-2 disabled:opacity-60 whitespace-nowrap shrink-0"
         >
           <span className={cn("material-symbols-outlined text-[18px]", verifying ? "animate-spin" : "")}>sync</span>
-          {verifying ? "Verifyingâ€¦" : "Verify Ledger Integrity"}
+          {verifying ? "Verifying…" : "Verify Ledger Integrity"}
         </button>
       </div>
 

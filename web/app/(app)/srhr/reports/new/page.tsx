@@ -370,7 +370,7 @@ function NewReportPageInner() {
               ? uploadProgress
                 ? `Uploading ${uploadProgress.done}/${uploadProgress.total}…`
                 : "Saving…"
-              : "Save as Draft"}
+              : "Save Draft"}
           </button>
         </div>
       </form>

@@ -137,7 +137,7 @@ export default function ResultsFrameworksPage() {
                           type="button"
                           className="text-red-500 text-xs hover:underline"
                           onClick={async () => {
-                            if (await confirm({ title: "Delete framework", message: "Delete this framework?", variant: "danger" })) {
+                            if (await confirm({ title: "Delete framework", message: "Delete this framework? This cannot be undone.", variant: "danger" })) {
                               delMut.mutate(fw.id);
                             }
                           }}
