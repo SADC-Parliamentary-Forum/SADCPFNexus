@@ -177,14 +177,14 @@ class RoleCatalogueService
             ]);
         }
 
-        if ((int) $target->tenant_id !== (int) $actor->tenant_id) {
+        if (! $actor->isSystemAdmin() && (int) $target->tenant_id !== (int) $actor->tenant_id) {
             throw ValidationException::withMessages([
                 'user' => ['The target user must belong to the same tenant as the assigning administrator.'],
             ]);
         }
 
         $catalogueTenant = $version->catalogue->tenant_id;
-        if ($catalogueTenant !== null && (int) $catalogueTenant !== (int) $target->tenant_id) {
+        if (! $actor->isSystemAdmin() && $catalogueTenant !== null && (int) $catalogueTenant !== (int) $target->tenant_id) {
             throw ValidationException::withMessages([
                 'role' => ['This role is not available in the target user tenant.'],
             ]);

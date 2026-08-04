@@ -437,4 +437,17 @@ class AccessControlNegativeAccessTest extends TestCase
         app(\App\Modules\AccessControl\Services\RoleCatalogueService::class)
             ->publishVersion($catalogue, ['dashboard.view'], $owner);
     }
+
+    public function test_direct_permission_grant_rejects_unregistered_key(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $target = $this->makeUser('staff', $admin->tenant);
+
+        Sanctum::actingAs($admin);
+        $this->postJson("/api/v1/admin/access/users/{$target->id}/grants", [
+            'permission_key' => 'unregistered.permission',
+            'scope_type' => 'self',
+            'reason' => 'Must be rejected',
+        ])->assertStatus(422);
+    }
 }

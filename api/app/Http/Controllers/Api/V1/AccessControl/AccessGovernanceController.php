@@ -144,6 +144,7 @@ class AccessGovernanceController extends Controller
 
     public function grantPermission(Request $request, User $user): JsonResponse
     {
+        $this->assertTargetTenant($request->user(), $user);
         $this->pdp->assert($request->user(), 'admin.roles.assign', null, [
             'target_user_id' => $user->id,
             'is_privileged' => true,
@@ -157,6 +158,7 @@ class AccessGovernanceController extends Controller
             'valid_until' => ['nullable', 'date'],
             'reason' => ['required', 'string'],
         ]);
+        $this->validatePermissionGrantInput($data);
 
         $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
         $grant = $dual->createGrant($user, $data, $request->user());
@@ -179,7 +181,7 @@ class AccessGovernanceController extends Controller
     public function approveGrant(Request $request, UserPermissionGrant $grant): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.approve');
-        abort_unless((int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
+        abort_unless($request->user()->isSystemAdmin() || (int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
 
         $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
 
@@ -189,7 +191,7 @@ class AccessGovernanceController extends Controller
     public function rejectGrant(Request $request, UserPermissionGrant $grant): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.approve');
-        abort_unless((int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
+        abort_unless($request->user()->isSystemAdmin() || (int) $grant->tenant_id === (int) $request->user()->tenant_id, 404);
         $data = $request->validate(['reason' => ['nullable', 'string']]);
 
         $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
@@ -200,7 +202,7 @@ class AccessGovernanceController extends Controller
     public function approveRoleAssignment(Request $request, AccessRoleAssignment $assignment): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.approve');
-        abort_unless((int) $assignment->tenant_id === (int) $request->user()->tenant_id, 404);
+        abort_unless($request->user()->isSystemAdmin() || (int) $assignment->tenant_id === (int) $request->user()->tenant_id, 404);
 
         $dual = app(\App\Modules\AccessControl\Services\PrivilegedAccessDualControlService::class);
 
@@ -209,12 +211,14 @@ class AccessGovernanceController extends Controller
 
     public function denyPermission(Request $request, User $user): JsonResponse
     {
+        $this->assertTargetTenant($request->user(), $user);
         $this->pdp->assert($request->user(), 'admin.roles.manage');
         $data = $request->validate([
             'permission_key' => ['required', 'string'],
             'reason' => ['required', 'string'],
             'valid_until' => ['nullable', 'date'],
         ]);
+        $this->validatePermissionGrantInput($data, false);
 
         $denial = UserPermissionDenial::create([
             'tenant_id' => $user->tenant_id,
@@ -246,9 +250,39 @@ class AccessGovernanceController extends Controller
     {
         $this->pdp->assert($request->user(), 'admin.access.requests.manage');
 
-        return response()->json([
-            'data' => AccessRequest::query()->orderByDesc('id')->limit(100)->get(),
-        ]);
+        $query = AccessRequest::query()->orderByDesc('id')->limit(100);
+        if (! $request->user()->isSystemAdmin()) {
+            $query->where('tenant_id', $request->user()->tenant_id);
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    private function assertTargetTenant(User $actor, User $target): void
+    {
+        abort_unless($actor->isSystemAdmin() || (int) $target->tenant_id === (int) $actor->tenant_id, 404);
+    }
+
+    private function validatePermissionGrantInput(array $data, bool $withScope = true): void
+    {
+        if (! $this->registry->get((string) $data['permission_key'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'permission_key' => ['The permission is not registered in the canonical access registry.'],
+            ]);
+        }
+
+        if ($withScope && ! in_array((string) ($data['scope_type'] ?? 'self'), $this->registry->scopes(), true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'scope_type' => ['The selected permission scope is not registered.'],
+            ]);
+        }
+
+        if (! empty($data['valid_from']) && ! empty($data['valid_until'])
+            && strtotime((string) $data['valid_until']) < strtotime((string) $data['valid_from'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'valid_until' => ['The permission expiry must be after the start date.'],
+            ]);
+        }
     }
 
     public function storeAccessRequest(Request $request): JsonResponse
