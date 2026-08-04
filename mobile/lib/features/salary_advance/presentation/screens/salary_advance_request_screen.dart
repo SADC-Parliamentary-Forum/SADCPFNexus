@@ -9,6 +9,7 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/offline/draft_database.dart';
 import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/salary_advance_helpers.dart';
 
 String _purposeToAdvanceType(String purpose) {
   const map = {
@@ -153,7 +154,7 @@ class _SalaryAdvanceRequestScreenState
   }
 
   String _fmt(double value, [String currency = 'NAD']) {
-    return '$currency ${value.toStringAsFixed(2)}';
+    return formatSaCurrency(value, currency: currency);
   }
 
   Future<void> _saveDraft() async {

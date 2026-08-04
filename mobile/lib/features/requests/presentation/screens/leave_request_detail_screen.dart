@@ -65,17 +65,15 @@ class _LeaveRequestDetailScreenState
     }
   }
 
-  Future<void> _cancelLeave() async {
+  Future<void> _deleteLeave() async {
     final requestId = widget.requestId;
     if (requestId == null || requestId.isEmpty) return;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cancel leave request?'),
-        content: const Text(
-          'This will delete the request if it is still in draft status.',
-        ),
+        title: const Text('Delete draft leave request?'),
+        content: const Text('This will permanently delete this draft leave request.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -83,7 +81,7 @@ class _LeaveRequestDetailScreenState
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Cancel Leave'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -97,7 +95,7 @@ class _LeaveRequestDetailScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Leave request cancelled.'),
+          content: Text('Leave request deleted.'),
           backgroundColor: AppColors.success,
         ),
       );
@@ -106,7 +104,58 @@ class _LeaveRequestDetailScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Only draft leave requests can be cancelled.'),
+          content: Text('Failed to delete leave request.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  Future<void> _withdrawLeave() async {
+    final requestId = widget.requestId;
+    if (requestId == null || requestId.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Withdraw leave request?'),
+        content: const Text('Withdraw this leave request? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Withdraw'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _cancelling = true);
+    try {
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .post('/leave/requests/$requestId/withdraw');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Leave request withdrawn.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      context.safePopOrGoHome();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to withdraw leave request.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -124,7 +173,13 @@ class _LeaveRequestDetailScreenState
       case 'draft':
         return 'Draft';
       case 'submitted':
-        return 'Pending Approval';
+        return 'Pending';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'returned_for_correction':
+        return 'Returned for Correction';
+      case 'withdrawn':
+        return 'Withdrawn';
       default:
         return status == null || status.isEmpty ? 'Unknown' : status;
     }
@@ -137,6 +192,12 @@ class _LeaveRequestDetailScreenState
       case 'rejected':
         return AppColors.danger;
       case 'draft':
+        return AppColors.textMuted;
+      case 'cancelled':
+        return AppColors.textMuted;
+      case 'returned_for_correction':
+        return AppColors.warning;
+      case 'withdrawn':
         return AppColors.textMuted;
       default:
         return AppColors.warning;
@@ -209,6 +270,11 @@ class _LeaveRequestDetailScreenState
     final status = request['status']?.toString();
     final statusColor = _statusColor(status);
     final approvalHistory = _extractApprovalHistory(request);
+    final approvalRequest = request['approval_request'];
+    final approvalStatus =
+        approvalRequest is Map ? approvalRequest['status']?.toString() : null;
+    final canDelete = status == 'draft';
+    final canWithdraw = status == 'submitted' && approvalStatus == 'pending';
     final annualBalance = request['requester'] is Map
         ? request['requester']['annual_leave_balance']
         : null;
@@ -365,35 +431,41 @@ class _LeaveRequestDetailScreenState
                   ),
             ]),
           ],
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: OutlinedButton.icon(
-              onPressed: _cancelling ? null : _cancelLeave,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.danger,
-                side: const BorderSide(color: AppColors.danger),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          if (canDelete || canWithdraw) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _cancelling
+                    ? null
+                    : (canDelete ? _deleteLeave : _withdrawLeave),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.danger,
+                  side: const BorderSide(color: AppColors.danger),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: _cancelling
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.danger,
+                        ),
+                      )
+                    : const Icon(Icons.cancel_outlined, size: 16),
+                label: Text(
+                  _cancelling
+                      ? 'Processing...'
+                      : (canDelete ? 'Delete Draft' : 'Withdraw Request'),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-              icon: _cancelling
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.danger,
-                      ),
-                    )
-                  : const Icon(Icons.cancel_outlined, size: 16),
-              label: Text(
-                _cancelling ? 'Cancelling...' : 'Cancel Leave',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
             ),
-          ),
+          ],
           const SizedBox(height: 32),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
 
@@ -39,10 +40,19 @@ double asSaDouble(dynamic value) {
   return double.tryParse('$value') ?? 0;
 }
 
+final NumberFormat _saCurrencyFormat = NumberFormat('#,##0.00', 'en_US');
+
+/// Maps an ISO currency code to the display symbol used on web, matching
+/// `defaultCurrency === "NAD" ? "N$" : defaultCurrency` in
+/// web/app/(app)/salary-advances/create/page.tsx.
+String _saCurrencySymbol(String currency) {
+  return currency == 'NAD' ? 'N\$' : currency;
+}
+
 String formatSaCurrency(dynamic amount, {String currency = 'NAD'}) {
   final value = asSaDouble(amount);
   final ccy = currency.isEmpty ? 'NAD' : currency;
-  return '$ccy ${value.toStringAsFixed(2)}';
+  return '${_saCurrencySymbol(ccy)} ${_saCurrencyFormat.format(value)}';
 }
 
 class SalaryAdvanceStatusConfig {

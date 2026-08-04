@@ -52,6 +52,9 @@ ProcurementStatusConfig procurementStatusConfig(String status) {
     case 'hod_approved':
       return const ProcurementStatusConfig(
           AppColors.info, Icons.thumb_up_outlined, 'HOD Approved');
+    case 'hod_rejected':
+      return const ProcurementStatusConfig(
+          AppColors.danger, Icons.person_off_outlined, 'HOD Rejected');
     case 'budget_reserved':
       return const ProcurementStatusConfig(
           AppColors.info, Icons.account_balance_outlined, 'Budget Reserved');
@@ -63,7 +66,7 @@ ProcurementStatusConfig procurementStatusConfig(String status) {
           AppColors.primary, Icons.compare_outlined, 'Evaluated');
     case 'awarded':
       return const ProcurementStatusConfig(
-          AppColors.success, Icons.emoji_events_outlined, 'Awarded');
+          AppColors.info, Icons.emoji_events_outlined, 'Awarded');
     case 'po_issued':
       return const ProcurementStatusConfig(
           AppColors.success, Icons.receipt_long_outlined, 'PO Issued');

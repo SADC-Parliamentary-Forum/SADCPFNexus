@@ -67,7 +67,7 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
             ) : null}
             <Link href="/salary-advances/create" className="btn-primary text-sm">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              Apply for Salary Advance
+              Request Advance
             </Link>
           </>
         }

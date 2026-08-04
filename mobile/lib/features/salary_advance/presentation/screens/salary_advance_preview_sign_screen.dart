@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart' show AppDateFormatter;
+import '../../data/salary_advance_helpers.dart';
 
 class SalaryAdvancePreviewSignScreen extends ConsumerStatefulWidget {
   const SalaryAdvancePreviewSignScreen({super.key, this.requestId});
@@ -164,8 +165,8 @@ class _SalaryAdvancePreviewSignScreenState
               recoveryDate != null && recoveryDate.isNotEmpty
                   ? 'Payroll month ending $recoveryDate'
                   : 'Next applicable payroll month',
-              '$currency ${amount.toStringAsFixed(2)}',
-              '$currency 0.00',
+              formatSaCurrency(amount, currency: currency),
+              formatSaCurrency(0, currency: currency),
             ),
           ]
         : _buildSchedule(amount, months, monthly, currency);
@@ -213,11 +214,11 @@ class _SalaryAdvancePreviewSignScreenState
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _row('Reference', ref_),
             _row('Purpose', purpose.isEmpty ? advanceType : purpose),
-            _row('Amount Requested', '$currency ${amount.toStringAsFixed(2)}'),
+            _row('Amount Requested', formatSaCurrency(amount, currency: currency)),
             _row('Recovery', isFullEom ? 'Full amount — one payroll month' : '$months months'),
             _row(
               isFullEom ? 'Payroll Deduction' : 'Monthly Deduction',
-              '$currency ${(isFullEom ? amount : monthly).toStringAsFixed(2)}',
+              formatSaCurrency(isFullEom ? amount : monthly, currency: currency),
             ),
           ]),
         ),
@@ -285,7 +286,7 @@ class _SalaryAdvancePreviewSignScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total Repayment:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
-                  Text('$currency ${amount.toStringAsFixed(2)}',
+                  Text(formatSaCurrency(amount, currency: currency),
                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0BAE5E))),
                 ],
               ),
@@ -352,7 +353,7 @@ class _SalaryAdvancePreviewSignScreenState
               padding: const EdgeInsets.only(top: 10),
               child: Text(
                 isFullEom
-                    ? 'I authorise the Finance Department to deduct the full advance of $currency ${amount.toStringAsFixed(2)} from my salary in the applicable payroll month. This consent is digitally logged.'
+                    ? 'I authorise the Finance Department to deduct the full advance of ${formatSaCurrency(amount, currency: currency)} from my salary in the applicable payroll month. This consent is digitally logged.'
                     : 'I acknowledge that deductions will be made automatically from my salary for the duration of the repayment term.',
                 style: const TextStyle(fontSize: 13, color: Color(0xFF444444), height: 1.4),
               ),
@@ -402,8 +403,8 @@ class _SalaryAdvancePreviewSignScreenState
       final balance = remaining < 0.01 ? 0.0 : remaining;
       result.add((
         '${date.month == 1 ? 'January' : date.month == 2 ? 'February' : date.month == 3 ? 'March' : date.month == 4 ? 'April' : date.month == 5 ? 'May' : date.month == 6 ? 'June' : date.month == 7 ? 'July' : date.month == 8 ? 'August' : date.month == 9 ? 'September' : date.month == 10 ? 'October' : date.month == 11 ? 'November' : 'December'} ${date.year}',
-        '$currency ${monthly.toStringAsFixed(2)}',
-        '$currency ${balance.toStringAsFixed(2)}',
+        formatSaCurrency(monthly, currency: currency),
+        formatSaCurrency(balance, currency: currency),
       ));
     }
     return result;
