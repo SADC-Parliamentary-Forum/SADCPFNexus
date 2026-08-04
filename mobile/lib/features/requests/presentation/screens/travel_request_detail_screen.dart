@@ -74,7 +74,7 @@ class _TravelRequestDetailScreenState
       builder: (ctx) => AlertDialog(
         title: const Text('Withdraw request?'),
         content: const Text(
-          'This will delete the request if it is still in draft status.',
+          'Withdraw this travel request? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -93,7 +93,10 @@ class _TravelRequestDetailScreenState
 
     setState(() => _withdrawing = true);
     try {
-      await ref.read(apiClientProvider).dio.delete('/travel/requests/$requestId');
+      await ref
+          .read(apiClientProvider)
+          .dio
+          .post('/travel/requests/$requestId/withdraw');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -106,7 +109,7 @@ class _TravelRequestDetailScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Only draft requests can be withdrawn.'),
+          content: Text('Failed to withdraw travel request.'),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -220,6 +223,10 @@ class _TravelRequestDetailScreenState
   ) {
     final status = request['status']?.toString();
     final statusColor = _statusColor(status, c);
+    final approvalRequest = request['approval_request'];
+    final approvalStatus =
+        approvalRequest is Map ? approvalRequest['status']?.toString() : null;
+    final canWithdraw = status == 'submitted' && approvalStatus == 'pending';
     final itineraries = (request['itineraries'] as List<dynamic>? ?? [])
         .map((e) => e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{})
         .toList();
@@ -380,34 +387,36 @@ class _TravelRequestDetailScreenState
               const SizedBox(height: 8),
             ]),
           ],
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 48,
-            child: OutlinedButton.icon(
-              onPressed: _withdrawing ? null : _withdraw,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: c.error,
-                side: BorderSide(color: c.error),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(kStitchCardRoundness),
+          if (canWithdraw) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _withdrawing ? null : _withdraw,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: c.error,
+                  side: BorderSide(color: c.error),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(kStitchCardRoundness),
+                  ),
+                ),
+                icon: _withdrawing
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: c.error,
+                        ),
+                      )
+                    : const Icon(Icons.cancel_outlined, size: 16),
+                label: Text(
+                  _withdrawing ? 'Withdrawing...' : 'Withdraw Request',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-              icon: _withdrawing
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: c.error,
-                      ),
-                    )
-                  : const Icon(Icons.cancel_outlined, size: 16),
-              label: Text(
-                _withdrawing ? 'Withdrawing...' : 'Withdraw Request',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
             ),
-          ),
+          ],
           const SizedBox(height: 32),
         ],
       ),

@@ -32,13 +32,17 @@ function isHOD(user: { roles?: string[] } | null): boolean {
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"       },
-  submitted:               { label: "Pending Review",         cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"            },
+  submitted:               { label: "Pending HOD",            cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "pending"            },
   hod_approved:            { label: "HOD Approved",           cls: "text-teal-700 bg-teal-50 border-teal-200",           icon: "supervisor_account" },
   hod_rejected:            { label: "HOD Rejected",           cls: "text-red-700 bg-red-50 border-red-200",              icon: "person_off"         },
   budget_reserved:         { label: "Budget Reserved",        cls: "text-indigo-700 bg-indigo-50 border-indigo-200",     icon: "savings"            },
+  rfq_issued:              { label: "RFQ Issued",             cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "send"               },
+  evaluated:               { label: "Evaluated",              cls: "text-purple-700 bg-purple-50 border-purple-200",     icon: "compare"            },
   rejected:                { label: "Rejected",               cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"             },
   draft:                   { label: "Draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"          },
   awarded:                 { label: "Awarded",                cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"       },
+  po_issued:               { label: "PO Issued",              cls: "text-green-700 bg-green-50 border-green-200",        icon: "receipt_long"       },
+  completed:               { label: "Completed",              cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle"       },
   returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200",       icon: "undo"               },
   withdrawn:               { label: "Withdrawn",              cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block"              },
 };
