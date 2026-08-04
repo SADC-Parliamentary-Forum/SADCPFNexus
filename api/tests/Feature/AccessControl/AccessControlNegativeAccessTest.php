@@ -398,4 +398,15 @@ class AccessControlNegativeAccessTest extends TestCase
             'reason' => 'Retired version must be rejected',
         ])->assertStatus(422);
     }
+
+    public function test_legacy_role_permission_sync_cannot_bypass_catalogue(): void
+    {
+        $admin = $this->makeUser('System Admin');
+        $role = \Spatie\Permission\Models\Role::findByName('General Employee', 'sanctum');
+
+        Sanctum::actingAs($admin);
+        $this->putJson("/api/v1/admin/roles/{$role->id}/permissions", [
+            'permissions' => ['dashboard.view'],
+        ])->assertStatus(409);
+    }
 }

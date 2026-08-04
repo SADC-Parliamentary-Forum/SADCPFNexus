@@ -3,13 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
-use App\Models\User;
-use App\Models\UserSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use App\Modules\AccessControl\Services\CanonicalRoleManager;
@@ -17,8 +12,6 @@ use App\Modules\AccessControl\Services\CanonicalRoleManager;
 class RolesController extends Controller
 {
     private const GUARD = 'sanctum';
-
-    private const PROTECTED_ROLES = ['System Admin', 'System Administrator', 'super-admin'];
 
     /**
      * @OA\Get(path="/api/v1/admin/roles", summary="List all roles with permissions", tags={"Admin - Roles"}, security={{"sanctum":{}}})
@@ -66,30 +59,7 @@ class RolesController extends Controller
             abort(403);
         }
 
-        $data = $request->validate([
-            'name'          => ['required', 'string', 'max:100', 'unique:roles,name'],
-            'permissions'   => ['array'],
-            'permissions.*' => ['string', 'exists:permissions,name'],
-        ]);
-
-        if (! app(CanonicalRoleManager::class)->isAssignableRole($data['name'])) {
-            throw ValidationException::withMessages([
-                'name' => ['Create or publish roles through the governed access catalogue.'],
-            ]);
-        }
-
-        $role = Role::create(['name' => $data['name'], 'guard_name' => self::GUARD]);
-
-        if (!empty($data['permissions'])) {
-            $role->syncPermissions($data['permissions']);
-        }
-
-        AuditLog::record('role.created', [
-            'new_values' => ['name' => $role->name, 'permissions' => $data['permissions'] ?? []],
-            'tags'       => 'rbac',
-        ]);
-
-        return response()->json(['message' => 'Role created.', 'data' => $role->load('permissions')], 201);
+        return $this->canonicalMutationRequired();
     }
 
     /**
@@ -101,37 +71,7 @@ class RolesController extends Controller
             abort(403);
         }
 
-        $data = $request->validate([
-            'permissions'   => ['required', 'array'],
-            'permissions.*' => ['string', 'exists:permissions,name'],
-        ]);
-
-        $old = $role->permissions->pluck('name')->toArray();
-        $role->syncPermissions($data['permissions']);
-
-        $affectedUserIds = User::role($role->name)->pluck('id');
-        if ($affectedUserIds->isNotEmpty()) {
-            \Laravel\Sanctum\PersonalAccessToken::where('tokenable_type', User::class)
-                ->whereIn('tokenable_id', $affectedUserIds)
-                ->delete();
-            UserSession::whereIn('user_id', $affectedUserIds)->delete();
-        }
-
-        AuditLog::record('role.permissions_synced', [
-            'auditable_type' => Role::class,
-            'auditable_id'   => $role->id,
-            'old_values'     => ['permissions' => $old],
-            'new_values'     => [
-                'permissions' => $data['permissions'],
-                'revoked_user_sessions' => $affectedUserIds->count(),
-            ],
-            'tags'           => 'rbac',
-        ]);
-
-        return response()->json([
-            'message' => 'Role permissions updated.',
-            'data'    => $role->fresh('permissions'),
-        ]);
+        return $this->canonicalMutationRequired();
     }
 
     /**
@@ -143,25 +83,7 @@ class RolesController extends Controller
             abort(403);
         }
 
-        $data = $request->validate([
-            'name' => [
-                'required', 'string', 'max:100',
-                Rule::unique('roles', 'name')
-                    ->where('guard_name', $role->guard_name)
-                    ->ignore($role->id),
-            ],
-        ]);
-
-        $role->update(['name' => $data['name']]);
-
-        AuditLog::record('role.updated', [
-            'auditable_type' => Role::class,
-            'auditable_id'   => $role->id,
-            'new_values'     => ['name' => $role->name],
-            'tags'           => 'rbac',
-        ]);
-
-        return response()->json(['message' => 'Role updated.', 'data' => $role->fresh('permissions')]);
+        return $this->canonicalMutationRequired();
     }
 
     /**
@@ -173,21 +95,11 @@ class RolesController extends Controller
             abort(403);
         }
 
-        if (in_array($role->name, self::PROTECTED_ROLES, true)) {
-            throw ValidationException::withMessages([
-                'role' => ['This role cannot be deleted.'],
-            ]);
-        }
+        return $this->canonicalMutationRequired();
+    }
 
-        $role->delete();
-
-        AuditLog::record('role.deleted', [
-            'auditable_type' => Role::class,
-            'auditable_id'   => $role->id,
-            'old_values'     => ['name' => $role->name],
-            'tags'           => 'rbac',
-        ]);
-
-        return response()->json(['message' => 'Role deleted.']);
+    private function canonicalMutationRequired(): JsonResponse
+    {
+        abort(409, 'Direct role mutation is disabled. Create, review, publish, retire, and assign roles through the governed Access Control catalogue.');
     }
 }
