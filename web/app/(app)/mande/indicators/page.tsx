@@ -145,13 +145,15 @@ export default function IndicatorsPage() {
                       </button>
                       <button
                         onClick={async () => {
+                          if (delMut.isPending) return;
                           if (await confirm({ title: "Delete indicator", message: "Delete this indicator?", variant: "danger" })) {
                             delMut.mutate(ind.id);
                           }
                         }}
-                        className="text-red-500 text-xs hover:underline"
+                        disabled={delMut.isPending}
+                        className="text-red-500 text-xs hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        Delete
+                        {delMut.isPending ? "Deleting…" : "Delete"}
                       </button>
                     </td>
                   </tr>
@@ -168,7 +170,7 @@ export default function IndicatorsPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="font-semibold text-neutral-800">{modal.id ? "Edit Indicator" : "New Indicator"}</h2>
-              <button onClick={() => setModal(null)} className="text-neutral-400 hover:text-neutral-700"><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setModal(null)} aria-label="Close" className="text-neutral-400 hover:text-neutral-700"><span className="material-symbols-outlined">close</span></button>
             </div>
             <div className="p-5 space-y-4">
               <div>

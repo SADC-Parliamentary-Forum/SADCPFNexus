@@ -162,8 +162,9 @@ export default function BudgetControlPage() {
                   </td>
                 </tr>
               ) : (
-                lines.map((line) => {
+                lines.map((line, idx) => {
                   const avail = availabilityById[line.id];
+                  const wasChecked = idx < 40;
                   return (
                     <tr key={line.id} className="hover:bg-neutral-50/50">
                       <td className="font-mono text-sm">{line.code ?? `BL-${line.id}`}</td>
@@ -173,7 +174,9 @@ export default function BudgetControlPage() {
                       <td className="text-right">{avail ? money(avail.actual) : "—"}</td>
                       <td className="text-right">{avail ? money(avail.commitments) : "—"}</td>
                       <td className={`text-right font-semibold ${avail && avail.available < 0 ? "text-red-600" : "text-emerald-700"}`}>
-                        {avail ? money(avail.available) : "…"}
+                        {avail ? money(avail.available) : wasChecked ? "…" : (
+                          <span className="text-xs font-normal italic text-neutral-400">Not loaded</span>
+                        )}
                       </td>
                     </tr>
                   );

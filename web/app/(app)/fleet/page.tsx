@@ -92,7 +92,7 @@ export default function FleetListPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <ModulePageHeader
         title="Fleet"
-        subtitle="Ops layer on Fixed Assets with category fleet — vehicles, drivers roster, and booking calendar.\r\n          GPS uses a pluggable telematics provider when configu"
+        subtitle="Ops layer on Fixed Assets with category fleet — vehicles, drivers roster, and booking calendar. GPS uses a pluggable telematics provider when configured, or a manual override otherwise."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Fleet" }]} />}
       />
 
@@ -112,9 +112,9 @@ export default function FleetListPage() {
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       {tab === "vehicles" && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
           <table className="min-w-full text-sm">
-            <thead className="bg-neutral-50 text-left text-neutral-600">
+            <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
               <tr>
                 <th className="px-3 py-2 font-medium">Code</th>
                 <th className="px-3 py-2 font-medium">Name</th>
@@ -124,12 +124,12 @@ export default function FleetListPage() {
             </thead>
             <tbody>
               {vehicles.map((v) => (
-                <tr key={v.id} className="border-t border-neutral-100">
+                <tr key={v.id} className="border-t border-neutral-100 dark:border-neutral-800 dark:text-neutral-200">
                   <td className="px-3 py-3 font-medium">{v.asset_code}</td>
                   <td className="px-3 py-3">{v.name}</td>
                   <td className="px-3 py-3">{v.status}</td>
                   <td className="px-3 py-3 text-right">
-                    <Link href={`/fleet/${v.id}`} className="text-blue-700 underline">
+                    <Link href={`/fleet/${v.id}`} className="text-blue-700 underline dark:text-blue-400">
                       Open
                     </Link>
                   </td>
@@ -137,7 +137,7 @@ export default function FleetListPage() {
               ))}
               {vehicles.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-neutral-500">
+                  <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">
                     {vehiclesQuery.isLoading ? "Loading fleet vehicles…" : "No fleet vehicles found."}
                   </td>
                 </tr>
@@ -149,7 +149,7 @@ export default function FleetListPage() {
 
       {tab === "drivers" && (
         <div className="space-y-4">
-          <form onSubmit={onDriver} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3">
+          <form onSubmit={onDriver} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-3">
             <label className="space-y-1">
               <span className="text-sm font-medium">User ID</span>
               <input className="input w-full" required value={driverUserId} onChange={(e) => setDriverUserId(e.target.value)} />
@@ -164,9 +164,9 @@ export default function FleetListPage() {
               </button>
             </div>
           </form>
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
             <table className="min-w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-neutral-600">
+              <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Driver</th>
                   <th className="px-3 py-2 font-medium">Licence</th>
@@ -176,7 +176,7 @@ export default function FleetListPage() {
               </thead>
               <tbody>
                 {drivers.map((d) => (
-                  <tr key={d.id} className="border-t border-neutral-100">
+                  <tr key={d.id} className="border-t border-neutral-100 dark:border-neutral-800 dark:text-neutral-200">
                     <td className="px-3 py-3">{d.user?.name ?? `User #${d.user_id}`}</td>
                     <td className="px-3 py-3">{d.licence_number ?? "—"}</td>
                     <td className="px-3 py-3">{d.licence_expires_on ?? "—"}</td>
@@ -185,7 +185,7 @@ export default function FleetListPage() {
                 ))}
                 {drivers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-neutral-500">No drivers on roster yet.</td>
+                    <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">No drivers on roster yet.</td>
                   </tr>
                 )}
               </tbody>
@@ -196,7 +196,7 @@ export default function FleetListPage() {
 
       {tab === "calendar" && (
         <div className="space-y-4">
-          <form onSubmit={onBooking} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2">
+          <form onSubmit={onBooking} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-2">
             <label className="space-y-1">
               <span className="text-sm font-medium">Vehicle</span>
               <select className="input w-full" required value={bookingAssetId} onChange={(e) => setBookingAssetId(e.target.value)}>
@@ -226,9 +226,9 @@ export default function FleetListPage() {
               </button>
             </div>
           </form>
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
             <table className="min-w-full text-sm">
-              <thead className="bg-neutral-50 text-left text-neutral-600">
+              <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Vehicle</th>
                   <th className="px-3 py-2 font-medium">Start</th>
@@ -239,7 +239,7 @@ export default function FleetListPage() {
               </thead>
               <tbody>
                 {calendarRows.map((b) => (
-                  <tr key={b.id} className="border-t border-neutral-100">
+                  <tr key={b.id} className="border-t border-neutral-100 dark:border-neutral-800 dark:text-neutral-200">
                     <td className="px-3 py-3">{b.asset?.asset_code ?? b.asset_id}</td>
                     <td className="px-3 py-3">{new Date(b.starts_at).toLocaleString()}</td>
                     <td className="px-3 py-3">{new Date(b.ends_at).toLocaleString()}</td>
@@ -249,7 +249,7 @@ export default function FleetListPage() {
                 ))}
                 {calendarRows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-neutral-500">No bookings yet.</td>
+                    <td colSpan={5} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">No bookings yet.</td>
                   </tr>
                 )}
               </tbody>

@@ -268,11 +268,26 @@ export default function FleetVehicleDetailPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <section className="card space-y-2 p-4">
               <h2 className="font-semibold">Log trip</h2>
-              <input className="input" type="datetime-local" value={trip.started_at} onChange={(e) => setTrip({ ...trip, started_at: e.target.value })} />
-              <input className="input" type="datetime-local" value={trip.ended_at} onChange={(e) => setTrip({ ...trip, ended_at: e.target.value })} />
-              <input className="input" placeholder="Start odometer km" value={trip.start_odometer_km} onChange={(e) => setTrip({ ...trip, start_odometer_km: e.target.value })} />
-              <input className="input" placeholder="End odometer km" value={trip.end_odometer_km} onChange={(e) => setTrip({ ...trip, end_odometer_km: e.target.value })} />
-              <input className="input" placeholder="Purpose" value={trip.purpose} onChange={(e) => setTrip({ ...trip, purpose: e.target.value })} />
+              <label className="block space-y-1" htmlFor="trip-started-at">
+                <span className="text-sm font-medium">Started at</span>
+                <input id="trip-started-at" className="input w-full" type="datetime-local" value={trip.started_at} onChange={(e) => setTrip({ ...trip, started_at: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="trip-ended-at">
+                <span className="text-sm font-medium">Ended at</span>
+                <input id="trip-ended-at" className="input w-full" type="datetime-local" value={trip.ended_at} onChange={(e) => setTrip({ ...trip, ended_at: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="trip-start-odometer">
+                <span className="text-sm font-medium">Start odometer km</span>
+                <input id="trip-start-odometer" className="input w-full" type="number" min="0" placeholder="Start odometer km" value={trip.start_odometer_km} onChange={(e) => setTrip({ ...trip, start_odometer_km: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="trip-end-odometer">
+                <span className="text-sm font-medium">End odometer km</span>
+                <input id="trip-end-odometer" className="input w-full" type="number" min="0" placeholder="End odometer km" value={trip.end_odometer_km} onChange={(e) => setTrip({ ...trip, end_odometer_km: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="trip-purpose">
+                <span className="text-sm font-medium">Purpose</span>
+                <input id="trip-purpose" className="input w-full" placeholder="Purpose" value={trip.purpose} onChange={(e) => setTrip({ ...trip, purpose: e.target.value })} />
+              </label>
               <button type="button" className="btn-primary" disabled={createTrip.isPending || !trip.started_at} onClick={() => createTrip.mutate()}>
                 Save trip
               </button>
@@ -280,11 +295,26 @@ export default function FleetVehicleDetailPage() {
 
             <section className="card space-y-2 p-4">
               <h2 className="font-semibold">Log fuel</h2>
-              <input className="input" type="datetime-local" value={fuel.logged_at} onChange={(e) => setFuel({ ...fuel, logged_at: e.target.value })} />
-              <input className="input" placeholder="Litres" value={fuel.litres} onChange={(e) => setFuel({ ...fuel, litres: e.target.value })} />
-              <input className="input" placeholder="Cost (NAD)" value={fuel.cost_amount} onChange={(e) => setFuel({ ...fuel, cost_amount: e.target.value })} />
-              <input className="input" placeholder="Odometer km" value={fuel.odometer_km} onChange={(e) => setFuel({ ...fuel, odometer_km: e.target.value })} />
-              <input className="input" placeholder="Station" value={fuel.station} onChange={(e) => setFuel({ ...fuel, station: e.target.value })} />
+              <label className="block space-y-1" htmlFor="fuel-logged-at">
+                <span className="text-sm font-medium">Logged at</span>
+                <input id="fuel-logged-at" className="input w-full" type="datetime-local" value={fuel.logged_at} onChange={(e) => setFuel({ ...fuel, logged_at: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="fuel-litres">
+                <span className="text-sm font-medium">Litres</span>
+                <input id="fuel-litres" className="input w-full" type="number" min="0" placeholder="Litres" value={fuel.litres} onChange={(e) => setFuel({ ...fuel, litres: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="fuel-cost">
+                <span className="text-sm font-medium">Cost (NAD)</span>
+                <input id="fuel-cost" className="input w-full" type="number" min="0" placeholder="Cost (NAD)" value={fuel.cost_amount} onChange={(e) => setFuel({ ...fuel, cost_amount: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="fuel-odometer">
+                <span className="text-sm font-medium">Odometer km</span>
+                <input id="fuel-odometer" className="input w-full" type="number" min="0" placeholder="Odometer km" value={fuel.odometer_km} onChange={(e) => setFuel({ ...fuel, odometer_km: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="fuel-station">
+                <span className="text-sm font-medium">Station</span>
+                <input id="fuel-station" className="input w-full" placeholder="Station" value={fuel.station} onChange={(e) => setFuel({ ...fuel, station: e.target.value })} />
+              </label>
               <button type="button" className="btn-primary" disabled={createFuel.isPending || !fuel.logged_at || !fuel.litres} onClick={() => createFuel.mutate()}>
                 Save fuel
               </button>
@@ -292,11 +322,26 @@ export default function FleetVehicleDetailPage() {
 
             <section className="card space-y-2 p-4">
               <h2 className="font-semibold">Service schedule</h2>
-              <input className="input" placeholder="Service type" value={service.service_type} onChange={(e) => setService({ ...service, service_type: e.target.value })} />
-              <input className="input" placeholder="Interval km" value={service.interval_km} onChange={(e) => setService({ ...service, interval_km: e.target.value })} />
-              <input className="input" placeholder="Interval days" value={service.interval_days} onChange={(e) => setService({ ...service, interval_days: e.target.value })} />
-              <input className="input" type="date" value={service.last_service_at} onChange={(e) => setService({ ...service, last_service_at: e.target.value })} />
-              <input className="input" placeholder="Last service odometer" value={service.last_service_odometer_km} onChange={(e) => setService({ ...service, last_service_odometer_km: e.target.value })} />
+              <label className="block space-y-1" htmlFor="service-type">
+                <span className="text-sm font-medium">Service type</span>
+                <input id="service-type" className="input w-full" placeholder="Service type" value={service.service_type} onChange={(e) => setService({ ...service, service_type: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="service-interval-km">
+                <span className="text-sm font-medium">Interval km</span>
+                <input id="service-interval-km" className="input w-full" type="number" min="0" placeholder="Interval km" value={service.interval_km} onChange={(e) => setService({ ...service, interval_km: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="service-interval-days">
+                <span className="text-sm font-medium">Interval days</span>
+                <input id="service-interval-days" className="input w-full" type="number" min="0" placeholder="Interval days" value={service.interval_days} onChange={(e) => setService({ ...service, interval_days: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="service-last-service-at">
+                <span className="text-sm font-medium">Last service date</span>
+                <input id="service-last-service-at" className="input w-full" type="date" value={service.last_service_at} onChange={(e) => setService({ ...service, last_service_at: e.target.value })} />
+              </label>
+              <label className="block space-y-1" htmlFor="service-last-odometer">
+                <span className="text-sm font-medium">Last service odometer</span>
+                <input id="service-last-odometer" className="input w-full" type="number" min="0" placeholder="Last service odometer" value={service.last_service_odometer_km} onChange={(e) => setService({ ...service, last_service_odometer_km: e.target.value })} />
+              </label>
               <button type="button" className="btn-primary" disabled={createService.isPending} onClick={() => createService.mutate()}>
                 Save schedule
               </button>

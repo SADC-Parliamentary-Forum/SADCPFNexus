@@ -159,7 +159,7 @@ export default function ResultsFrameworksPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="font-semibold text-neutral-800">{modal.id ? "Edit Framework" : "New Framework"}</h2>
-              <button type="button" onClick={() => setModal(null)} className="text-neutral-400 hover:text-neutral-700">
+              <button type="button" onClick={() => setModal(null)} aria-label="Close" className="text-neutral-400 hover:text-neutral-700">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -193,7 +193,16 @@ export default function ResultsFrameworksPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
-                  <input type="date" className="form-input" value={modal.end_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, end_date: e.target.value })} />
+                  <input
+                    type="date"
+                    className="form-input"
+                    min={modal.start_date?.slice(0, 10) ?? undefined}
+                    value={modal.end_date?.slice(0, 10) ?? ""}
+                    onChange={(e) => setModal({ ...modal, end_date: e.target.value })}
+                  />
+                  {modal.start_date && modal.end_date && modal.end_date < modal.start_date && (
+                    <p className="mt-1 text-xs text-red-600">End date cannot be before the start date.</p>
+                  )}
                 </div>
               </div>
               <div>
