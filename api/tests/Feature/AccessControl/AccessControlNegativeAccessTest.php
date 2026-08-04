@@ -373,4 +373,29 @@ class AccessControlNegativeAccessTest extends TestCase
         $this->getJson('/api/v1/procurement/tenders')->assertStatus(403);
         $this->getJson('/api/v1/procurement/settings')->assertStatus(403);
     }
+
+    public function test_retired_role_version_cannot_be_assigned(): void
+    {
+        $admin = $this->makeUser('Security and Access Administrator');
+        $target = $this->makeUser('staff', $admin->tenant);
+        $catalogue = \App\Models\AccessControl\AccessRoleCatalogue::create([
+            'tenant_id' => null,
+            'key' => 'temporary_read_only',
+            'name' => 'Temporary Read Only',
+            'status' => 'active',
+            'risk_level' => 'low',
+            'default_scopes' => ['self'],
+        ]);
+        $version = \App\Models\AccessControl\AccessRoleVersion::create([
+            'role_catalogue_id' => $catalogue->id,
+            'version' => 1,
+            'status' => 'retired',
+            'permissions' => ['dashboard.view'],
+        ]);
+
+        Sanctum::actingAs($admin);
+        $this->postJson("/api/v1/admin/access/users/{$target->id}/role-versions/{$version->id}", [
+            'reason' => 'Retired version must be rejected',
+        ])->assertStatus(422);
+    }
 }

@@ -14,6 +14,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class RoleCatalogueService
 {
@@ -99,6 +100,41 @@ class RoleCatalogueService
 
     public function assignRoleVersion(User $target, AccessRoleVersion $version, array $data, User $actor): AccessRoleAssignment
     {
+        $version->loadMissing('catalogue');
+
+        if ($version->status !== 'active' || ! $version->catalogue || $version->catalogue->status !== 'active') {
+            throw ValidationException::withMessages([
+                'role' => ['Only an active, published role version may be assigned.'],
+            ]);
+        }
+
+        if ((int) $target->tenant_id !== (int) $actor->tenant_id) {
+            throw ValidationException::withMessages([
+                'user' => ['The target user must belong to the same tenant as the assigning administrator.'],
+            ]);
+        }
+
+        $catalogueTenant = $version->catalogue->tenant_id;
+        if ($catalogueTenant !== null && (int) $catalogueTenant !== (int) $target->tenant_id) {
+            throw ValidationException::withMessages([
+                'role' => ['This role is not available in the target user tenant.'],
+            ]);
+        }
+
+        $scopeType = (string) ($data['scope_type'] ?? 'organisation');
+        if (! in_array($scopeType, config('access_control.scopes', []), true)) {
+            throw ValidationException::withMessages([
+                'scope_type' => ['The selected role scope is not registered.'],
+            ]);
+        }
+
+        if (! empty($data['valid_from']) && ! empty($data['valid_until'])
+            && strtotime((string) $data['valid_until']) < strtotime((string) $data['valid_from'])) {
+            throw ValidationException::withMessages([
+                'valid_until' => ['The role expiry must be after the role start date.'],
+            ]);
+        }
+
         $sod = $this->sod->evaluate($actor, 'admin.roles.assign', null, [
             'target_user_id' => $target->id,
             'is_privileged' => in_array($version->catalogue?->risk_level, ['high', 'critical'], true),
