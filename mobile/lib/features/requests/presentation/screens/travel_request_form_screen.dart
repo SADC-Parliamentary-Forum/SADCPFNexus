@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,45 @@ import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/stitch_buttons.dart';
 import '../../data/travel_locations.dart';
+
+// ─────────────────────────────────────────────────────────────
+//  SUPPORTING DOCUMENTS — mirrors web `TRAVEL_DOCUMENT_TYPES` /
+//  `REQUIRED_ON_SUBMIT` (web/app/(app)/travel/create/page.tsx).
+// ─────────────────────────────────────────────────────────────
+const List<String> _requiredTravelDocTypes = ['invitation', 'agenda'];
+
+const List<(String, String)> _travelDocumentTypes = [
+  ('invitation', 'Invitation Letter'),
+  ('agenda', 'Agenda / Programme'),
+  ('concept_note', 'Concept Note'),
+  ('approved_pif', 'Approved PIF'),
+  ('travel_itinerary', 'Travel Itinerary'),
+  ('visa_copy', 'Visa Copy'),
+  ('flight_ticket', 'Flight Ticket'),
+  ('hotel_booking', 'Hotel Booking'),
+  ('travel_insurance', 'Travel Insurance'),
+  ('donor_correspondence', 'Donor Correspondence'),
+  ('funding_confirmation', 'Funding Confirmation'),
+  ('mission_report', 'Mission Report'),
+  ('receipt', 'Receipt'),
+  ('other', 'Other'),
+];
+
+String _travelDocLabel(String type) => _travelDocumentTypes
+    .firstWhere((t) => t.$1 == type, orElse: () => (type, type))
+    .$2;
+
+class _PendingTravelAttachment {
+  _PendingTravelAttachment({
+    required this.path,
+    required this.name,
+    required this.documentType,
+  });
+
+  final String path;
+  final String name;
+  final String documentType;
+}
 
 // ─────────────────────────────────────────────────────────────
 //  MODEL
@@ -74,10 +115,22 @@ class TravelRequestFormScreen extends ConsumerStatefulWidget {
 class _TravelRequestFormScreenState
     extends ConsumerState<TravelRequestFormScreen> {
   final _form = _TravelFormData();
-  int _step = 0; // 0=Mission, 1=Funding, 2=Itinerary, 3=Review
+  final List<_PendingTravelAttachment> _pendingAttachments = [];
+  int _step = 0; // 0=Mission, 1=Funding, 2=Itinerary, 3=Documents, 4=Review
   bool _submitting = false;
 
-  static const _stepLabels = ['Mission', 'Funding', 'Itinerary', 'Review'];
+  static const _stepLabels = [
+    'Mission',
+    'Funding',
+    'Itinerary',
+    'Documents',
+    'Review'
+  ];
+
+  List<String> _missingRequiredDocs() {
+    final attached = _pendingAttachments.map((a) => a.documentType).toSet();
+    return _requiredTravelDocTypes.where((t) => !attached.contains(t)).toList();
+  }
 
   @override
   void initState() {
@@ -129,10 +182,53 @@ class _TravelRequestFormScreenState
 
   // ── Submit ──────────────────────────────────────────────────
   Future<void> _submit() async {
+    final missing = _missingRequiredDocs();
+    if (missing.isNotEmpty) {
+      setState(() => _step = 3);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Attach required documents before submit: ${missing.map(_travelDocLabel).join(", ")}.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final dio = ref.read(apiClientProvider).dio;
-      await dio.post('/travel/requests', data: _buildPayload());
+      final response =
+          await dio.post('/travel/requests', data: _buildPayload());
+      final body = response.data;
+      final createdId = body is Map
+          ? ((body['data'] is Map ? body['data']['id'] : null) ?? body['id'])
+          : null;
+
+      if (createdId != null && _pendingAttachments.isNotEmpty) {
+        try {
+          for (final att in _pendingAttachments) {
+            final form = FormData.fromMap({
+              'file': await MultipartFile.fromFile(att.path,
+                  filename: att.name),
+              'document_type': att.documentType,
+            });
+            await dio.post('/travel/requests/$createdId/attachments',
+                data: form);
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Request #$createdId was submitted, but a document failed to upload. Attach it from the request detail screen.'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+        }
+      }
+
       if (!mounted) return;
       if (widget.draftId != null) {
         try {
@@ -337,9 +433,19 @@ class _TravelRequestFormScreenState
           onChanged: () => setState(() {}),
           onNext: _form.step3Valid ? () => setState(() => _step = 3) : null,
         );
+      case 3:
+        return _Step4Documents(
+          attachments: _pendingAttachments,
+          missingRequired: _missingRequiredDocs(),
+          onChanged: () => setState(() {}),
+          onNext: _missingRequiredDocs().isEmpty
+              ? () => setState(() => _step = 4)
+              : null,
+        );
       default:
-        return _Step4Review(
+        return _Step5Review(
           form: _form,
+          attachments: _pendingAttachments,
           submitting: _submitting,
           onSubmit: _submit,
           onEdit: (s) => setState(() => _step = s),
@@ -1748,16 +1854,252 @@ class _Step3ItineraryState extends State<_Step3Itinerary> {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  STEP 4 – REVIEW & SUBMIT
+//  STEP 4 – SUPPORTING DOCUMENTS
 // ─────────────────────────────────────────────────────────────
-class _Step4Review extends StatelessWidget {
+class _Step4Documents extends StatefulWidget {
+  final List<_PendingTravelAttachment> attachments;
+  final List<String> missingRequired;
+  final VoidCallback onChanged;
+  final VoidCallback? onNext;
+
+  const _Step4Documents({
+    required this.attachments,
+    required this.missingRequired,
+    required this.onChanged,
+    required this.onNext,
+  });
+
+  @override
+  State<_Step4Documents> createState() => _Step4DocumentsState();
+}
+
+class _Step4DocumentsState extends State<_Step4Documents> {
+  String _selectedType = _requiredTravelDocTypes.first;
+
+  Future<void> _pickFile() async {
+    final result =
+        await FilePicker.platform.pickFiles(allowMultiple: false, type: FileType.any);
+    final file = result?.files.single;
+    if (file == null || file.path == null) return;
+    widget.attachments.add(_PendingTravelAttachment(
+      path: file.path!,
+      name: file.name,
+      documentType: _selectedType,
+    ));
+    widget.onChanged();
+  }
+
+  void _removeAttachment(_PendingTravelAttachment att) {
+    widget.attachments.remove(att);
+    widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 8),
+            children: [
+              const _HeroBanner(
+                stepNumber: 4,
+                title: 'Supporting Documents',
+                subtitle:
+                    'Attach the invitation letter and agenda before you can submit.',
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _requiredTravelDocTypes.map((type) {
+                        final ok = widget.attachments
+                            .any((a) => a.documentType == type);
+                        final chipColor = ok ? c.primary : c.error;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: chipColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: chipColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                  ok
+                                      ? Icons.check_circle
+                                      : Icons.error_outline,
+                                  size: 14,
+                                  color: chipColor),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${_travelDocLabel(type)}${ok ? '' : ' required'}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: chipColor),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Document Type',
+                        style: TextStyle(
+                            color: c.onSurface.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: c.surface,
+                        borderRadius: BorderRadius.circular(kStitchRoundness),
+                        border: Border.all(color: c.outline),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedType,
+                          isExpanded: true,
+                          dropdownColor: c.surface,
+                          iconEnabledColor: c.onSurface.withValues(alpha: 0.7),
+                          style: TextStyle(color: c.onSurface, fontSize: 13),
+                          items: _travelDocumentTypes
+                              .map((t) => DropdownMenuItem(
+                                    value: t.$1,
+                                    child: Text(t.$2),
+                                  ))
+                              .toList(),
+                          onChanged: (v) => setState(
+                              () => _selectedType = v ?? _selectedType),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _pickFile,
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: const Text('Add file'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: c.primary,
+                          side: BorderSide(
+                              color: c.primary.withValues(alpha: 0.4)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(kStitchRoundness)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (widget.attachments.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 28),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: c.outline),
+                        ),
+                        child: Text(
+                          'No documents selected yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: c.onSurface.withValues(alpha: 0.6),
+                              fontSize: 12),
+                        ),
+                      )
+                    else
+                      ...widget.attachments.map((att) => Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: c.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: c.outline),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.description_outlined,
+                                    size: 20, color: c.primary),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        att.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            color: c.onSurface,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                      Text(
+                                        _travelDocLabel(att.documentType),
+                                        style: TextStyle(
+                                            color: c.onSurface
+                                                .withValues(alpha: 0.6),
+                                            fontSize: 10),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.close,
+                                      size: 18,
+                                      color:
+                                          c.onSurface.withValues(alpha: 0.6)),
+                                  onPressed: () => _removeAttachment(att),
+                                ),
+                              ],
+                            ),
+                          )),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        _BottomBar(
+          leftLabel: 'REQUIRED DOCS',
+          leftValue:
+              '${_requiredTravelDocTypes.length - widget.missingRequired.length}/${_requiredTravelDocTypes.length}',
+          rightLabel: 'STATUS',
+          rightValue: widget.missingRequired.isEmpty ? 'Complete' : 'Missing',
+          ctaLabel: 'Review & Submit  →',
+          onCta: widget.onNext,
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  STEP 5 – REVIEW & SUBMIT
+// ─────────────────────────────────────────────────────────────
+class _Step5Review extends StatelessWidget {
   final _TravelFormData form;
+  final List<_PendingTravelAttachment> attachments;
   final bool submitting;
   final VoidCallback onSubmit;
   final ValueChanged<int> onEdit;
 
-  const _Step4Review({
+  const _Step5Review({
     required this.form,
+    required this.attachments,
     required this.submitting,
     required this.onSubmit,
     required this.onEdit,
@@ -1936,6 +2278,19 @@ class _Step4Review extends StatelessWidget {
                   _ReviewRow('Per Diem',
                       form.perDiemRequired ? 'Required' : 'Not required'),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // Section: Documents
+              _ReviewSection(
+                title: 'Supporting Documents',
+                onEdit: () => onEdit(3),
+                rows: attachments.isEmpty
+                    ? [const _ReviewRow('Attached', '—')]
+                    : attachments
+                        .map((a) => _ReviewRow(
+                            _travelDocLabel(a.documentType), a.name))
+                        .toList(),
               ),
               const SizedBox(height: 16),
 

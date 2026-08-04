@@ -106,22 +106,23 @@ class _SalaryAdvancePreviewSignScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        foregroundColor: Colors.black87,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        foregroundColor: c.onSurface,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () {
             if (context.canPop()) context.pop();
           },
         ),
-        title: const Text(
+        title: Text(
           'Salary Advance Request',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: c.onSurface),
         ),
         centerTitle: true,
       ),
@@ -129,8 +130,8 @@ class _SalaryAdvancePreviewSignScreenState
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _error != null
               ? _buildError()
-              : _buildBody(),
-      bottomNavigationBar: _loading || _error != null ? null : _buildBottomBar(),
+              : _buildBody(context),
+      bottomNavigationBar: _loading || _error != null ? null : _buildBottomBar(context),
     );
   }
 
@@ -148,7 +149,8 @@ class _SalaryAdvancePreviewSignScreenState
     ]),
   );
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final a = _advance!;
     final amount = (a['amount'] as num?)?.toDouble() ?? 0;
     final months = (a['repayment_months'] as int?) ?? 1;
@@ -181,7 +183,7 @@ class _SalaryAdvancePreviewSignScreenState
               height: 4,
               margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
               decoration: BoxDecoration(
-                color: const Color(0xFF13EC80),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -190,16 +192,16 @@ class _SalaryAdvancePreviewSignScreenState
         const SizedBox(height: 20),
 
         // Heading
-        const Text(
+        Text(
           'Deduction Preview & Sign',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: c.onSurface),
         ),
         const SizedBox(height: 6),
         Text(
           isFullEom
               ? 'Confirm full payroll deduction authority for your $advanceType advance. This consent is digitally logged.'
               : 'Review the repayment schedule for your $advanceType advance before signing. This action is binding.',
-          style: const TextStyle(fontSize: 13, color: Color(0xFF666666), height: 1.5),
+          style: TextStyle(fontSize: 13, color: c.onSurface.withValues(alpha: 0.65), height: 1.5),
         ),
         const SizedBox(height: 16),
 
@@ -207,16 +209,17 @@ class _SalaryAdvancePreviewSignScreenState
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
+            color: c.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: c.outline),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _row('Reference', ref_),
-            _row('Purpose', purpose.isEmpty ? advanceType : purpose),
-            _row('Amount Requested', formatSaCurrency(amount, currency: currency)),
-            _row('Recovery', isFullEom ? 'Full amount — one payroll month' : '$months months'),
+            _row(context, 'Reference', ref_),
+            _row(context, 'Purpose', purpose.isEmpty ? advanceType : purpose),
+            _row(context, 'Amount Requested', formatSaCurrency(amount, currency: currency)),
+            _row(context, 'Recovery', isFullEom ? 'Full amount — one payroll month' : '$months months'),
             _row(
+              context,
               isFullEom ? 'Payroll Deduction' : 'Monthly Deduction',
               formatSaCurrency(isFullEom ? amount : monthly, currency: currency),
             ),
@@ -227,67 +230,67 @@ class _SalaryAdvancePreviewSignScreenState
         // Deduction Schedule
         Row(
           children: [
-            const Icon(Icons.calendar_today, size: 14, color: Color(0xFF888888)),
+            Icon(Icons.calendar_today, size: 14, color: c.onSurface.withValues(alpha: 0.55)),
             const SizedBox(width: 6),
             Text(
               isFullEom
                   ? 'Full EOM Recovery'
                   : 'Deduction Schedule · $months Month${months == 1 ? "" : "s"} Term',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF333333)),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.onSurface.withValues(alpha: 0.85)),
             ),
           ],
         ),
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE0E0E0)),
+            border: Border.all(color: c.outline),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(children: [
             // Header
             Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+              decoration: BoxDecoration(
+                color: c.onSurface.withValues(alpha: 0.05),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Row(children: [
-                  Expanded(flex: 3, child: Text('Month', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF888888)))),
-                  Expanded(flex: 2, child: Text('Deduction', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF888888)))),
-                  Expanded(flex: 2, child: Text('Balance', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF888888)))),
+                  Expanded(flex: 3, child: Text('Month', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.onSurface.withValues(alpha: 0.55)))),
+                  Expanded(flex: 2, child: Text('Deduction', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.onSurface.withValues(alpha: 0.55)))),
+                  Expanded(flex: 2, child: Text('Balance', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c.onSurface.withValues(alpha: 0.55)))),
                 ]),
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFE0E0E0)),
+            Divider(height: 1, color: c.outline),
             ...schedule.asMap().entries.map((e) => Column(children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(children: [
-                  Expanded(flex: 3, child: Text(e.value.$1, style: const TextStyle(fontSize: 13, color: Color(0xFF333333)))),
+                  Expanded(flex: 3, child: Text(e.value.$1, style: TextStyle(fontSize: 13, color: c.onSurface.withValues(alpha: 0.85)))),
                   Expanded(flex: 2, child: Text(e.value.$2, textAlign: TextAlign.right,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)))),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.onSurface))),
                   Expanded(flex: 2, child: Text(e.value.$3, textAlign: TextAlign.right,
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                          color: e.key == schedule.length - 1 ? const Color(0xFF0BAE5E) : const Color(0xFF1A1A1A)))),
+                          color: e.key == schedule.length - 1 ? AppColors.success : c.onSurface))),
                 ]),
               ),
-              if (e.key < schedule.length - 1) const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              if (e.key < schedule.length - 1) Divider(height: 1, color: c.outline.withValues(alpha: 0.6)),
             ])),
-            const Divider(height: 1, color: Color(0xFFE0E0E0)),
+            Divider(height: 1, color: c.outline),
             // Footer total
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0FFF6),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(11)),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(11)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total Repayment:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                  Text('Total Repayment:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.onSurface)),
                   Text(formatSaCurrency(amount, currency: currency),
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0BAE5E))),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.success)),
                 ],
               ),
             ),
@@ -302,34 +305,34 @@ class _SalaryAdvancePreviewSignScreenState
             duration: const Duration(milliseconds: 300),
             decoration: BoxDecoration(
               border: Border.all(
-                color: _signed ? const Color(0xFF13EC80) : const Color(0xFFDDDDDD),
+                color: _signed ? AppColors.primary : c.outline,
                 width: _signed ? 1.5 : 1,
               ),
               borderRadius: BorderRadius.circular(14),
-              color: _signed ? const Color(0xFFF0FFF6) : const Color(0xFFFAFAFA),
+              color: _signed ? AppColors.primary.withValues(alpha: 0.1) : c.surface,
             ),
             padding: const EdgeInsets.all(20),
             child: Column(children: [
               Icon(Icons.fingerprint, size: 48,
-                  color: _signed ? const Color(0xFF13EC80) : const Color(0xFF999999)),
+                  color: _signed ? AppColors.primary : c.onSurface.withValues(alpha: 0.45)),
               const SizedBox(height: 10),
               Text(
                 _signed ? 'Signed Successfully' : 'Tap to Acknowledge',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                    color: _signed ? const Color(0xFF0BAE5E) : const Color(0xFF333333)),
+                    color: _signed ? AppColors.success : c.onSurface.withValues(alpha: 0.85)),
               ),
               const SizedBox(height: 4),
-              const Text('I have reviewed the deduction schedule above.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF888888)), textAlign: TextAlign.center),
+              Text('I have reviewed the deduction schedule above.',
+                  style: TextStyle(fontSize: 11, color: c.onSurface.withValues(alpha: 0.55)), textAlign: TextAlign.center),
               const SizedBox(height: 12),
-              const Divider(color: Color(0xFFEEEEEE)),
+              Divider(color: c.outline.withValues(alpha: 0.6)),
               const SizedBox(height: 8),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.access_time, size: 12, color: Color(0xFFAAAAAA)),
+                Icon(Icons.access_time, size: 12, color: c.onSurface.withValues(alpha: 0.45)),
                 const SizedBox(width: 4),
                 Text(
                   _signed ? 'Acknowledged at ${TimeOfDay.now().format(context)}' : 'Awaiting acknowledgement',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFFAAAAAA)),
+                  style: TextStyle(fontSize: 11, color: c.onSurface.withValues(alpha: 0.45)),
                 ),
               ]),
             ]),
@@ -341,9 +344,9 @@ class _SalaryAdvancePreviewSignScreenState
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Checkbox(
             value: _acknowledged,
-            activeColor: const Color(0xFF13EC80),
+            activeColor: AppColors.primary,
             checkColor: const Color(0xFF102219),
-            side: const BorderSide(color: Color(0xFFCCCCCC)),
+            side: BorderSide(color: c.onSurface.withValues(alpha: 0.3)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             onChanged: (v) => setState(() => _acknowledged = v!),
           ),
@@ -355,7 +358,7 @@ class _SalaryAdvancePreviewSignScreenState
                 isFullEom
                     ? 'I authorise the Finance Department to deduct the full advance of ${formatSaCurrency(amount, currency: currency)} from my salary in the applicable payroll month. This consent is digitally logged.'
                     : 'I acknowledge that deductions will be made automatically from my salary for the duration of the repayment term.',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF444444), height: 1.4),
+                style: TextStyle(fontSize: 13, color: c.onSurface.withValues(alpha: 0.8), height: 1.4),
               ),
             ),
           ),
@@ -365,13 +368,15 @@ class _SalaryAdvancePreviewSignScreenState
     );
   }
 
-  Widget _buildBottomBar() {
+  Widget _buildBottomBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
     final canSubmit = _acknowledged && _signed && !_submitting;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: c.outline.withValues(alpha: 0.6))),
       ),
       child: ElevatedButton.icon(
         onPressed: canSubmit ? _submitAdvance : null,
@@ -380,8 +385,8 @@ class _SalaryAdvancePreviewSignScreenState
             : const Icon(Icons.send, size: 18),
         label: Text(_submitting ? 'Submitting…' : 'Submit Request'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: canSubmit ? const Color(0xFF13EC80) : const Color(0xFFCCCCCC),
-          foregroundColor: canSubmit ? const Color(0xFF102219) : const Color(0xFF888888),
+          backgroundColor: canSubmit ? AppColors.primary : c.onSurface.withValues(alpha: 0.15),
+          foregroundColor: canSubmit ? const Color(0xFF102219) : c.onSurface.withValues(alpha: 0.4),
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
@@ -410,11 +415,14 @@ class _SalaryAdvancePreviewSignScreenState
     return result;
   }
 
-  Widget _row(String label, String value) => Padding(
+  Widget _row(BuildContext context, String label, String value) {
+    final c = Theme.of(context).colorScheme;
+    return Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      SizedBox(width: 140, child: Text(label, style: const TextStyle(color: Color(0xFF888888), fontSize: 12))),
-      Expanded(child: Text(value, style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 12, fontWeight: FontWeight.w500))),
+      SizedBox(width: 140, child: Text(label, style: TextStyle(color: c.onSurface.withValues(alpha: 0.55), fontSize: 12))),
+      Expanded(child: Text(value, style: TextStyle(color: c.onSurface, fontSize: 12, fontWeight: FontWeight.w500))),
     ]),
   );
+  }
 }
