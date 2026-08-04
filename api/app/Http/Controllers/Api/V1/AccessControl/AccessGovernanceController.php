@@ -217,15 +217,42 @@ class AccessGovernanceController extends Controller
         $this->pdp->assert($request->user(), 'admin.roles.manage');
         $data = $request->validate([
             'permission_key' => ['required', 'string'],
+            'scope_type' => ['nullable', 'string'],
+            'scope_reference' => ['nullable', 'string'],
             'reason' => ['required', 'string'],
             'valid_until' => ['nullable', 'date'],
         ]);
-        $this->validatePermissionGrantInput($data, false);
+        $this->validatePermissionGrantInput($data, true);
+
+        $scopeType = $data['scope_type'] ?? 'self';
+        $scopeReference = $data['scope_reference'] ?? null;
+        $duplicate = UserPermissionDenial::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('user_id', $user->id)
+            ->where('permission_key', $data['permission_key'])
+            ->where('scope_type', $scopeType)
+            ->where(function ($query) use ($scopeReference): void {
+                if ($scopeReference === null) {
+                    $query->whereNull('scope_reference');
+                } else {
+                    $query->where('scope_reference', $scopeReference);
+                }
+            })
+            ->where('status', 'active')
+            ->exists();
+
+        if ($duplicate) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'permission_key' => ['An active denial already covers this user, permission and scope.'],
+            ]);
+        }
 
         $denial = UserPermissionDenial::create([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
             'permission_key' => $data['permission_key'],
+            'scope_type' => $scopeType,
+            'scope_reference' => $scopeReference,
             'status' => 'active',
             'reason' => $data['reason'],
             'valid_until' => $data['valid_until'] ?? null,
