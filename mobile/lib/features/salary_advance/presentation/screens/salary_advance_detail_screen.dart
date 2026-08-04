@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +6,7 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 import '../../data/salary_advance_helpers.dart';
 
 class SalaryAdvanceDetailScreen extends ConsumerStatefulWidget {
@@ -146,46 +146,28 @@ class _SalaryAdvanceDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => context.safePopOrGoHome(),
-        ),
-        title: const Text('Advance detail',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A))),
-      ),
+    return StitchScreen(
+      title: 'Advance detail',
+      fallbackRoute: '/salary/advances',
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading advance')
           : _error != null
-              ? Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                    TextButton(onPressed: _load, child: const Text('Retry')),
-                  ]))
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppColors.primary,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
                     children: [
-                      _header(),
+                      _header(context),
                       const SizedBox(height: 16),
-                      _summaryCard(),
+                      _summaryCard(context),
                       const SizedBox(height: 12),
-                      _workflowCard(),
+                      _workflowCard(context),
                       const SizedBox(height: 12),
-                      _paymentRecoveryCard(),
+                      _paymentRecoveryCard(context),
                       const SizedBox(height: 12),
-                      _ledgerCard(),
+                      _ledgerCard(context),
                       const SizedBox(height: 20),
                       _actions(),
                     ],
@@ -194,15 +176,14 @@ class _SalaryAdvanceDetailScreenState
     );
   }
 
-  Widget _header() {
+  Widget _header(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final a = _advance!;
     final status = salaryAdvanceStatusConfig(a['status']?.toString());
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(a['reference_number']?.toString() ?? 'Salary advance',
-          style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A1A))),
+          style: TextStyle(
+              fontSize: 22, fontWeight: FontWeight.w800, color: c.onSurface)),
       const SizedBox(height: 8),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -223,42 +204,45 @@ class _SalaryAdvanceDetailScreenState
     ]);
   }
 
-  Widget _summaryCard() {
+  Widget _summaryCard(BuildContext context) {
     final a = _advance!;
     final currency = a['currency']?.toString() ?? 'NAD';
     return _section(
+      context,
       title: 'Request',
       child: Column(children: [
-        _row('Amount', formatSaCurrency(a['amount'], currency: currency)),
+        _row(context, 'Amount', formatSaCurrency(a['amount'], currency: currency)),
         if (a['approved_amount'] != null)
-          _row('Approved amount',
+          _row(context, 'Approved amount',
               formatSaCurrency(a['approved_amount'], currency: currency)),
-        _row('Type',
+        _row(context, 'Type',
             (a['advance_type']?.toString() ?? '—').replaceAll('_', ' ')),
-        _row('Purpose', a['purpose']?.toString() ?? '—'),
+        _row(context, 'Purpose', a['purpose']?.toString() ?? '—'),
         _row(
+            context,
             'Recovery',
             asSaDouble(a['repayment_months']) <= 1
                 ? 'Full EOM'
                 : '${a['repayment_months']} months'),
         if (a['intended_recovery_payroll_date'] != null)
-          _row('Recovery payroll',
+          _row(context, 'Recovery payroll',
               AppDateFormatter.short(
                   a['intended_recovery_payroll_date'].toString())),
         if (a['created_at'] != null)
-          _row('Created', AppDateFormatter.short(a['created_at'].toString())),
+          _row(context, 'Created', AppDateFormatter.short(a['created_at'].toString())),
         if (a['submitted_at'] != null)
-          _row('Submitted',
+          _row(context, 'Submitted',
               AppDateFormatter.short(a['submitted_at'].toString())),
         if (a['rejection_reason'] != null)
-          _row('Rejection reason', a['rejection_reason'].toString()),
+          _row(context, 'Rejection reason', a['rejection_reason'].toString()),
         if (a['not_eligible_reason'] != null)
-          _row('Not eligible', a['not_eligible_reason'].toString()),
+          _row(context, 'Not eligible', a['not_eligible_reason'].toString()),
       ]),
     );
   }
 
-  Widget _workflowCard() {
+  Widget _workflowCard(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final a = _advance!;
     final steps = <(String, String?, bool)>[
       (
@@ -286,6 +270,7 @@ class _SalaryAdvanceDetailScreenState
         : const [];
 
     return _section(
+      context,
       title: 'Workflow status',
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ...steps.map((s) {
@@ -295,7 +280,9 @@ class _SalaryAdvanceDetailScreenState
             child: Row(children: [
               Icon(done ? Icons.check_circle : Icons.radio_button_unchecked,
                   size: 18,
-                  color: done ? AppColors.success : const Color(0xFFCCCCCC)),
+                  color: done
+                      ? AppColors.success
+                      : c.onSurface.withValues(alpha: 0.3)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(s.$1,
@@ -303,14 +290,14 @@ class _SalaryAdvanceDetailScreenState
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: done
-                          ? const Color(0xFF1A1A1A)
-                          : const Color(0xFF888888),
+                          ? c.onSurface
+                          : c.onSurface.withValues(alpha: 0.6),
                     )),
               ),
               if (s.$2 != null)
                 Text(AppDateFormatter.short(s.$2!),
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF888888))),
+                    style: TextStyle(
+                        fontSize: 11, color: c.onSurface.withValues(alpha: 0.6))),
             ]),
           );
         }),
@@ -318,8 +305,11 @@ class _SalaryAdvanceDetailScreenState
           const SizedBox(height: 8),
           const Divider(),
           const SizedBox(height: 8),
-          const Text('Approval history',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+          Text('Approval history',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: c.onSurface)),
           const SizedBox(height: 8),
           ...history.whereType<Map>().take(8).map((h) {
             final user = h['user'];
@@ -332,7 +322,8 @@ class _SalaryAdvanceDetailScreenState
                 '${h['action'] ?? h['status'] ?? 'Update'}'
                 '${name != null ? ' · $name' : ''}'
                 '${h['created_at'] != null ? ' · ${AppDateFormatter.short(h['created_at'].toString())}' : ''}',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF555555)),
+                style: TextStyle(
+                    fontSize: 12, color: c.onSurface.withValues(alpha: 0.7)),
               ),
             );
           }),
@@ -341,7 +332,8 @@ class _SalaryAdvanceDetailScreenState
     );
   }
 
-  Widget _paymentRecoveryCard() {
+  Widget _paymentRecoveryCard(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final a = _advance!;
     final currency = a['currency']?.toString() ?? 'NAD';
     final balance = outstandingBalanceFromRegister(a);
@@ -355,60 +347,68 @@ class _SalaryAdvanceDetailScreenState
 
     if (!hasPayment && !hasRecovery) {
       return _section(
+        context,
         title: 'Payment & recovery',
-        child: const Text('No payment or recovery recorded yet.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF666666))),
+        child: Text('No payment or recovery recorded yet.',
+            style: TextStyle(
+                fontSize: 13, color: c.onSurface.withValues(alpha: 0.7))),
       );
     }
 
     return _section(
+      context,
       title: 'Payment & recovery',
       child: Column(children: [
         if (a['payment_status'] != null)
-          _row('Payment status', a['payment_status'].toString()),
+          _row(context, 'Payment status', a['payment_status'].toString()),
         if (a['payment_reference'] != null)
-          _row('Payment reference', a['payment_reference'].toString()),
+          _row(context, 'Payment reference', a['payment_reference'].toString()),
         if (a['payment_method'] != null)
-          _row('Payment method',
+          _row(context, 'Payment method',
               a['payment_method'].toString().replaceAll('_', ' ')),
         if (a['paid_at'] != null)
-          _row('Paid at', AppDateFormatter.short(a['paid_at'].toString())),
+          _row(context, 'Paid at', AppDateFormatter.short(a['paid_at'].toString())),
         if (a['recovery_status'] != null)
-          _row('Recovery status',
+          _row(context, 'Recovery status',
               a['recovery_status'].toString().replaceAll('_', ' ')),
         if (a['recovered_amount'] != null)
-          _row('Recovered amount',
+          _row(context, 'Recovered amount',
               formatSaCurrency(a['recovered_amount'], currency: currency)),
         if (a['intended_recovery_payroll_date'] != null)
           _row(
+              context,
               'Intended recovery',
               AppDateFormatter.short(
                   a['intended_recovery_payroll_date'].toString())),
         if (balance > 0)
-          _row('Outstanding balance',
+          _row(context, 'Outstanding balance',
               formatSaCurrency(balance, currency: currency)),
       ]),
     );
   }
 
-  Widget _ledgerCard() {
+  Widget _ledgerCard(BuildContext context) {
+    final c = Theme.of(context).colorScheme;
     final a = _advance!;
     final register = a['balance_register'] ?? a['balanceRegister'];
     if (register is! Map) return const SizedBox.shrink();
     final txns = (register['transactions'] as List?) ?? const [];
     if (txns.isEmpty) {
       return _section(
+        context,
         title: 'Balance register',
         child: Text(
           'Balance: ${formatSaCurrency(register['balance'], currency: a['currency']?.toString() ?? 'NAD')}',
-          style: const TextStyle(fontSize: 13),
+          style: TextStyle(fontSize: 13, color: c.onSurface),
         ),
       );
     }
     return _section(
+      context,
       title: 'Ledger',
       child: Column(children: [
         _row(
+            context,
             'Current balance',
             formatSaCurrency(register['balance'],
                 currency: a['currency']?.toString() ?? 'NAD')),
@@ -421,15 +421,17 @@ class _SalaryAdvanceDetailScreenState
                 child: Text(
                   '${t['type'] ?? 'txn'}'
                   '${t['created_at'] != null ? ' · ${AppDateFormatter.short(t['created_at'].toString())}' : ''}',
-                  style:
-                      const TextStyle(fontSize: 12, color: Color(0xFF555555)),
+                  style: TextStyle(
+                      fontSize: 12, color: c.onSurface.withValues(alpha: 0.7)),
                 ),
               ),
               Text(
                 formatSaCurrency(t['amount'],
                     currency: a['currency']?.toString() ?? 'NAD'),
-                style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: c.onSurface),
               ),
             ]),
           );
@@ -494,36 +496,46 @@ class _SalaryAdvanceDetailScreenState
     ]);
   }
 
-  Widget _section({required String title, required Widget child}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 10),
-          child,
-        ]),
-      );
+  Widget _section(BuildContext context,
+      {required String title, required Widget child}) {
+    final c = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.outline),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title,
+            style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w700, color: c.onSurface)),
+        const SizedBox(height: 10),
+        child,
+      ]),
+    );
+  }
 
-  Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-            width: 130,
-            child: Text(label,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
-          ),
-          Expanded(
-            child: Text(value,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A))),
-          ),
-        ]),
-      );
+  Widget _row(BuildContext context, String label, String value) {
+    final c = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(
+          width: 130,
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 12, color: c.onSurface.withValues(alpha: 0.6))),
+        ),
+        Expanded(
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: c.onSurface)),
+        ),
+      ]),
+    );
+  }
 }
