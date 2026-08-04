@@ -132,7 +132,13 @@ class CanonicalRoleManager
             }
 
             $permissions = $this->registry()->rolePermissions($name);
-            if (! DB::table('access_role_versions')->where('role_catalogue_id', $catalogueId)->exists()) {
+            $activeVersion = DB::table('access_role_versions')
+                ->where('role_catalogue_id', $catalogueId)
+                ->where('status', 'active')
+                ->orderByDesc('version')
+                ->first();
+
+            if (! $activeVersion) {
                 DB::table('access_role_versions')->insert([
                     'role_catalogue_id' => $catalogueId,
                     'version' => 1,
@@ -144,8 +150,47 @@ class CanonicalRoleManager
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                continue;
+            }
+
+            $storedPermissions = is_string($activeVersion->permissions)
+                ? json_decode($activeVersion->permissions, true)
+                : $activeVersion->permissions;
+
+            if ($this->permissionSetHash($storedPermissions) !== $this->permissionSetHash($permissions)) {
+                $nextVersion = ((int) DB::table('access_role_versions')
+                    ->where('role_catalogue_id', $catalogueId)
+                    ->max('version')) + 1;
+
+                DB::transaction(function () use ($catalogueId, $nextVersion, $permissions): void {
+                    DB::table('access_role_versions')
+                        ->where('role_catalogue_id', $catalogueId)
+                        ->where('status', 'active')
+                        ->update(['status' => 'retired', 'updated_at' => now()]);
+
+                    DB::table('access_role_versions')->insert([
+                        'role_catalogue_id' => $catalogueId,
+                        'version' => $nextVersion,
+                        'status' => 'active',
+                        'permissions' => json_encode($permissions),
+                        'changelog' => 'Canonical role catalogue synchronized from registry changes',
+                        'published_at' => now(),
+                        'approved_at' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                });
             }
         }
+    }
+
+    private function permissionSetHash(mixed $permissions): string
+    {
+        $permissions = is_array($permissions) ? $permissions : [];
+        $permissions = array_values(array_unique(array_filter($permissions, 'is_string')));
+        sort($permissions);
+
+        return hash('sha256', json_encode($permissions));
     }
 
     private function registry(): PermissionRegistry
