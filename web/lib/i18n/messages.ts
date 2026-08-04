@@ -11,6 +11,7 @@ type Dict = Record<string, string>;
 
 const en: Dict = {
   "nav.dashboard": "Dashboard",
+  "nav.my_work": "My Work",
   "nav.travel": "Travel",
   "nav.leave": "Leave",
   "nav.imprest": "Imprest",
@@ -67,6 +68,7 @@ const en: Dict = {
 
 const fr: Dict = {
   "nav.dashboard": "Tableau de bord",
+  "nav.my_work": "Mon travail",
   "nav.travel": "Missions",
   "nav.leave": "Congés",
   "nav.imprest": "Avances",
@@ -123,6 +125,7 @@ const fr: Dict = {
 
 const pt: Dict = {
   "nav.dashboard": "Painel",
+  "nav.my_work": "O meu trabalho",
   "nav.travel": "Missões",
   "nav.leave": "Licenças",
   "nav.imprest": "Adiantamentos",
