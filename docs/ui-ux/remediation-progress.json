@@ -1,22 +1,24 @@
 {
   "counts": {
-    "Fixed": 256,
+    "Fixed": 327,
     "Already-fixed-by-prior-pack": 7,
     "Deferred": 186,
-    "New": 71,
+    "New": 0,
     "Out-of-scope": 0
   },
-  "closed": 263,
+  "closed": 334,
   "total": 520,
   "mphCount": 236,
   "latest_pass": {
     "date": "2026-08-04",
-    "scope": "Pass 5 fresh sweep - mobile Flutter remaining-features UX, admin web under-explored modules (fleet/M&E/SRHR/budget/correspondence/stock/weekly-summaries/workplan), admin web copy/visual-consistency, admin-web-vs-mobile parity",
+    "scope": "Pass 5 fresh sweep - mobile Flutter remaining-features UX, admin web under-explored modules (fleet/M&E/SRHR/budget/correspondence/stock/weekly-summaries/workplan), admin web copy/visual-consistency, admin-web-vs-mobile parity - followed same-day by full remediation of all 71 findings",
     "notes": [
       "71 findings (UX-450..UX-520) added via four parallel read-only agent sweeps scoped to avoid re-reporting the existing 449 catalogued items.",
-      "2 P0s: UX-450 mobile /hr/assignments/detail route is unregistered (dead route, crashes on tap); UX-495 mobile travel requests have no document/attachment validation where web blocks submission without Invitation Letter + Agenda (+ Approved PIF).",
-      "30 P1s and 39 P2s, none yet triaged into Fixed/Deferred - status is New pending owner review.",
-      "Notable clusters: mojibake text corruption (UX-503..506) copy-pasted across 10 People sub-module pages; missing submit-lock/error-handling repeated across ~10 admin forms in fleet/budget/stock/correspondence/weekly-summaries; status label/color drift between web and mobile for leave/procurement statuses (UX-491..494, 497..500); missing status guards on mobile destructive actions (Cancel Leave / Withdraw Request shown regardless of status)."
+      "All 71 findings fixed same day via six parallel implementation workstreams in isolated git worktrees, merged into main: mobile HR/assignments (4cee2e8), mobile finance/travel incl. P0 travel-document-validation (c16c864), admin web fleet/M&E/SRHR/budget (5722bfd), admin web correspondence/stock/weekly-summaries (afce868), admin-web-vs-mobile parity (ef9d433), admin web copy/visual-consistency incl. mojibake cleanup (90d6391).",
+      "UX-450 (P0) fixed: mobile assignment-card tap now shows a bottom sheet with assignment details instead of pushing an unregistered route.",
+      "UX-495 (P0) fixed: mobile travel request form now has a required Supporting Documents step (Invitation Letter + Agenda) with submit-time validation, mirroring web; draft saves remain exempt.",
+      "One merge conflict (salary_advance_preview_sign_screen.dart touched by both the finance/travel and parity workstreams) resolved by combining the theme-aware _row(context, ...) signature with formatSaCurrency grouped-currency formatting.",
+      "0 Pass 5 findings remain New."
     ]
   }
 }

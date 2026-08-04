@@ -1,27 +1,27 @@
 # UI/UX Audit Remediation Progress
 
-> **Programme verdict:** All **19 P0s (Pass 1-4) Fixed**. Closed **263/520 (50.6%)** Fixed/Already-fixed under honest route/theme verification.
+> **Programme verdict:** All **21 P0s (Pass 1-5) Fixed**. Closed **334/520 (64.2%)** Fixed/Already-fixed under honest route/theme verification.
 > Pass 2 (`feat/ui-ux-audit-remediation-2`) closed universal toast, WorkflowStatusBanner on remaining workflow details, register captions, Leave mobile cards + DS Input/Select/Badge/Button seed, Header a11y, dark `bg-white` hotspots, residual double padding.
 > Pass 3 verification hardened P0 regressions: sidebar now exposes one Approvals entry point, native browser confirm usage is blocked by unit test, and `ConfirmDialog` restores focus with dialog ARIA/Escape/backdrop handling.
 > Pass 4 (2026-08-03) ran four parallel read-only sweeps (admin web forms/tables/empty-states, admin web accessibility/dark-mode, mobile Flutter screen-level UX, mobile Flutter cross-screen consistency) scoped to find only issues **not** already catalogued below. Added **85 new findings, UX-365..UX-449**; all **85 Pass 4 findings** are now Fixed.
-> Pass 5 (2026-08-04) ran four more parallel sweeps (mobile remaining-features UX, admin web under-explored modules, admin web copy/visual-consistency, admin-web-vs-mobile parity) scoped to find only issues **not** already catalogued. Added **71 new findings, UX-450..UX-520**, including **2 new P0s** — none yet triaged into Fixed/Deferred.
+> Pass 5 (2026-08-04) ran four more parallel sweeps (mobile remaining-features UX, admin web under-explored modules, admin web copy/visual-consistency, admin-web-vs-mobile parity) scoped to find only issues **not** already catalogued. Added **71 new findings, UX-450..UX-520**, including **2 new P0s**. All **71 Pass 5 findings were remediated** by six parallel implementation workstreams (isolated git worktrees, merged 2026-08-04): mobile HR/assignments, mobile finance/travel (incl. the P0 travel-document-validation gap), admin web fleet/M&E/SRHR/budget, admin web correspondence/stock/weekly-summaries, admin-web-vs-mobile parity, and admin web copy/visual-consistency (incl. mojibake cleanup across 14 files).
 > Remaining Deferred items are predominantly **product/IA decisions** (dual module surfaces, calendar multiplicity, settings IA) or residual per-route polish where the canonical pattern now exists.
 **Branch:** `feat/ui-ux-audit-remediation-2`
 **Base:** `SADCPFNexus/main` @ `33cfa96`
-**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-04 (Pass 5)
+**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-04 (Pass 5 fixed)
 
 ## Counts
 
 | Status | Count |
 | --- | ---: |
-| Fixed | 256 |
+| Fixed | 327 |
 | Already-fixed-by-prior-pack | 7 |
 | Deferred | 186 |
-| New (Pass 5, untriaged) | 71 |
+| New | 0 |
 | Out-of-scope | 0 |
 | **Total** | **520** |
 
-**Closed (Fixed + Already-fixed):** **263 / 520 (50.6%)**
+**Closed (Fixed + Already-fixed):** **334 / 520 (64.2%)**
 
 ## Evidence snapshot
 
@@ -562,9 +562,9 @@ _Generated 2026-08-03 via four parallel read-only agent sweeps, scoped to report
 - **UX-448** (P2/platform): Local, un-debounced substring search filters are hand-rolled independently on at least two directory screens rather than sharing one searchable-list widget — `mobile/lib/features/hr/presentation/screens/hr_directory_screen.dart:373-389`, `mobile/lib/features/procurement/presentation/screens/vendor_directory_screen.dart:68-82`.
 - **UX-449** (P2/mobile-nav): "Leave" drawer entry navigates to the identical route as the top-level "Requests" entry with no leave-specific filter, unlike "Travel" which deep-links to a travel-specific route — `mobile/lib/shared/widgets/app_drawer.dart:63`.
 
-### New — Pass 5 fresh sweep (71, untriaged)
+### Fixed — Pass 5 (71)
 
-_Generated 2026-08-04 via four parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-449 above. Not yet triaged into Fixed/Deferred — each needs an owner decision._
+_Generated 2026-08-04 via four parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-449 above. All 71 were remediated the same day by six parallel implementation workstreams run in isolated git worktrees and merged into `main`: mobile HR/assignments (commit `4cee2e8`), mobile finance/travel incl. P0 travel-document-validation (commit `c16c864`), admin web fleet/M&E/SRHR/budget (commit `5722bfd`), admin web correspondence/stock/weekly-summaries (commit `afce868`), admin-web-vs-mobile parity (commit `ef9d433`), and admin web copy/visual-consistency incl. mojibake cleanup across 14 files (commit `90d6391`). One merge conflict (both the mobile finance/travel and parity workstreams touched `salary_advance_preview_sign_screen.dart`) was resolved by combining both fixes (theme-aware `_row(context, ...)` signature + `formatSaCurrency` grouped-currency formatting)._
 
 #### P0 — Critical (2)
 
