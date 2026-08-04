@@ -1,13 +1,14 @@
 # UI/UX Audit Remediation Progress
 
-> **Programme verdict:** All **19 P0s (Pass 1-4) Fixed**. Closed **263/449 (58.6%)** Fixed/Already-fixed under honest route/theme verification.
+> **Programme verdict:** All **19 P0s (Pass 1-4) Fixed**. Closed **263/520 (50.6%)** Fixed/Already-fixed under honest route/theme verification.
 > Pass 2 (`feat/ui-ux-audit-remediation-2`) closed universal toast, WorkflowStatusBanner on remaining workflow details, register captions, Leave mobile cards + DS Input/Select/Badge/Button seed, Header a11y, dark `bg-white` hotspots, residual double padding.
 > Pass 3 verification hardened P0 regressions: sidebar now exposes one Approvals entry point, native browser confirm usage is blocked by unit test, and `ConfirmDialog` restores focus with dialog ARIA/Escape/backdrop handling.
 > Pass 4 (2026-08-03) ran four parallel read-only sweeps (admin web forms/tables/empty-states, admin web accessibility/dark-mode, mobile Flutter screen-level UX, mobile Flutter cross-screen consistency) scoped to find only issues **not** already catalogued below. Added **85 new findings, UX-365..UX-449**; all **85 Pass 4 findings** are now Fixed.
+> Pass 5 (2026-08-04) ran four more parallel sweeps (mobile remaining-features UX, admin web under-explored modules, admin web copy/visual-consistency, admin-web-vs-mobile parity) scoped to find only issues **not** already catalogued. Added **71 new findings, UX-450..UX-520**, including **2 new P0s** — none yet triaged into Fixed/Deferred.
 > Remaining Deferred items are predominantly **product/IA decisions** (dual module surfaces, calendar multiplicity, settings IA) or residual per-route polish where the canonical pattern now exists.
 **Branch:** `feat/ui-ux-audit-remediation-2`
 **Base:** `SADCPFNexus/main` @ `33cfa96`
-**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-03 (Pass 4)
+**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-04 (Pass 5)
 
 ## Counts
 
@@ -16,11 +17,11 @@
 | Fixed | 256 |
 | Already-fixed-by-prior-pack | 7 |
 | Deferred | 186 |
-| New (Pass 4, untriaged) | 0 |
+| New (Pass 5, untriaged) | 71 |
 | Out-of-scope | 0 |
-| **Total** | **449** |
+| **Total** | **520** |
 
-**Closed (Fixed + Already-fixed):** **263 / 449 (58.6%)**
+**Closed (Fixed + Already-fixed):** **263 / 520 (50.6%)**
 
 ## Evidence snapshot
 
@@ -560,4 +561,110 @@ _Generated 2026-08-03 via four parallel read-only agent sweeps, scoped to report
 - **UX-447** (P2/platform): No consistent rule for primary-action placement — some hub screens use a bottom-right FAB, others (audit, offline drafts) use a top-right app-bar action for the same "primary CTA" role on the same shared shell — `mobile/lib/features/procurement/presentation/screens/procurement_hub_screen.dart:123-130` vs. `mobile/lib/features/offline/presentation/screens/offline_drafts_screen.dart:296-308`.
 - **UX-448** (P2/platform): Local, un-debounced substring search filters are hand-rolled independently on at least two directory screens rather than sharing one searchable-list widget — `mobile/lib/features/hr/presentation/screens/hr_directory_screen.dart:373-389`, `mobile/lib/features/procurement/presentation/screens/vendor_directory_screen.dart:68-82`.
 - **UX-449** (P2/mobile-nav): "Leave" drawer entry navigates to the identical route as the top-level "Requests" entry with no leave-specific filter, unlike "Travel" which deep-links to a travel-specific route — `mobile/lib/shared/widgets/app_drawer.dart:63`.
+
+### New — Pass 5 fresh sweep (71, untriaged)
+
+_Generated 2026-08-04 via four parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-449 above. Not yet triaged into Fixed/Deferred — each needs an owner decision._
+
+#### P0 — Critical (2)
+
+- **UX-450** (P0/mobile-hr): Assignment-card tap calls `context.push('/hr/assignments/detail', ...)`, a route not registered in `app_router.dart` — every tap throws a go_router "no routes match" error — `mobile/lib/features/hr/presentation/screens/work_assignments_screen.dart:536`.
+- **UX-495** (P0/parity-travel): Mobile travel requests have zero document/attachment validation — web blocks non-draft submission without Invitation Letter + Agenda (+ Approved PIF when linked to a programme); mobile has no matching step anywhere in the form. Compliance/data-integrity gap, not cosmetic — `web/app/(app)/travel/create/page.tsx:610-620` vs `mobile/lib/features/requests/presentation/screens/travel_request_form_screen.dart`.
+
+#### P1 — High (30)
+
+**Mobile — remaining features (5)**
+
+- **UX-451** (P1/mobile-hr): `_buildBottomNav()` on the timesheets/incidents screen only calls `setState`; none of the 4 nav items actually navigate anywhere — `mobile/lib/features/hr/presentation/screens/timesheets_incidents_screen.dart:530-597`.
+- **UX-453** (P1/mobile-finance): Salary advance detail screen hardcodes `Scaffold(backgroundColor: Colors.white)` and light-mode text colors while the rest of the app uses the dark theme — a jarring light popup inside an otherwise dark app — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_detail_screen.dart:149-164`.
+- **UX-454** (P1/mobile-finance): Same hardcoded light theme on the next screen in the same flow — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_preview_sign_screen.dart:108-126`.
+- **UX-455** (P1/mobile-hr): Two HR sub-screens use a raw `Scaffold`+custom `AppBar` with hand-rolled loading/error/empty widgets instead of the shared `StitchScreen`/`StitchLoadingState`/`StitchErrorState` shell used by sibling HR screens — `mobile/lib/features/hr/presentation/screens/disciplinary_case_screen.dart:54`, `work_assignments_screen.dart:345`.
+- **UX-457** (P1/mobile-hr): "Assigned To" is a raw free-text field requiring the user to type another employee's name/ID by hand with zero validation/typeahead (same pattern as UX-413, different screen) — `mobile/lib/features/hr/presentation/screens/work_assignments_screen.dart:232`.
+
+**Admin web — under-explored modules (14)**
+
+- **UX-463** (P1/fleet): Module subtitle contains a literal `\r\n` escape sequence and is mid-sentence truncated, rendering corrupted/cut-off text to every user — `web/app/(app)/fleet/page.tsx:95`.
+- **UX-465** (P1/fleet): Odometer/litres/cost/interval fields are plain text inputs with placeholder-as-label, no `type="number"`, no `min="0"` — allows negative mileage/fuel/cost — `web/app/(app)/fleet/[id]/page.tsx:273-299`.
+- **UX-470** (P1/srhr): `Promise.all` fetch has no `.catch()`; on API failure the page silently shows "No active deployments"/"No reports yet" indistinguishable from a genuinely empty dataset — `web/app/(app)/srhr/page.tsx:28-38`.
+- **UX-472** (P1/budget): Availability is only fetched for the first 40 budget lines; lines beyond that permanently show `…` in the Available column that never resolves — `web/app/(app)/budget/page.tsx:44`.
+- **UX-473** (P1/budget): "Add rate" inputs have no `<label>`; `effective_date` is a plain text box (not `type="date"`), `rate` accepts negative/non-numeric text with no `type="number"`/`min` — `web/app/(app)/budget/fx-rates/page.tsx:40-42`.
+- **UX-474** (P1/budget): `save`/`doConvert` mutations have no `onError` handler; a failed POST fails silently — `web/app/(app)/budget/fx-rates/page.tsx:19-27`.
+- **UX-476** (P1/budget): "Donor name"/"Amount"/"Currency" inputs are placeholder-only with no `<label>`; "Amount" has no `type="number"`/`min="0"`, permitting negative contribution amounts — `web/app/(app)/budget/contribution-schedules/page.tsx:39-48`.
+- **UX-477** (P1/budget): `save` mutation has no `onError` handler; a failed schedule creation fails silently — `web/app/(app)/budget/contribution-schedules/page.tsx:24-27`.
+- **UX-478** (P1/correspondence): "Release hold" (destructive legal-hold release) has no confirmation dialog and no pending/disabled state, unlike the "Set retention" form on the same page — `web/app/(app)/correspondence/retention/page.tsx:181`.
+- **UX-479** (P1/stock): "Draft transfer" button has no loading/disabled state while the create call is in flight, allowing duplicate submissions — `web/app/(app)/stock/transfers/page.tsx:69`.
+- **UX-483** (P1/stock): "Request write-off" button has no pending/disabled state during async submit, allowing duplicate requests — `web/app/(app)/stock/write-offs/page.tsx:53-65`.
+- **UX-485** (P1/weekly-summaries): "Accept (supervisor)" has no try/catch (unhandled promise rejection on failure) and no disabled/loading state — `web/app/(app)/weekly-summaries/[id]/page.tsx:60-69`.
+- **UX-486** (P1/weekly-summaries): Same pattern on "Return", plus the "Return reason" input is placeholder-only with no `<label>` — `web/app/(app)/weekly-summaries/[id]/page.tsx:77-86`.
+- **UX-488** (P1/weekly-summaries): "Publish" button's `onClick` has no try/catch; a failed publish is an unhandled rejection with no error surfaced — `web/app/(app)/weekly-summaries/department/page.tsx:43-46`.
+
+**Admin-web-vs-mobile parity (6)**
+
+- **UX-492** (P1/parity-leave): Web explicitly labels `returned_for_correction`/`withdrawn` with dedicated colors/icons; mobile's status switch falls through to printing the raw snake_case string for anything it doesn't handle — a returned leave shows literally "returned_for_correction" on mobile — `web/app/(app)/leave/[id]/page.tsx:38-39` vs `mobile/lib/features/requests/presentation/screens/leave_request_detail_screen.dart:118-145`.
+- **UX-493** (P1/parity-leave): Mobile shows an unconditional "Cancel Leave" button on every leave detail screen regardless of status; web only offers Delete/Withdraw under specific status+approval conditions — `web/app/(app)/leave/[id]/page.tsx:318-354` vs `mobile/lib/features/requests/presentation/screens/leave_request_detail_screen.dart:369-395`.
+- **UX-494** (P1/parity-travel): Mobile renders "Withdraw Request" unconditionally with no status check; web gates it to submitted+pending — `web/app/(app)/travel/[id]/page.tsx:736-744` vs `mobile/lib/features/requests/presentation/screens/travel_request_detail_screen.dart:384-406`.
+- **UX-496** (P1/parity-finance): Web formats salary-advance amounts with locale thousands separators; mobile's shared helper uses no grouping — the same amount reads "N$ 15,000.00" on web and "NAD 15000.00" on mobile — `web/app/(app)/salary-advances/[id]/page.tsx:45` vs `mobile/lib/features/salary_advance/data/salary_advance_helpers.dart:42-45`.
+- **UX-499** (P1/parity-procurement): Web has an explicit "HOD Rejected" danger-colored config for `hod_rejected`; mobile has no case for it and falls through to a neutral-colored generic humanizer producing "Hod Rejected" — the rejection loses its visual severity signal on mobile — `mobile/lib/features/procurement/data/procurement_api_helpers.dart:73-90`.
+- **UX-501** (P1/parity-procurement): Web's status fallback silently mislabels `rfq_issued`/`evaluated`/`po_issued`/`completed` requests as "Draft" with a gray badge — mobile actually handles these statuses correctly, so the bug runs the opposite direction from usual — `web/app/(app)/procurement/[id]/page.tsx:358`.
+
+**Admin web — copy/visual-consistency (5)**
+
+- **UX-503** (P1/admin-ledger): Search input placeholders contain literal mojibake (`"Search by name or emailâ€¦"`) instead of a proper ellipsis — `web/app/(app)/admin/ledger/generate/page.tsx:230`, `admin/ledger/page.tsx:318`.
+- **UX-504** (P1/admin-ledger): Same mojibake corruption in hash placeholders and empty-state copy — `web/app/(app)/admin/ledger/verify/page.tsx:19-20,138`.
+- **UX-505** (P1/hr): Same mojibake bug in "Savingâ€¦"/"Loadingâ€¦" button/loading text — `web/app/(app)/hr/timesheets/overtime/page.tsx:148,168`.
+- **UX-506** (P1/people): Identical corrupted placeholder `"Filter rowsâ€¦"` copy-pasted across 10 People sub-module pages (analytics, esign, m365, privilege-alerts, recertification, scenarios, search, skills, sod, succession) — `web/app/(app)/people/*/page.tsx:94-95`.
+- **UX-507** (P1/pif): The identical "approved" PIF status renders `badge-primary` (blue) on the list page but `badge-success` (green) on the detail page — `web/app/(app)/pif/page.tsx:21` vs `web/app/(app)/pif/[id]/page.tsx:34`.
+
+#### P2 — Medium (39)
+
+**Mobile — remaining features (7)**
+
+- **UX-452** (P2/mobile-hr): "View All" link under Active Cases is a dead no-op (`onTap: () {}`) with no destination — `mobile/lib/features/hr/presentation/screens/timesheets_incidents_screen.dart:497-508`.
+- **UX-456** (P2/mobile-hr): Assignment status/priority uses raw Material colors while the sibling accountability-assignments module uses app color tokens for the same semantic states — `mobile/lib/features/hr/presentation/screens/work_assignments_screen.dart:17-47`.
+- **UX-458** (P2/mobile-hr): `_submitNewAssignment()` silently returns with no error message when the title is empty; the Create button appears to do nothing — `mobile/lib/features/hr/presentation/screens/work_assignments_screen.dart:169-171`.
+- **UX-459** (P2/mobile-hr): "Report Incident" dialog uses raw `TextField`s with no `Form`/`validator`; Submit silently no-ops when Subject is blank — `mobile/lib/features/hr/presentation/screens/timesheets_incidents_screen.dart:68-98`.
+- **UX-460** (P2/mobile-hr): Payment vs "Time Off in Lieu" choice is never sent as a structured field, only appended as free text inside the description — downstream systems can't reliably distinguish TOIL claims — `mobile/lib/features/hr/presentation/screens/overtime_claim_form_screen.dart:20,104`.
+- **UX-461** (P2/mobile-hr): Back button is a 36x36 container with a 16px icon, under the 44dp minimum tap target — `mobile/lib/features/hr/presentation/screens/disciplinary_case_screen.dart:71-82`.
+- **UX-462** (P2/mobile-hr): Same sub-44dp back button pattern repeated — `mobile/lib/features/hr/presentation/screens/timesheets_incidents_screen.dart:178-191`.
+
+**Admin web — under-explored modules (14)**
+
+- **UX-464** (P2/fleet): Vehicles/drivers/calendar tables and forms hardcode `bg-white`/`border-neutral-200` with no `dark:` variants — `web/app/(app)/fleet/page.tsx:115-229`.
+- **UX-466** (P2/mande): Icon-only modal close button has no `aria-label` — `web/app/(app)/mande/indicators/page.tsx:171`.
+- **UX-467** (P2/mande): Delete button has no `isPending`/disabled guard, allowing duplicate delete requests — `web/app/(app)/mande/indicators/page.tsx:146-155`.
+- **UX-468** (P2/mande): Icon-only modal close button has no `aria-label` — `web/app/(app)/mande/results/page.tsx:163`.
+- **UX-469** (P2/mande): "Start"/"End" date inputs have no cross-validation; an end date before the start date is silently accepted — `web/app/(app)/mande/results/page.tsx:192,196`.
+- **UX-471** (P2/srhr): "End Date" input has no `min={form.start_date}` — `web/app/(app)/srhr/deployments/new/page.tsx:146`.
+- **UX-475** (P2/budget): FX rates table has no empty-state row when the result set is empty — `web/app/(app)/budget/fx-rates/page.tsx:57-64`.
+- **UX-480** (P2/budget): Contribution schedules table has no empty-state row — `web/app/(app)/budget/contribution-schedules/page.tsx:56-63`.
+- **UX-481** (P2/stock): No client-side guard preventing a transfer from a location to itself (`fromId === toId`) — `web/app/(app)/stock/transfers/page.tsx:56-67`.
+- **UX-482** (P2/stock): Transfers table has no empty-state message — `web/app/(app)/stock/transfers/page.tsx:82-102`.
+- **UX-484** (P2/stock): Write-offs table has no empty-state message — `web/app/(app)/stock/write-offs/page.tsx:80-97`.
+- **UX-487** (P2/weekly-summaries): "Period ID" is a raw numeric-text input with placeholder-as-label, requiring the user to know an internal ID by hand — `web/app/(app)/weekly-summaries/department/page.tsx:18-23`.
+- **UX-489** (P2/workplan): "End date" input has no `min={date}`, allowing an end date before the event's start date — `web/app/(app)/workplan/new/page.tsx:147-154`.
+- **UX-490** (P2/fleet): "Service type"/"Interval km"/"Interval days"/"Last service odometer" fields are placeholder-only with no `<label>` — `web/app/(app)/fleet/[id]/page.tsx:295-299`.
+
+**Admin-web-vs-mobile parity (5)**
+
+- **UX-491** (P2/parity-leave): Same `submitted` status shows "Pending" on web but "Pending Approval" on mobile — `web/app/(app)/leave/[id]/page.tsx:34` vs `mobile/lib/features/requests/presentation/screens/leave_request_detail_screen.dart:126-127`.
+- **UX-497** (P2/parity-finance): Web displays the currency symbol ("N$"); every mobile salary-advance screen prints the raw ISO code ("NAD") for the same value — `web/app/(app)/salary-advances/create/page.tsx:61-62` vs `mobile/lib/features/salary_advance/data/salary_advance_helpers.dart:42-45`.
+- **UX-498** (P2/parity-procurement): Same `submitted` status labeled "Pending Review" on web, "Pending HOD" on mobile — `web/app/(app)/procurement/[id]/page.tsx:35` vs `mobile/lib/features/procurement/data/procurement_api_helpers.dart:49-51`.
+- **UX-500** (P2/parity-procurement): `awarded` status is blue on web, green/success on mobile for the same value — `web/app/(app)/procurement/[id]/page.tsx:41` vs `mobile/lib/features/procurement/data/procurement_api_helpers.dart:64-66`.
+- **UX-502** (P2/parity-finance): Mobile's create screen reads "Request Advance"; web's equivalent reads "Apply for Salary Advance" — `mobile/lib/features/salary_advance/presentation/screens/salary_advance_request_screen.dart:259-260` vs `web/app/(app)/salary-advances/page.tsx:60-70`.
+
+**Admin web — copy/visual-consistency (13)**
+
+- **UX-508** (P2/procurement): Hand-rolled breadcrumb/heading instead of the shared `PageBreadcrumbs`/`ModulePageHeader` pattern used by sibling create flows — `web/app/(app)/procurement/create/page.tsx:177-191`.
+- **UX-509** (P2/platform): "New request" vs "New Request" — same breadcrumb label capitalized differently across equivalent create flows — `leave/create/page.tsx:211` vs `imprest/create/page.tsx:90`, `salary-advances/create/page.tsx:492`.
+- **UX-510** (P2/platform): "Save as Draft" vs "Save Draft" — same action worded two ways across 8 create flows — `risk/create/page.tsx:344`, `correspondence/create/page.tsx:257`, `srhr/reports/new/page.tsx:373` vs 5 others.
+- **UX-511** (P2/platform): Delete confirmations lack an irreversibility caveat on some pages while sibling deletes elsewhere include "This cannot be undone." — `mande/indicators/page.tsx:148` (+4 files) vs `hr/departments/page.tsx:93`, `governance/resolutions/page.tsx:396,1303,1331`.
+- **UX-512** (P2/platform): No single house style for delete-confirm copy — some titles/messages include the danger caveat, others don't, even within the same file — `admin/portfolios/page.tsx:56`, `governance/resolutions/page.tsx:544,687`.
+- **UX-513** (P2/platform): 7 call sites use bare `toLocaleDateString()` (default/US locale) while dozens of other pages explicitly pass `"en-GB"` — date formatting flips style depending on the screen — `assets/page.tsx:458,734` (+6 files).
+- **UX-514** (P2/platform): At least 6 modules reimplement pagination/month-nav with abbreviated "Prev"/"Next" instead of the shared `ListPagination` component's "Previous"/"Next" — `admin/weekly-summary/page.tsx:171` (+5 files).
+- **UX-515** (P2/platform): `ListPagination` under-adoption is inconsistent, not absent — some hand-rolled pagers use the "correct" full-word labels anyway — `assets/revaluation/page.tsx`.
+- **UX-516** (P2/platform): 5+ modules each define their own local money-formatting helper instead of the shared `formatCurrency`, producing visibly different output (symbol vs code, decimals vs none) for the same values — `finance/budget/[id]/page.tsx:13-14`, `pif/page.tsx:31-34`, `salary-advances/[id]/page.tsx:44-46`, `settings/hr/salary-scales/page.tsx:20-24`, `travel/[id]/page.tsx:43-47`.
+- **UX-517** (P2/platform): 6 modules each hand-roll their own dashboard stat-card component with different padding instead of sharing one — `assignments/page.tsx:32-38`, `risk/dashboard/page.tsx:60-66`, `travel/page.tsx:26-28`, `governance/plenary/page.tsx:61`, `hr/leave/balances/page.tsx:144`, `saam/page.tsx:77`.
+- **UX-518** (P2/platform): Same back-link affordance is lowercase after "to" in 3 files vs Title Case elsewhere — `admin/workflows/designer/page.tsx:128`, `finance/budget/[id]/page.tsx:198`, `travel/missions/[id]/page.tsx:41`.
+- **UX-519** (P2/platform): "Submitting..." (ASCII dots) vs "Submitting…" (Unicode ellipsis) for the identical submit-in-progress state across sibling create flows — `leave/create/page.tsx:491`, `procurement/create/page.tsx:495` vs 3 others.
+- **UX-520** (P2/platform): `text-red-400` used for the required-field asterisk on 3 pages while 134 other occurrences across the app use `text-red-500` — `admin/users/[id]/page.tsx:551,555`, `assignments/create/page.tsx:98,112,197`, `assignments/[id]/page.tsx:578`.
 
