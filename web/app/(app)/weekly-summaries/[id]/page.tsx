@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function WeeklySummaryDetailPage() {
   const params = useParams<{ id: string }>();
+  const { toast } = useToast();
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [returnReason, setReturnReason] = useState("");
+  const [accepting, setAccepting] = useState(false);
+  const [returning, setReturning] = useState(false);
 
   const load = async () => {
     try {
@@ -59,30 +63,51 @@ export default function WeeklySummaryDetailPage() {
         </a>
         <button
           type="button"
-          className="rounded bg-emerald-800 px-3 py-2 text-sm text-white"
+          className="rounded bg-emerald-800 px-3 py-2 text-sm text-white disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled={accepting}
           onClick={async () => {
-            await weeklyReportsApi.accept(report.id);
-            await load();
+            if (accepting) return;
+            setAccepting(true);
+            try {
+              await weeklyReportsApi.accept(report.id);
+              await load();
+            } catch (e: unknown) {
+              toast("error", e instanceof Error ? e.message : "Failed to accept report");
+            } finally {
+              setAccepting(false);
+            }
           }}
         >
-          Accept (supervisor)
+          {accepting ? "Accepting..." : "Accept (supervisor)"}
         </button>
         <div className="flex gap-2">
+          <label className="sr-only" htmlFor="weekly-return-reason">Return reason</label>
           <input
-            className="rounded border px-2 text-sm"
+            id="weekly-return-reason"
+            className="rounded border px-2 text-sm disabled:opacity-60"
             placeholder="Return reason"
             value={returnReason}
             onChange={(e) => setReturnReason(e.target.value)}
+            disabled={returning}
           />
           <button
             type="button"
-            className="rounded border border-amber-700 px-3 py-2 text-sm text-amber-900"
+            className="rounded border border-amber-700 px-3 py-2 text-sm text-amber-900 disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={returning}
             onClick={async () => {
-              await weeklyReportsApi.returnReport(report.id, { reason: returnReason || "Correction required" });
-              await load();
+              if (returning) return;
+              setReturning(true);
+              try {
+                await weeklyReportsApi.returnReport(report.id, { reason: returnReason || "Correction required" });
+                await load();
+              } catch (e: unknown) {
+                toast("error", e instanceof Error ? e.message : "Failed to return report");
+              } finally {
+                setReturning(false);
+              }
             }}
           >
-            Return
+            {returning ? "Returning..." : "Return"}
           </button>
         </div>
       </section>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type HoldRow = {
   id: number;
@@ -27,6 +28,8 @@ export default function CorrespondenceRetentionPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [releasingId, setReleasingId] = useState<number | null>(null);
+  const { confirm } = useConfirm();
 
   async function loadHolds() {
     const r = await api.get<{ data: HoldRow[] }>("/correspondence/legal-holds");
@@ -63,9 +66,26 @@ export default function CorrespondenceRetentionPage() {
   }
 
   async function release(id: number) {
-    await api.post(`/correspondence/letters/${id}/release-hold`);
-    setMsg("Legal hold released.");
-    await loadHolds();
+    if (releasingId) return;
+    const ok = await confirm({
+      title: "Release legal hold",
+      message: "This will lift the legal hold and allow the item to be purged per its retention policy. This action cannot be undone.",
+      confirmText: "Release hold",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    setErr(null);
+    setReleasingId(id);
+    try {
+      await api.post(`/correspondence/letters/${id}/release-hold`);
+      setMsg("Legal hold released.");
+      await loadHolds();
+    } catch (error: unknown) {
+      setErr(error instanceof Error ? error.message : "Failed to release hold.");
+    } finally {
+      setReleasingId(null);
+    }
   }
 
   return (
@@ -178,7 +198,14 @@ export default function CorrespondenceRetentionPage() {
                 <td>{h.retain_until ?? "—"}</td>
                 <td className="max-w-xs truncate">{h.legal_hold_reason ?? "—"}</td>
                 <td>
-                  <button type="button" className="btn-secondary text-xs" onClick={() => void release(h.id)}>Release hold</button>
+                  <button
+                    type="button"
+                    className="btn-secondary text-xs disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={() => void release(h.id)}
+                    disabled={releasingId === h.id}
+                  >
+                    {releasingId === h.id ? "Releasing..." : "Release hold"}
+                  </button>
                 </td>
               </tr>
             ))}

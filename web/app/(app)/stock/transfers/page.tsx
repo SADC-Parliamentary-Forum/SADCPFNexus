@@ -16,6 +16,8 @@ export default function StockTransfersPage() {
   const [toId, setToId] = useState("");
   const [itemId, setItemId] = useState("");
   const [qty, setQty] = useState("1");
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     stockTransfersApi.list({ per_page: 50 })
@@ -31,6 +33,13 @@ export default function StockTransfersPage() {
   }, [load]);
 
   const create = async () => {
+    if (creating) return;
+    if (fromId && toId && fromId === toId) {
+      setFormError("From and to locations must be different.");
+      return;
+    }
+    setFormError(null);
+    setCreating(true);
     try {
       await stockTransfersApi.create({
         from_location_id: Number(fromId),
@@ -41,6 +50,8 @@ export default function StockTransfersPage() {
       load();
     } catch {
       toast("error", "Could not create transfer");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -52,21 +63,31 @@ export default function StockTransfersPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Store Transfers" }]} />}
       />
       {canIssue && (
-        <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
-          <select className="form-input" value={fromId} onChange={(e) => setFromId(e.target.value)}>
-            <option value="">From…</option>
-            {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
-          </select>
-          <select className="form-input" value={toId} onChange={(e) => setToId(e.target.value)}>
-            <option value="">To…</option>
-            {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
-          </select>
-          <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value)}>
-            <option value="">Item…</option>
-            {items.map((i) => <option key={i.id} value={i.id}>{i.item_code}</option>)}
-          </select>
-          <input type="number" min={1} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
-          <button type="button" className="btn-primary" onClick={create}>Draft transfer</button>
+        <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
+          <div className="flex flex-wrap gap-3 items-end">
+            <select className="form-input disabled:opacity-60" value={fromId} onChange={(e) => setFromId(e.target.value)} disabled={creating}>
+              <option value="">From…</option>
+              {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
+            </select>
+            <select className="form-input disabled:opacity-60" value={toId} onChange={(e) => setToId(e.target.value)} disabled={creating}>
+              <option value="">To…</option>
+              {locations.map((l) => <option key={l.id} value={l.id}>{l.code} — {l.name}</option>)}
+            </select>
+            <select className="form-input disabled:opacity-60" value={itemId} onChange={(e) => setItemId(e.target.value)} disabled={creating}>
+              <option value="">Item…</option>
+              {items.map((i) => <option key={i.id} value={i.id}>{i.item_code}</option>)}
+            </select>
+            <input type="number" min={1} className="form-input w-24 disabled:opacity-60" value={qty} onChange={(e) => setQty(e.target.value)} disabled={creating} />
+            <button
+              type="button"
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={create}
+              disabled={creating || !fromId || !toId || !itemId}
+            >
+              {creating ? "Drafting..." : "Draft transfer"}
+            </button>
+          </div>
+          {formError && <p className="text-sm text-red-600">{formError}</p>}
         </div>
       )}
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -100,6 +121,13 @@ export default function StockTransfersPage() {
               </td>
             </tr>
           ))}
+          {rows.length === 0 && (
+            <tr>
+              <td className="px-4 py-6 text-center text-sm text-neutral-500" colSpan={4}>
+                No transfers yet.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
