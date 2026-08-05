@@ -144,10 +144,15 @@ export default function SupplierRegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
     setSuccess("");
 
+    if (form.password !== form.password_confirmation) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => payload.append(key, value));
@@ -318,7 +323,12 @@ export default function SupplierRegisterPage() {
               <input className="form-input" placeholder="Contact phone" value={form.contact_phone} onChange={(e) => setField("contact_phone", e.target.value)} required />
               <div className="grid grid-cols-2 gap-4">
                 <input className="form-input" type="password" placeholder="Password" value={form.password} onChange={(e) => setField("password", e.target.value)} required />
-                <input className="form-input" type="password" placeholder="Confirm password" value={form.password_confirmation} onChange={(e) => setField("password_confirmation", e.target.value)} required />
+                <div className="space-y-1">
+                  <input className="form-input w-full" type="password" placeholder="Confirm password" value={form.password_confirmation} onChange={(e) => setField("password_confirmation", e.target.value)} required />
+                  {form.password_confirmation && form.password !== form.password_confirmation && (
+                    <p className="text-xs text-red-500">Passwords do not match</p>
+                  )}
+                </div>
               </div>
             </div>
           </section>

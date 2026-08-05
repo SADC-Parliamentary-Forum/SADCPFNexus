@@ -30,7 +30,7 @@ export default function SupplierDashboardPage() {
         ].map(([label, value, href]) => (
           <Link key={String(label)} href={String(href)} className="card p-5 block hover:border-primary/30">
             <p className="text-xs uppercase tracking-wide text-neutral-400">{label}</p>
-            <p className="mt-2 text-3xl font-bold text-neutral-900">{value}</p>
+            <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">{value}</p>
           </Link>
         ))}
       </div>
