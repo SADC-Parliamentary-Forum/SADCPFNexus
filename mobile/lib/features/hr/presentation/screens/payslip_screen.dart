@@ -95,8 +95,16 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
   double _num(dynamic v) =>
       (v is num) ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0.0;
 
-  String _fmt(double v) =>
-      'N\$${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}';
+  /// Maps an ISO currency code to the display symbol, matching the
+  /// NAD -> "N$" convention used by [formatSaCurrency] in
+  /// salary_advance_helpers.dart.
+  String _currencySymbol(String? currency) {
+    final ccy = (currency == null || currency.isEmpty) ? 'NAD' : currency;
+    return ccy == 'NAD' ? 'N\$' : ccy;
+  }
+
+  String _fmt(double v, {String? currency}) =>
+      '${_currencySymbol(currency)}${v.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},')}';
 
   Future<void> _downloadPdf() async {
     final p = _selected;
@@ -222,6 +230,7 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
     final gross = _num(p['gross_amount']);
     final deductions = gross - net;
     final periodLabel = _periodLabel(p);
+    final currency = p['currency']?.toString();
     return StitchCard(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -229,7 +238,7 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
           Text(periodLabel,
               style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
           const SizedBox(height: 8),
-          Text(_fmt(net),
+          Text(_fmt(net, currency: currency),
               style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 30,
@@ -242,7 +251,7 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    Text(_fmt(gross),
+                    Text(_fmt(gross, currency: currency),
                         style: const TextStyle(
                             color: AppColors.success,
                             fontSize: 14,
@@ -257,7 +266,7 @@ class _PayslipScreenState extends ConsumerState<PayslipScreen> {
               Expanded(
                 child: Column(
                   children: [
-                    Text(_fmt(deductions),
+                    Text(_fmt(deductions, currency: currency),
                         style: const TextStyle(
                             color: AppColors.danger,
                             fontSize: 14,

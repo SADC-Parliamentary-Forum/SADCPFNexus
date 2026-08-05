@@ -97,33 +97,61 @@ class _UserProfileSecurityScreenState
     final currentController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: currentController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current Password'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'New Password'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: confirmController,
-              obscureText: true,
-              decoration:
-                  const InputDecoration(labelText: 'Confirm New Password'),
-            ),
-          ],
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: currentController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Current Password'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Current password is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'New Password'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'New password is required';
+                  }
+                  if (value.length < 8) {
+                    return 'Minimum 8 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: confirmController,
+                obscureText: true,
+                decoration:
+                    const InputDecoration(labelText: 'Confirm New Password'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm your new password';
+                  }
+                  if (value != passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -131,7 +159,10 @@ class _UserProfileSecurityScreenState
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () {
+              if (formKey.currentState?.validate() != true) return;
+              Navigator.pop(ctx, true);
+            },
             child: const Text('Update'),
           ),
         ],
@@ -170,37 +201,42 @@ class _UserProfileSecurityScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = theme.colorScheme;
+    final muted = c.onSurface.withValues(alpha: 0.55);
+    final secondary = c.onSurface.withValues(alpha: 0.75);
+
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
             size: 18,
-            color: AppColors.textPrimary,
+            color: c.onSurface,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Security Settings',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: c.onSurface,
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            icon: Icon(Icons.refresh, color: c.onSurface),
             onPressed: _loading ? null : _load,
           ),
         ],
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+          ? Center(
+              child: CircularProgressIndicator(color: c.primary),
             )
           : _error != null
               ? Center(
@@ -228,13 +264,13 @@ class _UserProfileSecurityScreenState
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppColors.primary.withValues(alpha: 0.15),
-                            AppColors.bgSurface,
+                            c.primary.withValues(alpha: 0.15),
+                            c.surface,
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25),
+                          color: c.primary.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Column(
@@ -242,8 +278,8 @@ class _UserProfileSecurityScreenState
                         children: [
                           Text(
                             _profile?['name']?.toString() ?? 'Current User',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: c.onSurface,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
@@ -251,8 +287,8 @@ class _UserProfileSecurityScreenState
                           const SizedBox(height: 4),
                           Text(
                             _profile?['email']?.toString() ?? '-',
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
+                            style: TextStyle(
+                              color: muted,
                               fontSize: 11,
                             ),
                           ),
@@ -261,8 +297,8 @@ class _UserProfileSecurityScreenState
                             _biometricAvailable
                                 ? 'Biometric login is available on this device.'
                                 : 'Biometric login is not available on this device.',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: secondary,
                               fontSize: 12,
                             ),
                           ),
@@ -270,10 +306,10 @@ class _UserProfileSecurityScreenState
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'AUTHENTICATION',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: muted,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
@@ -288,7 +324,7 @@ class _UserProfileSecurityScreenState
                           : 'Unavailable on this device.',
                       value: _biometricEnabled,
                       onChanged: _toggleBiometric,
-                      color: AppColors.primary,
+                      color: c.primary,
                     ),
                     _settingsTile(
                       icon: Icons.notifications_active_outlined,
@@ -307,10 +343,10 @@ class _UserProfileSecurityScreenState
                       color: AppColors.info,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'ACCOUNT ACTIONS',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: muted,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
@@ -321,7 +357,7 @@ class _UserProfileSecurityScreenState
                       Icons.lock_reset_outlined,
                       'Change Password',
                       'Update your account password using the server API.',
-                      AppColors.primary,
+                      c.primary,
                       _changePassword,
                     ),
                     _actionTile(
@@ -339,14 +375,14 @@ class _UserProfileSecurityScreenState
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.bgSurface,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: c.outline),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Server-managed active session listings and remote session revocation are not exposed by the current API, so this screen only shows real settings and actions the mobile client can actually perform.',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: secondary,
                           fontSize: 12,
                           height: 1.5,
                         ),
@@ -365,14 +401,82 @@ class _UserProfileSecurityScreenState
     required bool value,
     required ValueChanged<bool> onChanged,
     required Color color,
-  }) =>
-      Container(
+  }) {
+    final c = Theme.of(context).colorScheme;
+    final muted = c.onSurface.withValues(alpha: 0.55);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.outline),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: c.onSurface,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: c.primary,
+            activeTrackColor: c.primary.withValues(alpha: 0.3),
+            inactiveThumbColor: muted,
+            inactiveTrackColor: Theme.of(context).scaffoldBackgroundColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionTile(
+    IconData icon,
+    String label,
+    String sub,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    final c = Theme.of(context).colorScheme;
+    final muted = c.onSurface.withValues(alpha: 0.55);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.bgSurface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.outline),
         ),
         child: Row(
           children: [
@@ -392,88 +496,26 @@ class _UserProfileSecurityScreenState
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: c.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    sub,
+                    style: TextStyle(
+                      color: muted,
                       fontSize: 11,
                     ),
                   ),
                 ],
               ),
             ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-              inactiveThumbColor: AppColors.textMuted,
-              inactiveTrackColor: AppColors.bgDark,
-            ),
+            Icon(Icons.chevron_right, color: muted, size: 18),
           ],
         ),
-      );
-
-  Widget _actionTile(
-    IconData icon,
-    String label,
-    String sub,
-    Color color,
-    VoidCallback onTap,
-  ) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      sub,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 18),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
+  }
 }

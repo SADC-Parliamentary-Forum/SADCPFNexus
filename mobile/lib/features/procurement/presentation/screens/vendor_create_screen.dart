@@ -182,6 +182,14 @@ class _VendorCreateScreenState extends ConsumerState<VendorCreateScreen> {
                     icon: Icons.alternate_email_rounded,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
+                    validator: (value) {
+                      final trimmed = (value ?? '').trim();
+                      if (trimmed.isEmpty) return null;
+                      if (!trimmed.contains('@')) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
                   ),
                   _Field(
                     controller: _phoneCtrl,
