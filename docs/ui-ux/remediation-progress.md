@@ -1,24 +1,24 @@
 # UI/UX Audit Remediation Progress
 
-> **Programme verdict:** All **21 P0s (Pass 1-5) Fixed**. Closed **334/593 (56.3%)** Fixed/Already-fixed under honest route/theme verification, with **73 Pass 6 findings in remediation**.
+> **Programme verdict:** All **22 P0s (Pass 1-6) Fixed**. Closed **407/593 (68.6%)** Fixed/Already-fixed under honest route/theme verification.
 > Pass 2 (`feat/ui-ux-audit-remediation-2`) closed universal toast, WorkflowStatusBanner on remaining workflow details, register captions, Leave mobile cards + DS Input/Select/Badge/Button seed, Header a11y, dark `bg-white` hotspots, residual double padding.
 > Pass 3 verification hardened P0 regressions: sidebar now exposes one Approvals entry point, native browser confirm usage is blocked by unit test, and `ConfirmDialog` restores focus with dialog ARIA/Escape/backdrop handling.
 > Pass 4 (2026-08-03) ran four parallel read-only sweeps (admin web forms/tables/empty-states, admin web accessibility/dark-mode, mobile Flutter screen-level UX, mobile Flutter cross-screen consistency) scoped to find only issues **not** already catalogued below. Added **85 new findings, UX-365..UX-449**; all **85 Pass 4 findings** are now Fixed.
 > Pass 5 (2026-08-04) ran four more parallel sweeps (mobile remaining-features UX, admin web under-explored modules, admin web copy/visual-consistency, admin-web-vs-mobile parity) scoped to find only issues **not** already catalogued. Added **71 new findings, UX-450..UX-520**, including **2 new P0s**. All **71 Pass 5 findings were remediated** by six parallel implementation workstreams (isolated git worktrees, merged 2026-08-04): mobile HR/assignments, mobile finance/travel (incl. the P0 travel-document-validation gap), admin web fleet/M&E/SRHR/budget, admin web correspondence/stock/weekly-summaries, admin-web-vs-mobile parity, and admin web copy/visual-consistency (incl. mojibake cleanup across 14 files).
-> Pass 6 (2026-08-05) ran five parallel sweeps (admin web untouched modules, admin web layout/CSS-bug hunt, mobile untouched screens, mobile performance/offline edge cases, cross-platform notifications/PDF/print) scoped to find only issues **not** already catalogued. Added **73 new findings, UX-521..UX-593**, including **1 new P0** (mojibake corruption in the compliance audit ledger export). Remediation dispatched the same day across six parallel worktree workstreams — status pending verification.
+> Pass 6 (2026-08-05) ran five parallel sweeps (admin web untouched modules, admin web layout/CSS-bug hunt, mobile untouched screens, mobile performance/offline edge cases, cross-platform notifications/PDF/print) scoped to find only issues **not** already catalogued. Added **73 new findings, UX-521..UX-593**, including **1 new P0** (mojibake corruption in the compliance audit ledger export). All **73 Pass 6 findings were remediated** by six parallel implementation workstreams (isolated git worktrees, merged 2026-08-05): mobile dead-taps/navigation, mobile forms/validation/theming, mobile offline/lifecycle/performance (incl. a `ShellRoute` → `StatefulShellRoute.indexedStack` navigation-architecture change), web auth/public/supplier, web admin/governance/decisions/setup, and certificates/PDF/print/ledger (incl. the P0). One item (`profile/security` session-timeout preference) has no backend support and was honestly disabled with "Coming soon" copy rather than faked; one item (vendor directory pagination) needs a backend change and was left with a code comment rather than a client-only workaround.
 > Remaining Deferred items are predominantly **product/IA decisions** (dual module surfaces, calendar multiplicity, settings IA) or residual per-route polish where the canonical pattern now exists.
 **Branch:** `feat/ui-ux-audit-remediation-2`
 **Base:** `SADCPFNexus/main` @ `33cfa96`
-**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-05 (Pass 6 logged)
+**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-05 (Pass 6 fixed)
 
 ## Counts
 
 | Status | Count |
 | --- | ---: |
-| Fixed | 327 |
+| Fixed | 400 |
 | Already-fixed-by-prior-pack | 7 |
 | Deferred | 186 |
-| New (Pass 6, remediation in progress) | 73 |
+| New | 0 |
 | Out-of-scope | 0 |
 | **Total** | **593** |
 
@@ -669,9 +669,9 @@ _Generated 2026-08-04 via four parallel read-only agent sweeps, scoped to report
 - **UX-519** (P2/platform): "Submitting..." (ASCII dots) vs "Submitting…" (Unicode ellipsis) for the identical submit-in-progress state across sibling create flows — `leave/create/page.tsx:491`, `procurement/create/page.tsx:495` vs 3 others.
 - **UX-520** (P2/platform): `text-red-400` used for the required-field asterisk on 3 pages while 134 other occurrences across the app use `text-red-500` — `admin/users/[id]/page.tsx:551,555`, `assignments/create/page.tsx:98,112,197`, `assignments/[id]/page.tsx:578`.
 
-### New — Pass 6 fresh sweep (73, remediation in progress)
+### Fixed — Pass 6 (73)
 
-_Generated 2026-08-05 via five parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-520 above. Remediation dispatched the same day across six parallel worktree workstreams; status pending merge/verification._
+_Generated 2026-08-05 via five parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-520 above. All 73 were remediated the same day by six parallel implementation workstreams run in isolated git worktrees and merged into `main`: mobile dead-taps/navigation (commit `8799da3`), mobile forms/validation/theming (commit `7cd5e62`), mobile offline/lifecycle/performance incl. the navigation-architecture change (commit `6b4bf2a`), web auth/public/supplier (commit `b5129df`), web admin/governance/decisions/setup (commit `fe3bfe6`), and certificates/PDF/print/ledger incl. the P0 (commit `2addb16`). Two items were handled honestly rather than faked: UX-530 (session-timeout preference) has no backend support and was disabled with "Coming soon" copy instead of a fake-success toast; UX-579 (vendor directory pagination) needs a backend change and was left with a code comment rather than a client-only workaround._
 
 #### P0 — Critical (1)
 

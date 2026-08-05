@@ -1,23 +1,26 @@
 {
   "counts": {
-    "Fixed": 327,
+    "Fixed": 400,
     "Already-fixed-by-prior-pack": 7,
     "Deferred": 186,
-    "New": 73,
+    "New": 0,
     "Out-of-scope": 0
   },
-  "closed": 334,
+  "closed": 407,
   "total": 593,
   "mphCount": 236,
   "latest_pass": {
     "date": "2026-08-05",
-    "scope": "Pass 6 fresh sweep - admin web untouched modules (supplier/decisions/analytics/auth/print), admin web layout/CSS-bug hunt, mobile untouched screens (audit/auth/settings/payslip/security), mobile performance/offline edge cases, cross-platform notifications/PDF/print consistency",
+    "scope": "Pass 6 fresh sweep - admin web untouched modules, admin web layout/CSS-bug hunt, mobile untouched screens, mobile performance/offline edge cases, cross-platform notifications/PDF/print - followed same-day by full remediation of all 73 findings",
     "notes": [
       "73 findings (UX-521..UX-593) added via five parallel read-only agent sweeps scoped to avoid re-reporting the existing 520 catalogued items.",
-      "1 P0: UX-521/UX-551 mojibake corruption in the compliance audit ledger export (print + on-screen), undermining a document whose footer claims 7-year cryptographic retention guarantees.",
-      "30 P1s and 42 P2s. Remediation dispatched same day across six parallel worktree workstreams: mobile dead-taps/navigation, mobile forms/validation/theming, mobile offline/lifecycle/performance (incl. a ShellRoute -> StatefulShellRoute.indexedStack navigation-architecture change), web auth/public/supplier, web admin/governance/decisions/setup, and certificates/PDF/print/ledger (incl. the P0).",
-      "Notable pattern: document/record cards across HR, procurement, reports, and audit mobile screens render metadata but have no tap handler to actually open the underlying content (UX-522, 523, 524, 525, 526).",
-      "Status pending merge/verification - findings recorded as New, to be flipped to Fixed once each workstream's branch is merged and checked."
+      "All 73 findings fixed same day via six parallel implementation workstreams in isolated git worktrees, merged into main: mobile dead-taps/navigation (8799da3), mobile forms/validation/theming (7cd5e62), mobile offline/lifecycle/performance incl. ShellRoute -> StatefulShellRoute.indexedStack (6b4bf2a), web auth/public/supplier (b5129df), web admin/governance/decisions/setup (fe3bfe6), certificates/PDF/print/ledger incl. P0 (2addb16).",
+      "UX-521/UX-551 (P0) fixed: mojibake corruption removed from the compliance audit ledger export, both print/export HTML and on-screen module UI - verified zero remaining instances via grep.",
+      "UX-530 (session-timeout preference) has no backend support; honestly disabled with 'Coming soon' copy instead of a fake-success toast.",
+      "UX-579 (vendor directory pagination) needs a backend change; left with a code comment rather than a client-only workaround.",
+      "One merge conflict resolved: a pre-existing whitespace-only local diff on web/lib/api.ts (unrelated to any Pass 6 change) blocked one merge; discarded before retrying.",
+      "Verification post-merge: web tsc --noEmit clean, web production build clean (all routes), mobile flutter analyze clean (0 errors, only pre-existing warnings/infos).",
+      "0 Pass 6 findings remain New."
     ]
   }
 }
